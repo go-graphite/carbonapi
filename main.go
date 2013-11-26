@@ -95,6 +95,13 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 
 	responses := multiGet(Config.Backends, req.URL.RequestURI())
 
+	if len(responses) == 1 {
+		w.Header().Set("Content-Type", "application/pickle")
+		w.Write(responses[0])
+	}
+
+	// decode everything
+	var decoded [][]interface{}
 	for _, r := range responses {
 		d := pickle.NewDecoder(bytes.NewReader(r))
 		metric, err := d.Decode()
@@ -103,28 +110,38 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 			continue
 		}
 
-		// TODO: merge metrics here
-		// something like
-		/*
-		   base := metric[0]
-		   for i := 0; i< len(base['values']); i++ {
-		       if (base['values'][i] == pickle.None{}) {
-		           // find one in the other values
-		           for other := 1; i< len(metric); i++ {
-		               if metric[other]["values"][i] != pickle.None{} {
-		                   base['values'][i] = metric[other]["values"][i]
-		               }
-		           }
-		       }
-		   }
-		*/
-
-		_ = metric
+		marray := metric.([]interface{})
+		decoded = append(decoded, marray)
 	}
 
-	// Fake it, for now.  Just return the first one
+	if len(decoded) == 1 {
+		w.Header().Set("Content-Type", "application/pickle")
+		w.Write(responses[0])
+	}
+
+	// TODO: check len(d) == 1
+	base := decoded[0][0].(map[interface{}]interface{})
+	values := base["values"].([]interface{})
+
+	for i := 0; i < len(values); i++ {
+		if _, ok := values[i].(pickle.None); ok {
+			// find one in the other values arrays
+		replacenone:
+			for other := 1; other < len(decoded); other++ {
+				m := decoded[other][0].(map[interface{}]interface{})
+				ovalues := m["values"].([]interface{})
+				if _, ok := ovalues[i].(pickle.None); !ok {
+					values[i] = ovalues[i]
+					break replacenone
+				}
+			}
+		}
+	}
+
+	// the first response is where we've been filling in our data, so we're ok just to serialize it as our response
 	w.Header().Set("Content-Type", "application/pickle")
-	w.Write(responses[0])
+	e := pickle.NewEncoder(w)
+	e.Encode(decoded[0])
 }
 
 func main() {
