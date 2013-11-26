@@ -2,17 +2,21 @@ package main
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"sync"
 
 	pickle "github.com/kisielk/og-rek"
 )
+
+var Debug bool
 
 var Config struct {
 	Backends []string
@@ -42,7 +46,17 @@ func multiGet(servers []string, uri string) []serverResponse {
 				Header: make(http.Header),
 			}
 
+			if Debug {
+				d, _ := httputil.DumpRequest(&req, false)
+				log.Println(string(d))
+			}
+
 			resp, err := http.DefaultClient.Do(&req)
+
+			if Debug {
+				d, _ := httputil.DumpResponse(resp, true)
+				log.Println(string(d))
+			}
 
 			if err != nil || resp.StatusCode != 200 {
 				log.Println("got status code", resp.StatusCode, "while querying", server)
@@ -84,6 +98,9 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		metric, err := d.Decode()
 		if err != nil {
 			log.Println("error during decode:", err)
+			if Debug {
+				log.Println("\n" + hex.Dump(r.response))
+			}
 			continue
 		}
 
@@ -183,6 +200,7 @@ func main() {
 
 	configFile := flag.String("c", "", "config file (json)")
 	port := flag.Int("p", 8080, "port to listen on")
+	flag.BoolVar(&Debug, "d", false, "enable debug logging")
 
 	flag.Parse()
 
