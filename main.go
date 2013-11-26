@@ -55,7 +55,10 @@ func multiGet(servers []string, uri string) [][]byte {
 	var response [][]byte
 
 	for i := 0; i < len(servers); i++ {
-		response = append(response, <-ch)
+		r := <-ch
+		if r != nil {
+			response = append(response, r)
+		}
 	}
 
 	return response
