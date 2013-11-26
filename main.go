@@ -9,22 +9,29 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"sync"
 
 	pickle "github.com/kisielk/og-rek"
 )
 
-var Debug = false
-
 var Config struct {
 	Backends []string
+
+	mu          sync.RWMutex
+	metricPaths map[string][]string
 }
 
-func multiGet(servers []string, uri string) [][]byte {
+type serverResponse struct {
+	server   string
+	response []byte
+}
 
-	ch := make(chan []byte)
+func multiGet(servers []string, uri string) []serverResponse {
+
+	ch := make(chan serverResponse)
 
 	for _, server := range servers {
-		go func(server string, ch chan<- []byte) {
+		go func(server string, ch chan<- serverResponse) {
 
 			u, err := url.Parse(server + uri)
 			if err != nil {
@@ -39,24 +46,24 @@ func multiGet(servers []string, uri string) [][]byte {
 
 			if err != nil || resp.StatusCode != 200 {
 				log.Println("got status code", resp.StatusCode, "while querying", server)
-				ch <- nil
+				ch <- serverResponse{server, nil}
 			}
 			defer resp.Body.Close()
 
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				ch <- nil
+				ch <- serverResponse{server, nil}
 			}
 
-			ch <- body
+			ch <- serverResponse{server, body}
 		}(server, ch)
 	}
 
-	var response [][]byte
+	var response []serverResponse
 
 	for i := 0; i < len(servers); i++ {
 		r := <-ch
-		if r != nil {
+		if r.response != nil {
 			response = append(response, r)
 		}
 	}
@@ -68,10 +75,12 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 
 	responses := multiGet(Config.Backends, req.URL.RequestURI())
 
+	paths := make(map[string][]string)
 	seenIds := make(map[string]bool)
+
 	var metrics []map[interface{}]interface{}
 	for _, r := range responses {
-		d := pickle.NewDecoder(bytes.NewReader(r))
+		d := pickle.NewDecoder(bytes.NewReader(r.response))
 		metric, err := d.Decode()
 		if err != nil {
 			log.Println("error during decode:", err)
@@ -82,11 +91,21 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 			mm := m.(map[interface{}]interface{})
 			name := mm["metric_path"].(string)
 			if !seenIds[name] {
+				p := paths[name]
+				p = append(p, r.server)
+				paths[name] = p
 				seenIds[name] = true
 				metrics = append(metrics, mm)
 			}
 		}
 	}
+
+	// update our cache of which servers have which metrics
+	Config.mu.Lock()
+	for k, v := range paths {
+		Config.metricPaths[k] = v
+	}
+	Config.mu.Unlock()
 
 	w.Header().Set("Content-Type", "application/pickle")
 
@@ -96,17 +115,30 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 
 func renderHandler(w http.ResponseWriter, req *http.Request) {
 
-	responses := multiGet(Config.Backends, req.URL.RequestURI())
+	req.ParseForm()
+	target := req.FormValue("target")
+
+	var serverList []string
+	var ok bool
+
+	Config.mu.RLock()
+	// lookup the server list for this metric, or use all the servers if it's unknown
+	if serverList, ok = Config.metricPaths[target]; !ok {
+		serverList = Config.Backends
+	}
+	Config.mu.RUnlock()
+
+	responses := multiGet(serverList, req.URL.RequestURI())
 
 	if len(responses) == 1 {
 		w.Header().Set("Content-Type", "application/pickle")
-		w.Write(responses[0])
+		w.Write(responses[0].response)
 	}
 
 	// decode everything
 	var decoded [][]interface{}
 	for _, r := range responses {
-		d := pickle.NewDecoder(bytes.NewReader(r))
+		d := pickle.NewDecoder(bytes.NewReader(r.response))
 		metric, err := d.Decode()
 		if err != nil {
 			log.Println("error during decode:", err)
@@ -119,7 +151,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 
 	if len(decoded) == 1 {
 		w.Header().Set("Content-Type", "application/pickle")
-		w.Write(responses[0])
+		w.Write(responses[0].response)
 	}
 
 	// TODO: check len(d) == 1
@@ -164,6 +196,7 @@ func main() {
 	}
 
 	json.Unmarshal(cfgjs, &Config)
+	Config.metricPaths = make(map[string][]string)
 
 	http.HandleFunc("/metrics/find/", findHandler)
 	http.HandleFunc("/render/", renderHandler)
