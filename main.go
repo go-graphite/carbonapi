@@ -16,7 +16,7 @@ import (
 	pickle "github.com/kisielk/og-rek"
 )
 
-var Debug bool
+var Debug int
 
 var Config struct {
 	Backends []string
@@ -46,14 +46,14 @@ func multiGet(servers []string, uri string) []serverResponse {
 				Header: make(http.Header),
 			}
 
-			if Debug {
+			if Debug > 2 {
 				d, _ := httputil.DumpRequest(&req, false)
 				log.Println(string(d))
 			}
 
 			resp, err := http.DefaultClient.Do(&req)
 
-			if Debug {
+			if Debug > 2 {
 				d, _ := httputil.DumpResponse(resp, true)
 				log.Println(string(d))
 			}
@@ -98,7 +98,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		metric, err := d.Decode()
 		if err != nil {
 			log.Println("error during decode:", err)
-			if Debug {
+			if Debug > 1 {
 				log.Println("\n" + hex.Dump(r.response))
 			}
 			continue
@@ -200,7 +200,7 @@ func main() {
 
 	configFile := flag.String("c", "", "config file (json)")
 	port := flag.Int("p", 8080, "port to listen on")
-	flag.BoolVar(&Debug, "d", false, "enable debug logging")
+	flag.IntVar(&Debug, "d", 0, "enable debug logging")
 
 	flag.Parse()
 
