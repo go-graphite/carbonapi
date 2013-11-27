@@ -107,10 +107,10 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		for _, m := range metric.([]interface{}) {
 			mm := m.(map[interface{}]interface{})
 			name := mm["metric_path"].(string)
+			p := paths[name]
+			p = append(p, r.server)
+			paths[name] = p
 			if !seenIds[name] {
-				p := paths[name]
-				p = append(p, r.server)
-				paths[name] = p
 				seenIds[name] = true
 				metrics = append(metrics, mm)
 			}
