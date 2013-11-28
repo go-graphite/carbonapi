@@ -89,8 +89,8 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 
 	responses := multiGet(Config.Backends, req.URL.RequestURI())
 
+	// metric -> [server1, ... ]
 	paths := make(map[string][]string)
-	seenIds := make(map[string]bool)
 
 	var metrics []map[interface{}]interface{}
 	for _, r := range responses {
@@ -107,13 +107,15 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		for _, m := range metric.([]interface{}) {
 			mm := m.(map[interface{}]interface{})
 			name := mm["metric_path"].(string)
-			p := paths[name]
-			p = append(p, r.server)
-			paths[name] = p
-			if !seenIds[name] {
-				seenIds[name] = true
+			p, ok := paths[name]
+			if !ok {
+				// we haven't seen this name yet
+				// add the metric to the list of metrics to return
 				metrics = append(metrics, mm)
 			}
+			// add the server to the list of servers that know about this metric
+			p = append(p, r.server)
+			paths[name] = p
 		}
 	}
 
