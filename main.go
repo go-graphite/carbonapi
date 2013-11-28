@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"runtime"
 	"sync"
 
 	pickle "github.com/kisielk/og-rek"
@@ -18,11 +19,17 @@ import (
 
 var Debug int
 
-var Config struct {
+var Config = struct {
 	Backends []string
+	MaxProcs int
+	Port     int
 
 	mu          sync.RWMutex
 	metricPaths map[string][]string
+}{
+	MaxProcs:    1,
+	Port:        8080,
+	metricPaths: make(map[string][]string),
 }
 
 type serverResponse struct {
@@ -201,7 +208,8 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 func main() {
 
 	configFile := flag.String("c", "", "config file (json)")
-	port := flag.Int("p", 8080, "port to listen on")
+	port := flag.Int("p", 0, "port to listen on")
+	maxprocs := flag.Int("maxprocs", 0, "GOMAXPROCS")
 	flag.IntVar(&Debug, "d", 0, "enable debug logging")
 
 	flag.Parse()
@@ -216,12 +224,24 @@ func main() {
 	}
 
 	json.Unmarshal(cfgjs, &Config)
-	Config.metricPaths = make(map[string][]string)
+
+	// command line overrides config file
+
+	if *port != 0 {
+		Config.Port = *port
+	}
+
+	if *maxprocs != 0 {
+		Config.MaxProcs = *maxprocs
+	}
+
+	log.Println("setting GOMAXPROCS=", Config.MaxProcs)
+	runtime.GOMAXPROCS(Config.MaxProcs)
 
 	http.HandleFunc("/metrics/find/", findHandler)
 	http.HandleFunc("/render/", renderHandler)
 
-	portStr := fmt.Sprintf(":%d", *port)
+	portStr := fmt.Sprintf(":%d", Config.Port)
 	log.Println("listening on", portStr)
 	log.Fatal(http.ListenAndServe(portStr, nil))
 }
