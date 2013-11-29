@@ -239,6 +239,10 @@ func main() {
 		log.Fatal("error parsing config file: ", err)
 	}
 
+	if len(Config.Backends) == 0 {
+		log.Fatal("no Backends loaded -- exiting")
+	}
+
 	// command line overrides config file
 
 	if *port != 0 {
