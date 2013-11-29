@@ -205,6 +205,23 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	e.Encode(decoded[0])
 }
 
+func stripCommentHeader(cfg []byte) []byte {
+
+	// strip out the comment header block that begins with '#' characters
+	// as soon as we see a line that starts with something _other_ than '#', we're done
+
+	idx := 0
+	for cfg[0] == '#' {
+		idx = bytes.Index(cfg, []byte("\n"))
+		if idx == -1 || idx+1 == len(cfg) {
+			return nil
+		}
+		cfg = cfg[idx+1:]
+	}
+
+	return cfg
+}
+
 func main() {
 
 	configFile := flag.String("c", "", "config file (json)")
@@ -223,15 +240,10 @@ func main() {
 		log.Fatal("unable to load config file:", err)
 	}
 
-	// strip out the comment header block that begins with '#'
-	// as soon as we see a line that starts with something _other_ than '#', we're done
-	idx := 0
-	for cfgjs[0] == '#' {
-		idx = bytes.Index(cfgjs, []byte("\n"))
-		if idx == -1 || idx+1 == len(cfgjs) {
-			log.Fatal("error removing header comment from ", *configFile)
-		}
-		cfgjs = cfgjs[idx+1:]
+	cfgjs = stripCommentHeader(cfgjs)
+
+	if cfgjs == nil {
+		log.Fatal("error removing header comment from ", *configFile)
 	}
 
 	err = json.Unmarshal(cfgjs, &Config)
