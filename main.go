@@ -223,6 +223,17 @@ func main() {
 		log.Fatal("unable to load config file:", err)
 	}
 
+	// strip out the comment header block that begins with '#'
+	// as soon as we see a line that starts with something _other_ than '#', we're done
+	idx := 0
+	for cfgjs[0] == '#' {
+		idx = bytes.Index(cfgjs, []byte("\n"))
+		if idx == -1 || idx+1 == len(cfgjs) {
+			log.Fatal("error removing header comment from ", *configFile)
+		}
+		cfgjs = cfgjs[idx+1:]
+	}
+
 	err = json.Unmarshal(cfgjs, &Config)
 	if err != nil {
 		log.Fatal("error parsing config file: ", err)
