@@ -223,7 +223,10 @@ func main() {
 		log.Fatal("unable to load config file:", err)
 	}
 
-	json.Unmarshal(cfgjs, &Config)
+	err = json.Unmarshal(cfgjs, &Config)
+	if err != nil {
+		log.Fatal("error parsing config file: ", err)
+	}
 
 	// command line overrides config file
 
