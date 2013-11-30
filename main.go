@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"runtime"
 	"sync"
@@ -41,6 +40,10 @@ func multiGet(servers []string, uri string) []serverResponse {
 
 	ch := make(chan serverResponse)
 
+	if Debug > 0 {
+		log.Println("querying servers=", servers, "uri=", uri)
+	}
+
 	for _, server := range servers {
 		go func(server string, ch chan<- serverResponse) {
 
@@ -53,20 +56,10 @@ func multiGet(servers []string, uri string) []serverResponse {
 				Header: make(http.Header),
 			}
 
-			if Debug > 2 {
-				d, _ := httputil.DumpRequest(&req, false)
-				log.Println(string(d))
-			}
-
 			resp, err := http.DefaultClient.Do(&req)
 
-			if Debug > 2 {
-				d, _ := httputil.DumpResponse(resp, true)
-				log.Println(string(d))
-			}
-
 			if err != nil || resp.StatusCode != 200 {
-				log.Println("got status code", resp.StatusCode, "while querying", server)
+				log.Println("got status code", resp.StatusCode, "while querying", server, "/", uri)
 				ch <- serverResponse{server, nil}
 			}
 			defer resp.Body.Close()
@@ -94,7 +87,17 @@ func multiGet(servers []string, uri string) []serverResponse {
 
 func findHandler(w http.ResponseWriter, req *http.Request) {
 
+	if Debug > 0 {
+		log.Println("request: ", req.URL.RequestURI())
+	}
+
 	responses := multiGet(Config.Backends, req.URL.RequestURI())
+
+	if responses == nil || len(responses) == 0 {
+		log.Println("error querying backends for: ", req.URL.RequestURI())
+		http.Error(w, "error querying backends", http.StatusInternalServerError)
+		return
+	}
 
 	// metric -> [server1, ... ]
 	paths := make(map[string][]string)
@@ -104,16 +107,33 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		d := pickle.NewDecoder(bytes.NewReader(r.response))
 		metric, err := d.Decode()
 		if err != nil {
-			log.Println("error during decode:", err)
+			log.Printf("error decoding response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
 			if Debug > 1 {
 				log.Println("\n" + hex.Dump(r.response))
 			}
 			continue
 		}
 
-		for _, m := range metric.([]interface{}) {
-			mm := m.(map[interface{}]interface{})
-			name := mm["metric_path"].(string)
+		marray, ok := metric.([]interface{})
+		if !ok {
+			log.Printf("bad type for metric:%t from server:%s: req:%s", metric, r.server, req.URL.RequestURI())
+			http.Error(w, fmt.Sprintf("bad type for metric: %t", metric), http.StatusInternalServerError)
+			return
+		}
+
+		for i, m := range marray {
+			mm, ok := m.(map[interface{}]interface{})
+			if !ok {
+				log.Printf("bad type for metric[%d]:%t from server:%s: req:%s", i, m, r.server, req.URL.RequestURI())
+				http.Error(w, fmt.Sprintf("bad type for metric[%d]:%t", i, m), http.StatusInternalServerError)
+				return
+			}
+			name, ok := mm["metric_path"].(string)
+			if !ok {
+				log.Printf("bad type for metric_path:%t from server:%s: req:%s", mm["metric_path"], r.server, req.URL.RequestURI())
+				http.Error(w, fmt.Sprintf("bad type for metric_path: %t", mm["metric_path"]), http.StatusInternalServerError)
+				return
+			}
 			p, ok := paths[name]
 			if !ok {
 				// we haven't seen this name yet
@@ -141,8 +161,17 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 
 func renderHandler(w http.ResponseWriter, req *http.Request) {
 
+	if Debug > 0 {
+		log.Println("request: ", req.URL.RequestURI())
+	}
+
 	req.ParseForm()
 	target := req.FormValue("target")
+
+	if target == "" {
+		http.Error(w, "empty target", http.StatusBadRequest)
+		return
+	}
 
 	var serverList []string
 	var ok bool
@@ -156,6 +185,13 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 
 	responses := multiGet(serverList, req.URL.RequestURI())
 
+	if responses == nil || len(responses) == 0 {
+		log.Println("error querying backends for: ", req.URL.RequestURI())
+		http.Error(w, "error querying backends", http.StatusInternalServerError)
+		return
+	}
+
+	// nothing to merge
 	if len(responses) == 1 {
 		w.Header().Set("Content-Type", "application/pickle")
 		w.Write(responses[0].response)
@@ -167,30 +203,87 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		d := pickle.NewDecoder(bytes.NewReader(r.response))
 		metric, err := d.Decode()
 		if err != nil {
-			log.Println("error during decode:", err)
+			log.Printf("error decoding response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
+			if Debug > 1 {
+				log.Println("\n" + hex.Dump(r.response))
+			}
 			continue
 		}
 
-		marray := metric.([]interface{})
+		marray, ok := metric.([]interface{})
+		if !ok {
+			err := fmt.Sprintf("bad type for metric:%d from server:%s req:%s", metric, r.server, req.URL.RequestURI())
+			log.Println(err)
+			http.Error(w, err, http.StatusInternalServerError)
+			return
+		}
+		if len(marray) == 0 {
+			continue
+		}
 		decoded = append(decoded, marray)
 	}
 
-	if len(decoded) == 1 {
+	if len(decoded) == 0 {
+		log.Printf("no decoded responses to merge for req:%s", req.URL.RequestURI())
 		w.Header().Set("Content-Type", "application/pickle")
 		w.Write(responses[0].response)
+		return
 	}
 
-	// TODO: check len(d) == 1
-	base := decoded[0][0].(map[interface{}]interface{})
-	values := base["values"].([]interface{})
+	if len(decoded) == 1 {
+		log.Printf("only one decoded responses to merge for req:%s", req.URL.RequestURI())
+		w.Header().Set("Content-Type", "application/pickle")
+		// send back whatever data we have
+		e := pickle.NewEncoder(w)
+		e.Encode(decoded[0])
+		return
+	}
+
+	if len(decoded[0]) != 1 {
+		err := fmt.Sprintf("bad length for decoded[]:%d from req:%s", len(decoded[0]), req.URL.RequestURI())
+		log.Println(err)
+		http.Error(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	base, ok := decoded[0][0].(map[interface{}]interface{})
+	if !ok {
+		err := fmt.Sprintf("bad type for decoded:%t from req:%s", decoded[0][0], req.URL.RequestURI())
+		log.Println(err)
+		http.Error(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	values, ok := base["values"].([]interface{})
+	if !ok {
+		err := fmt.Sprintf("bad type for values:%t from req:%s", base["values"], req.URL.RequestURI())
+		log.Println(err)
+		http.Error(w, err, http.StatusInternalServerError)
+		return
+	}
 
 	for i := 0; i < len(values); i++ {
 		if _, ok := values[i].(pickle.None); ok {
 			// find one in the other values arrays
 		replacenone:
 			for other := 1; other < len(decoded); other++ {
-				m := decoded[other][0].(map[interface{}]interface{})
-				ovalues := m["values"].([]interface{})
+				m, ok := decoded[other][0].(map[interface{}]interface{})
+				if !ok {
+					log.Println(fmt.Sprintf("bad type for decoded[%d][0]: %t", other, decoded[other][0]))
+					continue
+				}
+
+				ovalues, ok := m["values"].([]interface{})
+				if !ok {
+					log.Printf("bad type for ovalues:%t from req:%s (skipping)", m["values"], req.URL.RequestURI())
+					continue
+				}
+
+				if len(ovalues) <= i {
+					log.Printf("bad ovalues length for %s: need offset %d but len(ovalues)=%d", req.URL.RequestURI(), i, len(ovalues))
+					continue
+				}
+
 				if _, ok := ovalues[i].(pickle.None); !ok {
 					values[i] = ovalues[i]
 					break replacenone
