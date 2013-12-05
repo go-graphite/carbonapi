@@ -268,31 +268,32 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+fixValues:
 	for i := 0; i < len(values); i++ {
 		if _, ok := values[i].(pickle.None); ok {
 			// find one in the other values arrays
-		replacenone:
 			for other := 1; other < len(decoded); other++ {
 				m, ok := decoded[other][0].(map[interface{}]interface{})
 				if !ok {
 					log.Println(fmt.Sprintf("bad type for decoded[%d][0]: %t", other, decoded[other][0]))
-					continue
+					break fixValues
 				}
 
 				ovalues, ok := m["values"].([]interface{})
 				if !ok {
 					log.Printf("bad type for ovalues:%t from req:%s (skipping)", m["values"], req.URL.RequestURI())
-					continue
+					break fixValues
 				}
 
-				if len(ovalues) <= i {
-					log.Printf("bad ovalues length for %s: need offset %d but len(ovalues)=%d", req.URL.RequestURI(), i, len(ovalues))
-					continue
+				if len(ovalues) != len(values) {
+					log.Printf("unable to merge ovalues: len(values)=%d but len(ovalues)=%d", req.URL.RequestURI(), len(values), len(ovalues))
+					log.Printf("request: %s: %v", req.URL.RequestURI(), decoded)
+					break fixValues
 				}
 
 				if _, ok := ovalues[i].(pickle.None); !ok {
 					values[i] = ovalues[i]
-					break replacenone
+					break
 				}
 			}
 		}
