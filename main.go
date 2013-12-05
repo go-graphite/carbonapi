@@ -225,6 +225,10 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		decoded = append(decoded, marray)
 	}
 
+	if Debug > 2 {
+		log.Printf("request: %s: %v", req.URL.RequestURI(), decoded)
+	}
+
 	if len(decoded) == 0 {
 		log.Printf("no decoded responses to merge for req:%s", req.URL.RequestURI())
 		w.Header().Set("Content-Type", "application/pickle")
