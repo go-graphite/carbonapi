@@ -371,7 +371,7 @@ func main() {
 	}
 
 	// set up our logging
-	slog, err := syslog.New(syslog.LOG_DAEMON, "photosrv")
+	slog, err := syslog.New(syslog.LOG_DAEMON, "carbonzipper")
 	if err != nil {
 		log.Fatal("can't obtain a syslog connection", err)
 	}
