@@ -9,9 +9,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"log/syslog"
 	"net/http"
 	_ "net/http/pprof"
 	"net/url"
+	"os"
 	"runtime"
 	"sync"
 
@@ -33,6 +35,8 @@ var Config = struct {
 	metricPaths: make(map[string][]string),
 }
 
+var logger multilog
+
 type serverResponse struct {
 	server   string
 	response []byte
@@ -43,7 +47,7 @@ func multiGet(servers []string, uri string) []serverResponse {
 	ch := make(chan serverResponse)
 
 	if Debug > 0 {
-		log.Println("querying servers=", servers, "uri=", uri)
+		logger.Logln("querying servers=", servers, "uri=", uri)
 	}
 
 	for _, server := range servers {
@@ -61,7 +65,7 @@ func multiGet(servers []string, uri string) []serverResponse {
 			resp, err := http.DefaultClient.Do(&req)
 
 			if err != nil || resp.StatusCode != 200 {
-				log.Println("got status code", resp.StatusCode, "while querying", server, "/", uri)
+				logger.Logln("got status code", resp.StatusCode, "while querying", server, "/", uri)
 				ch <- serverResponse{server, nil}
 			}
 			defer resp.Body.Close()
@@ -90,13 +94,13 @@ func multiGet(servers []string, uri string) []serverResponse {
 func findHandler(w http.ResponseWriter, req *http.Request) {
 
 	if Debug > 0 {
-		log.Println("request: ", req.URL.RequestURI())
+		logger.Logln("request: ", req.URL.RequestURI())
 	}
 
 	responses := multiGet(Config.Backends, req.URL.RequestURI())
 
 	if responses == nil || len(responses) == 0 {
-		log.Println("error querying backends for: ", req.URL.RequestURI())
+		logger.Logln("error querying backends for: ", req.URL.RequestURI())
 		http.Error(w, "error querying backends", http.StatusInternalServerError)
 		return
 	}
@@ -109,16 +113,16 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		d := pickle.NewDecoder(bytes.NewReader(r.response))
 		metric, err := d.Decode()
 		if err != nil {
-			log.Printf("error decoding response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
+			logger.Logf("error decoding response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
 			if Debug > 1 {
-				log.Println("\n" + hex.Dump(r.response))
+				logger.Logln("\n" + hex.Dump(r.response))
 			}
 			continue
 		}
 
 		marray, ok := metric.([]interface{})
 		if !ok {
-			log.Printf("bad type for metric:%t from server:%s: req:%s", metric, r.server, req.URL.RequestURI())
+			logger.Logf("bad type for metric:%t from server:%s: req:%s", metric, r.server, req.URL.RequestURI())
 			http.Error(w, fmt.Sprintf("bad type for metric: %t", metric), http.StatusInternalServerError)
 			return
 		}
@@ -126,13 +130,13 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		for i, m := range marray {
 			mm, ok := m.(map[interface{}]interface{})
 			if !ok {
-				log.Printf("bad type for metric[%d]:%t from server:%s: req:%s", i, m, r.server, req.URL.RequestURI())
+				logger.Logf("bad type for metric[%d]:%t from server:%s: req:%s", i, m, r.server, req.URL.RequestURI())
 				http.Error(w, fmt.Sprintf("bad type for metric[%d]:%t", i, m), http.StatusInternalServerError)
 				return
 			}
 			name, ok := mm["metric_path"].(string)
 			if !ok {
-				log.Printf("bad type for metric_path:%t from server:%s: req:%s", mm["metric_path"], r.server, req.URL.RequestURI())
+				logger.Logf("bad type for metric_path:%t from server:%s: req:%s", mm["metric_path"], r.server, req.URL.RequestURI())
 				http.Error(w, fmt.Sprintf("bad type for metric_path: %t", mm["metric_path"]), http.StatusInternalServerError)
 				return
 			}
@@ -164,7 +168,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 func renderHandler(w http.ResponseWriter, req *http.Request) {
 
 	if Debug > 0 {
-		log.Println("request: ", req.URL.RequestURI())
+		logger.Logln("request: ", req.URL.RequestURI())
 	}
 
 	req.ParseForm()
@@ -188,7 +192,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	responses := multiGet(serverList, req.URL.RequestURI())
 
 	if responses == nil || len(responses) == 0 {
-		log.Println("error querying backends for: ", req.URL.RequestURI())
+		logger.Logln("error querying backends for: ", req.URL.RequestURI())
 		http.Error(w, "error querying backends", http.StatusInternalServerError)
 		return
 	}
@@ -205,9 +209,9 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		d := pickle.NewDecoder(bytes.NewReader(r.response))
 		metric, err := d.Decode()
 		if err != nil {
-			log.Printf("error decoding response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
+			logger.Logf("error decoding response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
 			if Debug > 1 {
-				log.Println("\n" + hex.Dump(r.response))
+				logger.Logln("\n" + hex.Dump(r.response))
 			}
 			continue
 		}
@@ -215,7 +219,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		marray, ok := metric.([]interface{})
 		if !ok {
 			err := fmt.Sprintf("bad type for metric:%d from server:%s req:%s", metric, r.server, req.URL.RequestURI())
-			log.Println(err)
+			logger.Logln(err)
 			http.Error(w, err, http.StatusInternalServerError)
 			return
 		}
@@ -226,18 +230,18 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if Debug > 2 {
-		log.Printf("request: %s: %v", req.URL.RequestURI(), decoded)
+		logger.Logf("request: %s: %v", req.URL.RequestURI(), decoded)
 	}
 
 	if len(decoded) == 0 {
-		log.Printf("no decoded responses to merge for req:%s", req.URL.RequestURI())
+		logger.Logf("no decoded responses to merge for req:%s", req.URL.RequestURI())
 		w.Header().Set("Content-Type", "application/pickle")
 		w.Write(responses[0].response)
 		return
 	}
 
 	if len(decoded) == 1 {
-		log.Printf("only one decoded responses to merge for req:%s", req.URL.RequestURI())
+		logger.Logf("only one decoded responses to merge for req:%s", req.URL.RequestURI())
 		w.Header().Set("Content-Type", "application/pickle")
 		// send back whatever data we have
 		e := pickle.NewEncoder(w)
@@ -247,7 +251,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 
 	if len(decoded[0]) != 1 {
 		err := fmt.Sprintf("bad length for decoded[]:%d from req:%s", len(decoded[0]), req.URL.RequestURI())
-		log.Println(err)
+		logger.Logln(err)
 		http.Error(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -255,7 +259,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	base, ok := decoded[0][0].(map[interface{}]interface{})
 	if !ok {
 		err := fmt.Sprintf("bad type for decoded:%t from req:%s", decoded[0][0], req.URL.RequestURI())
-		log.Println(err)
+		logger.Logln(err)
 		http.Error(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -263,7 +267,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	values, ok := base["values"].([]interface{})
 	if !ok {
 		err := fmt.Sprintf("bad type for values:%t from req:%s", base["values"], req.URL.RequestURI())
-		log.Println(err)
+		logger.Logln(err)
 		http.Error(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -275,19 +279,19 @@ fixValues:
 			for other := 1; other < len(decoded); other++ {
 				m, ok := decoded[other][0].(map[interface{}]interface{})
 				if !ok {
-					log.Println(fmt.Sprintf("bad type for decoded[%d][0]: %t", other, decoded[other][0]))
+					logger.Logln(fmt.Sprintf("bad type for decoded[%d][0]: %t", other, decoded[other][0]))
 					break fixValues
 				}
 
 				ovalues, ok := m["values"].([]interface{})
 				if !ok {
-					log.Printf("bad type for ovalues:%t from req:%s (skipping)", m["values"], req.URL.RequestURI())
+					logger.Logf("bad type for ovalues:%t from req:%s (skipping)", m["values"], req.URL.RequestURI())
 					break fixValues
 				}
 
 				if len(ovalues) != len(values) {
-					log.Printf("unable to merge ovalues: len(values)=%d but len(ovalues)=%d", req.URL.RequestURI(), len(values), len(ovalues))
-					log.Printf("request: %s: %v", req.URL.RequestURI(), decoded)
+					logger.Logf("unable to merge ovalues: len(values)=%d but len(ovalues)=%d", req.URL.RequestURI(), len(values), len(ovalues))
+					logger.Logf("request: %s: %v", req.URL.RequestURI(), decoded)
 					break fixValues
 				}
 
@@ -328,6 +332,7 @@ func main() {
 	port := flag.Int("p", 0, "port to listen on")
 	maxprocs := flag.Int("maxprocs", 0, "GOMAXPROCS")
 	flag.IntVar(&Debug, "d", 0, "enable debug logging")
+	logStdout := flag.Bool("stdout", false, "write logging output also to stdout (default: only syslog)")
 
 	flag.Parse()
 
@@ -365,13 +370,54 @@ func main() {
 		Config.MaxProcs = *maxprocs
 	}
 
-	log.Println("setting GOMAXPROCS=", Config.MaxProcs)
+	// set up our logging
+	slog, err := syslog.New(syslog.LOG_DAEMON, "photosrv")
+	if err != nil {
+		log.Fatal("can't obtain a syslog connection", err)
+	}
+	logger = append(logger, &sysLogger{w: slog})
+
+	if *logStdout {
+		logger = append(logger, &stdoutLogger{log.New(os.Stdout, "", log.LstdFlags)})
+	}
+
+	logger.Logln("setting GOMAXPROCS=", Config.MaxProcs)
 	runtime.GOMAXPROCS(Config.MaxProcs)
 
 	http.HandleFunc("/metrics/find/", findHandler)
 	http.HandleFunc("/render/", renderHandler)
 
 	portStr := fmt.Sprintf(":%d", Config.Port)
-	log.Println("listening on", portStr)
+	logger.Logln("listening on", portStr)
 	log.Fatal(http.ListenAndServe(portStr, nil))
+}
+
+// trivial logging classes
+
+type Logger interface {
+	Log(string)
+}
+
+type stdoutLogger struct{ logger *log.Logger }
+
+func (l *stdoutLogger) Log(s string) { l.logger.Print(s) }
+
+type sysLogger struct{ w *syslog.Writer }
+
+func (l *sysLogger) Log(s string) { l.w.Info(s) }
+
+type multilog []Logger
+
+func (ml multilog) Logln(a ...interface{}) {
+	s := fmt.Sprintln(a...)
+	for _, l := range ml {
+		l.Log(s)
+	}
+}
+
+func (ml multilog) Logf(format string, a ...interface{}) {
+	s := fmt.Sprintf(format, a...)
+	for _, l := range ml {
+		l.Log(s)
+	}
 }
