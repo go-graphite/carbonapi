@@ -314,8 +314,7 @@ fixValues:
 				}
 
 				if len(ovalues) != len(values) {
-					logger.Logf("unable to merge ovalues: len(values)=%d but len(ovalues)=%d", req.URL.RequestURI(), len(values), len(ovalues))
-					logger.Logf("request: %s: %v", req.URL.RequestURI(), decoded)
+					logger.Logf("request: %s: unable to merge ovalues: len(values)=%d but len(ovalues)=%d", req.URL.RequestURI(), len(values), len(ovalues))
 					Metrics.Errors.Add(1)
 					break fixValues
 				}
