@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
-	_ "expvar"
+	"expvar"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -33,6 +33,14 @@ var Config = struct {
 	MaxProcs:    1,
 	Port:        8080,
 	metricPaths: make(map[string][]string),
+}
+
+var Metrics = struct {
+	Requests *expvar.Int
+	Errors   *expvar.Int
+}{
+	Requests: expvar.NewInt("requests"),
+	Errors:   expvar.NewInt("errors"),
 }
 
 var logger multilog
@@ -97,6 +105,8 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		logger.Logln("request: ", req.URL.RequestURI())
 	}
 
+	Metrics.Requests.Add(1)
+
 	responses := multiGet(Config.Backends, req.URL.RequestURI())
 
 	if responses == nil || len(responses) == 0 {
@@ -117,6 +127,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 			if Debug > 1 {
 				logger.Logln("\n" + hex.Dump(r.response))
 			}
+			Metrics.Errors.Add(1)
 			continue
 		}
 
@@ -124,6 +135,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		if !ok {
 			logger.Logf("bad type for metric:%t from server:%s: req:%s", metric, r.server, req.URL.RequestURI())
 			http.Error(w, fmt.Sprintf("bad type for metric: %t", metric), http.StatusInternalServerError)
+			Metrics.Errors.Add(1)
 			return
 		}
 
@@ -132,12 +144,14 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 			if !ok {
 				logger.Logf("bad type for metric[%d]:%t from server:%s: req:%s", i, m, r.server, req.URL.RequestURI())
 				http.Error(w, fmt.Sprintf("bad type for metric[%d]:%t", i, m), http.StatusInternalServerError)
+				Metrics.Errors.Add(1)
 				return
 			}
 			name, ok := mm["metric_path"].(string)
 			if !ok {
 				logger.Logf("bad type for metric_path:%t from server:%s: req:%s", mm["metric_path"], r.server, req.URL.RequestURI())
 				http.Error(w, fmt.Sprintf("bad type for metric_path: %t", mm["metric_path"]), http.StatusInternalServerError)
+				Metrics.Errors.Add(1)
 				return
 			}
 			p, ok := paths[name]
@@ -171,6 +185,8 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		logger.Logln("request: ", req.URL.RequestURI())
 	}
 
+	Metrics.Requests.Add(1)
+
 	req.ParseForm()
 	target := req.FormValue("target")
 
@@ -194,6 +210,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	if responses == nil || len(responses) == 0 {
 		logger.Logln("error querying backends for: ", req.URL.RequestURI())
 		http.Error(w, "error querying backends", http.StatusInternalServerError)
+		Metrics.Errors.Add(1)
 		return
 	}
 
@@ -213,6 +230,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 			if Debug > 1 {
 				logger.Logln("\n" + hex.Dump(r.response))
 			}
+			Metrics.Errors.Add(1)
 			continue
 		}
 
@@ -221,6 +239,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 			err := fmt.Sprintf("bad type for metric:%d from server:%s req:%s", metric, r.server, req.URL.RequestURI())
 			logger.Logln(err)
 			http.Error(w, err, http.StatusInternalServerError)
+			Metrics.Errors.Add(1)
 			return
 		}
 		if len(marray) == 0 {
@@ -253,6 +272,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		err := fmt.Sprintf("bad length for decoded[]:%d from req:%s", len(decoded[0]), req.URL.RequestURI())
 		logger.Logln(err)
 		http.Error(w, err, http.StatusInternalServerError)
+		Metrics.Errors.Add(1)
 		return
 	}
 
@@ -261,6 +281,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		err := fmt.Sprintf("bad type for decoded:%t from req:%s", decoded[0][0], req.URL.RequestURI())
 		logger.Logln(err)
 		http.Error(w, err, http.StatusInternalServerError)
+		Metrics.Errors.Add(1)
 		return
 	}
 
@@ -269,6 +290,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		err := fmt.Sprintf("bad type for values:%t from req:%s", base["values"], req.URL.RequestURI())
 		logger.Logln(err)
 		http.Error(w, err, http.StatusInternalServerError)
+		Metrics.Errors.Add(1)
 		return
 	}
 
@@ -280,18 +302,21 @@ fixValues:
 				m, ok := decoded[other][0].(map[interface{}]interface{})
 				if !ok {
 					logger.Logln(fmt.Sprintf("bad type for decoded[%d][0]: %t", other, decoded[other][0]))
+					Metrics.Errors.Add(1)
 					break fixValues
 				}
 
 				ovalues, ok := m["values"].([]interface{})
 				if !ok {
 					logger.Logf("bad type for ovalues:%t from req:%s (skipping)", m["values"], req.URL.RequestURI())
+					Metrics.Errors.Add(1)
 					break fixValues
 				}
 
 				if len(ovalues) != len(values) {
 					logger.Logf("unable to merge ovalues: len(values)=%d but len(ovalues)=%d", req.URL.RequestURI(), len(values), len(ovalues))
 					logger.Logf("request: %s: %v", req.URL.RequestURI(), decoded)
+					Metrics.Errors.Add(1)
 					break fixValues
 				}
 
