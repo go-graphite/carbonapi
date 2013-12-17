@@ -52,18 +52,20 @@ type serverResponse struct {
 
 func multiGet(servers []string, uri string) []serverResponse {
 
-	ch := make(chan serverResponse)
-
 	if Debug > 0 {
 		logger.Logln("querying servers=", servers, "uri=", uri)
 	}
+
+	ch := make(chan serverResponse)
 
 	for _, server := range servers {
 		go func(server string, ch chan<- serverResponse) {
 
 			u, err := url.Parse(server + uri)
 			if err != nil {
-				log.Fatal(err)
+				logger.Logln("error parsing uri: ", server+uri, ":", err)
+				ch <- serverResponse{server, nil}
+				return
 			}
 			req := http.Request{
 				URL:    u,
@@ -71,16 +73,24 @@ func multiGet(servers []string, uri string) []serverResponse {
 			}
 
 			resp, err := http.DefaultClient.Do(&req)
-
-			if err != nil || resp.StatusCode != 200 {
-				logger.Logln("got status code", resp.StatusCode, "while querying", server, "/", uri)
+			if err != nil {
+				logger.Logln("error querying ", server, "/", uri, ":", err)
 				ch <- serverResponse{server, nil}
+				return
 			}
 			defer resp.Body.Close()
 
+			if resp.StatusCode != 200 {
+				logger.Logln("bad response code ", server, "/", uri, ":", resp.StatusCode)
+				ch <- serverResponse{server, nil}
+				return
+			}
+
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
+				logger.Logln("error reading body: ", server, "/", uri, ":", err)
 				ch <- serverResponse{server, nil}
+				return
 			}
 
 			ch <- serverResponse{server, body}
