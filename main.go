@@ -200,7 +200,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 
 	Config.mu.RLock()
 	// lookup the server list for this metric, or use all the servers if it's unknown
-	if serverList, ok = Config.metricPaths[target]; !ok {
+	if serverList, ok = Config.metricPaths[target]; !ok || serverList == nil || len(serverList) == 0 {
 		serverList = Config.Backends
 	}
 	Config.mu.RUnlock()
