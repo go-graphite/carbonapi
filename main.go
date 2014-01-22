@@ -16,6 +16,7 @@ import (
 	"os"
 	"runtime"
 	"sync"
+	"time"
 
 	pickle "github.com/kisielk/og-rek"
 )
@@ -418,12 +419,48 @@ func main() {
 	logger.Logln("setting GOMAXPROCS=", Config.MaxProcs)
 	runtime.GOMAXPROCS(Config.MaxProcs)
 
-	http.HandleFunc("/metrics/find/", findHandler)
-	http.HandleFunc("/render/", renderHandler)
+	expvar.Publish("httptrack", expvar.Func(trackedConnections))
+
+	http.HandleFunc("/metrics/find/", trackConnections(findHandler))
+	http.HandleFunc("/render/", trackConnections(renderHandler))
 
 	portStr := fmt.Sprintf(":%d", Config.Port)
 	logger.Logln("listening on", portStr)
 	log.Fatal(http.ListenAndServe(portStr, nil))
+}
+
+func trackedConnections() interface{} {
+
+	connectionsLock.Lock()
+	defer connectionsLock.Unlock()
+
+	m := make(map[string][]string)
+
+	for k, v := range connections {
+		u := k.URL.String()
+		s := m[u]
+		s = append(s, time.Since(v).String())
+		m[u] = s
+	}
+
+	return m
+}
+
+var connections = make(map[*http.Request]time.Time)
+var connectionsLock sync.Mutex
+
+func trackConnections(fn http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		connectionsLock.Lock()
+		connections[req] = time.Now()
+		connectionsLock.Unlock()
+
+		fn(w, req)
+
+		connectionsLock.Lock()
+		delete(connections, req)
+		connectionsLock.Unlock()
+	}
 }
 
 // trivial logging classes
