@@ -16,6 +16,7 @@ import (
 	"os"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	pickle "github.com/kisielk/og-rek"
@@ -27,12 +28,14 @@ var Config = struct {
 	Backends []string
 	MaxProcs int
 	Port     int
+	Buckets  int
 
 	mu          sync.RWMutex
 	metricPaths map[string][]string
 }{
 	MaxProcs:    1,
 	Port:        8080,
+	Buckets:     10,
 	metricPaths: make(map[string][]string),
 }
 
@@ -419,7 +422,11 @@ func main() {
 	logger.Logln("setting GOMAXPROCS=", Config.MaxProcs)
 	runtime.GOMAXPROCS(Config.MaxProcs)
 
-	expvar.Publish("httptrack", expvar.Func(trackedConnections))
+	// +1 to track every over the number of buckets we track
+	timeBuckets = make([]int64, Config.Buckets+1)
+
+	expvar.Publish("httptrack", expvar.Func(renderTrackedConnections))
+	expvar.Publish("requestBuckets", expvar.Func(renderTimeBuckets))
 
 	http.HandleFunc("/metrics/find/", trackConnections(findHandler))
 	http.HandleFunc("/render/", trackConnections(renderHandler))
@@ -429,7 +436,13 @@ func main() {
 	log.Fatal(http.ListenAndServe(portStr, nil))
 }
 
-func trackedConnections() interface{} {
+var timeBuckets []int64
+
+func renderTimeBuckets() interface{} {
+	return timeBuckets
+}
+
+func renderTrackedConnections() interface{} {
 
 	connectionsLock.Lock()
 	defer connectionsLock.Unlock()
@@ -458,8 +471,21 @@ func trackConnections(fn http.HandlerFunc) http.HandlerFunc {
 		fn(w, req)
 
 		connectionsLock.Lock()
+		t0 := connections[req]
 		delete(connections, req)
 		connectionsLock.Unlock()
+
+		t := time.Since(t0)
+
+		bucket := int(t.Seconds())
+
+		if bucket < Config.Buckets {
+			atomic.AddInt64(&timeBuckets[bucket], 1)
+		} else {
+			// Too big? Increment overflow bucket and log
+			atomic.AddInt64(&timeBuckets[Config.Buckets], 1)
+			logger.Logf("Slow Request: %s: %s", t.String(), req.URL.String())
+		}
 	}
 }
 
