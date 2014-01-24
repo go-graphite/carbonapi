@@ -54,6 +54,8 @@ type serverResponse struct {
 	response []byte
 }
 
+var storageClient = &http.Client{Transport: &http.Transport{ResponseHeaderTimeout: 1 * time.Minute}}
+
 func multiGet(servers []string, uri string) []serverResponse {
 
 	if Debug > 0 {
@@ -76,7 +78,7 @@ func multiGet(servers []string, uri string) []serverResponse {
 				Header: make(http.Header),
 			}
 
-			resp, err := http.DefaultClient.Do(&req)
+			resp, err := storageClient.Do(&req)
 			if err != nil {
 				logger.Logln("error querying ", server, "/", uri, ":", err)
 				ch <- serverResponse{server, nil}
@@ -103,11 +105,44 @@ func multiGet(servers []string, uri string) []serverResponse {
 
 	var response []serverResponse
 
+	received := 0
+	success := 0
+	var timeout <-chan time.Time
+
+GATHER:
 	for i := 0; i < len(servers); i++ {
-		r := <-ch
-		if r.response != nil {
-			response = append(response, r)
+		select {
+		case r := <-ch:
+			received++
+			if r.response != nil {
+
+				response = append(response, r)
+
+				success++
+				if success == 1 {
+					// wait at most 5 more seconds for the other stores after we got our first chunk of real data back
+					timeout = time.After(5 * time.Second)
+				}
+			}
+
+		case <-timeout:
+			timeout = nil
+			break GATHER
 		}
+	}
+
+	// could also kill off the remaining requests by calling
+	// storageClient.Transport.CancelRequest(req), but at this point we
+	// don't have that list
+	if received != len(servers) {
+		go func() {
+			for i := received; i < len(servers); i++ {
+				<-ch
+			}
+			if timeout != nil {
+				<-timeout
+			}
+		}()
 	}
 
 	return response
