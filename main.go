@@ -62,7 +62,8 @@ func multiGet(servers []string, uri string) []serverResponse {
 		logger.Logln("querying servers=", servers, "uri=", uri)
 	}
 
-	ch := make(chan serverResponse)
+	// buffered channel so the goroutines don't block on send
+	ch := make(chan serverResponse, len(servers))
 
 	for _, server := range servers {
 		go func(server string, ch chan<- serverResponse) {
@@ -105,44 +106,27 @@ func multiGet(servers []string, uri string) []serverResponse {
 
 	var response []serverResponse
 
-	received := 0
-	success := 0
+	first_response := true
 	var timeout <-chan time.Time
 
 GATHER:
 	for i := 0; i < len(servers); i++ {
 		select {
 		case r := <-ch:
-			received++
 			if r.response != nil {
 
 				response = append(response, r)
 
-				success++
-				if success == 1 {
+				if first_response {
 					// wait at most 5 more seconds for the other stores after we got our first chunk of real data back
 					timeout = time.After(5 * time.Second)
 				}
+				first_response = false
 			}
 
 		case <-timeout:
-			timeout = nil
 			break GATHER
 		}
-	}
-
-	// could also kill off the remaining requests by calling
-	// storageClient.Transport.CancelRequest(req), but at this point we
-	// don't have that list
-	if received != len(servers) {
-		go func() {
-			for i := received; i < len(servers); i++ {
-				<-ch
-			}
-			if timeout != nil {
-				<-timeout
-			}
-		}()
 	}
 
 	return response
