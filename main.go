@@ -125,6 +125,7 @@ GATHER:
 			}
 
 		case <-timeout:
+			logger.Logln("Timeout waiting for more responses: ", uri)
 			break GATHER
 		}
 	}
