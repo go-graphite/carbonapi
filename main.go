@@ -15,11 +15,14 @@ import (
 	"net/url"
 	"os"
 	"runtime"
+	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	pickle "github.com/kisielk/og-rek"
+	"github.com/peterbourgon/g2g"
 )
 
 var Debug int
@@ -30,12 +33,17 @@ var Config = struct {
 	Port     int
 	Buckets  int
 
+	GraphiteHost string
+
 	mu          sync.RWMutex
 	metricPaths map[string][]string
 }{
-	MaxProcs:    1,
-	Port:        8080,
-	Buckets:     10,
+	MaxProcs: 1,
+	Port:     8080,
+	Buckets:  10,
+
+	GraphiteHost: "localhost:2003",
+
 	metricPaths: make(map[string][]string),
 }
 
@@ -451,12 +459,34 @@ func main() {
 	http.HandleFunc("/metrics/find/", trackConnections(findHandler))
 	http.HandleFunc("/render/", trackConnections(renderHandler))
 
+	// register our metrics with graphite
+	graphite, err := g2g.NewGraphite(Config.GraphiteHost, 1*time.Second, 2*time.Second)
+	if err != nil {
+		log.Fatal("unable to connect to to graphite: ", Config.GraphiteHost, ":", err)
+	}
+
+	hostname, _ := os.Hostname()
+	hostname = strings.Replace(hostname, ".", "_", -1)
+
+	graphite.Register(fmt.Sprintf("carbon.zipper.%s.requests", hostname), Metrics.Requests)
+	graphite.Register(fmt.Sprintf("carbon.zipper.%s.errors", hostname), Metrics.Errors)
+
+	for i := 0; i < Config.Buckets; i++ {
+		graphite.Register(fmt.Sprintf("carbon.zipper.%s.requests_in_%ds_to_%ds", hostname, i, i+1), bucketEntry(i))
+	}
+
 	portStr := fmt.Sprintf(":%d", Config.Port)
 	logger.Logln("listening on", portStr)
 	log.Fatal(http.ListenAndServe(portStr, nil))
 }
 
 var timeBuckets []int64
+
+type bucketEntry int
+
+func (b bucketEntry) String() string {
+	return strconv.Itoa(int(atomic.LoadInt64(&timeBuckets[b])))
+}
 
 func renderTimeBuckets() interface{} {
 	return timeBuckets
