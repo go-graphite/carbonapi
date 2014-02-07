@@ -468,7 +468,7 @@ func main() {
 		logger.Logln("Using graphite host", Config.GraphiteHost)
 
 		// register our metrics with graphite
-		graphite, err := g2g.NewGraphite(Config.GraphiteHost, 60*time.Second, 2*time.Second)
+		graphite, err := g2g.NewGraphite(Config.GraphiteHost, 60*time.Second, 10*time.Second)
 		if err != nil {
 			log.Fatal("unable to connect to to graphite: ", Config.GraphiteHost, ":", err)
 		}
