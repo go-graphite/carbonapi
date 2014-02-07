@@ -42,8 +42,6 @@ var Config = struct {
 	Port:     8080,
 	Buckets:  10,
 
-	GraphiteHost: "localhost:2003",
-
 	metricPaths: make(map[string][]string),
 }
 
@@ -459,20 +457,29 @@ func main() {
 	http.HandleFunc("/metrics/find/", trackConnections(findHandler))
 	http.HandleFunc("/render/", trackConnections(renderHandler))
 
-	// register our metrics with graphite
-	graphite, err := g2g.NewGraphite(Config.GraphiteHost, 60*time.Second, 2*time.Second)
-	if err != nil {
-		log.Fatal("unable to connect to to graphite: ", Config.GraphiteHost, ":", err)
+	// nothing in the config? check the environment
+	if Config.GraphiteHost == "" {
+		os.Getenv("GRAPHITEHOST")
+		Config.GraphiteHost = os.Getenv("GRAPHITEHOST") + ":" + os.Getenv("GRAPHITEPORT")
 	}
 
-	hostname, _ := os.Hostname()
-	hostname = strings.Replace(hostname, ".", "_", -1)
+	// only register g2g if we have a graphite host
+	if Config.GraphiteHost != "" {
+		// register our metrics with graphite
+		graphite, err := g2g.NewGraphite(Config.GraphiteHost, 60*time.Second, 2*time.Second)
+		if err != nil {
+			log.Fatal("unable to connect to to graphite: ", Config.GraphiteHost, ":", err)
+		}
 
-	graphite.Register(fmt.Sprintf("carbon.zipper.%s.requests", hostname), Metrics.Requests)
-	graphite.Register(fmt.Sprintf("carbon.zipper.%s.errors", hostname), Metrics.Errors)
+		hostname, _ := os.Hostname()
+		hostname = strings.Replace(hostname, ".", "_", -1)
 
-	for i := 0; i <= Config.Buckets; i++ {
-		graphite.Register(fmt.Sprintf("carbon.zipper.%s.requests_in_%ds_to_%ds", hostname, i, i+1), bucketEntry(i))
+		graphite.Register(fmt.Sprintf("carbon.zipper.%s.requests", hostname), Metrics.Requests)
+		graphite.Register(fmt.Sprintf("carbon.zipper.%s.errors", hostname), Metrics.Errors)
+
+		for i := 0; i <= Config.Buckets; i++ {
+			graphite.Register(fmt.Sprintf("carbon.zipper.%s.requests_in_%ds_to_%ds", hostname, i, i+1), bucketEntry(i))
+		}
 	}
 
 	portStr := fmt.Sprintf(":%d", Config.Port)
