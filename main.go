@@ -471,7 +471,7 @@ func main() {
 	graphite.Register(fmt.Sprintf("carbon.zipper.%s.requests", hostname), Metrics.Requests)
 	graphite.Register(fmt.Sprintf("carbon.zipper.%s.errors", hostname), Metrics.Errors)
 
-	for i := 0; i < Config.Buckets; i++ {
+	for i := 0; i <= Config.Buckets; i++ {
 		graphite.Register(fmt.Sprintf("carbon.zipper.%s.requests_in_%ds_to_%ds", hostname, i, i+1), bucketEntry(i))
 	}
 
