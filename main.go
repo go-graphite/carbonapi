@@ -464,6 +464,9 @@ func main() {
 
 	// only register g2g if we have a graphite host
 	if Config.GraphiteHost != "" {
+
+		logger.Logln("Using graphite host", Config.GraphiteHost)
+
 		// register our metrics with graphite
 		graphite, err := g2g.NewGraphite(Config.GraphiteHost, 60*time.Second, 2*time.Second)
 		if err != nil {
