@@ -459,7 +459,6 @@ func main() {
 
 	// nothing in the config? check the environment
 	if Config.GraphiteHost == "" {
-		os.Getenv("GRAPHITEHOST")
 		Config.GraphiteHost = os.Getenv("GRAPHITEHOST") + ":" + os.Getenv("GRAPHITEPORT")
 	}
 
