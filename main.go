@@ -25,8 +25,10 @@ import (
 	"github.com/peterbourgon/g2g"
 )
 
+// global debugging level
 var Debug int
 
+// configuration values
 var Config = struct {
 	Backends []string
 	MaxProcs int
@@ -45,6 +47,7 @@ var Config = struct {
 	metricPaths: make(map[string][]string),
 }
 
+// grouped expvars for /debug/vars and graphite
 var Metrics = struct {
 	Requests *expvar.Int
 	Errors   *expvar.Int
@@ -112,7 +115,7 @@ func multiGet(servers []string, uri string) []serverResponse {
 
 	var response []serverResponse
 
-	first_response := true
+	isFirstResponse := false
 	var timeout <-chan time.Time
 
 GATHER:
@@ -123,11 +126,11 @@ GATHER:
 
 				response = append(response, r)
 
-				if first_response {
+				if isFirstResponse {
 					// wait at most 5 more seconds for the other stores after we got our first chunk of real data back
 					timeout = time.After(5 * time.Second)
 				}
-				first_response = false
+				isFirstResponse = false
 			}
 
 		case <-timeout:
@@ -550,6 +553,7 @@ func trackConnections(fn http.HandlerFunc) http.HandlerFunc {
 
 // trivial logging classes
 
+// Logger is something that can log
 type Logger interface {
 	Log(string)
 }
