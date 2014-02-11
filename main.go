@@ -303,7 +303,9 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if len(decoded) == 1 {
-		logger.Logf("only one decoded responses to merge for req:%s", req.URL.RequestURI())
+		if Debug > 0 {
+			logger.Logf("only one decoded responses to merge for req:%s", req.URL.RequestURI())
+		}
 		w.Header().Set("Content-Type", "application/pickle")
 		// send back whatever data we have
 		e := pickle.NewEncoder(w)
