@@ -51,9 +51,11 @@ var Config = struct {
 var Metrics = struct {
 	Requests *expvar.Int
 	Errors   *expvar.Int
+	Timeouts *expvar.Int
 }{
 	Requests: expvar.NewInt("requests"),
 	Errors:   expvar.NewInt("errors"),
+	Timeouts: expvar.NewInt("timeouts"),
 }
 
 var logger multilog
@@ -135,6 +137,7 @@ GATHER:
 
 		case <-timeout:
 			logger.Logln("Timeout waiting for more responses: ", uri)
+			Metrics.Timeouts.Add(1)
 			break GATHER
 		}
 	}
@@ -483,6 +486,7 @@ func main() {
 
 		graphite.Register(fmt.Sprintf("carbon.zipper.%s.requests", hostname), Metrics.Requests)
 		graphite.Register(fmt.Sprintf("carbon.zipper.%s.errors", hostname), Metrics.Errors)
+		graphite.Register(fmt.Sprintf("carbon.zipper.%s.timeouts", hostname), Metrics.Timeouts)
 
 		for i := 0; i <= Config.Buckets; i++ {
 			graphite.Register(fmt.Sprintf("carbon.zipper.%s.requests_in_%ds_to_%ds", hostname, i, i+1), bucketEntry(i))
