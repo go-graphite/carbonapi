@@ -467,7 +467,9 @@ func main() {
 
 	// nothing in the config? check the environment
 	if Config.GraphiteHost == "" {
-		Config.GraphiteHost = os.Getenv("GRAPHITEHOST") + ":" + os.Getenv("GRAPHITEPORT")
+		if host := os.Getenv("GRAPHITEHOST") + ":" + os.Getenv("GRAPHITEPORT"); host != ":" {
+			Config.GraphiteHost = host
+		}
 	}
 
 	// only register g2g if we have a graphite host
