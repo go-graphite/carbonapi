@@ -271,6 +271,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	if len(responses) == 1 {
 		w.Header().Set("Content-Type", "application/pickle")
 		w.Write(responses[0].response)
+		return
 	}
 
 	// decode everything
