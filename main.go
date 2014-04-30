@@ -124,7 +124,7 @@ func multiGet(servers []string, uri string) []serverResponse {
 
 	var response []serverResponse
 
-	isFirstResponse := false
+	isFirstResponse := true
 	var timeout <-chan time.Time
 
 GATHER:
