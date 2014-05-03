@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"log/syslog"
+	"math"
 	"net/http"
 	_ "net/http/pprof"
 	"net/url"
@@ -499,7 +500,7 @@ func main() {
 		graphite.Register(fmt.Sprintf("carbon.zipper.%s.timeouts", hostname), Metrics.Timeouts)
 
 		for i := 0; i <= Config.Buckets; i++ {
-			graphite.Register(fmt.Sprintf("carbon.zipper.%s.requests_in_%ds_to_%ds", hostname, i, i+1), bucketEntry(i))
+			graphite.Register(fmt.Sprintf("carbon.zipper.%s.requests_in_1e%dms_to_1e%dms", hostname, i, i+1), bucketEntry(i))
 		}
 	}
 
@@ -553,9 +554,15 @@ func trackConnections(fn http.HandlerFunc) http.HandlerFunc {
 		delete(connections, req)
 		connectionsLock.Unlock()
 
-		t := time.Since(t0)
+		t := time.Duration(time.Since(t0))
 
-		bucket := int(t.Seconds())
+		ms := t.Nanoseconds() / int64(time.Millisecond)
+
+		bucket := int(math.Log(float64(ms)) * math.Log10E)
+
+		if bucket < 0 {
+			bucket = 0
+		}
 
 		if bucket < Config.Buckets {
 			atomic.AddInt64(&timeBuckets[bucket], 1)
