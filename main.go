@@ -22,6 +22,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/dgryski/httputil"
 	pickle "github.com/kisielk/og-rek"
 	"github.com/peterbourgon/g2g"
 )
@@ -468,11 +469,11 @@ func main() {
 	// +1 to track every over the number of buckets we track
 	timeBuckets = make([]int64, Config.Buckets+1)
 
-	expvar.Publish("httptrack", expvar.Func(renderTrackedConnections))
+	httputil.PublishTrackedConnections("httptrack")
 	expvar.Publish("requestBuckets", expvar.Func(renderTimeBuckets))
 
-	http.HandleFunc("/metrics/find/", trackConnections(findHandler))
-	http.HandleFunc("/render/", trackConnections(renderHandler))
+	http.HandleFunc("/metrics/find/", httputil.TrackConnections(httputil.TimeHandler(findHandler, bucketRequestTimes)))
+	http.HandleFunc("/render/", httputil.TrackConnections(httputil.TimeHandler(renderHandler, bucketRequestTimes)))
 
 	// nothing in the config? check the environment
 	if Config.GraphiteHost == "" {
@@ -521,56 +522,22 @@ func renderTimeBuckets() interface{} {
 	return timeBuckets
 }
 
-func renderTrackedConnections() interface{} {
+func bucketRequestTimes(req *http.Request, t time.Duration) {
 
-	connectionsLock.Lock()
-	defer connectionsLock.Unlock()
+	ms := t.Nanoseconds() / int64(time.Millisecond)
 
-	m := make(map[string][]string)
+	bucket := int(math.Log(float64(ms)) * math.Log10E)
 
-	for k, v := range connections {
-		u := k.URL.String()
-		s := m[u]
-		s = append(s, time.Since(v).String())
-		m[u] = s
+	if bucket < 0 {
+		bucket = 0
 	}
 
-	return m
-}
-
-var connections = make(map[*http.Request]time.Time)
-var connectionsLock sync.Mutex
-
-func trackConnections(fn http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		connectionsLock.Lock()
-		connections[req] = time.Now()
-		connectionsLock.Unlock()
-
-		fn(w, req)
-
-		connectionsLock.Lock()
-		t0 := connections[req]
-		delete(connections, req)
-		connectionsLock.Unlock()
-
-		t := time.Duration(time.Since(t0))
-
-		ms := t.Nanoseconds() / int64(time.Millisecond)
-
-		bucket := int(math.Log(float64(ms)) * math.Log10E)
-
-		if bucket < 0 {
-			bucket = 0
-		}
-
-		if bucket < Config.Buckets {
-			atomic.AddInt64(&timeBuckets[bucket], 1)
-		} else {
-			// Too big? Increment overflow bucket and log
-			atomic.AddInt64(&timeBuckets[Config.Buckets], 1)
-			logger.Logf("Slow Request: %s: %s", t.String(), req.URL.String())
-		}
+	if bucket < Config.Buckets {
+		atomic.AddInt64(&timeBuckets[bucket], 1)
+	} else {
+		// Too big? Increment overflow bucket and log
+		atomic.AddInt64(&timeBuckets[Config.Buckets], 1)
+		logger.Logf("Slow Request: %s: %s", t.String(), req.URL.String())
 	}
 }
 
