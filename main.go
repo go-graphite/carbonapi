@@ -263,7 +263,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	responses := multiGet(serverList, req.URL.RequestURI())
 
 	if responses == nil || len(responses) == 0 {
-		logger.Logln("error querying backends for: ", req.URL.RequestURI())
+		logger.Logln("error querying backends for:", req.URL.RequestURI(), "backends:", serverList)
 		http.Error(w, "error querying backends", http.StatusInternalServerError)
 		Metrics.Errors.Add(1)
 		return
