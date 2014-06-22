@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"expvar"
 	"flag"
 	"fmt"
@@ -22,7 +23,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"code.google.com/p/gogoprotobuf/proto"
+
 	"github.com/dgryski/httputil"
+	cspb "github.com/grobian/carbonserver/carbonserverpb"
 	pickle "github.com/kisielk/og-rek"
 	"github.com/peterbourgon/g2g"
 )
@@ -36,6 +40,7 @@ var Config = struct {
 	MaxProcs int
 	Port     int
 	Buckets  int
+	UsePB    bool
 
 	GraphiteHost string
 
@@ -154,6 +159,44 @@ GATHER:
 	return response
 }
 
+func findHandlerPB(w http.ResponseWriter, req *http.Request, responses []serverResponse) ([]map[interface{}]interface{}, map[string][]string, error) {
+
+	// metric -> [server1, ... ]
+	paths := make(map[string][]string)
+
+	var metrics []map[interface{}]interface{}
+	for _, r := range responses {
+		var metric cspb.GlobResponse
+		err := proto.Unmarshal(r.response, &metric)
+		if err != nil {
+			logger.Logf("error decoding protobuf response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
+			if Debug > 1 {
+				logger.Logln("\n" + hex.Dump(r.response))
+			}
+			Metrics.Errors.Add(1)
+			continue
+		}
+
+		for _, name := range metric.Paths {
+			p, ok := paths[name]
+			if !ok {
+				// we haven't seen this name yet
+				// add the metric to the list of metrics to return
+				mm := map[interface{}]interface{}{
+					"metric_path": name,
+					"isLeaf":      true, // FIXME(dgryski): where does this come from in the JSON response?
+				}
+				metrics = append(metrics, mm)
+			}
+			// add the server to the list of servers that know about this metric
+			p = append(p, r.server)
+			paths[name] = p
+		}
+	}
+
+	return metrics, paths, nil
+}
+
 func findHandler(w http.ResponseWriter, req *http.Request) {
 
 	if Debug > 0 {
@@ -169,6 +212,37 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "error querying backends", http.StatusInternalServerError)
 		return
 	}
+
+	var metrics []map[interface{}]interface{}
+	var paths map[string][]string
+	var err error
+
+	if false && Config.UsePB {
+		metrics, paths, err = findHandlerPB(w, req, responses)
+	} else {
+		metrics, paths, err = findHandlerPickle(w, req, responses)
+	}
+
+	if err != nil {
+		// assumed error has already been handled, nothing else to do
+		return
+	}
+
+	// update our cache of which servers have which metrics
+	Config.mu.Lock()
+	for k, v := range paths {
+		Config.metricPaths[k] = v
+	}
+	Config.mu.Unlock()
+
+	w.Header().Set("Content-Type", "application/pickle")
+
+	pEnc := pickle.NewEncoder(w)
+	pEnc.Encode(metrics)
+
+}
+
+func findHandlerPickle(w http.ResponseWriter, req *http.Request, responses []serverResponse) ([]map[interface{}]interface{}, map[string][]string, error) {
 
 	// metric -> [server1, ... ]
 	paths := make(map[string][]string)
@@ -191,7 +265,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 			logger.Logf("bad type for metric:%t from server:%s: req:%s", metric, r.server, req.URL.RequestURI())
 			http.Error(w, fmt.Sprintf("bad type for metric: %t", metric), http.StatusInternalServerError)
 			Metrics.Errors.Add(1)
-			return
+			return nil, nil, errors.New("failed")
 		}
 
 		for i, m := range marray {
@@ -200,14 +274,14 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 				logger.Logf("bad type for metric[%d]:%t from server:%s: req:%s", i, m, r.server, req.URL.RequestURI())
 				http.Error(w, fmt.Sprintf("bad type for metric[%d]:%t", i, m), http.StatusInternalServerError)
 				Metrics.Errors.Add(1)
-				return
+				return nil, nil, errors.New("failed")
 			}
 			name, ok := mm["metric_path"].(string)
 			if !ok {
 				logger.Logf("bad type for metric_path:%t from server:%s: req:%s", mm["metric_path"], r.server, req.URL.RequestURI())
 				http.Error(w, fmt.Sprintf("bad type for metric_path: %t", mm["metric_path"]), http.StatusInternalServerError)
 				Metrics.Errors.Add(1)
-				return
+				return nil, nil, errors.New("failed")
 			}
 			p, ok := paths[name]
 			if !ok {
@@ -221,17 +295,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	// update our cache of which servers have which metrics
-	Config.mu.Lock()
-	for k, v := range paths {
-		Config.metricPaths[k] = v
-	}
-	Config.mu.Unlock()
-
-	w.Header().Set("Content-Type", "application/pickle")
-
-	pEnc := pickle.NewEncoder(w)
-	pEnc.Encode(metrics)
+	return metrics, paths, nil
 }
 
 func renderHandler(w http.ResponseWriter, req *http.Request) {
@@ -260,7 +324,16 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	Config.mu.RUnlock()
 
-	responses := multiGet(serverList, req.URL.RequestURI())
+	requrl := req.URL
+	if Config.UsePB {
+		rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
+		v := rewrite.Query()
+		v.Set("format", "protobuf")
+		rewrite.RawQuery = v.Encode()
+		requrl = rewrite
+	}
+
+	responses := multiGet(serverList, requrl.RequestURI())
 
 	if responses == nil || len(responses) == 0 {
 		logger.Logln("error querying backends for:", req.URL.RequestURI(), "backends:", serverList)
@@ -268,6 +341,125 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		Metrics.Errors.Add(1)
 		return
 	}
+
+	if false && Config.UsePB {
+		handleRenderPB(w, req, responses)
+	} else {
+		// pickle
+		handleRenderPickle(w, req, responses)
+	}
+
+}
+
+func returnRender(w http.ResponseWriter, metric cspb.FetchResponse, pvalues []interface{}) {
+	// create a pickle response
+	presponse := map[string]interface{}{
+		"start":  metric.StartTime,
+		"step":   metric.StepTime,
+		"end":    metric.StartTime,
+		"name":   metric.Name,
+		"values": pvalues,
+	}
+
+	w.Header().Set("Content-Type", "application/pickle")
+	e := pickle.NewEncoder(w)
+	e.Encode(presponse)
+}
+
+func handleRenderPB(w http.ResponseWriter, req *http.Request, responses []serverResponse) {
+
+	var decoded []cspb.FetchResponse
+	for _, r := range responses {
+		var d cspb.FetchResponse
+		err := proto.Unmarshal(r.response, &d)
+		if err != nil {
+			logger.Logf("error decoding protobuf response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
+			if Debug > 1 {
+				logger.Logln("\n" + hex.Dump(r.response))
+			}
+			Metrics.Errors.Add(1)
+			continue
+		}
+		decoded = append(decoded, d)
+	}
+
+	if Debug > 2 {
+		logger.Logf("request: %s: %v", req.URL.RequestURI(), decoded)
+	}
+
+	if len(decoded) == 0 {
+		err := fmt.Sprintf("no decoded responses to merge for req:%s", req.URL.RequestURI())
+		logger.Logln(err)
+		http.Error(w, err, http.StatusInternalServerError)
+		Metrics.Errors.Add(1)
+		return
+	}
+
+	if len(decoded) == 1 {
+		if Debug > 0 {
+			logger.Logf("only one decoded responses to merge for req:%s", req.URL.RequestURI())
+		}
+		w.Header().Set("Content-Type", "application/pickle")
+
+		metric := decoded[0]
+
+		var pvalues []interface{}
+
+		for i, v := range metric.Values {
+
+			if metric.IsAbsent[i] {
+				pvalues = append(pvalues, pickle.None{})
+			} else {
+				pvalues = append(pvalues, v)
+			}
+		}
+
+		returnRender(w, metric, pvalues)
+
+		return
+	}
+
+	metric := decoded[0]
+
+	// the pickle response values
+	var pvalues []interface{}
+
+fixValues:
+	for i, v := range metric.Values {
+		if !metric.IsAbsent[i] {
+			pvalues = append(pvalues, v)
+			continue
+		}
+
+		// found a missing value, find a replacement
+		foundReplacement := false
+		for other := 1; other < len(decoded); other++ {
+
+			m := decoded[other]
+
+			if len(m.Values) != len(metric.Values) {
+				logger.Logf("request: %s: unable to merge ovalues: len(values)=%d but len(ovalues)=%d", req.URL.RequestURI(), len(metric.Values), len(m.Values))
+				Metrics.Errors.Add(1)
+				break fixValues
+			}
+
+			// found one
+			if m.IsAbsent[i] {
+				pvalues = append(pvalues, m.Values[i])
+				foundReplacement = true
+				break
+			}
+		}
+
+		if !foundReplacement {
+			pvalues = append(pvalues, pickle.None{})
+		}
+	}
+
+	returnRender(w, metric, pvalues)
+}
+
+func handleRenderPickle(w http.ResponseWriter, req *http.Request, responses []serverResponse) {
 
 	// nothing to merge
 	if len(responses) == 1 {
