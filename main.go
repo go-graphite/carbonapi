@@ -164,6 +164,7 @@ func findHandlerPB(w http.ResponseWriter, req *http.Request, responses []serverR
 	// metric -> [server1, ... ]
 	paths := make(map[string][]string)
 
+	// TODO(dgryski): when pickle goes away, fix this to
 	var metrics []map[interface{}]interface{}
 	for _, r := range responses {
 		var metric cspb.GlobResponse
