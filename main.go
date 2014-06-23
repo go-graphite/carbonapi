@@ -205,10 +205,19 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 
 	Metrics.Requests.Add(1)
 
-	responses := multiGet(Config.Backends, req.URL.RequestURI())
+	requrl := req.URL
+	if Config.UsePB {
+		rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
+		v := rewrite.Query()
+		v.Set("format", "protobuf")
+		rewrite.RawQuery = v.Encode()
+		requrl = rewrite
+	}
+
+	responses := multiGet(Config.Backends, requrl.RequestURI())
 
 	if responses == nil || len(responses) == 0 {
-		logger.Logln("error querying backends for: ", req.URL.RequestURI())
+		logger.Logln("error querying backends for: ", requrl.RequestURI())
 		http.Error(w, "error querying backends", http.StatusInternalServerError)
 		return
 	}
