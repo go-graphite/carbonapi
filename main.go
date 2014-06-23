@@ -452,7 +452,7 @@ fixValues:
 			}
 
 			// found one
-			if m.IsAbsent[i] {
+			if !m.IsAbsent[i] {
 				pvalues = append(pvalues, m.Values[i])
 				foundReplacement = true
 				break
