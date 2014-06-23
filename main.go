@@ -408,8 +408,6 @@ func handleRenderPB(w http.ResponseWriter, req *http.Request, responses []server
 		if Debug > 0 {
 			logger.Logf("only one decoded responses to merge for req:%s", req.URL.RequestURI())
 		}
-		w.Header().Set("Content-Type", "application/pickle")
-
 		metric := decoded[0]
 
 		var pvalues []interface{}
