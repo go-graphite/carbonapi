@@ -226,7 +226,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	var paths map[string][]string
 	var err error
 
-	if false && Config.UsePB {
+	if Config.UsePB {
 		metrics, paths, err = findHandlerPB(w, req, responses)
 	} else {
 		metrics, paths, err = findHandlerPickle(w, req, responses)
@@ -351,7 +351,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if false && Config.UsePB {
+	if Config.UsePB {
 		handleRenderPB(w, req, responses)
 	} else {
 		// pickle
