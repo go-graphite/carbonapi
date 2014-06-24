@@ -178,20 +178,20 @@ func findHandlerPB(w http.ResponseWriter, req *http.Request, responses []serverR
 			continue
 		}
 
-		for _, name := range metric.Paths {
-			p, ok := paths[name]
+		for _, match := range metric.Matches {
+			p, ok := paths[*match.Path]
 			if !ok {
 				// we haven't seen this name yet
 				// add the metric to the list of metrics to return
 				mm := map[interface{}]interface{}{
-					"metric_path": name,
-					"isLeaf":      true, // FIXME(dgryski): where does this come from in the JSON response?
+					"metric_path": *match.Path,
+					"isLeaf":      *match.IsLeaf,
 				}
 				metrics = append(metrics, mm)
 			}
 			// add the server to the list of servers that know about this metric
 			p = append(p, r.server)
-			paths[name] = p
+			paths[*match.Path] = p
 		}
 	}
 
