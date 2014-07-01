@@ -365,7 +365,7 @@ func returnRender(w http.ResponseWriter, metric cspb.FetchResponse, pvalues []in
 	presponse := map[string]interface{}{
 		"start":  metric.StartTime,
 		"step":   metric.StepTime,
-		"end":    metric.StartTime,
+		"end":    metric.StopTime,
 		"name":   metric.Name,
 		"values": pvalues,
 	}
