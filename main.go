@@ -431,23 +431,36 @@ func handleRenderPB(w http.ResponseWriter, req *http.Request, responses []server
 	// the pickle response values
 	var pvalues []interface{}
 
-fixValues:
+	var responseLengthMismatch bool
 	for i, v := range metric.Values {
 		if !metric.IsAbsent[i] {
 			pvalues = append(pvalues, v)
 			continue
 		}
 
+		if responseLengthMismatch {
+			pvalues = append(pvalues, pickle.None{})
+			continue
+		}
+
 		// found a missing value, find a replacement
-		foundReplacement := false
+		var foundReplacement bool
 		for other := 1; other < len(decoded); other++ {
 
 			m := decoded[other]
 
 			if len(m.Values) != len(metric.Values) {
 				logger.Logf("request: %s: unable to merge ovalues: len(values)=%d but len(ovalues)=%d", req.URL.RequestURI(), len(metric.Values), len(m.Values))
+				// TODO(dgryski): we should remove
+				// decoded[other] from the list of responses to
+				// consider but this assumes that decoded[0] is
+				// the 'highest resolution' response and thus
+				// the one we want to keep, instead of the one
+				// we want to discard
+
 				Metrics.Errors.Add(1)
-				break fixValues
+				responseLengthMismatch = true
+				break
 			}
 
 			// found one
