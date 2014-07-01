@@ -372,7 +372,7 @@ func returnRender(w http.ResponseWriter, metric cspb.FetchResponse, pvalues []in
 
 	w.Header().Set("Content-Type", "application/pickle")
 	e := pickle.NewEncoder(w)
-	e.Encode(presponse)
+	e.Encode([]interface{}{presponse})
 }
 
 func handleRenderPB(w http.ResponseWriter, req *http.Request, responses []serverResponse) {
