@@ -41,6 +41,9 @@ var Config = struct {
 	Buckets  int
 	UsePB    bool
 
+	TimeoutMs               int
+	TimeoutMsAfterFirstSeen int
+
 	GraphiteHost string
 
 	mu          sync.RWMutex
@@ -49,6 +52,9 @@ var Config = struct {
 	MaxProcs: 1,
 	Port:     8080,
 	Buckets:  10,
+
+	TimeoutMs:               2000,
+	TimeoutMsAfterFirstSeen: 500,
 
 	metricPaths: make(map[string][]string),
 }
@@ -131,7 +137,7 @@ func multiGet(servers []string, uri string) []serverResponse {
 	var response []serverResponse
 
 	isFirstResponse := true
-	var timeout <-chan time.Time
+	timeout := time.After(time.Duration(Config.TimeoutMs) * time.Millisecond)
 
 GATHER:
 	for i := 0; i < len(servers); i++ {
@@ -142,8 +148,7 @@ GATHER:
 				response = append(response, r)
 
 				if isFirstResponse {
-					// wait at most 5 more seconds for the other stores after we got our first chunk of real data back
-					timeout = time.After(5 * time.Second)
+					timeout = time.After(time.Duration(Config.TimeoutMsAfterFirstSeen) * time.Millisecond)
 				}
 				isFirstResponse = false
 			}
