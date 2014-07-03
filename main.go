@@ -104,7 +104,7 @@ func multiGet(servers []string, uri string) []serverResponse {
 
 			resp, err := storageClient.Do(&req)
 			if err != nil {
-				logger.Logln("error querying ", server, "/", uri, ":", err)
+				logger.Logln("multiGet: error querying ", server, "/", uri, ":", err)
 				ch <- serverResponse{server, nil}
 				return
 			}
@@ -222,8 +222,8 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	responses := multiGet(Config.Backends, requrl.RequestURI())
 
 	if responses == nil || len(responses) == 0 {
-		logger.Logln("error querying backends for: ", requrl.RequestURI())
-		http.Error(w, "error querying backends", http.StatusInternalServerError)
+		logger.Logln("find: error querying backends for: ", requrl.RequestURI())
+		http.Error(w, "find: error querying backends", http.StatusInternalServerError)
 		return
 	}
 
@@ -350,8 +350,8 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	responses := multiGet(serverList, requrl.RequestURI())
 
 	if responses == nil || len(responses) == 0 {
-		logger.Logln("error querying backends for:", req.URL.RequestURI(), "backends:", serverList)
-		http.Error(w, "error querying backends", http.StatusInternalServerError)
+		logger.Logln("render: error querying backends for:", req.URL.RequestURI(), "backends:", serverList)
+		http.Error(w, "render: error querying backends", http.StatusInternalServerError)
 		Metrics.Errors.Add(1)
 		return
 	}
