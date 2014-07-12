@@ -162,7 +162,7 @@ GATHER:
 	return response
 }
 
-func findHandlerPB(w http.ResponseWriter, req *http.Request, responses []serverResponse) ([]map[string]interface{}, map[string][]string, error) {
+func findHandlerPB(w http.ResponseWriter, req *http.Request, responses []serverResponse) ([]map[string]interface{}, map[string][]string) {
 
 	// metric -> [server1, ... ]
 	paths := make(map[string][]string)
@@ -197,7 +197,7 @@ func findHandlerPB(w http.ResponseWriter, req *http.Request, responses []serverR
 		}
 	}
 
-	return metrics, paths, nil
+	return metrics, paths
 }
 
 func findHandler(w http.ResponseWriter, req *http.Request) {
@@ -225,12 +225,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	metrics, paths, err := findHandlerPB(w, req, responses)
-
-	if err != nil {
-		// assumed error has already been handled, nothing else to do
-		return
-	}
+	metrics, paths := findHandlerPB(w, req, responses)
 
 	// update our cache of which servers have which metrics
 	Config.mu.Lock()
