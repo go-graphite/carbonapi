@@ -38,7 +38,6 @@ var Config = struct {
 	MaxProcs int
 	Port     int
 	Buckets  int
-	UsePB    bool
 
 	TimeoutMs               int
 	TimeoutMsAfterFirstSeen int
@@ -208,19 +207,15 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 
 	Metrics.Requests.Add(1)
 
-	requrl := req.URL
-	if Config.UsePB {
-		rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
-		v := rewrite.Query()
-		v.Set("format", "protobuf")
-		rewrite.RawQuery = v.Encode()
-		requrl = rewrite
-	}
+	rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
+	v := rewrite.Query()
+	v.Set("format", "protobuf")
+	rewrite.RawQuery = v.Encode()
 
-	responses := multiGet(Config.Backends, requrl.RequestURI())
+	responses := multiGet(Config.Backends, rewrite.RequestURI())
 
 	if responses == nil || len(responses) == 0 {
-		logger.Logln("find: error querying backends for: ", requrl.RequestURI())
+		logger.Logln("find: error querying backends for: ", rewrite.RequestURI())
 		http.Error(w, "find: error querying backends", http.StatusInternalServerError)
 		return
 	}
@@ -267,16 +262,12 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	Config.mu.RUnlock()
 
-	requrl := req.URL
-	if Config.UsePB {
-		rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
-		v := rewrite.Query()
-		v.Set("format", "protobuf")
-		rewrite.RawQuery = v.Encode()
-		requrl = rewrite
-	}
+	rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
+	v := rewrite.Query()
+	v.Set("format", "protobuf")
+	rewrite.RawQuery = v.Encode()
 
-	responses := multiGet(serverList, requrl.RequestURI())
+	responses := multiGet(serverList, rewrite.RequestURI())
 
 	if responses == nil || len(responses) == 0 {
 		logger.Logln("render: error querying backends for:", req.URL.RequestURI(), "backends:", serverList)
