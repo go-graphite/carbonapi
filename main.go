@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"expvar"
 	"flag"
 	"fmt"
@@ -231,11 +230,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	var paths map[string][]string
 	var err error
 
-	if Config.UsePB {
-		metrics, paths, err = findHandlerPB(w, req, responses)
-	} else {
-		metrics, paths, err = findHandlerPickle(w, req, responses)
-	}
+	metrics, paths, err = findHandlerPB(w, req, responses)
 
 	if err != nil {
 		// assumed error has already been handled, nothing else to do
@@ -254,62 +249,6 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	pEnc := pickle.NewEncoder(w)
 	pEnc.Encode(metrics)
 
-}
-
-func findHandlerPickle(w http.ResponseWriter, req *http.Request, responses []serverResponse) ([]map[interface{}]interface{}, map[string][]string, error) {
-
-	// metric -> [server1, ... ]
-	paths := make(map[string][]string)
-
-	var metrics []map[interface{}]interface{}
-	for _, r := range responses {
-		d := pickle.NewDecoder(bytes.NewReader(r.response))
-		metric, err := d.Decode()
-		if err != nil {
-			logger.Logf("error decoding response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
-			if Debug > 1 {
-				logger.Logln("\n" + hex.Dump(r.response))
-			}
-			Metrics.Errors.Add(1)
-			continue
-		}
-
-		marray, ok := metric.([]interface{})
-		if !ok {
-			logger.Logf("bad type for metric:%t from server:%s: req:%s", metric, r.server, req.URL.RequestURI())
-			http.Error(w, fmt.Sprintf("bad type for metric: %t", metric), http.StatusInternalServerError)
-			Metrics.Errors.Add(1)
-			return nil, nil, errors.New("failed")
-		}
-
-		for i, m := range marray {
-			mm, ok := m.(map[interface{}]interface{})
-			if !ok {
-				logger.Logf("bad type for metric[%d]:%t from server:%s: req:%s", i, m, r.server, req.URL.RequestURI())
-				http.Error(w, fmt.Sprintf("bad type for metric[%d]:%t", i, m), http.StatusInternalServerError)
-				Metrics.Errors.Add(1)
-				return nil, nil, errors.New("failed")
-			}
-			name, ok := mm["metric_path"].(string)
-			if !ok {
-				logger.Logf("bad type for metric_path:%t from server:%s: req:%s", mm["metric_path"], r.server, req.URL.RequestURI())
-				http.Error(w, fmt.Sprintf("bad type for metric_path: %t", mm["metric_path"]), http.StatusInternalServerError)
-				Metrics.Errors.Add(1)
-				return nil, nil, errors.New("failed")
-			}
-			p, ok := paths[name]
-			if !ok {
-				// we haven't seen this name yet
-				// add the metric to the list of metrics to return
-				metrics = append(metrics, mm)
-			}
-			// add the server to the list of servers that know about this metric
-			p = append(p, r.server)
-			paths[name] = p
-		}
-	}
-
-	return metrics, paths, nil
 }
 
 func renderHandler(w http.ResponseWriter, req *http.Request) {
@@ -356,12 +295,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if Config.UsePB {
-		handleRenderPB(w, req, responses)
-	} else {
-		// pickle
-		handleRenderPickle(w, req, responses)
-	}
+	handleRenderPB(w, req, responses)
 
 }
 
@@ -482,130 +416,6 @@ func handleRenderPB(w http.ResponseWriter, req *http.Request, responses []server
 	}
 
 	returnRender(w, metric, pvalues)
-}
-
-func handleRenderPickle(w http.ResponseWriter, req *http.Request, responses []serverResponse) {
-
-	// nothing to merge
-	if len(responses) == 1 {
-		w.Header().Set("Content-Type", "application/pickle")
-		w.Write(responses[0].response)
-		return
-	}
-
-	// decode everything
-	var decoded [][]interface{}
-	for _, r := range responses {
-		d := pickle.NewDecoder(bytes.NewReader(r.response))
-		metric, err := d.Decode()
-		if err != nil {
-			logger.Logf("error decoding response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
-			if Debug > 1 {
-				logger.Logln("\n" + hex.Dump(r.response))
-			}
-			Metrics.Errors.Add(1)
-			continue
-		}
-
-		marray, ok := metric.([]interface{})
-		if !ok {
-			err := fmt.Sprintf("bad type for metric:%d from server:%s req:%s", metric, r.server, req.URL.RequestURI())
-			logger.Logln(err)
-			http.Error(w, err, http.StatusInternalServerError)
-			Metrics.Errors.Add(1)
-			return
-		}
-		if len(marray) == 0 {
-			continue
-		}
-		decoded = append(decoded, marray)
-	}
-
-	if Debug > 2 {
-		logger.Logf("request: %s: %v", req.URL.RequestURI(), decoded)
-	}
-
-	if len(decoded) == 0 {
-		logger.Logf("no decoded responses to merge for req:%s", req.URL.RequestURI())
-		w.Header().Set("Content-Type", "application/pickle")
-		w.Write(responses[0].response)
-		return
-	}
-
-	if len(decoded) == 1 {
-		if Debug > 0 {
-			logger.Logf("only one decoded responses to merge for req:%s", req.URL.RequestURI())
-		}
-		w.Header().Set("Content-Type", "application/pickle")
-		// send back whatever data we have
-		e := pickle.NewEncoder(w)
-		e.Encode(decoded[0])
-		return
-	}
-
-	if len(decoded[0]) != 1 {
-		err := fmt.Sprintf("bad length for decoded[]:%d from req:%s", len(decoded[0]), req.URL.RequestURI())
-		logger.Logln(err)
-		http.Error(w, err, http.StatusInternalServerError)
-		Metrics.Errors.Add(1)
-		return
-	}
-
-	base, ok := decoded[0][0].(map[interface{}]interface{})
-	if !ok {
-		err := fmt.Sprintf("bad type for decoded:%t from req:%s", decoded[0][0], req.URL.RequestURI())
-		logger.Logln(err)
-		http.Error(w, err, http.StatusInternalServerError)
-		Metrics.Errors.Add(1)
-		return
-	}
-
-	values, ok := base["values"].([]interface{})
-	if !ok {
-		err := fmt.Sprintf("bad type for values:%t from req:%s", base["values"], req.URL.RequestURI())
-		logger.Logln(err)
-		http.Error(w, err, http.StatusInternalServerError)
-		Metrics.Errors.Add(1)
-		return
-	}
-
-fixValues:
-	for i := 0; i < len(values); i++ {
-		if _, ok := values[i].(pickle.None); ok {
-			// find one in the other values arrays
-			for other := 1; other < len(decoded); other++ {
-				m, ok := decoded[other][0].(map[interface{}]interface{})
-				if !ok {
-					logger.Logln(fmt.Sprintf("bad type for decoded[%d][0]: %t", other, decoded[other][0]))
-					Metrics.Errors.Add(1)
-					break fixValues
-				}
-
-				ovalues, ok := m["values"].([]interface{})
-				if !ok {
-					logger.Logf("bad type for ovalues:%t from req:%s (skipping)", m["values"], req.URL.RequestURI())
-					Metrics.Errors.Add(1)
-					break fixValues
-				}
-
-				if len(ovalues) != len(values) {
-					logger.Logf("request: %s: unable to merge ovalues: len(values)=%d but len(ovalues)=%d", req.URL.RequestURI(), len(values), len(ovalues))
-					Metrics.Errors.Add(1)
-					break fixValues
-				}
-
-				if _, ok := ovalues[i].(pickle.None); !ok {
-					values[i] = ovalues[i]
-					break
-				}
-			}
-		}
-	}
-
-	// the first response is where we've been filling in our data, so we're ok just to serialize it as our response
-	w.Header().Set("Content-Type", "application/pickle")
-	e := pickle.NewEncoder(w)
-	e.Encode(decoded[0])
 }
 
 func stripCommentHeader(cfg []byte) []byte {
