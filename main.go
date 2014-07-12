@@ -162,13 +162,12 @@ GATHER:
 	return response
 }
 
-func findHandlerPB(w http.ResponseWriter, req *http.Request, responses []serverResponse) ([]map[interface{}]interface{}, map[string][]string, error) {
+func findHandlerPB(w http.ResponseWriter, req *http.Request, responses []serverResponse) ([]map[string]interface{}, map[string][]string, error) {
 
 	// metric -> [server1, ... ]
 	paths := make(map[string][]string)
 
-	// TODO(dgryski): when pickle goes away, fix this to
-	var metrics []map[interface{}]interface{}
+	var metrics []map[string]interface{}
 	for _, r := range responses {
 		var metric cspb.GlobResponse
 		err := proto.Unmarshal(r.response, &metric)
@@ -186,7 +185,7 @@ func findHandlerPB(w http.ResponseWriter, req *http.Request, responses []serverR
 			if !ok {
 				// we haven't seen this name yet
 				// add the metric to the list of metrics to return
-				mm := map[interface{}]interface{}{
+				mm := map[string]interface{}{
 					"metric_path": *match.Path,
 					"isLeaf":      *match.IsLeaf,
 				}
@@ -226,11 +225,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var metrics []map[interface{}]interface{}
-	var paths map[string][]string
-	var err error
-
-	metrics, paths, err = findHandlerPB(w, req, responses)
+	metrics, paths, err := findHandlerPB(w, req, responses)
 
 	if err != nil {
 		// assumed error has already been handled, nothing else to do
