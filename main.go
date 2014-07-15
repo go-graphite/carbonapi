@@ -348,6 +348,13 @@ func handleRenderPB(w http.ResponseWriter, req *http.Request, responses []server
 
 	metric := decoded[0]
 
+	pvalues := mergeValues(req, metric, decoded)
+
+	returnRender(w, metric, pvalues)
+}
+
+func mergeValues(req *http.Request, metric cspb.FetchResponse, decoded []cspb.FetchResponse) []interface{} {
+
 	// the pickle response values
 	var pvalues []interface{}
 
@@ -396,7 +403,7 @@ func handleRenderPB(w http.ResponseWriter, req *http.Request, responses []server
 		}
 	}
 
-	returnRender(w, metric, pvalues)
+	return pvalues
 }
 
 func stripCommentHeader(cfg []byte) []byte {
