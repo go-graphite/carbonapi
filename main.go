@@ -77,6 +77,50 @@ type serverResponse struct {
 
 var storageClient = &http.Client{Transport: &http.Transport{ResponseHeaderTimeout: 1 * time.Minute}}
 
+func singleGet(uri, server string, ch chan<- serverResponse) {
+
+	u, err := url.Parse(server + uri)
+	if err != nil {
+		logger.Logln("error parsing uri: ", server+uri, ":", err)
+		ch <- serverResponse{server, nil}
+		return
+	}
+	req := http.Request{
+		URL:    u,
+		Header: make(http.Header),
+	}
+
+	resp, err := storageClient.Do(&req)
+	if err != nil {
+		logger.Logln("multiGet: error querying ", server, "/", uri, ":", err)
+		ch <- serverResponse{server, nil}
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == 404 {
+		// carbonsserver replies with Not Found if we request a
+		// metric that it doesn't have -- makes sense
+		ch <- serverResponse{server, nil}
+		return
+	}
+
+	if resp.StatusCode != 200 {
+		logger.Logln("bad response code ", server, "/", uri, ":", resp.StatusCode)
+		ch <- serverResponse{server, nil}
+		return
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		logger.Logln("error reading body: ", server, "/", uri, ":", err)
+		ch <- serverResponse{server, nil}
+		return
+	}
+
+	ch <- serverResponse{server, body}
+}
+
 func multiGet(servers []string, uri string) []serverResponse {
 
 	if Debug > 0 {
@@ -87,49 +131,7 @@ func multiGet(servers []string, uri string) []serverResponse {
 	ch := make(chan serverResponse, len(servers))
 
 	for _, server := range servers {
-		go func(server string, ch chan<- serverResponse) {
-
-			u, err := url.Parse(server + uri)
-			if err != nil {
-				logger.Logln("error parsing uri: ", server+uri, ":", err)
-				ch <- serverResponse{server, nil}
-				return
-			}
-			req := http.Request{
-				URL:    u,
-				Header: make(http.Header),
-			}
-
-			resp, err := storageClient.Do(&req)
-			if err != nil {
-				logger.Logln("multiGet: error querying ", server, "/", uri, ":", err)
-				ch <- serverResponse{server, nil}
-				return
-			}
-			defer resp.Body.Close()
-
-			if resp.StatusCode == 404 {
-				// carbonsserver replies with Not Found if we request a
-				// metric that it doesn't have -- makes sense
-				ch <- serverResponse{server, nil}
-				return
-			}
-
-			if resp.StatusCode != 200 {
-				logger.Logln("bad response code ", server, "/", uri, ":", resp.StatusCode)
-				ch <- serverResponse{server, nil}
-				return
-			}
-
-			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				logger.Logln("error reading body: ", server, "/", uri, ":", err)
-				ch <- serverResponse{server, nil}
-				return
-			}
-
-			ch <- serverResponse{server, body}
-		}(server, ch)
+		go singleGet(uri, server, ch)
 	}
 
 	var response []serverResponse
