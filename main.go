@@ -283,6 +283,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	Config.mu.RUnlock()
 
+	format := req.FormValue("format")
 	rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
 	v := rewrite.Query()
 	v.Set("format", "protobuf")
@@ -297,12 +298,20 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	handleRenderPB(w, req, responses)
-
+	handleRenderPB(w, req, format, responses)
 }
 
-func returnRender(w http.ResponseWriter, metric cspb.FetchResponse, pvalues []interface{}) {
-	// create a pickle response
+func createRenderResponse(metric cspb.FetchResponse, missing interface{}) map[string]interface{} {
+	var pvalues []interface{}
+	for i, v := range metric.Values {
+		if metric.IsAbsent[i] {
+			pvalues = append(pvalues, missing)
+		} else {
+			pvalues = append(pvalues, v)
+		}
+	}
+
+	// create the response
 	presponse := map[string]interface{}{
 		"start":  metric.StartTime,
 		"step":   metric.StepTime,
@@ -311,12 +320,33 @@ func returnRender(w http.ResponseWriter, metric cspb.FetchResponse, pvalues []in
 		"values": pvalues,
 	}
 
-	w.Header().Set("Content-Type", "application/pickle")
-	e := pickle.NewEncoder(w)
-	e.Encode([]interface{}{presponse})
+	return presponse
 }
 
-func handleRenderPB(w http.ResponseWriter, req *http.Request, responses []serverResponse) {
+func returnRender(w http.ResponseWriter, format string, metric cspb.FetchResponse) {
+
+	switch format {
+	case "protobuf":
+		w.Header().Set("Content-Type", "application/protobuf")
+		b, _ := proto.Marshal(&metric)
+		w.Write(b)
+
+	case "json":
+		presponse := createRenderResponse(metric, nil)
+		w.Header().Set("Content-Type", "application/json")
+		e := json.NewEncoder(w)
+		e.Encode(presponse)
+
+	case "", "pickle":
+		presponse := createRenderResponse(metric, pickle.None{})
+		w.Header().Set("Content-Type", "application/pickle")
+		e := pickle.NewEncoder(w)
+		e.Encode([]interface{}{presponse})
+	}
+
+}
+
+func handleRenderPB(w http.ResponseWriter, req *http.Request, format string, responses []serverResponse) {
 
 	var decoded []cspb.FetchResponse
 	for _, r := range responses {
@@ -349,50 +379,27 @@ func handleRenderPB(w http.ResponseWriter, req *http.Request, responses []server
 		if Debug > 0 {
 			logger.Logf("only one decoded responses to merge for req:%s", req.URL.RequestURI())
 		}
-		metric := decoded[0]
-
-		var pvalues []interface{}
-
-		for i, v := range metric.Values {
-
-			if metric.IsAbsent[i] {
-				pvalues = append(pvalues, pickle.None{})
-			} else {
-				pvalues = append(pvalues, v)
-			}
-		}
-
-		returnRender(w, metric, pvalues)
+		returnRender(w, format, decoded[0])
 
 		return
 	}
 
 	metric := decoded[0]
 
-	pvalues := mergeValues(req, metric, decoded)
+	mergeValues(req, &metric, decoded)
 
-	returnRender(w, metric, pvalues)
+	returnRender(w, format, metric)
 }
 
-func mergeValues(req *http.Request, metric cspb.FetchResponse, decoded []cspb.FetchResponse) []interface{} {
-
-	// the pickle response values
-	var pvalues []interface{}
+func mergeValues(req *http.Request, metric *cspb.FetchResponse, decoded []cspb.FetchResponse) {
 
 	var responseLengthMismatch bool
-	for i, v := range metric.Values {
-		if !metric.IsAbsent[i] {
-			pvalues = append(pvalues, v)
-			continue
-		}
-
-		if responseLengthMismatch {
-			pvalues = append(pvalues, pickle.None{})
+	for i := range metric.Values {
+		if !metric.IsAbsent[i] || responseLengthMismatch {
 			continue
 		}
 
 		// found a missing value, find a replacement
-		var foundReplacement bool
 		for other := 1; other < len(decoded); other++ {
 
 			m := decoded[other]
@@ -413,18 +420,11 @@ func mergeValues(req *http.Request, metric cspb.FetchResponse, decoded []cspb.Fe
 
 			// found one
 			if !m.IsAbsent[i] {
-				pvalues = append(pvalues, m.Values[i])
-				foundReplacement = true
-				break
+				metric.IsAbsent[i] = false
+				metric.Values[i] = m.Values[i]
 			}
 		}
-
-		if !foundReplacement {
-			pvalues = append(pvalues, pickle.None{})
-		}
 	}
-
-	return pvalues
 }
 
 func stripCommentHeader(cfg []byte) []byte {
