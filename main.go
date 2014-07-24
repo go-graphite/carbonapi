@@ -163,12 +163,12 @@ GATHER:
 	return response
 }
 
-func findHandlerPB(w http.ResponseWriter, req *http.Request, responses []serverResponse) ([]map[string]interface{}, map[string][]string) {
+func findHandlerPB(w http.ResponseWriter, req *http.Request, responses []serverResponse) ([]*cspb.GlobMatch, map[string][]string) {
 
 	// metric -> [server1, ... ]
 	paths := make(map[string][]string)
 
-	var metrics []map[string]interface{}
+	var metrics []*cspb.GlobMatch
 	for _, r := range responses {
 		var metric cspb.GlobResponse
 		err := proto.Unmarshal(r.response, &metric)
@@ -186,11 +186,7 @@ func findHandlerPB(w http.ResponseWriter, req *http.Request, responses []serverR
 			if !ok {
 				// we haven't seen this name yet
 				// add the metric to the list of metrics to return
-				mm := map[string]interface{}{
-					"metric_path": *match.Path,
-					"isLeaf":      *match.IsLeaf,
-				}
-				metrics = append(metrics, mm)
+				metrics = append(metrics, match)
 			}
 			// add the server to the list of servers that know about this metric
 			p = append(p, r.server)
@@ -211,6 +207,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 
 	rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
 	v := rewrite.Query()
+	format := req.FormValue("format")
 	v.Set("format", "protobuf")
 	rewrite.RawQuery = v.Encode()
 
@@ -231,11 +228,33 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	Config.mu.Unlock()
 
-	w.Header().Set("Content-Type", "application/pickle")
+	switch format {
+	case "protobuf":
+		w.Header().Set("Content-Type", "application/protobuf")
+		var result cspb.GlobResponse
+		result.Matches = metrics
+		b, _ := proto.Marshal(&result)
+		w.Write(b)
+	case "json":
+		w.Header().Set("Content-Type", "application/json")
+		jEnc := json.NewEncoder(w)
+		jEnc.Encode(metrics)
+	case "", "pickle":
+		w.Header().Set("Content-Type", "application/pickle")
 
-	pEnc := pickle.NewEncoder(w)
-	pEnc.Encode(metrics)
+		var result []map[string]interface{}
 
+		for _, metric := range metrics {
+			mm := map[string]interface{}{
+				"metric_path": *metric.Path,
+				"isLeaf":      *metric.IsLeaf,
+			}
+			result = append(result, mm)
+		}
+
+		pEnc := pickle.NewEncoder(w)
+		pEnc.Encode(result)
+	}
 }
 
 func renderHandler(w http.ResponseWriter, req *http.Request) {
