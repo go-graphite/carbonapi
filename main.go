@@ -232,6 +232,8 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	case "protobuf":
 		w.Header().Set("Content-Type", "application/protobuf")
 		var result cspb.GlobResponse
+		query := req.FormValue("query")
+		result.Name = &query
 		result.Matches = metrics
 		b, _ := proto.Marshal(&result)
 		w.Write(b)
