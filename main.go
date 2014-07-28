@@ -88,7 +88,7 @@ func (z zipper) Render(metric, from, until string) (cspb.FetchResponse, error) {
 	return pbresp, nil
 }
 
-func queryHandler(w http.ResponseWriter, r *http.Request) {
+func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	target := r.FormValue("target")
 	from := r.FormValue("from")
@@ -136,7 +136,7 @@ func main() {
 
 	Zipper = zipper(*z)
 
-	http.HandleFunc("/query", queryHandler)
+	http.HandleFunc("/render/", renderHandler)
 
 	log.Println("listening on port", *port)
 	log.Fatalln(http.ListenAndServe(":"+strconv.Itoa(*port), nil))
