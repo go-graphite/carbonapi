@@ -63,12 +63,20 @@ var Config = struct {
 
 // grouped expvars for /debug/vars and graphite
 var Metrics = struct {
-	Requests *expvar.Int
-	Errors   *expvar.Int
+	FindRequests *expvar.Int
+	FindErrors   *expvar.Int
+
+	RenderRequests *expvar.Int
+	RenderErrors   *expvar.Int
+
 	Timeouts *expvar.Int
 }{
-	Requests: expvar.NewInt("requests"),
-	Errors:   expvar.NewInt("errors"),
+	FindRequests: expvar.NewInt("find_requests"),
+	FindErrors:   expvar.NewInt("find_errors"),
+
+	RenderRequests: expvar.NewInt("render_requests"),
+	RenderErrors:   expvar.NewInt("render_errors"),
+
 	Timeouts: expvar.NewInt("timeouts"),
 }
 
@@ -185,7 +193,7 @@ func findHandlerPB(w http.ResponseWriter, req *http.Request, responses []serverR
 			if Debug > 1 {
 				logger.Logln("\n" + hex.Dump(r.response))
 			}
-			Metrics.Errors.Add(1)
+			Metrics.FindErrors.Add(1)
 			continue
 		}
 
@@ -211,7 +219,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		logger.Logln("request: ", req.URL.RequestURI())
 	}
 
-	Metrics.Requests.Add(1)
+	Metrics.FindRequests.Add(1)
 
 	rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
 	v := rewrite.Query()
@@ -273,7 +281,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		logger.Logln("request: ", req.URL.RequestURI())
 	}
 
-	Metrics.Requests.Add(1)
+	Metrics.RenderRequests.Add(1)
 
 	req.ParseForm()
 	target := req.FormValue("target")
@@ -304,7 +312,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	if responses == nil || len(responses) == 0 {
 		logger.Logln("render: error querying backends for:", req.URL.RequestURI(), "backends:", serverList)
 		http.Error(w, "render: error querying backends", http.StatusInternalServerError)
-		Metrics.Errors.Add(1)
+		Metrics.RenderErrors.Add(1)
 		return
 	}
 
@@ -367,7 +375,7 @@ func handleRenderPB(w http.ResponseWriter, req *http.Request, format string, res
 			if Debug > 1 {
 				logger.Logln("\n" + hex.Dump(r.response))
 			}
-			Metrics.Errors.Add(1)
+			Metrics.RenderErrors.Add(1)
 			continue
 		}
 		decoded = append(decoded, d)
@@ -381,7 +389,7 @@ func handleRenderPB(w http.ResponseWriter, req *http.Request, format string, res
 		err := fmt.Sprintf("no decoded responses to merge for req:%s", req.URL.RequestURI())
 		logger.Logln(err)
 		http.Error(w, err, http.StatusInternalServerError)
-		Metrics.Errors.Add(1)
+		Metrics.RenderErrors.Add(1)
 		return
 	}
 
@@ -423,7 +431,7 @@ func mergeValues(req *http.Request, metric *cspb.FetchResponse, decoded []cspb.F
 				// the one we want to keep, instead of the one
 				// we want to discard
 
-				Metrics.Errors.Add(1)
+				Metrics.RenderErrors.Add(1)
 				responseLengthMismatch = true
 				break
 			}
@@ -542,8 +550,12 @@ func main() {
 		hostname, _ := os.Hostname()
 		hostname = strings.Replace(hostname, ".", "_", -1)
 
-		graphite.Register(fmt.Sprintf("carbon.zipper.%s.requests", hostname), Metrics.Requests)
-		graphite.Register(fmt.Sprintf("carbon.zipper.%s.errors", hostname), Metrics.Errors)
+		graphite.Register(fmt.Sprintf("carbon.zipper.%s.find_requests", hostname), Metrics.FindRequests)
+		graphite.Register(fmt.Sprintf("carbon.zipper.%s.find_errors", hostname), Metrics.FindErrors)
+
+		graphite.Register(fmt.Sprintf("carbon.zipper.%s.render_requests", hostname), Metrics.RenderRequests)
+		graphite.Register(fmt.Sprintf("carbon.zipper.%s.render_errors", hostname), Metrics.RenderErrors)
+
 		graphite.Register(fmt.Sprintf("carbon.zipper.%s.timeouts", hostname), Metrics.Timeouts)
 
 		for i := 0; i <= Config.Buckets; i++ {
