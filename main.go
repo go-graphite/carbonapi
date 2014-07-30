@@ -158,7 +158,11 @@ GATHER:
 			}
 
 		case <-timeout:
-			logger.Logln("Timeout waiting for more responses: ", uri)
+			servs := make([]string, 0)
+			for _, r := range response {
+				servs = append(servs, r.server)
+			}
+			logger.Logln("Timeout waiting for more responses.  uri=", uri, ", servers=", servers, ", answers_from_servers=", servs)
 			Metrics.Timeouts.Add(1)
 			break GATHER
 		}
