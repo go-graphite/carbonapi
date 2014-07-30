@@ -1,10 +1,16 @@
 VERSION=0.25
 distdir=carbonzipper-$(VERSION)
 
-carbonzipper:
+carbonzipper: fetchdeps
 	GOPATH=`pwd`/Godeps/_workspace go build -o carbonzipper
 
-dist:
+fetchdeps:
+	GOPATH=`pwd`/Godeps/_workspace go get -d
+
+updatedeps:
+	GOPATH=`pwd`/Godeps/_workspace go get -du
+
+dist: fetchdeps
 	godep save
 	mkdir $(distdir)
 	mv Godeps $(distdir)
