@@ -75,7 +75,7 @@ type serverResponse struct {
 	response []byte
 }
 
-var storageClient = &http.Client{Transport: &http.Transport{ResponseHeaderTimeout: 1 * time.Minute}}
+var storageClient = &http.Client{Transport: &http.Transport{}}
 
 func singleGet(uri, server string, ch chan<- serverResponse) {
 
