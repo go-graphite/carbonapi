@@ -46,6 +46,8 @@ var Config = struct {
 
 	mu          sync.RWMutex
 	metricPaths map[string][]string
+
+	MaxIdleConnsPerHost int
 }{
 	MaxProcs: 1,
 	Port:     8080,
@@ -53,6 +55,8 @@ var Config = struct {
 
 	TimeoutMs:               2000,
 	TimeoutMsAfterFirstSeen: 500,
+
+	MaxIdleConnsPerHost: 100,
 
 	metricPaths: make(map[string][]string),
 }
@@ -75,7 +79,7 @@ type serverResponse struct {
 	response []byte
 }
 
-var storageClient = &http.Client{Transport: &http.Transport{}}
+var storageClient = &http.Client{}
 
 func singleGet(uri, server string, ch chan<- serverResponse) {
 
@@ -541,6 +545,11 @@ func main() {
 		for i := 0; i <= Config.Buckets; i++ {
 			graphite.Register(fmt.Sprintf("carbon.zipper.%s.requests_in_%dms_to_%dms", hostname, i*100, (i+1)*100), bucketEntry(i))
 		}
+	}
+
+	// configure the storage client
+	storageClient.Transport = &http.Transport{
+		MaxIdleConnsPerHost: Config.MaxIdleConnsPerHost,
 	}
 
 	portStr := fmt.Sprintf(":%d", Config.Port)
