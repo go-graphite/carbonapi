@@ -467,6 +467,15 @@ func mergeValues(uri string, metric *cspb.FetchResponse, fill *cspb.FetchRespons
 	return true
 }
 
+func lbCheckHandler(w http.ResponseWriter, req *http.Request) {
+
+	if Debug > 2 {
+		logger.Logln("loadbalancer: ", req.URL.RequestURI())
+	}
+
+	fmt.Fprintf(w, "Hi loadbalancer!  It works!!!\n")
+}
+
 func stripCommentHeader(cfg []byte) []byte {
 
 	// strip out the comment header block that begins with '#' characters
@@ -550,6 +559,7 @@ func main() {
 
 	http.HandleFunc("/metrics/find/", httputil.TrackConnections(httputil.TimeHandler(findHandler, bucketRequestTimes)))
 	http.HandleFunc("/render/", httputil.TrackConnections(httputil.TimeHandler(renderHandler, bucketRequestTimes)))
+	http.HandleFunc("/lb_check", lbCheckHandler)
 
 	// nothing in the config? check the environment
 	if Config.GraphiteHost == "" {
