@@ -104,7 +104,7 @@ func singleGet(uri, server string, ch chan<- serverResponse) {
 
 	resp, err := storageClient.Do(&req)
 	if err != nil {
-		logger.Logln("multiGet: error querying ", server, "/", uri, ":", err)
+		logger.Logln("singleGet: error querying ", server, "/", uri, ":", err)
 		ch <- serverResponse{server, nil}
 		return
 	}
