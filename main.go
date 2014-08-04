@@ -133,7 +133,7 @@ func singleGet(uri, server string, ch chan<- serverResponse) {
 	ch <- serverResponse{server, body}
 }
 
-func multiGetFetch(servers []string, uri string) *cspb.FetchResponse {
+func multiGet(servers []string, uri string) []serverResponse {
 
 	if Debug > 0 {
 		logger.Logln("querying servers=", servers, "uri=", uri)
@@ -141,78 +141,7 @@ func multiGetFetch(servers []string, uri string) *cspb.FetchResponse {
 
 	// buffered channel so the goroutines don't block on send
 	ch := make(chan serverResponse, len(servers))
-	for _, server := range servers {
-		go singleGet(uri, server, ch)
-	}
 
-	isFirstResponse := true
-	timeout := time.After(time.Duration(Config.TimeoutMs) * time.Millisecond)
-	var gaps []int
-	var ret *cspb.FetchResponse = nil
-	var rservs []string
-
-GATHER:
-	for i := 0; i < len(servers); i++ {
-		select {
-		case r := <-ch:
-			if r.response != nil {
-
-				// we are satisfied once we don't have gaps any more
-				var d cspb.FetchResponse
-				err := proto.Unmarshal(r.response, &d)
-				if err != nil {
-					logger.Logf("error decoding protobuf response from server:%s: req:%s: err=%s", r.server, uri, err)
-					if Debug > 1 {
-						logger.Logln("\n" + hex.Dump(r.response))
-					}
-					Metrics.RenderErrors.Add(1)
-					continue
-				}
-
-				if isFirstResponse {
-					timeout = time.After(time.Duration(Config.TimeoutMsAfterFirstSeen) * time.Millisecond)
-					ret = &d
-					// record which elements are absent
-					for i, v := range d.IsAbsent {
-						if v {
-							gaps = append(gaps, i)
-						}
-					}
-					isFirstResponse = false
-				} else if mergeValues(uri, ret, &d, &gaps) != true {
-					Metrics.RenderErrors.Add(1)
-					continue
-				}
-
-				if len(gaps) == 0 {
-					if Debug > 2 {
-						rservs = append(rservs, r.server)
-						logger.Logln("found all information after querying servers=", rservs, "uri=", uri)
-					}
-					break GATHER
-				}
-
-				rservs = append(rservs, r.server)
-			}
-
-		case <-timeout:
-			logger.Logln("Timeout waiting for more responses.  uri=", uri, ", servers=", servers, ", answers_from_servers=", rservs)
-			Metrics.Timeouts.Add(1)
-			break GATHER
-		}
-	}
-
-	return ret
-}
-
-func multiGetFind(servers []string, uri string) []serverResponse {
-
-	if Debug > 0 {
-		logger.Logln("querying servers=", servers, "uri=", uri)
-	}
-
-	// buffered channel so the goroutines don't block on send
-	ch := make(chan serverResponse, len(servers))
 	for _, server := range servers {
 		go singleGet(uri, server, ch)
 	}
@@ -298,7 +227,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	v.Set("format", "protobuf")
 	rewrite.RawQuery = v.Encode()
 
-	responses := multiGetFind(Config.Backends, rewrite.RequestURI())
+	responses := multiGet(Config.Backends, rewrite.RequestURI())
 
 	if responses == nil || len(responses) == 0 {
 		logger.Logln("find: error querying backends for: ", rewrite.RequestURI())
@@ -378,19 +307,19 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	v.Set("format", "protobuf")
 	rewrite.RawQuery = v.Encode()
 
-	response := multiGetFetch(serverList, rewrite.RequestURI())
+	responses := multiGet(serverList, rewrite.RequestURI())
 
-	if response == nil {
+	if responses == nil || len(responses) == 0 {
 		logger.Logln("render: error querying backends for:", req.URL.RequestURI(), "backends:", serverList)
 		http.Error(w, "render: error querying backends", http.StatusInternalServerError)
 		Metrics.RenderErrors.Add(1)
 		return
 	}
 
-	returnRender(w, format, response)
+	handleRenderPB(w, req, format, responses)
 }
 
-func createRenderResponse(metric *cspb.FetchResponse, missing interface{}) map[string]interface{} {
+func createRenderResponse(metric cspb.FetchResponse, missing interface{}) map[string]interface{} {
 	var pvalues []interface{}
 	for i, v := range metric.Values {
 		if metric.IsAbsent[i] {
@@ -412,12 +341,12 @@ func createRenderResponse(metric *cspb.FetchResponse, missing interface{}) map[s
 	return presponse
 }
 
-func returnRender(w http.ResponseWriter, format string, metric *cspb.FetchResponse) {
+func returnRender(w http.ResponseWriter, format string, metric cspb.FetchResponse) {
 
 	switch format {
 	case "protobuf":
 		w.Header().Set("Content-Type", "application/protobuf")
-		b, _ := proto.Marshal(metric)
+		b, _ := proto.Marshal(&metric)
 		w.Write(b)
 
 	case "json":
@@ -435,36 +364,85 @@ func returnRender(w http.ResponseWriter, format string, metric *cspb.FetchRespon
 
 }
 
-func mergeValues(uri string, metric *cspb.FetchResponse, fill *cspb.FetchResponse, gaps *[]int) bool {
+func handleRenderPB(w http.ResponseWriter, req *http.Request, format string, responses []serverResponse) {
 
-	if *metric.StartTime != *fill.StartTime {
-		logger.Logf("request %s: responses have different startTimes: we have %d, but new response has %d", uri, int(*metric.StartTime), int(*fill.StartTime))
-		return false
-	}
-
-	if *metric.StepTime != *fill.StepTime {
-		logger.Logf("request %s: responses have different stepTimes: we have %d, but new response has %d", uri, int(*metric.StepTime), int(*fill.StepTime))
-		return false
-	}
-
-	wgaps := *gaps
-	for i := 0; i < len(wgaps); i = i + 1 {
-		v := wgaps[i]
-		if v < len(fill.IsAbsent) && !fill.IsAbsent[v] {
-			metric.IsAbsent[v] = false
-			metric.Values[v] = fill.Values[v]
-			// this gap disappears, shuffle data around to make the
-			// slice one less bigger
-			newlen := len(wgaps) - 1
-			if i < newlen {
-				wgaps[i] = wgaps[newlen]
+	var decoded []cspb.FetchResponse
+	for _, r := range responses {
+		var d cspb.FetchResponse
+		err := proto.Unmarshal(r.response, &d)
+		if err != nil {
+			logger.Logf("error decoding protobuf response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
+			if Debug > 1 {
+				logger.Logln("\n" + hex.Dump(r.response))
 			}
-			wgaps = wgaps[:newlen]
+			Metrics.RenderErrors.Add(1)
+			continue
+		}
+		decoded = append(decoded, d)
+	}
+
+	if Debug > 2 {
+		logger.Logf("request: %s: %v", req.URL.RequestURI(), decoded)
+	}
+
+	if len(decoded) == 0 {
+		err := fmt.Sprintf("no decoded responses to merge for req:%s", req.URL.RequestURI())
+		logger.Logln(err)
+		http.Error(w, err, http.StatusInternalServerError)
+		Metrics.RenderErrors.Add(1)
+		return
+	}
+
+	if len(decoded) == 1 {
+		if Debug > 0 {
+			logger.Logf("only one decoded responses to merge for req:%s", req.URL.RequestURI())
+		}
+		returnRender(w, format, decoded[0])
+
+		return
+	}
+
+	metric := decoded[0]
+
+	mergeValues(req, &metric, decoded)
+
+	returnRender(w, format, metric)
+}
+
+func mergeValues(req *http.Request, metric *cspb.FetchResponse, decoded []cspb.FetchResponse) {
+
+	var responseLengthMismatch bool
+	for i := range metric.Values {
+		if !metric.IsAbsent[i] || responseLengthMismatch {
+			continue
+		}
+
+		// found a missing value, find a replacement
+		for other := 1; other < len(decoded); other++ {
+
+			m := decoded[other]
+
+			if len(m.Values) != len(metric.Values) {
+				logger.Logf("request: %s: unable to merge ovalues: len(values)=%d but len(ovalues)=%d", req.URL.RequestURI(), len(metric.Values), len(m.Values))
+				// TODO(dgryski): we should remove
+				// decoded[other] from the list of responses to
+				// consider but this assumes that decoded[0] is
+				// the 'highest resolution' response and thus
+				// the one we want to keep, instead of the one
+				// we want to discard
+
+				Metrics.RenderErrors.Add(1)
+				responseLengthMismatch = true
+				break
+			}
+
+			// found one
+			if !m.IsAbsent[i] {
+				metric.IsAbsent[i] = false
+				metric.Values[i] = m.Values[i]
+			}
 		}
 	}
-	*gaps = wgaps
-
-	return true
 }
 
 func lbCheckHandler(w http.ResponseWriter, req *http.Request) {
