@@ -88,6 +88,13 @@ func (z zipper) Render(metric, from, until string) (cspb.FetchResponse, error) {
 	return pbresp, nil
 }
 
+type limiter chan struct{}
+
+func (l limiter) enter() { l <- struct{}{} }
+func (l limiter) leave() { <-l }
+
+var Limiter limiter
+
 func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	target := r.FormValue("target")
@@ -100,16 +107,30 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var results []cspb.FetchResponse
+	var results []*cspb.FetchResponse
 
 	// for each server in find response query render
-	// TODO(dgryski): run this in parallel
+	rch := make(chan *cspb.FetchResponse, len(glob.GetMatches()))
 	for _, m := range glob.GetMatches() {
-		if m.GetIsLeaf() {
-			r, err := Zipper.Render(m.GetPath(), from, until)
-			if err != nil {
-				continue
+		go func(m *cspb.GlobMatch) {
+			Limiter.enter()
+			if m.GetIsLeaf() {
+				r, err := Zipper.Render(m.GetPath(), from, until)
+				if err != nil {
+					rch <- nil
+				} else {
+					rch <- &r
+				}
+			} else {
+				rch <- nil
 			}
+			Limiter.leave()
+		}(m)
+	}
+
+	for i := 0; i < len(glob.GetMatches()); i++ {
+		r := <-rch
+		if r != nil {
 			results = append(results, r)
 		}
 	}
@@ -123,12 +144,15 @@ func main() {
 
 	z := flag.String("z", "", "zipper")
 	port := flag.Int("p", 8080, "port")
+	l := flag.Int("l", 20, "concurrency limit")
 
 	flag.Parse()
 
 	if *z == "" {
 		log.Fatal("no zipper (-z) provided")
 	}
+
+	Limiter = make(chan struct{}, *l)
 
 	if _, err := url.Parse(*z); err != nil {
 		log.Fatal("unable to parze zipper:", err)
