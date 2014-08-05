@@ -97,41 +97,43 @@ var Limiter limiter
 
 func renderHandler(w http.ResponseWriter, r *http.Request) {
 
-	target := r.FormValue("target")
+	r.ParseForm()
+	targets := r.Form["target"]
 	from := r.FormValue("from")
 	until := r.FormValue("until")
 
-	// query zipper for find
-	glob, err := Zipper.Find(target)
-	if err != nil {
-		return
-	}
-
 	var results []*cspb.FetchResponse
+	// query zipper for find
+	for _, target := range targets {
+		glob, err := Zipper.Find(target)
+		if err != nil {
+			return
+		}
 
-	// for each server in find response query render
-	rch := make(chan *cspb.FetchResponse, len(glob.GetMatches()))
-	for _, m := range glob.GetMatches() {
-		go func(m *cspb.GlobMatch) {
-			Limiter.enter()
-			if m.GetIsLeaf() {
-				r, err := Zipper.Render(m.GetPath(), from, until)
-				if err != nil {
-					rch <- nil
+		// for each server in find response query render
+		rch := make(chan *cspb.FetchResponse, len(glob.GetMatches()))
+		for _, m := range glob.GetMatches() {
+			go func(m *cspb.GlobMatch) {
+				Limiter.enter()
+				if m.GetIsLeaf() {
+					r, err := Zipper.Render(m.GetPath(), from, until)
+					if err != nil {
+						rch <- nil
+					} else {
+						rch <- &r
+					}
 				} else {
-					rch <- &r
+					rch <- nil
 				}
-			} else {
-				rch <- nil
-			}
-			Limiter.leave()
-		}(m)
-	}
+				Limiter.leave()
+			}(m)
+		}
 
-	for i := 0; i < len(glob.GetMatches()); i++ {
-		r := <-rch
-		if r != nil {
-			results = append(results, r)
+		for i := 0; i < len(glob.GetMatches()); i++ {
+			r := <-rch
+			if r != nil {
+				results = append(results, r)
+			}
 		}
 	}
 
