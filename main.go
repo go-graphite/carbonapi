@@ -107,7 +107,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	for _, target := range targets {
 		glob, err := Zipper.Find(target)
 		if err != nil {
-			return
+			continue
 		}
 
 		// for each server in find response query render
