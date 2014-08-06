@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
 	"code.google.com/p/gogoprotobuf/proto"
 
@@ -101,7 +102,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	targets := r.Form["target"]
 	from := r.FormValue("from")
 	until := r.FormValue("until")
-
+	if until == "" {
+		until = strconv.Itoa(int(time.Now().Unix()))
+	}
 	var results []*cspb.FetchResponse
 	// query zipper for find
 	for _, target := range targets {
