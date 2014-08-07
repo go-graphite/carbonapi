@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"code.google.com/p/gogoprotobuf/proto"
@@ -18,6 +19,25 @@ import (
 type zipper string
 
 var Zipper zipper
+
+var timeFormats = []string{"15:04 20060102", "20060102", "01/02/06"}
+
+func ParseDate(s string, d int64) string {
+	// Function to parse from and until parameters.
+	_, err := strconv.Atoi(s)
+	if err == nil && len(s) > 8 {
+		return s // We got a timestamp so returning it
+	} else if strings.Contains(s, "_") {
+		s = strings.Replace(s, "_", " ", 1) // Go can't parse _ in date strings
+	}
+	for _, format := range timeFormats {
+		t, err := time.Parse(format, s)
+		if err == nil {
+			return strconv.Itoa(int(t.Unix()))
+		}
+	}
+	return strconv.Itoa(int(d))
+}
 
 // FIXME(dgryski): extract the http.Get + unproto code into its own function
 
@@ -102,9 +122,11 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	targets := r.Form["target"]
 	from := r.FormValue("from")
 	until := r.FormValue("until")
-	if until == "" {
-		until = strconv.Itoa(int(time.Now().Unix()))
-	}
+
+	// normalize from and until values
+	from = ParseDate(from, time.Now().Add(-24 * time.Hour).Unix())
+	until = ParseDate(until, time.Now().Unix())
+
 	var results []*cspb.FetchResponse
 	// query zipper for find
 	for _, target := range targets {
