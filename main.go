@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -20,6 +21,7 @@ type zipper string
 
 var Zipper zipper
 
+var re = regexp.MustCompile("(?P<num>-?[0-9]+)(?P<unit>[a-zA-Z]+)")
 var timeFormats = []string{"15:04 20060102", "20060102", "01/02/06"}
 
 func ParseDate(s string, d int64) string {
@@ -27,6 +29,25 @@ func ParseDate(s string, d int64) string {
 	_, err := strconv.Atoi(s)
 	if err == nil && len(s) > 8 {
 		return s // We got a timestamp so returning it
+	} else if re.MatchString(s) {
+		m := re.FindStringSubmatch(s)
+		offset_int, _ := strconv.Atoi(m[1])
+		offset := time.Duration(offset_int)
+		unit := time.Second
+		if strings.HasPrefix(m[2], "min") {
+			unit = time.Minute
+		} else if strings.HasPrefix(m[2], "h") {
+			unit = time.Hour
+		} else if strings.HasPrefix(m[2], "d") {
+			unit = 24 * time.Hour
+		} else if strings.HasPrefix(m[2], "w") {
+			unit = 7 * 24 * time.Hour
+		} else if strings.HasPrefix(m[2], "mon") {
+			unit = 30 * 24 * time.Hour
+		} else if strings.HasPrefix(m[2], "y") {
+			unit = 365 * 24 * time.Hour
+		}
+		return strconv.Itoa(int(time.Now().Add(offset * unit).Unix()))
 	} else if strings.Contains(s, "_") {
 		s = strings.Replace(s, "_", " ", 1) // Go can't parse _ in date strings
 	}
@@ -124,7 +145,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	until := r.FormValue("until")
 
 	// normalize from and until values
-	from = ParseDate(from, time.Now().Add(-24 * time.Hour).Unix())
+	from = ParseDate(from, time.Now().Add(-24*time.Hour).Unix())
 	until = ParseDate(until, time.Now().Unix())
 
 	var results []*cspb.FetchResponse
