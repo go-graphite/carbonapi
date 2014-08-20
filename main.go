@@ -431,7 +431,7 @@ func lbCheckHandler(w http.ResponseWriter, req *http.Request) {
 
 	logger.Traceln("loadbalancer: ", req.URL.RequestURI())
 
-	fmt.Fprintf(w, "Hi loadbalancer!  It works!!!\n")
+	fmt.Fprintf(w, "Ok\n")
 }
 
 func stripCommentHeader(cfg []byte) []byte {
