@@ -371,7 +371,7 @@ func handleRenderPB(w http.ResponseWriter, req *http.Request, format string, res
 	logger.Traceln("request: %s: %v", req.URL.RequestURI(), decoded)
 
 	if len(decoded) == 0 {
-		err := fmt.Sprintf("no decoded responses to merge for req:%s", req.URL.RequestURI())
+		err := fmt.Sprintf("no decoded responses to merge for req: %s", req.URL.RequestURI())
 		logger.Logln(err)
 		http.Error(w, err, http.StatusInternalServerError)
 		Metrics.RenderErrors.Add(1)
