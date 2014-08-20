@@ -29,9 +29,6 @@ import (
 	"github.com/peterbourgon/g2g"
 )
 
-// global debugging level
-var Debug int
-
 // configuration values
 var Config = struct {
 	Backends []string
@@ -135,9 +132,7 @@ func singleGet(uri, server string, ch chan<- serverResponse) {
 
 func multiGet(servers []string, uri string) []serverResponse {
 
-	if Debug > 0 {
-		logger.Logln("querying servers=", servers, "uri=", uri)
-	}
+	logger.Debugln("querying servers=", servers, "uri=", uri)
 
 	// buffered channel so the goroutines don't block on send
 	ch := make(chan serverResponse, len(servers))
@@ -190,9 +185,7 @@ func findHandlerPB(w http.ResponseWriter, req *http.Request, responses []serverR
 		err := proto.Unmarshal(r.response, &metric)
 		if err != nil {
 			logger.Logf("error decoding protobuf response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
-			if Debug > 1 {
-				logger.Logln("\n" + hex.Dump(r.response))
-			}
+			logger.Traceln("\n" + hex.Dump(r.response))
 			Metrics.FindErrors.Add(1)
 			continue
 		}
@@ -215,9 +208,7 @@ func findHandlerPB(w http.ResponseWriter, req *http.Request, responses []serverR
 
 func findHandler(w http.ResponseWriter, req *http.Request) {
 
-	if Debug > 0 {
-		logger.Logln("request: ", req.URL.RequestURI())
-	}
+	logger.Debugln("request: ", req.URL.RequestURI())
 
 	Metrics.FindRequests.Add(1)
 
@@ -277,9 +268,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 
 func renderHandler(w http.ResponseWriter, req *http.Request) {
 
-	if Debug > 0 {
-		logger.Logln("request: ", req.URL.RequestURI())
-	}
+	logger.Debugln("request: ", req.URL.RequestURI())
 
 	Metrics.RenderRequests.Add(1)
 
@@ -372,18 +361,14 @@ func handleRenderPB(w http.ResponseWriter, req *http.Request, format string, res
 		err := proto.Unmarshal(r.response, &d)
 		if err != nil {
 			logger.Logf("error decoding protobuf response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
-			if Debug > 1 {
-				logger.Logln("\n" + hex.Dump(r.response))
-			}
+			logger.Traceln("\n" + hex.Dump(r.response))
 			Metrics.RenderErrors.Add(1)
 			continue
 		}
 		decoded = append(decoded, d)
 	}
 
-	if Debug > 2 {
-		logger.Logf("request: %s: %v", req.URL.RequestURI(), decoded)
-	}
+	logger.Traceln("request: %s: %v", req.URL.RequestURI(), decoded)
 
 	if len(decoded) == 0 {
 		err := fmt.Sprintf("no decoded responses to merge for req:%s", req.URL.RequestURI())
@@ -394,11 +379,8 @@ func handleRenderPB(w http.ResponseWriter, req *http.Request, format string, res
 	}
 
 	if len(decoded) == 1 {
-		if Debug > 0 {
-			logger.Logf("only one decoded responses to merge for req:%s", req.URL.RequestURI())
-		}
+		logger.Debugf("only one decoded responses to merge for req: %s", req.URL.RequestURI())
 		returnRender(w, format, decoded[0])
-
 		return
 	}
 
@@ -447,9 +429,7 @@ func mergeValues(req *http.Request, metric *cspb.FetchResponse, decoded []cspb.F
 
 func lbCheckHandler(w http.ResponseWriter, req *http.Request) {
 
-	if Debug > 2 {
-		logger.Logln("loadbalancer: ", req.URL.RequestURI())
-	}
+	logger.Traceln("loadbalancer: ", req.URL.RequestURI())
 
 	fmt.Fprintf(w, "Hi loadbalancer!  It works!!!\n")
 }
@@ -476,7 +456,7 @@ func main() {
 	configFile := flag.String("c", "", "config file (json)")
 	port := flag.Int("p", 0, "port to listen on")
 	maxprocs := flag.Int("maxprocs", 0, "GOMAXPROCS")
-	flag.IntVar(&Debug, "d", 0, "enable debug logging")
+	debugLevel := flag.Int("d", 0, "enable debug logging")
 	logStdout := flag.Bool("stdout", false, "write logging output also to stdout (default: only syslog)")
 
 	flag.Parse()
@@ -516,14 +496,15 @@ func main() {
 	}
 
 	// set up our logging
+	logger.level = logLevel(*debugLevel)
 	slog, err := syslog.New(syslog.LOG_DAEMON, "carbonzipper")
 	if err != nil {
 		log.Fatal("can't obtain a syslog connection", err)
 	}
-	logger = append(logger, &sysLogger{w: slog})
+	logger.loggers = append(logger.loggers, &sysLogger{w: slog})
 
 	if *logStdout {
-		logger = append(logger, &stdoutLogger{log.New(os.Stdout, "", log.LstdFlags)})
+		logger.loggers = append(logger.loggers, &stdoutLogger{log.New(os.Stdout, "", log.LstdFlags)})
 	}
 
 	logger.Logln("setting GOMAXPROCS=", Config.MaxProcs)
@@ -612,6 +593,14 @@ func bucketRequestTimes(req *http.Request, t time.Duration) {
 
 // trivial logging classes
 
+type logLevel int
+
+const (
+	LOG_NORMAL logLevel = iota
+	LOG_DEBUG
+	LOG_TRACE
+)
+
 // Logger is something that can log
 type Logger interface {
 	Log(string)
@@ -625,18 +614,44 @@ type sysLogger struct{ w *syslog.Writer }
 
 func (l *sysLogger) Log(s string) { l.w.Info(s) }
 
-type multilog []Logger
+type multilog struct {
+	level   logLevel
+	loggers []Logger
+}
 
-func (ml multilog) Logln(a ...interface{}) {
+func (ml *multilog) Debugf(format string, a ...interface{}) {
+	if ml.level >= LOG_DEBUG {
+		ml.Logf(format, a...)
+	}
+}
+
+func (ml *multilog) Debugln(a ...interface{}) {
+	if ml.level >= LOG_DEBUG {
+		ml.Logln(a...)
+	}
+}
+
+func (ml *multilog) Tracef(format string, a ...interface{}) {
+	if ml.level >= LOG_TRACE {
+		ml.Logf(format, a...)
+	}
+}
+
+func (ml *multilog) Traceln(a ...interface{}) {
+	if ml.level >= LOG_TRACE {
+		ml.Logln(a...)
+	}
+}
+func (ml *multilog) Logln(a ...interface{}) {
 	s := fmt.Sprintln(a...)
-	for _, l := range ml {
+	for _, l := range ml.loggers {
 		l.Log(s)
 	}
 }
 
-func (ml multilog) Logf(format string, a ...interface{}) {
+func (ml *multilog) Logf(format string, a ...interface{}) {
 	s := fmt.Sprintf(format, a...)
-	for _, l := range ml {
+	for _, l := range ml.loggers {
 		l.Log(s)
 	}
 }
