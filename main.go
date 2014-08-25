@@ -125,6 +125,9 @@ func (l limiter) leave() { <-l }
 
 var Limiter limiter
 
+// for testing
+var timeNow = time.Now
+
 func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm()
@@ -133,8 +136,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	until := r.FormValue("until")
 
 	// normalize from and until values
-	from = dateParamToEpoch(from, time.Now().Add(-24*time.Hour).Unix())
-	until = dateParamToEpoch(until, time.Now().Unix())
+	from = dateParamToEpoch(from, timeNow().Add(-24*time.Hour).Unix())
+	until = dateParamToEpoch(until, timeNow().Unix())
 
 	var results []*cspb.FetchResponse
 	// query zipper for find
