@@ -22,14 +22,23 @@ var Zipper zipper
 
 var timeFormats = []string{"15:04 20060102", "20060102", "01/02/06"}
 
-func ParseDate(s string, d int64) string {
-	// Function to parse from and until parameters.
+// dateParamToEpoch turns a passed string parameter into an epoch we can send to the Zipper
+func dateParamToEpoch(s string, d int64) string {
+
+	if s == "" {
+		// return the default if nothing was passed
+		return strconv.Itoa(int(d))
+	}
+
 	_, err := strconv.Atoi(s)
 	if err == nil && len(s) > 8 {
 		return s // We got a timestamp so returning it
-	} else if strings.Contains(s, "_") {
+	}
+
+	if strings.Contains(s, "_") {
 		s = strings.Replace(s, "_", " ", 1) // Go can't parse _ in date strings
 	}
+
 	for _, format := range timeFormats {
 		t, err := time.Parse(format, s)
 		if err == nil {
@@ -124,8 +133,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	until := r.FormValue("until")
 
 	// normalize from and until values
-	from = ParseDate(from, time.Now().Add(-24 * time.Hour).Unix())
-	until = ParseDate(until, time.Now().Unix())
+	from = dateParamToEpoch(from, time.Now().Add(-24*time.Hour).Unix())
+	until = dateParamToEpoch(until, time.Now().Unix())
 
 	var results []*cspb.FetchResponse
 	// query zipper for find
