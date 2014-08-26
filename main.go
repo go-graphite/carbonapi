@@ -23,8 +23,8 @@ import (
 
 	"code.google.com/p/gogoprotobuf/proto"
 
+	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 	"github.com/dgryski/httputil"
-	cspb "github.com/grobian/carbonserver/carbonserverpb"
 	pickle "github.com/kisielk/og-rek"
 	"github.com/peterbourgon/g2g"
 )
@@ -174,14 +174,14 @@ GATHER:
 	return response
 }
 
-func findHandlerPB(w http.ResponseWriter, req *http.Request, responses []serverResponse) ([]*cspb.GlobMatch, map[string][]string) {
+func findHandlerPB(w http.ResponseWriter, req *http.Request, responses []serverResponse) ([]*pb.GlobMatch, map[string][]string) {
 
 	// metric -> [server1, ... ]
 	paths := make(map[string][]string)
 
-	var metrics []*cspb.GlobMatch
+	var metrics []*pb.GlobMatch
 	for _, r := range responses {
-		var metric cspb.GlobResponse
+		var metric pb.GlobResponse
 		err := proto.Unmarshal(r.response, &metric)
 		if err != nil {
 			logger.Logf("error decoding protobuf response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
@@ -238,7 +238,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	switch format {
 	case "protobuf":
 		w.Header().Set("Content-Type", "application/protobuf")
-		var result cspb.GlobResponse
+		var result pb.GlobResponse
 		query := req.FormValue("query")
 		result.Name = &query
 		result.Matches = metrics
@@ -308,7 +308,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	handleRenderPB(w, req, format, responses)
 }
 
-func createRenderResponse(metric cspb.FetchResponse, missing interface{}) map[string]interface{} {
+func createRenderResponse(metric pb.FetchResponse, missing interface{}) map[string]interface{} {
 	var pvalues []interface{}
 	for i, v := range metric.Values {
 		if metric.IsAbsent[i] {
@@ -330,7 +330,7 @@ func createRenderResponse(metric cspb.FetchResponse, missing interface{}) map[st
 	return presponse
 }
 
-func returnRender(w http.ResponseWriter, format string, metric cspb.FetchResponse) {
+func returnRender(w http.ResponseWriter, format string, metric pb.FetchResponse) {
 
 	switch format {
 	case "protobuf":
@@ -355,9 +355,9 @@ func returnRender(w http.ResponseWriter, format string, metric cspb.FetchRespons
 
 func handleRenderPB(w http.ResponseWriter, req *http.Request, format string, responses []serverResponse) {
 
-	var decoded []cspb.FetchResponse
+	var decoded []pb.FetchResponse
 	for _, r := range responses {
-		var d cspb.FetchResponse
+		var d pb.FetchResponse
 		err := proto.Unmarshal(r.response, &d)
 		if err != nil {
 			logger.Logf("error decoding protobuf response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
@@ -391,7 +391,7 @@ func handleRenderPB(w http.ResponseWriter, req *http.Request, format string, res
 	returnRender(w, format, metric)
 }
 
-func mergeValues(req *http.Request, metric *cspb.FetchResponse, decoded []cspb.FetchResponse) {
+func mergeValues(req *http.Request, metric *pb.FetchResponse, decoded []pb.FetchResponse) {
 
 	var responseLengthMismatch bool
 	for i := range metric.Values {
