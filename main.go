@@ -13,7 +13,7 @@ import (
 
 	"code.google.com/p/gogoprotobuf/proto"
 
-	cspb "github.com/grobian/carbonserver/carbonserverpb"
+	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 )
 
 type zipper string
@@ -50,7 +50,7 @@ func dateParamToEpoch(s string, d int64) string {
 
 // FIXME(dgryski): extract the http.Get + unproto code into its own function
 
-func (z zipper) Find(metric string) (cspb.GlobResponse, error) {
+func (z zipper) Find(metric string) (pb.GlobResponse, error) {
 
 	u, _ := url.Parse(string(z) + "/metrics/find/")
 
@@ -62,28 +62,28 @@ func (z zipper) Find(metric string) (cspb.GlobResponse, error) {
 	resp, err := http.Get(u.String())
 	if err != nil {
 		log.Printf("Find: http.Get: %+v\n", err)
-		return cspb.GlobResponse{}, err
+		return pb.GlobResponse{}, err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("Find: ioutil.ReadAll: %+v\n", err)
-		return cspb.GlobResponse{}, err
+		return pb.GlobResponse{}, err
 	}
 
-	var pbresp cspb.GlobResponse
+	var pbresp pb.GlobResponse
 
 	err = proto.Unmarshal(body, &pbresp)
 	if err != nil {
 		log.Printf("Find: proto.Unmarshal: %+v\n", err)
-		return cspb.GlobResponse{}, err
+		return pb.GlobResponse{}, err
 	}
 
 	return pbresp, nil
 }
 
-func (z zipper) Render(metric, from, until string) (cspb.FetchResponse, error) {
+func (z zipper) Render(metric, from, until string) (pb.FetchResponse, error) {
 
 	u, _ := url.Parse(string(z) + "/render/")
 
@@ -97,22 +97,22 @@ func (z zipper) Render(metric, from, until string) (cspb.FetchResponse, error) {
 	resp, err := http.Get(u.String())
 	if err != nil {
 		log.Printf("Render: http.Get: %s: %+v\n", metric, err)
-		return cspb.FetchResponse{}, err
+		return pb.FetchResponse{}, err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("Render: ioutil.ReadAll: %s: %+v\n", metric, err)
-		return cspb.FetchResponse{}, err
+		return pb.FetchResponse{}, err
 	}
 
-	var pbresp cspb.FetchResponse
+	var pbresp pb.FetchResponse
 
 	err = proto.Unmarshal(body, &pbresp)
 	if err != nil {
 		log.Printf("Render: proto.Unmarshal: %s: %+v\n", metric, err)
-		return cspb.FetchResponse{}, err
+		return pb.FetchResponse{}, err
 	}
 
 	return pbresp, nil
@@ -139,7 +139,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	from = dateParamToEpoch(from, timeNow().Add(-24*time.Hour).Unix())
 	until = dateParamToEpoch(until, timeNow().Unix())
 
-	var results []*cspb.FetchResponse
+	var results []*pb.FetchResponse
 	// query zipper for find
 	for _, target := range targets {
 		glob, err := Zipper.Find(target)
@@ -148,9 +148,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// for each server in find response query render
-		rch := make(chan *cspb.FetchResponse, len(glob.GetMatches()))
+		rch := make(chan *pb.FetchResponse, len(glob.GetMatches()))
 		for _, m := range glob.GetMatches() {
-			go func(m *cspb.GlobMatch) {
+			go func(m *pb.GlobMatch) {
 				Limiter.enter()
 				if m.GetIsLeaf() {
 					r, err := Zipper.Render(m.GetPath(), from, until)
