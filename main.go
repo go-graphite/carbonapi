@@ -60,7 +60,7 @@ func dateParamToEpoch(s string, d int64) string {
 			return strconv.Itoa(int(d))
 		}
 
-		return strconv.Itoa(int(timeNow().Add(-time.Duration(offset) * units).Unix()))
+		return strconv.Itoa(int(timeNow().Add(time.Duration(offset) * units).Unix()))
 
 	}
 
