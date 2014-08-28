@@ -30,6 +30,40 @@ func dateParamToEpoch(s string, d int64) string {
 		return strconv.Itoa(int(d))
 	}
 
+	// relative timestamp
+	if s[0] == '-' {
+
+		j := 1
+		for j < len(s) && s[j] >= '0' && s[j] <= '9' {
+			j++
+		}
+		offsetStr, unitStr := s[:j], s[j:]
+
+		var units time.Duration
+		switch unitStr {
+		case "s", "sec", "secs", "second", "seconds":
+			units = time.Second
+		case "min", "minute", "minutes":
+			units = time.Minute
+		case "h", "hour", "hours":
+			units = time.Hour
+		case "d", "day", "days":
+			units = 24 * time.Hour
+		case "mon", "month", "months":
+			units = 30 * 24 * time.Hour
+		case "y", "year", "years":
+			units = 365 * 24 * time.Hour
+		}
+
+		offset, err := strconv.Atoi(offsetStr)
+		if err != nil {
+			return strconv.Itoa(int(d))
+		}
+
+		return strconv.Itoa(int(timeNow().Add(-time.Duration(offset) * units).Unix()))
+
+	}
+
 	_, err := strconv.Atoi(s)
 	if err == nil && len(s) > 8 {
 		return s // We got a timestamp so returning it
