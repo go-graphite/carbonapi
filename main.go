@@ -186,16 +186,14 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		for _, m := range glob.GetMatches() {
 			go func(m *pb.GlobMatch) {
 				Limiter.enter()
+				var rptr *pb.FetchResponse
 				if m.GetIsLeaf() {
 					r, err := Zipper.Render(m.GetPath(), from, until)
-					if err != nil {
-						rch <- nil
-					} else {
-						rch <- &r
+					if err == nil {
+						rptr = &r
 					}
-				} else {
-					rch <- nil
 				}
+				rch <- rptr
 				Limiter.leave()
 			}(m)
 		}
