@@ -5,6 +5,7 @@ import (
 	"flag"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -175,34 +176,63 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	var results []*pb.FetchResponse
 	// query zipper for find
+
 	for _, target := range targets {
-		glob, err := Zipper.Find(target)
-		if err != nil {
-			continue
+
+		exp, e, err := parseExpr(target)
+		if err != nil || e != "" {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
 		}
 
-		// for each server in find response query render
-		rch := make(chan *pb.FetchResponse, len(glob.GetMatches()))
-		for _, m := range glob.GetMatches() {
-			go func(m *pb.GlobMatch) {
-				Limiter.enter()
-				var rptr *pb.FetchResponse
-				if m.GetIsLeaf() {
-					r, err := Zipper.Render(m.GetPath(), from, until)
-					if err == nil {
-						rptr = &r
-					}
-				}
-				rch <- rptr
-				Limiter.leave()
-			}(m)
-		}
+		metricMap := make(map[string][]namedExpr)
 
-		for i := 0; i < len(glob.GetMatches()); i++ {
-			r := <-rch
-			if r != nil {
-				results = append(results, r)
+		for _, metric := range exp.metrics() {
+
+			// query zipper for find
+			glob, err := Zipper.Find(metric)
+			if err != nil {
+				continue
 			}
+
+			// for each server in find response query render
+			rch := make(chan *pb.FetchResponse, len(glob.GetMatches()))
+			for _, m := range glob.GetMatches() {
+				go func(m *pb.GlobMatch) {
+					Limiter.enter()
+					var rptr *pb.FetchResponse
+					if m.GetIsLeaf() {
+						r, err := Zipper.Render(m.GetPath(), from, until)
+						if err == nil {
+							rptr = &r
+						}
+					}
+					rch <- rptr
+					Limiter.leave()
+				}(m)
+			}
+
+			for i := 0; i < len(glob.GetMatches()); i++ {
+				r := <-rch
+				if r != nil {
+					metricMap[metric] = append(metricMap[metric], namedExpr{name: r.GetName(), data: r.Values})
+				}
+			}
+		}
+
+		exprs := evalExpr(exp, metricMap)
+		for _, e := range exprs {
+			var r pb.FetchResponse
+			r.Name = proto.String(e.name)
+			r.Values = e.data
+			r.IsAbsent = make([]bool, len(r.Values))
+			for i, v := range r.Values {
+				if math.IsNaN(v) {
+					r.IsAbsent[i] = true
+					r.Values[i] = 0
+				}
+			}
+			results = append(results, &r)
 		}
 	}
 
