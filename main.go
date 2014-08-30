@@ -457,7 +457,8 @@ func main() {
 	port := flag.Int("p", 0, "port to listen on")
 	maxprocs := flag.Int("maxprocs", 0, "GOMAXPROCS")
 	debugLevel := flag.Int("d", 0, "enable debug logging")
-	logStdout := flag.Bool("stdout", false, "write logging output also to stdout (default: only syslog)")
+	logStdout := flag.Bool("stdout", false, "write logging output also to stdout")
+	logSyslog := flag.Bool("syslog", true, "write logging output also to syslog")
 
 	flag.Parse()
 
@@ -497,11 +498,13 @@ func main() {
 
 	// set up our logging
 	logger.level = logLevel(*debugLevel)
-	slog, err := syslog.New(syslog.LOG_DAEMON, "carbonzipper")
-	if err != nil {
-		log.Fatal("can't obtain a syslog connection", err)
+	if *logSyslog {
+		slog, err := syslog.New(syslog.LOG_DAEMON, "carbonzipper")
+		if err != nil {
+			log.Fatal("can't obtain a syslog connection", err)
+		}
+		logger.loggers = append(logger.loggers, &sysLogger{w: slog})
 	}
-	logger.loggers = append(logger.loggers, &sysLogger{w: slog})
 
 	if *logStdout {
 		logger.loggers = append(logger.loggers, &stdoutLogger{log.New(os.Stdout, "", log.LstdFlags)})
