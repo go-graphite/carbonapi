@@ -215,7 +215,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			for i := 0; i < len(glob.GetMatches()); i++ {
 				r := <-rch
 				if r != nil {
-					metricMap[metric] = append(metricMap[metric], namedExpr{name: r.GetName(), data: r.Values})
+					metricMap[metric] = append(metricMap[metric], namedExpr{name: r.GetName(), data: r.Values, step: r.GetStepTime()})
 				}
 			}
 		}

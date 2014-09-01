@@ -151,6 +151,7 @@ func parseName(s string) (string, string) {
 type namedExpr struct {
 	name string
 	data []float64
+	step int32
 }
 
 func evalExpr(e *expr, values map[string][]namedExpr) []namedExpr {
@@ -182,6 +183,7 @@ func evalExpr(e *expr, values map[string][]namedExpr) []namedExpr {
 			r := namedExpr{
 				name: fmt.Sprintf("movingAverage(%s, %d)", a.name, windowSize),
 				data: make([]float64, len(a.data)),
+				step: a.step,
 			}
 			for i, v := range a.data {
 				if math.IsNaN(v) {
@@ -202,6 +204,7 @@ func evalExpr(e *expr, values map[string][]namedExpr) []namedExpr {
 			r := namedExpr{
 				name: fmt.Sprintf("nonNegativeDerivative(%s)", a.name),
 				data: make([]float64, len(a.data)),
+				step: a.step,
 			}
 			prev := math.NaN()
 			for i, v := range a.data {
@@ -236,6 +239,7 @@ func evalExpr(e *expr, values map[string][]namedExpr) []namedExpr {
 			r := namedExpr{
 				name: fmt.Sprintf("scale(%s,%g)", e.argString, scale),
 				data: make([]float64, len(a.data)),
+				step: a.step,
 			}
 
 			for i, v := range a.data {
@@ -249,8 +253,40 @@ func evalExpr(e *expr, values map[string][]namedExpr) []namedExpr {
 		}
 		return results
 
+	case "scaleToSeconds":
+		arg := evalExpr(e.args[0], values)
+		n := evalExpr(e.args[1], values)
+		if len(n) != 1 || len(n[0].data) != 1 {
+			// fail
+			return nil
+		}
+
+		seconds := n[0].data[0]
+
+		var results []namedExpr
+
+		for _, a := range arg {
+			r := namedExpr{
+				name: fmt.Sprintf("scale(%s,%g)", e.argString, seconds),
+				data: make([]float64, len(a.data)),
+				step: a.step,
+			}
+
+			factor := seconds / float64(a.step)
+
+			for i, v := range a.data {
+				if math.IsNaN(v) {
+					r.data[i] = math.NaN()
+					continue
+				}
+				r.data[i] = v * factor
+			}
+			results = append(results, r)
+		}
+		return results
+
 	case "sum", "sumSeries":
-		// make sure the arrays are all the same 'size'
+		// TODO(dgryski): make sure the arrays are all the same 'size'
 		var args []namedExpr
 		for _, arg := range e.args {
 			a := evalExpr(arg, values)
@@ -259,6 +295,7 @@ func evalExpr(e *expr, values map[string][]namedExpr) []namedExpr {
 		r := namedExpr{
 			name: fmt.Sprintf("sum(%s)", e.argString),
 			data: make([]float64, len(args[0].data)),
+			step: args[0].step,
 		}
 		for _, arg := range args {
 			for i, v := range arg.data {

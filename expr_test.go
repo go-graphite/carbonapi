@@ -102,7 +102,7 @@ func TestEvalExpression(t *testing.T) {
 		{
 			&expr{target: "metric"},
 			map[string][]namedExpr{
-				"metric": []namedExpr{{"metric", []float64{1, 2, 3, 4, 5}}},
+				"metric": []namedExpr{{"metric", []float64{1, 2, 3, 4, 5}, 1}},
 			},
 			[]float64{1, 2, 3, 4, 5},
 		},
@@ -115,9 +115,9 @@ func TestEvalExpression(t *testing.T) {
 					&expr{target: "metric2"},
 					&expr{target: "metric3"}}},
 			map[string][]namedExpr{
-				"metric1": []namedExpr{{"metric1", []float64{1, 2, 3, 4, 5}}},
-				"metric2": []namedExpr{{"metric2", []float64{2, 3, math.NaN(), 5, 6}}},
-				"metric3": []namedExpr{{"metric3", []float64{3, 4, 5, 6, math.NaN()}}},
+				"metric1": []namedExpr{{"metric1", []float64{1, 2, 3, 4, 5}, 1}},
+				"metric2": []namedExpr{{"metric2", []float64{2, 3, math.NaN(), 5, 6}, 1}},
+				"metric3": []namedExpr{{"metric3", []float64{3, 4, 5, 6, math.NaN()}, 1}},
 			},
 			[]float64{6, 9, 8, 15, 11},
 		},
@@ -130,7 +130,7 @@ func TestEvalExpression(t *testing.T) {
 				},
 			},
 			map[string][]namedExpr{
-				"metric1": []namedExpr{{"metric1", []float64{2, 4, 6, 10, 14, 20}}},
+				"metric1": []namedExpr{{"metric1", []float64{2, 4, 6, 10, 14, 20}, 1}},
 			},
 			[]float64{math.NaN(), 2, 2, 4, 4, 6},
 		},
@@ -143,7 +143,7 @@ func TestEvalExpression(t *testing.T) {
 				},
 			},
 			map[string][]namedExpr{
-				"metric1": []namedExpr{{"metric1", []float64{2, 4, 6, 0, 4, 8}}},
+				"metric1": []namedExpr{{"metric1", []float64{2, 4, 6, 0, 4, 8}, 1}},
 			},
 			[]float64{math.NaN(), 2, 2, math.NaN(), 4, 4},
 		},
@@ -157,7 +157,7 @@ func TestEvalExpression(t *testing.T) {
 				},
 			},
 			map[string][]namedExpr{
-				"metric1": []namedExpr{{"metric1", []float64{2, 4, 6, 4, 6, 8}}},
+				"metric1": []namedExpr{{"metric1", []float64{2, 4, 6, 4, 6, 8}, 1}},
 			},
 			[]float64{2, 3, 4, 4, 5, 6},
 		},
@@ -171,14 +171,31 @@ func TestEvalExpression(t *testing.T) {
 				},
 			},
 			map[string][]namedExpr{
-				"metric1": []namedExpr{{"metric1", []float64{1, 2, math.NaN(), 4, 5}}},
+				"metric1": []namedExpr{{"metric1", []float64{1, 2, math.NaN(), 4, 5}, 1}},
 			},
 			[]float64{2.5, 5.0, math.NaN(), 10.0, 12.5},
+		},
+		{
+			&expr{
+				target: "scaleToSeconds",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 5, etype: etConst},
+				},
+			},
+			map[string][]namedExpr{
+				"metric1": []namedExpr{{"metric1", []float64{60, 120, math.NaN(), 120, 120}, 60}},
+			},
+			[]float64{5, 10, math.NaN(), 10, 10},
 		},
 	}
 
 	for _, tt := range tests {
 		g := evalExpr(tt.e, tt.m)
+		if g[0].step == 0 {
+			t.Errorf("missing step for %+v", g)
+		}
 		if !nearlyEqual(g[0].data, tt.w) {
 			t.Errorf("failed: got %+v, want %+v", g, tt.w)
 		}
