@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 )
 
@@ -189,12 +190,18 @@ func evalExpr(e *expr, values map[string][]namedExpr) []namedExpr {
 				name: fmt.Sprintf("nonNegativeDerivative(%s)", a.name),
 				data: make([]float64, len(a.data)),
 			}
-			r.data[0] = 0
-			for i := 1; i < len(a.data); i++ {
-				r.data[i] = a.data[i] - a.data[i-1]
-				if r.data[i] < 0 {
-					r.data[i] = r.data[i-1]
+			prev := math.NaN()
+			for i, v := range a.data {
+				if math.IsNaN(prev) || math.IsNaN(v) {
+					prev = v
+					r.data[i] = math.NaN()
+					continue
 				}
+				r.data[i] = v - prev
+				if r.data[i] < 0 {
+					r.data[i] = math.NaN()
+				}
+				prev = v
 			}
 			result = append(result, r)
 		}

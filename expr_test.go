@@ -132,7 +132,7 @@ func TestEvalExpression(t *testing.T) {
 			map[string][]namedExpr{
 				"metric1": []namedExpr{{"metric1", []float64{2, 4, 6, 10, 14, 20}}},
 			},
-			[]float64{0, 2, 2, 4, 4, 6},
+			[]float64{math.NaN(), 2, 2, 4, 4, 6},
 		},
 		{
 			&expr{
@@ -145,7 +145,7 @@ func TestEvalExpression(t *testing.T) {
 			map[string][]namedExpr{
 				"metric1": []namedExpr{{"metric1", []float64{2, 4, 6, 0, 4, 8}}},
 			},
-			[]float64{0, 2, 2, 2, 4, 4},
+			[]float64{math.NaN(), 2, 2, math.NaN(), 4, 4},
 		},
 		{
 			&expr{
