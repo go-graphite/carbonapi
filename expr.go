@@ -229,6 +229,10 @@ func evalExpr(e *expr, values map[string][]namedExpr) []namedExpr {
 				data: make([]float64, len(a.data)),
 			}
 			for i, v := range a.data {
+				if math.IsNaN(v) {
+					// make sure NaN's are ignored
+					v = 0
+				}
 				w.Push(v)
 				r.data[i] = w.Mean()
 			}
