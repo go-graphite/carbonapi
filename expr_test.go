@@ -161,6 +161,20 @@ func TestEvalExpression(t *testing.T) {
 			},
 			[]float64{2, 3, 4, 4, 5, 6},
 		},
+		{
+			&expr{
+				target: "scale",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 2.5, etype: etConst},
+				},
+			},
+			map[string][]namedExpr{
+				"metric1": []namedExpr{{"metric1", []float64{1, 2, math.NaN(), 4, 5}}},
+			},
+			[]float64{2.5, 5.0, math.NaN(), 10.0, 12.5},
+		},
 	}
 
 	for _, tt := range tests {

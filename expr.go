@@ -164,6 +164,35 @@ func evalExpr(e *expr, values map[string][]namedExpr) []namedExpr {
 
 	// evaluate the function
 	switch e.target {
+	case "scale":
+		arg := evalExpr(e.args[0], values)
+		n := evalExpr(e.args[1], values)
+		if len(n) != 1 || len(n[0].data) != 1 {
+			// fail
+			return nil
+		}
+
+		scale := n[0].data[0]
+
+		var results []namedExpr
+
+		for _, a := range arg {
+			r := namedExpr{
+				name: fmt.Sprintf("scale(%s,%g)", e.argString, scale),
+				data: make([]float64, len(a.data)),
+			}
+
+			for i, v := range a.data {
+				if math.IsNaN(v) {
+					r.data[i] = math.NaN()
+					continue
+				}
+				r.data[i] = v * scale
+			}
+			results = append(results, r)
+		}
+		return results
+
 	case "sum", "sumSeries":
 		// make sure the arrays are all the same 'size'
 		var args []namedExpr
