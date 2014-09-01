@@ -116,10 +116,10 @@ func TestEvalExpression(t *testing.T) {
 					&expr{target: "metric3"}}},
 			map[string][]namedExpr{
 				"metric1": []namedExpr{{"metric1", []float64{1, 2, 3, 4, 5}}},
-				"metric2": []namedExpr{{"metric2", []float64{2, 3, 4, 5, 6}}},
-				"metric3": []namedExpr{{"metric3", []float64{3, 4, 5, 6, 7}}},
+				"metric2": []namedExpr{{"metric2", []float64{2, 3, math.NaN(), 5, 6}}},
+				"metric3": []namedExpr{{"metric3", []float64{3, 4, 5, 6, math.NaN()}}},
 			},
-			[]float64{6, 9, 12, 15, 18},
+			[]float64{6, 9, 8, 15, 11},
 		},
 		{
 			&expr{
@@ -183,6 +183,10 @@ func nearlyEqual(a, b []float64) bool {
 		// "same"
 		if math.IsNaN(v) && math.IsNaN(b[i]) {
 			continue
+		}
+		if math.IsNaN(v) || math.IsNaN(b[i]) {
+			// unexpected NaN
+			return false
 		}
 		// "close enough"
 		if math.Abs(v-b[i]) > eps {

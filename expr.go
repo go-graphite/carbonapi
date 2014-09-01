@@ -177,6 +177,9 @@ func evalExpr(e *expr, values map[string][]namedExpr) []namedExpr {
 		}
 		for _, arg := range args {
 			for i, v := range arg.data {
+				if math.IsNaN(v) {
+					continue
+				}
 				r.data[i] += v
 			}
 		}
