@@ -164,6 +164,62 @@ func evalExpr(e *expr, values map[string][]namedExpr) []namedExpr {
 
 	// evaluate the function
 	switch e.target {
+
+	case "movingAverage":
+		arg := evalExpr(e.args[0], values)
+		n := evalExpr(e.args[1], values)
+		if len(n) != 1 || len(n[0].data) != 1 {
+			// fail
+			return nil
+		}
+
+		windowSize := int(n[0].data[0])
+
+		var result []namedExpr
+
+		for _, a := range arg {
+			w := &Windowed{data: make([]float64, windowSize)}
+			r := namedExpr{
+				name: fmt.Sprintf("movingAverage(%s, %d)", a.name, windowSize),
+				data: make([]float64, len(a.data)),
+			}
+			for i, v := range a.data {
+				if math.IsNaN(v) {
+					// make sure NaN's are ignored
+					v = 0
+				}
+				w.Push(v)
+				r.data[i] = w.Mean()
+			}
+			result = append(result, r)
+		}
+		return result
+
+	case "nonNegativeDerivative":
+		arg := evalExpr(e.args[0], values)
+		var result []namedExpr
+		for _, a := range arg {
+			r := namedExpr{
+				name: fmt.Sprintf("nonNegativeDerivative(%s)", a.name),
+				data: make([]float64, len(a.data)),
+			}
+			prev := math.NaN()
+			for i, v := range a.data {
+				if math.IsNaN(prev) || math.IsNaN(v) {
+					prev = v
+					r.data[i] = math.NaN()
+					continue
+				}
+				r.data[i] = v - prev
+				if r.data[i] < 0 {
+					r.data[i] = math.NaN()
+				}
+				prev = v
+			}
+			result = append(result, r)
+		}
+		return result
+
 	case "scale":
 		arg := evalExpr(e.args[0], values)
 		n := evalExpr(e.args[1], values)
@@ -213,61 +269,6 @@ func evalExpr(e *expr, values map[string][]namedExpr) []namedExpr {
 			}
 		}
 		return []namedExpr{r}
-
-	case "nonNegativeDerivative":
-		arg := evalExpr(e.args[0], values)
-		var result []namedExpr
-		for _, a := range arg {
-			r := namedExpr{
-				name: fmt.Sprintf("nonNegativeDerivative(%s)", a.name),
-				data: make([]float64, len(a.data)),
-			}
-			prev := math.NaN()
-			for i, v := range a.data {
-				if math.IsNaN(prev) || math.IsNaN(v) {
-					prev = v
-					r.data[i] = math.NaN()
-					continue
-				}
-				r.data[i] = v - prev
-				if r.data[i] < 0 {
-					r.data[i] = math.NaN()
-				}
-				prev = v
-			}
-			result = append(result, r)
-		}
-		return result
-
-	case "movingAverage":
-		arg := evalExpr(e.args[0], values)
-		n := evalExpr(e.args[1], values)
-		if len(n) != 1 || len(n[0].data) != 1 {
-			// fail
-			return nil
-		}
-
-		windowSize := int(n[0].data[0])
-
-		var result []namedExpr
-
-		for _, a := range arg {
-			w := &Windowed{data: make([]float64, windowSize)}
-			r := namedExpr{
-				name: fmt.Sprintf("movingAverage(%s, %d)", a.name, windowSize),
-				data: make([]float64, len(a.data)),
-			}
-			for i, v := range a.data {
-				if math.IsNaN(v) {
-					// make sure NaN's are ignored
-					v = 0
-				}
-				w.Push(v)
-				r.data[i] = w.Mean()
-			}
-			result = append(result, r)
-		}
-		return result
 	}
 
 	return nil
