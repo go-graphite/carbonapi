@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 
 	"code.google.com/p/goprotobuf/proto"
@@ -163,6 +164,56 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 
 	// evaluate the function
 	switch e.target {
+	case "keepLastValue":
+
+		arg := evalExpr(e.args[0], values)
+
+		keep := -1
+
+		if len(e.args) > 1 {
+
+			n := evalExpr(e.args[1], values)
+			if len(n) != 1 || len(n[0].Values) != 1 {
+				// fail
+				return nil
+			}
+
+			keep = int(n[0].Values[0])
+
+		}
+
+		var results []*pb.FetchResponse
+
+		for _, a := range arg {
+			r := pb.FetchResponse{
+				Name:     proto.String(fmt.Sprintf("keepLastValue(%s,%d)", e.argString, keep)),
+				Values:   make([]float64, len(a.Values)),
+				IsAbsent: make([]bool, len(a.Values)),
+				StepTime: a.StepTime,
+			}
+
+			prev := math.NaN()
+			missing := 0
+
+			for i, v := range a.Values {
+				if a.IsAbsent[i] {
+
+					if missing < keep && !math.IsNaN(prev) {
+						r.Values[i] = prev
+						missing++
+					} else {
+						r.IsAbsent[i] = true
+					}
+
+					continue
+				}
+				missing = 0
+				prev = v
+				r.Values[i] = v
+			}
+			results = append(results, &r)
+		}
+		return results
 
 	case "movingAverage":
 		arg := evalExpr(e.args[0], values)
