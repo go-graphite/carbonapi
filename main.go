@@ -52,6 +52,8 @@ func dateParamToEpoch(s string, d int64) string {
 			units = time.Hour
 		case "d", "day", "days":
 			units = 24 * time.Hour
+		case "w", "week", "weeks":
+			units = 7 * 24 * time.Hour
 		case "mon", "month", "months":
 			units = 30 * 24 * time.Hour
 		case "y", "year", "years":
