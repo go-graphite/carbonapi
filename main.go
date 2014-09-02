@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -36,37 +37,12 @@ func dateParamToEpoch(s string, d int64) string {
 	// relative timestamp
 	if s[0] == '-' {
 
-		j := 1
-		for j < len(s) && s[j] >= '0' && s[j] <= '9' {
-			j++
-		}
-		offsetStr, unitStr := s[:j], s[j:]
-
-		var units time.Duration
-		switch unitStr {
-		case "s", "sec", "secs", "second", "seconds":
-			units = time.Second
-		case "min", "minute", "minutes":
-			units = time.Minute
-		case "h", "hour", "hours":
-			units = time.Hour
-		case "d", "day", "days":
-			units = 24 * time.Hour
-		case "w", "week", "weeks":
-			units = 7 * 24 * time.Hour
-		case "mon", "month", "months":
-			units = 30 * 24 * time.Hour
-		case "y", "year", "years":
-			units = 365 * 24 * time.Hour
-		}
-
-		offset, err := strconv.Atoi(offsetStr)
+		offset, err := intervalString(s[1:])
 		if err != nil {
 			return strconv.Itoa(int(d))
 		}
 
-		return strconv.Itoa(int(timeNow().Add(time.Duration(offset) * units).Unix()))
-
+		return strconv.Itoa(int(timeNow().Add(-time.Duration(offset) * time.Second).Unix()))
 	}
 
 	_, err := strconv.Atoi(s)
@@ -85,6 +61,43 @@ func dateParamToEpoch(s string, d int64) string {
 		}
 	}
 	return strconv.Itoa(int(d))
+}
+
+func intervalString(s string) (int32, error) {
+
+	var j int
+
+	for j < len(s) && s[j] >= '0' && s[j] <= '9' {
+		j++
+	}
+	offsetStr, unitStr := s[:j], s[j:]
+
+	var units int
+	switch unitStr {
+	case "s", "sec", "secs", "second", "seconds":
+		units = 1
+	case "min", "minute", "minutes":
+		units = 60
+	case "h", "hour", "hours":
+		units = 60 * 60
+	case "d", "day", "days":
+		units = 24 * 60 * 60
+	case "w", "week", "weeks":
+		units = 7 * 24 * 60 * 60
+	case "mon", "month", "months":
+		units = 30 * 24 * 60 * 60
+	case "y", "year", "years":
+		units = 365 * 24 * 60 * 60
+	default:
+		return 0, errors.New("unknown time units")
+	}
+
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil {
+		return 0, err
+	}
+
+	return int32(offset * units), nil
 }
 
 // FIXME(dgryski): extract the http.Get + unproto code into its own function
