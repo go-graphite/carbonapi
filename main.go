@@ -208,6 +208,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 		for _, metric := range exp.metrics() {
 
+			// TODO(dgryski): add a caching layer here
+
 			// query zipper for find
 			glob, err := Zipper.Find(metric)
 			if err != nil {

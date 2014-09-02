@@ -154,6 +154,8 @@ func parseName(s string) (string, string) {
 
 func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchResponse {
 
+	// TODO(dgryski): this should reuse the FetchResponse structs instead of allocating new ones
+
 	switch e.etype {
 	case etMetric:
 		return values[e.target]
