@@ -3,8 +3,11 @@ package main
 import (
 	"errors"
 	"fmt"
-	"math"
 	"strconv"
+
+	"code.google.com/p/goprotobuf/proto"
+
+	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 )
 
 // expression parser
@@ -148,19 +151,14 @@ func parseName(s string) (string, string) {
 	return s[:i], s[i:]
 }
 
-type namedExpr struct {
-	name string
-	data []float64
-	step int32
-}
-
-func evalExpr(e *expr, values map[string][]namedExpr) []namedExpr {
+func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchResponse {
 
 	switch e.etype {
 	case etMetric:
 		return values[e.target]
 	case etConst:
-		return []namedExpr{{name: e.target, data: []float64{e.val}}}
+		p := pb.FetchResponse{Name: proto.String(e.target), Values: []float64{e.val}}
+		return []*pb.FetchResponse{&p}
 	}
 
 	// evaluate the function
@@ -169,143 +167,151 @@ func evalExpr(e *expr, values map[string][]namedExpr) []namedExpr {
 	case "movingAverage":
 		arg := evalExpr(e.args[0], values)
 		n := evalExpr(e.args[1], values)
-		if len(n) != 1 || len(n[0].data) != 1 {
+		if len(n) != 1 || len(n[0].Values) != 1 {
 			// fail
 			return nil
 		}
 
-		windowSize := int(n[0].data[0])
+		windowSize := int(n[0].Values[0])
 
-		var result []namedExpr
+		var result []*pb.FetchResponse
 
 		for _, a := range arg {
 			w := &Windowed{data: make([]float64, windowSize)}
-			r := namedExpr{
-				name: fmt.Sprintf("movingAverage(%s, %d)", a.name, windowSize),
-				data: make([]float64, len(a.data)),
-				step: a.step,
+			r := pb.FetchResponse{
+				Name:     proto.String(fmt.Sprintf("movingAverage(%s, %d)", *a.Name, windowSize)),
+				Values:   make([]float64, len(a.Values)),
+				IsAbsent: make([]bool, len(a.Values)),
+				StepTime: a.StepTime,
 			}
-			for i, v := range a.data {
-				if math.IsNaN(v) {
-					// make sure NaN's are ignored
+			for i, v := range a.Values {
+				if a.IsAbsent[i] {
+					// make sure missing values are ignored
 					v = 0
 				}
 				w.Push(v)
-				r.data[i] = w.Mean()
+				r.Values[i] = w.Mean()
 			}
-			result = append(result, r)
+			result = append(result, &r)
 		}
 		return result
 
 	case "nonNegativeDerivative":
 		arg := evalExpr(e.args[0], values)
-		var result []namedExpr
+		var result []*pb.FetchResponse
 		for _, a := range arg {
-			r := namedExpr{
-				name: fmt.Sprintf("nonNegativeDerivative(%s)", a.name),
-				data: make([]float64, len(a.data)),
-				step: a.step,
+			r := pb.FetchResponse{
+				Name:     proto.String(fmt.Sprintf("nonNegativeDerivative(%s)", *a.Name)),
+				Values:   make([]float64, len(a.Values)),
+				IsAbsent: make([]bool, len(a.Values)),
+				StepTime: a.StepTime,
 			}
-			prev := math.NaN()
-			for i, v := range a.data {
-				if math.IsNaN(prev) || math.IsNaN(v) {
-					prev = v
-					r.data[i] = math.NaN()
+			prev := a.Values[0]
+			for i, v := range a.Values {
+				if i == 0 || a.IsAbsent[i] {
+					r.IsAbsent[i] = true
 					continue
 				}
-				r.data[i] = v - prev
-				if r.data[i] < 0 {
-					r.data[i] = math.NaN()
+
+				r.Values[i] = v - prev
+				if r.Values[i] < 0 {
+					r.Values[i] = 0
+					r.IsAbsent[i] = true
 				}
 				prev = v
 			}
-			result = append(result, r)
+			result = append(result, &r)
 		}
 		return result
 
 	case "scale":
 		arg := evalExpr(e.args[0], values)
 		n := evalExpr(e.args[1], values)
-		if len(n) != 1 || len(n[0].data) != 1 {
+		if len(n) != 1 || len(n[0].Values) != 1 {
 			// fail
 			return nil
 		}
 
-		scale := n[0].data[0]
+		scale := n[0].Values[0]
 
-		var results []namedExpr
+		var results []*pb.FetchResponse
 
 		for _, a := range arg {
-			r := namedExpr{
-				name: fmt.Sprintf("scale(%s,%g)", e.argString, scale),
-				data: make([]float64, len(a.data)),
-				step: a.step,
+			r := pb.FetchResponse{
+				Name:     proto.String(fmt.Sprintf("scale(%s,%g)", e.argString, scale)),
+				Values:   make([]float64, len(a.Values)),
+				IsAbsent: make([]bool, len(a.Values)),
+				StepTime: a.StepTime,
 			}
 
-			for i, v := range a.data {
-				if math.IsNaN(v) {
-					r.data[i] = math.NaN()
+			for i, v := range a.Values {
+				if a.IsAbsent[i] {
+					r.Values[i] = 0
+					r.IsAbsent[i] = true
 					continue
 				}
-				r.data[i] = v * scale
+				r.Values[i] = v * scale
 			}
-			results = append(results, r)
+			results = append(results, &r)
 		}
 		return results
 
 	case "scaleToSeconds":
 		arg := evalExpr(e.args[0], values)
 		n := evalExpr(e.args[1], values)
-		if len(n) != 1 || len(n[0].data) != 1 {
+		if len(n) != 1 || len(n[0].Values) != 1 {
 			// fail
 			return nil
 		}
 
-		seconds := n[0].data[0]
+		seconds := n[0].Values[0]
 
-		var results []namedExpr
+		var results []*pb.FetchResponse
 
 		for _, a := range arg {
-			r := namedExpr{
-				name: fmt.Sprintf("scale(%s,%g)", e.argString, seconds),
-				data: make([]float64, len(a.data)),
-				step: a.step,
+			r := pb.FetchResponse{
+				Name:     proto.String(fmt.Sprintf("scale(%s,%g)", e.argString, seconds)),
+				Values:   make([]float64, len(a.Values)),
+				StepTime: a.StepTime,
+				IsAbsent: make([]bool, len(a.Values)),
 			}
 
-			factor := seconds / float64(a.step)
+			factor := seconds / float64(*a.StepTime)
 
-			for i, v := range a.data {
-				if math.IsNaN(v) {
-					r.data[i] = math.NaN()
+			for i, v := range a.Values {
+				if a.IsAbsent[i] {
+					r.Values[i] = 0
+					r.IsAbsent[i] = true
 					continue
 				}
-				r.data[i] = v * factor
+				r.Values[i] = v * factor
 			}
-			results = append(results, r)
+			results = append(results, &r)
 		}
 		return results
 
 	case "sum", "sumSeries":
 		// TODO(dgryski): make sure the arrays are all the same 'size'
-		var args []namedExpr
+		var args []*pb.FetchResponse
 		for _, arg := range e.args {
 			a := evalExpr(arg, values)
 			args = append(args, a...)
 		}
-		r := namedExpr{
-			name: fmt.Sprintf("sum(%s)", e.argString),
-			data: make([]float64, len(args[0].data)),
-			step: args[0].step,
+		r := pb.FetchResponse{
+			Name:     proto.String(fmt.Sprintf("sum(%s)", e.argString)),
+			Values:   make([]float64, len(args[0].Values)),
+			IsAbsent: make([]bool, len(args[0].Values)),
+			StepTime: args[0].StepTime,
 		}
 		for _, arg := range args {
-			for i, v := range arg.data {
-				if math.IsNaN(v) {
+			for i, v := range arg.Values {
+				if arg.IsAbsent[i] {
 					continue
 				}
-				r.data[i] += v
+				r.Values[i] += v
 			}
 		}
-		return []namedExpr{r}
+		return []*pb.FetchResponse{&r}
 	}
 
 	return nil

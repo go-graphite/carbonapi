@@ -5,7 +5,6 @@ import (
 	"flag"
 	"io/ioutil"
 	"log"
-	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -185,7 +184,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		metricMap := make(map[string][]namedExpr)
+		metricMap := make(map[string][]*pb.FetchResponse)
 
 		for _, metric := range exp.metrics() {
 
@@ -215,25 +214,13 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			for i := 0; i < len(glob.GetMatches()); i++ {
 				r := <-rch
 				if r != nil {
-					metricMap[metric] = append(metricMap[metric], namedExpr{name: r.GetName(), data: r.Values, step: r.GetStepTime()})
+					metricMap[metric] = append(metricMap[metric], r)
 				}
 			}
 		}
 
 		exprs := evalExpr(exp, metricMap)
-		for _, e := range exprs {
-			var r pb.FetchResponse
-			r.Name = proto.String(e.name)
-			r.Values = e.data
-			r.IsAbsent = make([]bool, len(r.Values))
-			for i, v := range r.Values {
-				if math.IsNaN(v) {
-					r.IsAbsent[i] = true
-					r.Values[i] = 0
-				}
-			}
-			results = append(results, &r)
-		}
+		results = append(results, exprs...)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
