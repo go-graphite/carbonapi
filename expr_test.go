@@ -287,6 +287,10 @@ func TestEvalExpression(t *testing.T) {
 
 	for _, tt := range tests {
 		g := evalExpr(tt.e, tt.m)
+		if g == nil {
+			t.Errorf("failed to eval %v", tt.name)
+			continue
+		}
 		if *g[0].StepTime == 0 {
 			t.Errorf("missing step for %+v", g)
 		}
