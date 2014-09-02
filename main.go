@@ -171,6 +171,7 @@ type graphitePoint struct {
 }
 
 func (g graphitePoint) MarshalJSON() ([]byte, error) {
+	// TODO(dgryski): fmt.Sprintf() is slow, use strconv.Append{Float,Int}
 	if math.IsNaN(g.value) {
 		return []byte(fmt.Sprintf("[null,%d]", g.t)), nil
 	}
