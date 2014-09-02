@@ -361,7 +361,7 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 			args = append(args, a...)
 		}
 		r := pb.FetchResponse{
-			Name:      proto.String(fmt.Sprintf("sum(%s)", e.argString)),
+			Name:      proto.String(fmt.Sprintf("sumSeries(%s)", e.argString)),
 			Values:    make([]float64, len(args[0].Values)),
 			IsAbsent:  make([]bool, len(args[0].Values)),
 			StepTime:  args[0].StepTime,
