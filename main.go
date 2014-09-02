@@ -3,8 +3,10 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
@@ -163,6 +165,23 @@ var Limiter limiter
 // for testing
 var timeNow = time.Now
 
+type graphitePoint struct {
+	value float64
+	t     int32
+}
+
+func (g graphitePoint) MarshalJSON() ([]byte, error) {
+	if math.IsNaN(g.value) {
+		return []byte(fmt.Sprintf("[null,%d]", g.t)), nil
+	}
+	return []byte(fmt.Sprintf("[%g,%d]", g.value, g.t)), nil
+}
+
+type jsonResponse struct {
+	Target     string          `json:"target"`
+	Datapoints []graphitePoint `json:"datapoints"`
+}
+
 func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm()
@@ -225,8 +244,27 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+
+	var jresults []jsonResponse
+
+	for _, r := range results {
+		if r == nil {
+			log.Println("skipping nil result")
+		}
+		datapoints := make([]graphitePoint, 0, len(r.Values))
+		t := *r.StartTime
+		for i, v := range r.Values {
+			if r.IsAbsent[i] {
+				v = math.NaN()
+			}
+			datapoints = append(datapoints, graphitePoint{value: v, t: t})
+			t += *r.StepTime
+		}
+		jresults = append(jresults, jsonResponse{Target: r.GetName(), Datapoints: datapoints})
+	}
+
 	jEnc := json.NewEncoder(w)
-	jEnc.Encode(results)
+	jEnc.Encode(jresults)
 }
 
 func main() {
