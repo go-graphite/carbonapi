@@ -186,10 +186,12 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 
 		for _, a := range arg {
 			r := pb.FetchResponse{
-				Name:     proto.String(fmt.Sprintf("keepLastValue(%s,%d)", e.argString, keep)),
-				Values:   make([]float64, len(a.Values)),
-				IsAbsent: make([]bool, len(a.Values)),
-				StepTime: a.StepTime,
+				Name:      proto.String(fmt.Sprintf("keepLastValue(%s,%d)", e.argString, keep)),
+				Values:    make([]float64, len(a.Values)),
+				IsAbsent:  make([]bool, len(a.Values)),
+				StepTime:  a.StepTime,
+				StartTime: a.StartTime,
+				StopTime:  a.StopTime,
 			}
 
 			prev := math.NaN()
@@ -230,10 +232,12 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 		for _, a := range arg {
 			w := &Windowed{data: make([]float64, windowSize)}
 			r := pb.FetchResponse{
-				Name:     proto.String(fmt.Sprintf("movingAverage(%s, %d)", *a.Name, windowSize)),
-				Values:   make([]float64, len(a.Values)),
-				IsAbsent: make([]bool, len(a.Values)),
-				StepTime: a.StepTime,
+				Name:      proto.String(fmt.Sprintf("movingAverage(%s, %d)", *a.Name, windowSize)),
+				Values:    make([]float64, len(a.Values)),
+				IsAbsent:  make([]bool, len(a.Values)),
+				StepTime:  a.StepTime,
+				StartTime: a.StartTime,
+				StopTime:  a.StopTime,
 			}
 			for i, v := range a.Values {
 				if a.IsAbsent[i] {
@@ -252,10 +256,12 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 		var result []*pb.FetchResponse
 		for _, a := range arg {
 			r := pb.FetchResponse{
-				Name:     proto.String(fmt.Sprintf("nonNegativeDerivative(%s)", *a.Name)),
-				Values:   make([]float64, len(a.Values)),
-				IsAbsent: make([]bool, len(a.Values)),
-				StepTime: a.StepTime,
+				Name:      proto.String(fmt.Sprintf("nonNegativeDerivative(%s)", *a.Name)),
+				Values:    make([]float64, len(a.Values)),
+				IsAbsent:  make([]bool, len(a.Values)),
+				StepTime:  a.StepTime,
+				StartTime: a.StartTime,
+				StopTime:  a.StopTime,
 			}
 			prev := a.Values[0]
 			for i, v := range a.Values {
@@ -289,10 +295,12 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 
 		for _, a := range arg {
 			r := pb.FetchResponse{
-				Name:     proto.String(fmt.Sprintf("scale(%s,%g)", e.argString, scale)),
-				Values:   make([]float64, len(a.Values)),
-				IsAbsent: make([]bool, len(a.Values)),
-				StepTime: a.StepTime,
+				Name:      proto.String(fmt.Sprintf("scale(%s,%g)", e.argString, scale)),
+				Values:    make([]float64, len(a.Values)),
+				IsAbsent:  make([]bool, len(a.Values)),
+				StepTime:  a.StepTime,
+				StartTime: a.StartTime,
+				StopTime:  a.StopTime,
 			}
 
 			for i, v := range a.Values {
@@ -321,10 +329,12 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 
 		for _, a := range arg {
 			r := pb.FetchResponse{
-				Name:     proto.String(fmt.Sprintf("scale(%s,%g)", e.argString, seconds)),
-				Values:   make([]float64, len(a.Values)),
-				StepTime: a.StepTime,
-				IsAbsent: make([]bool, len(a.Values)),
+				Name:      proto.String(fmt.Sprintf("scale(%s,%g)", e.argString, seconds)),
+				Values:    make([]float64, len(a.Values)),
+				StepTime:  a.StepTime,
+				IsAbsent:  make([]bool, len(a.Values)),
+				StartTime: a.StartTime,
+				StopTime:  a.StopTime,
 			}
 
 			factor := seconds / float64(*a.StepTime)
@@ -349,10 +359,12 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 			args = append(args, a...)
 		}
 		r := pb.FetchResponse{
-			Name:     proto.String(fmt.Sprintf("sum(%s)", e.argString)),
-			Values:   make([]float64, len(args[0].Values)),
-			IsAbsent: make([]bool, len(args[0].Values)),
-			StepTime: args[0].StepTime,
+			Name:      proto.String(fmt.Sprintf("sum(%s)", e.argString)),
+			Values:    make([]float64, len(args[0].Values)),
+			IsAbsent:  make([]bool, len(args[0].Values)),
+			StepTime:  args[0].StepTime,
+			StartTime: args[0].StartTime,
+			StopTime:  args[0].StopTime,
 		}
 		for _, arg := range args {
 			for i, v := range arg.Values {
