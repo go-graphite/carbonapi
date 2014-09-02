@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -238,6 +239,10 @@ func main() {
 
 	if *z == "" {
 		log.Fatal("no zipper (-z) provided")
+	}
+
+	if p := os.Getenv("PORT"); p != "" {
+		*port, _ = strconv.Atoi(p)
 	}
 
 	Limiter = make(chan struct{}, *l)
