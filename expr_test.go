@@ -81,6 +81,18 @@ func TestParseExpr(t *testing.T) {
 				argString: "metric1,3",
 			},
 		},
+		{
+			"func1(metric1,'stringconst')",
+			&expr{
+				target: "func1",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{valStr: "stringconst", etype: etString},
+				},
+				argString: "metric1,'stringconst'",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -117,9 +129,10 @@ func makeResponse(name string, values []float64, step int32) *pb.FetchResponse {
 func TestEvalExpression(t *testing.T) {
 
 	tests := []struct {
-		e *expr
-		m map[string][]*pb.FetchResponse
-		w []float64
+		e    *expr
+		m    map[string][]*pb.FetchResponse
+		w    []float64
+		name string
 	}{
 		{
 			&expr{target: "metric"},
@@ -127,6 +140,7 @@ func TestEvalExpression(t *testing.T) {
 				"metric": []*pb.FetchResponse{makeResponse("metric", []float64{1, 2, 3, 4, 5}, 1)},
 			},
 			[]float64{1, 2, 3, 4, 5},
+			"metric",
 		},
 		{
 			&expr{
@@ -135,13 +149,16 @@ func TestEvalExpression(t *testing.T) {
 				args: []*expr{
 					&expr{target: "metric1"},
 					&expr{target: "metric2"},
-					&expr{target: "metric3"}}},
+					&expr{target: "metric3"}},
+				argString: "metric1,metric2,metric3",
+			},
 			map[string][]*pb.FetchResponse{
 				"metric1": []*pb.FetchResponse{makeResponse("metric1", []float64{1, 2, 3, 4, 5}, 1)},
 				"metric2": []*pb.FetchResponse{makeResponse("metric2", []float64{2, 3, math.NaN(), 5, 6}, 1)},
 				"metric3": []*pb.FetchResponse{makeResponse("metric3", []float64{3, 4, 5, 6, math.NaN()}, 1)},
 			},
 			[]float64{6, 9, 8, 15, 11},
+			"sumSeries(metric1,metric2,metric3)",
 		},
 		{
 			&expr{
@@ -155,6 +172,7 @@ func TestEvalExpression(t *testing.T) {
 				"metric1": []*pb.FetchResponse{makeResponse("metric1", []float64{2, 4, 6, 10, 14, 20}, 1)},
 			},
 			[]float64{math.NaN(), 2, 2, 4, 4, 6},
+			"nonNegativeDerivative(metric1)",
 		},
 		{
 			&expr{
@@ -168,6 +186,7 @@ func TestEvalExpression(t *testing.T) {
 				"metric1": []*pb.FetchResponse{makeResponse("metric1", []float64{2, 4, 6, 1, 4, math.NaN(), 8}, 1)},
 			},
 			[]float64{math.NaN(), 2, 2, math.NaN(), 3, math.NaN(), 4},
+			"nonNegativeDerivative(metric1)",
 		},
 		{
 			&expr{
@@ -177,11 +196,13 @@ func TestEvalExpression(t *testing.T) {
 					&expr{target: "metric1"},
 					&expr{val: 4, etype: etConst},
 				},
+				argString: "metric1,4",
 			},
 			map[string][]*pb.FetchResponse{
 				"metric1": []*pb.FetchResponse{makeResponse("metric1", []float64{2, 4, 6, 4, 6, 8}, 1)},
 			},
 			[]float64{2, 3, 4, 4, 5, 6},
+			"movingAverage(metric1,4)",
 		},
 		{
 			&expr{
@@ -191,11 +212,13 @@ func TestEvalExpression(t *testing.T) {
 					&expr{target: "metric1"},
 					&expr{val: 2.5, etype: etConst},
 				},
+				argString: "metric1,2.5",
 			},
 			map[string][]*pb.FetchResponse{
 				"metric1": []*pb.FetchResponse{makeResponse("metric1", []float64{1, 2, math.NaN(), 4, 5}, 1)},
 			},
 			[]float64{2.5, 5.0, math.NaN(), 10.0, 12.5},
+			"scale(metric1,2.5)",
 		},
 		{
 			&expr{
@@ -205,11 +228,13 @@ func TestEvalExpression(t *testing.T) {
 					&expr{target: "metric1"},
 					&expr{val: 5, etype: etConst},
 				},
+				argString: "metric1,5",
 			},
 			map[string][]*pb.FetchResponse{
 				"metric1": []*pb.FetchResponse{makeResponse("metric1", []float64{60, 120, math.NaN(), 120, 120}, 60)},
 			},
 			[]float64{5, 10, math.NaN(), 10, 10},
+			"scaleToSeconds(metric1,5)",
 		},
 		{
 			&expr{
@@ -219,11 +244,13 @@ func TestEvalExpression(t *testing.T) {
 					&expr{target: "metric1"},
 					&expr{val: 3, etype: etConst},
 				},
+				argString: "metric1,3",
 			},
 			map[string][]*pb.FetchResponse{
 				"metric1": []*pb.FetchResponse{makeResponse("metric1", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1)},
 			},
 			[]float64{math.NaN(), 2, 2, 2, 2, math.NaN(), 4, 5},
+			"keepLastValue(metric1,3)",
 		},
 
 		{
@@ -233,11 +260,28 @@ func TestEvalExpression(t *testing.T) {
 				args: []*expr{
 					&expr{target: "metric1"},
 				},
+				argString: "metric1",
 			},
 			map[string][]*pb.FetchResponse{
 				"metric1": []*pb.FetchResponse{makeResponse("metric1", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1)},
 			},
 			[]float64{math.NaN(), 2, 2, 2, 2, 2, 4, 5},
+			"keepLastValue(metric1)",
+		},
+		{
+			&expr{
+				target: "alias",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{valStr: "renamed", etype: etString},
+				},
+			},
+			map[string][]*pb.FetchResponse{
+				"metric1": []*pb.FetchResponse{makeResponse("metric1", []float64{1, 2, 3, 4, 5}, 1)},
+			},
+			[]float64{1, 2, 3, 4, 5},
+			"renamed",
 		},
 	}
 
@@ -247,7 +291,10 @@ func TestEvalExpression(t *testing.T) {
 			t.Errorf("missing step for %+v", g)
 		}
 		if !nearlyEqual(g[0].Values, g[0].IsAbsent, tt.w) {
-			t.Errorf("failed: got %+v, want %+v", g[0].Values, tt.w)
+			t.Errorf("failed: %s: got %+v, want %+v", *g[0].Name, g[0].Values, tt.w)
+		}
+		if *g[0].Name != tt.name {
+			t.Errorf("bad name for %+v: got %v, want %v", g, *g[0].Name, tt.name)
 		}
 	}
 }

@@ -19,12 +19,14 @@ const (
 	etMetric exprType = iota
 	etFunc
 	etConst
+	etString
 )
 
 type expr struct {
 	target    string
 	etype     exprType
 	val       float64
+	valStr    string
 	args      []*expr
 	argString string
 }
@@ -34,7 +36,7 @@ func (e *expr) metrics() []string {
 	switch e.etype {
 	case etMetric:
 		return []string{e.target}
-	case etConst:
+	case etConst, etString:
 		return nil
 	case etFunc:
 		var r []string
@@ -54,6 +56,11 @@ func parseExpr(e string) (*expr, string, error) {
 		return &expr{val: val, etype: etConst}, e, err
 	}
 
+	if e[0] == '\'' {
+		val, e, err := parseString(e)
+		return &expr{valStr: val, etype: etString}, e, err
+	}
+
 	name, e := parseName(e)
 
 	if e != "" && e[0] == '(' {
@@ -71,6 +78,7 @@ func parseExpr(e string) (*expr, string, error) {
 
 var (
 	ErrMissingComma        = errors.New("missing comma")
+	ErrMissingQuote        = errors.New("missing quote")
 	ErrUnexpectedCharacter = errors.New("unexpected character")
 )
 
@@ -152,6 +160,27 @@ func parseName(s string) (string, string) {
 	return s[:i], s[i:]
 }
 
+func parseString(s string) (string, string, error) {
+
+	if s[0] != '\'' {
+		panic("string should start with open quote")
+	}
+
+	s = s[1:]
+
+	var i int
+	for i < len(s) && s[i] != '\'' {
+		i++
+	}
+
+	if i == len(s) {
+		return "", "", ErrMissingQuote
+
+	}
+
+	return s[:i], s[i+1:], nil
+}
+
 func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchResponse {
 
 	// TODO(dgryski): this should reuse the FetchResponse structs instead of allocating new ones
@@ -166,6 +195,28 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 
 	// evaluate the function
 	switch e.target {
+	case "alias":
+		arg := evalExpr(e.args[0], values)
+
+		if len(arg) > 1 {
+			return nil
+		}
+
+		if e.args[1].etype != etString {
+			return nil
+		}
+
+		r := pb.FetchResponse{
+			Name:      proto.String(e.args[1].valStr),
+			Values:    arg[0].Values,
+			IsAbsent:  arg[0].IsAbsent,
+			StepTime:  arg[0].StepTime,
+			StartTime: arg[0].StartTime,
+			StopTime:  arg[0].StopTime,
+		}
+
+		return []*pb.FetchResponse{&r}
+
 	case "keepLastValue":
 
 		arg := evalExpr(e.args[0], values)
@@ -188,7 +239,7 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 
 		for _, a := range arg {
 			r := pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("keepLastValue(%s,%d)", e.argString, keep)),
+				Name:      proto.String(fmt.Sprintf("keepLastValue(%s)", e.argString)),
 				Values:    make([]float64, len(a.Values)),
 				IsAbsent:  make([]bool, len(a.Values)),
 				StepTime:  a.StepTime,
@@ -234,7 +285,7 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 		for _, a := range arg {
 			w := &Windowed{data: make([]float64, windowSize)}
 			r := pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("movingAverage(%s, %d)", *a.Name, windowSize)),
+				Name:      proto.String(fmt.Sprintf("movingAverage(%s,%d)", *a.Name, windowSize)),
 				Values:    make([]float64, len(a.Values)),
 				IsAbsent:  make([]bool, len(a.Values)),
 				StepTime:  a.StepTime,
@@ -297,7 +348,7 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 
 		for _, a := range arg {
 			r := pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("scale(%s,%g)", e.argString, scale)),
+				Name:      proto.String(fmt.Sprintf("scale(%s)", e.argString)),
 				Values:    make([]float64, len(a.Values)),
 				IsAbsent:  make([]bool, len(a.Values)),
 				StepTime:  a.StepTime,
@@ -331,7 +382,7 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 
 		for _, a := range arg {
 			r := pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("scale(%s,%g)", e.argString, seconds)),
+				Name:      proto.String(fmt.Sprintf("scaleToSeconds(%s)", e.argString)),
 				Values:    make([]float64, len(a.Values)),
 				StepTime:  a.StepTime,
 				IsAbsent:  make([]bool, len(a.Values)),
