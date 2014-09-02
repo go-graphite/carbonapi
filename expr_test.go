@@ -225,6 +225,20 @@ func TestEvalExpression(t *testing.T) {
 			},
 			[]float64{math.NaN(), 2, 2, 2, 2, math.NaN(), 4, 5},
 		},
+
+		{
+			&expr{
+				target: "keepLastValue",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+				},
+			},
+			map[string][]*pb.FetchResponse{
+				"metric1": []*pb.FetchResponse{makeResponse("metric1", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1)},
+			},
+			[]float64{math.NaN(), 2, 2, 2, 2, 2, 4, 5},
+		},
 	}
 
 	for _, tt := range tests {

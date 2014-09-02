@@ -198,7 +198,7 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 			for i, v := range a.Values {
 				if a.IsAbsent[i] {
 
-					if missing < keep && !math.IsNaN(prev) {
+					if (keep < 0 || missing < keep) && !math.IsNaN(prev) {
 						r.Values[i] = prev
 						missing++
 					} else {
