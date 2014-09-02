@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 
 	"code.google.com/p/goprotobuf/proto"
 
@@ -216,6 +217,36 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 		}
 
 		return []*pb.FetchResponse{&r}
+
+	case "aliasByNode":
+		args := evalExpr(e.args[0], values)
+
+		if e.args[1].etype != etConst {
+			return nil
+		}
+
+		field := int(e.args[1].val)
+
+		var results []*pb.FetchResponse
+
+		for _, a := range args {
+
+			fields := strings.Split(*a.Name, ".")
+			if len(fields) < field {
+				continue
+			}
+			r := pb.FetchResponse{
+				Name:      proto.String(fields[field]),
+				Values:    a.Values,
+				IsAbsent:  a.IsAbsent,
+				StepTime:  a.StepTime,
+				StartTime: a.StartTime,
+				StopTime:  a.StopTime,
+			}
+			results = append(results, &r)
+		}
+
+		return results
 
 	case "keepLastValue":
 

@@ -283,6 +283,21 @@ func TestEvalExpression(t *testing.T) {
 			[]float64{1, 2, 3, 4, 5},
 			"renamed",
 		},
+		{
+			&expr{
+				target: "aliasByNode",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1.foo.bar.baz"},
+					&expr{val: 1, etype: etConst},
+				},
+			},
+			map[string][]*pb.FetchResponse{
+				"metric1.foo.bar.baz": []*pb.FetchResponse{makeResponse("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1)},
+			},
+			[]float64{1, 2, 3, 4, 5},
+			"foo",
+		},
 	}
 
 	for _, tt := range tests {
