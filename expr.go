@@ -57,7 +57,7 @@ func parseExpr(e string) (*expr, string, error) {
 		return &expr{val: val, etype: etConst}, e, err
 	}
 
-	if e[0] == '\'' {
+	if e[0] == '\'' || e[0] == '"' {
 		val, e, err := parseString(e)
 		return &expr{valStr: val, etype: etString}, e, err
 	}
@@ -163,14 +163,16 @@ func parseName(s string) (string, string) {
 
 func parseString(s string) (string, string, error) {
 
-	if s[0] != '\'' {
+	if s[0] != '\'' && s[0] != '"' {
 		panic("string should start with open quote")
 	}
+
+	match := s[0]
 
 	s = s[1:]
 
 	var i int
-	for i < len(s) && s[i] != '\'' {
+	for i < len(s) && s[i] != match {
 		i++
 	}
 
