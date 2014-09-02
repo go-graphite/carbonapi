@@ -247,9 +247,15 @@ func main() {
 
 	Limiter = make(chan struct{}, *l)
 
+	if *z == "" {
+		log.Fatal("no zipper provided")
+	}
+
 	if _, err := url.Parse(*z); err != nil {
 		log.Fatal("unable to parze zipper:", err)
 	}
+
+	log.Println("using zipper", *z)
 
 	Zipper = zipper(*z)
 
