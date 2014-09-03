@@ -462,9 +462,115 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 			}
 		}
 		return []*pb.FetchResponse{&r}
+	case "summarize":
+
+		// TODO(dgryski): make sure the arrays are all the same 'size'
+		args := evalExpr(e.args[0], values)
+
+		if len(e.args) == 1 {
+			return nil
+		}
+
+		bucketSize, err := intervalString(e.args[1].valStr)
+		if err != nil {
+			return nil
+		}
+
+		summarizeFunction := "sum"
+		if len(e.args) > 2 {
+			if e.args[2].etype == etString {
+				summarizeFunction = e.args[2].valStr
+			} else {
+				return nil
+			}
+		}
+
+		buckets := (*args[0].StopTime - *args[0].StartTime) / bucketSize
+
+		var results []*pb.FetchResponse
+
+		for _, arg := range args {
+			r := pb.FetchResponse{
+				Name:      proto.String(fmt.Sprintf("summarize(%s)", e.argString)),
+				Values:    make([]float64, buckets),
+				IsAbsent:  make([]bool, buckets),
+				StepTime:  proto.Int32(bucketSize),
+				StartTime: args[0].StartTime,
+				StopTime:  args[0].StopTime,
+			}
+			bucketStart := *r.StartTime
+			bucketEnd := *r.StartTime + bucketSize
+			values := make([]float64, 0, bucketSize / *arg.StepTime)
+			t := bucketStart
+			ridx := 0
+			skipped := 0
+			for i, v := range arg.Values {
+
+				if !arg.IsAbsent[i] {
+					values = append(values, v)
+				} else {
+					skipped++
+				}
+
+				t += *arg.StepTime
+
+				if t >= bucketEnd {
+					rv := summarizeValues(summarizeFunction, values)
+
+					r.Values[ridx] = rv
+					ridx++
+					bucketStart += bucketSize
+					bucketEnd += bucketSize
+					values = values[:0]
+					skipped = 0
+				}
+			}
+
+			// remaining values
+			if len(values) > 0 {
+				rv := summarizeValues(summarizeFunction, values)
+				r.Values[ridx] = rv
+			}
+
+			results = append(results, &r)
+		}
+		return results
 	}
 
 	return nil
+}
+
+func summarizeValues(f string, values []float64) float64 {
+	rv := 0.0
+	switch f {
+	case "sum":
+
+		for _, av := range values {
+			rv += av
+		}
+
+	case "avg":
+		for _, av := range values {
+			rv += av
+		}
+		rv /= float64(len(values))
+	case "max":
+		rv = math.Inf(-1)
+		for _, av := range values {
+			if av > rv {
+				rv = av
+			}
+		}
+	case "min":
+		rv = math.Inf(1)
+		for _, av := range values {
+			if av < rv {
+				rv = av
+			}
+		}
+	}
+
+	return rv
 }
 
 // From github.com/dgryski/go-onlinestats

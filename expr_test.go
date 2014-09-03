@@ -337,6 +337,125 @@ func TestEvalExpression(t *testing.T) {
 	}
 }
 
+func TestEvalSummarize(t *testing.T) {
+
+	now32 := int32(time.Now().Unix())
+
+	tests := []struct {
+		e     *expr
+		m     map[string][]*pb.FetchResponse
+		w     []float64
+		name  string
+		step  int32
+		start int32
+		stop  int32
+	}{
+		{
+			&expr{
+				target: "summarize",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{valStr: "5s", etype: etString},
+				},
+				argString: "metric1,'5s'",
+			},
+			map[string][]*pb.FetchResponse{
+				"metric1": []*pb.FetchResponse{makeResponse("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5}, 1, now32)},
+			},
+			[]float64{5, 10, 15, 20, 25},
+			"summarize(metric1,'5s')",
+			5,
+			now32,
+			now32 + 25*1,
+		},
+		{
+			&expr{
+				target: "summarize",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{valStr: "5s", etype: etString},
+					&expr{valStr: "avg", etype: etString},
+				},
+				argString: "metric1,'5s'",
+			},
+			map[string][]*pb.FetchResponse{
+				"metric1": []*pb.FetchResponse{makeResponse("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5}, 1, now32)},
+			},
+			[]float64{1, 2, 3, 4, 5},
+			"summarize(metric1,'5s')",
+			5,
+			now32,
+			now32 + 25*1,
+		},
+		{
+			&expr{
+				target: "summarize",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{valStr: "5s", etype: etString},
+					&expr{valStr: "max", etype: etString},
+				},
+				argString: "metric1,'5s','max'",
+			},
+			map[string][]*pb.FetchResponse{
+				"metric1": []*pb.FetchResponse{makeResponse("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+			},
+			[]float64{1, 2, 3, 4.5, 5},
+			"summarize(metric1,'5s','max')",
+			5,
+			now32,
+			now32 + 25*1,
+		},
+		{
+			&expr{
+				target: "summarize",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{valStr: "5s", etype: etString},
+					&expr{valStr: "min", etype: etString},
+				},
+				argString: "metric1,'5s','min'",
+			},
+			map[string][]*pb.FetchResponse{
+				"metric1": []*pb.FetchResponse{makeResponse("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+			},
+			[]float64{0, 1, 1.5, 2, 5},
+			"summarize(metric1,'5s','min')",
+			5,
+			now32,
+			now32 + 25*1,
+		},
+	}
+
+	for _, tt := range tests {
+		g := evalExpr(tt.e, tt.m)
+		if g == nil {
+			t.Errorf("failed to eval %v", tt.name)
+			continue
+		}
+		if *g[0].StepTime != tt.step {
+			t.Errorf("bad step for %+v", g)
+		}
+		if *g[0].StartTime != tt.start {
+			t.Errorf("bad start for %+v", g)
+		}
+		if *g[0].StopTime != tt.stop {
+			t.Errorf("bad stop for %+v", g)
+		}
+
+		if !nearlyEqual(g[0].Values, g[0].IsAbsent, tt.w) {
+			t.Errorf("failed: %s: got %+v, want %+v", *g[0].Name, g[0].Values, tt.w)
+		}
+		if *g[0].Name != tt.name {
+			t.Errorf("bad name for %+v: got %v, want %v", g, *g[0].Name, tt.name)
+		}
+	}
+}
+
 const eps = 0.0000000001
 
 func nearlyEqual(a []float64, absent []bool, b []float64) bool {
