@@ -569,6 +569,10 @@ func summarizeValues(f string, values []float64) float64 {
 				rv = av
 			}
 		}
+	case "last":
+		if len(values) > 0 {
+			rv = values[len(values)-1]
+		}
 	}
 
 	return rv

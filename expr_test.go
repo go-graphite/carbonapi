@@ -429,6 +429,26 @@ func TestEvalSummarize(t *testing.T) {
 			now32,
 			now32 + 25*1,
 		},
+		{
+			&expr{
+				target: "summarize",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{valStr: "5s", etype: etString},
+					&expr{valStr: "last", etype: etString},
+				},
+				argString: "metric1,'5s','last'",
+			},
+			map[string][]*pb.FetchResponse{
+				"metric1": []*pb.FetchResponse{makeResponse("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+			},
+			[]float64{1, 2, 3, 4.5, 5},
+			"summarize(metric1,'5s','last')",
+			5,
+			now32,
+			now32 + 25*1,
+		},
 	}
 
 	for _, tt := range tests {
