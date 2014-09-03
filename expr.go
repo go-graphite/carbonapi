@@ -466,6 +466,7 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 	case "summarize":
 
 		// TODO(dgryski): make sure the arrays are all the same 'size'
+		// TODO(dgryski): need to implement alignToFrom=false, and make it the default
 		args := evalExpr(e.args[0], values)
 
 		if len(e.args) == 1 {
