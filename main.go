@@ -13,6 +13,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"code.google.com/p/gogoprotobuf/proto"
@@ -198,6 +199,14 @@ type jsonResponse struct {
 	Datapoints []graphitePoint `json:"datapoints"`
 }
 
+type cacheElement struct {
+	validUntil time.Time
+	data       []byte
+}
+
+var queryCacheLock sync.Mutex
+var queryCache = make(map[string]cacheElement)
+
 func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm()
@@ -205,12 +214,24 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	from := r.FormValue("from")
 	until := r.FormValue("until")
 
+	cacheKey := r.Form.Encode()
+
+	queryCacheLock.Lock()
+	if response, ok := queryCache[cacheKey]; ok {
+		if response.validUntil.After(time.Now()) {
+			queryCacheLock.Unlock()
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(response.data)
+			return
+		}
+	}
+	queryCacheLock.Unlock()
+
 	// normalize from and until values
 	from = dateParamToEpoch(from, timeNow().Add(-24*time.Hour).Unix())
 	until = dateParamToEpoch(until, timeNow().Unix())
 
 	var results []*pb.FetchResponse
-	// query zipper for find
 
 	for _, target := range targets {
 
@@ -224,7 +245,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 		for _, metric := range exp.metrics() {
 
-			// TODO(dgryski): add a caching layer here
+			// TODO(dgryski): cache Find results for 1 minute
 
 			// query zipper for find
 			glob, err := Zipper.Find(metric)
@@ -261,8 +282,6 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		results = append(results, exprs...)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-
 	var jresults []jsonResponse
 
 	for _, r := range results {
@@ -281,8 +300,42 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		jresults = append(jresults, jsonResponse{Target: r.GetName(), Datapoints: datapoints})
 	}
 
-	jEnc := json.NewEncoder(w)
-	jEnc.Encode(jresults)
+	jout, err := json.Marshal(jresults)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	queryCacheLock.Lock()
+	queryCache[cacheKey] = cacheElement{validUntil: time.Now().Add(60 * time.Second), data: jout}
+	queryCacheLock.Unlock()
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jout)
+}
+
+func cacheCleaner() {
+
+	var keys []string
+
+	for {
+		time.Sleep(5 * time.Minute)
+
+		now := time.Now()
+		queryCacheLock.Lock()
+
+		for k, v := range queryCache {
+			if v.validUntil.Before(now) {
+				keys = append(keys, k)
+			}
+		}
+
+		for _, k := range keys {
+			delete(queryCache, k)
+		}
+
+		keys = keys[:0]
+		queryCacheLock.Unlock()
+	}
 }
 
 func main() {
@@ -312,6 +365,8 @@ func main() {
 	}
 
 	log.Println("using zipper", *z)
+
+	go cacheCleaner()
 
 	Zipper = zipper(*z)
 
