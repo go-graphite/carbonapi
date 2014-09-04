@@ -350,7 +350,6 @@ func (ec *expireCache) cleaner() {
 		}
 
 		for _, k := range keys {
-			log.Println("cleaning", k)
 			delete(ec.cache, k)
 		}
 
