@@ -293,7 +293,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	queryCache.set(cacheKey, jout, time.Now().Add(60*time.Second))
+	queryCache.set(cacheKey, jout)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jout)
@@ -321,7 +321,7 @@ func (ec *expireCache) get(k string) (interface{}, bool) {
 	return v.data, ok
 }
 
-func (ec *expireCache) set(k string, v interface{}, expire time.Time) {
+func (ec *expireCache) set(k string, v interface{}) {
 	ec.Lock()
 	ec.cache[k] = cacheElement{validUntil: time.Now().Add(60 * time.Second), data: v}
 	ec.Unlock()
