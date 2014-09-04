@@ -252,8 +252,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			// For each metric returned in the Find response, query Render
 			rch := make(chan *pb.FetchResponse, len(glob.GetMatches()))
 			for _, m := range glob.GetMatches() {
+				Limiter.enter()
 				go func(m *pb.GlobMatch) {
-					Limiter.enter()
 					var rptr *pb.FetchResponse
 					if m.GetIsLeaf() {
 						r, err := Zipper.Render(m.GetPath(), from, until)
