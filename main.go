@@ -251,22 +251,25 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 			// For each metric returned in the Find response, query Render
 			rch := make(chan *pb.FetchResponse, len(glob.GetMatches()))
+			leaves := 0
 			for _, m := range glob.GetMatches() {
+				if !m.GetIsLeaf() {
+					continue
+				}
+				leaves++
 				Limiter.enter()
 				go func(m *pb.GlobMatch) {
 					var rptr *pb.FetchResponse
-					if m.GetIsLeaf() {
-						r, err := Zipper.Render(m.GetPath(), from, until)
-						if err == nil {
-							rptr = &r
-						}
+					r, err := Zipper.Render(m.GetPath(), from, until)
+					if err == nil {
+						rptr = &r
 					}
 					rch <- rptr
 					Limiter.leave()
 				}(m)
 			}
 
-			for i := 0; i < len(glob.GetMatches()); i++ {
+			for i := 0; i < leaves; i++ {
 				r := <-rch
 				if r != nil {
 					metricMap[metric] = append(metricMap[metric], r)
