@@ -249,7 +249,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 				findCache.set(metric, glob)
 			}
 
-			// for each server in find response query render
+			// For each metric returned in the Find response, query Render
 			rch := make(chan *pb.FetchResponse, len(glob.GetMatches()))
 			for _, m := range glob.GetMatches() {
 				go func(m *pb.GlobMatch) {
