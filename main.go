@@ -199,14 +199,6 @@ type jsonResponse struct {
 	Datapoints []graphitePoint `json:"datapoints"`
 }
 
-type cacheElement struct {
-	validUntil time.Time
-	data       []byte
-}
-
-var queryCacheLock sync.Mutex
-var queryCache = make(map[string]cacheElement)
-
 func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm()
@@ -216,16 +208,11 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	cacheKey := r.Form.Encode()
 
-	queryCacheLock.Lock()
-	if response, ok := queryCache[cacheKey]; ok {
-		if response.validUntil.After(time.Now()) {
-			queryCacheLock.Unlock()
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(response.data)
-			return
-		}
+	if response, ok := queryCache.get(cacheKey); ok {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(response.([]byte))
+		return
 	}
-	queryCacheLock.Unlock()
 
 	// normalize from and until values
 	from = dateParamToEpoch(from, timeNow().Add(-24*time.Hour).Unix())
@@ -306,14 +293,41 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	queryCacheLock.Lock()
-	queryCache[cacheKey] = cacheElement{validUntil: time.Now().Add(60 * time.Second), data: jout}
-	queryCacheLock.Unlock()
+	queryCache.set(cacheKey, jout, time.Now().Add(60*time.Second))
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jout)
 }
 
-func cacheCleaner() {
+var queryCache *expireCache
+
+type cacheElement struct {
+	validUntil time.Time
+	data       interface{}
+}
+
+type expireCache struct {
+	sync.Mutex
+	cache map[string]cacheElement
+}
+
+func (ec *expireCache) get(k string) (interface{}, bool) {
+	ec.Lock()
+	v, ok := ec.cache[k]
+	ec.Unlock()
+	if !ok || v.validUntil.Before(time.Now()) {
+		return nil, false
+	}
+	return v.data, ok
+}
+
+func (ec *expireCache) set(k string, v interface{}, expire time.Time) {
+	ec.Lock()
+	ec.cache[k] = cacheElement{validUntil: time.Now().Add(60 * time.Second), data: v}
+	ec.Unlock()
+}
+
+func (ec *expireCache) cleaner() {
 
 	var keys []string
 
@@ -321,20 +335,21 @@ func cacheCleaner() {
 		time.Sleep(5 * time.Minute)
 
 		now := time.Now()
-		queryCacheLock.Lock()
+		ec.Lock()
 
-		for k, v := range queryCache {
+		for k, v := range ec.cache {
 			if v.validUntil.Before(now) {
 				keys = append(keys, k)
 			}
 		}
 
 		for _, k := range keys {
-			delete(queryCache, k)
+			log.Println("cleaning", k)
+			delete(ec.cache, k)
 		}
 
 		keys = keys[:0]
-		queryCacheLock.Unlock()
+		ec.Unlock()
 	}
 }
 
@@ -366,7 +381,8 @@ func main() {
 
 	log.Println("using zipper", *z)
 
-	go cacheCleaner()
+	queryCache = &expireCache{cache: make(map[string]cacheElement)}
+	go queryCache.cleaner()
 
 	Zipper = zipper(*z)
 
