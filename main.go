@@ -205,10 +205,14 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	targets := r.Form["target"]
 	from := r.FormValue("from")
 	until := r.FormValue("until")
+	useCache := r.FormValue("noCache") == ""
+
+	// make sure the cache key doesn't say noCache, because it will never hit
+	r.Form.Del("noCache")
 
 	cacheKey := r.Form.Encode()
 
-	if response, ok := queryCache.get(cacheKey); ok {
+	if response, ok := queryCache.get(cacheKey); useCache && ok {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(response.([]byte))
 		return
