@@ -232,12 +232,17 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 		for _, metric := range exp.metrics() {
 
-			// TODO(dgryski): cache Find results for 1 minute
+			var glob pb.GlobResponse
 
-			// query zipper for find
-			glob, err := Zipper.Find(metric)
-			if err != nil {
-				continue
+			if response, ok := findCache.get(metric); ok {
+				glob = response.(pb.GlobResponse)
+			} else {
+				var err error
+				glob, err = Zipper.Find(metric)
+				if err != nil {
+					continue
+				}
+				findCache.set(metric, glob)
 			}
 
 			// for each server in find response query render
@@ -300,6 +305,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 var queryCache *expireCache
+var findCache *expireCache
 
 type cacheElement struct {
 	validUntil time.Time
@@ -383,6 +389,9 @@ func main() {
 
 	queryCache = &expireCache{cache: make(map[string]cacheElement)}
 	go queryCache.cleaner()
+
+	findCache = &expireCache{cache: make(map[string]cacheElement)}
+	go findCache.cleaner()
 
 	Zipper = zipper(*z)
 
