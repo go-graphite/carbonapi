@@ -67,6 +67,8 @@ type memcachedCache struct {
 	client *memcache.Client
 }
 
+// TODO(dgryski): memcache fails on len(k) > 250, so hash key to reduce length
+
 func (m *memcachedCache) get(k string) ([]byte, bool) {
 	item, err := m.client.Get(k)
 	if err != nil {
