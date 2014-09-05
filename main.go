@@ -19,6 +19,7 @@ import (
 
 	"code.google.com/p/gogoprotobuf/proto"
 
+	"github.com/bradfitz/gomemcache/memcache"
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 )
 
@@ -327,6 +328,7 @@ func main() {
 	z := flag.String("z", "", "zipper")
 	port := flag.Int("p", 8080, "port")
 	l := flag.Int("l", 20, "concurrency limit")
+	mc := flag.String("mc", "", "comma separated memcached server list")
 
 	flag.Parse()
 
@@ -350,11 +352,17 @@ func main() {
 
 	log.Println("using zipper", *z)
 
-	queryCache = &expireCache{cache: make(map[string]cacheElement)}
-	go queryCache.(*expireCache).cleaner()
+	if *mc != "" {
+		servers := strings.Split(*mc, ",")
+		queryCache = &memcachedCache{client: memcache.New(servers...)}
+		findCache = &memcachedCache{client: memcache.New(servers...)}
+	} else {
+		queryCache = &expireCache{cache: make(map[string]cacheElement)}
+		go queryCache.(*expireCache).cleaner()
 
-	findCache = &expireCache{cache: make(map[string]cacheElement)}
-	go findCache.(*expireCache).cleaner()
+		findCache = &expireCache{cache: make(map[string]cacheElement)}
+		go findCache.(*expireCache).cleaner()
+	}
 
 	Zipper = zipper(*z)
 

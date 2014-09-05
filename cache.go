@@ -3,6 +3,8 @@ package main
 import (
 	"sync"
 	"time"
+
+	"github.com/bradfitz/gomemcache/memcache"
 )
 
 type bytesCache interface {
@@ -59,4 +61,20 @@ func (ec *expireCache) cleaner() {
 		keys = keys[:0]
 		ec.Unlock()
 	}
+}
+
+type memcachedCache struct {
+	client *memcache.Client
+}
+
+func (m *memcachedCache) get(k string) ([]byte, bool) {
+	item, err := m.client.Get(k)
+	if err != nil {
+		return nil, false
+	}
+	return item.Value, true
+}
+
+func (m *memcachedCache) set(k string, v []byte) {
+	m.client.Set(&memcache.Item{Key: k, Value: v, Expiration: 60})
 }
