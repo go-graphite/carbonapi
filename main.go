@@ -15,7 +15,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"code.google.com/p/gogoprotobuf/proto"
@@ -26,6 +25,9 @@ import (
 type zipper string
 
 var Zipper zipper
+
+var queryCache bytesCache
+var findCache bytesCache
 
 var timeFormats = []string{"15:04 20060102", "20060102", "01/02/06"}
 
@@ -216,7 +218,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	if response, ok := queryCache.get(cacheKey); useCache && ok {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(response.([]byte))
+		w.Write(response)
 		return
 	}
 
@@ -241,14 +243,17 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			var glob pb.GlobResponse
 
 			if response, ok := findCache.get(metric); ok {
-				glob = response.(pb.GlobResponse)
+				proto.Unmarshal(response, &glob)
 			} else {
 				var err error
 				glob, err = Zipper.Find(metric)
 				if err != nil {
 					continue
 				}
-				findCache.set(metric, glob)
+				b, err := proto.Marshal(&glob)
+				if err == nil {
+					findCache.set(metric, b)
+				}
 			}
 
 			// For each metric returned in the Find response, query Render
@@ -313,60 +318,6 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(jout)
 }
 
-var queryCache *expireCache
-var findCache *expireCache
-
-type cacheElement struct {
-	validUntil time.Time
-	data       interface{}
-}
-
-type expireCache struct {
-	sync.Mutex
-	cache map[string]cacheElement
-}
-
-func (ec *expireCache) get(k string) (interface{}, bool) {
-	ec.Lock()
-	v, ok := ec.cache[k]
-	ec.Unlock()
-	if !ok || v.validUntil.Before(time.Now()) {
-		return nil, false
-	}
-	return v.data, ok
-}
-
-func (ec *expireCache) set(k string, v interface{}) {
-	ec.Lock()
-	ec.cache[k] = cacheElement{validUntil: time.Now().Add(60 * time.Second), data: v}
-	ec.Unlock()
-}
-
-func (ec *expireCache) cleaner() {
-
-	var keys []string
-
-	for {
-		time.Sleep(5 * time.Minute)
-
-		now := time.Now()
-		ec.Lock()
-
-		for k, v := range ec.cache {
-			if v.validUntil.Before(now) {
-				keys = append(keys, k)
-			}
-		}
-
-		for _, k := range keys {
-			delete(ec.cache, k)
-		}
-
-		keys = keys[:0]
-		ec.Unlock()
-	}
-}
-
 func main() {
 
 	z := flag.String("z", "", "zipper")
@@ -396,10 +347,10 @@ func main() {
 	log.Println("using zipper", *z)
 
 	queryCache = &expireCache{cache: make(map[string]cacheElement)}
-	go queryCache.cleaner()
+	go queryCache.(*expireCache).cleaner()
 
 	findCache = &expireCache{cache: make(map[string]cacheElement)}
-	go findCache.cleaner()
+	go findCache.(*expireCache).cleaner()
 
 	Zipper = zipper(*z)
 
