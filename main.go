@@ -241,10 +241,14 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		for _, metric := range exp.metrics() {
 
 			var glob pb.GlobResponse
+			var haveCacheData bool
 
-			if response, ok := findCache.get(metric); ok {
-				proto.Unmarshal(response, &glob)
-			} else {
+			if response, ok := findCache.get(metric); useCache && ok {
+				err := proto.Unmarshal(response, &glob)
+				haveCacheData = err == nil
+			}
+
+			if !haveCacheData {
 				var err error
 				glob, err = Zipper.Find(metric)
 				if err != nil {
