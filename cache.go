@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/md5"
+	"fmt"
 	"sync"
 	"time"
 
@@ -67,10 +69,9 @@ type memcachedCache struct {
 	client *memcache.Client
 }
 
-// TODO(dgryski): memcache fails on len(k) > 250, so hash key to reduce length
-
 func (m *memcachedCache) get(k string) ([]byte, bool) {
-	item, err := m.client.Get(k)
+	hk := fmt.Sprintf("%x", md5.Sum([]byte(k)))
+	item, err := m.client.Get(hk)
 	if err != nil {
 		return nil, false
 	}
@@ -78,5 +79,6 @@ func (m *memcachedCache) get(k string) ([]byte, bool) {
 }
 
 func (m *memcachedCache) set(k string, v []byte) {
-	m.client.Set(&memcache.Item{Key: k, Value: v, Expiration: 60})
+	hk := fmt.Sprintf("%x", md5.Sum([]byte(k)))
+	m.client.Set(&memcache.Item{Key: hk, Value: v, Expiration: 60})
 }
