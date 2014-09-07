@@ -125,7 +125,7 @@ func isNameChar(r byte) bool {
 		'a' <= r && r <= 'z' ||
 		'A' <= r && r <= 'Z' ||
 		'0' <= r && r <= '9' ||
-		r == '.' || r == '_' || r == '-' || r == '*'
+		r == '.' || r == '_' || r == '-' || r == '*' || r == ':'
 }
 
 func isDigit(r byte) bool {
