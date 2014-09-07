@@ -189,6 +189,7 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 	// TODO(dgryski): this should reuse the FetchResponse structs instead of allocating new ones
 	// FIXME(dgryski): expr evaluation needs better error checking
 	// FIXME(dgryski): lots of repeated code below, should be cleaned up
+	// TODO(dgryski): group averageSeries highestAverage exclude divideSeries maxSeries timeShift stdev transformNull derivative
 
 	switch e.etype {
 	case etMetric:
