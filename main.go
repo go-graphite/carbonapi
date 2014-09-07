@@ -51,6 +51,10 @@ func dateParamToEpoch(s string, d int64) string {
 		return strconv.Itoa(int(timeNow().Add(-time.Duration(offset) * time.Second).Unix()))
 	}
 
+	if s == "now" {
+		return strconv.Itoa(int(timeNow().Unix()))
+	}
+
 	_, err := strconv.Atoi(s)
 	if err == nil && len(s) > 8 {
 		return s // We got a timestamp so returning it
