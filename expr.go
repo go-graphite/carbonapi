@@ -185,6 +185,69 @@ func parseString(s string) (string, string, error) {
 	return s[:i], s[i+1:], nil
 }
 
+var ErrBadType = errors.New("bad type")
+var ErrMissingArgument = errors.New("missing argument")
+
+func getStringArg(e *expr, n int) (string, error) {
+	if len(e.args) <= n {
+		return "", ErrMissingArgument
+	}
+
+	if e.args[n].etype != etString {
+		return "", ErrBadType
+	}
+
+	return e.args[n].valStr, nil
+
+}
+
+func getStringArgDefault(e *expr, n int, s string) (string, error) {
+	if len(e.args) <= n {
+		return s, nil
+	}
+
+	if e.args[n].etype != etString {
+		return "", ErrBadType
+	}
+
+	return e.args[n].valStr, nil
+}
+
+func getFloatArg(e *expr, n int) (float64, error) {
+	if len(e.args) <= n {
+		return 0, ErrMissingArgument
+	}
+
+	if e.args[n].etype != etConst {
+		return 0, ErrBadType
+	}
+
+	return e.args[n].val, nil
+}
+
+func getIntArg(e *expr, n int) (int, error) {
+	if len(e.args) <= n {
+		return 0, ErrMissingArgument
+	}
+
+	if e.args[n].etype != etConst {
+		return 0, ErrBadType
+	}
+
+	return int(e.args[n].val), nil
+}
+func getIntArgDefault(e *expr, n int, d int) (int, error) {
+	if len(e.args) <= n {
+		return d, nil
+	}
+
+	if e.args[n].etype != etConst {
+		return 0, ErrBadType
+	}
+
+	return int(e.args[n].val), nil
+}
+
 func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchResponse {
 
 	// TODO(dgryski): this should reuse the FetchResponse structs instead of allocating new ones
@@ -204,17 +267,13 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 	switch e.target {
 	case "alias":
 		arg := evalExpr(e.args[0], values)
-
-		if len(arg) > 1 {
-			return nil
-		}
-
-		if e.args[1].etype != etString {
+		alias, err := getStringArg(e, 1)
+		if err != nil {
 			return nil
 		}
 
 		r := pb.FetchResponse{
-			Name:      proto.String(e.args[1].valStr),
+			Name:      proto.String(alias),
 			Values:    arg[0].Values,
 			IsAbsent:  arg[0].IsAbsent,
 			StepTime:  arg[0].StepTime,
@@ -226,12 +285,10 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 
 	case "aliasByNode":
 		args := evalExpr(e.args[0], values)
-
-		if e.args[1].etype != etConst {
+		field, err := getIntArg(e, 1)
+		if err != nil {
 			return nil
 		}
-
-		field := int(e.args[1].val)
 
 		var results []*pb.FetchResponse
 
@@ -315,23 +372,11 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 		return result
 
 	case "keepLastValue":
-
 		arg := evalExpr(e.args[0], values)
-
-		keep := -1
-
-		if len(e.args) > 1 {
-
-			n := evalExpr(e.args[1], values)
-			if len(n) != 1 || len(n[0].Values) != 1 {
-				// fail
-				return nil
-			}
-
-			keep = int(n[0].Values[0])
-
+		keep, err := getIntArgDefault(e, 1, -1)
+		if err != nil {
+			return nil
 		}
-
 		var results []*pb.FetchResponse
 
 		for _, a := range arg {
@@ -405,13 +450,10 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 
 	case "movingAverage":
 		arg := evalExpr(e.args[0], values)
-		n := evalExpr(e.args[1], values)
-		if len(n) != 1 || len(n[0].Values) != 1 {
-			// fail
+		windowSize, err := getIntArg(e, 1)
+		if err != nil {
 			return nil
 		}
-
-		windowSize := int(n[0].Values[0])
 
 		var result []*pb.FetchResponse
 
@@ -469,14 +511,10 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 
 	case "scale":
 		arg := evalExpr(e.args[0], values)
-		n := evalExpr(e.args[1], values)
-		if len(n) != 1 || len(n[0].Values) != 1 {
-			// fail
+		scale, err := getFloatArg(e, 1)
+		if err != nil {
 			return nil
 		}
-
-		scale := n[0].Values[0]
-
 		var results []*pb.FetchResponse
 
 		for _, a := range arg {
@@ -503,13 +541,10 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 
 	case "scaleToSeconds":
 		arg := evalExpr(e.args[0], values)
-		n := evalExpr(e.args[1], values)
-		if len(n) != 1 || len(n[0].Values) != 1 {
-			// fail
+		seconds, err := getFloatArg(e, 1)
+		if err != nil {
 			return nil
 		}
-
-		seconds := n[0].Values[0]
 
 		var results []*pb.FetchResponse
 
@@ -567,22 +602,19 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 		// TODO(dgryski): need to implement alignToFrom=false, and make it the default
 		args := evalExpr(e.args[0], values)
 
-		if len(e.args) == 1 {
-			return nil
-		}
-
-		bucketSize, err := intervalString(e.args[1].valStr)
+		bucketSizeStr, err := getStringArg(e, 1)
 		if err != nil {
 			return nil
 		}
 
-		summarizeFunction := "sum"
-		if len(e.args) > 2 {
-			if e.args[2].etype == etString {
-				summarizeFunction = e.args[2].valStr
-			} else {
-				return nil
-			}
+		bucketSize, err := intervalString(bucketSizeStr)
+		if err != nil {
+			return nil
+		}
+
+		summarizeFunction, err := getStringArgDefault(e, 2, "sum")
+		if err != nil {
+			return nil
 		}
 
 		buckets := (*args[0].StopTime - *args[0].StartTime) / bucketSize
