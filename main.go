@@ -360,6 +360,7 @@ func main() {
 
 	if *mc != "" {
 		servers := strings.Split(*mc, ",")
+		log.Println("using memcache servers:", servers)
 		queryCache = &memcachedCache{client: memcache.New(servers...)}
 		findCache = &memcachedCache{client: memcache.New(servers...)}
 	} else {
