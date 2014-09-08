@@ -13,6 +13,7 @@ import (
 	_ "net/http/pprof"
 	"net/url"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -333,6 +334,7 @@ func main() {
 	port := flag.Int("p", 8080, "port")
 	l := flag.Int("l", 20, "concurrency limit")
 	mc := flag.String("mc", "", "comma separated memcached server list")
+	cpus := flag.Int("cpus", 0, "number of CPUs to use")
 
 	flag.Parse()
 
@@ -369,6 +371,11 @@ func main() {
 	}
 
 	Zipper = zipper(*z)
+
+	if *cpus != 0 {
+		log.Println("using GOMAXPROCS", *cpus)
+		runtime.GOMAXPROCS(*cpus)
+	}
 
 	http.HandleFunc("/render/", renderHandler)
 
