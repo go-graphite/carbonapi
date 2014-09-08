@@ -317,6 +317,20 @@ func TestEvalExpression(t *testing.T) {
 			[]float64{1, 2, 3, 4, 5},
 			"foo",
 		},
+		{
+			&expr{
+				target: "derivative",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+				},
+			},
+			map[string][]*pb.FetchResponse{
+				"metric1": []*pb.FetchResponse{makeResponse("metric1", []float64{2, 4, 6, 1, 4, math.NaN(), 8}, 1, now32)},
+			},
+			[]float64{math.NaN(), 2, 2, -5, 3, math.NaN(), 4},
+			"derivative(metric1)",
+		},
 	}
 
 	for _, tt := range tests {

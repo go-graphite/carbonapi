@@ -189,7 +189,7 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 	// TODO(dgryski): this should reuse the FetchResponse structs instead of allocating new ones
 	// FIXME(dgryski): expr evaluation needs better error checking
 	// FIXME(dgryski): lots of repeated code below, should be cleaned up
-	// TODO(dgryski): group averageSeries highestAverage exclude divideSeries maxSeries timeShift stdev transformNull derivative
+	// TODO(dgryski): group averageSeries highestAverage exclude divideSeries maxSeries timeShift stdev transformNull
 
 	switch e.etype {
 	case etMetric:
@@ -252,6 +252,32 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 		}
 
 		return results
+
+	case "derivative":
+		arg := evalExpr(e.args[0], values)
+		var result []*pb.FetchResponse
+		for _, a := range arg {
+			r := pb.FetchResponse{
+				Name:      proto.String(fmt.Sprintf("derivative(%s)", *a.Name)),
+				Values:    make([]float64, len(a.Values)),
+				IsAbsent:  make([]bool, len(a.Values)),
+				StepTime:  a.StepTime,
+				StartTime: a.StartTime,
+				StopTime:  a.StopTime,
+			}
+			prev := a.Values[0]
+			for i, v := range a.Values {
+				if i == 0 || a.IsAbsent[i] {
+					r.IsAbsent[i] = true
+					continue
+				}
+
+				r.Values[i] = v - prev
+				prev = v
+			}
+			result = append(result, &r)
+		}
+		return result
 
 	case "keepLastValue":
 
