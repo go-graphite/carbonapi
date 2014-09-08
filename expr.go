@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -635,6 +636,8 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 		}
 		return results
 	}
+
+	log.Printf("unknown function in evalExpr:  %q\n", e.target)
 
 	return nil
 }
