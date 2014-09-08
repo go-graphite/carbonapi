@@ -480,9 +480,13 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 		return result
 
 	case "nonNegativeDerivative":
-		arg := evalExpr(e.args[0], values)
+		var args []*pb.FetchResponse
+		for _, arg := range e.args {
+			a := evalExpr(arg, values)
+			args = append(args, a...)
+		}
 		var result []*pb.FetchResponse
-		for _, a := range arg {
+		for _, a := range args {
 			r := pb.FetchResponse{
 				Name:      proto.String(fmt.Sprintf("nonNegativeDerivative(%s)", *a.Name)),
 				Values:    make([]float64, len(a.Values)),
