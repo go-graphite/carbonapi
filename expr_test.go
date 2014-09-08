@@ -331,6 +331,24 @@ func TestEvalExpression(t *testing.T) {
 			[]float64{math.NaN(), 2, 2, -5, 3, math.NaN(), 4},
 			"derivative(metric1)",
 		},
+		{
+			&expr{
+				target: "avg",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{target: "metric2"},
+					&expr{target: "metric3"}},
+				argString: "metric1,metric2,metric3",
+			},
+			map[string][]*pb.FetchResponse{
+				"metric1": []*pb.FetchResponse{makeResponse("metric1", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32)},
+				"metric2": []*pb.FetchResponse{makeResponse("metric2", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32)},
+				"metric3": []*pb.FetchResponse{makeResponse("metric3", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32)},
+			},
+			[]float64{2, math.NaN(), 3, 4, 5, 5.5},
+			"averageSeries(metric1,metric2,metric3)",
+		},
 	}
 
 	for _, tt := range tests {

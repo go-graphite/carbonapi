@@ -189,7 +189,7 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 	// TODO(dgryski): this should reuse the FetchResponse structs instead of allocating new ones
 	// FIXME(dgryski): expr evaluation needs better error checking
 	// FIXME(dgryski): lots of repeated code below, should be cleaned up
-	// TODO(dgryski): group averageSeries highestAverage exclude divideSeries maxSeries timeShift stdev transformNull
+	// TODO(dgryski): group highestAverage exclude divideSeries maxSeries timeShift stdev transformNull
 
 	switch e.etype {
 	case etMetric:
@@ -252,6 +252,40 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 		}
 
 		return results
+
+	case "avg", "averageSeries":
+		var args []*pb.FetchResponse
+		for _, arg := range e.args {
+			a := evalExpr(arg, values)
+			args = append(args, a...)
+		}
+		r := pb.FetchResponse{
+			Name:      proto.String(fmt.Sprintf("averageSeries(%s)", e.argString)),
+			Values:    make([]float64, len(args[0].Values)),
+			IsAbsent:  make([]bool, len(args[0].Values)),
+			StepTime:  args[0].StepTime,
+			StartTime: args[0].StartTime,
+			StopTime:  args[0].StopTime,
+		}
+
+		// TODO(dgryski): make sure all series are the same 'size'
+		for i := 0; i < len(args[0].Values); i++ {
+			var elts int
+			for j := 0; j < len(args); j++ {
+				if args[j].IsAbsent[i] {
+					continue
+				}
+				elts++
+				r.Values[i] += args[j].Values[i]
+			}
+
+			if elts > 0 {
+				r.Values[i] /= float64(elts)
+			} else {
+				r.IsAbsent[i] = true
+			}
+		}
+		return []*pb.FetchResponse{&r}
 
 	case "derivative":
 		arg := evalExpr(e.args[0], values)
