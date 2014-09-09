@@ -253,7 +253,7 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 	// TODO(dgryski): this should reuse the FetchResponse structs instead of allocating new ones
 	// FIXME(dgryski): expr evaluation needs better error checking
 	// FIXME(dgryski): lots of repeated code below, should be cleaned up
-	// TODO(dgryski): group highestAverage exclude divideSeries timeShift stdev transformNull
+	// TODO(dgryski): group highestAverage exclude timeShift stdev transformNull
 
 	switch e.etype {
 	case etMetric:
@@ -370,6 +370,38 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 			result = append(result, &r)
 		}
 		return result
+
+	case "divideSeries":
+		numerator := evalExpr(e.args[0], values)
+		denominator := evalExpr(e.args[1], values)
+
+		if len(numerator) != 1 || len(denominator) != 1 {
+			return nil
+		}
+
+		if *numerator[0].StepTime != *denominator[0].StepTime || len(numerator[0].Values) != len(denominator[0].Values) {
+			return nil
+		}
+
+		r := pb.FetchResponse{
+			Name:      proto.String(fmt.Sprintf("divideSeries(%s)", e.argString)),
+			Values:    make([]float64, len(numerator[0].Values)),
+			IsAbsent:  make([]bool, len(numerator[0].Values)),
+			StepTime:  numerator[0].StepTime,
+			StartTime: numerator[0].StartTime,
+			StopTime:  numerator[0].StopTime,
+		}
+
+		for i, v := range numerator[0].Values {
+
+			if numerator[0].IsAbsent[i] || denominator[0].IsAbsent[i] || denominator[0].Values[i] == 0 {
+				r.IsAbsent[i] = true
+				continue
+			}
+
+			r.Values[i] = v / denominator[0].Values[i]
+		}
+		return []*pb.FetchResponse{&r}
 
 	case "keepLastValue":
 		arg := evalExpr(e.args[0], values)
