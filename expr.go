@@ -269,6 +269,12 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 	}
 
 	// evaluate the function
+
+	// all functions have arguments -- check we do too
+	if len(e.args) == 0 {
+		return nil
+	}
+
 	switch e.target {
 	case "alias":
 		arg := evalExpr(e.args[0], values)
@@ -322,6 +328,11 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 			a := evalExpr(arg, values)
 			args = append(args, a...)
 		}
+
+		if len(args) == 0 {
+			return nil
+		}
+
 		r := pb.FetchResponse{
 			Name:      proto.String(fmt.Sprintf("averageSeries(%s)", e.argString)),
 			Values:    make([]float64, len(args[0].Values)),
@@ -377,6 +388,9 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 		return result
 
 	case "divideSeries":
+		if len(e.args) != 2 {
+			return nil
+		}
 		numerator := evalExpr(e.args[0], values)
 		denominator := evalExpr(e.args[1], values)
 
@@ -455,6 +469,11 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 			a := evalExpr(arg, values)
 			args = append(args, a...)
 		}
+
+		if len(args) == 0 {
+			return nil
+		}
+
 		r := pb.FetchResponse{
 			Name:      proto.String(fmt.Sprintf("maxSeries(%s)", e.argString)),
 			Values:    make([]float64, len(args[0].Values)),
@@ -522,6 +541,11 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 			a := evalExpr(arg, values)
 			args = append(args, a...)
 		}
+
+		if len(args) == 0 {
+			return nil
+		}
+
 		var result []*pb.FetchResponse
 		for _, a := range args {
 			r := pb.FetchResponse{
@@ -620,6 +644,11 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 			a := evalExpr(arg, values)
 			args = append(args, a...)
 		}
+
+		if len(args) == 0 {
+			return nil
+		}
+
 		r := pb.FetchResponse{
 			Name:      proto.String(fmt.Sprintf("sumSeries(%s)", e.argString)),
 			Values:    make([]float64, len(args[0].Values)),
