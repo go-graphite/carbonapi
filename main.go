@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	_ "expvar"
+	"expvar"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -27,6 +27,24 @@ import (
 type zipper string
 
 var Zipper zipper
+
+var Metrics = struct {
+	Requests        *expvar.Int
+	RequestCacheHit *expvar.Int
+
+	FindRequests *expvar.Int
+	FindCacheHit *expvar.Int
+
+	RenderRequests *expvar.Int
+}{
+	Requests:        expvar.NewInt("requests"),
+	RequestCacheHit: expvar.NewInt("request_cache_hit"),
+
+	FindRequests: expvar.NewInt("find_requests"),
+	FindCacheHit: expvar.NewInt("find_cache_hit"),
+
+	RenderRequests: expvar.NewInt("render_request"),
+}
 
 var queryCache bytesCache
 var findCache bytesCache
@@ -211,6 +229,8 @@ type jsonResponse struct {
 
 func renderHandler(w http.ResponseWriter, r *http.Request) {
 
+	Metrics.Requests.Add(1)
+
 	r.ParseForm()
 	targets := r.Form["target"]
 	from := r.FormValue("from")
@@ -223,6 +243,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	cacheKey := r.Form.Encode()
 
 	if response, ok := queryCache.get(cacheKey); useCache && ok {
+		Metrics.RequestCacheHit.Add(1)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(response)
 		return
@@ -250,12 +271,14 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			var haveCacheData bool
 
 			if response, ok := findCache.get(metric); useCache && ok {
+				Metrics.FindCacheHit.Add(1)
 				err := proto.Unmarshal(response, &glob)
 				haveCacheData = err == nil
 			}
 
 			if !haveCacheData {
 				var err error
+				Metrics.FindRequests.Add(1)
 				glob, err = Zipper.Find(metric)
 				if err != nil {
 					continue
@@ -273,6 +296,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 				if !m.GetIsLeaf() {
 					continue
 				}
+				Metrics.RenderRequests.Add(1)
 				leaves++
 				Limiter.enter()
 				go func(m *pb.GlobMatch) {
