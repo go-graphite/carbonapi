@@ -65,6 +65,10 @@ func parseExpr(e string) (*expr, string, error) {
 
 	name, e := parseName(e)
 
+	if name == "" {
+		return nil, "", ErrMissingArgument
+	}
+
 	if e != "" && e[0] == '(' {
 		exp := &expr{target: name, etype: etFunc}
 
@@ -79,6 +83,7 @@ func parseExpr(e string) (*expr, string, error) {
 }
 
 var (
+	ErrMissingExpr         = errors.New("missing expression")
 	ErrMissingComma        = errors.New("missing comma")
 	ErrMissingQuote        = errors.New("missing quote")
 	ErrUnexpectedCharacter = errors.New("unexpected character")
