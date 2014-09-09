@@ -1,6 +1,7 @@
 package main
 
 import (
+	"container/heap"
 	"errors"
 	"fmt"
 	"log"
@@ -511,6 +512,50 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 		}
 		return []*pb.FetchResponse{&r}
 
+	case "highestMax":
+
+		arg, err := getSeriesArg(e.args[0], values)
+		if err != nil {
+			return nil
+		}
+		n, err := getIntArg(e, 1)
+		if err != nil {
+			return nil
+		}
+		var results []*pb.FetchResponse
+
+		// we have fewer arguments than we want result series
+		if len(arg) < n {
+			return arg
+		}
+
+		var mh metricHeap
+
+		for i, a := range arg {
+			m := maxFloat(a.Values)
+
+			if len(mh) < n {
+				heap.Push(&mh, metricHeapElement{idx: i, val: m})
+				continue
+			}
+			// m is bigger than smallest max found so far
+			if mh[0].val < m {
+				mh[0].val = m
+				mh[0].idx = i
+				heap.Fix(&mh, 0)
+			}
+		}
+
+		results = make([]*pb.FetchResponse, n)
+
+		// results should be ordered ascending
+		for len(mh) > 0 {
+			v := heap.Pop(&mh).(metricHeapElement)
+			results[len(mh)] = arg[v.idx]
+		}
+
+		return results
+
 	case "keepLastValue":
 		arg, err := getSeriesArg(e.args[0], values)
 		if err != nil {
@@ -905,3 +950,36 @@ func (w *Windowed) Len() int {
 }
 
 func (w *Windowed) Mean() float64 { return w.sum / float64(w.Len()) }
+
+func maxFloat(f64s []float64) float64 {
+	m := math.Inf(-1)
+	for _, v := range f64s {
+		if v > m {
+			m = v
+		}
+	}
+	return m
+}
+
+type metricHeapElement struct {
+	idx int
+	val float64
+}
+
+type metricHeap []metricHeapElement
+
+func (m metricHeap) Len() int           { return len(m) }
+func (m metricHeap) Swap(i, j int)      { m[i], m[j] = m[j], m[i] }
+func (m metricHeap) Less(i, j int) bool { return m[i].val < m[j].val }
+
+func (m *metricHeap) Push(x interface{}) {
+	*m = append(*m, x.(metricHeapElement))
+}
+
+func (m *metricHeap) Pop() interface{} {
+	old := *m
+	n := len(old)
+	x := old[n-1]
+	*m = old[0 : n-1]
+	return x
+}
