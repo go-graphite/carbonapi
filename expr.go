@@ -425,6 +425,49 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 		}
 		return result
 
+	case "diffSeries":
+		if len(e.args) != 2 {
+			return nil
+		}
+
+		minuend, err := getSeriesArg(e.args[0], values)
+		if err != nil {
+			return nil
+		}
+
+		subtrahend, err := getSeriesArg(e.args[1], values)
+		if err != nil {
+			return nil
+		}
+
+		if len(minuend) != 1 || len(subtrahend) != 1 {
+			return nil
+		}
+
+		if *minuend[0].StepTime != *subtrahend[0].StepTime || len(minuend[0].Values) != len(subtrahend[0].Values) {
+			return nil
+		}
+
+		r := pb.FetchResponse{
+			Name:      proto.String(fmt.Sprintf("diffSeries(%s)", e.argString)),
+			Values:    make([]float64, len(minuend[0].Values)),
+			IsAbsent:  make([]bool, len(minuend[0].Values)),
+			StepTime:  minuend[0].StepTime,
+			StartTime: minuend[0].StartTime,
+			StopTime:  minuend[0].StopTime,
+		}
+
+		for i, v := range minuend[0].Values {
+
+			if minuend[0].IsAbsent[i] || subtrahend[0].IsAbsent[i] {
+				r.IsAbsent[i] = true
+				continue
+			}
+
+			r.Values[i] = v - subtrahend[0].Values[i]
+		}
+		return []*pb.FetchResponse{&r}
+
 	case "divideSeries":
 		if len(e.args) != 2 {
 			return nil
