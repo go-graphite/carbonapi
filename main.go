@@ -29,21 +29,21 @@ type zipper string
 var Zipper zipper
 
 var Metrics = struct {
-	Requests        *expvar.Int
-	RequestCacheHit *expvar.Int
+	Requests         *expvar.Int
+	RequestCacheHits *expvar.Int
 
-	FindRequests *expvar.Int
-	FindCacheHit *expvar.Int
+	FindRequests  *expvar.Int
+	FindCacheHits *expvar.Int
 
 	RenderRequests *expvar.Int
 }{
-	Requests:        expvar.NewInt("requests"),
-	RequestCacheHit: expvar.NewInt("request_cache_hit"),
+	Requests:         expvar.NewInt("requests"),
+	RequestCacheHits: expvar.NewInt("request_cache_hits"),
 
-	FindRequests: expvar.NewInt("find_requests"),
-	FindCacheHit: expvar.NewInt("find_cache_hit"),
+	FindRequests:  expvar.NewInt("find_requests"),
+	FindCacheHits: expvar.NewInt("find_cache_hits"),
 
-	RenderRequests: expvar.NewInt("render_request"),
+	RenderRequests: expvar.NewInt("render_requests"),
 }
 
 var queryCache bytesCache
@@ -243,7 +243,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	cacheKey := r.Form.Encode()
 
 	if response, ok := queryCache.get(cacheKey); useCache && ok {
-		Metrics.RequestCacheHit.Add(1)
+		Metrics.RequestCacheHits.Add(1)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(response)
 		return
@@ -271,7 +271,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			var haveCacheData bool
 
 			if response, ok := findCache.get(metric); useCache && ok {
-				Metrics.FindCacheHit.Add(1)
+				Metrics.FindCacheHits.Add(1)
 				err := proto.Unmarshal(response, &glob)
 				haveCacheData = err == nil
 			}
