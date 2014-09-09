@@ -417,12 +417,12 @@ func main() {
 		hostname = strings.Replace(hostname, ".", "_", -1)
 
 		graphite.Register(fmt.Sprintf("carbon.api.%s.requests", hostname), Metrics.Requests)
-		graphite.Register(fmt.Sprintf("carbon.api.%s.request_cache_hit", hostname), Metrics.RequestCacheHits)
+		graphite.Register(fmt.Sprintf("carbon.api.%s.request_cache_hits", hostname), Metrics.RequestCacheHits)
 
 		graphite.Register(fmt.Sprintf("carbon.api.%s.find_requests", hostname), Metrics.FindRequests)
-		graphite.Register(fmt.Sprintf("carbon.api.%s.find_cache_hit", hostname), Metrics.FindCacheHits)
+		graphite.Register(fmt.Sprintf("carbon.api.%s.find_cache_hits", hostname), Metrics.FindCacheHits)
 
-		graphite.Register(fmt.Sprintf("carbon.api.%s.render_request", hostname), Metrics.RenderRequests)
+		graphite.Register(fmt.Sprintf("carbon.api.%s.render_requests", hostname), Metrics.RenderRequests)
 	}
 
 	http.HandleFunc("/render/", renderHandler)
