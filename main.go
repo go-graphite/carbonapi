@@ -353,6 +353,10 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(jout)
 }
 
+func lbcheckHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Ok\n")
+}
+
 func main() {
 
 	z := flag.String("z", "", "zipper")
@@ -426,6 +430,7 @@ func main() {
 	}
 
 	http.HandleFunc("/render/", renderHandler)
+	http.HandleFunc("/lbcheck", lbcheckHandler)
 
 	log.Println("listening on port", *port)
 	log.Fatalln(http.ListenAndServe(":"+strconv.Itoa(*port), nil))
