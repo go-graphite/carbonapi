@@ -291,6 +291,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// For each metric returned in the Find response, query Render
+			// This is a conscious decision to *not* cache render data
 			rch := make(chan *pb.FetchResponse, len(glob.GetMatches()))
 			leaves := 0
 			for _, m := range glob.GetMatches() {
