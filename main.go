@@ -19,9 +19,9 @@ import (
 	"time"
 
 	"code.google.com/p/gogoprotobuf/proto"
+	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 
 	"github.com/bradfitz/gomemcache/memcache"
-	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 	"github.com/peterbourgon/g2g"
 )
 
