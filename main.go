@@ -22,6 +22,7 @@ import (
 
 	"github.com/bradfitz/gomemcache/memcache"
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
+	"github.com/peterbourgon/g2g"
 )
 
 type zipper string
@@ -402,9 +403,30 @@ func main() {
 		runtime.GOMAXPROCS(*cpus)
 	}
 
+	if host := os.Getenv("GRAPHITEHOST") + ":" + os.Getenv("GRAPHITEPORT"); host != ":" {
+
+		log.Println("Using graphite host", host)
+
+		// register our metrics with graphite
+		graphite, err := g2g.NewGraphite(host, 60*time.Second, 10*time.Second)
+		if err != nil {
+			log.Fatal("unable to connect to to graphite: ", host, ":", err)
+		}
+
+		hostname, _ := os.Hostname()
+		hostname = strings.Replace(hostname, ".", "_", -1)
+
+		graphite.Register(fmt.Sprintf("carbon.api.%s.requests", hostname), Metrics.Requests)
+		graphite.Register(fmt.Sprintf("carbon.api.%s.request_cache_hit", hostname), Metrics.RequestCacheHits)
+
+		graphite.Register(fmt.Sprintf("carbon.api.%s.find_requests", hostname), Metrics.FindRequests)
+		graphite.Register(fmt.Sprintf("carbon.api.%s.find_cache_hit", hostname), Metrics.FindCacheHits)
+
+		graphite.Register(fmt.Sprintf("carbon.api.%s.render_request", hostname), Metrics.RenderRequests)
+	}
+
 	http.HandleFunc("/render/", renderHandler)
 
 	log.Println("listening on port", *port)
 	log.Fatalln(http.ListenAndServe(":"+strconv.Itoa(*port), nil))
-
 }
