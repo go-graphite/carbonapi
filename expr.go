@@ -192,6 +192,7 @@ func parseString(s string) (string, string, error) {
 
 var ErrBadType = errors.New("bad type")
 var ErrMissingArgument = errors.New("missing argument")
+var ErrMissingTimeseries = errors.New("missing time series")
 
 func getStringArg(e *expr, n int) (string, error) {
 	if len(e.args) <= n {
@@ -253,6 +254,39 @@ func getIntArgDefault(e *expr, n int, d int) (int, error) {
 	return int(e.args[n].val), nil
 }
 
+func getSeriesArg(arg *expr, values map[string][]*pb.FetchResponse) ([]*pb.FetchResponse, error) {
+
+	if arg.etype != etMetric && arg.etype != etFunc {
+		return nil, ErrMissingTimeseries
+	}
+	a := evalExpr(arg, values)
+
+	if len(a) == 0 {
+		return nil, ErrMissingTimeseries
+	}
+
+	return a, nil
+}
+
+func getSeriesArgs(e []*expr, values map[string][]*pb.FetchResponse) ([]*pb.FetchResponse, error) {
+
+	var args []*pb.FetchResponse
+
+	for _, arg := range e {
+		a, err := getSeriesArg(arg, values)
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, a...)
+	}
+
+	if len(args) == 0 {
+		return nil, ErrMissingTimeseries
+	}
+
+	return args, nil
+}
+
 func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchResponse {
 
 	// TODO(dgryski): this should reuse the FetchResponse structs instead of allocating new ones
@@ -277,7 +311,10 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 
 	switch e.target {
 	case "alias":
-		arg := evalExpr(e.args[0], values)
+		arg, err := getSeriesArg(e.args[0], values)
+		if err != nil {
+			return nil
+		}
 		alias, err := getStringArg(e, 1)
 		if err != nil {
 			return nil
@@ -295,7 +332,10 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 		return []*pb.FetchResponse{&r}
 
 	case "aliasByNode":
-		args := evalExpr(e.args[0], values)
+		args, err := getSeriesArg(e.args[0], values)
+		if err != nil {
+			return nil
+		}
 		field, err := getIntArg(e, 1)
 		if err != nil {
 			return nil
@@ -323,13 +363,8 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 		return results
 
 	case "avg", "averageSeries":
-		var args []*pb.FetchResponse
-		for _, arg := range e.args {
-			a := evalExpr(arg, values)
-			args = append(args, a...)
-		}
-
-		if len(args) == 0 {
+		args, err := getSeriesArgs(e.args, values)
+		if err != nil {
 			return nil
 		}
 
@@ -362,9 +397,12 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 		return []*pb.FetchResponse{&r}
 
 	case "derivative":
-		arg := evalExpr(e.args[0], values)
+		args, err := getSeriesArgs(e.args, values)
+		if err != nil {
+			return nil
+		}
 		var result []*pb.FetchResponse
-		for _, a := range arg {
+		for _, a := range args {
 			r := pb.FetchResponse{
 				Name:      proto.String(fmt.Sprintf("derivative(%s)", *a.Name)),
 				Values:    make([]float64, len(a.Values)),
@@ -391,8 +429,16 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 		if len(e.args) != 2 {
 			return nil
 		}
-		numerator := evalExpr(e.args[0], values)
-		denominator := evalExpr(e.args[1], values)
+
+		numerator, err := getSeriesArg(e.args[0], values)
+		if err != nil {
+			return nil
+		}
+
+		denominator, err := getSeriesArg(e.args[1], values)
+		if err != nil {
+			return nil
+		}
 
 		if len(numerator) != 1 || len(denominator) != 1 {
 			return nil
@@ -423,7 +469,10 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 		return []*pb.FetchResponse{&r}
 
 	case "keepLastValue":
-		arg := evalExpr(e.args[0], values)
+		arg, err := getSeriesArg(e.args[0], values)
+		if err != nil {
+			return nil
+		}
 		keep, err := getIntArgDefault(e, 1, -1)
 		if err != nil {
 			return nil
@@ -464,13 +513,8 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 		return results
 
 	case "maxSeries":
-		var args []*pb.FetchResponse
-		for _, arg := range e.args {
-			a := evalExpr(arg, values)
-			args = append(args, a...)
-		}
-
-		if len(args) == 0 {
+		args, err := getSeriesArgs(e.args, values)
+		if err != nil {
 			return nil
 		}
 
@@ -505,7 +549,10 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 		return []*pb.FetchResponse{&r}
 
 	case "movingAverage":
-		arg := evalExpr(e.args[0], values)
+		arg, err := getSeriesArg(e.args[0], values)
+		if err != nil {
+			return nil
+		}
 		windowSize, err := getIntArg(e, 1)
 		if err != nil {
 			return nil
@@ -536,13 +583,8 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 		return result
 
 	case "nonNegativeDerivative":
-		var args []*pb.FetchResponse
-		for _, arg := range e.args {
-			a := evalExpr(arg, values)
-			args = append(args, a...)
-		}
-
-		if len(args) == 0 {
+		args, err := getSeriesArgs(e.args, values)
+		if err != nil {
 			return nil
 		}
 
@@ -575,7 +617,10 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 		return result
 
 	case "scale":
-		arg := evalExpr(e.args[0], values)
+		arg, err := getSeriesArg(e.args[0], values)
+		if err != nil {
+			return nil
+		}
 		scale, err := getFloatArg(e, 1)
 		if err != nil {
 			return nil
@@ -605,7 +650,10 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 		return results
 
 	case "scaleToSeconds":
-		arg := evalExpr(e.args[0], values)
+		arg, err := getSeriesArg(e.args[0], values)
+		if err != nil {
+			return nil
+		}
 		seconds, err := getFloatArg(e, 1)
 		if err != nil {
 			return nil
@@ -639,13 +687,8 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 
 	case "sum", "sumSeries":
 		// TODO(dgryski): make sure the arrays are all the same 'size'
-		var args []*pb.FetchResponse
-		for _, arg := range e.args {
-			a := evalExpr(arg, values)
-			args = append(args, a...)
-		}
-
-		if len(args) == 0 {
+		args, err := getSeriesArgs(e.args, values)
+		if err != nil {
 			return nil
 		}
 
@@ -670,7 +713,10 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 
 		// TODO(dgryski): make sure the arrays are all the same 'size'
 		// TODO(dgryski): need to implement alignToFrom=false, and make it the default
-		args := evalExpr(e.args[0], values)
+		args, err := getSeriesArg(e.args[0], values)
+		if err != nil {
+			return nil
+		}
 
 		bucketSizeStr, err := getStringArg(e, 1)
 		if err != nil {
