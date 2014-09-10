@@ -19,7 +19,7 @@ import (
 type exprType int
 
 const (
-	etMetric exprType = iota
+	etName exprType = iota
 	etFunc
 	etConst
 	etString
@@ -37,7 +37,7 @@ type expr struct {
 func (e *expr) metrics() []string {
 
 	switch e.etype {
-	case etMetric:
+	case etName:
 		return []string{e.target}
 	case etConst, etString:
 		return nil
@@ -257,7 +257,7 @@ func getIntArgDefault(e *expr, n int, d int) (int, error) {
 
 func getSeriesArg(arg *expr, values map[string][]*pb.FetchResponse) ([]*pb.FetchResponse, error) {
 
-	if arg.etype != etMetric && arg.etype != etFunc {
+	if arg.etype != etName && arg.etype != etFunc {
 		return nil, ErrMissingTimeseries
 	}
 	a := evalExpr(arg, values)
@@ -294,7 +294,7 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 	// TODO(dgryski): group highestAverage exclude timeShift stdev transformNull
 
 	switch e.etype {
-	case etMetric:
+	case etName:
 		return values[e.target]
 	case etConst:
 		p := pb.FetchResponse{Name: proto.String(e.target), Values: []float64{e.val}}
