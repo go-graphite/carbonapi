@@ -8,6 +8,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"time"
 
 	"code.google.com/p/goprotobuf/proto"
 
@@ -253,6 +254,26 @@ func getIntArgDefault(e *expr, n int, d int) (int, error) {
 	}
 
 	return int(e.args[n].val), nil
+}
+
+func getBoolArgDefault(e *expr, n int, b bool) (bool, error) {
+	if len(e.args) <= n {
+		return b, nil
+	}
+
+	if e.args[n].etype != etName {
+		return false, ErrBadType
+	}
+
+	// names go into 'target'
+	switch e.args[n].target {
+	case "false":
+		return false, nil
+	case "true":
+		return true, nil
+	}
+
+	return false, ErrBadType
 }
 
 func getSeriesArg(arg *expr, values map[string][]*pb.FetchResponse) ([]*pb.FetchResponse, error) {
@@ -819,20 +840,33 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 			return nil
 		}
 
-		buckets := (*args[0].StopTime - *args[0].StartTime) / bucketSize
+		alignToFrom, err := getBoolArgDefault(e, 3, false)
+		if err != nil {
+			return nil
+		}
+
+		start := *args[0].StartTime
+		stop := *args[0].StopTime
+
+		if !alignToFrom {
+			start = int32(time.Unix(int64(start), 0).Truncate(time.Duration(bucketSize) * time.Second).Unix())
+			stop = int32(time.Unix(int64(stop), 0).Truncate(time.Duration(bucketSize) * time.Second).Unix())
+		}
+
+		buckets := (stop - start) / bucketSize
 
 		var results []*pb.FetchResponse
 
 		for _, arg := range args {
 			r := pb.FetchResponse{
 				Name:      proto.String(fmt.Sprintf("summarize(%s)", e.argString)),
-				Values:    make([]float64, buckets),
-				IsAbsent:  make([]bool, buckets),
+				Values:    make([]float64, buckets, buckets+1),
+				IsAbsent:  make([]bool, buckets, buckets+1),
 				StepTime:  proto.Int32(bucketSize),
-				StartTime: args[0].StartTime,
-				StopTime:  args[0].StopTime,
+				StartTime: proto.Int32(start),
+				StopTime:  proto.Int32(stop),
 			}
-			bucketStart := *r.StartTime
+			bucketStart := *args[0].StartTime // unadjusted
 			bucketEnd := *r.StartTime + bucketSize
 			values := make([]float64, 0, bucketSize / *arg.StepTime)
 			t := bucketStart
@@ -863,7 +897,8 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 			// remaining values
 			if len(values) > 0 {
 				rv := summarizeValues(summarizeFunction, values)
-				r.Values[ridx] = rv
+				r.Values = append(r.Values, rv)
+				r.IsAbsent = append(r.IsAbsent, false)
 			}
 
 			results = append(results, &r)

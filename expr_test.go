@@ -423,7 +423,20 @@ func TestEvalExpression(t *testing.T) {
 
 func TestEvalSummarize(t *testing.T) {
 
-	now32 := int32(time.Now().Unix())
+	t0, err := time.Parse(time.UnixDate, "Wed Sep 10 10:32:00 CEST 2014")
+	if err != nil {
+		panic(err)
+	}
+
+	tenThirtyTwo := int32(t0.Unix())
+	t0, err = time.Parse(time.UnixDate, "Wed Sep 10 10:30:00 CEST 2014")
+	if err != nil {
+		panic(err)
+	}
+
+	tenThirty := int32(t0.Unix())
+
+	now32 := tenThirty
 
 	tests := []struct {
 		e     *expr
@@ -533,6 +546,46 @@ func TestEvalSummarize(t *testing.T) {
 			now32,
 			now32 + 25*1,
 		},
+		{
+			&expr{
+				target: "summarize",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{valStr: "10min", etype: etString},
+				},
+				argString: "metric1,'10min'",
+			},
+			map[string][]*pb.FetchResponse{
+				"metric1": []*pb.FetchResponse{makeResponse("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5}, 60, tenThirtyTwo)},
+			},
+			[]float64{11, 31, 33},
+			"summarize(metric1,'10min')",
+			600,
+			tenThirty,
+			tenThirty + 20*60,
+		},
+		{
+			&expr{
+				target: "summarize",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{valStr: "10min", etype: etString},
+					&expr{valStr: "sum", etype: etString},
+					&expr{target: "true", etype: etName},
+				},
+				argString: "metric1,'10min','sum',true",
+			},
+			map[string][]*pb.FetchResponse{
+				"metric1": []*pb.FetchResponse{makeResponse("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5}, 60, tenThirtyTwo)},
+			},
+			[]float64{15, 35, 25},
+			"summarize(metric1,'10min','sum',true)",
+			600,
+			tenThirtyTwo,
+			tenThirtyTwo + 25*60,
+		},
 	}
 
 	for _, tt := range tests {
@@ -542,13 +595,13 @@ func TestEvalSummarize(t *testing.T) {
 			continue
 		}
 		if *g[0].StepTime != tt.step {
-			t.Errorf("bad step for %+v", g)
+			t.Errorf("bad step for %s: got %d want %d", *g[0].Name, *g[0].StepTime, tt.step)
 		}
 		if *g[0].StartTime != tt.start {
-			t.Errorf("bad start for %+v", g)
+			t.Errorf("bad start for %s: got %s want %s", *g[0].Name, time.Unix(int64(*g[0].StartTime), 0).Format(time.StampNano), time.Unix(int64(tt.start), 0).Format(time.StampNano))
 		}
 		if *g[0].StopTime != tt.stop {
-			t.Errorf("bad stop for %+v", g)
+			t.Errorf("bad stop for %s: got %s want %s", *g[0].Name, time.Unix(int64(*g[0].StopTime), 0).Format(time.StampNano), time.Unix(int64(tt.stop), 0).Format(time.StampNano))
 		}
 
 		if !nearlyEqual(g[0].Values, g[0].IsAbsent, tt.w) {
