@@ -284,12 +284,12 @@ func getBoolArgDefault(e *expr, n int, b bool) (bool, error) {
 	return false, ErrBadType
 }
 
-func getSeriesArg(arg *expr, values map[metricRequest][]*pb.FetchResponse) ([]*pb.FetchResponse, error) {
+func getSeriesArg(arg *expr, from, until int32, values map[metricRequest][]*pb.FetchResponse) ([]*pb.FetchResponse, error) {
 
 	if arg.etype != etName && arg.etype != etFunc {
 		return nil, ErrMissingTimeseries
 	}
-	a := evalExpr(arg, values)
+	a := evalExpr(arg, from, until, values)
 
 	if len(a) == 0 {
 		return nil, ErrMissingTimeseries
@@ -298,12 +298,12 @@ func getSeriesArg(arg *expr, values map[metricRequest][]*pb.FetchResponse) ([]*p
 	return a, nil
 }
 
-func getSeriesArgs(e []*expr, values map[metricRequest][]*pb.FetchResponse) ([]*pb.FetchResponse, error) {
+func getSeriesArgs(e []*expr, from, until int32, values map[metricRequest][]*pb.FetchResponse) ([]*pb.FetchResponse, error) {
 
 	var args []*pb.FetchResponse
 
 	for _, arg := range e {
-		a, err := getSeriesArg(arg, values)
+		a, err := getSeriesArg(arg, from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -317,7 +317,7 @@ func getSeriesArgs(e []*expr, values map[metricRequest][]*pb.FetchResponse) ([]*
 	return args, nil
 }
 
-func evalExpr(e *expr, values map[metricRequest][]*pb.FetchResponse) []*pb.FetchResponse {
+func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchResponse) []*pb.FetchResponse {
 
 	// TODO(dgryski): group highestAverage exclude timeShift stdev transformNull
 
@@ -338,7 +338,7 @@ func evalExpr(e *expr, values map[metricRequest][]*pb.FetchResponse) []*pb.Fetch
 
 	switch e.target {
 	case "alias":
-		arg, err := getSeriesArg(e.args[0], values)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}
@@ -359,7 +359,7 @@ func evalExpr(e *expr, values map[metricRequest][]*pb.FetchResponse) []*pb.Fetch
 		return []*pb.FetchResponse{&r}
 
 	case "aliasByNode":
-		args, err := getSeriesArg(e.args[0], values)
+		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}
@@ -390,7 +390,7 @@ func evalExpr(e *expr, values map[metricRequest][]*pb.FetchResponse) []*pb.Fetch
 		return results
 
 	case "avg", "averageSeries":
-		args, err := getSeriesArgs(e.args, values)
+		args, err := getSeriesArgs(e.args, from, until, values)
 		if err != nil {
 			return nil
 		}
@@ -424,7 +424,7 @@ func evalExpr(e *expr, values map[metricRequest][]*pb.FetchResponse) []*pb.Fetch
 		return []*pb.FetchResponse{&r}
 
 	case "derivative":
-		args, err := getSeriesArgs(e.args, values)
+		args, err := getSeriesArgs(e.args, from, until, values)
 		if err != nil {
 			return nil
 		}
@@ -457,12 +457,12 @@ func evalExpr(e *expr, values map[metricRequest][]*pb.FetchResponse) []*pb.Fetch
 			return nil
 		}
 
-		minuend, err := getSeriesArg(e.args[0], values)
+		minuend, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}
 
-		subtrahend, err := getSeriesArg(e.args[1], values)
+		subtrahend, err := getSeriesArg(e.args[1], from, until, values)
 		if err != nil {
 			return nil
 		}
@@ -500,12 +500,12 @@ func evalExpr(e *expr, values map[metricRequest][]*pb.FetchResponse) []*pb.Fetch
 			return nil
 		}
 
-		numerator, err := getSeriesArg(e.args[0], values)
+		numerator, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}
 
-		denominator, err := getSeriesArg(e.args[1], values)
+		denominator, err := getSeriesArg(e.args[1], from, until, values)
 		if err != nil {
 			return nil
 		}
@@ -540,7 +540,7 @@ func evalExpr(e *expr, values map[metricRequest][]*pb.FetchResponse) []*pb.Fetch
 
 	case "highestMax":
 
-		arg, err := getSeriesArg(e.args[0], values)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}
@@ -583,7 +583,7 @@ func evalExpr(e *expr, values map[metricRequest][]*pb.FetchResponse) []*pb.Fetch
 		return results
 
 	case "keepLastValue":
-		arg, err := getSeriesArg(e.args[0], values)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}
@@ -627,7 +627,7 @@ func evalExpr(e *expr, values map[metricRequest][]*pb.FetchResponse) []*pb.Fetch
 		return results
 
 	case "maxSeries":
-		args, err := getSeriesArgs(e.args, values)
+		args, err := getSeriesArgs(e.args, from, until, values)
 		if err != nil {
 			return nil
 		}
@@ -663,7 +663,7 @@ func evalExpr(e *expr, values map[metricRequest][]*pb.FetchResponse) []*pb.Fetch
 		return []*pb.FetchResponse{&r}
 
 	case "movingAverage":
-		arg, err := getSeriesArg(e.args[0], values)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}
@@ -701,7 +701,7 @@ func evalExpr(e *expr, values map[metricRequest][]*pb.FetchResponse) []*pb.Fetch
 		return result
 
 	case "nonNegativeDerivative":
-		args, err := getSeriesArgs(e.args, values)
+		args, err := getSeriesArgs(e.args, from, until, values)
 		if err != nil {
 			return nil
 		}
@@ -735,7 +735,7 @@ func evalExpr(e *expr, values map[metricRequest][]*pb.FetchResponse) []*pb.Fetch
 		return result
 
 	case "scale":
-		arg, err := getSeriesArg(e.args[0], values)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}
@@ -768,7 +768,7 @@ func evalExpr(e *expr, values map[metricRequest][]*pb.FetchResponse) []*pb.Fetch
 		return results
 
 	case "scaleToSeconds":
-		arg, err := getSeriesArg(e.args[0], values)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}
@@ -805,7 +805,7 @@ func evalExpr(e *expr, values map[metricRequest][]*pb.FetchResponse) []*pb.Fetch
 
 	case "sum", "sumSeries":
 		// TODO(dgryski): make sure the arrays are all the same 'size'
-		args, err := getSeriesArgs(e.args, values)
+		args, err := getSeriesArgs(e.args, from, until, values)
 		if err != nil {
 			return nil
 		}
@@ -831,7 +831,7 @@ func evalExpr(e *expr, values map[metricRequest][]*pb.FetchResponse) []*pb.Fetch
 
 		// TODO(dgryski): make sure the arrays are all the same 'size'
 		// TODO(dgryski): need to implement alignToFrom=false, and make it the default
-		args, err := getSeriesArg(e.args[0], values)
+		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}

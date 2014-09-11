@@ -325,7 +325,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		exprs := evalExpr(exp, metricMap)
+		exprs := evalExpr(exp, from32, until32, metricMap)
 		results = append(results, exprs...)
 	}
 

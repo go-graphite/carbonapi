@@ -408,7 +408,7 @@ func TestEvalExpression(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		g := evalExpr(tt.e, tt.m)
+		g := evalExpr(tt.e, 0, 0, tt.m)
 		if g == nil {
 			t.Errorf("failed to eval %v", tt.name)
 			continue
@@ -593,7 +593,7 @@ func TestEvalSummarize(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		g := evalExpr(tt.e, tt.m)
+		g := evalExpr(tt.e, 0, 0, tt.m)
 		if g == nil {
 			t.Errorf("failed to eval %v", tt.name)
 			continue
