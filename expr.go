@@ -682,8 +682,12 @@ func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchRespons
 					// make sure missing values are ignored
 					v = 0
 				}
-				w.Push(v)
 				r.Values[i] = w.Mean()
+				if math.IsNaN(r.Values[i]) {
+					r.Values[i] = 0
+					r.IsAbsent[i] = true
+				}
+				w.Push(v)
 			}
 			result = append(result, &r)
 		}

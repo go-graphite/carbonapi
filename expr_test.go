@@ -224,7 +224,7 @@ func TestEvalExpression(t *testing.T) {
 			map[string][]*pb.FetchResponse{
 				"metric1": []*pb.FetchResponse{makeResponse("metric1", []float64{2, 4, 6, 4, 6, 8}, 1, now32)},
 			},
-			[]float64{2, 3, 4, 4, 5, 6},
+			[]float64{math.NaN(), 2, 3, 4, 4, 5},
 			"movingAverage(metric1,4)",
 		},
 		{
