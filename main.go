@@ -251,6 +251,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// normalize from and until values
+	// BUG(dgryski): doesn't handle timezones the same as graphite-web
 	from = dateParamToEpoch(from, timeNow().Add(-24*time.Hour).Unix())
 	until = dateParamToEpoch(until, timeNow().Unix())
 
