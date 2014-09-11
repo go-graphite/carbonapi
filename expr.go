@@ -35,15 +35,21 @@ type expr struct {
 	argString string
 }
 
-func (e *expr) metrics() []string {
+type metricRequest struct {
+	metric string
+	from   int32
+	until  int32
+}
+
+func (e *expr) metrics() []metricRequest {
 
 	switch e.etype {
 	case etName:
-		return []string{e.target}
+		return []metricRequest{{metric: e.target}}
 	case etConst, etString:
 		return nil
 	case etFunc:
-		var r []string
+		var r []metricRequest
 		for _, a := range e.args {
 			r = append(r, a.metrics()...)
 		}
@@ -278,7 +284,7 @@ func getBoolArgDefault(e *expr, n int, b bool) (bool, error) {
 	return false, ErrBadType
 }
 
-func getSeriesArg(arg *expr, values map[string][]*pb.FetchResponse) ([]*pb.FetchResponse, error) {
+func getSeriesArg(arg *expr, values map[metricRequest][]*pb.FetchResponse) ([]*pb.FetchResponse, error) {
 
 	if arg.etype != etName && arg.etype != etFunc {
 		return nil, ErrMissingTimeseries
@@ -292,7 +298,7 @@ func getSeriesArg(arg *expr, values map[string][]*pb.FetchResponse) ([]*pb.Fetch
 	return a, nil
 }
 
-func getSeriesArgs(e []*expr, values map[string][]*pb.FetchResponse) ([]*pb.FetchResponse, error) {
+func getSeriesArgs(e []*expr, values map[metricRequest][]*pb.FetchResponse) ([]*pb.FetchResponse, error) {
 
 	var args []*pb.FetchResponse
 
@@ -311,13 +317,13 @@ func getSeriesArgs(e []*expr, values map[string][]*pb.FetchResponse) ([]*pb.Fetc
 	return args, nil
 }
 
-func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchResponse {
+func evalExpr(e *expr, values map[metricRequest][]*pb.FetchResponse) []*pb.FetchResponse {
 
 	// TODO(dgryski): group highestAverage exclude timeShift stdev transformNull
 
 	switch e.etype {
 	case etName:
-		return values[e.target]
+		return values[metricRequest{metric: e.target}]
 	case etConst:
 		p := pb.FetchResponse{Name: proto.String(e.target), Values: []float64{e.val}}
 		return []*pb.FetchResponse{&p}

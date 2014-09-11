@@ -256,7 +256,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	until = dateParamToEpoch(until, timeNow().Unix())
 
 	var results []*pb.FetchResponse
-	metricMap := make(map[string][]*pb.FetchResponse)
+	metricMap := make(map[metricRequest][]*pb.FetchResponse)
 
 	for _, target := range targets {
 
@@ -266,9 +266,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		for _, metric := range exp.metrics() {
+		for _, m := range exp.metrics() {
 
-			if _, ok := metricMap[metric]; ok {
+			if _, ok := metricMap[m]; ok {
 				// already fetched this metric for this request
 				continue
 			}
@@ -276,7 +276,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			var glob pb.GlobResponse
 			var haveCacheData bool
 
-			if response, ok := findCache.get(metric); useCache && ok {
+			if response, ok := findCache.get(m.metric); useCache && ok {
 				Metrics.FindCacheHits.Add(1)
 				err := proto.Unmarshal(response, &glob)
 				haveCacheData = err == nil
@@ -285,13 +285,13 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			if !haveCacheData {
 				var err error
 				Metrics.FindRequests.Add(1)
-				glob, err = Zipper.Find(metric)
+				glob, err = Zipper.Find(m.metric)
 				if err != nil {
 					continue
 				}
 				b, err := proto.Marshal(&glob)
 				if err == nil {
-					findCache.set(metric, b)
+					findCache.set(m.metric, b)
 				}
 			}
 
@@ -320,7 +320,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			for i := 0; i < leaves; i++ {
 				r := <-rch
 				if r != nil {
-					metricMap[metric] = append(metricMap[metric], r)
+					metricMap[m] = append(metricMap[m], r)
 				}
 			}
 		}
