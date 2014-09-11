@@ -192,9 +192,11 @@ func parseString(s string) (string, string, error) {
 	return s[:i], s[i+1:], nil
 }
 
-var ErrBadType = errors.New("bad type")
-var ErrMissingArgument = errors.New("missing argument")
-var ErrMissingTimeseries = errors.New("missing time series")
+var (
+	ErrBadType           = errors.New("bad type")
+	ErrMissingArgument   = errors.New("missing argument")
+	ErrMissingTimeseries = errors.New("missing time series")
+)
 
 func getStringArg(e *expr, n int) (string, error) {
 	if len(e.args) <= n {
@@ -206,7 +208,6 @@ func getStringArg(e *expr, n int) (string, error) {
 	}
 
 	return e.args[n].valStr, nil
-
 }
 
 func getStringArgDefault(e *expr, n int, s string) (string, error) {
@@ -244,6 +245,7 @@ func getIntArg(e *expr, n int) (int, error) {
 
 	return int(e.args[n].val), nil
 }
+
 func getIntArgDefault(e *expr, n int, d int) (int, error) {
 	if len(e.args) <= n {
 		return d, nil
