@@ -71,6 +71,10 @@ func TestParseExpr(t *testing.T) {
 			&expr{val: 3, etype: etConst},
 		},
 		{
+			"3.1",
+			&expr{val: 3.1, etype: etConst},
+		},
+		{
 			"func1(metric1,3)",
 			&expr{
 				target: "func1",

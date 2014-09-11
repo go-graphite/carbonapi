@@ -143,7 +143,7 @@ func isDigit(r byte) bool {
 func parseConst(s string) (float64, string, error) {
 
 	var i int
-	for i < len(s) && isDigit(s[i]) {
+	for i < len(s) && (isDigit(s[i]) || s[i] == '.') {
 		i++
 	}
 
