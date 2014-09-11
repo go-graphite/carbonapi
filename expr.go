@@ -311,7 +311,6 @@ func getSeriesArgs(e []*expr, values map[string][]*pb.FetchResponse) ([]*pb.Fetc
 
 func evalExpr(e *expr, values map[string][]*pb.FetchResponse) []*pb.FetchResponse {
 
-	// TODO(dgryski): this should reuse the FetchResponse structs instead of allocating new ones
 	// TODO(dgryski): group highestAverage exclude timeShift stdev transformNull
 
 	switch e.etype {
