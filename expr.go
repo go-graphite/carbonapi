@@ -955,7 +955,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		for _, a := range arg {
 			r := pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("timeShift(%s)", e.argString)),
+				Name:      proto.String(fmt.Sprintf("timeShift(%s)", *a.Name)),
 				Values:    a.Values,
 				IsAbsent:  a.IsAbsent,
 				StepTime:  a.StepTime,
@@ -977,7 +977,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		for _, a := range arg {
 			r := pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("%s(%s)", e.target, e.argString)),
+				Name:      proto.String(fmt.Sprintf("%s(%s)", e.target, *a.Name)),
 				Values:    a.Values,
 				IsAbsent:  a.IsAbsent,
 				StepTime:  a.StepTime,
