@@ -228,6 +228,23 @@ func getStringArgDefault(e *expr, n int, s string) (string, error) {
 	return e.args[n].valStr, nil
 }
 
+func getIntervalArg(e *expr, n int) (int32, error) {
+	if len(e.args) <= n {
+		return 0, ErrMissingArgument
+	}
+
+	if e.args[n].etype != etString {
+		return 0, ErrBadType
+	}
+
+	seconds, err := intervalString(e.args[n].valStr)
+	if err != nil {
+		return 0, ErrBadType
+	}
+
+	return seconds, nil
+}
+
 func getFloatArg(e *expr, n int) (float64, error) {
 	if len(e.args) <= n {
 		return 0, ErrMissingArgument
@@ -836,12 +853,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 			return nil
 		}
 
-		bucketSizeStr, err := getStringArg(e, 1)
-		if err != nil {
-			return nil
-		}
-
-		bucketSize, err := intervalString(bucketSizeStr)
+		bucketSize, err := getIntervalArg(e, 1)
 		if err != nil {
 			return nil
 		}
