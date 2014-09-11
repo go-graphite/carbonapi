@@ -255,6 +255,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	until = dateParamToEpoch(until, timeNow().Unix())
 
 	var results []*pb.FetchResponse
+	metricMap := make(map[string][]*pb.FetchResponse)
 
 	for _, target := range targets {
 
@@ -264,9 +265,12 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		metricMap := make(map[string][]*pb.FetchResponse)
-
 		for _, metric := range exp.metrics() {
+
+			if _, ok := metricMap[metric]; ok {
+				// already fetched this metric for this request
+				continue
+			}
 
 			var glob pb.GlobResponse
 			var haveCacheData bool
