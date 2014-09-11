@@ -53,6 +53,17 @@ func (e *expr) metrics() []metricRequest {
 		for _, a := range e.args {
 			r = append(r, a.metrics()...)
 		}
+		switch e.target {
+		case "timeShift":
+			offs, err := getIntervalArg(e, 1)
+			if err != nil {
+				return nil
+			}
+			for i := range r {
+				r[i].from -= offs
+				r[i].until -= offs
+			}
+		}
 		return r
 	}
 
@@ -927,6 +938,35 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 			results = append(results, &r)
 		}
 		return results
+
+	case "timeShift":
+
+		offs, err := getIntervalArg(e, 1)
+		if err != nil {
+			return nil
+		}
+
+		arg, err := getSeriesArg(e.args[0], from-offs, until-offs, values)
+		if err != nil {
+			return nil
+		}
+
+		var results []*pb.FetchResponse
+
+		for _, a := range arg {
+			r := pb.FetchResponse{
+				Name:      proto.String(fmt.Sprintf("timeShift(%s)", e.argString)),
+				Values:    a.Values,
+				IsAbsent:  a.IsAbsent,
+				StepTime:  a.StepTime,
+				StartTime: proto.Int32(*a.StartTime + offs),
+				StopTime:  proto.Int32(*a.StopTime + offs),
+			}
+
+			results = append(results, &r)
+		}
+		return results
+
 	}
 
 	log.Printf("unknown function in evalExpr:  %q\n", e.target)
