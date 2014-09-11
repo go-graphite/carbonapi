@@ -53,11 +53,11 @@ var findCache bytesCache
 var timeFormats = []string{"15:04 20060102", "20060102", "01/02/06"}
 
 // dateParamToEpoch turns a passed string parameter into an epoch we can send to the Zipper
-func dateParamToEpoch(s string, d int64) string {
+func dateParamToEpoch(s string, d int64) int32 {
 
 	if s == "" {
 		// return the default if nothing was passed
-		return strconv.Itoa(int(d))
+		return int32(d)
 	}
 
 	// relative timestamp
@@ -65,19 +65,19 @@ func dateParamToEpoch(s string, d int64) string {
 
 		offset, err := intervalString(s[1:])
 		if err != nil {
-			return strconv.Itoa(int(d))
+			return int32(d)
 		}
 
-		return strconv.Itoa(int(timeNow().Add(-time.Duration(offset) * time.Second).Unix()))
+		return int32(timeNow().Add(-time.Duration(offset) * time.Second).Unix())
 	}
 
 	if s == "now" {
-		return strconv.Itoa(int(timeNow().Unix()))
+		return int32(timeNow().Unix())
 	}
 
-	_, err := strconv.Atoi(s)
+	sint, err := strconv.Atoi(s)
 	if err == nil && len(s) > 8 {
-		return s // We got a timestamp so returning it
+		return int32(sint) // We got a timestamp so returning it
 	}
 
 	if strings.Contains(s, "_") {
@@ -87,10 +87,10 @@ func dateParamToEpoch(s string, d int64) string {
 	for _, format := range timeFormats {
 		t, err := time.Parse(format, s)
 		if err == nil {
-			return strconv.Itoa(int(t.Unix()))
+			return int32(t.Unix())
 		}
 	}
-	return strconv.Itoa(int(d))
+	return int32(d)
 }
 
 func intervalString(s string) (int32, error) {
@@ -165,15 +165,15 @@ func (z zipper) Find(metric string) (pb.GlobResponse, error) {
 	return pbresp, nil
 }
 
-func (z zipper) Render(metric, from, until string) (pb.FetchResponse, error) {
+func (z zipper) Render(metric string, from, until int32) (pb.FetchResponse, error) {
 
 	u, _ := url.Parse(string(z) + "/render/")
 
 	u.RawQuery = url.Values{
 		"target": []string{metric},
 		"format": []string{"protobuf"},
-		"from":   []string{from},
-		"until":  []string{until},
+		"from":   []string{strconv.Itoa(int(from))},
+		"until":  []string{strconv.Itoa(int(until))},
 	}.Encode()
 
 	resp, err := http.Get(u.String())
@@ -252,8 +252,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	// normalize from and until values
 	// BUG(dgryski): doesn't handle timezones the same as graphite-web
-	from = dateParamToEpoch(from, timeNow().Add(-24*time.Hour).Unix())
-	until = dateParamToEpoch(until, timeNow().Unix())
+	from32 := dateParamToEpoch(from, timeNow().Add(-24*time.Hour).Unix())
+	until32 := dateParamToEpoch(until, timeNow().Unix())
 
 	var results []*pb.FetchResponse
 	metricMap := make(map[metricRequest][]*pb.FetchResponse)
@@ -308,7 +308,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 				Limiter.enter()
 				go func(m *pb.GlobMatch) {
 					var rptr *pb.FetchResponse
-					r, err := Zipper.Render(m.GetPath(), from, until)
+					r, err := Zipper.Render(m.GetPath(), from32, until32)
 					if err == nil {
 						rptr = &r
 					}
