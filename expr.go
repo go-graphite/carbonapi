@@ -323,7 +323,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 	switch e.etype {
 	case etName:
-		return values[metricRequest{metric: e.target}]
+		return values[metricRequest{metric: e.target, from: from, until: until}]
 	case etConst:
 		p := pb.FetchResponse{Name: proto.String(e.target), Values: []float64{e.val}}
 		return []*pb.FetchResponse{&p}

@@ -268,7 +268,11 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 		for _, m := range exp.metrics() {
 
-			if _, ok := metricMap[m]; ok {
+			mfetch := m
+			mfetch.from += from32
+			mfetch.until += until32
+
+			if _, ok := metricMap[mfetch]; ok {
 				// already fetched this metric for this request
 				continue
 			}
@@ -306,21 +310,21 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 				Metrics.RenderRequests.Add(1)
 				leaves++
 				Limiter.enter()
-				go func(m *pb.GlobMatch) {
+				go func(m *pb.GlobMatch, from, until int32) {
 					var rptr *pb.FetchResponse
-					r, err := Zipper.Render(m.GetPath(), from32, until32)
+					r, err := Zipper.Render(m.GetPath(), from, until)
 					if err == nil {
 						rptr = &r
 					}
 					rch <- rptr
 					Limiter.leave()
-				}(m)
+				}(m, mfetch.from, mfetch.until)
 			}
 
 			for i := 0; i < leaves; i++ {
 				r := <-rch
 				if r != nil {
-					metricMap[m] = append(metricMap[m], r)
+					metricMap[mfetch] = append(metricMap[mfetch], r)
 				}
 			}
 		}
