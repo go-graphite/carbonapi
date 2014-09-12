@@ -377,10 +377,6 @@ func main() {
 
 	flag.Parse()
 
-	if *z == "" {
-		log.Fatal("no zipper (-z) provided")
-	}
-
 	if p := os.Getenv("PORT"); p != "" {
 		*port, _ = strconv.Atoi(p)
 	}
