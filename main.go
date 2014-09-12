@@ -132,7 +132,7 @@ func intervalString(s string) (int32, error) {
 	return int32(offset * units), nil
 }
 
-// FIXME(dgryski): extract the http.Get + unproto code into its own function
+// TODO(dgryski): extract the http.Get + unproto code into its own function
 
 func (z zipper) Find(metric string) (pb.GlobResponse, error) {
 
