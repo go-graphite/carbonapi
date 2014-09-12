@@ -232,7 +232,12 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	Metrics.Requests.Add(1)
 
-	r.ParseForm()
+	err := r.ParseForm()
+	if err != nil {
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+	}
+
 	targets := r.Form["target"]
 	from := r.FormValue("from")
 	until := r.FormValue("until")
