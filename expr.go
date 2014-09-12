@@ -347,7 +347,7 @@ func getSeriesArgs(e []*expr, from, until int32, values map[metricRequest][]*pb.
 
 func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchResponse) []*pb.FetchResponse {
 
-	// TODO(dgryski): group highestAverage exclude timeShift stdev transformNull
+	// TODO(dgryski): group highestAverage exclude stdev transformNull
 
 	switch e.etype {
 	case etName:
