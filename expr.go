@@ -268,6 +268,18 @@ func getFloatArg(e *expr, n int) (float64, error) {
 	return e.args[n].val, nil
 }
 
+func getFloatArgDefault(e *expr, n int, v float64) (float64, error) {
+	if len(e.args) <= n {
+		return v, nil
+	}
+
+	if e.args[n].etype != etConst {
+		return 0, ErrBadType
+	}
+
+	return e.args[n].val, nil
+}
+
 func getIntArg(e *expr, n int) (int, error) {
 	if len(e.args) <= n {
 		return 0, ErrMissingArgument
@@ -347,7 +359,7 @@ func getSeriesArgs(e []*expr, from, until int32, values map[metricRequest][]*pb.
 
 func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchResponse) []*pb.FetchResponse {
 
-	// TODO(dgryski): group highestAverage exclude stdev transformNull
+	// TODO(dgryski): group highestAverage exclude stdev
 
 	switch e.etype {
 	case etName:
@@ -962,6 +974,38 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 				StopTime:  proto.Int32(*a.StopTime + offs),
 			}
 
+			results = append(results, &r)
+		}
+		return results
+
+	case "transformNull":
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+		defv, err := getFloatArgDefault(e, 1, 0)
+		if err != nil {
+			return nil
+		}
+		var results []*pb.FetchResponse
+
+		for _, a := range arg {
+			r := pb.FetchResponse{
+				Name:      proto.String(fmt.Sprintf("transformNull(%s)", e.argString)),
+				Values:    make([]float64, len(a.Values)),
+				IsAbsent:  make([]bool, len(a.Values)),
+				StepTime:  a.StepTime,
+				StartTime: a.StartTime,
+				StopTime:  a.StopTime,
+			}
+
+			for i, v := range a.Values {
+				if a.IsAbsent[i] {
+					v = defv
+				}
+
+				r.Values[i] = v
+			}
 			results = append(results, &r)
 		}
 		return results
