@@ -53,7 +53,33 @@ func (e *expr) metrics() []metricRequest {
 		for _, a := range e.args {
 			r = append(r, a.metrics()...)
 		}
+
 		switch e.target {
+		case "movingAverage":
+			if len(e.args) != 2 {
+				return nil
+			}
+
+			var n int32
+			var err error
+
+			switch e.args[1].etype {
+			case etConst:
+				var nint int
+				nint, err = getIntArg(e, 1)
+				n = int32(nint)
+			case etString:
+				n, err = getIntervalArg(e, 1, 1)
+			default:
+				err = ErrBadType
+			}
+			if err != nil {
+				return nil
+			}
+
+			for i := range r {
+				r[i].from -= n
+			}
 		case "timeShift":
 			offs, err := getIntervalArg(e, 1, -1)
 			if err != nil {
@@ -703,36 +729,64 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		return []*pb.FetchResponse{&r}
 
 	case "movingAverage":
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+
+		var n int
+		var err error
+
+		var scaleByStep bool
+
+		switch e.args[1].etype {
+		case etConst:
+			n, err = getIntArg(e, 1)
+		case etString:
+			var n32 int32
+			n32, err = getIntervalArg(e, 1, 1)
+			n = int(n32)
+			scaleByStep = true
+		default:
+			err = ErrBadType
+		}
 		if err != nil {
 			return nil
 		}
-		windowSize, err := getIntArg(e, 1)
+
+		windowSize := n
+
+		arg, err := getSeriesArg(e.args[0], from-int32(windowSize), until, values)
 		if err != nil {
 			return nil
+		}
+
+		if scaleByStep {
+			windowSize /= int(*arg[0].StepTime)
 		}
 
 		var result []*pb.FetchResponse
 
 		for _, a := range arg {
 			w := &Windowed{data: make([]float64, windowSize)}
+			sz := (until - from) / *a.StepTime
 			r := pb.FetchResponse{
 				Name:      proto.String(fmt.Sprintf("movingAverage(%s,%d)", *a.Name, windowSize)),
-				Values:    make([]float64, len(a.Values)),
-				IsAbsent:  make([]bool, len(a.Values)),
+				Values:    make([]float64, sz),
+				IsAbsent:  make([]bool, sz),
 				StepTime:  a.StepTime,
-				StartTime: a.StartTime,
-				StopTime:  a.StopTime,
+				StartTime: proto.Int32(from),
+				StopTime:  proto.Int32(until),
 			}
+			ridx := 0
 			for i, v := range a.Values {
 				if a.IsAbsent[i] {
 					// make sure missing values are ignored
 					v = 0
 				}
-				r.Values[i] = w.Mean()
-				if math.IsNaN(r.Values[i]) {
-					r.Values[i] = 0
-					r.IsAbsent[i] = true
+				if i > windowSize {
+					r.Values[ridx] = w.Mean()
+					if math.IsNaN(r.Values[ridx]) {
+						r.Values[ridx] = 0
+						r.IsAbsent[ridx] = true
+					}
+					ridx++
 				}
 				w.Push(v)
 			}
