@@ -63,7 +63,7 @@ func dateParamToEpoch(s string, d int64) int32 {
 	// relative timestamp
 	if s[0] == '-' {
 
-		offset, err := intervalString(s[1:])
+		offset, err := intervalString(s, -1)
 		if err != nil {
 			return int32(d)
 		}
@@ -93,11 +93,20 @@ func dateParamToEpoch(s string, d int64) int32 {
 	return int32(d)
 }
 
-func intervalString(s string) (int32, error) {
-
-	// TODO(dgryski): add defaultSign param for use if there is no +/- sign provided by string
+func intervalString(s string, defaultSign int) (int32, error) {
 
 	var j int
+
+	sign := defaultSign
+
+	switch s[0] {
+	case '-':
+		sign = -1
+		s = s[1:]
+	case '+':
+		sign = 1
+		s = s[1:]
+	}
 
 	for j < len(s) && s[j] >= '0' && s[j] <= '9' {
 		j++
@@ -129,7 +138,7 @@ func intervalString(s string) (int32, error) {
 		return 0, err
 	}
 
-	return int32(offset * units), nil
+	return int32(sign * offset * units), nil
 }
 
 // TODO(dgryski): extract the http.Get + unproto code into its own function

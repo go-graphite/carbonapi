@@ -55,7 +55,7 @@ func (e *expr) metrics() []metricRequest {
 		}
 		switch e.target {
 		case "timeShift":
-			offs, err := getIntervalArg(e, 1)
+			offs, err := getIntervalArg(e, 1, -1)
 			if err != nil {
 				return nil
 			}
@@ -239,7 +239,7 @@ func getStringArgDefault(e *expr, n int, s string) (string, error) {
 	return e.args[n].valStr, nil
 }
 
-func getIntervalArg(e *expr, n int) (int32, error) {
+func getIntervalArg(e *expr, n int, defaultSign int) (int32, error) {
 	if len(e.args) <= n {
 		return 0, ErrMissingArgument
 	}
@@ -248,7 +248,7 @@ func getIntervalArg(e *expr, n int) (int32, error) {
 		return 0, ErrBadType
 	}
 
-	seconds, err := intervalString(e.args[n].valStr)
+	seconds, err := intervalString(e.args[n].valStr, defaultSign)
 	if err != nil {
 		return 0, ErrBadType
 	}
@@ -875,7 +875,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 			return nil
 		}
 
-		bucketSize, err := getIntervalArg(e, 1)
+		bucketSize, err := getIntervalArg(e, 1, 1)
 		if err != nil {
 			return nil
 		}
@@ -952,7 +952,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 	case "timeShift":
 
-		offs, err := getIntervalArg(e, 1)
+		offs, err := getIntervalArg(e, 1, -1)
 		if err != nil {
 			return nil
 		}
