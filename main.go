@@ -95,6 +95,8 @@ func dateParamToEpoch(s string, d int64) int32 {
 
 func intervalString(s string) (int32, error) {
 
+	// TODO(dgryski): add defaultSign param for use if there is no +/- sign provided by string
+
 	var j int
 
 	for j < len(s) && s[j] >= '0' && s[j] <= '9' {
@@ -217,6 +219,7 @@ type graphitePoint struct {
 
 func (g graphitePoint) MarshalJSON() ([]byte, error) {
 	// TODO(dgryski): fmt.Sprintf() is slow, use strconv.Append{Float,Int}
+	// TODO(dgryski): MarshalJSON call should be on jsonResponse to reduce overhead
 	if math.IsNaN(g.value) {
 		return []byte(fmt.Sprintf("[null,%d]", g.t)), nil
 	}
