@@ -68,7 +68,7 @@ func dateParamToEpoch(s string, d int64) int32 {
 			return int32(d)
 		}
 
-		return int32(timeNow().Add(-time.Duration(offset) * time.Second).Unix())
+		return int32(timeNow().Add(time.Duration(offset) * time.Second).Unix())
 	}
 
 	if s == "now" {

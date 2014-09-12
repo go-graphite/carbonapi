@@ -60,8 +60,8 @@ func (e *expr) metrics() []metricRequest {
 				return nil
 			}
 			for i := range r {
-				r[i].from -= offs
-				r[i].until -= offs
+				r[i].from += offs
+				r[i].until += offs
 			}
 		}
 		return r
@@ -957,7 +957,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 			return nil
 		}
 
-		arg, err := getSeriesArg(e.args[0], from-offs, until-offs, values)
+		arg, err := getSeriesArg(e.args[0], from+offs, until+offs, values)
 		if err != nil {
 			return nil
 		}
