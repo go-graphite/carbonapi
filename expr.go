@@ -858,7 +858,6 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 	case "summarize":
 
 		// TODO(dgryski): make sure the arrays are all the same 'size'
-		// TODO(dgryski): need to implement alignToFrom=false, and make it the default
 		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
