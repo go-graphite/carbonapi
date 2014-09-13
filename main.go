@@ -226,18 +226,35 @@ type graphitePoint struct {
 	t     int32
 }
 
-func (g graphitePoint) MarshalJSON() ([]byte, error) {
-	// TODO(dgryski): fmt.Sprintf() is slow, use strconv.Append{Float,Int}
-	// TODO(dgryski): MarshalJSON call should be on jsonResponse to reduce overhead
-	if math.IsNaN(g.value) {
-		return []byte(fmt.Sprintf("[null,%d]", g.t)), nil
-	}
-	return []byte(fmt.Sprintf("[%g,%d]", g.value, g.t)), nil
-}
-
 type jsonResponse struct {
 	Target     string          `json:"target"`
 	Datapoints []graphitePoint `json:"datapoints"`
+}
+
+func (j jsonResponse) MarshalJSON() ([]byte, error) {
+	var b []byte
+	b = append(b, `{"target":`...)
+	b = strconv.AppendQuoteToASCII(b, j.Target)
+	b = append(b, `,"datapoints":[`...)
+
+	var comma bool
+	for _, v := range j.Datapoints {
+		if comma {
+			b = append(b, ',')
+		}
+		comma = true
+		b = append(b, '[')
+		if math.IsNaN(v.value) {
+			b = append(b, "null"...)
+		} else {
+			b = strconv.AppendFloat(b, v.value, 'f', -1, 64)
+		}
+		b = append(b, ',')
+		b = strconv.AppendInt(b, int64(v.t), 10)
+		b = append(b, ']')
+	}
+	b = append(b, `]}`...)
+	return b, nil
 }
 
 func renderHandler(w http.ResponseWriter, r *http.Request) {
