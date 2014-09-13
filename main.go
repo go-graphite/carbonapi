@@ -141,8 +141,6 @@ func intervalString(s string, defaultSign int) (int32, error) {
 	return int32(sign * offset * units), nil
 }
 
-// TODO(dgryski): extract the http.Get + unproto code into its own function
-
 func (z zipper) Find(metric string) (pb.GlobResponse, error) {
 
 	u, _ := url.Parse(string(z) + "/metrics/find/")
@@ -152,28 +150,11 @@ func (z zipper) Find(metric string) (pb.GlobResponse, error) {
 		"format": []string{"protobuf"},
 	}.Encode()
 
-	resp, err := http.Get(u.String())
-	if err != nil {
-		log.Printf("Find: http.Get: %+v\n", err)
-		return pb.GlobResponse{}, err
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("Find: ioutil.ReadAll: %+v\n", err)
-		return pb.GlobResponse{}, err
-	}
-
 	var pbresp pb.GlobResponse
 
-	err = proto.Unmarshal(body, &pbresp)
-	if err != nil {
-		log.Printf("Find: proto.Unmarshal: %+v\n", err)
-		return pb.GlobResponse{}, err
-	}
+	err := z.get("Find", u, &pbresp)
 
-	return pbresp, nil
+	return pbresp, err
 }
 
 func (z zipper) Render(metric string, from, until int32) (pb.FetchResponse, error) {
@@ -187,28 +168,34 @@ func (z zipper) Render(metric string, from, until int32) (pb.FetchResponse, erro
 		"until":  []string{strconv.Itoa(int(until))},
 	}.Encode()
 
+	var pbresp pb.FetchResponse
+
+	err := z.get("Render", u, &pbresp)
+
+	return pbresp, err
+}
+
+func (z zipper) get(who string, u *url.URL, msg proto.Message) error {
 	resp, err := http.Get(u.String())
 	if err != nil {
-		log.Printf("Render: http.Get: %s: %+v\n", metric, err)
-		return pb.FetchResponse{}, err
+		log.Printf("%s: http.Get: %+v\n", who, err)
+		return err
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Printf("Render: ioutil.ReadAll: %s: %+v\n", metric, err)
-		return pb.FetchResponse{}, err
+		log.Printf("%s: ioutil.ReadAll: %+v\n", who, err)
+		return err
 	}
 
-	var pbresp pb.FetchResponse
-
-	err = proto.Unmarshal(body, &pbresp)
+	err = proto.Unmarshal(body, msg)
 	if err != nil {
-		log.Printf("Render: proto.Unmarshal: %s: %+v\n", metric, err)
-		return pb.FetchResponse{}, err
+		log.Printf("%s: proto.Unmarshal: %+v\n", who, err)
+		return err
 	}
 
-	return pbresp, nil
+	return nil
 }
 
 type limiter chan struct{}
