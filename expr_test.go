@@ -438,6 +438,66 @@ func TestEvalExpression(t *testing.T) {
 			[]float64{1, 5, 5, 3, 4, 12},
 			"transformNull(metric1,5)",
 		},
+		{
+			&expr{
+				target: "highestMax",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 1, etype: etConst},
+				},
+				argString: "metric1,1",
+			},
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{
+					makeResponse("metricA", []float64{1, 1, 3, 3, 12, 11}, 1, now32),
+					makeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					makeResponse("metricC", []float64{1, 1, 3, 3, 4, 10}, 1, now32),
+				},
+			},
+			[]float64{1, 1, 3, 3, 12, 11},
+			"metricA", // NOTE(dgryski): not sure if this matches graphite
+		},
+		{
+			&expr{
+				target: "highestCurrent",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 1, etype: etConst},
+				},
+				argString: "metric1,1",
+			},
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{
+					makeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
+					makeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					makeResponse("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
+				},
+			},
+			[]float64{1, 1, 3, 3, 4, 15},
+			"metricC", // NOTE(dgryski): not sure if this matches graphite
+		},
+		{
+			&expr{
+				target: "highestAverage",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 1, etype: etConst},
+				},
+				argString: "metric1,1",
+			},
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{
+					makeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
+					makeResponse("metricB", []float64{1, 5, 5, 5, 5, 5}, 1, now32),
+					makeResponse("metricC", []float64{1, 1, 3, 3, 4, 10}, 1, now32),
+				},
+			},
+			[]float64{1, 5, 5, 5, 5, 5},
+			"metricB", // NOTE(dgryski): not sure if this matches graphite
+		},
 	}
 
 	for _, tt := range tests {

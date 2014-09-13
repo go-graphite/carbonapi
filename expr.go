@@ -385,7 +385,8 @@ func getSeriesArgs(e []*expr, from, until int32, values map[metricRequest][]*pb.
 
 func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchResponse) []*pb.FetchResponse {
 
-	// TODO(dgryski): group highestAverage exclude stdev
+	// TODO(dgryski): make sure all params are correct
+	// TODO(dgryski): group exclude stdev
 
 	switch e.etype {
 	case etName:
@@ -604,7 +605,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return []*pb.FetchResponse{&r}
 
-	case "highestMax":
+	case "highestAverage", "highestCurrent", "highestMax":
 
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
@@ -623,8 +624,19 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		var mh metricHeap
 
+		var compute func([]float64, []bool) float64
+
+		switch e.target {
+		case "highestMax":
+			compute = maxValue
+		case "highestAverage":
+			compute = avgValue
+		case "highestCurrent":
+			compute = currentValue
+		}
+
 		for i, a := range arg {
-			m := maxFloat(a.Values)
+			m := compute(a.Values, a.IsAbsent)
 
 			if len(mh) < n {
 				heap.Push(&mh, metricHeapElement{idx: i, val: m})
@@ -1165,14 +1177,41 @@ func (w *Windowed) Len() int {
 
 func (w *Windowed) Mean() float64 { return w.sum / float64(w.Len()) }
 
-func maxFloat(f64s []float64) float64 {
+func maxValue(f64s []float64, absent []bool) float64 {
 	m := math.Inf(-1)
-	for _, v := range f64s {
+	for i, v := range f64s {
+		if absent[i] {
+			continue
+		}
 		if v > m {
 			m = v
 		}
 	}
 	return m
+}
+
+func avgValue(f64s []float64, absent []bool) float64 {
+	var t float64
+	var elts int
+	for i, v := range f64s {
+		if absent[i] {
+			continue
+		}
+		elts++
+		t += v
+	}
+	return t / float64(elts)
+}
+
+func currentValue(f64s []float64, absent []bool) float64 {
+
+	for i := len(f64s) - 1; i >= 0; i-- {
+		if !absent[i] {
+			return f64s[i]
+		}
+	}
+
+	return math.NaN()
 }
 
 type metricHeapElement struct {
