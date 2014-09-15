@@ -608,6 +608,14 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return []*pb.FetchResponse{&r}
 
+	case "group": // group(*seriesLists)
+		args, err := getSeriesArgs(e.args, from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		return args
+
 	case "highestAverage", "highestCurrent", "highestMax": // highestAverage(seriesList, n) , highestCurrent(seriesList, n), highestMax(seriesList, n)
 
 		arg, err := getSeriesArg(e.args[0], from, until, values)
