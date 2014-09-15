@@ -506,7 +506,7 @@ func TestEvalExpression(t *testing.T) {
 					&expr{target: "metric1"},
 					&expr{valStr: "(Foo|Baz)", etype: etString},
 				},
-				argString: "metric1,1",
+				argString: "metric1,'(Foo|Baz)'",
 			},
 			map[metricRequest][]*pb.FetchResponse{
 				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{
