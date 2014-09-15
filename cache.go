@@ -28,7 +28,7 @@ func (ec *expireCache) get(k string) ([]byte, bool) {
 	ec.Lock()
 	v, ok := ec.cache[k]
 	ec.Unlock()
-	if !ok || v.validUntil.Before(time.Now()) {
+	if !ok || v.validUntil.Before(timeNow()) {
 		return nil, false
 	}
 	return v.data, ok
@@ -36,7 +36,7 @@ func (ec *expireCache) get(k string) ([]byte, bool) {
 
 func (ec *expireCache) set(k string, v []byte, expire int32) {
 	ec.Lock()
-	ec.cache[k] = cacheElement{validUntil: time.Now().Add(time.Duration(expire) * time.Second), data: v}
+	ec.cache[k] = cacheElement{validUntil: timeNow().Add(time.Duration(expire) * time.Second), data: v}
 	ec.Unlock()
 }
 
@@ -47,7 +47,7 @@ func (ec *expireCache) cleaner() {
 	for {
 		time.Sleep(5 * time.Minute)
 
-		now := time.Now()
+		now := timeNow()
 		ec.Lock()
 
 		for k, v := range ec.cache {
