@@ -429,14 +429,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	case "raw":
 		contentType = contentTypeRaw
 
-		var newLine = false
-
 		for _, j := range results {
-			if newLine {
-				body = append(body, '\n')
-			}
-			newLine = true
-
 			rout, err := marshalRaw(j)
 			if err != nil {
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
