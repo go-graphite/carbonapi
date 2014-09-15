@@ -404,7 +404,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 	}
 
 	switch e.target {
-	case "alias":
+	case "alias": // alias(seriesList, newName)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
@@ -425,7 +425,8 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		return []*pb.FetchResponse{&r}
 
-	case "aliasByNode":
+	case "aliasByNode": // aliasByNode(seriesList, *nodes)
+		// FIXME(dgryski): we only support one 'node' argument at the moment
 		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
@@ -456,7 +457,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		return results
 
-	case "avg", "averageSeries":
+	case "avg", "averageSeries": // averageSeries(*seriesLists)
 		args, err := getSeriesArgs(e.args, from, until, values)
 		if err != nil {
 			return nil
@@ -490,7 +491,8 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return []*pb.FetchResponse{&r}
 
-	case "derivative":
+	case "derivative": // derivative(seriesList)
+		// FIXME(dgryski): should only accept a single argument
 		args, err := getSeriesArgs(e.args, from, until, values)
 		if err != nil {
 			return nil
@@ -519,7 +521,8 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return result
 
-	case "diffSeries":
+	case "diffSeries": // diffSeries(*seriesLists)
+		// FIXME(dgryski): only accepts two arguments
 		if len(e.args) != 2 {
 			return nil
 		}
@@ -562,7 +565,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return []*pb.FetchResponse{&r}
 
-	case "divideSeries":
+	case "divideSeries": // divideSeries(dividendSeriesList, divisorSeriesList)
 		if len(e.args) != 2 {
 			return nil
 		}
@@ -605,7 +608,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return []*pb.FetchResponse{&r}
 
-	case "highestAverage", "highestCurrent", "highestMax":
+	case "highestAverage", "highestCurrent", "highestMax": // highestAverage(seriesList, n) , highestCurrent(seriesList, n), highestMax(seriesList, n)
 
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
@@ -660,7 +663,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		return results
 
-	case "keepLastValue":
+	case "keepLastValue": // keepLastValue(seriesList, limit=inf)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
@@ -704,7 +707,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return results
 
-	case "maxSeries":
+	case "maxSeries": // maxSeries(*seriesLists)
 		args, err := getSeriesArgs(e.args, from, until, values)
 		if err != nil {
 			return nil
@@ -740,8 +743,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return []*pb.FetchResponse{&r}
 
-	case "movingAverage":
-
+	case "movingAverage": // movingAverage(seriesList, windowSize)
 		var n int
 		var err error
 
@@ -806,7 +808,8 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return result
 
-	case "nonNegativeDerivative":
+	case "nonNegativeDerivative": // nonNegativeDerivative(seriesList, maxValue=None)
+		// FIXME(dgryski): support only one seriesList; support maxValue
 		args, err := getSeriesArgs(e.args, from, until, values)
 		if err != nil {
 			return nil
@@ -840,7 +843,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return result
 
-	case "scale":
+	case "scale": // scale(seriesList, factor)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
@@ -873,7 +876,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return results
 
-	case "scaleToSeconds":
+	case "scaleToSeconds": // scaleToSeconds(seriesList, seconds)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
@@ -909,7 +912,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return results
 
-	case "sum", "sumSeries":
+	case "sum", "sumSeries": // sumSeries(*seriesLists)
 		// TODO(dgryski): make sure the arrays are all the same 'size'
 		args, err := getSeriesArgs(e.args, from, until, values)
 		if err != nil {
@@ -933,8 +936,8 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 			}
 		}
 		return []*pb.FetchResponse{&r}
-	case "summarize":
 
+	case "summarize": // summarize(seriesList, intervalString, func='sum', alignToFrom=False
 		// TODO(dgryski): make sure the arrays are all the same 'size'
 		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
@@ -1016,7 +1019,8 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return results
 
-	case "timeShift":
+	case "timeShift": // timeShift(seriesList, timeShift, resetEnd=True)
+		// FIXME(dgryski): support resetEnd=true
 
 		offs, err := getIntervalArg(e, 1, -1)
 		if err != nil {
@@ -1044,7 +1048,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return results
 
-	case "transformNull":
+	case "transformNull": // transformNull(seriesList, default=0)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
@@ -1076,7 +1080,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return results
 
-	case "drawAsInfinite":
+	case "drawAsInfinite": // ignored
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
