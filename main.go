@@ -244,7 +244,7 @@ func (j jsonResponse) MarshalJSON() ([]byte, error) {
 	return b, nil
 }
 
-func marshalRaw(r *pb.FetchResponse) ([]byte, error) {
+func marshalRaw(r *pb.FetchResponse) []byte {
 	var b []byte
 	b = append(b, r.GetName()...)
 
@@ -270,7 +270,7 @@ func marshalRaw(r *pb.FetchResponse) ([]byte, error) {
 	}
 
 	b = append(b, '\n')
-	return b, nil
+	return b
 }
 
 const (
@@ -430,11 +430,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		contentType = contentTypeRaw
 
 		for _, j := range results {
-			rout, err := marshalRaw(j)
-			if err != nil {
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				return
-			}
+			rout := marshalRaw(j)
 			body = append(body, rout...)
 		}
 	}
