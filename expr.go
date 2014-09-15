@@ -426,7 +426,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		return []*pb.FetchResponse{&r}
 
 	case "aliasByNode": // aliasByNode(seriesList, *nodes)
-		// FIXME(dgryski): we only support one 'node' argument at the moment
+		// TODO(dgryski): we only support one 'node' argument at the moment
 		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
