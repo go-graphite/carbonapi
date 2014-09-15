@@ -633,6 +633,32 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		return results
 
+	case "grep": // grep(seriesList, pattern)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		pat, err := getStringArg(e, 1)
+		if err != nil {
+			return nil
+		}
+
+		patre, err := regexp.Compile(pat)
+		if err != nil {
+			return nil
+		}
+
+		var results []*pb.FetchResponse
+
+		for _, a := range arg {
+			if patre.MatchString(a.GetName()) {
+				results = append(results, a)
+			}
+		}
+
+		return results
+
 	case "group": // group(*seriesLists)
 		args, err := getSeriesArgs(e.args, from, until, values)
 		if err != nil {
