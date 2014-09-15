@@ -273,6 +273,11 @@ func marshalRaw(r *pb.FetchResponse) ([]byte, error) {
 	return b, nil
 }
 
+const (
+	contentTypeJSON = "application/json"
+	contentTypeRaw  = "text/plain"
+)
+
 func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	Metrics.Requests.Add(1)
@@ -298,9 +303,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		Metrics.RequestCacheHits.Add(1)
 		switch format {
 		case "json":
-			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("Content-Type", contentTypeJSON)
 		case "raw":
-			w.Header().Set("Content-Type", "text/plain")
+			w.Header().Set("Content-Type", contentTypeRaw)
 		}
 		w.Write(response)
 		return
@@ -394,7 +399,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch format {
 	case "json":
-		contentType = "application/json"
+		contentType = contentTypeJSON
 
 		var jresults []jsonResponse
 
@@ -422,7 +427,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 	case "raw":
-		contentType = "text/plain"
+		contentType = contentTypeRaw
 
 		var newLine = false
 
