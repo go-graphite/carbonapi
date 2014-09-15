@@ -538,6 +538,37 @@ func TestEvalExpression(t *testing.T) {
 			[]float64{2, 2, 2, 2, 2},
 			"metricBar", // NOTE(dgryski): not sure if this matches graphite
 		},
+		{
+			&expr{
+				target: "logarithm",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{makeResponse("metric1", []float64{1, 10, 100, 1000, 10000}, 1, now32)},
+			},
+			[]float64{0, 1, 2, 3, 4},
+			"logarithm(metric1)",
+		},
+		{
+			&expr{
+				target: "logarithm",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 2, etype: etConst},
+				},
+				argString: "metric1,2",
+			},
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{makeResponse("metric1", []float64{1, 2, 4, 8, 16, 32}, 1, now32)},
+			},
+			[]float64{0, 1, 2, 3, 4, 5},
+			"logarithm(metric1,2)",
+		},
 	}
 
 	for _, tt := range tests {

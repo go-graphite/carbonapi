@@ -766,6 +766,41 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return results
 
+	case "logarithm": // logarithm(seriesList, base=10)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+		base, err := getIntArgDefault(e, 1, 10)
+		if err != nil {
+			return nil
+		}
+		baseLog := math.Log(float64(base))
+
+		var results []*pb.FetchResponse
+
+		for _, a := range arg {
+			r := pb.FetchResponse{
+				Name:      proto.String(fmt.Sprintf("logarithm(%s)", e.argString)),
+				Values:    make([]float64, len(a.Values)),
+				IsAbsent:  make([]bool, len(a.Values)),
+				StepTime:  a.StepTime,
+				StartTime: a.StartTime,
+				StopTime:  a.StopTime,
+			}
+
+			for i, v := range a.Values {
+				if a.IsAbsent[i] {
+					r.Values[i] = 0
+					r.IsAbsent[i] = true
+					continue
+				}
+				r.Values[i] = math.Log(v) / baseLog
+			}
+			results = append(results, &r)
+		}
+		return results
+
 	case "maxSeries": // maxSeries(*seriesLists)
 		args, err := getSeriesArgs(e.args, from, until, values)
 		if err != nil {
