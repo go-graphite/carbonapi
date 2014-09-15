@@ -403,6 +403,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 		var jresults []jsonResponse
 
+		// FIXME(dgryski): should probably inline this into MarshalJSON to avoid the extra allocation overhead
+
 		for _, r := range results {
 			if r == nil {
 				continue
