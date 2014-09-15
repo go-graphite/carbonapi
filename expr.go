@@ -492,8 +492,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		return []*pb.FetchResponse{&r}
 
 	case "derivative": // derivative(seriesList)
-		// FIXME(dgryski): should only accept a single argument
-		args, err := getSeriesArgs(e.args, from, until, values)
+		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}
@@ -817,8 +816,8 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		return result
 
 	case "nonNegativeDerivative": // nonNegativeDerivative(seriesList, maxValue=None)
-		// FIXME(dgryski): support only one seriesList; support maxValue
-		args, err := getSeriesArgs(e.args, from, until, values)
+		// FIXME(dgryski): support maxValue
+		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}
