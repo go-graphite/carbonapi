@@ -386,8 +386,7 @@ func getSeriesArgs(e []*expr, from, until int32, values map[metricRequest][]*pb.
 
 func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchResponse) []*pb.FetchResponse {
 
-	// TODO(dgryski): make sure all params are correct
-	// TODO(dgryski): exclude stdev
+	// TODO(dgryski): stdev
 
 	switch e.etype {
 	case etName:
