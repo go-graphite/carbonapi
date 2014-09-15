@@ -184,12 +184,12 @@ func (z zipper) get(who string, u *url.URL, msg proto.Message) error {
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("ioutil.ReadAll: %+v\n", err)
+		return fmt.Errorf("ioutil.ReadAll: %+v", err)
 	}
 
 	err = proto.Unmarshal(body, msg)
 	if err != nil {
-		return fmt.Errorf("proto.Unmarshal: %+v\n", err)
+		return fmt.Errorf("proto.Unmarshal: %+v", err)
 	}
 
 	return nil
