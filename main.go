@@ -178,21 +178,18 @@ func (z zipper) Render(metric string, from, until int32) (pb.FetchResponse, erro
 func (z zipper) get(who string, u *url.URL, msg proto.Message) error {
 	resp, err := http.Get(u.String())
 	if err != nil {
-		log.Printf("%s: http.Get: %+v\n", who, err)
-		return err
+		return fmt.Errorf("http.Get: %+v", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Printf("%s: ioutil.ReadAll: %+v\n", who, err)
-		return err
+		return fmt.Errorf("ioutil.ReadAll: %+v\n", err)
 	}
 
 	err = proto.Unmarshal(body, msg)
 	if err != nil {
-		log.Printf("%s: proto.Unmarshal: %+v\n", who, err)
-		return err
+		return fmt.Errorf("proto.Unmarshal: %+v\n", err)
 	}
 
 	return nil
@@ -352,6 +349,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 				Metrics.FindRequests.Add(1)
 				glob, err = Zipper.Find(m.metric)
 				if err != nil {
+					log.Printf("Find: %v: %v", m.metric, err)
 					continue
 				}
 				b, err := proto.Marshal(&glob)
@@ -376,6 +374,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 					r, err := Zipper.Render(m.GetPath(), from, until)
 					if err == nil {
 						rptr = &r
+					} else {
+						log.Printf("Render: %v: %v", m.GetPath(), err)
 					}
 					rch <- rptr
 					Limiter.leave()
