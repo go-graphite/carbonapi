@@ -244,6 +244,35 @@ func (j jsonResponse) MarshalJSON() ([]byte, error) {
 	return b, nil
 }
 
+func marshalRaw(r *pb.FetchResponse) ([]byte, error) {
+	var b []byte
+	b = append(b, r.GetName()...)
+
+	b = append(b, ',')
+	b = strconv.AppendInt(b, int64(r.GetStartTime()), 10)
+	b = append(b, ',')
+	b = strconv.AppendInt(b, int64(r.GetStopTime()), 10)
+	b = append(b, ',')
+	b = strconv.AppendInt(b, int64(r.GetStepTime()), 10)
+	b = append(b, '|')
+
+	var comma bool
+	for i, v := range r.Values {
+		if comma {
+			b = append(b, ',')
+		}
+		comma = true
+		if r.IsAbsent[i] {
+			b = append(b, "None"...)
+		} else {
+			b = strconv.AppendFloat(b, v, 'f', -1, 64)
+		}
+	}
+
+	b = append(b, '\n')
+	return b, nil
+}
+
 func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	Metrics.Requests.Add(1)
@@ -257,6 +286,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	targets := r.Form["target"]
 	from := r.FormValue("from")
 	until := r.FormValue("until")
+	format := r.FormValue("format")
 	useCache := r.FormValue("noCache") == ""
 
 	// make sure the cache key doesn't say noCache, because it will never hit
@@ -266,7 +296,12 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	if response, ok := queryCache.get(cacheKey); useCache && ok {
 		Metrics.RequestCacheHits.Add(1)
-		w.Header().Set("Content-Type", "application/json")
+		switch format {
+		case "json":
+			w.Header().Set("Content-Type", "application/json")
+		case "raw":
+			w.Header().Set("Content-Type", "text/plain")
+		}
 		w.Write(response)
 		return
 	}
@@ -354,34 +389,62 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		results = append(results, exprs...)
 	}
 
-	var jresults []jsonResponse
+	var body []byte
+	var contentType string
 
-	for _, r := range results {
-		if r == nil {
-			log.Println("skipping nil result")
-		}
-		datapoints := make([]graphitePoint, 0, len(r.Values))
-		t := *r.StartTime
-		for i, v := range r.Values {
-			if r.IsAbsent[i] {
-				v = math.NaN()
+	switch format {
+	case "json":
+		contentType = "application/json"
+
+		var jresults []jsonResponse
+
+		for _, r := range results {
+			if r == nil {
+				continue
 			}
-			datapoints = append(datapoints, graphitePoint{value: v, t: t})
-			t += *r.StepTime
+			datapoints := make([]graphitePoint, 0, len(r.Values))
+			t := *r.StartTime
+			for i, v := range r.Values {
+				if r.IsAbsent[i] {
+					v = math.NaN()
+				}
+				datapoints = append(datapoints, graphitePoint{value: v, t: t})
+				t += *r.StepTime
+			}
+			jresults = append(jresults, jsonResponse{Target: r.GetName(), Datapoints: datapoints})
 		}
-		jresults = append(jresults, jsonResponse{Target: r.GetName(), Datapoints: datapoints})
+
+		var err error
+		body, err = json.Marshal(jresults)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+	case "raw":
+		contentType = "text/plain"
+
+		var newLine = false
+
+		for _, j := range results {
+			if newLine {
+				body = append(body, '\n')
+			}
+			newLine = true
+
+			rout, err := marshalRaw(j)
+			if err != nil {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+			body = append(body, rout...)
+		}
 	}
 
-	jout, err := json.Marshal(jresults)
-	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
+	queryCache.set(cacheKey, body, 60)
 
-	queryCache.set(cacheKey, jout, 60)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(jout)
+	w.Header().Set("Content-Type", contentType)
+	w.Write(body)
 }
 
 func lbcheckHandler(w http.ResponseWriter, r *http.Request) {

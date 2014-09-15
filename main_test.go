@@ -56,3 +56,16 @@ func TestJSONResponse(t *testing.T) {
 		}
 	}
 }
+
+func TestRawResponse(t *testing.T) {
+
+	r := makeResponse("metric1", []float64{1, 2, math.NaN(), 8, 16, 32}, 60, 1410633660)
+
+	b, _ := marshalRaw(r)
+
+	want := []byte(`metric1,1410633660,1410634020,60|1,2,None,8,16,32` + "\n")
+
+	if !bytes.Equal(b, want) {
+		t.Errorf("marshalRaw(...)=%q, want %q", string(b), string(want))
+	}
+}
