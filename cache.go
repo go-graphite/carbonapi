@@ -11,7 +11,7 @@ import (
 
 type bytesCache interface {
 	get(k string) ([]byte, bool)
-	set(k string, v []byte)
+	set(k string, v []byte, expire int32)
 }
 
 type cacheElement struct {
@@ -34,9 +34,9 @@ func (ec *expireCache) get(k string) ([]byte, bool) {
 	return v.data, ok
 }
 
-func (ec *expireCache) set(k string, v []byte) {
+func (ec *expireCache) set(k string, v []byte, expire int32) {
 	ec.Lock()
-	ec.cache[k] = cacheElement{validUntil: time.Now().Add(60 * time.Second), data: v}
+	ec.cache[k] = cacheElement{validUntil: time.Now().Add(time.Duration(expire) * time.Second), data: v}
 	ec.Unlock()
 }
 
@@ -78,7 +78,7 @@ func (m *memcachedCache) get(k string) ([]byte, bool) {
 	return item.Value, true
 }
 
-func (m *memcachedCache) set(k string, v []byte) {
+func (m *memcachedCache) set(k string, v []byte, expire int32) {
 	hk := fmt.Sprintf("%x", md5.Sum([]byte(k)))
-	m.client.Set(&memcache.Item{Key: hk, Value: v, Expiration: 60})
+	m.client.Set(&memcache.Item{Key: hk, Value: v, Expiration: expire})
 }

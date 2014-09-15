@@ -316,7 +316,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 				}
 				b, err := proto.Marshal(&glob)
 				if err == nil {
-					findCache.set(m.metric, b)
+					findCache.set(m.metric, b, 5*60)
 				}
 			}
 
@@ -378,7 +378,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	queryCache.set(cacheKey, jout)
+	queryCache.set(cacheKey, jout, 60)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jout)
