@@ -99,6 +99,11 @@ func (e *expr) metrics() []metricRequest {
 
 func parseExpr(e string) (*expr, string, error) {
 
+	// skip whitespace
+	for e[0] == ' ' {
+		e = e[1:]
+	}
+
 	if '0' <= e[0] && e[0] <= '9' {
 		val, e, err := parseConst(e)
 		return &expr{val: val, etype: etConst}, e, err

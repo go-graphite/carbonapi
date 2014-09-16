@@ -50,7 +50,7 @@ func TestParseExpr(t *testing.T) {
 			},
 		},
 		{
-			"func1(metric1,func2(metricA,metricB),metric3)",
+			"func1(metric1,func2(metricA, metricB),metric3)",
 			&expr{
 				target: "func1",
 				etype:  etFunc,
@@ -59,10 +59,10 @@ func TestParseExpr(t *testing.T) {
 					&expr{target: "func2",
 						etype:     etFunc,
 						args:      []*expr{&expr{target: "metricA"}, &expr{target: "metricB"}},
-						argString: "metricA,metricB",
+						argString: "metricA, metricB",
 					},
 					&expr{target: "metric3"}},
-				argString: "metric1,func2(metricA,metricB),metric3",
+				argString: "metric1,func2(metricA, metricB),metric3",
 			},
 		},
 
@@ -75,7 +75,7 @@ func TestParseExpr(t *testing.T) {
 			&expr{val: 3.1, etype: etConst},
 		},
 		{
-			"func1(metric1,3)",
+			"func1(metric1, 3)",
 			&expr{
 				target: "func1",
 				etype:  etFunc,
@@ -83,11 +83,11 @@ func TestParseExpr(t *testing.T) {
 					&expr{target: "metric1"},
 					&expr{val: 3, etype: etConst},
 				},
-				argString: "metric1,3",
+				argString: "metric1, 3",
 			},
 		},
 		{
-			"func1(metric1,'stringconst')",
+			"func1(metric1, 'stringconst')",
 			&expr{
 				target: "func1",
 				etype:  etFunc,
@@ -95,11 +95,11 @@ func TestParseExpr(t *testing.T) {
 					&expr{target: "metric1"},
 					&expr{valStr: "stringconst", etype: etString},
 				},
-				argString: "metric1,'stringconst'",
+				argString: "metric1, 'stringconst'",
 			},
 		},
 		{
-			`func1(metric1,"stringconst")`,
+			`func1(metric1, "stringconst")`,
 			&expr{
 				target: "func1",
 				etype:  etFunc,
@@ -107,7 +107,7 @@ func TestParseExpr(t *testing.T) {
 					&expr{target: "metric1"},
 					&expr{valStr: "stringconst", etype: etString},
 				},
-				argString: `metric1,"stringconst"`,
+				argString: `metric1, "stringconst"`,
 			},
 		},
 	}
