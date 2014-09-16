@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"expvar"
 	"flag"
@@ -241,29 +240,58 @@ func (j jsonResponse) MarshalJSON() ([]byte, error) {
 	return b, nil
 }
 
-func marshalJSON(results []*pb.FetchResponse) ([]byte, error) {
-	var jresults []jsonResponse
+func marshalJSON(results []*pb.FetchResponse) []byte {
 
-	// FIXME(dgryski): should probably inline this into MarshalJSON to avoid the extra allocation overhead
+	var b []byte
 
+	b = append(b, '[')
+
+	var topComma bool
 	for _, r := range results {
 		if r == nil {
 			continue
 		}
-		datapoints := make([]graphitePoint, 0, len(r.Values))
+
+		if topComma {
+			b = append(b, ',')
+		}
+		topComma = true
+
+		b = append(b, `{"target":`...)
+		b = strconv.AppendQuoteToASCII(b, r.GetName())
+		b = append(b, `,"datapoints":[`...)
+
+		var innerComma bool
 		t := *r.StartTime
 		for i, v := range r.Values {
-			if r.IsAbsent[i] {
-				v = math.NaN()
+			if innerComma {
+				b = append(b, ',')
 			}
-			datapoints = append(datapoints, graphitePoint{value: v, t: t})
+			innerComma = true
+
+			b = append(b, '[')
+
+			if r.IsAbsent[i] {
+				b = append(b, "null"...)
+			} else {
+				b = strconv.AppendFloat(b, v, 'f', -1, 64)
+			}
+
+			b = append(b, ',')
+
+			b = strconv.AppendInt(b, int64(t), 10)
+
+			b = append(b, ']')
+
 			t += *r.StepTime
 		}
-		jresults = append(jresults, jsonResponse{Target: r.GetName(), Datapoints: datapoints})
+
+		b = append(b, `]}`...)
 	}
 
-	body, err := json.Marshal(jresults)
-	return body, err
+	b = append(b, ']')
+
+	return b
 }
 
 func marshalRaw(r *pb.FetchResponse) []byte {
@@ -425,14 +453,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	switch format {
 	case "json":
 		contentType = contentTypeJSON
-
-		var err error
-
-		body, err = marshalJSON(results)
-		if err != nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
+		body = marshalJSON(results)
 
 	case "raw":
 		contentType = contentTypeRaw
