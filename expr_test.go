@@ -788,6 +788,14 @@ func TestExtractMetric(t *testing.T) {
 		metric string
 	}{
 		{
+			"f",
+			"f",
+		},
+		{
+			"func(f)",
+			"f",
+		},
+		{
 			"foo.bar.baz",
 			"foo.bar.baz",
 		},
@@ -801,6 +809,10 @@ func TestExtractMetric(t *testing.T) {
 		},
 		{
 			"scale(scaleToSeconds(nonNegativeDerivative(foo.bar.baz),60),60)",
+			"foo.bar.baz",
+		},
+		{
+			"divideSeries(foo.bar.baz,baz.qux.zot)",
 			"foo.bar.baz",
 		},
 	}
