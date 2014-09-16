@@ -1248,8 +1248,6 @@ func extractMetric(m string) string {
 	start := 0
 	end := 0
 	for end < len(m) {
-		log.Printf("m[start:end] %+v\n", m[start:end])
-
 		if !isNameChar(m[end]) {
 			if m[end] == ',' || m[end] == ')' {
 				return m[start:end]
