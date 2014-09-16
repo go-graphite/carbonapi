@@ -29,6 +29,9 @@ func (ec *expireCache) get(k string) ([]byte, bool) {
 	v, ok := ec.cache[k]
 	ec.Unlock()
 	if !ok || v.validUntil.Before(timeNow()) {
+		if ok {
+			delete(ec.cache, k)
+		}
 		return nil, false
 	}
 	return v.data, ok
