@@ -735,8 +735,15 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		var results []*pb.FetchResponse
 
 		for _, a := range arg {
+			var name string
+			if len(e.args) == 1 {
+				name = fmt.Sprintf("keepLastValue(%s)", *a.Name)
+			} else {
+				name = fmt.Sprintf("keepLastValue(%s,%d)", *a.Name, keep)
+			}
+
 			r := pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("keepLastValue(%s)", *a.Name)),
+				Name:      proto.String(name),
 				Values:    make([]float64, len(a.Values)),
 				IsAbsent:  make([]bool, len(a.Values)),
 				StepTime:  a.StepTime,
@@ -781,8 +788,16 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		var results []*pb.FetchResponse
 
 		for _, a := range arg {
+
+			var name string
+			if len(e.args) == 1 {
+				name = fmt.Sprintf("logarithm(%s)", *a.Name)
+			} else {
+				name = fmt.Sprintf("logarithm(%s,%d)", *a.Name, base)
+			}
+
 			r := pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("logarithm(%s)", *a.Name)),
+				Name:      proto.String(name),
 				Values:    make([]float64, len(a.Values)),
 				IsAbsent:  make([]bool, len(a.Values)),
 				StepTime:  a.StepTime,
