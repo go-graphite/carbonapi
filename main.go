@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"math"
 	"net/http"
 	_ "net/http/pprof"
 	"net/url"
@@ -203,42 +202,6 @@ var Limiter limiter
 
 // for testing
 var timeNow = time.Now
-
-type graphitePoint struct {
-	value float64
-	t     int32
-}
-
-type jsonResponse struct {
-	Target     string          `json:"target"`
-	Datapoints []graphitePoint `json:"datapoints"`
-}
-
-func (j jsonResponse) MarshalJSON() ([]byte, error) {
-	var b []byte
-	b = append(b, `{"target":`...)
-	b = strconv.AppendQuoteToASCII(b, j.Target)
-	b = append(b, `,"datapoints":[`...)
-
-	var comma bool
-	for _, v := range j.Datapoints {
-		if comma {
-			b = append(b, ',')
-		}
-		comma = true
-		b = append(b, '[')
-		if math.IsNaN(v.value) {
-			b = append(b, "null"...)
-		} else {
-			b = strconv.AppendFloat(b, v.value, 'f', -1, 64)
-		}
-		b = append(b, ',')
-		b = strconv.AppendInt(b, int64(v.t), 10)
-		b = append(b, ']')
-	}
-	b = append(b, `]}`...)
-	return b, nil
-}
 
 func marshalJSON(results []*pb.FetchResponse) []byte {
 

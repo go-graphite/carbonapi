@@ -2,9 +2,10 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"math"
 	"testing"
+
+	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 )
 
 func TestInterval(t *testing.T) {
@@ -33,26 +34,22 @@ func TestInterval(t *testing.T) {
 func TestJSONResponse(t *testing.T) {
 
 	tests := []struct {
-		jsr jsonResponse
-		out []byte
+		results []*pb.FetchResponse
+		out     []byte
 	}{
 		{
-			jsonResponse{
-				Target:     "jsTarget",
-				Datapoints: []graphitePoint{{1, 100}, {1.5, 200}, {2.25, 300}, {math.NaN(), 400}},
+			[]*pb.FetchResponse{
+				makeResponse("metric1", []float64{1, 1.5, 2.25, math.NaN()}, 100, 100),
+				makeResponse("metric2", []float64{2, 2.5, 3.25, 4, 5}, 100, 100),
 			},
-			[]byte(`{"target":"jsTarget","datapoints":[[1,100],[1.5,200],[2.25,300],[null,400]]}`),
+			[]byte(`[{"target":"metric1","datapoints":[[1,100],[1.5,200],[2.25,300],[null,400]]},{"target":"metric2","datapoints":[[2,100],[2.5,200],[3.25,300],[4,400],[5,500]]}]`),
 		},
 	}
 
 	for _, tt := range tests {
-		b, err := json.Marshal(tt.jsr)
-		if err != nil {
-			t.Errorf("error marshalling %+v: %+v", tt.jsr, err)
-			continue
-		}
+		b := marshalJSON(tt.results)
 		if !bytes.Equal(b, tt.out) {
-			t.Errorf("json.Marshal(%+v)=%+v, want %+v", tt.jsr, string(b), string(tt.out))
+			t.Errorf("marshalJSON(%+v)=%+v, want %+v", tt.results, string(b), string(tt.out))
 		}
 	}
 }
