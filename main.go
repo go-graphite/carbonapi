@@ -241,6 +241,31 @@ func (j jsonResponse) MarshalJSON() ([]byte, error) {
 	return b, nil
 }
 
+func marshalJSON(results []*pb.FetchResponse) ([]byte, error) {
+	var jresults []jsonResponse
+
+	// FIXME(dgryski): should probably inline this into MarshalJSON to avoid the extra allocation overhead
+
+	for _, r := range results {
+		if r == nil {
+			continue
+		}
+		datapoints := make([]graphitePoint, 0, len(r.Values))
+		t := *r.StartTime
+		for i, v := range r.Values {
+			if r.IsAbsent[i] {
+				v = math.NaN()
+			}
+			datapoints = append(datapoints, graphitePoint{value: v, t: t})
+			t += *r.StepTime
+		}
+		jresults = append(jresults, jsonResponse{Target: r.GetName(), Datapoints: datapoints})
+	}
+
+	body, err := json.Marshal(jresults)
+	return body, err
+}
+
 func marshalRaw(r *pb.FetchResponse) []byte {
 	var b []byte
 	b = append(b, r.GetName()...)
@@ -401,28 +426,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	case "json":
 		contentType = contentTypeJSON
 
-		var jresults []jsonResponse
-
-		// FIXME(dgryski): should probably inline this into MarshalJSON to avoid the extra allocation overhead
-
-		for _, r := range results {
-			if r == nil {
-				continue
-			}
-			datapoints := make([]graphitePoint, 0, len(r.Values))
-			t := *r.StartTime
-			for i, v := range r.Values {
-				if r.IsAbsent[i] {
-					v = math.NaN()
-				}
-				datapoints = append(datapoints, graphitePoint{value: v, t: t})
-				t += *r.StepTime
-			}
-			jresults = append(jresults, jsonResponse{Target: r.GetName(), Datapoints: datapoints})
-		}
-
 		var err error
-		body, err = json.Marshal(jresults)
+
+		body, err = marshalJSON(results)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
