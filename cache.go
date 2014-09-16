@@ -45,6 +45,7 @@ func (ec *expireCache) cleaner() {
 	var keys []string
 
 	for {
+		// FIXME(dgryski): pollSleep + channels, q.v., https://youtu.be/ndmB0bj7eyw?t=32m40s
 		time.Sleep(5 * time.Minute)
 
 		now := timeNow()
