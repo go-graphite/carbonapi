@@ -735,7 +735,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		for _, a := range arg {
 			r := pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("keepLastValue(%s)", e.argString)),
+				Name:      proto.String(fmt.Sprintf("keepLastValue(%s)", *a.Name)),
 				Values:    make([]float64, len(a.Values)),
 				IsAbsent:  make([]bool, len(a.Values)),
 				StepTime:  a.StepTime,
@@ -781,7 +781,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		for _, a := range arg {
 			r := pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("logarithm(%s)", e.argString)),
+				Name:      proto.String(fmt.Sprintf("logarithm(%s)", *a.Name)),
 				Values:    make([]float64, len(a.Values)),
 				IsAbsent:  make([]bool, len(a.Values)),
 				StepTime:  a.StepTime,
@@ -950,7 +950,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		for _, a := range arg {
 			r := pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("scale(%s)", e.argString)),
+				Name:      proto.String(fmt.Sprintf("scale(%s,%g)", *a.Name, scale)),
 				Values:    make([]float64, len(a.Values)),
 				IsAbsent:  make([]bool, len(a.Values)),
 				StepTime:  a.StepTime,
@@ -984,7 +984,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		for _, a := range arg {
 			r := pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("scaleToSeconds(%s)", e.argString)),
+				Name:      proto.String(fmt.Sprintf("scaleToSeconds(%s,%d)", *a.Name, int(seconds))),
 				Values:    make([]float64, len(a.Values)),
 				StepTime:  a.StepTime,
 				IsAbsent:  make([]bool, len(a.Values)),
