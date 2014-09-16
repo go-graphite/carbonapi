@@ -48,8 +48,7 @@ func (ec *expireCache) cleaner() {
 	var keys []string
 
 	for {
-		// FIXME(dgryski): pollSleep + channels, q.v., https://youtu.be/ndmB0bj7eyw?t=32m40s
-		time.Sleep(5 * time.Minute)
+		cleanerSleep(5 * time.Minute)
 
 		now := timeNow()
 		ec.Lock()
@@ -66,8 +65,14 @@ func (ec *expireCache) cleaner() {
 
 		keys = keys[:0]
 		ec.Unlock()
+		cleanerDone()
 	}
 }
+
+var (
+	cleanerSleep = time.Sleep
+	cleanerDone  = func() {}
+)
 
 type memcachedCache struct {
 	client *memcache.Client
