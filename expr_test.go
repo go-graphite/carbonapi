@@ -781,6 +781,37 @@ func TestEvalSummarize(t *testing.T) {
 	}
 }
 
+func TestExtractMetric(t *testing.T) {
+
+	var tests = []struct {
+		input  string
+		metric string
+	}{
+		{
+			"foo.bar.baz",
+			"foo.bar.baz",
+		},
+		{
+			"nonNegativeDerivative(foo.bar.baz)",
+			"foo.bar.baz",
+		},
+		{
+			"movingAverage(foo.bar.baz,10)",
+			"foo.bar.baz",
+		},
+		{
+			"scale(scaleToSeconds(nonNegativeDerivative(foo.bar.baz),60),60)",
+			"foo.bar.baz",
+		},
+	}
+
+	for _, tt := range tests {
+		if m := extractMetric(tt.input); m != tt.metric {
+			t.Errorf("extractMetric(%q)=%q, want %q", tt.input, m, tt.metric)
+		}
+	}
+}
+
 const eps = 0.0000000001
 
 func nearlyEqual(a []float64, absent []bool, b []float64) bool {

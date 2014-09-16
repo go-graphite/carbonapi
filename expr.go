@@ -440,7 +440,8 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		for _, a := range args {
 
-			fields := strings.Split(*a.Name, ".")
+			metric := extractMetric(*a.Name)
+			fields := strings.Split(metric, ".")
 			if len(fields) < field {
 				continue
 			}
@@ -1237,6 +1238,29 @@ func summarizeValues(f string, values []float64) float64 {
 	}
 
 	return rv
+}
+
+func extractMetric(m string) string {
+
+	// search for a metric name in `m'
+	// metric name is defined to be a series of name characters terminated by a comma
+
+	start := 0
+	end := 0
+	for end < len(m) {
+		log.Printf("m[start:end] %+v\n", m[start:end])
+
+		if !isNameChar(m[end]) {
+			if m[end] == ',' || m[end] == ')' {
+				return m[start:end]
+			}
+			start = end + 1
+		}
+
+		end++
+	}
+
+	return m[start:end]
 }
 
 // From github.com/dgryski/go-onlinestats
