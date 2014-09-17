@@ -442,6 +442,7 @@ func main() {
 	z := flag.String("z", "", "zipper")
 	port := flag.Int("p", 8080, "port")
 	l := flag.Int("l", 20, "concurrency limit")
+	cacheType := flag.String("cache", "mem", "cache type to use")
 	mc := flag.String("mc", "", "comma separated memcached server list")
 	cpus := flag.Int("cpus", 0, "number of CPUs to use")
 
@@ -463,17 +464,26 @@ func main() {
 
 	log.Println("using zipper", *z)
 
-	if *mc != "" {
+	switch *cacheType {
+	case "memcache":
+		if *mc == "" {
+			log.Fatal("memcache cache requested but no memcache servers provided")
+		}
+
 		servers := strings.Split(*mc, ",")
 		log.Println("using memcache servers:", servers)
 		queryCache = &memcachedCache{client: memcache.New(servers...)}
 		findCache = &memcachedCache{client: memcache.New(servers...)}
-	} else {
+
+	case "mem":
 		queryCache = &expireCache{cache: make(map[string]cacheElement)}
 		go queryCache.(*expireCache).cleaner()
 
 		findCache = &expireCache{cache: make(map[string]cacheElement)}
 		go findCache.(*expireCache).cleaner()
+	case "null":
+		queryCache = &nullCache{}
+		findCache = &nullCache{}
 	}
 
 	Zipper = zipper(*z)

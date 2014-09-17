@@ -14,6 +14,11 @@ type bytesCache interface {
 	set(k string, v []byte, expire int32)
 }
 
+type nullCache struct{}
+
+func (_ nullCache) get(string) ([]byte, bool) { return nil, false }
+func (_ nullCache) set(string, []byte, int32) {}
+
 type cacheElement struct {
 	validUntil time.Time
 	data       []byte
