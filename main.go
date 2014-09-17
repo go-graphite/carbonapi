@@ -451,7 +451,7 @@ func main() {
 	l := flag.Int("l", 20, "concurrency limit")
 	cacheType := flag.String("cache", "mem", "cache type to use")
 	mc := flag.String("mc", "", "comma separated memcached server list")
-	memsize := flag.Int("memsize", 0, "in-memory cache size (0 is unlimited)")
+	memsize := flag.Int("memsize", 0, "in-memory cache size in MB (0 is unlimited)")
 	cpus := flag.Int("cpus", 0, "number of CPUs to use")
 
 	flag.Parse()
@@ -484,7 +484,7 @@ func main() {
 		findCache = &memcachedCache{client: memcache.New(servers...)}
 
 	case "mem":
-		qcache := &expireCache{cache: make(map[string]cacheElement), maxSize: uint64(*memsize)}
+		qcache := &expireCache{cache: make(map[string]cacheElement), maxSize: uint64(*memsize * 1024 * 1024)}
 		queryCache = qcache
 		go queryCache.(*expireCache).cleaner()
 
