@@ -77,6 +77,8 @@ var Metrics = struct {
 	Timeouts: expvar.NewInt("timeouts"),
 }
 
+var Limiter serverLimiter
+
 var logger multilog
 
 type serverResponse struct {
@@ -99,6 +101,8 @@ func singleGet(uri, server string, ch chan<- serverResponse) {
 		Header: make(http.Header),
 	}
 
+	Limiter.enter(server)
+	defer Limiter.leave(server)
 	resp, err := storageClient.Do(&req)
 	if err != nil {
 		logger.Logln("singleGet: error querying ", server, "/", uri, ":", err)
@@ -459,6 +463,7 @@ func main() {
 	debugLevel := flag.Int("d", 0, "enable debug logging")
 	logStdout := flag.Bool("stdout", false, "write logging output also to stdout")
 	logSyslog := flag.Bool("syslog", true, "write logging output also to syslog")
+	concurrencyLimit := flag.Int("limit", 0, "concurrency limit per server (0 to disable)")
 
 	flag.Parse()
 
@@ -512,6 +517,10 @@ func main() {
 
 	logger.Logln("setting GOMAXPROCS=", Config.MaxProcs)
 	runtime.GOMAXPROCS(Config.MaxProcs)
+
+	if *concurrencyLimit != 0 {
+		Limiter = newServerLimiter(Config.Backends, *concurrencyLimit)
+	}
 
 	// +1 to track every over the number of buckets we track
 	timeBuckets = make([]int64, Config.Buckets+1)
@@ -657,4 +666,30 @@ func (ml *multilog) Logf(format string, a ...interface{}) {
 	for _, l := range ml.loggers {
 		l.Log(s)
 	}
+}
+
+type serverLimiter map[string]chan struct{}
+
+func newServerLimiter(servers []string, l int) serverLimiter {
+	sl := make(map[string]chan struct{})
+
+	for _, s := range servers {
+		sl[s] = make(chan struct{}, l)
+	}
+
+	return sl
+}
+
+func (sl serverLimiter) enter(s string) {
+	if sl == nil {
+		return
+	}
+	sl[s] <- struct{}{}
+}
+
+func (sl serverLimiter) leave(s string) {
+	if sl == nil {
+		return
+	}
+	<-sl[s]
 }
