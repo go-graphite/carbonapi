@@ -1155,8 +1155,8 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 				Values:    a.Values,
 				IsAbsent:  a.IsAbsent,
 				StepTime:  a.StepTime,
-				StartTime: proto.Int32(*a.StartTime + offs),
-				StopTime:  proto.Int32(*a.StopTime + offs),
+				StartTime: proto.Int32(*a.StartTime - offs),
+				StopTime:  proto.Int32(*a.StopTime - offs),
 			}
 
 			results = append(results, &r)
