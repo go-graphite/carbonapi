@@ -37,6 +37,9 @@ var Metrics = struct {
 	RenderRequests *expvar.Int
 
 	MemcacheTimeouts *expvar.Int
+
+	CacheSize  expvar.Func
+	CacheItems expvar.Func
 }{
 	Requests:         expvar.NewInt("requests"),
 	RequestCacheHits: expvar.NewInt("request_cache_hits"),
@@ -481,11 +484,29 @@ func main() {
 		findCache = &memcachedCache{client: memcache.New(servers...)}
 
 	case "mem":
-		queryCache = &expireCache{cache: make(map[string]cacheElement), maxSize: uint64(*memsize)}
+		qcache := &expireCache{cache: make(map[string]cacheElement), maxSize: uint64(*memsize)}
+		queryCache = qcache
 		go queryCache.(*expireCache).cleaner()
 
 		findCache = &expireCache{cache: make(map[string]cacheElement)}
 		go findCache.(*expireCache).cleaner()
+
+		Metrics.CacheSize = expvar.Func(func() interface{} {
+			qcache.Lock()
+			size := qcache.totalSize
+			qcache.Unlock()
+			return size
+		})
+		expvar.Publish("cache_size", Metrics.CacheSize)
+
+		Metrics.CacheItems = expvar.Func(func() interface{} {
+			qcache.Lock()
+			size := len(qcache.keys)
+			qcache.Unlock()
+			return size
+		})
+		expvar.Publish("cache_items", Metrics.CacheItems)
+
 	case "null":
 		queryCache = &nullCache{}
 		findCache = &nullCache{}
@@ -520,6 +541,11 @@ func main() {
 		graphite.Register(fmt.Sprintf("carbon.api.%s.render_requests", hostname), Metrics.RenderRequests)
 
 		graphite.Register(fmt.Sprintf("carbon.api.%s.memcache_timeouts", hostname), Metrics.MemcacheTimeouts)
+
+		if Metrics.CacheSize != nil {
+			graphite.Register(fmt.Sprintf("carbon.api.%s.cache_size", hostname), Metrics.CacheSize)
+			graphite.Register(fmt.Sprintf("carbon.api.%s.cache_items", hostname), Metrics.CacheItems)
+		}
 	}
 
 	http.HandleFunc("/render/", renderHandler)
