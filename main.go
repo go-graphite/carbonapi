@@ -431,13 +431,10 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		body = marshalJSON(results)
 
 	case "raw":
+
 		contentType = contentTypeRaw
 		body = marshalRaw(results)
 
-		for _, j := range results {
-			rout := marshalRaw(j)
-			body = append(body, rout...)
-		}
 	}
 
 	queryCache.set(cacheKey, body, 60)
