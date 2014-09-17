@@ -85,14 +85,33 @@ type memcachedCache struct {
 
 func (m *memcachedCache) get(k string) ([]byte, bool) {
 	hk := fmt.Sprintf("%x", md5.Sum([]byte(k)))
-	item, err := m.client.Get(hk)
+	done := make(chan bool, 1)
+
+	var err error
+	var item *memcache.Item
+
+	go func() {
+		item, err = m.client.Get(hk)
+		done <- true
+	}()
+
+	timeout := time.After(50 * time.Millisecond)
+
+	select {
+	case <-timeout:
+		Metrics.MemcacheTimeouts.Add(1)
+		return nil, false
+	case <-done:
+	}
+
 	if err != nil {
 		return nil, false
 	}
+
 	return item.Value, true
 }
 
 func (m *memcachedCache) set(k string, v []byte, expire int32) {
 	hk := fmt.Sprintf("%x", md5.Sum([]byte(k)))
-	m.client.Set(&memcache.Item{Key: hk, Value: v, Expiration: expire})
+	go m.client.Set(&memcache.Item{Key: hk, Value: v, Expiration: expire})
 }

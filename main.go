@@ -35,6 +35,8 @@ var Metrics = struct {
 	FindCacheHits *expvar.Int
 
 	RenderRequests *expvar.Int
+
+	MemcacheTimeouts *expvar.Int
 }{
 	Requests:         expvar.NewInt("requests"),
 	RequestCacheHits: expvar.NewInt("request_cache_hits"),
@@ -43,6 +45,8 @@ var Metrics = struct {
 	FindCacheHits: expvar.NewInt("find_cache_hits"),
 
 	RenderRequests: expvar.NewInt("render_requests"),
+
+	MemcacheTimeouts: expvar.NewInt("memcache_timeouts"),
 }
 
 var queryCache bytesCache
@@ -513,6 +517,8 @@ func main() {
 		graphite.Register(fmt.Sprintf("carbon.api.%s.find_cache_hits", hostname), Metrics.FindCacheHits)
 
 		graphite.Register(fmt.Sprintf("carbon.api.%s.render_requests", hostname), Metrics.RenderRequests)
+
+		graphite.Register(fmt.Sprintf("carbon.api.%s.memcache_timeouts", hostname), Metrics.MemcacheTimeouts)
 	}
 
 	http.HandleFunc("/render/", renderHandler)
