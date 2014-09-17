@@ -52,6 +52,24 @@ func TestCacheExpire(t *testing.T) {
 		}
 	}
 
+	if len(c.keys) != 3 {
+		t.Errorf("unexpired keys array length mismatch: got %d, want %d", len(c.keys), 3)
+	}
+
+	if c.totalSize != 3+3+4 {
+		t.Errorf("unexpired cache size mismatch: got %d, want %d", c.totalSize, 3+3+4)
+	}
+
+	c.set("baz", []byte("snork"), 60)
+
+	if len(c.keys) != 3 {
+		t.Errorf("unexpired extra keys array length mismatch: got %d, want %d", len(c.keys), 3)
+	}
+
+	if c.totalSize != 3+5+4 {
+		t.Errorf("unexpired extra cache size mismatch: got %d, want %d", c.totalSize, 3+3+4)
+	}
+
 	// expire key `foo`
 	timeNow = func() time.Time { return t0.Add(45 * time.Second) }
 
@@ -84,5 +102,13 @@ func TestCacheExpire(t *testing.T) {
 		if ok != p.ok || (ok != (b != nil)) {
 			t.Errorf("expireCache: bad partial expire cache.get(%v)=(%v,%v), want %v", p.key, string(b), ok, p.ok)
 		}
+	}
+
+	if len(c.keys) != 1 {
+		t.Errorf("unexpired keys array length mismatch: got %d, want %d", len(c.keys), 3)
+	}
+
+	if c.totalSize != 4 {
+		t.Errorf("unexpired cache size mismatch: got %d, want %d", c.totalSize, 3+3+4)
 	}
 }

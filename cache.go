@@ -80,8 +80,6 @@ func (ec *expireCache) randomEvict() {
 
 func (ec *expireCache) cleaner() {
 
-	var keys []string
-
 	for {
 		cleanerSleep(5 * time.Minute)
 
@@ -92,19 +90,19 @@ func (ec *expireCache) cleaner() {
 		// but since we keep the cache expiration times small, we
 		// expect only a small number of elements here to loop over
 
-		for _, k := range ec.keys {
+		for i := 0; i < len(ec.keys); i++ {
+			k := ec.keys[i]
 			v := ec.cache[k]
 			if v.validUntil.Before(now) {
 				ec.totalSize -= uint64(len(v.data))
-				keys = append(keys, k)
+				delete(ec.cache, k)
+
+				ec.keys[i] = ec.keys[len(ec.keys)-1]
+				ec.keys = ec.keys[:len(ec.keys)-1]
+				i-- // so we reprocess this index
 			}
 		}
 
-		for _, k := range keys {
-			delete(ec.cache, k)
-		}
-
-		keys = keys[:0]
 		ec.Unlock()
 		cleanerDone()
 	}
