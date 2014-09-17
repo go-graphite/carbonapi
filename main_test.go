@@ -56,13 +56,23 @@ func TestJSONResponse(t *testing.T) {
 
 func TestRawResponse(t *testing.T) {
 
-	r := makeResponse("metric1", []float64{1, 2, math.NaN(), 8, 16, 32}, 60, 1410633660)
+	tests := []struct {
+		results []*pb.FetchResponse
+		out     []byte
+	}{
+		{
+			[]*pb.FetchResponse{
+				makeResponse("metric1", []float64{1, 1.5, 2.25, math.NaN()}, 100, 100),
+				makeResponse("metric2", []float64{2, 2.5, 3.25, 4, 5}, 100, 100),
+			},
+			[]byte(`metric1,100,500,100|1,1.5,2.25,None` + "\n" + `metric2,100,600,100|2,2.5,3.25,4,5` + "\n"),
+		},
+	}
 
-	b := marshalRaw(r)
-
-	want := []byte(`metric1,1410633660,1410634020,60|1,2,None,8,16,32` + "\n")
-
-	if !bytes.Equal(b, want) {
-		t.Errorf("marshalRaw(...)=%q, want %q", string(b), string(want))
+	for _, tt := range tests {
+		b := marshalRaw(tt.results)
+		if !bytes.Equal(b, tt.out) {
+			t.Errorf("marshalRaw(%+v)=%+v, want %+v", tt.results, string(b), string(tt.out))
+		}
 	}
 }

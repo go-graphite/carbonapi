@@ -264,32 +264,37 @@ func marshalJSON(results []*pb.FetchResponse) []byte {
 	return b
 }
 
-func marshalRaw(r *pb.FetchResponse) []byte {
+func marshalRaw(results []*pb.FetchResponse) []byte {
+
 	var b []byte
-	b = append(b, r.GetName()...)
 
-	b = append(b, ',')
-	b = strconv.AppendInt(b, int64(r.GetStartTime()), 10)
-	b = append(b, ',')
-	b = strconv.AppendInt(b, int64(r.GetStopTime()), 10)
-	b = append(b, ',')
-	b = strconv.AppendInt(b, int64(r.GetStepTime()), 10)
-	b = append(b, '|')
+	for _, r := range results {
 
-	var comma bool
-	for i, v := range r.Values {
-		if comma {
-			b = append(b, ',')
+		b = append(b, r.GetName()...)
+
+		b = append(b, ',')
+		b = strconv.AppendInt(b, int64(r.GetStartTime()), 10)
+		b = append(b, ',')
+		b = strconv.AppendInt(b, int64(r.GetStopTime()), 10)
+		b = append(b, ',')
+		b = strconv.AppendInt(b, int64(r.GetStepTime()), 10)
+		b = append(b, '|')
+
+		var comma bool
+		for i, v := range r.Values {
+			if comma {
+				b = append(b, ',')
+			}
+			comma = true
+			if r.IsAbsent[i] {
+				b = append(b, "None"...)
+			} else {
+				b = strconv.AppendFloat(b, v, 'f', -1, 64)
+			}
 		}
-		comma = true
-		if r.IsAbsent[i] {
-			b = append(b, "None"...)
-		} else {
-			b = strconv.AppendFloat(b, v, 'f', -1, 64)
-		}
+
+		b = append(b, '\n')
 	}
-
-	b = append(b, '\n')
 	return b
 }
 
@@ -427,6 +432,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	case "raw":
 		contentType = contentTypeRaw
+		body = marshalRaw(results)
 
 		for _, j := range results {
 			rout := marshalRaw(j)
