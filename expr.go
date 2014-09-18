@@ -1087,8 +1087,19 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		var results []*pb.FetchResponse
 
 		for _, arg := range args {
+
+			var name string
+			switch len(e.args) {
+			case 2:
+				name = fmt.Sprintf("summarize(%s,'%s')", arg.GetName(), e.args[1].valStr)
+			case 3:
+				name = fmt.Sprintf("summarize(%s,'%s','%s')", arg.GetName(), e.args[1].valStr, e.args[2].valStr)
+			case 4:
+				name = fmt.Sprintf("summarize(%s,'%s','%s',%s)", arg.GetName(), e.args[1].valStr, e.args[2].valStr, e.args[3].target)
+			}
+
 			r := pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("summarize(%s)", e.argString)),
+				Name:      proto.String(name),
 				Values:    make([]float64, buckets, buckets+1),
 				IsAbsent:  make([]bool, buckets, buckets+1),
 				StepTime:  proto.Int32(bucketSize),
@@ -1175,8 +1186,16 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		var results []*pb.FetchResponse
 
 		for _, a := range arg {
+
+			var name string
+			if len(e.args) == 1 {
+				name = fmt.Sprintf("transformNull(%s)", a.GetName())
+			} else {
+				name = fmt.Sprintf("transformNull(%s,%g)", a.GetName(), defv)
+			}
+
 			r := pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("transformNull(%s)", e.argString)),
+				Name:      proto.String(name),
 				Values:    make([]float64, len(a.Values)),
 				IsAbsent:  make([]bool, len(a.Values)),
 				StepTime:  a.StepTime,
