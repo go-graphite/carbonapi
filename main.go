@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"expvar"
 	"flag"
@@ -20,6 +21,7 @@ import (
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 
 	"github.com/bradfitz/gomemcache/memcache"
+	pickle "github.com/kisielk/og-rek"
 	"github.com/peterbourgon/g2g"
 )
 
@@ -298,9 +300,41 @@ func marshalRaw(results []*pb.FetchResponse) []byte {
 	return b
 }
 
+func marshalPickle(results []*pb.FetchResponse) []byte {
+
+	var p []map[string]interface{}
+
+	for _, r := range results {
+		values := make([]interface{}, len(r.Values))
+		for i, v := range r.Values {
+			if r.IsAbsent[i] {
+				values[i] = pickle.None{}
+			} else {
+				values[i] = v
+			}
+
+		}
+		p = append(p, map[string]interface{}{
+			"name":   r.GetName(),
+			"start":  r.GetStartTime(),
+			"end":    r.GetStopTime(),
+			"step":   r.GetStepTime(),
+			"values": values,
+		})
+	}
+
+	var buf bytes.Buffer
+
+	penc := pickle.NewEncoder(&buf)
+	penc.Encode(p)
+
+	return buf.Bytes()
+}
+
 const (
-	contentTypeJSON = "application/json"
-	contentTypeRaw  = "text/plain"
+	contentTypeJSON   = "application/json"
+	contentTypeRaw    = "text/plain"
+	contentTypePickle = "application/pickle"
 )
 
 func renderHandler(w http.ResponseWriter, r *http.Request) {
@@ -331,6 +365,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", contentTypeJSON)
 		case "raw":
 			w.Header().Set("Content-Type", contentTypeRaw)
+		case "pickle":
+			w.Header().Set("Content-Type", contentTypePickle)
 		}
 		w.Write(response)
 		return
@@ -435,6 +471,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		contentType = contentTypeRaw
 		body = marshalRaw(results)
 
+	case "pickle":
+		contentType = contentTypePickle
+		body = marshalPickle(results)
 	}
 
 	queryCache.set(cacheKey, body, 60)
