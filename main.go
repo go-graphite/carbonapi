@@ -483,7 +483,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func lbcheckHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Ok\n")
+	w.Write([]byte("Ok\n"))
 }
 
 func main() {
@@ -591,7 +591,7 @@ func main() {
 	}
 
 	http.HandleFunc("/render/", renderHandler)
-	http.HandleFunc("/lbcheck", lbcheckHandler)
+	http.HandleFunc("/lb_check", lbcheckHandler)
 
 	log.Println("listening on port", *port)
 	log.Fatalln(http.ListenAndServe(":"+strconv.Itoa(*port), nil))
