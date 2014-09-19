@@ -516,6 +516,7 @@ func main() {
 	}
 
 	log.Println("using zipper", *z)
+	Zipper = zipper(*z)
 
 	switch *cacheType {
 	case "memcache":
@@ -557,7 +558,6 @@ func main() {
 		findCache = &nullCache{}
 	}
 
-	Zipper = zipper(*z)
 	if *tz != "" {
 		fields := strings.Split(*tz, ",")
 		if len(fields) != 2 {
