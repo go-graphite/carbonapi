@@ -102,6 +102,8 @@ func dateParamToEpoch(s string, d int64) int32 {
 	return int32(d)
 }
 
+var errUnknownTimeUnits = errors.New("unknown time units")
+
 func intervalString(s string, defaultSign int) (int32, error) {
 
 	sign := defaultSign
@@ -148,7 +150,7 @@ func intervalString(s string, defaultSign int) (int32, error) {
 		case "y", "year", "years":
 			units = 365 * 24 * 60 * 60
 		default:
-			return 0, errors.New("unknown time units")
+			return 0, errUnknownTimeUnits
 		}
 
 		offset, err := strconv.Atoi(offsetStr)
