@@ -591,6 +591,7 @@ func main() {
 	}
 
 	http.HandleFunc("/render/", renderHandler)
+	http.HandleFunc("/render", renderHandler)
 	http.HandleFunc("/lb_check", lbcheckHandler)
 
 	log.Println("listening on port", *port)
