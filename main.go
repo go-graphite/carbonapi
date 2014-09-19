@@ -104,7 +104,7 @@ func dateParamToEpoch(s string, d int64) int32 {
 
 func intervalString(s string, defaultSign int) (int32, error) {
 
-	var j int
+	var i, j, k int
 
 	sign := defaultSign
 
@@ -117,37 +117,49 @@ func intervalString(s string, defaultSign int) (int32, error) {
 		s = s[1:]
 	}
 
-	for j < len(s) && s[j] >= '0' && s[j] <= '9' {
-		j++
-	}
-	offsetStr, unitStr := s[:j], s[j:]
+	var totalInterval int32
+	var lastError error
+	for k < len(s) {
+		for j = i; j < len(s) && s[j] >= '0' && s[j] <= '9'; {
+			j++
+		}
+		for k = j; k < len(s) && (s[k] > '9' || s[k] < '0'); {
+			k++
+		}
+		offsetStr, unitStr := s[i:j], s[j:k]
+		i = k
+		k++
 
-	var units int
-	switch unitStr {
-	case "s", "sec", "secs", "second", "seconds":
-		units = 1
-	case "min", "minute", "minutes":
-		units = 60
-	case "h", "hour", "hours":
-		units = 60 * 60
-	case "d", "day", "days":
-		units = 24 * 60 * 60
-	case "w", "week", "weeks":
-		units = 7 * 24 * 60 * 60
-	case "mon", "month", "months":
-		units = 30 * 24 * 60 * 60
-	case "y", "year", "years":
-		units = 365 * 24 * 60 * 60
-	default:
-		return 0, errors.New("unknown time units")
+		var units int
+		switch unitStr {
+		case "s", "sec", "secs", "second", "seconds":
+			units = 1
+		case "min", "minute", "minutes":
+			units = 60
+		case "h", "hour", "hours":
+			units = 60 * 60
+		case "d", "day", "days":
+			units = 24 * 60 * 60
+		case "w", "week", "weeks":
+			units = 7 * 24 * 60 * 60
+		case "mon", "month", "months":
+			units = 30 * 24 * 60 * 60
+		case "y", "year", "years":
+			units = 365 * 24 * 60 * 60
+		default:
+			lastError = errors.New("unknown time units")
+			continue
+		}
+
+		offset, err := strconv.Atoi(offsetStr)
+		if err != nil {
+			lastError = err
+			continue
+		}
+		totalInterval += int32(sign * offset * units)
 	}
 
-	offset, err := strconv.Atoi(offsetStr)
-	if err != nil {
-		return 0, err
-	}
-
-	return int32(sign * offset * units), nil
+	return totalInterval, lastError
 }
 
 func (z zipper) Find(metric string) (pb.GlobResponse, error) {
