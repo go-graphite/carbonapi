@@ -59,6 +59,8 @@ var findCache bytesCache
 
 var timeFormats = []string{"15:04 20060102", "20060102", "01/02/06"}
 
+var defaultTimeZone = time.Local
+
 // dateParamToEpoch turns a passed string parameter into an epoch we can send to the Zipper
 func dateParamToEpoch(s string, d int64) int32 {
 
@@ -92,7 +94,7 @@ func dateParamToEpoch(s string, d int64) int32 {
 	}
 
 	for _, format := range timeFormats {
-		t, err := time.Parse(format, s)
+		t, err := time.ParseInLocation(format, s, defaultTimeZone)
 		if err == nil {
 			return int32(t.Unix())
 		}
@@ -495,6 +497,7 @@ func main() {
 	mc := flag.String("mc", "", "comma separated memcached server list")
 	memsize := flag.Int("memsize", 0, "in-memory cache size in MB (0 is unlimited)")
 	cpus := flag.Int("cpus", 0, "number of CPUs to use")
+	tz := flag.String("tz", "", "timezone,offset to use for dates with no timezone")
 
 	flag.Parse()
 
@@ -555,6 +558,21 @@ func main() {
 	}
 
 	Zipper = zipper(*z)
+	if *tz != "" {
+		fields := strings.Split(*tz, ",")
+		if len(fields) != 2 {
+			log.Fatalf("expected two fields for tz,seconds, got %d", len(fields))
+		}
+
+		var err error
+		offs, err := strconv.Atoi(fields[1])
+		if err != nil {
+			log.Fatalf("unable to parse seconds: %s: %s", fields[1], err)
+		}
+
+		defaultTimeZone = time.FixedZone(fields[0], offs)
+		log.Printf("using fixed timezone %s, offset %d ", defaultTimeZone.String(), offs)
+	}
 
 	if *cpus != 0 {
 		log.Println("using GOMAXPROCS", *cpus)
