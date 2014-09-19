@@ -104,8 +104,6 @@ func dateParamToEpoch(s string, d int64) int32 {
 
 func intervalString(s string, defaultSign int) (int32, error) {
 
-	var i, j, k int
-
 	sign := defaultSign
 
 	switch s[0] {
@@ -119,16 +117,20 @@ func intervalString(s string, defaultSign int) (int32, error) {
 
 	var totalInterval int32
 	var lastError error
-	for k < len(s) {
-		for j = i; j < len(s) && s[j] >= '0' && s[j] <= '9'; {
+	for len(s) > 0 {
+		var j int
+		for j < len(s) && '0' <= s[j] && s[j] <= '9' {
 			j++
 		}
-		for k = j; k < len(s) && (s[k] > '9' || s[k] < '0'); {
-			k++
+		var offsetStr string
+		offsetStr, s = s[:j], s[j:]
+
+		j = 0
+		for j < len(s) && (s[j] < '0' || '9' < s[j]) {
+			j++
 		}
-		offsetStr, unitStr := s[i:j], s[j:k]
-		i = k
-		k++
+		var unitStr string
+		unitStr, s = s[:j], s[j:]
 
 		var units int
 		switch unitStr {
