@@ -116,7 +116,6 @@ func intervalString(s string, defaultSign int) (int32, error) {
 	}
 
 	var totalInterval int32
-	var lastError error
 	for len(s) > 0 {
 		var j int
 		for j < len(s) && '0' <= s[j] && s[j] <= '9' {
@@ -149,19 +148,17 @@ func intervalString(s string, defaultSign int) (int32, error) {
 		case "y", "year", "years":
 			units = 365 * 24 * 60 * 60
 		default:
-			lastError = errors.New("unknown time units")
-			continue
+			return 0, errors.New("unknown time units")
 		}
 
 		offset, err := strconv.Atoi(offsetStr)
 		if err != nil {
-			lastError = err
-			continue
+			return 0, err
 		}
 		totalInterval += int32(sign * offset * units)
 	}
 
-	return totalInterval, lastError
+	return totalInterval, nil
 }
 
 func (z zipper) Find(metric string) (pb.GlobResponse, error) {
