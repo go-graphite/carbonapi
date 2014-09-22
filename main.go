@@ -511,6 +511,7 @@ func main() {
 	memsize := flag.Int("memsize", 0, "in-memory cache size in MB (0 is unlimited)")
 	cpus := flag.Int("cpus", 0, "number of CPUs to use")
 	tz := flag.String("tz", "", "timezone,offset to use for dates with no timezone")
+	graphiteHost := flag.String("graphite", "", "graphite destination host")
 
 	flag.Parse()
 
@@ -592,7 +593,18 @@ func main() {
 		runtime.GOMAXPROCS(*cpus)
 	}
 
-	if host := os.Getenv("GRAPHITEHOST") + ":" + os.Getenv("GRAPHITEPORT"); host != ":" {
+	if envhost := os.Getenv("GRAPHITEHOST") + ":" + os.Getenv("GRAPHITEPORT"); envhost != ":" || *graphiteHost != "" {
+
+		var host string
+
+		switch {
+		case envhost != ":" && *graphiteHost != "":
+			host = *graphiteHost
+		case envhost != ":":
+			host = envhost
+		case *graphiteHost != "":
+			host = *graphiteHost
+		}
 
 		log.Println("Using graphite host", host)
 
