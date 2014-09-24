@@ -25,7 +25,10 @@ import (
 	"github.com/peterbourgon/g2g"
 )
 
-type zipper string
+type zipper struct {
+	z      string
+	client *http.Client
+}
 
 var Zipper zipper
 
@@ -167,7 +170,7 @@ func intervalString(s string, defaultSign int) (int32, error) {
 
 func (z zipper) Find(metric string) (pb.GlobResponse, error) {
 
-	u, _ := url.Parse(string(z) + "/metrics/find/")
+	u, _ := url.Parse(string(z.z) + "/metrics/find/")
 
 	u.RawQuery = url.Values{
 		"query":  []string{metric},
@@ -183,7 +186,7 @@ func (z zipper) Find(metric string) (pb.GlobResponse, error) {
 
 func (z zipper) Render(metric string, from, until int32) (pb.FetchResponse, error) {
 
-	u, _ := url.Parse(string(z) + "/render/")
+	u, _ := url.Parse(string(z.z) + "/render/")
 
 	u.RawQuery = url.Values{
 		"target": []string{metric},
@@ -200,7 +203,7 @@ func (z zipper) Render(metric string, from, until int32) (pb.FetchResponse, erro
 }
 
 func (z zipper) get(who string, u *url.URL, msg proto.Message) error {
-	resp, err := http.Get(u.String())
+	resp, err := z.client.Get(u.String())
 	if err != nil {
 		return fmt.Errorf("http.Get: %+v", err)
 	}
@@ -535,7 +538,13 @@ func main() {
 	}
 
 	log.Println("using zipper", *z)
-	Zipper = zipper(*z)
+	Zipper = zipper{
+		z: *z,
+		client: &http.Client{
+			Transport: &http.Transport{
+				MaxIdleConnsPerHost: *l / 2},
+		},
+	}
 
 	switch *cacheType {
 	case "memcache":
