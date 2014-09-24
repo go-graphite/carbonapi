@@ -430,6 +430,31 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		return []*pb.FetchResponse{&r}
 
+	case "aliasByMetric": // aliasByMetric(seriesList)
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		var results []*pb.FetchResponse
+		for _, a := range args {
+
+			metric := extractMetric(*a.Name)
+			part := strings.Split(metric, ".")
+			r := pb.FetchResponse{
+				Name:      proto.String(part[len(part)-1]),
+				Values:    a.Values,
+				IsAbsent:  a.IsAbsent,
+				StepTime:  a.StepTime,
+				StartTime: a.StartTime,
+				StopTime:  a.StopTime,
+			}
+
+			results = append(results, &r)
+		}
+
+		return results
+
 	case "aliasByNode": // aliasByNode(seriesList, *nodes)
 		// TODO(dgryski): we only support one 'node' argument at the moment
 		args, err := getSeriesArg(e.args[0], from, until, values)

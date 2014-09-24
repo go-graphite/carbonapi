@@ -310,6 +310,20 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "aliasByMetric",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1.foo.bar.baz"},
+				},
+			},
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1.foo.bar.baz", 0, 0}: []*pb.FetchResponse{makeResponse("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			},
+			[]float64{1, 2, 3, 4, 5},
+			"baz",
+		},
+		{
+			&expr{
 				target: "aliasByNode",
 				etype:  etFunc,
 				args: []*expr{
