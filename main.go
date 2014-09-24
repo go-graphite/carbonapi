@@ -478,7 +478,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
-					log.Printf("panic during eval: %v: %v", r, cacheKey)
+					var buf [1024]byte
+					runtime.Stack(buf[:], false)
+					log.Printf("panic during eval: %s: %s\n%s\n", cacheKey, r, string(buf[:]))
 				}
 			}()
 			exprs := evalExpr(exp, from32, until32, metricMap)
