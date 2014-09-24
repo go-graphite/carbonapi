@@ -54,6 +54,8 @@ var Metrics = struct {
 	MemcacheTimeouts: expvar.NewInt("memcache_timeouts"),
 }
 
+var BuildVersion string = "(development build)"
+
 var queryCache bytesCache
 var findCache bytesCache
 
@@ -514,6 +516,9 @@ func main() {
 	graphiteHost := flag.String("graphite", "", "graphite destination host")
 
 	flag.Parse()
+
+	expvar.NewString("BuildVersion").Set(BuildVersion)
+	log.Println("starting carbonapi", BuildVersion)
 
 	if p := os.Getenv("PORT"); p != "" {
 		*port, _ = strconv.Atoi(p)
