@@ -389,6 +389,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		case "pickle":
 			w.Header().Set("Content-Type", contentTypePickle)
 		}
+
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+
 		w.Write(response)
 		return
 	}
@@ -508,6 +511,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	queryCache.set(cacheKey, body, 60)
 
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", contentType)
 	w.Write(body)
 }
