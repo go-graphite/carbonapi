@@ -1150,6 +1150,11 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 				if t >= bucketEnd {
 					rv := summarizeValues(summarizeFunction, values)
 
+					if math.IsNaN(rv) {
+						rv = 0
+						r.IsAbsent[ridx] = true
+					}
+
 					r.Values[ridx] = rv
 					ridx++
 					bucketStart += bucketSize
