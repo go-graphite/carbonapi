@@ -474,8 +474,15 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		exprs := evalExpr(exp, from32, until32, metricMap)
-		results = append(results, exprs...)
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("panic during eval: %v: %v", r, cacheKey)
+				}
+			}()
+			exprs := evalExpr(exp, from32, until32, metricMap)
+			results = append(results, exprs...)
+		}()
 	}
 
 	var body []byte
