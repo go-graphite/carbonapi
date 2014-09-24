@@ -21,6 +21,7 @@ import (
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 
 	"github.com/bradfitz/gomemcache/memcache"
+	"github.com/dgryski/httputil"
 	pickle "github.com/kisielk/og-rek"
 	"github.com/peterbourgon/g2g"
 )
@@ -654,10 +655,17 @@ func main() {
 		}
 	}
 
-	http.HandleFunc("/render/", renderHandler)
-	http.HandleFunc("/render", renderHandler)
+	httputil.PublishTrackedConnections("httptrack")
+
+	http.HandleFunc("/render/", httputil.TrackConnections(httputil.TimeHandler(renderHandler, loggercb)))
+	http.HandleFunc("/render", httputil.TrackConnections(httputil.TimeHandler(renderHandler, loggercb)))
+
 	http.HandleFunc("/lb_check", lbcheckHandler)
 
 	log.Println("listening on port", *port)
 	log.Fatalln(http.ListenAndServe(":"+strconv.Itoa(*port), nil))
+}
+
+func loggercb(r *http.Request, d time.Duration) {
+	log.Println(r.RequestURI, d)
 }
