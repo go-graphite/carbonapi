@@ -374,6 +374,17 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	format := r.FormValue("format")
 	useCache := r.FormValue("noCache") == ""
 
+	cacheTimeout := int32(60)
+
+	if tstr := r.FormValue("cacheTimeout"); tstr != "" {
+		t, err := strconv.Atoi(tstr)
+		if err != nil {
+			log.Printf("failed to parse cacheTimeout: %v: %v", tstr, err)
+		} else {
+			cacheTimeout = int32(t)
+		}
+	}
+
 	// make sure the cache key doesn't say noCache, because it will never hit
 	r.Form.Del("noCache")
 
@@ -509,7 +520,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		body = marshalPickle(results)
 	}
 
-	queryCache.set(cacheKey, body, 60)
+	queryCache.set(cacheKey, body, cacheTimeout)
 
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", contentType)
