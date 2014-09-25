@@ -110,6 +110,13 @@ func TestParseExpr(t *testing.T) {
 				argString: `metric1, "stringconst"`,
 			},
 		},
+		{
+			`foo.{bar,baz}.qux`,
+			&expr{
+				target: "foo.{bar,baz}.qux",
+				etype:  etName,
+			},
+		},
 	}
 
 	for _, tt := range tests {

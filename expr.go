@@ -207,8 +207,31 @@ func parseConst(s string) (float64, string, error) {
 func parseName(s string) (string, string) {
 
 	var i int
-	for i < len(s) && isNameChar(s[i]) {
-		i++
+
+FOR:
+	for braces := 0; i < len(s); i++ {
+
+		if isNameChar(s[i]) {
+			continue
+		}
+
+		switch s[i] {
+		case '{':
+			braces++
+		case '}':
+			if braces == 0 {
+				break FOR
+
+			}
+			braces--
+		case ',':
+			if braces == 0 {
+				break FOR
+			}
+		default:
+			break FOR
+		}
+
 	}
 
 	if i == len(s) {
