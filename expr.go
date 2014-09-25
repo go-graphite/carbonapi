@@ -1279,7 +1279,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return results
 
-	case "drawAsInfinite": // ignored
+	case "dashed", "drawAsInfinite", "secondYAxis": // ignored
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
