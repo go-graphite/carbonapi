@@ -883,6 +883,41 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return []*pb.FetchResponse{&r}
 
+	case "minSeries": // minSeries(*seriesLists)
+		args, err := getSeriesArgs(e.args, from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		r := pb.FetchResponse{
+			Name:      proto.String(fmt.Sprintf("minSeries(%s)", e.argString)),
+			Values:    make([]float64, len(args[0].Values)),
+			IsAbsent:  make([]bool, len(args[0].Values)),
+			StepTime:  args[0].StepTime,
+			StartTime: args[0].StartTime,
+			StopTime:  args[0].StopTime,
+		}
+
+		// TODO(dgryski): make sure all series are the same 'size'
+		for i := 0; i < len(args[0].Values); i++ {
+			var elts int
+			r.Values[i] = math.Inf(1)
+			for j := 0; j < len(args); j++ {
+				if args[j].IsAbsent[i] {
+					continue
+				}
+				elts++
+				if r.Values[i] > args[j].Values[i] {
+					r.Values[i] = args[j].Values[i]
+				}
+			}
+
+			if elts == 0 {
+				r.Values[i] = 0
+				r.IsAbsent[i] = true
+			}
+		}
+		return []*pb.FetchResponse{&r}
 	case "movingAverage": // movingAverage(seriesList, windowSize)
 		var n int
 		var err error
