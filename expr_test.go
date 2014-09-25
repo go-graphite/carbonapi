@@ -793,6 +793,25 @@ func TestEvalSummarize(t *testing.T) {
 			tenThirtyTwo,
 			tenThirtyTwo + 25*60,
 		},
+		{
+			&expr{
+				target: "hitcount",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{valStr: "30s", etype: etString},
+				},
+				argString: "metric1,'30s'",
+			},
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{makeResponse("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5}, 5, now32)},
+			},
+			[]float64{35, 70, 105, 140, 25},
+			"hitcount(metric1,'30s')",
+			30,
+			now32,
+			now32 + 25*5,
+		},
 	}
 
 	for _, tt := range tests {

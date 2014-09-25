@@ -776,6 +776,101 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		return results
 
+	case "hitcount": // hitcount(seriesList, intervalString, alignToInterval=False)
+		// TODO(dgryski): make sure the arrays are all the same 'size'
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		bucketSize, err := getIntervalArg(e, 1, 1)
+		if err != nil {
+			return nil
+		}
+
+		alignToInterval, err := getBoolArgDefault(e, 3, false)
+		if err != nil {
+			return nil
+		}
+
+		start := *args[0].StartTime
+		stop := *args[0].StopTime
+
+		if alignToInterval {
+			start = int32(time.Unix(int64(start), 0).Truncate(time.Duration(bucketSize) * time.Second).Unix())
+			stop = int32(time.Unix(int64(stop), 0).Truncate(time.Duration(bucketSize) * time.Second).Unix())
+		}
+
+		buckets := (stop - start) / bucketSize
+
+		var results []*pb.FetchResponse
+
+		for _, arg := range args {
+
+			var name string
+			switch len(e.args) {
+			case 2:
+				name = fmt.Sprintf("hitcount(%s,'%s')", arg.GetName(), e.args[1].valStr)
+			case 3:
+				name = fmt.Sprintf("hitcount(%s,'%s',%s)", arg.GetName(), e.args[1].valStr, e.args[2].target)
+			}
+
+			r := pb.FetchResponse{
+				Name:      proto.String(name),
+				Values:    make([]float64, buckets, buckets+1),
+				IsAbsent:  make([]bool, buckets, buckets+1),
+				StepTime:  proto.Int32(bucketSize),
+				StartTime: proto.Int32(start),
+				StopTime:  proto.Int32(stop),
+			}
+			bucketStart := *args[0].StartTime // unadjusted
+			bucketEnd := *r.StartTime + bucketSize
+			values := make([]float64, 0, bucketSize / *arg.StepTime)
+			t := bucketStart
+			ridx := 0
+			skipped := 0
+			var count float64
+			for i, v := range arg.Values {
+
+				if !arg.IsAbsent[i] {
+					values = append(values, v)
+				} else {
+					skipped++
+				}
+
+				t += *arg.StepTime
+
+				count += v * float64(*arg.StepTime)
+
+				if t >= bucketEnd {
+					rv := count
+
+					if math.IsNaN(rv) {
+						rv = 0
+						r.IsAbsent[ridx] = true
+					}
+
+					r.Values[ridx] = rv
+					ridx++
+					bucketStart += bucketSize
+					bucketEnd += bucketSize
+					values = values[:0]
+					skipped = 0
+					count = 0
+				}
+			}
+
+			// remaining values
+			if len(values) > 0 {
+				rv := count
+				r.Values = append(r.Values, rv)
+				r.IsAbsent = append(r.IsAbsent, false)
+			}
+
+			results = append(results, &r)
+		}
+		return results
+
 	case "keepLastValue": // keepLastValue(seriesList, limit=inf)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
