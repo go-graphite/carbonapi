@@ -922,7 +922,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return results
 
-	case "logarithm": // logarithm(seriesList, base=10)
+	case "logarithm", "log": // logarithm(seriesList, base=10)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
