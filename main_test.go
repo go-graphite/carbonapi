@@ -59,6 +59,7 @@ func TestJSONResponse(t *testing.T) {
 
 	tests := []struct {
 		results []*pb.FetchResponse
+		jsonp   string
 		out     []byte
 	}{
 		{
@@ -66,12 +67,21 @@ func TestJSONResponse(t *testing.T) {
 				makeResponse("metric1", []float64{1, 1.5, 2.25, math.NaN()}, 100, 100),
 				makeResponse("metric2", []float64{2, 2.5, 3.25, 4, 5}, 100, 100),
 			},
+			"",
 			[]byte(`[{"target":"metric1","datapoints":[[1,100],[1.5,200],[2.25,300],[null,400]]},{"target":"metric2","datapoints":[[2,100],[2.5,200],[3.25,300],[4,400],[5,500]]}]`),
+		},
+		{
+			[]*pb.FetchResponse{
+				makeResponse("metric1", []float64{1, 1.5, 2.25, math.NaN()}, 100, 100),
+				makeResponse("metric2", []float64{2, 2.5, 3.25, 4, 5}, 100, 100),
+			},
+			"callback",
+			[]byte(`callback([{"target":"metric1","datapoints":[[1,100],[1.5,200],[2.25,300],[null,400]]},{"target":"metric2","datapoints":[[2,100],[2.5,200],[3.25,300],[4,400],[5,500]]}])`),
 		},
 	}
 
 	for _, tt := range tests {
-		b := marshalJSON(tt.results)
+		b := marshalJSON(tt.results, tt.jsonp)
 		if !bytes.Equal(b, tt.out) {
 			t.Errorf("marshalJSON(%+v)=%+v, want %+v", tt.results, string(b), string(tt.out))
 		}

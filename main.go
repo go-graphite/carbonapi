@@ -233,9 +233,14 @@ var Limiter limiter
 // for testing
 var timeNow = time.Now
 
-func marshalJSON(results []*pb.FetchResponse) []byte {
+func marshalJSON(results []*pb.FetchResponse, jsonp string) []byte {
 
 	var b []byte
+
+	if jsonp != "" {
+		b = append(b, []byte(jsonp)...)
+		b = append(b, '(')
+	}
 
 	b = append(b, '[')
 
@@ -283,6 +288,10 @@ func marshalJSON(results []*pb.FetchResponse) []byte {
 	}
 
 	b = append(b, ']')
+
+	if jsonp != "" {
+		b = append(b, ')')
+	}
 
 	return b
 }
@@ -373,6 +382,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	until := r.FormValue("until")
 	format := r.FormValue("format")
 	useCache := r.FormValue("noCache") == ""
+	jsonp := r.FormValue("jsonp")
 
 	cacheTimeout := int32(60)
 
@@ -508,7 +518,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	switch format {
 	case "json":
 		contentType = contentTypeJSON
-		body = marshalJSON(results)
+		body = marshalJSON(results, jsonp)
 
 	case "raw":
 
