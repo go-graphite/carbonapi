@@ -21,7 +21,6 @@ import (
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 
 	"github.com/bradfitz/gomemcache/memcache"
-	"github.com/dgryski/httputil"
 	pickle "github.com/kisielk/og-rek"
 	"github.com/peterbourgon/g2g"
 )
@@ -367,7 +366,11 @@ const (
 	contentTypePickle = "application/pickle"
 )
 
-func renderHandler(w http.ResponseWriter, r *http.Request) {
+type renderStats struct {
+	zipperRequests int
+}
+
+func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 
 	Metrics.Requests.Add(1)
 
@@ -456,6 +459,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			if !haveCacheData {
 				var err error
 				Metrics.FindRequests.Add(1)
+				stats.zipperRequests++
 				glob, err = Zipper.Find(m.metric)
 				if err != nil {
 					log.Printf("Find: %v: %v", m.metric, err)
@@ -478,6 +482,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 				Metrics.RenderRequests.Add(1)
 				leaves++
 				Limiter.enter()
+				stats.zipperRequests++
 				go func(m *pb.GlobMatch, from, until int32) {
 					var rptr *pb.FetchResponse
 					r, err := Zipper.Render(m.GetPath(), from, until)
@@ -682,17 +687,18 @@ func main() {
 		}
 	}
 
-	httputil.PublishTrackedConnections("httptrack")
+	render := func(w http.ResponseWriter, r *http.Request) {
+		var stats renderStats
+		t0 := time.Now()
+		renderHandler(w, r, &stats)
+		log.Println(r.RequestURI, time.Since(t0), stats.zipperRequests)
+	}
 
-	http.HandleFunc("/render/", httputil.TrackConnections(httputil.TimeHandler(renderHandler, loggercb)))
-	http.HandleFunc("/render", httputil.TrackConnections(httputil.TimeHandler(renderHandler, loggercb)))
+	http.HandleFunc("/render/", render)
+	http.HandleFunc("/render", render)
 
 	http.HandleFunc("/lb_check", lbcheckHandler)
 
 	log.Println("listening on port", *port)
 	log.Fatalln(http.ListenAndServe(":"+strconv.Itoa(*port), nil))
-}
-
-func loggercb(r *http.Request, d time.Duration) {
-	log.Println(r.RequestURI, d)
 }
