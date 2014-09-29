@@ -347,6 +347,25 @@ func getIntArg(e *expr, n int) (int, error) {
 	return int(e.args[n].val), nil
 }
 
+func getIntArgs(e *expr, n int) ([]int, error) {
+
+	if len(e.args) <= n {
+		return nil, ErrMissingArgument
+	}
+
+	var ints []int
+
+	for i := n; i < len(e.args); i++ {
+		a, err := getIntArg(e, i)
+		if err != nil {
+			return nil, err
+		}
+		ints = append(ints, a)
+	}
+
+	return ints, nil
+}
+
 func getIntArgDefault(e *expr, n int, d int) (int, error) {
 	if len(e.args) <= n {
 		return d, nil
@@ -479,12 +498,12 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		return results
 
 	case "aliasByNode": // aliasByNode(seriesList, *nodes)
-		// TODO(dgryski): we only support one 'node' argument at the moment
 		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}
-		field, err := getIntArg(e, 1)
+
+		fields, err := getIntArgs(e, 1)
 		if err != nil {
 			return nil
 		}
@@ -494,12 +513,18 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		for _, a := range args {
 
 			metric := extractMetric(*a.Name)
-			fields := strings.Split(metric, ".")
-			if len(fields) < field {
-				continue
+			nodes := strings.Split(metric, ".")
+
+			var name []string
+			for _, f := range fields {
+				if f >= len(nodes) {
+					continue
+				}
+				name = append(name, nodes[f])
 			}
+
 			r := pb.FetchResponse{
-				Name:      proto.String(fields[field]),
+				Name:      proto.String(strings.Join(name, ".")),
 				Values:    a.Values,
 				IsAbsent:  a.IsAbsent,
 				StepTime:  a.StepTime,
