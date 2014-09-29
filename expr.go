@@ -575,8 +575,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		return result
 
 	case "diffSeries": // diffSeries(*seriesLists)
-		// FIXME(dgryski): only accepts two arguments
-		if len(e.args) != 2 {
+		if len(e.args) < 2 {
 			return nil
 		}
 
@@ -585,19 +584,12 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 			return nil
 		}
 
-		subtrahend, err := getSeriesArg(e.args[1], from, until, values)
+		subtrahends, err := getSeriesArgs(e.args[1:], from, until, values)
 		if err != nil {
 			return nil
 		}
 
-		if len(minuend) != 1 || len(subtrahend) != 1 {
-			return nil
-		}
-
-		if *minuend[0].StepTime != *subtrahend[0].StepTime || len(minuend[0].Values) != len(subtrahend[0].Values) {
-			return nil
-		}
-
+		// FIXME: need more error checking on minuend, subtrahends here
 		r := pb.FetchResponse{
 			Name:      proto.String(fmt.Sprintf("diffSeries(%s)", e.argString)),
 			Values:    make([]float64, len(minuend[0].Values)),
@@ -609,12 +601,26 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		for i, v := range minuend[0].Values {
 
-			if minuend[0].IsAbsent[i] || subtrahend[0].IsAbsent[i] {
+			if minuend[0].IsAbsent[i] {
 				r.IsAbsent[i] = true
 				continue
 			}
 
-			r.Values[i] = v - subtrahend[0].Values[i]
+			var sub float64
+			var atLeastOne bool
+			for _, s := range subtrahends {
+				if s.IsAbsent[i] {
+					continue
+				}
+				atLeastOne = true
+				sub += s.Values[i]
+			}
+
+			if atLeastOne {
+				r.Values[i] = v - sub
+			} else {
+				r.IsAbsent[i] = true
+			}
 		}
 		return []*pb.FetchResponse{&r}
 
