@@ -361,9 +361,10 @@ func marshalPickle(results []*pb.FetchResponse) []byte {
 }
 
 const (
-	contentTypeJSON   = "application/json"
-	contentTypeRaw    = "text/plain"
-	contentTypePickle = "application/pickle"
+	contentTypeJSON       = "application/json"
+	contentTypeJavaScript = "text/javascript"
+	contentTypeRaw        = "text/plain"
+	contentTypePickle     = "application/pickle"
 )
 
 type renderStats struct {
@@ -407,7 +408,11 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 		Metrics.RequestCacheHits.Add(1)
 		switch format {
 		case "json":
-			w.Header().Set("Content-Type", contentTypeJSON)
+			if jsonp != "" {
+				w.Header().Set("Content-Type", contentTypeJavaScript)
+			} else {
+				w.Header().Set("Content-Type", contentTypeJSON)
+			}
 		case "raw":
 			w.Header().Set("Content-Type", contentTypeRaw)
 		case "pickle":
@@ -522,7 +527,12 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 
 	switch format {
 	case "json":
-		contentType = contentTypeJSON
+		if jsonp != "" {
+			contentType = contentTypeJavaScript
+		} else {
+			contentType = contentTypeJSON
+		}
+
 		body = marshalJSON(results, jsonp)
 
 	case "raw":
