@@ -511,6 +511,96 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		return results
 
+	case "asPercent": // asPercent(seriesList, total=None)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		var getTotal func(i int) float64
+		var formatName func(a *pb.FetchResponse) string
+
+		if len(e.args) == 1 {
+			getTotal = func(i int) float64 {
+				var t float64
+				for _, a := range arg {
+					if a.IsAbsent[i] {
+						continue
+					}
+					t += a.Values[i]
+				}
+				return t
+			}
+			formatName = func(a *pb.FetchResponse) string {
+				return fmt.Sprintf("asPercent(%s)", a.GetName())
+			}
+		} else if len(e.args) == 2 && e.args[1].etype == etConst {
+			total, err := getFloatArg(e, 1)
+			if err != nil {
+				return nil
+			}
+			getTotal = func(i int) float64 { return total }
+			formatName = func(a *pb.FetchResponse) string {
+				return fmt.Sprintf("asPercent(%s,%g)", a, total)
+			}
+		} else if len(e.args) == 2 && (e.args[1].etype == etName || e.args[1].etype == etFunc) {
+			total, err := getSeriesArg(e.args[1], from, until, values)
+			if err != nil || len(total) != 1 {
+				return nil
+			}
+			getTotal = func(i int) float64 {
+				if total[0].IsAbsent[i] {
+					return math.NaN()
+				}
+				return total[0].Values[i]
+			}
+			var totalString string
+			if e.args[1].etype == etName {
+				totalString = e.args[1].target
+			} else {
+				totalString = fmt.Sprintf("%s(%s)", e.args[1].target, e.args[1].argString)
+			}
+			formatName = func(a *pb.FetchResponse) string {
+				return fmt.Sprintf("asPercent(%s,%s)", a.GetName(), totalString)
+			}
+		} else {
+			return nil
+		}
+
+		var results []*pb.FetchResponse
+
+		for _, a := range arg {
+			r := pb.FetchResponse{
+				Name:      proto.String(formatName(a)),
+				Values:    make([]float64, len(a.Values)),
+				StepTime:  a.StepTime,
+				IsAbsent:  make([]bool, len(a.Values)),
+				StartTime: a.StartTime,
+				StopTime:  a.StopTime,
+			}
+
+			results = append(results, &r)
+		}
+
+		for i := range results[0].Values {
+
+			total := getTotal(i)
+
+			for j := range results {
+				r := results[j]
+				a := arg[j]
+
+				if a.IsAbsent[i] {
+					r.Values[i] = 0
+					r.IsAbsent[i] = true
+					continue
+				}
+
+				r.Values[i] = (a.Values[i] / total) * 100
+			}
+		}
+		return results
+
 	case "avg", "averageSeries": // averageSeries(*seriesLists)
 		args, err := getSeriesArgs(e.args, from, until, values)
 		if err != nil {
