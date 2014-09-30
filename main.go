@@ -402,6 +402,10 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 	// make sure the cache key doesn't say noCache, because it will never hit
 	r.Form.Del("noCache")
 
+	// Strip some cache-busters.  If you don't want to cache, use noCache=1
+	r.Form.Del("_salt")
+	r.Form.Del("_ts")
+
 	cacheKey := r.Form.Encode()
 
 	if response, ok := queryCache.get(cacheKey); useCache && ok {
