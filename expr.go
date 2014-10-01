@@ -1379,6 +1379,13 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		if !alignToFrom {
 			start = int32(time.Unix(int64(start), 0).Truncate(time.Duration(bucketSize) * time.Second).Unix())
 			stop = int32(time.Unix(int64(stop), 0).Truncate(time.Duration(bucketSize) * time.Second).Unix())
+			// check if a partial bucket is needed
+			if stop != *args[0].StopTime {
+				stop += bucketSize
+			}
+		} else {
+			// adjust for partial buckets
+			stop += (stop - start) % bucketSize
 		}
 
 		buckets := (stop - start) / bucketSize
@@ -1399,16 +1406,15 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 			r := pb.FetchResponse{
 				Name:      proto.String(name),
-				Values:    make([]float64, buckets, buckets+1),
-				IsAbsent:  make([]bool, buckets, buckets+1),
+				Values:    make([]float64, buckets, buckets),
+				IsAbsent:  make([]bool, buckets, buckets),
 				StepTime:  proto.Int32(bucketSize),
 				StartTime: proto.Int32(start),
 				StopTime:  proto.Int32(stop),
 			}
-			bucketStart := *args[0].StartTime // unadjusted
+			t := *args[0].StartTime // unadjusted
 			bucketEnd := *r.StartTime + bucketSize
 			values := make([]float64, 0, bucketSize / *arg.StepTime)
-			t := bucketStart
 			ridx := 0
 			skipped := 0
 			for i, v := range arg.Values {
@@ -1431,18 +1437,24 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 					r.Values[ridx] = rv
 					ridx++
-					bucketStart += bucketSize
 					bucketEnd += bucketSize
 					values = values[:0]
 					skipped = 0
 				}
 			}
 
-			// remaining values
-			if len(values) > 0 {
+			// last partial bucket
+			if t < stop {
+
 				rv := summarizeValues(summarizeFunction, values)
-				r.Values = append(r.Values, rv)
-				r.IsAbsent = append(r.IsAbsent, false)
+				if math.IsNaN(rv) {
+					r.Values[ridx] = 0
+					r.IsAbsent[ridx] = true
+				} else {
+					r.Values[ridx] = rv
+					r.IsAbsent[ridx] = false
+				}
+
 			}
 
 			results = append(results, &r)
@@ -1548,9 +1560,13 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 func summarizeValues(f string, values []float64) float64 {
 	rv := 0.0
+
+	if len(values) == 0 {
+		return math.NaN()
+	}
+
 	switch f {
 	case "sum":
-
 		for _, av := range values {
 			rv += av
 		}

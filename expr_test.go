@@ -806,7 +806,7 @@ func TestEvalSummarize(t *testing.T) {
 			"summarize(metric1,'10min')",
 			600,
 			tenThirty,
-			tenThirty + 20*60,
+			tenThirty + 30*60,
 		},
 		{
 			&expr{
@@ -827,7 +827,7 @@ func TestEvalSummarize(t *testing.T) {
 			"summarize(metric1,'10min','sum',true)",
 			600,
 			tenThirtyTwo,
-			tenThirtyTwo + 25*60,
+			tenThirtyTwo + 3*10*60,
 		},
 		{
 			&expr{
