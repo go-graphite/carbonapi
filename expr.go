@@ -1599,6 +1599,7 @@ type Windowed struct {
 	head   int
 	length int
 	sum    float64
+	nans   int
 }
 
 func (w *Windowed) Push(n float64) {
@@ -1614,10 +1615,14 @@ func (w *Windowed) Push(n float64) {
 
 	if !math.IsNaN(old) {
 		w.sum -= old
+	} else {
+		w.nans--
 	}
 
 	if !math.IsNaN(n) {
 		w.sum += n
+	} else {
+		w.nans++
 	}
 }
 
@@ -1629,7 +1634,7 @@ func (w *Windowed) Len() int {
 	return len(w.data)
 }
 
-func (w *Windowed) Mean() float64 { return w.sum / float64(w.Len()) }
+func (w *Windowed) Mean() float64 { return w.sum / float64(w.Len()-w.nans) }
 
 func maxValue(f64s []float64, absent []bool) float64 {
 	m := math.Inf(-1)
