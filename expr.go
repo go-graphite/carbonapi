@@ -56,31 +56,6 @@ func (e *expr) metrics() []metricRequest {
 		}
 
 		switch e.target {
-		case "movingAverage":
-			if len(e.args) != 2 {
-				return nil
-			}
-
-			var n int32
-			var err error
-
-			switch e.args[1].etype {
-			case etConst:
-				var nint int
-				nint, err = getIntArg(e, 1)
-				n = int32(nint)
-			case etString:
-				n, err = getIntervalArg(e, 1, 1)
-			default:
-				err = ErrBadType
-			}
-			if err != nil {
-				return nil
-			}
-
-			for i := range r {
-				r[i].from -= n
-			}
 		case "timeShift":
 			offs, err := getIntervalArg(e, 1, -1)
 			if err != nil {
@@ -1180,7 +1155,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		windowSize := n
 
-		arg, err := getSeriesArg(e.args[0], from-int32(windowSize), until, values)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}
@@ -1193,30 +1168,25 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		for _, a := range arg {
 			w := &Windowed{data: make([]float64, windowSize)}
-			sz := (until - from) / *a.StepTime
 			r := pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("movingAverage(%s,%d)", *a.Name, windowSize)),
-				Values:    make([]float64, sz),
-				IsAbsent:  make([]bool, sz),
+				Name:      proto.String(fmt.Sprintf("movingAverage(%s,%d)", a.GetName(), windowSize)),
+				Values:    make([]float64, len(a.Values)),
+				IsAbsent:  make([]bool, len(a.Values)),
 				StepTime:  a.StepTime,
 				StartTime: proto.Int32(from),
 				StopTime:  proto.Int32(until),
 			}
-			ridx := 0
 			for i, v := range a.Values {
 				if a.IsAbsent[i] {
 					// make sure missing values are ignored
-					v = 0
+					v = math.NaN()
 				}
-				if i > windowSize {
-					r.Values[ridx] = w.Mean()
-					if math.IsNaN(r.Values[ridx]) {
-						r.Values[ridx] = 0
-						r.IsAbsent[ridx] = true
-					}
-					ridx++
-				}
+				r.Values[i] = w.Mean()
 				w.Push(v)
+				if i < windowSize || math.IsNaN(r.Values[i]) {
+					r.Values[i] = 0
+					r.IsAbsent[i] = true
+				}
 			}
 			result = append(result, &r)
 		}
@@ -1642,8 +1612,13 @@ func (w *Windowed) Push(n float64) {
 		w.head = 0
 	}
 
-	w.sum -= old
-	w.sum += n
+	if !math.IsNaN(old) {
+		w.sum -= old
+	}
+
+	if !math.IsNaN(n) {
+		w.sum += n
+	}
 }
 
 func (w *Windowed) Len() int {

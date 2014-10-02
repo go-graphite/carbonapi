@@ -218,24 +218,22 @@ func TestEvalExpression(t *testing.T) {
 			[]float64{math.NaN(), 2, 2, math.NaN(), 3, math.NaN(), 4},
 			"nonNegativeDerivative(metric1)",
 		},
-		/*
-			{
-				&expr{
-					target: "movingAverage",
-					etype:  etFunc,
-					args: []*expr{
-						&expr{target: "metric1"},
-						&expr{val: 4, etype: etConst},
-					},
-					argString: "metric1,4",
+		{
+			&expr{
+				target: "movingAverage",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 4, etype: etConst},
 				},
-				map[metricRequest][]*pb.FetchResponse{
-					metricRequest{"metric1", -4, 0}: []*pb.FetchResponse{makeResponse("metric1", []float64{1, 1, 1, 1, 2, 4, 6, 4, 6, 8}, 1, now32)},
-				},
-				[]float64{1, 2, 3, 4, 4, 5},
-				"movingAverage(metric1,4)",
+				argString: "metric1,4",
 			},
-		*/
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{makeResponse("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8}, 1, now32)},
+			},
+			[]float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), 1, 1.25, 1.5, 1.75, 2.5, 3.5, 4, 5},
+			"movingAverage(metric1,4)",
+		},
 		{
 			&expr{
 				target: "scale",
