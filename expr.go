@@ -408,8 +408,6 @@ func getSeriesArgs(e []*expr, from, until int32, values map[metricRequest][]*pb.
 
 func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchResponse) []*pb.FetchResponse {
 
-	// TODO(dgryski): stdev
-
 	switch e.etype {
 	case etName:
 		return values[metricRequest{metric: e.target, from: from, until: until}]
@@ -1296,6 +1294,52 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return results
 
+	case "stdev", "stddev": // stdev(seriesList, points, missingThreshold=0.1)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		points, err := getIntArg(e, 1)
+		if err != nil {
+			return nil
+		}
+
+		missingThreshold, err := getFloatArgDefault(e, 2, 0.1)
+		if err != nil {
+			return nil
+		}
+
+		minLen := int((1 - missingThreshold) * float64(points))
+
+		var result []*pb.FetchResponse
+
+		for _, a := range arg {
+			w := &Windowed{data: make([]float64, points)}
+			r := pb.FetchResponse{
+				Name:      proto.String(fmt.Sprintf("stdev(%s,%d)", a.GetName(), points)),
+				Values:    make([]float64, len(a.Values)),
+				IsAbsent:  make([]bool, len(a.Values)),
+				StepTime:  a.StepTime,
+				StartTime: a.StartTime,
+				StopTime:  a.StopTime,
+			}
+			for i, v := range a.Values {
+				if a.IsAbsent[i] {
+					// make sure missing values are ignored
+					v = math.NaN()
+				}
+				w.Push(v)
+				r.Values[i] = w.Stdev()
+				if math.IsNaN(r.Values[i]) || (i >= minLen && w.Len() < minLen) {
+					r.Values[i] = 0
+					r.IsAbsent[i] = true
+				}
+			}
+			result = append(result, &r)
+		}
+		return result
+
 	case "sum", "sumSeries": // sumSeries(*seriesLists)
 		// TODO(dgryski): make sure the arrays are all the same 'size'
 		args, err := getSeriesArgs(e.args, from, until, values)
@@ -1590,15 +1634,19 @@ func extractMetric(m string) string {
 	return m[start:end]
 }
 
-// From github.com/dgryski/go-onlinestats
+// Based on github.com/dgryski/go-onlinestats
 // Copied here because we don't need the rest of the package, and we only need
-// a small part of this type
+// a small part of this type which we need to modify anyway.
+
+// Note that this uses a slightly unstable but faster implementation of
+// standard deviation.  This is also required to be compatible with graphite.
 
 type Windowed struct {
 	data   []float64
 	head   int
 	length int
 	sum    float64
+	sumsq  float64
 	nans   int
 }
 
@@ -1615,12 +1663,14 @@ func (w *Windowed) Push(n float64) {
 
 	if !math.IsNaN(old) {
 		w.sum -= old
+		w.sumsq -= (old * old)
 	} else {
 		w.nans--
 	}
 
 	if !math.IsNaN(n) {
 		w.sum += n
+		w.sumsq += (n * n)
 	} else {
 		w.nans++
 	}
@@ -1628,13 +1678,24 @@ func (w *Windowed) Push(n float64) {
 
 func (w *Windowed) Len() int {
 	if w.length < len(w.data) {
-		return w.length
+		return w.length - w.nans
 	}
 
-	return len(w.data)
+	return len(w.data) - w.nans
 }
 
-func (w *Windowed) Mean() float64 { return w.sum / float64(w.Len()-w.nans) }
+func (w *Windowed) Stdev() float64 {
+	l := w.Len()
+
+	if l == 0 {
+		return 0
+	}
+
+	n := float64(l)
+	return math.Sqrt(n*w.sumsq-(w.sum*w.sum)) / n
+}
+
+func (w *Windowed) Mean() float64 { return w.sum / float64(w.Len()) }
 
 func maxValue(f64s []float64, absent []bool) float64 {
 	m := math.Inf(-1)
