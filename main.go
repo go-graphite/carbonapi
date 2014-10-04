@@ -528,6 +528,9 @@ func main() {
 	httputil.PublishTrackedConnections("httptrack")
 	expvar.Publish("requestBuckets", expvar.Func(renderTimeBuckets))
 
+	// export config via expvars
+	expvar.Publish("Config", expvar.Func(func() interface{} { return Config }))
+
 	http.HandleFunc("/metrics/find/", httputil.TrackConnections(httputil.TimeHandler(findHandler, bucketRequestTimes)))
 	http.HandleFunc("/render/", httputil.TrackConnections(httputil.TimeHandler(renderHandler, bucketRequestTimes)))
 	http.HandleFunc("/lb_check", lbCheckHandler)
