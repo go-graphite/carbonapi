@@ -77,6 +77,8 @@ var Metrics = struct {
 	Timeouts: expvar.NewInt("timeouts"),
 }
 
+var BuildVersion = "(development version)"
+
 var Limiter serverLimiter
 
 var logger multilog
@@ -466,6 +468,9 @@ func main() {
 	concurrencyLimit := flag.Int("limit", 0, "concurrency limit per server (0 to disable)")
 
 	flag.Parse()
+
+	expvar.NewString("BuildVersion").Set(BuildVersion)
+	log.Println("starting carbonapi", BuildVersion)
 
 	if *configFile == "" {
 		log.Fatal("missing config file")
