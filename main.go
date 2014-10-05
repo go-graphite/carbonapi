@@ -390,6 +390,15 @@ func handleRenderPB(w http.ResponseWriter, req *http.Request, format string, res
 		return
 	}
 
+	// Use the metric with the highest resolution as our base
+	var highest int
+	for i, d := range decoded {
+		if d.GetStepTime() < decoded[highest].GetStepTime() {
+			highest = i
+		}
+	}
+	decoded[0], decoded[highest] = decoded[highest], decoded[0]
+
 	metric := decoded[0]
 
 	mergeValues(req, &metric, decoded)
