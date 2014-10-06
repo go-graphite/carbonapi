@@ -873,6 +873,70 @@ func TestEvalSummarize(t *testing.T) {
 	}
 }
 
+func TestEvalGroupByNode(t *testing.T) {
+
+	now32 := int32(time.Now().Unix())
+
+	tests := []struct {
+		e       *expr
+		m       map[metricRequest][]*pb.FetchResponse
+		name    string
+		results map[string][]*pb.FetchResponse
+	}{
+		{
+			&expr{
+				target: "groupByNode",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1.foo.*.*"},
+					&expr{val: 3, etype: etConst},
+					&expr{valStr: "sum", etype: etString},
+				},
+			},
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1.foo.*.*", 0, 0}: []*pb.FetchResponse{
+					makeResponse("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
+					makeResponse("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, now32),
+					makeResponse("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
+					makeResponse("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11}, 1, now32),
+				},
+			},
+			"groupByNode",
+			map[string][]*pb.FetchResponse{
+				"sumSeries(baz)": []*pb.FetchResponse{makeResponse("sumSeries(baz)", []float64{12, 14, 16, 18, 20}, 1, now32)},
+				"sumSeries(qux)": []*pb.FetchResponse{makeResponse("sumSeries(qux)", []float64{13, 15, 17, 19, 21}, 1, now32)},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		g := evalExpr(tt.e, 0, 0, tt.m)
+		if g == nil {
+			t.Errorf("failed to eval %v", tt.name)
+			continue
+		}
+		if *g[0].StepTime == 0 {
+			t.Errorf("missing step for %+v", g)
+		}
+		if len(g) != len(tt.results) {
+			t.Errorf("unexpected results len: got %d, want %d", len(g), len(tt.results))
+		}
+		for _, gg := range g {
+			r, ok := tt.results[gg.GetName()]
+			if !ok {
+				t.Errorf("missing result name: %v", gg.GetName())
+				continue
+			}
+			if !reflect.DeepEqual(r[0].Values, gg.Values) || !reflect.DeepEqual(r[0].IsAbsent, gg.IsAbsent) ||
+				r[0].GetStartTime() != gg.GetStartTime() ||
+				r[0].GetStopTime() != gg.GetStopTime() ||
+				r[0].GetStepTime() != gg.GetStepTime() {
+				t.Errorf("result mismatch, got\n%#v,\nwant\n%#v", gg, r)
+			}
+		}
+	}
+}
+
 func TestExtractMetric(t *testing.T) {
 
 	var tests = []struct {
