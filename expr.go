@@ -815,6 +815,55 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		return args
 
+	case "groupByNode": // groupByNode(seriesList, nodeNum, callback)
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		field, err := getIntArg(e, 1)
+		if err != nil {
+			return nil
+		}
+
+		callback, err := getStringArg(e, 2)
+		if err != nil {
+			return nil
+		}
+
+		var results []*pb.FetchResponse
+
+		groups := make(map[string][]*pb.FetchResponse)
+
+		for _, a := range args {
+
+			metric := extractMetric(*a.Name)
+			nodes := strings.Split(metric, ".")
+			node := nodes[field]
+
+			groups[node] = append(groups[node], a)
+		}
+
+		for k, v := range groups {
+
+			// create a stub context to evaluate the callback in
+			nexpr, _, err := parseExpr(fmt.Sprintf("%s(%s)", callback, k))
+			if err != nil {
+				return nil
+			}
+
+			nvalues := map[metricRequest][]*pb.FetchResponse{
+				metricRequest{k, from, until}: v,
+			}
+
+			r := evalExpr(nexpr, from, until, nvalues)
+			if r != nil {
+				results = append(results, r...)
+			}
+		}
+
+		return results
+
 	case "highestAverage", "highestCurrent", "highestMax": // highestAverage(seriesList, n) , highestCurrent(seriesList, n), highestMax(seriesList, n)
 
 		arg, err := getSeriesArg(e.args[0], from, until, values)
