@@ -6,6 +6,7 @@ import (
 	"expvar"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -22,6 +23,7 @@ import (
 
 	"github.com/bradfitz/gomemcache/memcache"
 	pickle "github.com/kisielk/og-rek"
+	"github.com/lestrrat/go-file-rotatelogs"
 	"github.com/peterbourgon/g2g"
 )
 
@@ -571,8 +573,23 @@ func main() {
 	cpus := flag.Int("cpus", 0, "number of CPUs to use")
 	tz := flag.String("tz", "", "timezone,offset to use for dates with no timezone")
 	graphiteHost := flag.String("graphite", "", "graphite destination host")
+	logdir := flag.String("logdir", "/var/log/carbonapi/", "logging directory")
+	logtostdout := flag.Bool("logtostdout", false, "log also to stdout")
 
 	flag.Parse()
+
+	rl := rotatelogs.NewRotateLogs(
+		*logdir + "/carbon-api.%Y%m%d%H%M.log",
+	)
+
+	// Optional fields must be set afterwards
+	rl.LinkName = *logdir + "/carbon-api.log"
+
+	if *logtostdout {
+		log.SetOutput(io.MultiWriter(os.Stdout, rl))
+	} else {
+		log.SetOutput(rl)
+	}
 
 	expvar.NewString("BuildVersion").Set(BuildVersion)
 	log.Println("starting carbonapi", BuildVersion)
