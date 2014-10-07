@@ -7,9 +7,9 @@ import (
 	"expvar"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
-	"log/syslog"
 	"net/http"
 	_ "net/http/pprof"
 	"net/url"
@@ -26,6 +26,7 @@ import (
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 	"github.com/dgryski/httputil"
 	pickle "github.com/kisielk/og-rek"
+	"github.com/lestrrat/go-file-rotatelogs"
 	"github.com/peterbourgon/g2g"
 )
 
@@ -81,7 +82,7 @@ var BuildVersion = "(development version)"
 
 var Limiter serverLimiter
 
-var logger multilog
+var logger logLevel
 
 type serverResponse struct {
 	server   string
@@ -472,8 +473,8 @@ func main() {
 	port := flag.Int("p", 0, "port to listen on")
 	maxprocs := flag.Int("maxprocs", 0, "GOMAXPROCS")
 	debugLevel := flag.Int("d", 0, "enable debug logging")
-	logStdout := flag.Bool("stdout", false, "write logging output also to stdout")
-	logSyslog := flag.Bool("syslog", true, "write logging output also to syslog")
+	logtostdout := flag.Bool("stdout", false, "write logging output also to stdout")
+	logdir := flag.String("logdir", "/var/log/carbonzipper/", "logging directory")
 	concurrencyLimit := flag.Int("limit", 0, "concurrency limit per server (0 to disable)")
 
 	flag.Parse()
@@ -516,18 +517,21 @@ func main() {
 	}
 
 	// set up our logging
-	logger.level = logLevel(*debugLevel)
-	if *logSyslog {
-		slog, err := syslog.New(syslog.LOG_DAEMON, "carbonzipper")
-		if err != nil {
-			log.Fatal("can't obtain a syslog connection", err)
-		}
-		logger.loggers = append(logger.loggers, &sysLogger{w: slog})
+
+	rl := rotatelogs.NewRotateLogs(
+		*logdir + "/carbonzipper.%Y%m%d%H%M.log",
+	)
+
+	// Optional fields must be set afterwards
+	rl.LinkName = *logdir + "/carbonzipper.log"
+
+	if *logtostdout {
+		log.SetOutput(io.MultiWriter(os.Stdout, rl))
+	} else {
+		log.SetOutput(rl)
 	}
 
-	if *logStdout {
-		logger.loggers = append(logger.loggers, &stdoutLogger{log.New(os.Stdout, "", log.LstdFlags)})
-	}
+	logger = logLevel(*debugLevel)
 
 	logger.Logln("setting GOMAXPROCS=", Config.MaxProcs)
 	runtime.GOMAXPROCS(Config.MaxProcs)
@@ -630,59 +634,35 @@ const (
 	LOG_TRACE
 )
 
-// Logger is something that can log
-type Logger interface {
-	Log(string)
-}
-
-type stdoutLogger struct{ logger *log.Logger }
-
-func (l *stdoutLogger) Log(s string) { l.logger.Print(s) }
-
-type sysLogger struct{ w *syslog.Writer }
-
-func (l *sysLogger) Log(s string) { l.w.Info(s) }
-
-type multilog struct {
-	level   logLevel
-	loggers []Logger
-}
-
-func (ml *multilog) Debugf(format string, a ...interface{}) {
-	if ml.level >= LOG_DEBUG {
-		ml.Logf(format, a...)
+func (ll logLevel) Debugf(format string, a ...interface{}) {
+	if ll >= LOG_DEBUG {
+		log.Printf(format, a...)
 	}
 }
 
-func (ml *multilog) Debugln(a ...interface{}) {
-	if ml.level >= LOG_DEBUG {
-		ml.Logln(a...)
+func (ll logLevel) Debugln(a ...interface{}) {
+	if ll >= LOG_DEBUG {
+		log.Println(a...)
 	}
 }
 
-func (ml *multilog) Tracef(format string, a ...interface{}) {
-	if ml.level >= LOG_TRACE {
-		ml.Logf(format, a...)
+func (ll logLevel) Tracef(format string, a ...interface{}) {
+	if ll >= LOG_TRACE {
+		log.Printf(format, a...)
 	}
 }
 
-func (ml *multilog) Traceln(a ...interface{}) {
-	if ml.level >= LOG_TRACE {
-		ml.Logln(a...)
+func (ll logLevel) Traceln(a ...interface{}) {
+	if ll >= LOG_TRACE {
+		log.Println(a...)
 	}
 }
-func (ml *multilog) Logln(a ...interface{}) {
-	s := fmt.Sprintln(a...)
-	for _, l := range ml.loggers {
-		l.Log(s)
-	}
+func (ll logLevel) Logln(a ...interface{}) {
+	log.Println(a...)
 }
 
-func (ml *multilog) Logf(format string, a ...interface{}) {
-	s := fmt.Sprintf(format, a...)
-	for _, l := range ml.loggers {
-		l.Log(s)
-	}
+func (ll logLevel) Logf(format string, a ...interface{}) {
+	log.Printf(format, a...)
 }
 
 type serverLimiter map[string]chan struct{}
