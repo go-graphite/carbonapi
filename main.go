@@ -168,7 +168,7 @@ GATHER:
 			}
 
 		case <-timeout:
-			servs := make([]string, 0)
+			var servs []string
 			for _, r := range response {
 				servs = append(servs, r.server)
 			}
