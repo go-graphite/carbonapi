@@ -576,11 +576,11 @@ func main() {
 	flag.Parse()
 
 	rl := rotatelogs.NewRotateLogs(
-		*logdir + "/carbon-api.%Y%m%d%H%M.log",
+		*logdir + "/carbonapi.%Y%m%d%H%M.log",
 	)
 
 	// Optional fields must be set afterwards
-	rl.LinkName = *logdir + "/carbon-api.log"
+	rl.LinkName = *logdir + "/carbonapi.log"
 
 	if *logtostdout {
 		log.SetOutput(io.MultiWriter(os.Stdout, rl))
