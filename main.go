@@ -719,7 +719,8 @@ func main() {
 		var stats renderStats
 		t0 := time.Now()
 		renderHandler(w, r, &stats)
-		log.Println(r.RequestURI, time.Since(t0), stats.zipperRequests)
+		since := time.Since(t0)
+		log.Println(r.RequestURI, since.Nanoseconds()/int64(time.Millisecond), stats.zipperRequests)
 	}
 
 	http.HandleFunc("/render/", render)
