@@ -480,7 +480,7 @@ func main() {
 	flag.Parse()
 
 	expvar.NewString("BuildVersion").Set(BuildVersion)
-	log.Println("starting carbonapi", BuildVersion)
+	log.Println("starting carbonzipper", BuildVersion)
 
 	if *configFile == "" {
 		log.Fatal("missing config file")
