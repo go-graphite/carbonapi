@@ -571,7 +571,7 @@ func main() {
 	tz := flag.String("tz", "", "timezone,offset to use for dates with no timezone")
 	graphiteHost := flag.String("graphite", "", "graphite destination host")
 	logdir := flag.String("logdir", "/var/log/carbonapi/", "logging directory")
-	logtostdout := flag.Bool("logtostdout", false, "log also to stdout")
+	logtostdout := flag.Bool("stdout", false, "log also to stdout")
 
 	flag.Parse()
 
