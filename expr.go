@@ -364,9 +364,9 @@ func getBoolArgDefault(e *expr, n int, b bool) (bool, error) {
 
 	// names go into 'target'
 	switch e.args[n].target {
-	case "false":
+	case "False", "false":
 		return false, nil
-	case "true":
+	case "True", "true":
 		return true, nil
 	}
 
