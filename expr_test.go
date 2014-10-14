@@ -873,7 +873,7 @@ func TestEvalSummarize(t *testing.T) {
 	}
 }
 
-func TestEvalGroupByNode(t *testing.T) {
+func TestEvalMultipleReturns(t *testing.T) {
 
 	now32 := int32(time.Now().Unix())
 
@@ -905,6 +905,29 @@ func TestEvalGroupByNode(t *testing.T) {
 			map[string][]*pb.FetchResponse{
 				"sumSeries(baz)": []*pb.FetchResponse{makeResponse("sumSeries(baz)", []float64{12, 14, 16, 18, 20}, 1, now32)},
 				"sumSeries(qux)": []*pb.FetchResponse{makeResponse("sumSeries(qux)", []float64{13, 15, 17, 19, 21}, 1, now32)},
+			},
+		},
+		{
+			&expr{
+				target: "sumSeriesWithWildcards",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1.foo.*.*"},
+					&expr{val: 2, etype: etConst},
+				},
+			},
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1.foo.*.*", 0, 0}: []*pb.FetchResponse{
+					makeResponse("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
+					makeResponse("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, now32),
+					makeResponse("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
+					makeResponse("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11}, 1, now32),
+				},
+			},
+			"sumSeriesWithWildcards",
+			map[string][]*pb.FetchResponse{
+				"sumSeriesWithWildcards(metric1.foo.*.baz)": []*pb.FetchResponse{makeResponse("sumSeriesWithWildcards(metric1.foo.*.baz)", []float64{12, 14, 16, 18, 20}, 1, now32)},
+				"sumSeriesWithWildcards(metric1.foo.*.qux)": []*pb.FetchResponse{makeResponse("sumSeriesWithWildcards(metric1.foo.*.qux)", []float64{13, 15, 17, 19, 21}, 1, now32)},
 			},
 		},
 	}
