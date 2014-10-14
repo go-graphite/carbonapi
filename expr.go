@@ -1414,6 +1414,57 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return []*pb.FetchResponse{&r}
 
+	case "sumSeriesWithWildcards": // sumSeriesWithWildcards(seriesList, *position)
+		// TODO(dgryski): make sure the arrays are all the same 'size'
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		fields, err := getIntArgs(e, 1)
+		if err != nil {
+			return nil
+		}
+
+		var results []*pb.FetchResponse
+
+		groups := make(map[string][]*pb.FetchResponse)
+
+		for _, a := range args {
+			metric := extractMetric(*a.Name)
+			nodes := strings.Split(metric, ".")
+			for _, f := range fields {
+				nodes[f] = "*"
+			}
+
+			node := strings.Join(nodes, ".")
+
+			groups[node] = append(groups[node], a)
+		}
+
+		for series, args := range groups {
+			r := pb.FetchResponse{
+				Name:      proto.String(fmt.Sprintf("sumSeriesWithWildcards(%s)", series)),
+				Values:    make([]float64, len(args[0].Values)),
+				IsAbsent:  make([]bool, len(args[0].Values)),
+				StepTime:  args[0].StepTime,
+				StartTime: args[0].StartTime,
+				StopTime:  args[0].StopTime,
+			}
+
+			for _, arg := range args {
+				for i, v := range arg.Values {
+					if arg.IsAbsent[i] {
+						continue
+					}
+					r.Values[i] += v
+				}
+			}
+
+			results = append(results, &r)
+		}
+		return results
+
 	case "summarize": // summarize(seriesList, intervalString, func='sum', alignToFrom=False
 		// TODO(dgryski): make sure the arrays are all the same 'size'
 		args, err := getSeriesArg(e.args[0], from, until, values)
