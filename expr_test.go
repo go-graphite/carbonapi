@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"code.google.com/p/goprotobuf/proto"
+	"code.google.com/p/gogoprotobuf/proto"
 
 	"github.com/davecgh/go-spew/spew"
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"

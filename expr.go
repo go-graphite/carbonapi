@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"code.google.com/p/goprotobuf/proto"
+	"code.google.com/p/gogoprotobuf/proto"
 
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 )
