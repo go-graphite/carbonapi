@@ -913,6 +913,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 				etype:  etFunc,
 				args: []*expr{
 					&expr{target: "metric1.foo.*.*"},
+					&expr{val: 1, etype: etConst},
 					&expr{val: 2, etype: etConst},
 				},
 			},
@@ -926,8 +927,8 @@ func TestEvalMultipleReturns(t *testing.T) {
 			},
 			"sumSeriesWithWildcards",
 			map[string][]*pb.FetchResponse{
-				"sumSeriesWithWildcards(metric1.foo.*.baz)": []*pb.FetchResponse{makeResponse("sumSeriesWithWildcards(metric1.foo.*.baz)", []float64{12, 14, 16, 18, 20}, 1, now32)},
-				"sumSeriesWithWildcards(metric1.foo.*.qux)": []*pb.FetchResponse{makeResponse("sumSeriesWithWildcards(metric1.foo.*.qux)", []float64{13, 15, 17, 19, 21}, 1, now32)},
+				"sumSeriesWithWildcards(metric1.baz)": []*pb.FetchResponse{makeResponse("sumSeriesWithWildcards(metric1.baz)", []float64{12, 14, 16, 18, 20}, 1, now32)},
+				"sumSeriesWithWildcards(metric1.qux)": []*pb.FetchResponse{makeResponse("sumSeriesWithWildcards(metric1.qux)", []float64{13, 15, 17, 19, 21}, 1, now32)},
 			},
 		},
 	}

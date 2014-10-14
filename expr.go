@@ -1433,11 +1433,17 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		for _, a := range args {
 			metric := extractMetric(*a.Name)
 			nodes := strings.Split(metric, ".")
-			for _, f := range fields {
-				nodes[f] = "*"
+			var s []string
+			// Yes, this is O(n^2), but len(nodes) < 10 and len(fields) < 3
+			// Iterating an int slice is faster than a map for n ~ 30
+			// http://www.antoine.im/posts/someone_is_wrong_on_the_internet
+			for i, n := range nodes {
+				if !contains(fields, i) {
+					s = append(s, n)
+				}
 			}
 
-			node := strings.Join(nodes, ".")
+			node := strings.Join(s, ".")
 
 			groups[node] = append(groups[node], a)
 		}
@@ -1732,6 +1738,15 @@ func extractMetric(m string) string {
 	}
 
 	return m[start:end]
+}
+
+func contains(a []int, i int) bool {
+	for _, aa := range a {
+		if aa == i {
+			return true
+		}
+	}
+	return false
 }
 
 // Based on github.com/dgryski/go-onlinestats
