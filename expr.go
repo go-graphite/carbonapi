@@ -167,7 +167,9 @@ func isDigit(r byte) bool {
 func parseConst(s string) (float64, string, error) {
 
 	var i int
-	for i < len(s) && (isDigit(s[i]) || s[i] == '.') {
+	// All valid characters for a floating-point constant
+	// Just slurp them all in and let ParseFloat sort 'em out
+	for i < len(s) && (isDigit(s[i]) || s[i] == '.' || s[i] == '+' || s[i] == '-' || s[i] == 'e' || s[i] == 'E') {
 		i++
 	}
 
