@@ -523,6 +523,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		if len(e.args) == 1 {
 			getTotal = func(i int) float64 {
 				var t float64
+				// FIXME(dgryski): atLeastOne
 				for _, a := range arg {
 					if a.IsAbsent[i] {
 						continue
@@ -618,6 +619,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		// TODO(dgryski): make sure all series are the same 'size'
 		for i := 0; i < len(args[0].Values); i++ {
+			// FIXME(dgryski): atLeastOne
 			var elts int
 			for j := 0; j < len(args); j++ {
 				if args[j].IsAbsent[i] {
@@ -897,6 +899,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 
 		for i, a := range arg {
+			// FIXME(dgryski): atLeastOne
 			m := compute(a.Values, a.IsAbsent)
 
 			if len(mh) < n {
@@ -1127,6 +1130,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		// TODO(dgryski): make sure all series are the same 'size'
 		for i := 0; i < len(args[0].Values); i++ {
+			// FIXME(dgryski): atLeastOne
 			var elts int
 			r.Values[i] = math.Inf(-1)
 			for j := 0; j < len(args); j++ {
@@ -1163,6 +1167,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		// TODO(dgryski): make sure all series are the same 'size'
 		for i := 0; i < len(args[0].Values); i++ {
+			// FIXME(dgryski): atLeastOne
 			var elts int
 			r.Values[i] = math.Inf(1)
 			for j := 0; j < len(args); j++ {
@@ -1467,6 +1472,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 				StopTime:  args[0].StopTime,
 			}
 
+			// FIXME(dgryski): atLeastOne
 			for _, arg := range args {
 				for i, v := range arg.Values {
 					if arg.IsAbsent[i] {
