@@ -1406,12 +1406,19 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 			StartTime: args[0].StartTime,
 			StopTime:  args[0].StopTime,
 		}
+		atLeastOne := make([]bool, len(args[0].Values))
 		for _, arg := range args {
 			for i, v := range arg.Values {
 				if arg.IsAbsent[i] {
 					continue
 				}
+				atLeastOne[i] = true
 				r.Values[i] += v
+			}
+		}
+		for i, v := range atLeastOne {
+			if !v {
+				r.IsAbsent[i] = true
 			}
 		}
 		return []*pb.FetchResponse{&r}

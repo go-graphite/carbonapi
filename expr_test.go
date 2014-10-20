@@ -185,11 +185,11 @@ func TestEvalExpression(t *testing.T) {
 				argString: "metric1,metric2,metric3",
 			},
 			map[metricRequest][]*pb.FetchResponse{
-				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{makeResponse("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
-				metricRequest{"metric2", 0, 0}: []*pb.FetchResponse{makeResponse("metric2", []float64{2, 3, math.NaN(), 5, 6}, 1, now32)},
-				metricRequest{"metric3", 0, 0}: []*pb.FetchResponse{makeResponse("metric3", []float64{3, 4, 5, 6, math.NaN()}, 1, now32)},
+				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{makeResponse("metric1", []float64{1, 2, 3, 4, 5, math.NaN()}, 1, now32)},
+				metricRequest{"metric2", 0, 0}: []*pb.FetchResponse{makeResponse("metric2", []float64{2, 3, math.NaN(), 5, 6, math.NaN()}, 1, now32)},
+				metricRequest{"metric3", 0, 0}: []*pb.FetchResponse{makeResponse("metric3", []float64{3, 4, 5, 6, math.NaN(), math.NaN()}, 1, now32)},
 			},
-			[]float64{6, 9, 8, 15, 11},
+			[]float64{6, 9, 8, 15, 11, math.NaN()},
 			"sumSeries(metric1,metric2,metric3)",
 		},
 		{
