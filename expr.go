@@ -619,7 +619,6 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		// TODO(dgryski): make sure all series are the same 'size'
 		for i := 0; i < len(args[0].Values); i++ {
-			// FIXME(dgryski): atLeastOne
 			var elts int
 			for j := 0; j < len(args); j++ {
 				if args[j].IsAbsent[i] {
