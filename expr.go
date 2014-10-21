@@ -898,7 +898,6 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 
 		for i, a := range arg {
-			// FIXME(dgryski): atLeastOne
 			m := compute(a.Values, a.IsAbsent)
 
 			if len(mh) < n {
