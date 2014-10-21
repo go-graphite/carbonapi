@@ -552,7 +552,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 
 	writeResponse(w, body, format, jsonp)
 
-	queryCache.set(cacheKey, body, cacheTimeout)
+	if len(results) != 0 {
+		queryCache.set(cacheKey, body, cacheTimeout)
+	}
 }
 
 func lbcheckHandler(w http.ResponseWriter, r *http.Request) {
