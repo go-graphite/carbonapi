@@ -91,7 +91,7 @@ type serverResponse struct {
 
 var storageClient = &http.Client{}
 
-func singleGet(uri, server string, ch chan<- serverResponse) {
+func singleGet(uri, server string, ch chan<- serverResponse, started chan<- struct{}) {
 
 	u, err := url.Parse(server + uri)
 	if err != nil {
@@ -105,6 +105,7 @@ func singleGet(uri, server string, ch chan<- serverResponse) {
 	}
 
 	Limiter.enter(server)
+	started <- struct{}{}
 	defer Limiter.leave(server)
 	resp, err := storageClient.Do(&req)
 	if err != nil {
@@ -143,9 +144,10 @@ func multiGet(servers []string, uri string) []serverResponse {
 
 	// buffered channel so the goroutines don't block on send
 	ch := make(chan serverResponse, len(servers))
+	startedch := make(chan struct{}, len(servers))
 
 	for _, server := range servers {
-		go singleGet(uri, server, ch)
+		go singleGet(uri, server, ch, startedch)
 	}
 
 	var response []serverResponse
@@ -153,9 +155,14 @@ func multiGet(servers []string, uri string) []serverResponse {
 	isFirstResponse := true
 	timeout := time.After(time.Duration(Config.TimeoutMs) * time.Millisecond)
 
+	var started int
+
 GATHER:
 	for i := 0; i < len(servers); i++ {
 		select {
+		case <-startedch:
+			started++
+
 		case r := <-ch:
 			if r.response != nil {
 
