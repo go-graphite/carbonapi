@@ -523,13 +523,18 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		if len(e.args) == 1 {
 			getTotal = func(i int) float64 {
 				var t float64
-				// FIXME(dgryski): atLeastOne
+				var atLeastOne bool
 				for _, a := range arg {
 					if a.IsAbsent[i] {
 						continue
 					}
+					atLeastOne = true
 					t += a.Values[i]
 				}
+				if !atLeastOne {
+					t = math.NaN()
+				}
+
 				return t
 			}
 			formatName = func(a *pb.FetchResponse) string {
@@ -591,7 +596,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 				r := results[j]
 				a := arg[j]
 
-				if a.IsAbsent[i] {
+				if a.IsAbsent[i] || math.IsNaN(total) {
 					r.Values[i] = 0
 					r.IsAbsent[i] = true
 					continue
