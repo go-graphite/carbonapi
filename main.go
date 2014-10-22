@@ -493,7 +493,6 @@ func main() {
 	flag.Parse()
 
 	expvar.NewString("BuildVersion").Set(BuildVersion)
-	log.Println("starting carbonzipper", BuildVersion)
 
 	if *configFile == "" {
 		log.Fatal("missing config file")
@@ -545,6 +544,7 @@ func main() {
 	}
 
 	logger = logLevel(*debugLevel)
+	logger.Logln("starting carbonzipper", BuildVersion)
 
 	logger.Logln("setting GOMAXPROCS=", Config.MaxProcs)
 	runtime.GOMAXPROCS(Config.MaxProcs)
