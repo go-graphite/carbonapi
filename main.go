@@ -156,14 +156,16 @@ func multiGet(servers []string, uri string) []serverResponse {
 	timeout := time.After(time.Duration(Config.TimeoutMs) * time.Millisecond)
 
 	var started int
+	var responses int
 
 GATHER:
-	for i := 0; i < len(servers); i++ {
+	for {
 		select {
 		case <-startedch:
 			started++
 
 		case r := <-ch:
+			responses++
 			if r.response != nil {
 
 				response = append(response, r)
@@ -172,6 +174,10 @@ GATHER:
 					timeout = time.After(time.Duration(Config.TimeoutMsAfterFirstSeen) * time.Millisecond)
 				}
 				isFirstResponse = false
+			}
+
+			if responses == len(servers) {
+				break GATHER
 			}
 
 		case <-timeout:
