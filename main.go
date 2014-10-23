@@ -37,8 +37,8 @@ var Config = struct {
 	Port     int
 	Buckets  int
 
-	TimeoutMs               int
-	TimeoutMsAfterFirstSeen int
+	TimeoutMs                int
+	TimeoutMsAfterAllStarted int
 
 	GraphiteHost string
 
@@ -53,8 +53,8 @@ var Config = struct {
 	Port:     8080,
 	Buckets:  10,
 
-	TimeoutMs:               2000,
-	TimeoutMsAfterFirstSeen: 500,
+	TimeoutMs:                10000,
+	TimeoutMsAfterAllStarted: 2000,
 
 	MaxIdleConnsPerHost: 100,
 
@@ -154,28 +154,24 @@ func multiGet(servers []string, uri string) []serverResponse {
 
 	var response []serverResponse
 
-	isFirstResponse := true
 	timeout := time.After(time.Duration(Config.TimeoutMs) * time.Millisecond)
 
-	var started int
 	var responses int
+	var started int
 
 GATHER:
 	for {
 		select {
 		case <-startedch:
 			started++
+			if started == len(servers) {
+				timeout = time.After(time.Duration(Config.TimeoutMsAfterAllStarted) * time.Millisecond)
+			}
 
 		case r := <-ch:
 			responses++
 			if r.response != nil {
-
 				response = append(response, r)
-
-				if isFirstResponse {
-					timeout = time.After(time.Duration(Config.TimeoutMsAfterFirstSeen) * time.Millisecond)
-				}
-				isFirstResponse = false
 			}
 
 			if responses == len(servers) {
