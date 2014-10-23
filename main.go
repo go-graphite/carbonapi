@@ -46,6 +46,8 @@ var Config = struct {
 	metricPaths map[string][]string
 
 	MaxIdleConnsPerHost int
+
+	ConcurrencyLimitPerServer int
 }{
 	MaxProcs: 1,
 	Port:     8080,
@@ -488,7 +490,6 @@ func main() {
 	debugLevel := flag.Int("d", 0, "enable debug logging")
 	logtostdout := flag.Bool("stdout", false, "write logging output also to stdout")
 	logdir := flag.String("logdir", "/var/log/carbonzipper/", "logging directory")
-	concurrencyLimit := flag.Int("limit", 0, "concurrency limit per server (0 to disable)")
 
 	flag.Parse()
 
@@ -549,8 +550,9 @@ func main() {
 	logger.Logln("setting GOMAXPROCS=", Config.MaxProcs)
 	runtime.GOMAXPROCS(Config.MaxProcs)
 
-	if *concurrencyLimit != 0 {
-		Limiter = newServerLimiter(Config.Backends, *concurrencyLimit)
+	if Config.ConcurrencyLimitPerServer != 0 {
+		logger.Logln("Setting concurrencyLimit", Config.ConcurrencyLimitPerServer)
+		Limiter = newServerLimiter(Config.Backends, Config.ConcurrencyLimitPerServer)
 	}
 
 	// +1 to track every over the number of buckets we track
