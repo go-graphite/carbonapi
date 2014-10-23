@@ -183,6 +183,7 @@ GATHER:
 			for _, r := range response {
 				servs = append(servs, r.server)
 			}
+			// TODO(dgryski): log which servers have/haven't started
 			logger.Logln("Timeout waiting for more responses.  uri=", uri, ", servers=", servers, ", answers_from_servers=", servs)
 			Metrics.Timeouts.Add(1)
 			break GATHER
