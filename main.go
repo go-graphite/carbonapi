@@ -93,6 +93,44 @@ type serverResponse struct {
 
 var storageClient = &http.Client{}
 
+var probeTicker = time.NewTicker(10 * time.Minute)
+var probeQuit = make(chan struct{})
+var probeForce = make(chan int)
+
+func doProbe() {
+	query := "/metrics/find/?format=protobuf&query=%2A"
+
+	responses := multiGet(Config.Backends, query)
+
+	if responses == nil || len(responses) == 0 {
+		return
+	}
+
+	_, paths := findHandlerPB(nil, nil, responses)
+
+	// update our cache of which servers have which metrics
+	Config.mu.Lock()
+	for k, v := range paths {
+		Config.metricPaths[k] = v
+		logger.Debugln("TLD probe:", k, "servers =", v)
+	}
+	Config.mu.Unlock()
+}
+
+func probeTlds() {
+	for {
+		select {
+		case <-probeTicker.C:
+			doProbe()
+		case <-probeForce:
+			doProbe()
+		case <-probeQuit:
+			probeTicker.Stop()
+			return
+		}
+	}
+}
+
 func singleGet(uri, server string, ch chan<- serverResponse, started chan<- struct{}) {
 
 	u, err := url.Parse(server + uri)
@@ -202,7 +240,7 @@ func findHandlerPB(w http.ResponseWriter, req *http.Request, responses []serverR
 	for _, r := range responses {
 		var metric pb.GlobResponse
 		err := proto.Unmarshal(r.response, &metric)
-		if err != nil {
+		if err != nil && req != nil {
 			logger.Logf("error decoding protobuf response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
 			logger.Traceln("\n" + hex.Dump(r.response))
 			Metrics.FindErrors.Add(1)
@@ -237,7 +275,18 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	v.Set("format", "protobuf")
 	rewrite.RawQuery = v.Encode()
 
-	responses := multiGet(Config.Backends, rewrite.RequestURI())
+	tld := strings.SplitN(req.FormValue("query"), ".", 2)[0]
+	// lookup tld in our map of where they live to reduce the set of
+	// servers we bug with our find
+	Config.mu.RLock()
+	var backends []string
+	var ok bool
+	if backends, ok = Config.metricPaths[tld]; !ok || backends == nil || len(backends) == 0 {
+		backends = Config.Backends
+	}
+	Config.mu.RUnlock()
+
+	responses := multiGet(backends, rewrite.RequestURI())
 
 	if responses == nil || len(responses) == 0 {
 		logger.Logln("find: error querying backends for: ", rewrite.RequestURI())
@@ -603,6 +652,10 @@ func main() {
 	storageClient.Transport = &http.Transport{
 		MaxIdleConnsPerHost: Config.MaxIdleConnsPerHost,
 	}
+
+	go probeTlds()
+	// force run now
+	probeForce <- 1
 
 	portStr := fmt.Sprintf(":%d", Config.Port)
 	logger.Logln("listening on", portStr)
