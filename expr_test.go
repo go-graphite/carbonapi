@@ -217,8 +217,24 @@ func TestEvalExpression(t *testing.T) {
 			map[metricRequest][]*pb.FetchResponse{
 				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{makeResponse("metric1", []float64{2, 4, 6, 1, 4, math.NaN(), 8}, 1, now32)},
 			},
-			[]float64{math.NaN(), 2, 2, math.NaN(), 3, math.NaN(), 4},
+			[]float64{math.NaN(), 2, 2, math.NaN(), 3, math.NaN(), math.NaN()},
 			"nonNegativeDerivative(metric1)",
+		},
+		{
+			&expr{
+				target: "nonNegativeDerivative",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 32, etype: etConst},
+				},
+				argString: "metric1,32",
+			},
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{makeResponse("metric1", []float64{2, 4, 0, 10, 1, math.NaN(), 8, 40, 37}, 1, now32)},
+			},
+			[]float64{math.NaN(), 2, 29, 10, 24, math.NaN(), math.NaN(), 32, math.NaN()},
+			"nonNegativeDerivative(metric1,32)",
 		},
 		{
 			&expr{

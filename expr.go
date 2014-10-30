@@ -1303,16 +1303,26 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		return result
 
 	case "nonNegativeDerivative": // nonNegativeDerivative(seriesList, maxValue=None)
-		// FIXME(dgryski): support maxValue
 		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		maxValue, err := getFloatArgDefault(e, 1, math.NaN())
 		if err != nil {
 			return nil
 		}
 
 		var result []*pb.FetchResponse
 		for _, a := range args {
+			var name string
+			if len(e.args) == 1 {
+				name = fmt.Sprintf("nonNegativeDerivative(%s)", *a.Name)
+			} else {
+				name = fmt.Sprintf("nonNegativeDerivative(%s,%g)", *a.Name, maxValue)
+			}
 			r := pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("nonNegativeDerivative(%s)", *a.Name)),
+				Name:      proto.String(name),
 				Values:    make([]float64, len(a.Values)),
 				IsAbsent:  make([]bool, len(a.Values)),
 				StepTime:  a.StepTime,
@@ -1321,13 +1331,17 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 			}
 			prev := a.Values[0]
 			for i, v := range a.Values {
-				if i == 0 || a.IsAbsent[i] {
+				if i == 0 || a.IsAbsent[i] || a.IsAbsent[i-1] {
 					r.IsAbsent[i] = true
+					prev = v
 					continue
 				}
-
-				r.Values[i] = v - prev
-				if r.Values[i] < 0 {
+				diff := v - prev
+				if diff >= 0 {
+					r.Values[i] = diff
+				} else if !math.IsNaN(maxValue) && maxValue >= v {
+					r.Values[i] = ((maxValue - prev) + v + 1)
+				} else {
 					r.Values[i] = 0
 					r.IsAbsent[i] = true
 				}
