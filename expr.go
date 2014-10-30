@@ -426,6 +426,35 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 	}
 
 	switch e.target {
+	case "absolute": // absolute(seriesList)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+		var results []*pb.FetchResponse
+
+		for _, a := range arg {
+			r := pb.FetchResponse{
+				Name:      proto.String(fmt.Sprintf("absolute(%s)", *a.Name)),
+				Values:    make([]float64, len(a.Values)),
+				IsAbsent:  make([]bool, len(a.Values)),
+				StepTime:  a.StepTime,
+				StartTime: a.StartTime,
+				StopTime:  a.StopTime,
+			}
+
+			for i, v := range a.Values {
+				if a.IsAbsent[i] {
+					r.Values[i] = 0
+					r.IsAbsent[i] = true
+					continue
+				}
+				r.Values[i] = math.Abs(v)
+			}
+			results = append(results, &r)
+		}
+		return results
+
 	case "alias": // alias(seriesList, newName)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
@@ -640,6 +669,32 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 			}
 		}
 		return []*pb.FetchResponse{&r}
+
+	case "averageAbove", "averageBelow": // averageAbove(seriesList, minimumAverage), averageBelow(seriesList, minimumAverage)
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		minimumAverage, err := getIntArg(e, 1)
+		if err != nil {
+			return nil
+		}
+
+		var results []*pb.FetchResponse
+		for _, a := range args {
+			switch e.target {
+			case "averageAbove":
+				if avgValue(a.Values, a.IsAbsent) >= float64(minimumAverage) {
+					results = append(results, a)
+				}
+			case "averageBelow":
+				if avgValue(a.Values, a.IsAbsent) <= float64(minimumAverage) {
+					results = append(results, a)
+				}
+			}
+		}
+		return results
 
 	case "derivative": // derivative(seriesList)
 		args, err := getSeriesArg(e.args[0], from, until, values)
