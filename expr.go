@@ -653,13 +653,13 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return []*pb.FetchResponse{&r}
 
-	case "averageAbove", "averageBelow": // averageAbove(seriesList, minimumAverage), averageBelow(seriesList, minimumAverage)
+	case "averageAbove", "averageBelow", "currentAbove", "currentBelow": // averageAbove(seriesList, n), averageBelow(seriesList, n), currentAbove(seriesList, n), currentBelow(seriesList, n)
 		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}
 
-		minimumAverage, err := getIntArg(e, 1)
+		n, err := getIntArg(e, 1)
 		if err != nil {
 			return nil
 		}
@@ -668,11 +668,19 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		for _, a := range args {
 			switch e.target {
 			case "averageAbove":
-				if avgValue(a.Values, a.IsAbsent) >= float64(minimumAverage) {
+				if avgValue(a.Values, a.IsAbsent) >= float64(n) {
 					results = append(results, a)
 				}
 			case "averageBelow":
-				if avgValue(a.Values, a.IsAbsent) <= float64(minimumAverage) {
+				if avgValue(a.Values, a.IsAbsent) <= float64(n) {
+					results = append(results, a)
+				}
+			case "currentAbove":
+				if currentValue(a.Values, a.IsAbsent) >= float64(n) {
+					results = append(results, a)
+				}
+			case "currentBelow":
+				if currentValue(a.Values, a.IsAbsent) <= float64(n) {
 					results = append(results, a)
 				}
 			}
