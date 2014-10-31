@@ -204,6 +204,24 @@ func (z zipper) Render(metric string, from, until int32) (pb.FetchResponse, erro
 	return pbresp, err
 }
 
+func (z zipper) Passthrough(metric string) ([]byte, error) {
+
+	u, _ := url.Parse(string(z.z) + metric)
+
+	resp, err := z.client.Get(u.String())
+	if err != nil {
+		return nil, fmt.Errorf("http.Get: %+v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("ioutil.ReadAll: %+v", err)
+	}
+
+	return body, nil
+}
+
 func (z zipper) get(who string, u *url.URL, msg proto.Message) error {
 	resp, err := z.client.Get(u.String())
 	if err != nil {
@@ -557,6 +575,17 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 	}
 }
 
+func passthroughHandler(w http.ResponseWriter, r *http.Request) {
+	var data []byte
+	var err error
+
+	if data, err = Zipper.Passthrough(r.URL.RequestURI()); err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	w.Write(data)
+}
+
 func lbcheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Ok\n"))
 }
@@ -727,6 +756,11 @@ func main() {
 
 	http.HandleFunc("/render/", render)
 	http.HandleFunc("/render", render)
+
+	http.HandleFunc("/find/", passthroughHandler)
+	http.HandleFunc("/find", passthroughHandler)
+	http.HandleFunc("/info/", passthroughHandler)
+	http.HandleFunc("/info", passthroughHandler)
 
 	http.HandleFunc("/lb_check", lbcheckHandler)
 
