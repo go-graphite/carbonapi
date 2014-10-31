@@ -23,7 +23,7 @@ import (
 
 	"code.google.com/p/gogoprotobuf/proto"
 
-	pb "./carbonzipperpb"
+	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 	"github.com/dgryski/httputil"
 	pickle "github.com/kisielk/og-rek"
 	"github.com/lestrrat/go-file-rotatelogs"
