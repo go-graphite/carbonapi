@@ -217,8 +217,24 @@ func TestEvalExpression(t *testing.T) {
 			map[metricRequest][]*pb.FetchResponse{
 				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{makeResponse("metric1", []float64{2, 4, 6, 1, 4, math.NaN(), 8}, 1, now32)},
 			},
-			[]float64{math.NaN(), 2, 2, math.NaN(), 3, math.NaN(), 4},
+			[]float64{math.NaN(), 2, 2, math.NaN(), 3, math.NaN(), math.NaN()},
 			"nonNegativeDerivative(metric1)",
+		},
+		{
+			&expr{
+				target: "nonNegativeDerivative",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 32, etype: etConst},
+				},
+				argString: "metric1,32",
+			},
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{makeResponse("metric1", []float64{2, 4, 0, 10, 1, math.NaN(), 8, 40, 37}, 1, now32)},
+			},
+			[]float64{math.NaN(), 2, 29, 10, 24, math.NaN(), math.NaN(), 32, math.NaN()},
+			"nonNegativeDerivative(metric1,32)",
 		},
 		{
 			&expr{
@@ -643,6 +659,61 @@ func TestEvalExpression(t *testing.T) {
 			},
 			[]float64{0, 1, 2, 3, 4, 5},
 			"logarithm(metric1,2)",
+		},
+		{
+			&expr{
+				target: "absolute",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{makeResponse("metric1", []float64{0, -1, 2, -3, 4, 5}, 1, now32)},
+			},
+			[]float64{0, 1, 2, 3, 4, 5},
+			"absolute(metric1)",
+		},
+		{
+			&expr{
+				target: "averageAbove",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 5, etype: etConst},
+				},
+				argString: "metric1,1",
+			},
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{
+					makeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					makeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					makeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+				},
+			},
+			[]float64{3, 4, 5, 6, 7, 8},
+			"metricB",
+		},
+		{
+			&expr{
+				target: "averageBelow",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 0, etype: etConst},
+				},
+				argString: "metric1,1",
+			},
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{
+					makeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					makeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					makeResponse("metricC", []float64{0, 4, 4, 5, 5, 6}, 1, now32),
+				},
+			},
+			[]float64{0, 0, 0, 0, 0, 0},
+			"metricA",
 		},
 	}
 
