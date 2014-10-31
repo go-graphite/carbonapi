@@ -1349,6 +1349,33 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return result
 
+	case "offsetToZero": // offsetToZero(seriesList)
+		return forEachSeriesDo(e, from, until, values, func(a *pb.FetchResponse) *pb.FetchResponse {
+			r := pb.FetchResponse{
+				Name:      proto.String(fmt.Sprintf("offsetToZero(%s)", *a.Name)),
+				Values:    make([]float64, len(a.Values)),
+				IsAbsent:  make([]bool, len(a.Values)),
+				StepTime:  a.StepTime,
+				StartTime: a.StartTime,
+				StopTime:  a.StopTime,
+			}
+
+			minimum := math.Inf(1)
+			for i, v := range a.Values {
+				if !a.IsAbsent[i] && v < minimum {
+					minimum = v
+				}
+			}
+			for i, v := range a.Values {
+				if a.IsAbsent[i] {
+					r.Values[i] = 0
+					r.IsAbsent[i] = true
+					continue
+				}
+				r.Values[i] = v - minimum
+			}
+			return &r
+		})
 	case "scale": // scale(seriesList, factor)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {

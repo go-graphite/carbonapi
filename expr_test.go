@@ -730,6 +730,21 @@ func TestEvalExpression(t *testing.T) {
 			[]float64{-0.25, -0.5, -1, math.NaN(), 1, 0.5, 0.25},
 			"invert(metric1)",
 		},
+		{
+			&expr{
+				target: "offsetToZero",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{makeResponse("metric1", []float64{93, 94, 95, math.NaN(), 97, 98, 99, 100, 101}, 1, now32)},
+			},
+			[]float64{0, 1, 2, math.NaN(), 4, 5, 6, 7, 8},
+			"offsetToZero(metric1)",
+		},
 	}
 
 	for _, tt := range tests {
