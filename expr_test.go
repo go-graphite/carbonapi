@@ -785,6 +785,21 @@ func TestEvalExpression(t *testing.T) {
 			[]float64{0, 0, 0, 0, 0, math.NaN()},
 			"metricA",
 		},
+		{
+			&expr{
+				target: "integral",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{makeResponse("metric1", []float64{1, 2, 3, 4, 5, math.NaN(), 7, 8}, 1, now32)},
+			},
+			[]float64{1, 3, 6, 10, 15, math.NaN(), 22, 30},
+			"integral(metric1)",
+		},
 	}
 
 	for _, tt := range tests {
