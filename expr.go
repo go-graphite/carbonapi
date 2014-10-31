@@ -1054,6 +1054,27 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return results
 
+	case "invert": // invert(seriesList)
+		return forEachSeriesDo(e, from, until, values, func(a *pb.FetchResponse) *pb.FetchResponse {
+			r := pb.FetchResponse{
+				Name:      proto.String(fmt.Sprintf("invert(%s)", *a.Name)),
+				Values:    make([]float64, len(a.Values)),
+				IsAbsent:  make([]bool, len(a.Values)),
+				StepTime:  a.StepTime,
+				StartTime: a.StartTime,
+				StopTime:  a.StopTime,
+			}
+
+			for i, v := range a.Values {
+				if a.IsAbsent[i] || v == 0 {
+					r.Values[i] = 0
+					r.IsAbsent[i] = true
+					continue
+				}
+				r.Values[i] = 1 / v
+			}
+			return &r
+		})
 	case "keepLastValue": // keepLastValue(seriesList, limit=inf)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
