@@ -427,13 +427,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 	switch e.target {
 	case "absolute": // absolute(seriesList)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
-		if err != nil {
-			return nil
-		}
-		var results []*pb.FetchResponse
-
-		for _, a := range arg {
+		return forEachSeriesDo(e, from, until, values, func(a *pb.FetchResponse) *pb.FetchResponse {
 			r := pb.FetchResponse{
 				Name:      proto.String(fmt.Sprintf("absolute(%s)", *a.Name)),
 				Values:    make([]float64, len(a.Values)),
@@ -451,9 +445,8 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 				}
 				r.Values[i] = math.Abs(v)
 			}
-			results = append(results, &r)
-		}
-		return results
+			return &r
+		})
 
 	case "alias": // alias(seriesList, newName)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
@@ -477,14 +470,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		return []*pb.FetchResponse{&r}
 
 	case "aliasByMetric": // aliasByMetric(seriesList)
-		args, err := getSeriesArg(e.args[0], from, until, values)
-		if err != nil {
-			return nil
-		}
-
-		var results []*pb.FetchResponse
-		for _, a := range args {
-
+		return forEachSeriesDo(e, from, until, values, func(a *pb.FetchResponse) *pb.FetchResponse {
 			metric := extractMetric(*a.Name)
 			part := strings.Split(metric, ".")
 			r := pb.FetchResponse{
@@ -495,11 +481,8 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 				StartTime: a.StartTime,
 				StopTime:  a.StopTime,
 			}
-
-			results = append(results, &r)
-		}
-
-		return results
+			return &r
+		})
 
 	case "aliasByNode": // aliasByNode(seriesList, *nodes)
 		args, err := getSeriesArg(e.args[0], from, until, values)
@@ -697,12 +680,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		return results
 
 	case "derivative": // derivative(seriesList)
-		args, err := getSeriesArg(e.args[0], from, until, values)
-		if err != nil {
-			return nil
-		}
-		var result []*pb.FetchResponse
-		for _, a := range args {
+		return forEachSeriesDo(e, from, until, values, func(a *pb.FetchResponse) *pb.FetchResponse {
 			r := pb.FetchResponse{
 				Name:      proto.String(fmt.Sprintf("derivative(%s)", *a.Name)),
 				Values:    make([]float64, len(a.Values)),
@@ -721,9 +699,8 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 				r.Values[i] = v - prev
 				prev = v
 			}
-			result = append(result, &r)
-		}
-		return result
+			return &r
+		})
 
 	case "diffSeries": // diffSeries(*seriesLists)
 		if len(e.args) < 2 {
@@ -1768,6 +1745,21 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 	log.Printf("unknown function in evalExpr:  %q\n", e.target)
 
 	return nil
+}
+
+type seriesFunc func(*pb.FetchResponse) *pb.FetchResponse
+
+func forEachSeriesDo(e *expr, from, until int32, values map[metricRequest][]*pb.FetchResponse, function seriesFunc) []*pb.FetchResponse {
+	arg, err := getSeriesArg(e.args[0], from, until, values)
+	if err != nil {
+		return nil
+	}
+	var results []*pb.FetchResponse
+
+	for _, a := range arg {
+		results = append(results, function(a))
+	}
+	return results
 }
 
 func summarizeValues(f string, values []float64) float64 {
