@@ -23,7 +23,7 @@ import (
 
 	"code.google.com/p/gogoprotobuf/proto"
 
-	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
+	pb "./carbonzipperpb"
 	"github.com/dgryski/httputil"
 	pickle "github.com/kisielk/og-rek"
 	"github.com/lestrrat/go-file-rotatelogs"
@@ -69,6 +69,9 @@ var Metrics = struct {
 	RenderRequests *expvar.Int
 	RenderErrors   *expvar.Int
 
+	InfoRequests *expvar.Int
+	InfoErrors   *expvar.Int
+
 	Timeouts *expvar.Int
 }{
 	FindRequests: expvar.NewInt("find_requests"),
@@ -76,6 +79,9 @@ var Metrics = struct {
 
 	RenderRequests: expvar.NewInt("render_requests"),
 	RenderErrors:   expvar.NewInt("render_errors"),
+
+	InfoRequests: expvar.NewInt("info_requests"),
+	InfoErrors:   expvar.NewInt("info_errors"),
 
 	Timeouts: expvar.NewInt("timeouts"),
 }
@@ -504,6 +510,91 @@ func mergeValues(req *http.Request, metric *pb.FetchResponse, decoded []pb.Fetch
 	}
 }
 
+func infoHandlerPB(w http.ResponseWriter, req *http.Request, format string, responses []serverResponse) map[string]pb.InfoResponse {
+
+	decoded := make(map[string]pb.InfoResponse)
+	for _, r := range responses {
+		if r.response == nil {
+			continue
+		}
+		var d pb.InfoResponse
+		err := json.Unmarshal(r.response, &d) // should be proto
+		if err != nil {
+			logger.Logf("error decoding protobuf response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
+			logger.Traceln("\n" + hex.Dump(r.response))
+			Metrics.InfoErrors.Add(1)
+			continue
+		}
+		decoded[r.server] = d
+	}
+
+	logger.Traceln("request: %s: %v", req.URL.RequestURI(), decoded)
+
+	return decoded
+}
+
+func infoHandler(w http.ResponseWriter, req *http.Request) {
+
+	logger.Debugln("request: ", req.URL.RequestURI())
+
+	Metrics.InfoRequests.Add(1)
+
+	req.ParseForm()
+	target := req.FormValue("target")
+
+	if target == "" {
+		http.Error(w, "empty target", http.StatusBadRequest)
+		return
+	}
+
+	var serverList []string
+	var ok bool
+
+	Config.mu.RLock()
+	// lookup the server list for this metric, or use all the servers if it's unknown
+	if serverList, ok = Config.metricPaths[target]; !ok || serverList == nil || len(serverList) == 0 {
+		serverList = Config.Backends
+	}
+	Config.mu.RUnlock()
+
+	format := req.FormValue("format")
+	rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
+	v := rewrite.Query()
+	//v.Set("format", "protobuf")  needs carbonserver bump, awaits trigram fixes
+	v.Set("format", "json")
+	rewrite.RawQuery = v.Encode()
+
+	responses := multiGet(serverList, rewrite.RequestURI())
+
+	if responses == nil || len(responses) == 0 {
+		logger.Logln("info: error querying backends for:", req.URL.RequestURI(), "backends:", serverList)
+		http.Error(w, "info: error querying backends", http.StatusInternalServerError)
+		Metrics.InfoErrors.Add(1)
+		return
+	}
+
+	infos := infoHandlerPB(w, req, format, responses)
+
+	switch format {
+	case "protobuf":
+		w.Header().Set("Content-Type", "application/protobuf")
+		var result pb.ZipperInfoResponse
+		result.Responses = make([]*pb.ServerInfoResponse, len(infos))
+		for s, i := range infos {
+			var r pb.ServerInfoResponse
+			r.Server = &s
+			r.Info = &i
+			result.Responses = append(result.Responses, &r)
+		}
+		b, _ := proto.Marshal(&result)
+		w.Write(b)
+	case "", "json":
+		w.Header().Set("Content-Type", "application/json")
+		jEnc := json.NewEncoder(w)
+		jEnc.Encode(infos)
+	}
+}
+
 func lbCheckHandler(w http.ResponseWriter, req *http.Request) {
 
 	logger.Traceln("loadbalancer: ", req.URL.RequestURI())
@@ -612,6 +703,7 @@ func main() {
 
 	http.HandleFunc("/metrics/find/", httputil.TrackConnections(httputil.TimeHandler(findHandler, bucketRequestTimes)))
 	http.HandleFunc("/render/", httputil.TrackConnections(httputil.TimeHandler(renderHandler, bucketRequestTimes)))
+	http.HandleFunc("/info/", httputil.TrackConnections(httputil.TimeHandler(infoHandler, bucketRequestTimes)))
 	http.HandleFunc("/lb_check", lbCheckHandler)
 
 	// nothing in the config? check the environment
@@ -640,6 +732,9 @@ func main() {
 
 		graphite.Register(fmt.Sprintf("carbon.zipper.%s.render_requests", hostname), Metrics.RenderRequests)
 		graphite.Register(fmt.Sprintf("carbon.zipper.%s.render_errors", hostname), Metrics.RenderErrors)
+
+		graphite.Register(fmt.Sprintf("carbon.zipper.%s.info_requests", hostname), Metrics.InfoRequests)
+		graphite.Register(fmt.Sprintf("carbon.zipper.%s.info_errors", hostname), Metrics.InfoErrors)
 
 		graphite.Register(fmt.Sprintf("carbon.zipper.%s.timeouts", hostname), Metrics.Timeouts)
 

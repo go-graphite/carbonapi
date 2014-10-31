@@ -14,16 +14,16 @@ It has these top-level messages:
 	GlobResponse
 	Retention
 	InfoResponse
+	ServerInfoResponse
+	ZipperInfoResponse
 */
 package carbonzipperpb
 
 import proto "code.google.com/p/gogoprotobuf/proto"
-import json "encoding/json"
 import math "math"
 
-// Reference proto, json, and math imports to suppress error if they are not otherwise used.
+// Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
-var _ = &json.SyntaxError{}
 var _ = math.Inf
 
 type FetchResponse struct {
@@ -198,6 +198,46 @@ func (m *InfoResponse) GetXFilesFactor() float32 {
 func (m *InfoResponse) GetRetentions() []*Retention {
 	if m != nil {
 		return m.Retentions
+	}
+	return nil
+}
+
+type ServerInfoResponse struct {
+	Server           *string       `protobuf:"bytes,1,req,name=server" json:"server,omitempty"`
+	Info             *InfoResponse `protobuf:"bytes,2,req,name=info" json:"info,omitempty"`
+	XXX_unrecognized []byte        `json:"-"`
+}
+
+func (m *ServerInfoResponse) Reset()         { *m = ServerInfoResponse{} }
+func (m *ServerInfoResponse) String() string { return proto.CompactTextString(m) }
+func (*ServerInfoResponse) ProtoMessage()    {}
+
+func (m *ServerInfoResponse) GetServer() string {
+	if m != nil && m.Server != nil {
+		return *m.Server
+	}
+	return ""
+}
+
+func (m *ServerInfoResponse) GetInfo() *InfoResponse {
+	if m != nil {
+		return m.Info
+	}
+	return nil
+}
+
+type ZipperInfoResponse struct {
+	Responses        []*ServerInfoResponse `protobuf:"bytes,1,rep,name=responses" json:"responses,omitempty"`
+	XXX_unrecognized []byte                `json:"-"`
+}
+
+func (m *ZipperInfoResponse) Reset()         { *m = ZipperInfoResponse{} }
+func (m *ZipperInfoResponse) String() string { return proto.CompactTextString(m) }
+func (*ZipperInfoResponse) ProtoMessage()    {}
+
+func (m *ZipperInfoResponse) GetResponses() []*ServerInfoResponse {
+	if m != nil {
+		return m.Responses
 	}
 	return nil
 }

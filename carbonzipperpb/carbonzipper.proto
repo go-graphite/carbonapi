@@ -33,3 +33,12 @@ message InfoResponse {
 	required float xFilesFactor = 4;
 	repeated Retention retentions = 5;
 }
+
+message ServerInfoResponse {
+	required string server = 1;
+	required InfoResponse info = 2;
+}
+
+message ZipperInfoResponse {
+	repeated ServerInfoResponse responses = 1;
+}
