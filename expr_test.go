@@ -683,7 +683,7 @@ func TestEvalExpression(t *testing.T) {
 					&expr{target: "metric1"},
 					&expr{val: 5, etype: etConst},
 				},
-				argString: "metric1,1",
+				argString: "metric1,5",
 			},
 			map[metricRequest][]*pb.FetchResponse{
 				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{
@@ -703,7 +703,7 @@ func TestEvalExpression(t *testing.T) {
 					&expr{target: "metric1"},
 					&expr{val: 0, etype: etConst},
 				},
-				argString: "metric1,1",
+				argString: "metric1,0",
 			},
 			map[metricRequest][]*pb.FetchResponse{
 				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{
@@ -714,6 +714,91 @@ func TestEvalExpression(t *testing.T) {
 			},
 			[]float64{0, 0, 0, 0, 0, 0},
 			"metricA",
+		},
+		{
+			&expr{
+				target: "invert",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{makeResponse("metric1", []float64{-4, -2, -1, 0, 1, 2, 4}, 1, now32)},
+			},
+			[]float64{-0.25, -0.5, -1, math.NaN(), 1, 0.5, 0.25},
+			"invert(metric1)",
+		},
+		{
+			&expr{
+				target: "offsetToZero",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{makeResponse("metric1", []float64{93, 94, 95, math.NaN(), 97, 98, 99, 100, 101}, 1, now32)},
+			},
+			[]float64{0, 1, 2, math.NaN(), 4, 5, 6, 7, 8},
+			"offsetToZero(metric1)",
+		},
+		{
+			&expr{
+				target: "currentAbove",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 7, etype: etConst},
+				},
+				argString: "metric1,7",
+			},
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{
+					makeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					makeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					makeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+				},
+			},
+			[]float64{3, 4, 5, 6, 7, 8},
+			"metricB",
+		},
+		{
+			&expr{
+				target: "currentBelow",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 0, etype: etConst},
+				},
+				argString: "metric1,0",
+			},
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{
+					makeResponse("metricA", []float64{0, 0, 0, 0, 0, math.NaN()}, 1, now32),
+					makeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					makeResponse("metricC", []float64{0, 4, 4, 5, 5, 6}, 1, now32),
+				},
+			},
+			[]float64{0, 0, 0, 0, 0, math.NaN()},
+			"metricA",
+		},
+		{
+			&expr{
+				target: "integral",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1", 0, 0}: []*pb.FetchResponse{makeResponse("metric1", []float64{1, 2, 3, 4, 5, math.NaN(), 7, 8}, 1, now32)},
+			},
+			[]float64{1, 3, 6, 10, 15, math.NaN(), 22, 30},
+			"integral(metric1)",
 		},
 	}
 

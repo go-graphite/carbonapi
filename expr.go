@@ -427,22 +427,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 	switch e.target {
 	case "absolute": // absolute(seriesList)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
-		if err != nil {
-			return nil
-		}
-		var results []*pb.FetchResponse
-
-		for _, a := range arg {
-			r := pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("absolute(%s)", *a.Name)),
-				Values:    make([]float64, len(a.Values)),
-				IsAbsent:  make([]bool, len(a.Values)),
-				StepTime:  a.StepTime,
-				StartTime: a.StartTime,
-				StopTime:  a.StopTime,
-			}
-
+		return forEachSeriesDo(e, from, until, values, func(a *pb.FetchResponse, r *pb.FetchResponse) *pb.FetchResponse {
 			for i, v := range a.Values {
 				if a.IsAbsent[i] {
 					r.Values[i] = 0
@@ -451,9 +436,8 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 				}
 				r.Values[i] = math.Abs(v)
 			}
-			results = append(results, &r)
-		}
-		return results
+			return r
+		})
 
 	case "alias": // alias(seriesList, newName)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
@@ -477,29 +461,14 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		return []*pb.FetchResponse{&r}
 
 	case "aliasByMetric": // aliasByMetric(seriesList)
-		args, err := getSeriesArg(e.args[0], from, until, values)
-		if err != nil {
-			return nil
-		}
-
-		var results []*pb.FetchResponse
-		for _, a := range args {
-
+		return forEachSeriesDo(e, from, until, values, func(a *pb.FetchResponse, r *pb.FetchResponse) *pb.FetchResponse {
 			metric := extractMetric(*a.Name)
 			part := strings.Split(metric, ".")
-			r := pb.FetchResponse{
-				Name:      proto.String(part[len(part)-1]),
-				Values:    a.Values,
-				IsAbsent:  a.IsAbsent,
-				StepTime:  a.StepTime,
-				StartTime: a.StartTime,
-				StopTime:  a.StopTime,
-			}
-
-			results = append(results, &r)
-		}
-
-		return results
+			r.Name = proto.String(part[len(part)-1])
+			r.Values = a.Values
+			r.IsAbsent = a.IsAbsent
+			return r
+		})
 
 	case "aliasByNode": // aliasByNode(seriesList, *nodes)
 		args, err := getSeriesArg(e.args[0], from, until, values)
@@ -670,13 +639,13 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return []*pb.FetchResponse{&r}
 
-	case "averageAbove", "averageBelow": // averageAbove(seriesList, minimumAverage), averageBelow(seriesList, minimumAverage)
+	case "averageAbove", "averageBelow", "currentAbove", "currentBelow": // averageAbove(seriesList, n), averageBelow(seriesList, n), currentAbove(seriesList, n), currentBelow(seriesList, n)
 		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}
 
-		minimumAverage, err := getIntArg(e, 1)
+		n, err := getIntArg(e, 1)
 		if err != nil {
 			return nil
 		}
@@ -685,11 +654,19 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		for _, a := range args {
 			switch e.target {
 			case "averageAbove":
-				if avgValue(a.Values, a.IsAbsent) >= float64(minimumAverage) {
+				if avgValue(a.Values, a.IsAbsent) >= float64(n) {
 					results = append(results, a)
 				}
 			case "averageBelow":
-				if avgValue(a.Values, a.IsAbsent) <= float64(minimumAverage) {
+				if avgValue(a.Values, a.IsAbsent) <= float64(n) {
+					results = append(results, a)
+				}
+			case "currentAbove":
+				if currentValue(a.Values, a.IsAbsent) >= float64(n) {
+					results = append(results, a)
+				}
+			case "currentBelow":
+				if currentValue(a.Values, a.IsAbsent) <= float64(n) {
 					results = append(results, a)
 				}
 			}
@@ -697,20 +674,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		return results
 
 	case "derivative": // derivative(seriesList)
-		args, err := getSeriesArg(e.args[0], from, until, values)
-		if err != nil {
-			return nil
-		}
-		var result []*pb.FetchResponse
-		for _, a := range args {
-			r := pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("derivative(%s)", *a.Name)),
-				Values:    make([]float64, len(a.Values)),
-				IsAbsent:  make([]bool, len(a.Values)),
-				StepTime:  a.StepTime,
-				StartTime: a.StartTime,
-				StopTime:  a.StopTime,
-			}
+		return forEachSeriesDo(e, from, until, values, func(a *pb.FetchResponse, r *pb.FetchResponse) *pb.FetchResponse {
 			prev := a.Values[0]
 			for i, v := range a.Values {
 				if i == 0 || a.IsAbsent[i] {
@@ -721,9 +685,8 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 				r.Values[i] = v - prev
 				prev = v
 			}
-			result = append(result, &r)
-		}
-		return result
+			return r
+		})
 
 	case "diffSeries": // diffSeries(*seriesLists)
 		if len(e.args) < 2 {
@@ -1076,6 +1039,33 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 			results = append(results, &r)
 		}
 		return results
+	case "integral": // integral(seriesList)
+		return forEachSeriesDo(e, from, until, values, func(a *pb.FetchResponse, r *pb.FetchResponse) *pb.FetchResponse {
+			current := 0.0
+			for i, v := range a.Values {
+				if a.IsAbsent[i] || v == 0 {
+					r.Values[i] = 0
+					r.IsAbsent[i] = true
+					continue
+				}
+				current += v
+				r.Values[i] = current
+			}
+			return r
+		})
+
+	case "invert": // invert(seriesList)
+		return forEachSeriesDo(e, from, until, values, func(a *pb.FetchResponse, r *pb.FetchResponse) *pb.FetchResponse {
+			for i, v := range a.Values {
+				if a.IsAbsent[i] || v == 0 {
+					r.Values[i] = 0
+					r.IsAbsent[i] = true
+					continue
+				}
+				r.Values[i] = 1 / v
+			}
+			return r
+		})
 
 	case "keepLastValue": // keepLastValue(seriesList, limit=inf)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
@@ -1351,6 +1341,24 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return result
 
+	case "offsetToZero": // offsetToZero(seriesList)
+		return forEachSeriesDo(e, from, until, values, func(a *pb.FetchResponse, r *pb.FetchResponse) *pb.FetchResponse {
+			minimum := math.Inf(1)
+			for i, v := range a.Values {
+				if !a.IsAbsent[i] && v < minimum {
+					minimum = v
+				}
+			}
+			for i, v := range a.Values {
+				if a.IsAbsent[i] {
+					r.Values[i] = 0
+					r.IsAbsent[i] = true
+					continue
+				}
+				r.Values[i] = v - minimum
+			}
+			return r
+		})
 	case "scale": // scale(seriesList, factor)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
@@ -1768,6 +1776,29 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 	log.Printf("unknown function in evalExpr:  %q\n", e.target)
 
 	return nil
+}
+
+type seriesFunc func(*pb.FetchResponse, *pb.FetchResponse) *pb.FetchResponse
+
+func forEachSeriesDo(e *expr, from, until int32, values map[metricRequest][]*pb.FetchResponse, function seriesFunc) []*pb.FetchResponse {
+	arg, err := getSeriesArg(e.args[0], from, until, values)
+	if err != nil {
+		return nil
+	}
+	var results []*pb.FetchResponse
+
+	for _, a := range arg {
+		r := pb.FetchResponse{
+			Name:      proto.String(fmt.Sprintf("%s(%s)", e.target, *a.Name)),
+			Values:    make([]float64, len(a.Values)),
+			IsAbsent:  make([]bool, len(a.Values)),
+			StepTime:  a.StepTime,
+			StartTime: a.StartTime,
+			StopTime:  a.StopTime,
+		}
+		results = append(results, function(a, &r))
+	}
+	return results
 }
 
 func summarizeValues(f string, values []float64) float64 {
