@@ -757,8 +757,8 @@ func main() {
 	http.HandleFunc("/render/", render)
 	http.HandleFunc("/render", render)
 
-	http.HandleFunc("/find/", passthroughHandler)
-	http.HandleFunc("/find", passthroughHandler)
+	http.HandleFunc("/metrics/find/", passthroughHandler)
+	http.HandleFunc("/metrics/find", passthroughHandler)
 	http.HandleFunc("/info/", passthroughHandler)
 	http.HandleFunc("/info", passthroughHandler)
 
