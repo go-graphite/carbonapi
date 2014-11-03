@@ -560,8 +560,7 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 	format := req.FormValue("format")
 	rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
 	v := rewrite.Query()
-	//v.Set("format", "protobuf")  needs carbonserver bump, awaits trigram fixes
-	v.Set("format", "json")
+	v.Set("format", "protobuf")
 	rewrite.RawQuery = v.Encode()
 
 	responses := multiGet(serverList, rewrite.RequestURI())
