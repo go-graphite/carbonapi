@@ -376,7 +376,38 @@ func TestEvalExpression(t *testing.T) {
 			[]float64{1, 2, 3, 4, 5},
 			"foo.baz",
 		},
-
+		{
+			&expr{
+				target: "aliasSub",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1.foo.bar.baz"},
+					&expr{valStr: "foo", etype: etString},
+					&expr{valStr: "replaced", etype: etString},
+				},
+			},
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1.foo.bar.baz", 0, 0}: []*pb.FetchResponse{makeResponse("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			},
+			[]float64{1, 2, 3, 4, 5},
+			"metric1.replaced.bar.baz",
+		},
+		{
+			&expr{
+				target: "aliasSub",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1.TCP100"},
+					&expr{valStr: "^.*TCP(\\d+)", etype: etString},
+					&expr{valStr: "$1", etype: etString},
+				},
+			},
+			map[metricRequest][]*pb.FetchResponse{
+				metricRequest{"metric1.TCP100", 0, 0}: []*pb.FetchResponse{makeResponse("metric1.TCP100", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			},
+			[]float64{1, 2, 3, 4, 5},
+			"100",
+		},
 		{
 			&expr{
 				target: "derivative",

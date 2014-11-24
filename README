@@ -17,6 +17,19 @@ or if the GRAPHITEHOST/GRAPHITEPORT environment variables are found.
 
 Request data will be stored in memory (default) or in memcache.
 
+Known issues
+------------
+- aliasSub() implements different from original graphite's implementation
+regexp syntax. For example:
+
+    original graphite syntax:
+        aliasSub(ip.*TCP*,"^.*TCP(\d+)","\1")
+
+    carbonapi syntax:
+        aliasSub(ip.*TCP*,"^.*TCP(\d+)","$1")
+
+for other details of regexp syntax reffer to the documentation of regexp package.
+
 Acknowledgement
 ---------------
 This program was originally developed for Booking.com.  With approval
