@@ -509,6 +509,46 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 
 		return results
 
+	case "aliasSub": // aliasSub(seriesList, search, replace)
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		search, err := getStringArg(e, 1)
+		if err != nil {
+			return nil
+		}
+
+		replace, err := getStringArg(e, 2)
+		if err != nil {
+			return nil
+		}
+
+		re, err := regexp.Compile(search)
+		if err != nil {
+			return nil
+		}
+
+		var results []*pb.FetchResponse
+
+		for _, a := range args {
+			metric := extractMetric(*a.Name)
+
+			r := pb.FetchResponse{
+				Name:      proto.String(re.ReplaceAllString(metric, replace)),
+				Values:    a.Values,
+				IsAbsent:  a.IsAbsent,
+				StepTime:  a.StepTime,
+				StartTime: a.StartTime,
+				StopTime:  a.StopTime,
+			}
+
+			results = append(results, &r)
+		}
+
+		return results
+
 	case "asPercent": // asPercent(seriesList, total=None)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
