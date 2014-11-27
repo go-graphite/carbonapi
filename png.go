@@ -72,13 +72,20 @@ func timeMarker(min, max float64) []plot.Tick {
 	return ticks
 }
 
+type xy struct {
+	X, Y float64
+}
+
 func resultXYs(r *pb.FetchResponse) plotter.XYs {
-	pts := make(plotter.XYs, len(r.GetValues()))
+	pts := make(plotter.XYs, 0, len(r.GetValues()))
 	start := float64(r.GetStartTime())
 	step := float64(r.GetStepTime())
+	absent := r.GetIsAbsent()
 	for i, v := range r.GetValues() {
-		pts[i].X = start + float64(i)*step
-		pts[i].Y = v
+		if absent[i] {
+			continue
+		}
+		pts = append(pts, xy{start + float64(i)*step, v})
 	}
 	return pts
 }
