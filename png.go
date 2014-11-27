@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"image"
 	"image/png"
+	"net/http"
+	"strconv"
 	"time"
 
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
@@ -16,7 +18,7 @@ import (
 
 var linesColors = `blue,green,red,purple,brown,yellow,aqua,grey,magenta,pink,gold,rose`
 
-func marshalPNG(results []*pb.FetchResponse) []byte {
+func marshalPNG(r *http.Request, results []*pb.FetchResponse) []byte {
 
 	p, err := plot.New()
 	if err != nil {
@@ -41,10 +43,11 @@ func marshalPNG(results []*pb.FetchResponse) []byte {
 	}
 	p.Add(lines...)
 
-	dpi := 100
+	height := getInt(r.FormValue("height"), 300)
+	width := getInt(r.FormValue("width"), 400)
 
 	// Draw the plot to an in-memory image.
-	img := image.NewRGBA(image.Rect(0, 0, 8*dpi, 6*dpi))
+	img := image.NewRGBA(image.Rect(0, 0, width, height))
 	da := plot.MakeDrawArea(vgimg.NewImage(img))
 	p.Draw(da)
 
@@ -78,4 +81,19 @@ func resultXYs(r *pb.FetchResponse) plotter.XYs {
 		pts[i].Y = v
 	}
 	return pts
+}
+
+func getInt(s string, def int) int {
+
+	if s == "" {
+		return def
+	}
+
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		return def
+	}
+
+	return n
+
 }
