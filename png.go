@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"image"
 	"image/png"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -34,9 +35,7 @@ func marshalPNG(r *http.Request, results []*pb.FetchResponse) []byte {
 	var lines []plot.Plotter
 	for i, r := range results {
 
-		t := resultXYs(r)
-
-		l, _ := plotter.NewLine(t)
+		l := NewResponsePlotter(r)
 		l.Color = plotutil.Color(i)
 
 		lines = append(lines, l)
@@ -75,24 +74,6 @@ func timeMarker(min, max float64) []plot.Tick {
 	return ticks
 }
 
-type xy struct {
-	X, Y float64
-}
-
-func resultXYs(r *pb.FetchResponse) plotter.XYs {
-	pts := make(plotter.XYs, 0, len(r.GetValues()))
-	start := float64(r.GetStartTime())
-	step := float64(r.GetStepTime())
-	absent := r.GetIsAbsent()
-	for i, v := range r.GetValues() {
-		if absent[i] {
-			continue
-		}
-		pts = append(pts, xy{start + float64(i)*step, v})
-	}
-	return pts
-}
-
 func getInt(s string, def int) int {
 
 	if s == "" {
@@ -106,4 +87,64 @@ func getInt(s string, def int) int {
 
 	return n
 
+}
+
+type ResponsePlotter struct {
+	Response *pb.FetchResponse
+	plot.LineStyle
+}
+
+func NewResponsePlotter(r *pb.FetchResponse) *ResponsePlotter {
+	return &ResponsePlotter{
+		Response:  r,
+		LineStyle: plotter.DefaultLineStyle,
+	}
+}
+
+// Plot draws the Line, implementing the plot.Plotter
+// interface.
+func (rp *ResponsePlotter) Plot(da plot.DrawArea, plt *plot.Plot) {
+	trX, trY := plt.Transforms(&da)
+
+	start := float64(rp.Response.GetStartTime())
+	step := float64(rp.Response.GetStepTime())
+	absent := rp.Response.GetIsAbsent()
+
+	lines := make([][]plot.Point, 1, 1)
+
+	lines[0] = make([]plot.Point, 0, len(rp.Response.GetValues()))
+	currentLine := 0
+
+	lastAbsent := false
+	for i, v := range rp.Response.GetValues() {
+		if absent[i] {
+			lastAbsent = true
+		} else if lastAbsent {
+			currentLine++
+			lines = append(lines, make([]plot.Point, 1, len(rp.Response.GetValues())))
+			lines[currentLine][0] = plot.Point{trX(start + float64(i)*step), trY(v)}
+			lastAbsent = false
+		} else {
+			lines[currentLine] = append(lines[currentLine], plot.Point{trX(start + float64(i)*step), trY(v)})
+		}
+	}
+
+	da.StrokeLines(rp.LineStyle, lines...)
+}
+
+func (rp *ResponsePlotter) DataRange() (xmin, xmax, ymin, ymax float64) {
+	ymin = math.Inf(1)
+	ymax = math.Inf(-1)
+	absent := rp.Response.GetIsAbsent()
+
+	for i, v := range rp.Response.GetValues() {
+		if absent[i] {
+			continue
+		}
+		ymin = math.Min(ymin, v)
+		ymax = math.Max(ymax, v)
+	}
+	xmin = float64(rp.Response.GetStartTime())
+	xmax = float64(rp.Response.GetStopTime())
+	return
 }
