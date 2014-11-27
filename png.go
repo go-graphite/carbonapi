@@ -26,7 +26,7 @@ func marshalPNG(r *http.Request, results []*pb.FetchResponse) []byte {
 	}
 
 	// need different timeMarker's based on step size
-	p.Title.Text = results[0].GetName()
+	p.Title.Text = r.FormValue("title")
 	p.X.Tick.Marker = timeMarker
 
 	p.Add(plotter.NewGrid())
