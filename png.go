@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"image"
 	"image/png"
-	"log"
 	"time"
 
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
@@ -27,12 +26,17 @@ func marshalPNG(results []*pb.FetchResponse) []byte {
 	// need different timeMarker's based on step size
 	p.X.Tick.Marker = timeMarker
 
-	var lines []interface{}
-	for _, r := range results {
-		log.Println(r.GetName(), r.GetValues())
-		lines = append(lines, r.GetName(), resultXYs(r))
+	var lines []plot.Plotter
+	for i, r := range results {
+
+		t := resultXYs(r)
+
+		l, _ := plotter.NewLine(t)
+		l.Color = plotutil.Color(i)
+
+		lines = append(lines, l)
 	}
-	err = plotutil.AddLines(p, lines...)
+	p.Add(lines...)
 
 	dpi := 100
 
