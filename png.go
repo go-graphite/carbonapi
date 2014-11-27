@@ -43,8 +43,8 @@ func marshalPNG(r *http.Request, results []*pb.FetchResponse) []byte {
 	}
 	p.Add(lines...)
 
-	height := getInt(r.FormValue("height"), 300)
-	width := getInt(r.FormValue("width"), 400)
+	height := getInt(r.FormValue("height"), 250)
+	width := getInt(r.FormValue("width"), 330)
 
 	// Draw the plot to an in-memory image.
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
