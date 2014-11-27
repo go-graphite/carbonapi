@@ -1790,6 +1790,34 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*pb.FetchRe
 		}
 		return results
 
+	case "color": // color(seriesList, theColor) ignored
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		_, err = getStringArg(e, 1) // get color
+		if err != nil {
+			return nil
+		}
+
+		var results []*pb.FetchResponse
+
+		for _, a := range arg {
+			r := pb.FetchResponse{
+				Name:      proto.String(fmt.Sprintf("%s(%s)", e.target, *a.Name)),
+				Values:    a.Values,
+				IsAbsent:  a.IsAbsent,
+				StepTime:  a.StepTime,
+				StartTime: a.StartTime,
+				StopTime:  a.StopTime,
+			}
+
+			results = append(results, &r)
+		}
+
+		return results
+
 	case "dashed", "drawAsInfinite", "secondYAxis": // ignored
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
