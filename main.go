@@ -329,6 +329,10 @@ func writeResponse(w http.ResponseWriter, b []byte, format string, jsonp string)
 	case "pickle":
 		w.Header().Set("Content-Type", contentTypePickle)
 		w.Write(b)
+
+	case "png":
+		w.Header().Set("Content-Type", contentTypePNG)
+		w.Write(b)
 	}
 }
 
@@ -402,6 +406,7 @@ const (
 	contentTypeJavaScript = "text/javascript"
 	contentTypeRaw        = "text/plain"
 	contentTypePickle     = "application/pickle"
+	contentTypePNG        = "image/png"
 )
 
 type renderStats struct {
@@ -566,6 +571,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 		body = marshalRaw(results)
 	case "pickle":
 		body = marshalPickle(results)
+	case "png":
+		body = marshalPNG(results)
 	}
 
 	writeResponse(w, body, format, jsonp)
