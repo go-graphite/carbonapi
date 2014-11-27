@@ -27,6 +27,8 @@ func marshalPNG(results []*pb.FetchResponse) []byte {
 	p.Title.Text = results[0].GetName()
 	p.X.Tick.Marker = timeMarker
 
+	p.Add(plotter.NewGrid())
+
 	var lines []plot.Plotter
 	for i, r := range results {
 
