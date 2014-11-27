@@ -451,6 +451,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 	// Strip some cache-busters.  If you don't want to cache, use noCache=1
 	r.Form.Del("_salt")
 	r.Form.Del("_ts")
+	r.Form.Del("_t") // Used by jquery.graphite.js
 
 	cacheKey := r.Form.Encode()
 
