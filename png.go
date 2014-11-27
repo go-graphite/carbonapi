@@ -24,6 +24,7 @@ func marshalPNG(results []*pb.FetchResponse) []byte {
 	}
 
 	// need different timeMarker's based on step size
+	p.Title.Text = results[0].GetName()
 	p.X.Tick.Marker = timeMarker
 
 	var lines []plot.Plotter
