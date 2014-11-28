@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"image"
 	"image/png"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -31,9 +32,7 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 	var lines []plot.Plotter
 	for i, r := range results {
 
-		t := resultXYs(r)
-
-		l, _ := plotter.NewLine(t)
+		l := NewResponsePlotter(r)
 		l.Color = plotutil.Color(i)
 
 		lines = append(lines, l)
@@ -72,24 +71,6 @@ func timeMarker(min, max float64) []plot.Tick {
 	return ticks
 }
 
-type xy struct {
-	X, Y float64
-}
-
-func resultXYs(r *metricData) plotter.XYs {
-	pts := make(plotter.XYs, 0, len(r.Values))
-	start := float64(*r.StartTime)
-	step := float64(*r.StepTime)
-	absent := r.IsAbsent
-	for i, v := range r.Values {
-		if absent[i] {
-			continue
-		}
-		pts = append(pts, xy{start + float64(i)*step, v})
-	}
-	return pts
-}
-
 func getInt(s string, def int) int {
 
 	if s == "" {
@@ -103,4 +84,64 @@ func getInt(s string, def int) int {
 
 	return n
 
+}
+
+type ResponsePlotter struct {
+	Response *metricData
+	plot.LineStyle
+}
+
+func NewResponsePlotter(r *metricData) *ResponsePlotter {
+	return &ResponsePlotter{
+		Response:  r,
+		LineStyle: plotter.DefaultLineStyle,
+	}
+}
+
+// Plot draws the Line, implementing the plot.Plotter
+// interface.
+func (rp *ResponsePlotter) Plot(da plot.DrawArea, plt *plot.Plot) {
+	trX, trY := plt.Transforms(&da)
+
+	start := float64(*rp.Response.StartTime)
+	step := float64(*rp.Response.StepTime)
+	absent := rp.Response.IsAbsent
+
+	lines := make([][]plot.Point, 1, 1)
+
+	lines[0] = make([]plot.Point, 0, len(rp.Response.Values))
+	currentLine := 0
+
+	lastAbsent := false
+	for i, v := range rp.Response.Values {
+		if absent[i] {
+			lastAbsent = true
+		} else if lastAbsent {
+			currentLine++
+			lines = append(lines, make([]plot.Point, 1, len(rp.Response.Values)))
+			lines[currentLine][0] = plot.Point{X: trX(start + float64(i)*step), Y: trY(v)}
+			lastAbsent = false
+		} else {
+			lines[currentLine] = append(lines[currentLine], plot.Point{X: trX(start + float64(i)*step), Y: trY(v)})
+		}
+	}
+
+	da.StrokeLines(rp.LineStyle, lines...)
+}
+
+func (rp *ResponsePlotter) DataRange() (xmin, xmax, ymin, ymax float64) {
+	ymin = math.Inf(1)
+	ymax = math.Inf(-1)
+	absent := rp.Response.IsAbsent
+
+	for i, v := range rp.Response.Values {
+		if absent[i] {
+			continue
+		}
+		ymin = math.Min(ymin, v)
+		ymax = math.Max(ymax, v)
+	}
+	xmin = float64(*rp.Response.StartTime)
+	xmax = float64(*rp.Response.StopTime)
+	return
 }
