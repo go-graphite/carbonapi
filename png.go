@@ -24,11 +24,31 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 		panic(err)
 	}
 
+	// set bg/fg colors
+	bgcolor := string2Color(getString(r.FormValue("bgcolor"), "black"))
+	p.BackgroundColor = bgcolor
+
+	fgcolor := string2Color(getString(r.FormValue("fgcolor"), "white"))
+	p.Title.Color = fgcolor
+	p.X.LineStyle.Color = fgcolor
+	p.Y.LineStyle.Color = fgcolor
+	p.X.Tick.LineStyle.Color = fgcolor
+	p.Y.Tick.LineStyle.Color = fgcolor
+	p.X.Tick.Label.Color = fgcolor
+	p.Y.Tick.Label.Color = fgcolor
+	p.X.Label.Color = fgcolor
+	p.Y.Label.Color = fgcolor
+
+	// set grid
+	grid := plotter.NewGrid()
+	grid.Vertical.Color = fgcolor
+	grid.Horizontal.Color = fgcolor
+	p.Add(grid)
+
 	// need different timeMarker's based on step size
 	p.Title.Text = r.FormValue("title")
 	p.X.Tick.Marker = makeTimeMarker(*results[0].StepTime)
 
-	p.Add(plotter.NewGrid())
 
 	var lines []plot.Plotter
 	for i, r := range results {
@@ -98,6 +118,14 @@ func makeTimeMarker(step int32) func(min, max float64) []plot.Tick {
 		return ticks
 
 	}
+}
+
+func getString(s string, def string) string{
+	if s == "" {
+		return def
+	}
+
+	return s
 }
 
 func getInt(s string, def int) int {
