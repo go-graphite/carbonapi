@@ -1260,7 +1260,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			r.Values = make([]float64, len(a.Values))
 			r.IsAbsent = make([]bool, len(a.Values))
 			r.StartTime = proto.Int32(from)
-			r.StopTime =  proto.Int32(until)
+			r.StopTime = proto.Int32(until)
 
 			for i, v := range a.Values {
 				if a.IsAbsent[i] {
