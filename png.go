@@ -55,7 +55,12 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 	var lines []plot.Plotter
 	for i, r := range results {
 		l := NewResponsePlotter(r)
-		l.lineMode = lineMode
+
+		if r.drawAsInfinite {
+			l.lineMode = "drawAsInfinite"
+		} else {
+			l.lineMode = lineMode
+		}
 
 		if r.color != "" {
 			l.Color = string2Color(r.color)
@@ -412,8 +417,18 @@ func (rp *ResponsePlotter) Plot(da plot.DrawArea, plt *plot.Plot) {
 			lines[0] = append(lines[0], plot.Point{X: trX(start + float64(i)*step), Y: trY(v)})
 		}
 
-	//case "staircase": // TODO
+	case "drawAsInfinite":
+		for i, v := range rp.Response.Values {
+			if !absent[i] && v > 0 {
+				infiniteLine := []plot.Point{
+					plot.Point{X: trX(start + float64(i)*step), Y: da.Y(1)},
+					plot.Point{X: trX(start + float64(i)*step), Y: da.Y(0)},
+				}
+				lines = append(lines, infiniteLine)
+			}
+		}
 
+	//case "staircase": // TODO
 	default:
 		panic("Unimplemented " + rp.lineMode)
 	}
@@ -426,6 +441,16 @@ func (rp *ResponsePlotter) DataRange() (xmin, xmax, ymin, ymax float64) {
 	ymax = math.Inf(-1)
 	absent := rp.Response.IsAbsent
 
+	xmin = float64(*rp.Response.StartTime)
+	xmax = float64(*rp.Response.StopTime)
+
+	// same as rp.lineMode == "drawAsInfinite"
+	if rp.Response.drawAsInfinite {
+		ymin = 0
+		ymax = 1
+		return
+	}
+
 	for i, v := range rp.Response.Values {
 		if absent[i] {
 			continue
@@ -433,7 +458,5 @@ func (rp *ResponsePlotter) DataRange() (xmin, xmax, ymin, ymax float64) {
 		ymin = math.Min(ymin, v)
 		ymax = math.Max(ymax, v)
 	}
-	xmin = float64(*rp.Response.StartTime)
-	xmax = float64(*rp.Response.StopTime)
 	return
 }
