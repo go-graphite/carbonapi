@@ -384,7 +384,19 @@ func (rp *ResponsePlotter) Plot(da plot.DrawArea, plt *plot.Plot) {
 	currentLine := 0
 
 	lastAbsent := false
+
 	for i, v := range rp.Response.Values {
+		if rp.Response.drawAsInfinite {
+			if !absent[i] && v > 0 {
+				infiniteLine := []plot.Point{
+					plot.Point{X: trX(start + float64(i)*step), Y: da.Y(1)},
+					plot.Point{X: trX(start + float64(i)*step), Y: da.Y(0)},
+				}
+				lines = append(lines, infiniteLine)
+			}
+			continue
+		}
+
 		if absent[i] {
 			lastAbsent = true
 		} else if lastAbsent {
@@ -405,6 +417,14 @@ func (rp *ResponsePlotter) DataRange() (xmin, xmax, ymin, ymax float64) {
 	ymax = math.Inf(-1)
 	absent := rp.Response.IsAbsent
 
+	xmin = float64(*rp.Response.StartTime)
+	xmax = float64(*rp.Response.StopTime)
+
+	if rp.Response.drawAsInfinite {
+		ymin = 0
+		ymax = 1
+		return
+	}
 	for i, v := range rp.Response.Values {
 		if absent[i] {
 			continue
@@ -412,7 +432,5 @@ func (rp *ResponsePlotter) DataRange() (xmin, xmax, ymin, ymax float64) {
 		ymin = math.Min(ymin, v)
 		ymax = math.Max(ymax, v)
 	}
-	xmin = float64(*rp.Response.StartTime)
-	xmax = float64(*rp.Response.StopTime)
 	return
 }
