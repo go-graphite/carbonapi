@@ -391,6 +391,9 @@ func (rp *ResponsePlotter) Plot(da plot.DrawArea, plt *plot.Plot) {
 	lines := make([][]plot.Point, 1)
 	lines[0] = make([]plot.Point, 0, len(rp.Response.Values))
 
+	/* ikruglov
+	 * swithing between lineMode and looping inside
+	 * is more branch-prediction friendly i.e. potentially faster */
 	switch rp.lineMode {
 	case "slope":
 		currentLine := 0
