@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"code.google.com/p/gogoprotobuf/proto"
 	"code.google.com/p/plotinum/plot"
 	"code.google.com/p/plotinum/plotter"
 	"code.google.com/p/plotinum/plotutil"
@@ -48,6 +49,10 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 	// line mode (ikruglow) TODO check values
 	lineMode := getString(r.FormValue("lineMode"), "slope")
 
+	// width and height
+	width := getInt(r.FormValue("width"), 330)
+	height := getInt(r.FormValue("height"), 250)
+
 	// need different timeMarker's based on step size
 	p.Title.Text = r.FormValue("title")
 	p.X.Tick.Marker = makeTimeMarker(*results[0].StepTime)
@@ -55,6 +60,9 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 	var lines []plot.Plotter
 	for i, r := range results {
 		l := NewResponsePlotter(r)
+
+		// consolidate datapoints
+		l.maybeConsolidateData(width)
 
 		if r.drawAsInfinite {
 			l.lineMode = "drawAsInfinite"
@@ -72,9 +80,6 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 	}
 
 	p.Add(lines...)
-
-	height := getInt(r.FormValue("height"), 250)
-	width := getInt(r.FormValue("width"), 330)
 
 	p.Y.Max *= 1.05
 	p.Y.Min *= 0.95
@@ -379,8 +384,7 @@ func NewResponsePlotter(r *metricData) *ResponsePlotter {
 	}
 }
 
-// Plot draws the Line, implementing the plot.Plotter
-// interface.
+// Plot draws the Line, implementing the plot.Plotter interface.
 func (rp *ResponsePlotter) Plot(da plot.DrawArea, plt *plot.Plot) {
 	trX, trY := plt.Transforms(&da)
 
@@ -462,4 +466,58 @@ func (rp *ResponsePlotter) DataRange() (xmin, xmax, ymin, ymax float64) {
 		ymax = math.Max(ymax, v)
 	}
 	return
+}
+
+func (rp *ResponsePlotter) maybeConsolidateData(numberOfPixels int) {
+	// idealy numberOfPixels should be size in pixels of char ares,
+	// not char areay with Y axis and its label
+
+	numberOfDataPoints := len(rp.Response.Values)
+	pointsPerPixel := int(math.Ceil(float64(numberOfDataPoints) / float64(numberOfPixels)))
+
+	if pointsPerPixel <= 1 {
+		return
+	}
+
+	newNumberOfDataPoints := (numberOfDataPoints / pointsPerPixel) + 1
+	values := make([]float64, newNumberOfDataPoints)
+	absent := make([]bool, newNumberOfDataPoints)
+
+	k := 0
+	step := pointsPerPixel
+	for i := 0; i < numberOfDataPoints; i += step {
+		if i+step < numberOfDataPoints {
+			values[k], absent[k] = consolidateAvg(rp.Response.Values[i:i+step], rp.Response.IsAbsent[i:i+step])
+		} else {
+			values[k], absent[k] = consolidateAvg(rp.Response.Values[i:], rp.Response.IsAbsent[i:])
+		}
+
+		k++
+	}
+
+	stepTime := *rp.Response.StepTime
+	stepTime *= int32(pointsPerPixel)
+
+	rp.Response.Values = values[:k]
+	rp.Response.IsAbsent = absent[:k]
+	rp.Response.StepTime = proto.Int32(stepTime)
+}
+
+func consolidateAvg(v []float64, a []bool) (float64, bool) {
+	cnt := len(v)
+	if cnt == 0 {
+		return 0.0, true
+	}
+
+	abs := true
+	var val float64
+
+	for i := 0; i < cnt; i++ {
+		if !a[i] {
+			abs = false
+			val += v[i]
+		}
+	}
+
+	return val / float64(cnt), abs
 }
