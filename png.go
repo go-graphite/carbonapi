@@ -45,6 +45,9 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 	grid.Horizontal.Color = fgcolor
 	p.Add(grid)
 
+	// line mode (ikruglow) TODO check values
+	lineMode := getString(r.FormValue("lineMode"), "slope")
+
 	// need different timeMarker's based on step size
 	p.Title.Text = r.FormValue("title")
 	p.X.Tick.Marker = makeTimeMarker(*results[0].StepTime)
@@ -52,6 +55,7 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 	var lines []plot.Plotter
 	for i, r := range results {
 		l := NewResponsePlotter(r)
+		l.lineMode = lineMode
 
 		if r.color != "" {
 			l.Color = string2Color(r.color)
@@ -360,6 +364,7 @@ func hexToColor(h string) color.Color {
 type ResponsePlotter struct {
 	Response *metricData
 	plot.LineStyle
+	lineMode string
 }
 
 func NewResponsePlotter(r *metricData) *ResponsePlotter {
@@ -379,22 +384,38 @@ func (rp *ResponsePlotter) Plot(da plot.DrawArea, plt *plot.Plot) {
 	absent := rp.Response.IsAbsent
 
 	lines := make([][]plot.Point, 1, 1)
-
 	lines[0] = make([]plot.Point, 0, len(rp.Response.Values))
-	currentLine := 0
 
-	lastAbsent := false
-	for i, v := range rp.Response.Values {
-		if absent[i] {
-			lastAbsent = true
-		} else if lastAbsent {
-			currentLine++
-			lines = append(lines, make([]plot.Point, 1, len(rp.Response.Values)))
-			lines[currentLine][0] = plot.Point{X: trX(start + float64(i)*step), Y: trY(v)}
-			lastAbsent = false
-		} else {
-			lines[currentLine] = append(lines[currentLine], plot.Point{X: trX(start + float64(i)*step), Y: trY(v)})
+	switch rp.lineMode {
+	case "slope":
+		currentLine := 0
+		lastAbsent := false
+		for i, v := range rp.Response.Values {
+			if absent[i] {
+				lastAbsent = true
+			} else if lastAbsent {
+				currentLine++
+				lines = append(lines, make([]plot.Point, 1, len(rp.Response.Values)))
+				lines[currentLine][0] = plot.Point{X: trX(start + float64(i)*step), Y: trY(v)}
+				lastAbsent = false
+			} else {
+				lines[currentLine] = append(lines[currentLine], plot.Point{X: trX(start + float64(i)*step), Y: trY(v)})
+			}
 		}
+
+	case "connected":
+		for i, v := range rp.Response.Values {
+			if absent[i] {
+				continue
+			}
+
+			lines[0] = append(lines[0], plot.Point{X: trX(start + float64(i)*step), Y: trY(v)})
+		}
+
+	//case "staircase": // TODO
+
+	default:
+		panic("Unimplemented " + rp.lineMode)
 	}
 
 	da.StrokeLines(rp.LineStyle, lines...)
