@@ -49,12 +49,9 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 	p.Title.Text = r.FormValue("title")
 	p.X.Tick.Marker = makeTimeMarker(*results[0].StepTime)
 
-
 	var lines []plot.Plotter
 	for i, r := range results {
-
 		l := NewResponsePlotter(r)
-		l.Color = plotutil.Color(i)
 
 		if r.color != "" {
 			l.Color = string2Color(r.color)
@@ -64,6 +61,7 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 
 		lines = append(lines, l)
 	}
+
 	p.Add(lines...)
 
 	height := getInt(r.FormValue("height"), 250)
@@ -120,7 +118,7 @@ func makeTimeMarker(step int32) func(min, max float64) []plot.Tick {
 	}
 }
 
-func getString(s string, def string) string{
+func getString(s string, def string) string {
 	if s == "" {
 		return def
 	}
