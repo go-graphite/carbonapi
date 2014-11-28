@@ -26,7 +26,7 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 
 	// need different timeMarker's based on step size
 	p.Title.Text = r.FormValue("title")
-	p.X.Tick.Marker = timeMarker
+	p.X.Tick.Marker = makeTimeMarker(*results[0].StepTime)
 
 	p.Add(plotter.NewGrid())
 
@@ -65,17 +65,39 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 	return b.Bytes()
 }
 
-func timeMarker(min, max float64) []plot.Tick {
-	ticks := plot.DefaultTicks(min, max)
+func makeTimeMarker(step int32) func(min, max float64) []plot.Tick {
 
-	for i, t := range ticks {
-		if !t.IsMinor() {
-			t0 := time.Unix(int64(t.Value), 0)
-			ticks[i].Label = t0.Format("15:04:05")
-		}
+	var format string
+
+	// heuristic yoinked from graphite, more or less
+	switch {
+	case step < 5:
+		format = "15:04:05"
+	case step < 60:
+		format = "15:04"
+	case step < 100:
+		format = "Mon 3PM"
+	case step < 255:
+		format = "01/02 3PM"
+	case step < 32000:
+		format = "01/02"
+	case step < 120000:
+		format = "01/02 2006"
 	}
 
-	return ticks
+	return func(min, max float64) []plot.Tick {
+		ticks := plot.DefaultTicks(min, max)
+
+		for i, t := range ticks {
+			if !t.IsMinor() {
+				t0 := time.Unix(int64(t.Value), 0)
+				ticks[i].Label = t0.Format(format)
+			}
+		}
+
+		return ticks
+
+	}
 }
 
 func getInt(s string, def int) int {
