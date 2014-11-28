@@ -8,8 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
-
 	"code.google.com/p/plotinum/plot"
 	"code.google.com/p/plotinum/plotter"
 	"code.google.com/p/plotinum/plotutil"
@@ -18,8 +16,7 @@ import (
 
 var linesColors = `blue,green,red,purple,brown,yellow,aqua,grey,magenta,pink,gold,rose`
 
-func marshalPNG(r *http.Request, results []*pb.FetchResponse) []byte {
-
+func marshalPNG(r *http.Request, results []*metricData) []byte {
 	p, err := plot.New()
 	if err != nil {
 		panic(err)
@@ -79,12 +76,12 @@ type xy struct {
 	X, Y float64
 }
 
-func resultXYs(r *pb.FetchResponse) plotter.XYs {
-	pts := make(plotter.XYs, 0, len(r.GetValues()))
-	start := float64(r.GetStartTime())
-	step := float64(r.GetStepTime())
-	absent := r.GetIsAbsent()
-	for i, v := range r.GetValues() {
+func resultXYs(r *metricData) plotter.XYs {
+	pts := make(plotter.XYs, 0, len(r.Values))
+	start := float64(*r.StartTime)
+	step := float64(*r.StepTime)
+	absent := r.IsAbsent
+	for i, v := range r.Values {
 		if absent[i] {
 			continue
 		}
