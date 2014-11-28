@@ -383,7 +383,7 @@ func (rp *ResponsePlotter) Plot(da plot.DrawArea, plt *plot.Plot) {
 	step := float64(*rp.Response.StepTime)
 	absent := rp.Response.IsAbsent
 
-	lines := make([][]plot.Point, 1, 1)
+	lines := make([][]plot.Point, 1)
 	lines[0] = make([]plot.Point, 0, len(rp.Response.Values))
 
 	switch rp.lineMode {
@@ -395,7 +395,7 @@ func (rp *ResponsePlotter) Plot(da plot.DrawArea, plt *plot.Plot) {
 				lastAbsent = true
 			} else if lastAbsent {
 				currentLine++
-				lines = append(lines, make([]plot.Point, 1, len(rp.Response.Values)))
+				lines = append(lines, make([]plot.Point, 1))
 				lines[currentLine][0] = plot.Point{X: trX(start + float64(i)*step), Y: trY(v)}
 				lastAbsent = false
 			} else {
