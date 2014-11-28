@@ -563,7 +563,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			}
 			getTotal = func(i int) float64 { return total }
 			formatName = func(a *metricData) string {
-				return fmt.Sprintf("asPercent(%s,%g)", a, total)
+				return fmt.Sprintf("asPercent(%s,%g)", *a.Name, total)
 			}
 		} else if len(e.args) == 2 && (e.args[1].etype == etName || e.args[1].etype == etFunc) {
 			total, err := getSeriesArg(e.args[1], from, until, values)
