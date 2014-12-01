@@ -459,6 +459,10 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 		jsonp = r.FormValue("jsonp")
 	}
 
+	if format == "" {
+		format = "png"
+	}
+
 	cacheTimeout := int32(60)
 
 	if tstr := r.FormValue("cacheTimeout"); tstr != "" {
