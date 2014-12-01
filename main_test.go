@@ -5,8 +5,6 @@ import (
 	"math"
 	"strings"
 	"testing"
-
-	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 )
 
 func TestInterval(t *testing.T) {
@@ -58,11 +56,11 @@ func TestInterval(t *testing.T) {
 func TestJSONResponse(t *testing.T) {
 
 	tests := []struct {
-		results []*pb.FetchResponse
+		results []*metricData
 		out     []byte
 	}{
 		{
-			[]*pb.FetchResponse{
+			[]*metricData{
 				makeResponse("metric1", []float64{1, 1.5, 2.25, math.NaN()}, 100, 100),
 				makeResponse("metric2", []float64{2, 2.5, 3.25, 4, 5}, 100, 100),
 			},
@@ -81,11 +79,11 @@ func TestJSONResponse(t *testing.T) {
 func TestRawResponse(t *testing.T) {
 
 	tests := []struct {
-		results []*pb.FetchResponse
+		results []*metricData
 		out     []byte
 	}{
 		{
-			[]*pb.FetchResponse{
+			[]*metricData{
 				makeResponse("metric1", []float64{1, 1.5, 2.25, math.NaN()}, 100, 100),
 				makeResponse("metric2", []float64{2, 2.5, 3.25, 4, 5}, 100, 100),
 			},

@@ -27,6 +27,21 @@ import (
 	"github.com/peterbourgon/g2g"
 )
 
+type metricData struct {
+	Name      *string
+	StartTime *int32
+	StopTime  *int32
+	StepTime  *int32
+	Values    []float64
+	IsAbsent  []bool
+
+	// extra options
+	drawAsInfinite bool
+	secondYAxis    bool
+	dashed         bool // TODO (ikruglov) smth like lineType would be better
+	color          string
+}
+
 type zipper struct {
 	z      string
 	client *http.Client
@@ -186,7 +201,7 @@ func (z zipper) Find(metric string) (pb.GlobResponse, error) {
 	return pbresp, err
 }
 
-func (z zipper) Render(metric string, from, until int32) (pb.FetchResponse, error) {
+func (z zipper) Render(metric string, from, until int32) (metricData, error) {
 
 	u, _ := url.Parse(string(z.z) + "/render/")
 
@@ -198,10 +213,18 @@ func (z zipper) Render(metric string, from, until int32) (pb.FetchResponse, erro
 	}.Encode()
 
 	var pbresp pb.FetchResponse
-
 	err := z.get("Render", u, &pbresp)
 
-	return pbresp, err
+	mdata := metricData{
+		Name:      pbresp.Name,
+		StartTime: pbresp.StartTime,
+		StopTime:  pbresp.StopTime,
+		StepTime:  pbresp.StepTime,
+		Values:    pbresp.Values,
+		IsAbsent:  pbresp.IsAbsent,
+	}
+
+	return mdata, err
 }
 
 func (z zipper) Passthrough(metric string) ([]byte, error) {
@@ -252,7 +275,7 @@ var Limiter limiter
 // for testing
 var timeNow = time.Now
 
-func marshalJSON(results []*pb.FetchResponse) []byte {
+func marshalJSON(results []*metricData) []byte {
 
 	var b []byte
 
@@ -270,7 +293,7 @@ func marshalJSON(results []*pb.FetchResponse) []byte {
 		topComma = true
 
 		b = append(b, `{"target":`...)
-		b = strconv.AppendQuoteToASCII(b, r.GetName())
+		b = strconv.AppendQuoteToASCII(b, *r.Name)
 		b = append(b, `,"datapoints":[`...)
 
 		var innerComma bool
@@ -329,23 +352,27 @@ func writeResponse(w http.ResponseWriter, b []byte, format string, jsonp string)
 	case "pickle":
 		w.Header().Set("Content-Type", contentTypePickle)
 		w.Write(b)
+
+	case "png":
+		w.Header().Set("Content-Type", contentTypePNG)
+		w.Write(b)
 	}
 }
 
-func marshalRaw(results []*pb.FetchResponse) []byte {
+func marshalRaw(results []*metricData) []byte {
 
 	var b []byte
 
 	for _, r := range results {
 
-		b = append(b, r.GetName()...)
+		b = append(b, *r.Name...)
 
 		b = append(b, ',')
-		b = strconv.AppendInt(b, int64(r.GetStartTime()), 10)
+		b = strconv.AppendInt(b, int64(*r.StartTime), 10)
 		b = append(b, ',')
-		b = strconv.AppendInt(b, int64(r.GetStopTime()), 10)
+		b = strconv.AppendInt(b, int64(*r.StopTime), 10)
 		b = append(b, ',')
-		b = strconv.AppendInt(b, int64(r.GetStepTime()), 10)
+		b = strconv.AppendInt(b, int64(*r.StepTime), 10)
 		b = append(b, '|')
 
 		var comma bool
@@ -366,7 +393,7 @@ func marshalRaw(results []*pb.FetchResponse) []byte {
 	return b
 }
 
-func marshalPickle(results []*pb.FetchResponse) []byte {
+func marshalPickle(results []*metricData) []byte {
 
 	var p []map[string]interface{}
 
@@ -381,10 +408,10 @@ func marshalPickle(results []*pb.FetchResponse) []byte {
 
 		}
 		p = append(p, map[string]interface{}{
-			"name":   r.GetName(),
-			"start":  r.GetStartTime(),
-			"end":    r.GetStopTime(),
-			"step":   r.GetStepTime(),
+			"name":   *r.Name,
+			"start":  *r.StartTime,
+			"end":    *r.StopTime,
+			"step":   *r.StepTime,
 			"values": values,
 		})
 	}
@@ -402,6 +429,7 @@ const (
 	contentTypeJavaScript = "text/javascript"
 	contentTypeRaw        = "text/plain"
 	contentTypePickle     = "application/pickle"
+	contentTypePNG        = "image/png"
 )
 
 type renderStats struct {
@@ -466,8 +494,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 	from32 := dateParamToEpoch(from, timeNow().Add(-24*time.Hour).Unix())
 	until32 := dateParamToEpoch(until, timeNow().Unix())
 
-	var results []*pb.FetchResponse
-	metricMap := make(map[metricRequest][]*pb.FetchResponse)
+	var results []*metricData
+	metricMap := make(map[metricRequest][]*metricData)
 
 	for _, target := range targets {
 
@@ -514,7 +542,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 
 			// For each metric returned in the Find response, query Render
 			// This is a conscious decision to *not* cache render data
-			rch := make(chan *pb.FetchResponse, len(glob.GetMatches()))
+			rch := make(chan *metricData, len(glob.GetMatches()))
 			leaves := 0
 			for _, m := range glob.GetMatches() {
 				if !m.GetIsLeaf() {
@@ -525,7 +553,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 				Limiter.enter()
 				stats.zipperRequests++
 				go func(m *pb.GlobMatch, from, until int32) {
-					var rptr *pb.FetchResponse
+					var rptr *metricData
 					r, err := Zipper.Render(m.GetPath(), from, until)
 					if err == nil {
 						rptr = &r
@@ -567,6 +595,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 		body = marshalRaw(results)
 	case "pickle":
 		body = marshalPickle(results)
+	case "png":
+		body = marshalPNG(r, results)
 	}
 
 	writeResponse(w, body, format, jsonp)
