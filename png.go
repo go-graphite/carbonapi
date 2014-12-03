@@ -60,6 +60,11 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 
 	hideLegend := getBool(r.FormValue("hideLegend"), false)
 
+	graphOnly := getBool(r.FormValue("graphOnly"), false)
+	if graphOnly {
+		p.HideAxes()
+	}
+
 	var lines []plot.Plotter
 	for i, r := range results {
 		l := NewResponsePlotter(r)
@@ -81,7 +86,7 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 
 		lines = append(lines, l)
 
-		if !hideLegend {
+		if !graphOnly && !hideLegend {
 			p.Legend.Add(r.GetName(), l)
 		}
 	}
