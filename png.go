@@ -39,6 +39,7 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 	p.Y.Tick.Label.Color = fgcolor
 	p.X.Label.Color = fgcolor
 	p.Y.Label.Color = fgcolor
+	p.Legend.Color = fgcolor
 
 	// set grid
 	grid := plotter.NewGrid()
@@ -56,6 +57,8 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 	// need different timeMarker's based on step size
 	p.Title.Text = r.FormValue("title")
 	p.X.Tick.Marker = makeTimeMarker(*results[0].StepTime)
+
+	hideLegend := getBool(r.FormValue("hideLegend"), false)
 
 	var lines []plot.Plotter
 	for i, r := range results {
@@ -77,6 +80,10 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 		}
 
 		lines = append(lines, l)
+
+		if !hideLegend {
+			p.Legend.Add(*r.Name, l)
+		}
 	}
 
 	p.Add(lines...)
@@ -130,6 +137,21 @@ func makeTimeMarker(step int32) func(min, max float64) []plot.Tick {
 		return ticks
 
 	}
+}
+
+func getBool(s string, def bool) bool {
+	if s == "" {
+		return def
+	}
+
+	switch s {
+	case "True", "true", "1":
+		return true
+	case "False", "false", "0":
+		return false
+	}
+
+	return def
 }
 
 func getString(s string, def string) string {
@@ -350,6 +372,11 @@ func (rp *ResponsePlotter) Plot(da plot.DrawArea, plt *plot.Plot) {
 	}
 
 	da.StrokeLines(rp.LineStyle, lines...)
+}
+
+func (rp *ResponsePlotter) Thumbnail(da *plot.DrawArea) {
+	l := plotter.Line{LineStyle: rp.LineStyle}
+	l.Thumbnail(da)
 }
 
 func (rp *ResponsePlotter) DataRange() (xmin, xmax, ymin, ymax float64) {
