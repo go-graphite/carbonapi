@@ -281,11 +281,11 @@ func marshalJSON(results []*metricData) []byte {
 		topComma = true
 
 		b = append(b, `{"target":`...)
-		b = strconv.AppendQuoteToASCII(b, *r.Name)
+		b = strconv.AppendQuoteToASCII(b, r.GetName())
 		b = append(b, `,"datapoints":[`...)
 
 		var innerComma bool
-		t := *r.StartTime
+		t := r.GetStartTime()
 		for i, v := range r.Values {
 			if innerComma {
 				b = append(b, ',')
@@ -306,7 +306,7 @@ func marshalJSON(results []*metricData) []byte {
 
 			b = append(b, ']')
 
-			t += *r.StepTime
+			t += r.GetStepTime()
 		}
 
 		b = append(b, `]}`...)
@@ -353,14 +353,14 @@ func marshalRaw(results []*metricData) []byte {
 
 	for _, r := range results {
 
-		b = append(b, *r.Name...)
+		b = append(b, r.GetName()...)
 
 		b = append(b, ',')
-		b = strconv.AppendInt(b, int64(*r.StartTime), 10)
+		b = strconv.AppendInt(b, int64(r.GetStartTime()), 10)
 		b = append(b, ',')
-		b = strconv.AppendInt(b, int64(*r.StopTime), 10)
+		b = strconv.AppendInt(b, int64(r.GetStopTime()), 10)
 		b = append(b, ',')
-		b = strconv.AppendInt(b, int64(*r.StepTime), 10)
+		b = strconv.AppendInt(b, int64(r.GetStepTime()), 10)
 		b = append(b, '|')
 
 		var comma bool
@@ -396,10 +396,10 @@ func marshalPickle(results []*metricData) []byte {
 
 		}
 		p = append(p, map[string]interface{}{
-			"name":   *r.Name,
-			"start":  *r.StartTime,
-			"end":    *r.StopTime,
-			"step":   *r.StepTime,
+			"name":   r.GetName(),
+			"start":  r.GetStartTime(),
+			"end":    r.GetStopTime(),
+			"step":   r.GetStepTime(),
 			"values": values,
 		})
 	}

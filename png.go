@@ -56,7 +56,7 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 
 	// need different timeMarker's based on step size
 	p.Title.Text = r.FormValue("title")
-	p.X.Tick.Marker = makeTimeMarker(*results[0].StepTime)
+	p.X.Tick.Marker = makeTimeMarker(results[0].GetStepTime())
 
 	hideLegend := getBool(r.FormValue("hideLegend"), false)
 
@@ -82,7 +82,7 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 		lines = append(lines, l)
 
 		if !hideLegend {
-			p.Legend.Add(*r.Name, l)
+			p.Legend.Add(r.GetName(), l)
 		}
 	}
 
@@ -319,8 +319,8 @@ func NewResponsePlotter(r *metricData) *ResponsePlotter {
 func (rp *ResponsePlotter) Plot(da plot.DrawArea, plt *plot.Plot) {
 	trX, trY := plt.Transforms(&da)
 
-	start := float64(*rp.Response.StartTime)
-	step := float64(*rp.Response.StepTime)
+	start := float64(rp.Response.GetStartTime())
+	step := float64(rp.Response.GetStepTime())
 	absent := rp.Response.IsAbsent
 
 	lines := make([][]plot.Point, 1)
@@ -384,8 +384,8 @@ func (rp *ResponsePlotter) DataRange() (xmin, xmax, ymin, ymax float64) {
 	ymax = math.Inf(-1)
 	absent := rp.Response.IsAbsent
 
-	xmin = float64(*rp.Response.StartTime)
-	xmax = float64(*rp.Response.StopTime)
+	xmin = float64(rp.Response.GetStartTime())
+	xmax = float64(rp.Response.GetStopTime())
 
 	// same as rp.lineMode == "drawAsInfinite"
 	if rp.Response.drawAsInfinite {
@@ -431,7 +431,7 @@ func (rp *ResponsePlotter) maybeConsolidateData(numberOfPixels int) {
 		k++
 	}
 
-	stepTime := *rp.Response.StepTime
+	stepTime := rp.Response.GetStepTime()
 	stepTime *= int32(pointsPerPixel)
 
 	rp.Response.Values = values[:k]
