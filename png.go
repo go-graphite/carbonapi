@@ -153,199 +153,108 @@ func getInt(s string, def int) int {
 	return n
 }
 
+var colors = map[string]color.RGBA{
+	"black":                color.RGBA{0x00, 0x00, 0x00, 0},
+	"navy":                 color.RGBA{0x00, 0x00, 0x80, 0},
+	"darkblue":             color.RGBA{0x00, 0x00, 0x8b, 0},
+	"mediumblue":           color.RGBA{0x00, 0x00, 0xcd, 0},
+	"blue":                 color.RGBA{0x00, 0x00, 0xff, 0},
+	"darkgreen":            color.RGBA{0x00, 0x64, 0x00, 0},
+	"green":                color.RGBA{0x00, 0x80, 0x00, 0},
+	"teal":                 color.RGBA{0x00, 0x80, 0x80, 0},
+	"darkcyan":             color.RGBA{0x00, 0x8b, 0x8b, 0},
+	"deepskyblue":          color.RGBA{0x00, 0xbf, 0xff, 0},
+	"darkturquoise":        color.RGBA{0x00, 0xce, 0xd1, 0},
+	"mediumspringgreen":    color.RGBA{0x00, 0xfa, 0x9a, 0},
+	"lime":                 color.RGBA{0x00, 0xff, 0x00, 0},
+	"springgreen":          color.RGBA{0x00, 0xff, 0x7f, 0},
+	"aqua":                 color.RGBA{0x00, 0xff, 0xff, 0},
+	"cyan":                 color.RGBA{0x00, 0xff, 0xff, 0},
+	"midnightblue":         color.RGBA{0x19, 0x19, 0x70, 0},
+	"dodgerblue":           color.RGBA{0x1e, 0x90, 0xff, 0},
+	"lightseagreen":        color.RGBA{0x20, 0xb2, 0xaa, 0},
+	"forestgreen":          color.RGBA{0x22, 0x8b, 0x22, 0},
+	"seagreen":             color.RGBA{0x2e, 0x8b, 0x57, 0},
+	"darkslategray":        color.RGBA{0x2f, 0x4f, 0x4f, 0},
+	"limegreen":            color.RGBA{0x32, 0xcd, 0x32, 0},
+	"mediumseagreen":       color.RGBA{0x3c, 0xb3, 0x71, 0},
+	"turquoise":            color.RGBA{0x40, 0xe0, 0xd0, 0},
+	"royalblue":            color.RGBA{0x41, 0x69, 0xe1, 0},
+	"steelblue":            color.RGBA{0x46, 0x82, 0xb4, 0},
+	"darkslateblue":        color.RGBA{0x48, 0x3d, 0x8b, 0},
+	"mediumturquoise":      color.RGBA{0x48, 0xd1, 0xcc, 0},
+	"indigo":               color.RGBA{0x4b, 0x00, 0x82, 0},
+	"darkolivegreen":       color.RGBA{0x55, 0x6b, 0x2f, 0},
+	"cadetblue":            color.RGBA{0x5f, 0x9e, 0xa0, 0},
+	"cornflowerblue":       color.RGBA{0x64, 0x95, 0xed, 0},
+	"mediumaquamarine":     color.RGBA{0x66, 0xcd, 0xaa, 0},
+	"dimgray":              color.RGBA{0x69, 0x69, 0x69, 0},
+	"slateblue":            color.RGBA{0x6a, 0x5a, 0xcd, 0},
+	"olivedrab":            color.RGBA{0x6b, 0x8e, 0x23, 0},
+	"slategray":            color.RGBA{0x70, 0x80, 0x90, 0},
+	"lightslategray":       color.RGBA{0x77, 0x88, 0x99, 0},
+	"mediumslateblue":      color.RGBA{0x7b, 0x68, 0xee, 0},
+	"lawngreen":            color.RGBA{0x7c, 0xfc, 0x00, 0},
+	"chartreuse":           color.RGBA{0x7f, 0xff, 0x00, 0},
+	"aquamarine":           color.RGBA{0x7f, 0xff, 0xd4, 0},
+	"lavender":             color.RGBA{0xe6, 0xe6, 0xfa, 0},
+	"darksalmon":           color.RGBA{0xe9, 0x96, 0x7a, 0},
+	"violet":               color.RGBA{0xee, 0x82, 0xee, 0},
+	"palegoldenrod":        color.RGBA{0xee, 0xe8, 0xaa, 0},
+	"lightcoral":           color.RGBA{0xf0, 0x80, 0x80, 0},
+	"khaki":                color.RGBA{0xf0, 0xe6, 0x8c, 0},
+	"aliceblue":            color.RGBA{0xf0, 0xf8, 0xff, 0},
+	"honeydew":             color.RGBA{0xf0, 0xff, 0xf0, 0},
+	"azure":                color.RGBA{0xf0, 0xff, 0xff, 0},
+	"sandybrown":           color.RGBA{0xf4, 0xa4, 0x60, 0},
+	"wheat":                color.RGBA{0xf5, 0xde, 0xb3, 0},
+	"beige":                color.RGBA{0xf5, 0xf5, 0xdc, 0},
+	"whitesmoke":           color.RGBA{0xf5, 0xf5, 0xf5, 0},
+	"mintcream":            color.RGBA{0xf5, 0xff, 0xfa, 0},
+	"ghostwhite":           color.RGBA{0xf8, 0xf8, 0xff, 0},
+	"salmon":               color.RGBA{0xfa, 0x80, 0x72, 0},
+	"antiquewhite":         color.RGBA{0xfa, 0xeb, 0xd7, 0},
+	"linen":                color.RGBA{0xfa, 0xf0, 0xe6, 0},
+	"lightgoldenrodyellow": color.RGBA{0xfa, 0xfa, 0xd2, 0},
+	"oldlace":              color.RGBA{0xfd, 0xf5, 0xe6, 0},
+	"red":                  color.RGBA{0xff, 0x00, 0x00, 0},
+	"fuchsia":              color.RGBA{0xff, 0x00, 0xff, 0},
+	"magenta":              color.RGBA{0xff, 0x00, 0xff, 0},
+	"deeppink":             color.RGBA{0xff, 0x14, 0x93, 0},
+	"orangered":            color.RGBA{0xff, 0x45, 0x00, 0},
+	"tomato":               color.RGBA{0xff, 0x63, 0x47, 0},
+	"hotpink":              color.RGBA{0xff, 0x69, 0xb4, 0},
+	"coral":                color.RGBA{0xff, 0x7f, 0x50, 0},
+	"darkorange":           color.RGBA{0xff, 0x8c, 0x00, 0},
+	"lightsalmon":          color.RGBA{0xff, 0xa0, 0x7a, 0},
+	"orange":               color.RGBA{0xff, 0xa5, 0x00, 0},
+	"lightpink":            color.RGBA{0xff, 0xb6, 0xc1, 0},
+	"pink":                 color.RGBA{0xff, 0xc0, 0xcb, 0},
+	"gold":                 color.RGBA{0xff, 0xd7, 0x00, 0},
+	"peachpuff":            color.RGBA{0xff, 0xda, 0xb9, 0},
+	"navajowhite":          color.RGBA{0xff, 0xde, 0xad, 0},
+	"moccasin":             color.RGBA{0xff, 0xe4, 0xb5, 0},
+	"bisque":               color.RGBA{0xff, 0xe4, 0xc4, 0},
+	"mistyrose":            color.RGBA{0xff, 0xe4, 0xe1, 0},
+	"blanchedalmond":       color.RGBA{0xff, 0xeb, 0xcd, 0},
+	"papayawhip":           color.RGBA{0xff, 0xef, 0xd5, 0},
+	"lavenderblush":        color.RGBA{0xff, 0xf0, 0xf5, 0},
+	"seashell":             color.RGBA{0xff, 0xf5, 0xee, 0},
+	"cornsilk":             color.RGBA{0xff, 0xf8, 0xdc, 0},
+	"lemonchiffon":         color.RGBA{0xff, 0xfa, 0xcd, 0},
+	"floralwhite":          color.RGBA{0xff, 0xfa, 0xf0, 0},
+	"snow":                 color.RGBA{0xff, 0xfa, 0xfa, 0},
+	"yellow":               color.RGBA{0xff, 0xff, 0x00, 0},
+	"lightyellow":          color.RGBA{0xff, 0xff, 0xe0, 0},
+	"ivory":                color.RGBA{0xff, 0xff, 0xf0, 0},
+	"white":                color.RGBA{0xff, 0xff, 0xff, 0},
+}
+
 func string2Color(clr string) color.Color {
-	switch clr {
-	case "black":
-		return color.RGBA{0x00,0x00,0x00,0}
-	case "navy":
-		return color.RGBA{0x00,0x00,0x80,0}
-	case "darkblue":
-		return color.RGBA{0x00,0x00,0x8b,0}
-	case "mediumblue":
-		return color.RGBA{0x00,0x00,0xcd,0}
-	case "blue":
-		return color.RGBA{0x00,0x00,0xff,0}
-	case "darkgreen":
-		return color.RGBA{0x00,0x64,0x00,0}
-	case "green":
-		return color.RGBA{0x00,0x80,0x00,0}
-	case "teal":
-		return color.RGBA{0x00,0x80,0x80,0}
-	case "darkcyan":
-		return color.RGBA{0x00,0x8b,0x8b,0}
-	case "deepskyblue":
-		return color.RGBA{0x00,0xbf,0xff,0}
-	case "darkturquoise":
-		return color.RGBA{0x00,0xce,0xd1,0}
-	case "mediumspringgreen":
-		return color.RGBA{0x00,0xfa,0x9a,0}
-	case "lime":
-		return color.RGBA{0x00,0xff,0x00,0}
-	case "springgreen":
-		return color.RGBA{0x00,0xff,0x7f,0}
-	case "aqua":
-		return color.RGBA{0x00,0xff,0xff,0}
-	case "cyan":
-		return color.RGBA{0x00,0xff,0xff,0}
-	case "midnightblue":
-		return color.RGBA{0x19,0x19,0x70,0}
-	case "dodgerblue":
-		return color.RGBA{0x1e,0x90,0xff,0}
-	case "lightseagreen":
-		return color.RGBA{0x20,0xb2,0xaa,0}
-	case "forestgreen":
-		return color.RGBA{0x22,0x8b,0x22,0}
-	case "seagreen":
-		return color.RGBA{0x2e,0x8b,0x57,0}
-	case "darkslategray":
-		return color.RGBA{0x2f,0x4f,0x4f,0}
-	case "limegreen":
-		return color.RGBA{0x32,0xcd,0x32,0}
-	case "mediumseagreen":
-		return color.RGBA{0x3c,0xb3,0x71,0}
-	case "turquoise":
-		return color.RGBA{0x40,0xe0,0xd0,0}
-	case "royalblue":
-		return color.RGBA{0x41,0x69,0xe1,0}
-	case "steelblue":
-		return color.RGBA{0x46,0x82,0xb4,0}
-	case "darkslateblue":
-		return color.RGBA{0x48,0x3d,0x8b,0}
-	case "mediumturquoise":
-		return color.RGBA{0x48,0xd1,0xcc,0}
-	case "indigo":
-		return color.RGBA{0x4b,0x00,0x82,0}
-	case "darkolivegreen":
-		return color.RGBA{0x55,0x6b,0x2f,0}
-	case "cadetblue":
-		return color.RGBA{0x5f,0x9e,0xa0,0}
-	case "cornflowerblue":
-		return color.RGBA{0x64,0x95,0xed,0}
-	case "mediumaquamarine":
-		return color.RGBA{0x66,0xcd,0xaa,0}
-	case "dimgray":
-		return color.RGBA{0x69,0x69,0x69,0}
-	case "slateblue":
-		return color.RGBA{0x6a,0x5a,0xcd,0}
-	case "olivedrab":
-		return color.RGBA{0x6b,0x8e,0x23,0}
-	case "slategray":
-		return color.RGBA{0x70,0x80,0x90,0}
-	case "lightslategray":
-		return color.RGBA{0x77,0x88,0x99,0}
-	case "mediumslateblue":
-		return color.RGBA{0x7b,0x68,0xee,0}
-	case "lawngreen":
-		return color.RGBA{0x7c,0xfc,0x00,0}
-	case "chartreuse":
-		return color.RGBA{0x7f,0xff,0x00,0}
-	case "aquamarine":
-		return color.RGBA{0x7f,0xff,0xd4,0}
-	case "lavender":
-		return color.RGBA{0xe6,0xe6,0xfa,0}
-	case "darksalmon":
-		return color.RGBA{0xe9,0x96,0x7a,0}
-	case "violet":
-		return color.RGBA{0xee,0x82,0xee,0}
-	case "palegoldenrod":
-		return color.RGBA{0xee,0xe8,0xaa,0}
-	case "lightcoral":
-		return color.RGBA{0xf0,0x80,0x80,0}
-	case "khaki":
-		return color.RGBA{0xf0,0xe6,0x8c,0}
-	case "aliceblue":
-		return color.RGBA{0xf0,0xf8,0xff,0}
-	case "honeydew":
-		return color.RGBA{0xf0,0xff,0xf0,0}
-	case "azure":
-		return color.RGBA{0xf0,0xff,0xff,0}
-	case "sandybrown":
-		return color.RGBA{0xf4,0xa4,0x60,0}
-	case "wheat":
-		return color.RGBA{0xf5,0xde,0xb3,0}
-	case "beige":
-		return color.RGBA{0xf5,0xf5,0xdc,0}
-	case "whitesmoke":
-		return color.RGBA{0xf5,0xf5,0xf5,0}
-	case "mintcream":
-		return color.RGBA{0xf5,0xff,0xfa,0}
-	case "ghostwhite":
-		return color.RGBA{0xf8,0xf8,0xff,0}
-	case "salmon":
-		return color.RGBA{0xfa,0x80,0x72,0}
-	case "antiquewhite":
-		return color.RGBA{0xfa,0xeb,0xd7,0}
-	case "linen":
-		return color.RGBA{0xfa,0xf0,0xe6,0}
-	case "lightgoldenrodyellow":
-		return color.RGBA{0xfa,0xfa,0xd2,0}
-	case "oldlace":
-		return color.RGBA{0xfd,0xf5,0xe6,0}
-	case "red":
-		return color.RGBA{0xff,0x00,0x00,0}
-	case "fuchsia":
-		return color.RGBA{0xff,0x00,0xff,0}
-	case "magenta":
-		return color.RGBA{0xff,0x00,0xff,0}
-	case "deeppink":
-		return color.RGBA{0xff,0x14,0x93,0}
-	case "orangered":
-		return color.RGBA{0xff,0x45,0x00,0}
-	case "tomato":
-		return color.RGBA{0xff,0x63,0x47,0}
-	case "hotpink":
-		return color.RGBA{0xff,0x69,0xb4,0}
-	case "coral":
-		return color.RGBA{0xff,0x7f,0x50,0}
-	case "darkorange":
-		return color.RGBA{0xff,0x8c,0x00,0}
-	case "lightsalmon":
-		return color.RGBA{0xff,0xa0,0x7a,0}
-	case "orange":
-		return color.RGBA{0xff,0xa5,0x00,0}
-	case "lightpink":
-		return color.RGBA{0xff,0xb6,0xc1,0}
-	case "pink":
-		return color.RGBA{0xff,0xc0,0xcb,0}
-	case "gold":
-		return color.RGBA{0xff,0xd7,0x00,0}
-	case "peachpuff":
-		return color.RGBA{0xff,0xda,0xb9,0}
-	case "navajowhite":
-		return color.RGBA{0xff,0xde,0xad,0}
-	case "moccasin":
-		return color.RGBA{0xff,0xe4,0xb5,0}
-	case "bisque":
-		return color.RGBA{0xff,0xe4,0xc4,0}
-	case "mistyrose":
-		return color.RGBA{0xff,0xe4,0xe1,0}
-	case "blanchedalmond":
-		return color.RGBA{0xff,0xeb,0xcd,0}
-	case "papayawhip":
-		return color.RGBA{0xff,0xef,0xd5,0}
-	case "lavenderblush":
-		return color.RGBA{0xff,0xf0,0xf5,0}
-	case "seashell":
-		return color.RGBA{0xff,0xf5,0xee,0}
-	case "cornsilk":
-		return color.RGBA{0xff,0xf8,0xdc,0}
-	case "lemonchiffon":
-		return color.RGBA{0xff,0xfa,0xcd,0}
-	case "floralwhite":
-		return color.RGBA{0xff,0xfa,0xf0,0}
-	case "snow":
-		return color.RGBA{0xff,0xfa,0xfa,0}
-	case "yellow":
-		return color.RGBA{0xff,0xff,0x00,0}
-	case "lightyellow":
-		return color.RGBA{0xff,0xff,0xe0,0}
-	case "ivory":
-		return color.RGBA{0xff,0xff,0xf0,0}
-	case "white":
-		return color.RGBA{0xff,0xff,0xff,0}
-	default:
-		return hexToColor(clr)
+	if c, ok := colors[clr]; ok {
+		return c
 	}
+	return hexToColor(clr)
 }
 
 // https://code.google.com/p/sadbox/source/browse/color/hex.go
