@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"code.google.com/p/gogoprotobuf/proto"
+	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 )
 
 // expression parser
@@ -412,7 +413,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 	case etName:
 		return values[metricRequest{metric: e.target, from: from, until: until}]
 	case etConst:
-		p := metricData{Name: proto.String(e.target), Values: []float64{e.val}}
+		p := metricData{FetchResponse: pb.FetchResponse{Name: proto.String(e.target), Values: []float64{e.val}}}
 		return []*metricData{&p}
 	}
 
@@ -985,14 +986,14 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 				name = fmt.Sprintf("hitcount(%s,'%s',%s)", *arg.Name, e.args[1].valStr, e.args[2].target)
 			}
 
-			r := metricData{
+			r := metricData{FetchResponse: pb.FetchResponse{
 				Name:      proto.String(name),
 				Values:    make([]float64, buckets, buckets+1),
 				IsAbsent:  make([]bool, buckets, buckets+1),
 				StepTime:  proto.Int32(bucketSize),
 				StartTime: proto.Int32(start),
 				StopTime:  proto.Int32(stop),
-			}
+			}}
 
 			bucketStart := *args[0].StartTime // unadjusted
 			bucketEnd := *r.StartTime + bucketSize
@@ -1591,14 +1592,14 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 				name = fmt.Sprintf("summarize(%s,'%s','%s',%s)", *arg.Name, e.args[1].valStr, e.args[2].valStr, e.args[3].target)
 			}
 
-			r := metricData{
+			r := metricData{FetchResponse: pb.FetchResponse{
 				Name:      proto.String(name),
 				Values:    make([]float64, buckets, buckets),
 				IsAbsent:  make([]bool, buckets, buckets),
 				StepTime:  proto.Int32(bucketSize),
 				StartTime: proto.Int32(start),
 				StopTime:  proto.Int32(stop),
-			}
+			}}
 			t := *args[0].StartTime // unadjusted
 			bucketEnd := *r.StartTime + bucketSize
 			values := make([]float64, 0, bucketSize / *arg.StepTime)

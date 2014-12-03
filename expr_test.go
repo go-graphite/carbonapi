@@ -9,6 +9,7 @@ import (
 	"code.google.com/p/gogoprotobuf/proto"
 
 	"github.com/davecgh/go-spew/spew"
+	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 )
 
 func TestParseExpr(t *testing.T) {
@@ -145,14 +146,14 @@ func makeResponse(name string, values []float64, step, start int32) *metricData 
 
 	stop := start + int32(len(values))*step
 
-	return &metricData{
+	return &metricData{FetchResponse: pb.FetchResponse{
 		Name:      proto.String(name),
 		Values:    values,
 		StartTime: proto.Int32(start),
 		StepTime:  proto.Int32(step),
 		StopTime:  proto.Int32(stop),
 		IsAbsent:  absent,
-	}
+	}}
 }
 
 func TestEvalExpression(t *testing.T) {

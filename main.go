@@ -28,12 +28,7 @@ import (
 )
 
 type metricData struct {
-	Name      *string
-	StartTime *int32
-	StopTime  *int32
-	StepTime  *int32
-	Values    []float64
-	IsAbsent  []bool
+	pb.FetchResponse
 
 	// extra options
 	drawAsInfinite bool
@@ -215,14 +210,7 @@ func (z zipper) Render(metric string, from, until int32) (metricData, error) {
 	var pbresp pb.FetchResponse
 	err := z.get("Render", u, &pbresp)
 
-	mdata := metricData{
-		Name:      pbresp.Name,
-		StartTime: pbresp.StartTime,
-		StopTime:  pbresp.StopTime,
-		StepTime:  pbresp.StepTime,
-		Values:    pbresp.Values,
-		IsAbsent:  pbresp.IsAbsent,
-	}
+	mdata := metricData{FetchResponse: pbresp}
 
 	return mdata, err
 }
