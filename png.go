@@ -156,193 +156,193 @@ func getInt(s string, def int) int {
 func string2Color(clr string) color.Color {
 	switch clr {
 	case "black":
-		return hexToColor("#000000")
+		return color.RGBA{0x00,0x00,0x00,0}
 	case "navy":
-		return hexToColor("#000080")
+		return color.RGBA{0x00,0x00,0x80,0}
 	case "darkblue":
-		return hexToColor("#00008b")
+		return color.RGBA{0x00,0x00,0x8b,0}
 	case "mediumblue":
-		return hexToColor("#0000cd")
+		return color.RGBA{0x00,0x00,0xcd,0}
 	case "blue":
-		return hexToColor("#0000ff")
+		return color.RGBA{0x00,0x00,0xff,0}
 	case "darkgreen":
-		return hexToColor("#006400")
+		return color.RGBA{0x00,0x64,0x00,0}
 	case "green":
-		return hexToColor("#008000")
+		return color.RGBA{0x00,0x80,0x00,0}
 	case "teal":
-		return hexToColor("#008080")
+		return color.RGBA{0x00,0x80,0x80,0}
 	case "darkcyan":
-		return hexToColor("#008b8b")
+		return color.RGBA{0x00,0x8b,0x8b,0}
 	case "deepskyblue":
-		return hexToColor("#00bfff")
+		return color.RGBA{0x00,0xbf,0xff,0}
 	case "darkturquoise":
-		return hexToColor("#00ced1")
+		return color.RGBA{0x00,0xce,0xd1,0}
 	case "mediumspringgreen":
-		return hexToColor("#00fa9a")
+		return color.RGBA{0x00,0xfa,0x9a,0}
 	case "lime":
-		return hexToColor("#00ff00")
+		return color.RGBA{0x00,0xff,0x00,0}
 	case "springgreen":
-		return hexToColor("#00ff7f")
+		return color.RGBA{0x00,0xff,0x7f,0}
 	case "aqua":
-		return hexToColor("#00ffff")
+		return color.RGBA{0x00,0xff,0xff,0}
 	case "cyan":
-		return hexToColor("#00ffff")
+		return color.RGBA{0x00,0xff,0xff,0}
 	case "midnightblue":
-		return hexToColor("#191970")
+		return color.RGBA{0x19,0x19,0x70,0}
 	case "dodgerblue":
-		return hexToColor("#1e90ff")
+		return color.RGBA{0x1e,0x90,0xff,0}
 	case "lightseagreen":
-		return hexToColor("#20b2aa")
+		return color.RGBA{0x20,0xb2,0xaa,0}
 	case "forestgreen":
-		return hexToColor("#228b22")
+		return color.RGBA{0x22,0x8b,0x22,0}
 	case "seagreen":
-		return hexToColor("#2e8b57")
+		return color.RGBA{0x2e,0x8b,0x57,0}
 	case "darkslategray":
-		return hexToColor("#2f4f4f")
+		return color.RGBA{0x2f,0x4f,0x4f,0}
 	case "limegreen":
-		return hexToColor("#32cd32")
+		return color.RGBA{0x32,0xcd,0x32,0}
 	case "mediumseagreen":
-		return hexToColor("#3cb371")
+		return color.RGBA{0x3c,0xb3,0x71,0}
 	case "turquoise":
-		return hexToColor("#40e0d0")
+		return color.RGBA{0x40,0xe0,0xd0,0}
 	case "royalblue":
-		return hexToColor("#4169e1")
+		return color.RGBA{0x41,0x69,0xe1,0}
 	case "steelblue":
-		return hexToColor("#4682b4")
+		return color.RGBA{0x46,0x82,0xb4,0}
 	case "darkslateblue":
-		return hexToColor("#483d8b")
+		return color.RGBA{0x48,0x3d,0x8b,0}
 	case "mediumturquoise":
-		return hexToColor("#48d1cc")
+		return color.RGBA{0x48,0xd1,0xcc,0}
 	case "indigo":
-		return hexToColor("#4b0082")
+		return color.RGBA{0x4b,0x00,0x82,0}
 	case "darkolivegreen":
-		return hexToColor("#556b2f")
+		return color.RGBA{0x55,0x6b,0x2f,0}
 	case "cadetblue":
-		return hexToColor("#5f9ea0")
+		return color.RGBA{0x5f,0x9e,0xa0,0}
 	case "cornflowerblue":
-		return hexToColor("#6495ed")
+		return color.RGBA{0x64,0x95,0xed,0}
 	case "mediumaquamarine":
-		return hexToColor("#66cdaa")
+		return color.RGBA{0x66,0xcd,0xaa,0}
 	case "dimgray":
-		return hexToColor("#696969")
+		return color.RGBA{0x69,0x69,0x69,0}
 	case "slateblue":
-		return hexToColor("#6a5acd")
+		return color.RGBA{0x6a,0x5a,0xcd,0}
 	case "olivedrab":
-		return hexToColor("#6b8e23")
+		return color.RGBA{0x6b,0x8e,0x23,0}
 	case "slategray":
-		return hexToColor("#708090")
+		return color.RGBA{0x70,0x80,0x90,0}
 	case "lightslategray":
-		return hexToColor("#778899")
+		return color.RGBA{0x77,0x88,0x99,0}
 	case "mediumslateblue":
-		return hexToColor("#7b68ee")
+		return color.RGBA{0x7b,0x68,0xee,0}
 	case "lawngreen":
-		return hexToColor("#7cfc00")
+		return color.RGBA{0x7c,0xfc,0x00,0}
 	case "chartreuse":
-		return hexToColor("#7fff00")
+		return color.RGBA{0x7f,0xff,0x00,0}
 	case "aquamarine":
-		return hexToColor("#7fffd4")
+		return color.RGBA{0x7f,0xff,0xd4,0}
 	case "lavender":
-		return hexToColor("#e6e6fa")
+		return color.RGBA{0xe6,0xe6,0xfa,0}
 	case "darksalmon":
-		return hexToColor("#e9967a")
+		return color.RGBA{0xe9,0x96,0x7a,0}
 	case "violet":
-		return hexToColor("#ee82ee")
+		return color.RGBA{0xee,0x82,0xee,0}
 	case "palegoldenrod":
-		return hexToColor("#eee8aa")
+		return color.RGBA{0xee,0xe8,0xaa,0}
 	case "lightcoral":
-		return hexToColor("#f08080")
+		return color.RGBA{0xf0,0x80,0x80,0}
 	case "khaki":
-		return hexToColor("#f0e68c")
+		return color.RGBA{0xf0,0xe6,0x8c,0}
 	case "aliceblue":
-		return hexToColor("#f0f8ff")
+		return color.RGBA{0xf0,0xf8,0xff,0}
 	case "honeydew":
-		return hexToColor("#f0fff0")
+		return color.RGBA{0xf0,0xff,0xf0,0}
 	case "azure":
-		return hexToColor("#f0ffff")
+		return color.RGBA{0xf0,0xff,0xff,0}
 	case "sandybrown":
-		return hexToColor("#f4a460")
+		return color.RGBA{0xf4,0xa4,0x60,0}
 	case "wheat":
-		return hexToColor("#f5deb3")
+		return color.RGBA{0xf5,0xde,0xb3,0}
 	case "beige":
-		return hexToColor("#f5f5dc")
+		return color.RGBA{0xf5,0xf5,0xdc,0}
 	case "whitesmoke":
-		return hexToColor("#f5f5f5")
+		return color.RGBA{0xf5,0xf5,0xf5,0}
 	case "mintcream":
-		return hexToColor("#f5fffa")
+		return color.RGBA{0xf5,0xff,0xfa,0}
 	case "ghostwhite":
-		return hexToColor("#f8f8ff")
+		return color.RGBA{0xf8,0xf8,0xff,0}
 	case "salmon":
-		return hexToColor("#fa8072")
+		return color.RGBA{0xfa,0x80,0x72,0}
 	case "antiquewhite":
-		return hexToColor("#faebd7")
+		return color.RGBA{0xfa,0xeb,0xd7,0}
 	case "linen":
-		return hexToColor("#faf0e6")
+		return color.RGBA{0xfa,0xf0,0xe6,0}
 	case "lightgoldenrodyellow":
-		return hexToColor("#fafad2")
+		return color.RGBA{0xfa,0xfa,0xd2,0}
 	case "oldlace":
-		return hexToColor("#fdf5e6")
+		return color.RGBA{0xfd,0xf5,0xe6,0}
 	case "red":
-		return hexToColor("#ff0000")
+		return color.RGBA{0xff,0x00,0x00,0}
 	case "fuchsia":
-		return hexToColor("#ff00ff")
+		return color.RGBA{0xff,0x00,0xff,0}
 	case "magenta":
-		return hexToColor("#ff00ff")
+		return color.RGBA{0xff,0x00,0xff,0}
 	case "deeppink":
-		return hexToColor("#ff1493")
+		return color.RGBA{0xff,0x14,0x93,0}
 	case "orangered":
-		return hexToColor("#ff4500")
+		return color.RGBA{0xff,0x45,0x00,0}
 	case "tomato":
-		return hexToColor("#ff6347")
+		return color.RGBA{0xff,0x63,0x47,0}
 	case "hotpink":
-		return hexToColor("#ff69b4")
+		return color.RGBA{0xff,0x69,0xb4,0}
 	case "coral":
-		return hexToColor("#ff7f50")
+		return color.RGBA{0xff,0x7f,0x50,0}
 	case "darkorange":
-		return hexToColor("#ff8c00")
+		return color.RGBA{0xff,0x8c,0x00,0}
 	case "lightsalmon":
-		return hexToColor("#ffa07a")
+		return color.RGBA{0xff,0xa0,0x7a,0}
 	case "orange":
-		return hexToColor("#ffa500")
+		return color.RGBA{0xff,0xa5,0x00,0}
 	case "lightpink":
-		return hexToColor("#ffb6c1")
+		return color.RGBA{0xff,0xb6,0xc1,0}
 	case "pink":
-		return hexToColor("#ffc0cb")
+		return color.RGBA{0xff,0xc0,0xcb,0}
 	case "gold":
-		return hexToColor("#ffd700")
+		return color.RGBA{0xff,0xd7,0x00,0}
 	case "peachpuff":
-		return hexToColor("#ffdab9")
+		return color.RGBA{0xff,0xda,0xb9,0}
 	case "navajowhite":
-		return hexToColor("#ffdead")
+		return color.RGBA{0xff,0xde,0xad,0}
 	case "moccasin":
-		return hexToColor("#ffe4b5")
+		return color.RGBA{0xff,0xe4,0xb5,0}
 	case "bisque":
-		return hexToColor("#ffe4c4")
+		return color.RGBA{0xff,0xe4,0xc4,0}
 	case "mistyrose":
-		return hexToColor("#ffe4e1")
+		return color.RGBA{0xff,0xe4,0xe1,0}
 	case "blanchedalmond":
-		return hexToColor("#ffebcd")
+		return color.RGBA{0xff,0xeb,0xcd,0}
 	case "papayawhip":
-		return hexToColor("#ffefd5")
+		return color.RGBA{0xff,0xef,0xd5,0}
 	case "lavenderblush":
-		return hexToColor("#fff0f5")
+		return color.RGBA{0xff,0xf0,0xf5,0}
 	case "seashell":
-		return hexToColor("#fff5ee")
+		return color.RGBA{0xff,0xf5,0xee,0}
 	case "cornsilk":
-		return hexToColor("#fff8dc")
+		return color.RGBA{0xff,0xf8,0xdc,0}
 	case "lemonchiffon":
-		return hexToColor("#fffacd")
+		return color.RGBA{0xff,0xfa,0xcd,0}
 	case "floralwhite":
-		return hexToColor("#fffaf0")
+		return color.RGBA{0xff,0xfa,0xf0,0}
 	case "snow":
-		return hexToColor("#fffafa")
+		return color.RGBA{0xff,0xfa,0xfa,0}
 	case "yellow":
-		return hexToColor("#ffff00")
+		return color.RGBA{0xff,0xff,0x00,0}
 	case "lightyellow":
-		return hexToColor("#ffffe0")
+		return color.RGBA{0xff,0xff,0xe0,0}
 	case "ivory":
-		return hexToColor("#fffff0")
+		return color.RGBA{0xff,0xff,0xf0,0}
 	case "white":
-		return hexToColor("#ffffff")
+		return color.RGBA{0xff,0xff,0xff,0}
 	default:
 		return hexToColor(clr)
 	}
