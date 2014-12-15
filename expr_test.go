@@ -582,6 +582,26 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "lowestCurrent",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 1, etype: etConst},
+				},
+				argString: "metric1,1",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{
+					makeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
+					makeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					makeResponse("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
+				},
+			},
+			[]float64{1, 1, 3, 3, 4, 1},
+			"metricB", // NOTE(dgryski): not sure if this matches graphite
+		},
+		{
+			&expr{
 				target: "highestCurrent",
 				etype:  etFunc,
 				args: []*expr{
@@ -1118,6 +1138,53 @@ func TestEvalMultipleReturns(t *testing.T) {
 			map[string][]*metricData{
 				"sumSeriesWithWildcards(metric1.baz)": []*metricData{makeResponse("sumSeriesWithWildcards(metric1.baz)", []float64{12, 14, 16, 18, 20}, 1, now32)},
 				"sumSeriesWithWildcards(metric1.qux)": []*metricData{makeResponse("sumSeriesWithWildcards(metric1.qux)", []float64{13, 15, 17, 19, 21}, 1, now32)},
+			},
+		},
+		{
+			&expr{
+				target: "highestCurrent",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 2, etype: etConst},
+				},
+				argString: "metric1,2",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{
+					makeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
+					makeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					makeResponse("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
+				},
+			},
+			"highestCurrent",
+			map[string][]*metricData{
+				"metricA": []*metricData{makeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32)},
+				"metricC": []*metricData{makeResponse("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32)},
+			},
+		},
+		{
+			&expr{
+				target: "lowestCurrent",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 3, etype: etConst},
+				},
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{
+					makeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					makeResponse("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
+					makeResponse("metricD", []float64{1, 1, 3, 3, 4, 3}, 1, now32),
+					makeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
+				},
+			},
+			"lowestCurrent",
+			map[string][]*metricData{
+				"metricA": []*metricData{makeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32)},
+				"metricB": []*metricData{makeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32)},
+				"metricD": []*metricData{makeResponse("metricD", []float64{1, 1, 3, 3, 4, 3}, 1, now32)},
 			},
 		},
 	}

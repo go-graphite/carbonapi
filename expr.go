@@ -892,6 +892,49 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		return results
 
+	case "lowestAverage", "lowestCurrent": // lowestAverage(seriesList, n) , lowestCurrent(seriesList, n)
+
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+		n, err := getIntArg(e, 1)
+		if err != nil {
+			return nil
+		}
+		var results []*metricData
+
+		// we have fewer arguments than we want result series
+		if len(arg) < n {
+			return arg
+		}
+
+		var mh metricHeap
+
+		var compute func([]float64, []bool) float64
+
+		switch e.target {
+		case "lowestAverage":
+			compute = avgValue
+		case "lowestCurrent":
+			compute = currentValue
+		}
+
+		for i, a := range arg {
+			m := compute(a.Values, a.IsAbsent)
+			heap.Push(&mh, metricHeapElement{idx: i, val: m})
+		}
+
+		results = make([]*metricData, n)
+
+		// results should be ordered ascending
+		for i := 0; i < n; i++ {
+			v := heap.Pop(&mh).(metricHeapElement)
+			results[i] = arg[v.idx]
+		}
+
+		return results
+
 	case "highestAverage", "highestCurrent", "highestMax": // highestAverage(seriesList, n) , highestCurrent(seriesList, n), highestMax(seriesList, n)
 
 		arg, err := getSeriesArg(e.args[0], from, until, values)
