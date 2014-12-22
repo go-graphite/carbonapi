@@ -613,6 +613,10 @@ func lbcheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Ok\n"))
 }
 
+func usageHandler(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("supported requests:\r\n\r\n/render/?target=\r\n/metrics/find/?query=\r\n/info/?target=\r\n"))
+}
+
 func main() {
 
 	z := flag.String("z", "", "zipper")
@@ -786,6 +790,7 @@ func main() {
 	http.HandleFunc("/info", passthroughHandler)
 
 	http.HandleFunc("/lb_check", lbcheckHandler)
+	http.HandleFunc("/", usageHandler)
 
 	log.Println("listening on port", *port)
 	log.Fatalln(http.ListenAndServe(":"+strconv.Itoa(*port), nil))
