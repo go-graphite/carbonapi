@@ -7,6 +7,7 @@ import (
 	"log"
 	"math"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -1813,11 +1814,60 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 
 		return arg[0:limit]
+
+	case "sortByTotal", "sortByName", "sortByMaxima", "sortByMinima": // sortByTotal(seriesList), sortByName(seriesList), sortByMaxima(seriesList), sortByMinima(seriesList)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		switch e.target {
+		case "sortByTotal":
+			sort.Sort(ByTotal(arg))
+		case "sortByName":
+			sort.Sort(ByName(arg))
+		case "sortByMaxima":
+			sort.Sort(ByMaxi(arg))
+		case "sortByMin":
+			sort.Sort(ByMini(arg))
+		}
+
+		return arg
 	}
 
 	log.Printf("unknown function in evalExpr:  %q\n", e.target)
 
 	return nil
+}
+
+type ByTotal []*metricData
+
+func (s ByTotal) Len() int      { return len(s) }
+func (s ByTotal) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s ByTotal) Less(i, j int) bool {
+	return summarizeValues("sum", s[i].GetValues()) > summarizeValues("sum", s[j].GetValues())
+}
+
+type ByName []*metricData
+
+func (s ByName) Len() int           { return len(s) }
+func (s ByName) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s ByName) Less(i, j int) bool { return s[i].GetName() < s[j].GetName() }
+
+type ByMaxi []*metricData
+
+func (s ByMaxi) Len() int      { return len(s) }
+func (s ByMaxi) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s ByMaxi) Less(i, j int) bool {
+	return summarizeValues("max", s[i].GetValues()) > summarizeValues("max", s[j].GetValues())
+}
+
+type ByMini []*metricData
+
+func (s ByMini) Len() int      { return len(s) }
+func (s ByMini) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+func (s ByMini) Less(i, j int) bool {
+	return summarizeValues("min", s[i].GetValues()) < summarizeValues("min", s[j].GetValues())
 }
 
 type seriesFunc func(*metricData, *metricData) *metricData
