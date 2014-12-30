@@ -1800,6 +1800,19 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			results = append(results, &r)
 		}
 		return results
+
+	case "limit": // limit(seriesList, n)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		limit, err := getIntArg(e, 1) // get limit
+		if err != nil {
+			return nil
+		}
+
+		return arg[0:limit]
 	}
 
 	log.Printf("unknown function in evalExpr:  %q\n", e.target)
