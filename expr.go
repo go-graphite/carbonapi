@@ -7,6 +7,7 @@ import (
 	"log"
 	"math"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -39,6 +40,12 @@ type metricRequest struct {
 	metric string
 	from   int32
 	until  int32
+}
+
+type sortCache struct {
+	target string
+	vals   []float64
+	series []*metricData
 }
 
 func (e *expr) metrics() []metricRequest {
@@ -1813,12 +1820,75 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 
 		return arg[0:limit]
+
+	case "sortByTotal", "sortByMaxima", "sortByMinima": // sortByTotal(seriesList), sortByMaxima(seriesList), sortByMinima(seriesList)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		var v float64
+		var sc = new(sortCache)
+
+		for _, a := range arg {
+			switch e.target {
+			case "sortByTotal":
+				v = summarizeValues("sum", a.GetValues())
+			case "sortByMaxima":
+				v = summarizeValues("max", a.GetValues())
+			case "sortByMinima":
+				v = summarizeValues("min", a.GetValues())
+			}
+
+			sc.vals = append(sc.vals, v)
+			sc.series = append(sc.series, a)
+		}
+
+		sc.target = e.target
+
+		sort.Sort(sc)
+
+		return sc.series
+
+	case "sortByName": // sortByName(seriesList)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		sort.Sort(ByName(arg))
+
+		return arg
 	}
 
 	log.Printf("unknown function in evalExpr:  %q\n", e.target)
 
 	return nil
 }
+
+// Total (sortByTotal), max (sortByMaxima), min (sortByMinima) sorting
+func (s sortCache) Len() int { return len(s.series) }
+func (s sortCache) Swap(i, j int) {
+	s.series[i], s.series[j] = s.series[j], s.series[i]
+	s.vals[i], s.vals[j] = s.vals[j], s.vals[i]
+}
+func (s sortCache) Less(i, j int) bool {
+	switch s.target {
+	case "sortByTotal", "sortByMaxima":
+		return s.vals[i] > s.vals[j]
+	case "sortByMinima":
+		return s.vals[i] < s.vals[j]
+	}
+
+	return false
+}
+
+// Sorting by name (sortByName)
+type ByName []*metricData
+
+func (s ByName) Len() int           { return len(s) }
+func (s ByName) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s ByName) Less(i, j int) bool { return s[i].GetName() < s[j].GetName() }
 
 type seriesFunc func(*metricData, *metricData) *metricData
 

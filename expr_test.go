@@ -851,6 +851,83 @@ func TestEvalExpression(t *testing.T) {
 			[]float64{1, 3, 6, 10, 15, math.NaN(), 22, 30},
 			"integral(metric1)",
 		},
+		{
+			&expr{
+				target: "sortByTotal",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{
+					makeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					makeResponse("metricB", []float64{5, 5, 5, 5, 5, 5}, 1, now32),
+					makeResponse("metricC", []float64{4, 4, 5, 5, 4, 4}, 1, now32),
+				},
+			},
+			[]float64{5, 5, 5, 5, 5, 5},
+			"metricB",
+		},
+		{
+			&expr{
+				target: "sortByMaxima",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{
+					makeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					makeResponse("metricB", []float64{5, 5, 5, 5, 5, 5}, 1, now32),
+					makeResponse("metricC", []float64{2, 2, 10, 5, 2, 2}, 1, now32),
+				},
+			},
+			[]float64{2, 2, 10, 5, 2, 2},
+			"metricC",
+		},
+		{
+			&expr{
+				target: "sortByMinima",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{
+					makeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					makeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					makeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+				},
+			},
+			[]float64{0, 0, 0, 0, 0, 0},
+			"metricA",
+		},
+		{
+			&expr{
+				target: "sortByName",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{
+					makeResponse("metricX", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					makeResponse("metricA", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
+					makeResponse("metricB", []float64{0, 0, 2, 0, 0, 0}, 1, now32),
+					makeResponse("metricC", []float64{0, 0, 0, 3, 0, 0}, 1, now32),
+				},
+			},
+			[]float64{0, 1, 0, 0, 0, 0},
+			"metricA",
+		},
 	}
 
 	for _, tt := range tests {
