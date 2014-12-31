@@ -42,6 +42,12 @@ type metricRequest struct {
 	until  int32
 }
 
+type sortCache struct {
+	target string
+	vals   []float64
+	series []*metricData
+}
+
 func (e *expr) metrics() []metricRequest {
 
 	switch e.etype {
@@ -1821,18 +1827,33 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil
 		}
 
-		switch e.target {
-		case "sortByTotal":
-			sort.Sort(ByTotal(arg))
-		case "sortByName":
-			sort.Sort(ByName(arg))
-		case "sortByMaxima":
-			sort.Sort(ByMaxi(arg))
-		case "sortByMin":
-			sort.Sort(ByMini(arg))
+		var v float64
+		var sc = new(sortCache)
+
+		for _, a := range arg {
+			if e.target != "sortByName" {
+				switch e.target {
+				case "sortByTotal":
+					v = summarizeValues("sum", a.GetValues())
+				case "sortByMaxima":
+					v = summarizeValues("max", a.GetValues())
+				case "sortByMinima":
+					v = summarizeValues("min", a.GetValues())
+				}
+
+				sc.vals = append(sc.vals, v)
+			} else {
+				sc.vals = append(sc.vals, 0)
+			}
+
+			sc.series = append(sc.series, a)
 		}
 
-		return arg
+		sc.target = e.target
+
+		sort.Sort(sc)
+
+		return sc.series
 	}
 
 	log.Printf("unknown function in evalExpr:  %q\n", e.target)
@@ -1840,34 +1861,20 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 	return nil
 }
 
-type ByTotal []*metricData
-
-func (s ByTotal) Len() int      { return len(s) }
-func (s ByTotal) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
-func (s ByTotal) Less(i, j int) bool {
-	return summarizeValues("sum", s[i].GetValues()) > summarizeValues("sum", s[j].GetValues())
+func (s sortCache) Len() int { return len(s.series) }
+func (s sortCache) Swap(i, j int) {
+	s.series[i], s.series[j] = s.series[j], s.series[i]
+	s.vals[i], s.vals[j] = s.vals[j], s.vals[i]
 }
+func (s sortCache) Less(i, j int) bool {
+	switch s.target {
+	case "sortByTotal", "sortByMaxima", "sortByMinima":
+		return s.vals[i] > s.vals[j]
+	case "sortByName":
+		return s.series[i].GetName() < s.series[j].GetName()
+	}
 
-type ByName []*metricData
-
-func (s ByName) Len() int           { return len(s) }
-func (s ByName) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s ByName) Less(i, j int) bool { return s[i].GetName() < s[j].GetName() }
-
-type ByMaxi []*metricData
-
-func (s ByMaxi) Len() int      { return len(s) }
-func (s ByMaxi) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
-func (s ByMaxi) Less(i, j int) bool {
-	return summarizeValues("max", s[i].GetValues()) > summarizeValues("max", s[j].GetValues())
-}
-
-type ByMini []*metricData
-
-func (s ByMini) Len() int      { return len(s) }
-func (s ByMini) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
-func (s ByMini) Less(i, j int) bool {
-	return summarizeValues("min", s[i].GetValues()) < summarizeValues("min", s[j].GetValues())
+	return false
 }
 
 type seriesFunc func(*metricData, *metricData) *metricData
