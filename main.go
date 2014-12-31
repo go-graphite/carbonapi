@@ -793,5 +793,5 @@ func main() {
 	http.HandleFunc("/", usageHandler)
 
 	log.Println("listening on port", *port)
-	log.Fatalln(http.ListenAndServeTLS(":"+strconv.Itoa(*port), nil, nil, nil))
+	log.Fatalln(http.ListenAndServe(":"+strconv.Itoa(*port), nil))
 }
