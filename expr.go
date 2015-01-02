@@ -1874,10 +1874,10 @@ func (s sortCache) Swap(i, j int) {
 }
 func (s sortCache) Less(i, j int) bool {
 	switch s.target {
-	case "sortByTotal", "sortByMaxima", "sortByMinima":
+	case "sortByTotal", "sortByMaxima":
 		return s.vals[i] > s.vals[j]
-	case "sortByName":
-		return s.series[i].GetName() < s.series[j].GetName()
+	case "sortByMinima":
+		return s.vals[i] < s.vals[j]
 	}
 
 	return false
