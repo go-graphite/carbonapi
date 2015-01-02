@@ -1821,7 +1821,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		return arg[0:limit]
 
-	case "sortByTotal", "sortByName", "sortByMaxima", "sortByMinima": // sortByTotal(seriesList), sortByName(seriesList), sortByMaxima(seriesList), sortByMinima(seriesList)
+	case "sortByTotal", "sortByMaxima", "sortByMinima": // sortByTotal(seriesList), sortByMaxima(seriesList), sortByMinima(seriesList)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
@@ -1831,21 +1831,16 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		var sc = new(sortCache)
 
 		for _, a := range arg {
-			if e.target != "sortByName" {
-				switch e.target {
-				case "sortByTotal":
-					v = summarizeValues("sum", a.GetValues())
-				case "sortByMaxima":
-					v = summarizeValues("max", a.GetValues())
-				case "sortByMinima":
-					v = summarizeValues("min", a.GetValues())
-				}
-
-				sc.vals = append(sc.vals, v)
-			} else {
-				sc.vals = append(sc.vals, 0)
+			switch e.target {
+			case "sortByTotal":
+				v = summarizeValues("sum", a.GetValues())
+			case "sortByMaxima":
+				v = summarizeValues("max", a.GetValues())
+			case "sortByMinima":
+				v = summarizeValues("min", a.GetValues())
 			}
 
+			sc.vals = append(sc.vals, v)
 			sc.series = append(sc.series, a)
 		}
 
@@ -1854,6 +1849,16 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		sort.Sort(sc)
 
 		return sc.series
+
+	case "sortByName": // sortByName(seriesList)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		sort.Sort(ByName(arg))
+
+		return arg
 	}
 
 	log.Printf("unknown function in evalExpr:  %q\n", e.target)
@@ -1861,6 +1866,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 	return nil
 }
 
+// Total (sortByTotal), max (sortByMaxima), min (sortByMinima) sorting
 func (s sortCache) Len() int { return len(s.series) }
 func (s sortCache) Swap(i, j int) {
 	s.series[i], s.series[j] = s.series[j], s.series[i]
@@ -1876,6 +1882,13 @@ func (s sortCache) Less(i, j int) bool {
 
 	return false
 }
+
+// Sorting by name (sortByName)
+type ByName []*metricData
+
+func (s ByName) Len() int           { return len(s) }
+func (s ByName) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s ByName) Less(i, j int) bool { return s[i].GetName() < s[j].GetName() }
 
 type seriesFunc func(*metricData, *metricData) *metricData
 
