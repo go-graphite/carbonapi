@@ -1187,6 +1187,31 @@ func TestEvalMultipleReturns(t *testing.T) {
 				"metricD": []*metricData{makeResponse("metricD", []float64{1, 1, 3, 3, 4, 3}, 1, now32)},
 			},
 		},
+		{
+			&expr{
+				target: "limit",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 2, etype: etConst},
+				},
+				argString: "metric1, 2",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{
+					makeResponse("metricA", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
+					makeResponse("metricB", []float64{0, 0, 1, 0, 0, 0}, 1, now32),
+					makeResponse("metricC", []float64{0, 0, 0, 1, 0, 0}, 1, now32),
+					makeResponse("metricD", []float64{0, 0, 0, 0, 1, 0}, 1, now32),
+					makeResponse("metricE", []float64{0, 0, 0, 0, 0, 1}, 1, now32),
+				},
+			},
+			"limit",
+			map[string][]*metricData{
+				"metricA": []*metricData{makeResponse("metricA", []float64{0, 1, 0, 0, 0, 0}, 1, now32)},
+				"metricB": []*metricData{makeResponse("metricB", []float64{0, 0, 1, 0, 0, 0}, 1, now32)},
+			},
+		},
 	}
 
 	for _, tt := range tests {
