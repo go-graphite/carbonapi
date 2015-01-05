@@ -613,8 +613,15 @@ func lbcheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Ok\n"))
 }
 
+var usageMsg = []byte(`
+supported requests:
+	/render/?target=
+	/metrics/find/?query=
+	/info/?target=
+`)
+
 func usageHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("supported requests:\r\n\r\n/render/?target=\r\n/metrics/find/?query=\r\n/info/?target=\r\n"))
+	w.Write(usageMsg)
 }
 
 func main() {
