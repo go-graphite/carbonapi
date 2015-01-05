@@ -1167,6 +1167,19 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 		return results
 
+	case "limit": // limit(seriesList, n)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		limit, err := getIntArg(e, 1) // get limit
+		if err != nil {
+			return nil
+		}
+
+		return arg[0:limit]
+
 	case "logarithm", "log": // logarithm(seriesList, base=10)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
@@ -1455,6 +1468,44 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 		return results
 
+	case "sortByMaxima", "sortByMinima", "sortByTotal": // sortByMaxima(seriesList), sortByMinima(seriesList), sortByTotal(seriesList)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		var v float64
+		var sc = new(sortCache)
+
+		for _, a := range arg {
+			switch e.target {
+			case "sortByTotal":
+				v = summarizeValues("sum", a.GetValues())
+			case "sortByMaxima":
+				v = summarizeValues("max", a.GetValues())
+			case "sortByMinima":
+				v = summarizeValues("min", a.GetValues())
+			}
+
+			sc.vals = append(sc.vals, v)
+			sc.series = append(sc.series, a)
+		}
+
+		sc.target = e.target
+
+		sort.Sort(sc)
+
+		return sc.series
+
+	case "sortByName": // sortByName(seriesList)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		sort.Sort(ByName(arg))
+
+		return arg
 	case "stdev", "stddev": // stdev(seriesList, points, missingThreshold=0.1)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
@@ -1808,57 +1859,6 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 		return results
 
-	case "limit": // limit(seriesList, n)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
-		if err != nil {
-			return nil
-		}
-
-		limit, err := getIntArg(e, 1) // get limit
-		if err != nil {
-			return nil
-		}
-
-		return arg[0:limit]
-
-	case "sortByTotal", "sortByMaxima", "sortByMinima": // sortByTotal(seriesList), sortByMaxima(seriesList), sortByMinima(seriesList)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
-		if err != nil {
-			return nil
-		}
-
-		var v float64
-		var sc = new(sortCache)
-
-		for _, a := range arg {
-			switch e.target {
-			case "sortByTotal":
-				v = summarizeValues("sum", a.GetValues())
-			case "sortByMaxima":
-				v = summarizeValues("max", a.GetValues())
-			case "sortByMinima":
-				v = summarizeValues("min", a.GetValues())
-			}
-
-			sc.vals = append(sc.vals, v)
-			sc.series = append(sc.series, a)
-		}
-
-		sc.target = e.target
-
-		sort.Sort(sc)
-
-		return sc.series
-
-	case "sortByName": // sortByName(seriesList)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
-		if err != nil {
-			return nil
-		}
-
-		sort.Sort(ByName(arg))
-
-		return arg
 	}
 
 	log.Printf("unknown function in evalExpr:  %q\n", e.target)
