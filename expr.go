@@ -42,12 +42,6 @@ type metricRequest struct {
 	until  int32
 }
 
-type sortCache struct {
-	target string
-	vals   []float64
-	series []*metricData
-}
-
 func (e *expr) metrics() []metricRequest {
 
 	switch e.etype {
@@ -1478,28 +1472,22 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil
 		}
 
-		var v float64
-		var sc = new(sortCache)
+		vals := make([]float64, len(arg))
 
-		for _, a := range arg {
+		for i, a := range arg {
 			switch e.target {
 			case "sortByTotal":
-				v = summarizeValues("sum", a.GetValues())
+				vals[i] = summarizeValues("sum", a.GetValues())
 			case "sortByMaxima":
-				v = summarizeValues("max", a.GetValues())
+				vals[i] = summarizeValues("max", a.GetValues())
 			case "sortByMinima":
-				v = summarizeValues("min", a.GetValues())
+				vals[i] = 1 / summarizeValues("min", a.GetValues())
 			}
-
-			sc.vals = append(sc.vals, v)
-			sc.series = append(sc.series, a)
 		}
 
-		sc.target = e.target
+		sort.Sort(byVals{vals: vals, series: arg})
 
-		sort.Sort(sc)
-
-		return sc.series
+		return arg
 
 	case "sortByName": // sortByName(seriesList)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
@@ -1510,6 +1498,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		sort.Sort(ByName(arg))
 
 		return arg
+
 	case "stdev", "stddev": // stdev(seriesList, points, missingThreshold=0.1)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
@@ -1871,20 +1860,20 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 }
 
 // Total (sortByTotal), max (sortByMaxima), min (sortByMinima) sorting
-func (s sortCache) Len() int { return len(s.series) }
-func (s sortCache) Swap(i, j int) {
+// For 'min', we actually store 1/v so the sorting logic is the same
+type byVals struct {
+	vals   []float64
+	series []*metricData
+}
+
+func (s byVals) Len() int { return len(s.series) }
+func (s byVals) Swap(i, j int) {
 	s.series[i], s.series[j] = s.series[j], s.series[i]
 	s.vals[i], s.vals[j] = s.vals[j], s.vals[i]
 }
-func (s sortCache) Less(i, j int) bool {
-	switch s.target {
-	case "sortByTotal", "sortByMaxima":
-		return s.vals[i] > s.vals[j]
-	case "sortByMinima":
-		return s.vals[i] < s.vals[j]
-	}
-
-	return false
+func (s byVals) Less(i, j int) bool {
+	// actually "greater than"
+	return s.vals[i] > s.vals[j]
 }
 
 // Sorting by name (sortByName)
