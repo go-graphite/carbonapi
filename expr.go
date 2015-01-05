@@ -1178,7 +1178,11 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil
 		}
 
-		return arg[0:limit]
+		if limit >= len(arg) {
+			return arg
+		}
+
+		return arg[:limit]
 
 	case "logarithm", "log": // logarithm(seriesList, base=10)
 		arg, err := getSeriesArg(e.args[0], from, until, values)

@@ -1289,6 +1289,34 @@ func TestEvalMultipleReturns(t *testing.T) {
 				"metricB": []*metricData{makeResponse("metricB", []float64{0, 0, 1, 0, 0, 0}, 1, now32)},
 			},
 		},
+		{
+			&expr{
+				target: "limit",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 20, etype: etConst},
+				},
+				argString: "metric1, 20",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{
+					makeResponse("metricA", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
+					makeResponse("metricB", []float64{0, 0, 1, 0, 0, 0}, 1, now32),
+					makeResponse("metricC", []float64{0, 0, 0, 1, 0, 0}, 1, now32),
+					makeResponse("metricD", []float64{0, 0, 0, 0, 1, 0}, 1, now32),
+					makeResponse("metricE", []float64{0, 0, 0, 0, 0, 1}, 1, now32),
+				},
+			},
+			"limit",
+			map[string][]*metricData{
+				"metricA": []*metricData{makeResponse("metricA", []float64{0, 1, 0, 0, 0, 0}, 1, now32)},
+				"metricB": []*metricData{makeResponse("metricB", []float64{0, 0, 1, 0, 0, 0}, 1, now32)},
+				"metricC": []*metricData{makeResponse("metricC", []float64{0, 0, 0, 1, 0, 0}, 1, now32)},
+				"metricD": []*metricData{makeResponse("metricD", []float64{0, 0, 0, 0, 1, 0}, 1, now32)},
+				"metricE": []*metricData{makeResponse("metricE", []float64{0, 0, 0, 0, 0, 1}, 1, now32)},
+			},
+		},
 	}
 
 	for _, tt := range tests {
