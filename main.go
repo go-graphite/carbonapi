@@ -438,7 +438,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 	from := r.FormValue("from")
 	until := r.FormValue("until")
 	format := r.FormValue("format")
-	useCache := r.FormValue("noCache") == ""
+	useCache := truthyBool(r.FormValue("noCache")) == false
 
 	var jsonp string
 
@@ -596,6 +596,16 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 	if len(results) != 0 {
 		queryCache.set(cacheKey, body, cacheTimeout)
 	}
+}
+
+func truthyBool(s string) bool {
+	switch s {
+	case "", "0", "false", "False", "no", "No":
+		return false
+	case "1", "true", "True", "yes", "Yes":
+		return true
+	}
+	return false
 }
 
 func passthroughHandler(w http.ResponseWriter, r *http.Request) {
