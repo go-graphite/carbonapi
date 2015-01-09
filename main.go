@@ -447,6 +447,10 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 		jsonp = r.FormValue("jsonp")
 	}
 
+	if format == "" && (truthyBool(r.FormValue("rawData")) || truthyBool(r.FormValue("rawdata"))) {
+		format = "raw"
+	}
+
 	if format == "" {
 		format = "png"
 	}
