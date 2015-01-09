@@ -319,8 +319,6 @@ func marshalJSON(results []*metricData) []byte {
 
 func writeResponse(w http.ResponseWriter, b []byte, format string, jsonp string) {
 
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-
 	switch format {
 	case "json":
 		if jsonp != "" {
@@ -425,6 +423,14 @@ type renderStats struct {
 }
 
 func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
+
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Add("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+
+	if r.Method == "OPTIONS" {
+		// nothing to do, CORS headers already sent
+		return
+	}
 
 	Metrics.Requests.Add(1)
 
