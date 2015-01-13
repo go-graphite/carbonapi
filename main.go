@@ -425,14 +425,6 @@ type renderStats struct {
 
 func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Add("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-
-	if r.Method == "OPTIONS" {
-		// nothing to do, CORS headers already sent
-		return
-	}
-
 	Metrics.Requests.Add(1)
 
 	err := r.ParseForm()
@@ -753,6 +745,19 @@ func findTreejson(globs pb.GlobResponse) ([]byte, error) {
 	return b.Bytes(), err
 }
 
+func corsHandler(handler func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Add("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+
+		if r.Method == "OPTIONS" {
+			// nothing to do, CORS headers already sent
+			return
+		}
+		handler(w, r)
+	}
+}
+
 func passthroughHandler(w http.ResponseWriter, r *http.Request) {
 	var data []byte
 	var err error
@@ -943,11 +948,11 @@ func main() {
 		log.Println(r.RequestURI, since.Nanoseconds()/int64(time.Millisecond), stats.zipperRequests)
 	}
 
-	http.HandleFunc("/render/", render)
-	http.HandleFunc("/render", render)
+	http.HandleFunc("/render/", corsHandler(render))
+	http.HandleFunc("/render", corsHandler(render))
 
-	http.HandleFunc("/metrics/find/", findHandler)
-	http.HandleFunc("/metrics/find", findHandler)
+	http.HandleFunc("/metrics/find/", corsHandler(findHandler))
+	http.HandleFunc("/metrics/find", corsHandler(findHandler))
 
 	http.HandleFunc("/info/", passthroughHandler)
 	http.HandleFunc("/info", passthroughHandler)
