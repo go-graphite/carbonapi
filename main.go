@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"expvar"
 	"flag"
@@ -618,6 +619,140 @@ func truthyBool(s string) bool {
 	return false
 }
 
+func findHandler(w http.ResponseWriter, r *http.Request) {
+
+	format := r.FormValue("format")
+	jsonp := r.FormValue("jsonp")
+
+	query := r.FormValue("query")
+
+	if query == "" {
+		http.Error(w, "missing parameter `query`", http.StatusBadRequest)
+		return
+	}
+
+	if format == "" {
+		format = "treejson"
+	}
+
+	globs, err := Zipper.Find(query)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	var b []byte
+	switch format {
+	case "treejson", "json":
+		b, err = findTreejson(globs)
+	case "completer":
+		b, err = findCompleter(globs)
+	}
+
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	writeResponse(w, b, "json", jsonp)
+}
+
+type completer struct {
+	Path   string `json:"path"`
+	Name   string `json:"name"`
+	IsLeaf string `json:"is_leaf"`
+}
+
+func findCompleter(globs pb.GlobResponse) ([]byte, error) {
+	var b bytes.Buffer
+
+	var complete []completer
+
+	for _, g := range globs.GetMatches() {
+		c := completer{
+			Path: g.GetPath(),
+		}
+
+		if g.GetIsLeaf() {
+			c.IsLeaf = "1"
+		} else {
+			c.IsLeaf = "0"
+		}
+
+		i := strings.LastIndex(c.Path, ".")
+
+		if i != -1 {
+			c.Name = c.Path[i+1:]
+		}
+
+		complete = append(complete, c)
+	}
+
+	err := json.NewEncoder(&b).Encode(struct {
+		Metrics []completer `json:"metrics"`
+	}{
+		Metrics: complete},
+	)
+	return b.Bytes(), err
+}
+
+type treejson struct {
+	AllowChildren int            `json:"allowChildren"`
+	Expandable    int            `json:"expandable"`
+	Leaf          int            `json:"leaf"`
+	ID            string         `json:"id"`
+	Text          string         `json:"text"`
+	Context       map[string]int `json:"context"` // unused
+}
+
+var treejsonContext = make(map[string]int)
+
+func findTreejson(globs pb.GlobResponse) ([]byte, error) {
+	var b bytes.Buffer
+
+	var tree []treejson
+
+	seen := make(map[string]struct{})
+
+	basepath := globs.GetName()
+
+	if i := strings.LastIndex(basepath, "."); i != -1 {
+		basepath = basepath[:i+1]
+	}
+
+	for _, g := range globs.GetMatches() {
+
+		name := g.GetPath()
+
+		if i := strings.LastIndex(name, "."); i != -1 {
+			name = name[i+1:]
+		}
+
+		if _, ok := seen[name]; ok {
+			continue
+		}
+		seen[name] = struct{}{}
+
+		t := treejson{
+			ID:      basepath + name,
+			Context: treejsonContext,
+			Text:    name,
+		}
+
+		if g.GetIsLeaf() {
+			t.Leaf = 1
+		} else {
+			t.AllowChildren = 1
+			t.Expandable = 1
+		}
+
+		tree = append(tree, t)
+	}
+
+	err := json.NewEncoder(&b).Encode(tree)
+	return b.Bytes(), err
+}
+
 func passthroughHandler(w http.ResponseWriter, r *http.Request) {
 	var data []byte
 	var err error
@@ -811,8 +946,9 @@ func main() {
 	http.HandleFunc("/render/", render)
 	http.HandleFunc("/render", render)
 
-	http.HandleFunc("/metrics/find/", passthroughHandler)
-	http.HandleFunc("/metrics/find", passthroughHandler)
+	http.HandleFunc("/metrics/find/", findHandler)
+	http.HandleFunc("/metrics/find", findHandler)
+
 	http.HandleFunc("/info/", passthroughHandler)
 	http.HandleFunc("/info", passthroughHandler)
 
