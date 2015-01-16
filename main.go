@@ -658,7 +658,7 @@ type completer struct {
 func findCompleter(globs pb.GlobResponse) ([]byte, error) {
 	var b bytes.Buffer
 
-	var complete []completer
+	var complete = make([]completer, 0)
 
 	for _, g := range globs.GetMatches() {
 		c := completer{
@@ -702,7 +702,7 @@ var treejsonContext = make(map[string]int)
 func findTreejson(globs pb.GlobResponse) ([]byte, error) {
 	var b bytes.Buffer
 
-	var tree []treejson
+	var tree = make([]treejson, 0)
 
 	seen := make(map[string]struct{})
 
