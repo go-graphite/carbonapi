@@ -745,7 +745,7 @@ func findTreejson(globs pb.GlobResponse) ([]byte, error) {
 	return b.Bytes(), err
 }
 
-func corsHandler(handler func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+func corsHandler(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Add("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
