@@ -452,13 +452,16 @@ func consolidateAvg(v []float64, a []bool) (float64, bool) {
 
 	abs := true
 	var val float64
+	var elts int
 
 	for i := 0; i < cnt; i++ {
 		if !a[i] {
 			abs = false
 			val += v[i]
+			elts++
 		}
 	}
 
-	return val / float64(cnt), abs
+	// Don't need to check for divide-by-zero. We'll just return NaN and the point will be marked absent.
+	return val / float64(elts), abs
 }
