@@ -29,7 +29,8 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 	bgcolor := string2Color(getString(r.FormValue("bgcolor"), "black"))
 	p.BackgroundColor = bgcolor
 
-	fgcolor := string2Color(getString(r.FormValue("fgcolor"), "white"))
+	fgcolorstr := getString(r.FormValue("fgcolor"), "white")
+	fgcolor := string2Color(fgcolorstr)
 	p.Title.Color = fgcolor
 	p.X.LineStyle.Color = fgcolor
 	p.Y.LineStyle.Color = fgcolor
@@ -65,9 +66,15 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 		p.HideAxes()
 	}
 
+	if len(results) == 1 && results[0].color == "" {
+		results[0].color = fgcolorstr
+	}
+
 	var lines []plot.Plotter
 	for i, r := range results {
 		l := NewResponsePlotter(r)
+
+		l.LineStyle.Color = fgcolor
 
 		// consolidate datapoints
 		l.maybeConsolidateData(width)
