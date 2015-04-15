@@ -208,10 +208,10 @@ func (z zipper) Render(metric string, from, until int32) (metricData, error) {
 		"until":  []string{strconv.Itoa(int(until))},
 	}.Encode()
 
-	var pbresp pb.FetchResponse
+	var pbresp pb.MultiFetchResponse
 	err := z.get("Render", u, &pbresp)
 
-	mdata := metricData{FetchResponse: pbresp}
+	mdata := metricData{FetchResponse: *pbresp.Metrics[0]}
 
 	return mdata, err
 }
