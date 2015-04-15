@@ -11,6 +11,10 @@ message FetchResponse {
     repeated bool isAbsent = 6;
 }
 
+message MultiFetchResponse {
+    repeated FetchResponse Metrics = 1;
+}
+
 message GlobMatch {
     required string path = 1;
     required bool isLeaf = 2;

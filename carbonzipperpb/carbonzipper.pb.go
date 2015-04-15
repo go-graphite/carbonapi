@@ -10,6 +10,7 @@ It is generated from these files:
 
 It has these top-level messages:
 	FetchResponse
+	MultiFetchResponse
 	GlobMatch
 	GlobResponse
 	Retention
@@ -78,6 +79,22 @@ func (m *FetchResponse) GetValues() []float64 {
 func (m *FetchResponse) GetIsAbsent() []bool {
 	if m != nil {
 		return m.IsAbsent
+	}
+	return nil
+}
+
+type MultiFetchResponse struct {
+	Metrics          []*FetchResponse `protobuf:"bytes,1,rep" json:"Metrics,omitempty"`
+	XXX_unrecognized []byte           `json:"-"`
+}
+
+func (m *MultiFetchResponse) Reset()         { *m = MultiFetchResponse{} }
+func (m *MultiFetchResponse) String() string { return proto.CompactTextString(m) }
+func (*MultiFetchResponse) ProtoMessage()    {}
+
+func (m *MultiFetchResponse) GetMetrics() []*FetchResponse {
+	if m != nil {
+		return m.Metrics
 	}
 	return nil
 }
