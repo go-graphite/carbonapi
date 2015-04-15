@@ -429,7 +429,7 @@ func returnRender(w http.ResponseWriter, format string, metrics pb.MultiFetchRes
 		presponse := createRenderResponse(metrics, pickle.None{})
 		w.Header().Set("Content-Type", "application/pickle")
 		e := pickle.NewEncoder(w)
-		e.Encode([]interface{}{presponse})
+		e.Encode(presponse)
 	}
 
 }
