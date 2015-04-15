@@ -21,7 +21,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"code.google.com/p/gogoprotobuf/proto"
+	"github.com/gogo/protobuf/proto"
 
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 	"github.com/dgryski/httputil"
