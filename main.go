@@ -382,44 +382,51 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	handleRenderPB(w, req, format, responses)
 }
 
-func createRenderResponse(metric pb.FetchResponse, missing interface{}) map[string]interface{} {
-	var pvalues []interface{}
-	for i, v := range metric.Values {
-		if metric.IsAbsent[i] {
-			pvalues = append(pvalues, missing)
-		} else {
-			pvalues = append(pvalues, v)
+func createRenderResponse(metrics pb.MultiFetchResponse, missing interface{}) []map[string]interface{} {
+
+	var response []map[string]interface{}
+
+	for _, metric := range metrics.GetMetrics() {
+
+		var pvalues []interface{}
+		for i, v := range metric.Values {
+			if metric.IsAbsent[i] {
+				pvalues = append(pvalues, missing)
+			} else {
+				pvalues = append(pvalues, v)
+			}
 		}
+
+		// create the response
+		presponse := map[string]interface{}{
+			"start":  metric.StartTime,
+			"step":   metric.StepTime,
+			"end":    metric.StopTime,
+			"name":   metric.Name,
+			"values": pvalues,
+		}
+		response = append(response, presponse)
 	}
 
-	// create the response
-	presponse := map[string]interface{}{
-		"start":  metric.StartTime,
-		"step":   metric.StepTime,
-		"end":    metric.StopTime,
-		"name":   metric.Name,
-		"values": pvalues,
-	}
-
-	return presponse
+	return response
 }
 
-func returnRender(w http.ResponseWriter, format string, metric pb.FetchResponse) {
+func returnRender(w http.ResponseWriter, format string, metrics pb.MultiFetchResponse) {
 
 	switch format {
 	case "protobuf":
 		w.Header().Set("Content-Type", "application/protobuf")
-		b, _ := proto.Marshal(&metric)
+		b, _ := proto.Marshal(&metrics)
 		w.Write(b)
 
 	case "json":
-		presponse := createRenderResponse(metric, nil)
+		presponse := createRenderResponse(metrics, nil)
 		w.Header().Set("Content-Type", "application/json")
 		e := json.NewEncoder(w)
 		e.Encode(presponse)
 
 	case "", "pickle":
-		presponse := createRenderResponse(metric, pickle.None{})
+		presponse := createRenderResponse(metrics, pickle.None{})
 		w.Header().Set("Content-Type", "application/pickle")
 		e := pickle.NewEncoder(w)
 		e.Encode([]interface{}{presponse})
@@ -429,9 +436,10 @@ func returnRender(w http.ResponseWriter, format string, metric pb.FetchResponse)
 
 func handleRenderPB(w http.ResponseWriter, req *http.Request, format string, responses []serverResponse) {
 
-	var decoded []pb.FetchResponse
+	metrics := make(map[string][]pb.FetchResponse)
+
 	for _, r := range responses {
-		var d pb.FetchResponse
+		var d pb.MultiFetchResponse
 		err := proto.Unmarshal(r.response, &d)
 		if err != nil {
 			logger.Logf("error decoding protobuf response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
@@ -439,12 +447,14 @@ func handleRenderPB(w http.ResponseWriter, req *http.Request, format string, res
 			Metrics.RenderErrors.Add(1)
 			continue
 		}
-		decoded = append(decoded, d)
+		for _, m := range d.Metrics {
+			metrics[m.GetName()] = append(metrics[m.GetName()], *m)
+		}
 	}
 
-	logger.Traceln("request: %s: %v", req.URL.RequestURI(), decoded)
+	var multi pb.MultiFetchResponse
 
-	if len(decoded) == 0 {
+	if len(metrics) == 0 {
 		err := fmt.Sprintf("no decoded responses to merge for req: %s", req.URL.RequestURI())
 		logger.Logln(err)
 		http.Error(w, err, http.StatusInternalServerError)
@@ -452,26 +462,33 @@ func handleRenderPB(w http.ResponseWriter, req *http.Request, format string, res
 		return
 	}
 
-	if len(decoded) == 1 {
-		logger.Debugf("only one decoded responses to merge for req: %s", req.URL.RequestURI())
-		returnRender(w, format, decoded[0])
-		return
-	}
+	for name, decoded := range metrics {
 
-	// Use the metric with the highest resolution as our base
-	var highest int
-	for i, d := range decoded {
-		if d.GetStepTime() < decoded[highest].GetStepTime() {
-			highest = i
+		logger.Tracef("request: %s: %q %+v", req.URL.RequestURI(), name, decoded)
+
+		if len(decoded) == 1 {
+			logger.Debugf("only one decoded responses to merge for req: %q %s", name, req.URL.RequestURI())
+			m := decoded[0]
+			multi.Metrics = append(multi.Metrics, &m)
+			continue
 		}
+
+		// Use the metric with the highest resolution as our base
+		var highest int
+		for i, d := range decoded {
+			if d.GetStepTime() < decoded[highest].GetStepTime() {
+				highest = i
+			}
+		}
+		decoded[0], decoded[highest] = decoded[highest], decoded[0]
+
+		metric := decoded[0]
+
+		mergeValues(req, &metric, decoded)
+		multi.Metrics = append(multi.Metrics, &metric)
 	}
-	decoded[0], decoded[highest] = decoded[highest], decoded[0]
 
-	metric := decoded[0]
-
-	mergeValues(req, &metric, decoded)
-
-	returnRender(w, format, metric)
+	returnRender(w, format, multi)
 }
 
 func mergeValues(req *http.Request, metric *pb.FetchResponse, decoded []pb.FetchResponse) {
