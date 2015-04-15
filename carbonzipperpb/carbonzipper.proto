@@ -12,7 +12,7 @@ message FetchResponse {
 }
 
 message MultiFetchResponse {
-    repeated FetchResponse Metrics = 1;
+    repeated FetchResponse metrics = 1;
 }
 
 message GlobMatch {

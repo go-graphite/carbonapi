@@ -84,7 +84,7 @@ func (m *FetchResponse) GetIsAbsent() []bool {
 }
 
 type MultiFetchResponse struct {
-	Metrics          []*FetchResponse `protobuf:"bytes,1,rep" json:"Metrics,omitempty"`
+	Metrics          []*FetchResponse `protobuf:"bytes,1,rep,name=metrics" json:"metrics,omitempty"`
 	XXX_unrecognized []byte           `json:"-"`
 }
 
