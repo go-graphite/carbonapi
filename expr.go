@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"code.google.com/p/gogoprotobuf/proto"
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
+	"github.com/gogo/protobuf/proto"
 )
 
 // expression parser

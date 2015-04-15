@@ -19,8 +19,8 @@ import (
 	"strings"
 	"time"
 
-	"code.google.com/p/gogoprotobuf/proto"
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
+	"github.com/gogo/protobuf/proto"
 
 	"github.com/bradfitz/gomemcache/memcache"
 	pickle "github.com/kisielk/og-rek"

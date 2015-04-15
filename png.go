@@ -10,11 +10,11 @@ import (
 	"strconv"
 	"time"
 
-	"code.google.com/p/gogoprotobuf/proto"
 	"code.google.com/p/plotinum/plot"
 	"code.google.com/p/plotinum/plotter"
 	"code.google.com/p/plotinum/plotutil"
 	"code.google.com/p/plotinum/vg/vgimg"
+	"github.com/gogo/protobuf/proto"
 )
 
 var linesColors = `blue,green,red,purple,brown,yellow,aqua,grey,magenta,pink,gold,rose`
