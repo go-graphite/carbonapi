@@ -197,6 +197,8 @@ func (z zipper) Find(metric string) (pb.GlobResponse, error) {
 	return pbresp, err
 }
 
+var errNoMetrics = errors.New("no metrics")
+
 func (z zipper) Render(metric string, from, until int32) (metricData, error) {
 
 	u, _ := url.Parse(string(z.z) + "/render/")
@@ -210,10 +212,17 @@ func (z zipper) Render(metric string, from, until int32) (metricData, error) {
 
 	var pbresp pb.MultiFetchResponse
 	err := z.get("Render", u, &pbresp)
+	if err != nil {
+		return metricData{}, err
+	}
+
+	if m := pbresp.Metrics; m == nil {
+		return metricData{}, errNoMetrics
+	}
 
 	mdata := metricData{FetchResponse: *pbresp.Metrics[0]}
 
-	return mdata, err
+	return mdata, nil
 }
 
 func (z zipper) Passthrough(metric string) ([]byte, error) {
