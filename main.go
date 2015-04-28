@@ -216,7 +216,7 @@ func (z zipper) Render(metric string, from, until int32) (metricData, error) {
 		return metricData{}, err
 	}
 
-	if m := pbresp.Metrics; m == nil {
+	if m := pbresp.Metrics; len(m) == 0 {
 		return metricData{}, errNoMetrics
 	}
 
