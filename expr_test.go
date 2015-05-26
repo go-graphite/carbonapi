@@ -254,6 +254,22 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "movingMedian",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 4, etype: etConst},
+				},
+				argString: "metric1,4",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8}, 1, now32)},
+			},
+			[]float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), 1, 1, 1.5, 2, 2, 3, 4, 5, 5, 6},
+			"movingMedian(metric1,4)",
+		},
+		{
+			&expr{
 				target: "scale",
 				etype:  etFunc,
 				args: []*expr{
