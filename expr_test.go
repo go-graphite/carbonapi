@@ -252,7 +252,7 @@ func TestEvalExpression(t *testing.T) {
 			[]float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), 1, 1.25, 1.5, 1.75, 2.5, 3.5, 4, 5},
 			"movingAverage(metric1,4)",
 		},
-        {
+		{
 			&expr{
 				target: "movingMedian",
 				etype:  etFunc,

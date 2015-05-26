@@ -1338,9 +1338,9 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			}
 			result = append(result, &r)
 		}
-	    return result
+		return result
 
-    case "movingMedian": // movingMedian(seriesList, windowSize)
+	case "movingMedian": // movingMedian(seriesList, windowSize)
 		var n int
 		var err error
 
@@ -2105,15 +2105,15 @@ func (w *Windowed) Less(i, j int) bool {
 }
 
 func (w *Windowed) Median() float64 {
-    sort.Sort(w)
-    if (w.Len() % 2) == 1 {
-        return w.data[(w.Len() + 1) / 2];
-    }
+	sort.Sort(w)
+	if (w.Len() % 2) == 1 {
+		return w.data[(w.Len()+1)/2]
+	}
 
-    index := w.Len() / 2
-    a := w.data[index]
-    b := w.data[index+1]
-    return (a + b) / 2
+	index := w.Len() / 2
+	a := w.data[index]
+	b := w.data[index+1]
+	return (a + b) / 2
 }
 
 func maxValue(f64s []float64, absent []bool) float64 {
