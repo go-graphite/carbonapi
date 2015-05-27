@@ -1143,6 +1143,106 @@ func TestEvalSummarize(t *testing.T) {
 				etype:  etFunc,
 				args: []*expr{
 					&expr{target: "metric1"},
+					&expr{valStr: "5s", etype: etString},
+					&expr{valStr: "p50", etype: etString},
+				},
+				argString: "metric1,'5s','p50'",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+			},
+			[]float64{0.5, 1.5, 2, 3, 5},
+			"summarize(metric1,'5s','p50')",
+			5,
+			now32,
+			now32 + 25*1,
+		},
+		{
+			&expr{
+				target: "summarize",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{valStr: "5s", etype: etString},
+					&expr{valStr: "p25", etype: etString},
+				},
+				argString: "metric1,'5s','p25'",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+			},
+			[]float64{0, 1, 2, 3, 5},
+			"summarize(metric1,'5s','p25')",
+			5,
+			now32,
+			now32 + 25*1,
+		},
+		{
+			&expr{
+				target: "summarize",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{valStr: "5s", etype: etString},
+					&expr{valStr: "p99.9", etype: etString},
+				},
+				argString: "metric1,'5s','p99.9'",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+			},
+			[]float64{1, 2, 3, 3.0059999999999993, 5},
+			"summarize(metric1,'5s','p99.9')",
+			5,
+			now32,
+			now32 + 25*1,
+		},
+		{
+			&expr{
+				target: "summarize",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{valStr: "5s", etype: etString},
+					&expr{valStr: "p100.1", etype: etString},
+				},
+				argString: "metric1,'5s','p100.1'",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+			},
+			[]float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()},
+			"summarize(metric1,'5s','p100.1')",
+			5,
+			now32,
+			now32 + 25*1,
+		},
+		{
+			&expr{
+				target: "summarize",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{valStr: "1s", etype: etString},
+					&expr{valStr: "p50", etype: etString},
+				},
+				argString: "metric1,'1s','p50'",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+			},
+			[]float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5},
+			"summarize(metric1,'1s','p50')",
+			1,
+			now32,
+			now32 + 25*1,
+		},
+		{
+			&expr{
+				target: "summarize",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
 					&expr{valStr: "10min", etype: etString},
 				},
 				argString: "metric1,'10min'",
