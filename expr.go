@@ -14,6 +14,7 @@ import (
 
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 	"github.com/gogo/protobuf/proto"
+	"github.com/wangjohn/quickselect"
 )
 
 // expression parser
@@ -1340,6 +1341,64 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 		return result
 
+	case "movingMedian": // movingMedian(seriesList, windowSize)
+		var n int
+		var err error
+
+		var scaleByStep bool
+
+		switch e.args[1].etype {
+		case etConst:
+			n, err = getIntArg(e, 1)
+		case etString:
+			var n32 int32
+			n32, err = getIntervalArg(e, 1, 1)
+			n = int(n32)
+			scaleByStep = true
+		default:
+			err = ErrBadType
+		}
+		if err != nil {
+			return nil
+		}
+
+		windowSize := n
+
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		if scaleByStep {
+			windowSize /= int(arg[0].GetStepTime())
+		}
+
+		var result []*metricData
+
+		for _, a := range arg {
+			r := *a
+			r.Name = proto.String(fmt.Sprintf("movingMedian(%s,%d)", a.GetName(), windowSize))
+			r.Values = make([]float64, len(a.Values))
+			r.IsAbsent = make([]bool, len(a.Values))
+			r.StartTime = proto.Int32(from)
+			r.StopTime = proto.Int32(until)
+
+			data := make([]float64, windowSize)
+
+			for i := range a.Values {
+				r.Values[i] = math.NaN()
+				if !a.IsAbsent[i] && i >= (windowSize-1) {
+					copy(data, a.Values[1+i-windowSize:1+i])
+					r.Values[i] = Median(data)
+				}
+				if math.IsNaN(r.Values[i]) {
+					r.IsAbsent[i] = true
+				}
+			}
+			result = append(result, &r)
+		}
+		return result
+
 	case "nonNegativeDerivative": // nonNegativeDerivative(seriesList, maxValue=None)
 		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
@@ -2035,6 +2094,29 @@ func (w *Windowed) Stdev() float64 {
 }
 
 func (w *Windowed) Mean() float64 { return w.sum / float64(w.Len()) }
+
+func Median(data []float64) float64 {
+	if len(data) == 1 {
+		return data[0]
+	}
+	k := (len(data) / 2) + 1
+	quickselect.Float64QuickSelect(data, k)
+	max := make([]float64, 2)
+	copy(max, data[0:2])
+	for i := 2; i < k; i++ {
+		if data[i] > max[0] {
+			max[0] = data[i]
+		} else if data[i] > max[1] {
+			max[1] = data[i]
+		}
+	}
+
+	if (len(data) % 2) == 1 {
+		return math.Max(max[0], max[1])
+	}
+
+	return (max[0] + max[1]) / 2
+}
 
 func maxValue(f64s []float64, absent []bool) float64 {
 	m := math.Inf(-1)
