@@ -1387,8 +1387,13 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 			for i := range a.Values {
 				r.Values[i] = math.NaN()
-				if !a.IsAbsent[i] && i >= (windowSize-1) {
-					copy(data, a.Values[1+i-windowSize:1+i])
+				if i >= (windowSize - 1) {
+					data = data[:0] // reset data pointer
+					for ii := 1 + i - windowSize; ii <= i; ii++ {
+						if !a.IsAbsent[ii] {
+							data = append(data, a.Values[ii])
+						}
+					}
 					r.Values[i] = Median(data)
 				}
 				if math.IsNaN(r.Values[i]) {
@@ -2096,6 +2101,9 @@ func (w *Windowed) Stdev() float64 {
 func (w *Windowed) Mean() float64 { return w.sum / float64(w.Len()) }
 
 func Median(data []float64) float64 {
+	if len(data) == 0 {
+		return math.NaN()
+	}
 	if len(data) == 1 {
 		return data[0]
 	}
