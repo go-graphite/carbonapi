@@ -327,6 +327,19 @@ func marshalJSON(results []*metricData) []byte {
 	return b
 }
 
+func marshalProtobuf(results []*metricData) []byte {
+	response := pb.MultiFetchResponse{}
+	for _, metric := range results {
+		response.Metrics = append(response.Metrics, &((*metric).FetchResponse))
+	}
+	b, err := proto.Marshal(&response)
+	if err != nil {
+		log.Printf("proto.Marshal: %v", err)
+	}
+
+	return b
+}
+
 func writeResponse(w http.ResponseWriter, b []byte, format string, jsonp string) {
 
 	switch format {
@@ -341,7 +354,9 @@ func writeResponse(w http.ResponseWriter, b []byte, format string, jsonp string)
 			w.Header().Set("Content-Type", contentTypeJSON)
 			w.Write(b)
 		}
-
+	case "protobuf":
+		w.Header().Set("Content-Type", contentTypeProtobuf)
+		w.Write(b)
 	case "raw":
 		w.Header().Set("Content-Type", contentTypeRaw)
 		w.Write(b)
@@ -422,6 +437,7 @@ func marshalPickle(results []*metricData) []byte {
 
 const (
 	contentTypeJSON       = "application/json"
+	contentTypeProtobuf   = "application/x-protobuf"
 	contentTypeJavaScript = "text/javascript"
 	contentTypeRaw        = "text/plain"
 	contentTypePickle     = "application/pickle"
@@ -595,6 +611,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 	switch format {
 	case "json":
 		body = marshalJSON(results)
+	case "protobuf":
+		body = marshalProtobuf(results)
 	case "raw":
 		body = marshalRaw(results)
 	case "pickle":
