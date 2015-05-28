@@ -1191,7 +1191,7 @@ func TestEvalSummarize(t *testing.T) {
 			map[metricRequest][]*metricData{
 				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
-			[]float64{1, 2, 3, 3.0059999999999993, 5},
+			[]float64{1, 2, 3, 4.498, 5},
 			"summarize(metric1,'5s','p99.9')",
 			5,
 			now32,
