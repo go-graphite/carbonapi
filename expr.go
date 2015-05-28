@@ -2121,21 +2121,20 @@ func percentile(data []float64, percent float64) float64 {
 	k := (float64(len(data)-1) * percent) / 100
 	length := int(math.Ceil(k)) + 1
 	quickselect.Float64QuickSelect(data, length)
-	top := make([]float64, 2)
-	copy(top, data[0:2])
-	for i := 2; i < length; i++ {
-		if data[i] > top[0] {
-			top[0] = data[i]
-		} else if data[i] > top[1] {
-			top[1] = data[i]
+	top, secondTop := math.Inf(-1), math.Inf(-1)
+	for _, val := range data[0:length] {
+		if val > top {
+			secondTop = top
+			top = val
+		} else if val > secondTop {
+			secondTop = val
 		}
 	}
-
-	if top[0] > top[1] {
-		top[0], top[1] = top[1], top[0]
-	}
 	remainder := k - float64(int(k))
-	return (top[0] * remainder) + (top[1] * (1 - remainder))
+	if remainder == 0 {
+		return top
+	}
+	return (top * remainder) + (secondTop * (1 - remainder))
 }
 
 func maxValue(f64s []float64, absent []bool) float64 {
