@@ -1394,7 +1394,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 							data = append(data, a.Values[ii])
 						}
 					}
-					r.Values[i] = Median(data)
+					r.Values[i] = median(data)
 				}
 				if math.IsNaN(r.Values[i]) {
 					r.IsAbsent[i] = true
@@ -1777,7 +1777,6 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 					rv := summarizeValues(summarizeFunction, values)
 
 					if math.IsNaN(rv) {
-						rv = 0
 						r.IsAbsent[ridx] = true
 					}
 
@@ -2002,6 +2001,13 @@ func summarizeValues(f string, values []float64) float64 {
 		if len(values) > 0 {
 			rv = values[len(values)-1]
 		}
+
+	default:
+		f = strings.Split(f, "p")[1]
+		percent, err := strconv.ParseFloat(f, 64)
+		if err == nil {
+			rv = percentile(values, percent)
+		}
 	}
 
 	return rv
@@ -2100,30 +2106,36 @@ func (w *Windowed) Stdev() float64 {
 
 func (w *Windowed) Mean() float64 { return w.sum / float64(w.Len()) }
 
-func Median(data []float64) float64 {
-	if len(data) == 0 {
+func median(data []float64) float64 {
+	return percentile(data, 50)
+}
+
+func percentile(data []float64, percent float64) float64 {
+	if len(data) == 0 || percent < 0 || percent > 100 {
 		return math.NaN()
 	}
 	if len(data) == 1 {
 		return data[0]
 	}
-	k := (len(data) / 2) + 1
-	quickselect.Float64QuickSelect(data, k)
-	max := make([]float64, 2)
-	copy(max, data[0:2])
-	for i := 2; i < k; i++ {
-		if data[i] > max[0] {
-			max[0] = data[i]
-		} else if data[i] > max[1] {
-			max[1] = data[i]
+
+	k := (float64(len(data)-1) * percent) / 100
+	length := int(math.Ceil(k)) + 1
+	quickselect.Float64QuickSelect(data, length)
+	top := make([]float64, 2)
+	copy(top, data[0:2])
+	for i := 2; i < length; i++ {
+		if data[i] > top[0] {
+			top[0] = data[i]
+		} else if data[i] > top[1] {
+			top[1] = data[i]
 		}
 	}
 
-	if (len(data) % 2) == 1 {
-		return math.Max(max[0], max[1])
+	if top[0] > top[1] {
+		top[0], top[1] = top[1], top[0]
 	}
-
-	return (max[0] + max[1]) / 2
+	remainder := k - float64(int(k))
+	return (top[0] * remainder) + (top[1] * (1 - remainder))
 }
 
 func maxValue(f64s []float64, absent []bool) float64 {
