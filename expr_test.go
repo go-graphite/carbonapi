@@ -194,6 +194,65 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "percentileOfSeries",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 4, etype: etConst},
+				},
+				argString: "metric1,4",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, math.NaN()}, 1, now32)},
+			},
+			[]float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, math.NaN()},
+			"percentileOfSeries(metric1,4)",
+		},
+		{
+			&expr{
+				target: "percentileOfSeries",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1.foo.*.*"},
+					&expr{val: 50, etype: etConst},
+				},
+				argString: "metric1.foo.*.*,50",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1.foo.*.*", 0, 0}: []*metricData{
+					makeResponse("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, math.NaN(), math.NaN()}, 1, now32),
+					makeResponse("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10, math.NaN()}, 1, now32),
+					makeResponse("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15, math.NaN()}, 1, now32),
+					makeResponse("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11, math.NaN()}, 1, now32),
+				},
+			},
+			[]float64{7, 8, 9, 10, 11, math.NaN()},
+			"percentileOfSeries(metric1.foo.*.*,50)",
+		},
+		{
+			&expr{
+				target: "percentileOfSeries",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1.foo.*.*"},
+					&expr{val: 50, etype: etConst},
+					&expr{target: "true", etype: etName},
+				},
+				argString: "metric1.foo.*.*,50,true",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1.foo.*.*", 0, 0}: []*metricData{
+					makeResponse("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, math.NaN(), math.NaN()}, 1, now32),
+					makeResponse("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10, math.NaN()}, 1, now32),
+					makeResponse("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15, math.NaN()}, 1, now32),
+					makeResponse("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11, math.NaN()}, 1, now32),
+				},
+			},
+			[]float64{6.5, 7.5, 8.5, 9.5, 11, math.NaN()},
+			"percentileOfSeries(metric1.foo.*.*,50,true)",
+		},
+		{
+			&expr{
 				target: "nonNegativeDerivative",
 				etype:  etFunc,
 				args: []*expr{

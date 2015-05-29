@@ -1697,6 +1697,43 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 		return results
 
+	case "percentileOfSeries": // percentileOfSeries(seriesList, n, interpolate=False)
+		// TODO(dgryski): make sure the arrays are all the same 'size'
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		percent, err := getFloatArg(e, 1)
+		if err != nil {
+			return nil
+		}
+
+		interpolate, err := getBoolArgDefault(e, 2, false)
+		if err != nil {
+			return nil
+		}
+
+		length := len(args[0].Values)
+		r := *args[0]
+		r.Name = proto.String(fmt.Sprintf("percentileOfSeries(%s)", e.argString))
+		r.Values = make([]float64, length)
+		r.IsAbsent = make([]bool, length)
+
+		for i, _ := range args[0].Values {
+			values := make([]float64, 0)
+			for _, arg := range args {
+				if !arg.IsAbsent[i] {
+					values = append(values, arg.Values[i])
+				}
+			}
+
+			r.Values[i] = percentile(values, percent, interpolate)
+			r.IsAbsent[i] = math.IsNaN(r.Values[i])
+		}
+
+		return []*metricData{&r}
+
 	case "summarize": // summarize(seriesList, intervalString, func='sum', alignToFrom=False
 		// TODO(dgryski): make sure the arrays are all the same 'size'
 		args, err := getSeriesArg(e.args[0], from, until, values)
@@ -2006,7 +2043,7 @@ func summarizeValues(f string, values []float64) float64 {
 		f = strings.Split(f, "p")[1]
 		percent, err := strconv.ParseFloat(f, 64)
 		if err == nil {
-			rv = percentile(values, percent)
+			rv = percentile(values, percent, true)
 		}
 	}
 
@@ -2107,10 +2144,10 @@ func (w *Windowed) Stdev() float64 {
 func (w *Windowed) Mean() float64 { return w.sum / float64(w.Len()) }
 
 func median(data []float64) float64 {
-	return percentile(data, 50)
+	return percentile(data, 50, true)
 }
 
-func percentile(data []float64, percent float64) float64 {
+func percentile(data []float64, percent float64, interpolate bool) float64 {
 	if len(data) == 0 || percent < 0 || percent > 100 {
 		return math.NaN()
 	}
@@ -2131,7 +2168,7 @@ func percentile(data []float64, percent float64) float64 {
 		}
 	}
 	remainder := k - float64(int(k))
-	if remainder == 0 {
+	if remainder == 0 || !interpolate {
 		return top
 	}
 	return (top * remainder) + (secondTop * (1 - remainder))
