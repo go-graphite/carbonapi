@@ -627,29 +627,14 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil
 		}
 
-		r := *args[0]
-		r.Name = proto.String(fmt.Sprintf("averageSeries(%s)", e.argString))
-		r.Values = make([]float64, len(args[0].Values))
-		r.IsAbsent = make([]bool, len(args[0].Values))
-
-		// TODO(dgryski): make sure all series are the same 'size'
-		for i := 0; i < len(args[0].Values); i++ {
-			var elts int
-			for j := 0; j < len(args); j++ {
-				if args[j].IsAbsent[i] {
-					continue
-				}
-				elts++
-				r.Values[i] += args[j].Values[i]
+		e.target = "averageSeries"
+		return aggregateSeries(e, args, func(values []float64) float64 {
+			sum := 0.0
+			for _, value := range values {
+				sum += value
 			}
-
-			if elts > 0 {
-				r.Values[i] /= float64(elts)
-			} else {
-				r.IsAbsent[i] = true
-			}
-		}
-		return []*metricData{&r}
+			return sum / float64(len(values))
+		})
 
 	case "averageAbove", "averageBelow", "currentAbove", "currentBelow": // averageAbove(seriesList, n), averageBelow(seriesList, n), currentAbove(seriesList, n), currentBelow(seriesList, n)
 		args, err := getSeriesArg(e.args[0], from, until, values)
@@ -1224,31 +1209,15 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil
 		}
 
-		r := *args[0]
-		r.Name = proto.String(fmt.Sprintf("maxSeries(%s)", e.argString))
-		r.Values = make([]float64, len(args[0].Values))
-		r.IsAbsent = make([]bool, len(args[0].Values))
-
-		// TODO(dgryski): make sure all series are the same 'size'
-		for i := 0; i < len(args[0].Values); i++ {
-			var atLeastOne bool
-			r.Values[i] = math.Inf(-1)
-			for j := 0; j < len(args); j++ {
-				if args[j].IsAbsent[i] {
-					continue
-				}
-				atLeastOne = true
-				if r.Values[i] < args[j].Values[i] {
-					r.Values[i] = args[j].Values[i]
+		return aggregateSeries(e, args, func(values []float64) float64 {
+			max := math.Inf(-1)
+			for _, value := range values {
+				if value > max {
+					max = value
 				}
 			}
-
-			if !atLeastOne {
-				r.Values[i] = 0
-				r.IsAbsent[i] = true
-			}
-		}
-		return []*metricData{&r}
+			return max
+		})
 
 	case "minSeries": // minSeries(*seriesLists)
 		args, err := getSeriesArgs(e.args, from, until, values)
@@ -1256,31 +1225,15 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil
 		}
 
-		r := *args[0]
-		r.Name = proto.String(fmt.Sprintf("minSeries(%s)", e.argString))
-		r.Values = make([]float64, len(args[0].Values))
-		r.IsAbsent = make([]bool, len(args[0].Values))
-
-		// TODO(dgryski): make sure all series are the same 'size'
-		for i := 0; i < len(args[0].Values); i++ {
-			var atLeastOne bool
-			r.Values[i] = math.Inf(1)
-			for j := 0; j < len(args); j++ {
-				if args[j].IsAbsent[i] {
-					continue
-				}
-				atLeastOne = true
-				if r.Values[i] > args[j].Values[i] {
-					r.Values[i] = args[j].Values[i]
+		return aggregateSeries(e, args, func(values []float64) float64 {
+			min := math.Inf(1)
+			for _, value := range values {
+				if value < min {
+					min = value
 				}
 			}
-
-			if !atLeastOne {
-				r.Values[i] = 0
-				r.IsAbsent[i] = true
-			}
-		}
-		return []*metricData{&r}
+			return min
+		})
 	case "movingAverage": // movingAverage(seriesList, windowSize)
 		var n int
 		var err error
@@ -1614,27 +1567,14 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil
 		}
 
-		r := *args[0]
-		r.Name = proto.String(fmt.Sprintf("sumSeries(%s)", e.argString))
-		r.Values = make([]float64, len(args[0].Values))
-		r.IsAbsent = make([]bool, len(args[0].Values))
-
-		atLeastOne := make([]bool, len(args[0].Values))
-		for _, arg := range args {
-			for i, v := range arg.Values {
-				if arg.IsAbsent[i] {
-					continue
-				}
-				atLeastOne[i] = true
-				r.Values[i] += v
+		e.target = "sumSeries"
+		return aggregateSeries(e, args, func(values []float64) float64 {
+			sum := 0.0
+			for _, value := range values {
+				sum += value
 			}
-		}
-		for i, v := range atLeastOne {
-			if !v {
-				r.IsAbsent[i] = true
-			}
-		}
-		return []*metricData{&r}
+			return sum
+		})
 
 	case "sumSeriesWithWildcards": // sumSeriesWithWildcards(seriesList, *position)
 		// TODO(dgryski): make sure the arrays are all the same 'size'
@@ -1714,25 +1654,9 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil
 		}
 
-		length := len(args[0].Values)
-		r := *args[0]
-		r.Name = proto.String(fmt.Sprintf("percentileOfSeries(%s)", e.argString))
-		r.Values = make([]float64, length)
-		r.IsAbsent = make([]bool, length)
-
-		for i, _ := range args[0].Values {
-			values := make([]float64, 0)
-			for _, arg := range args {
-				if !arg.IsAbsent[i] {
-					values = append(values, arg.Values[i])
-				}
-			}
-
-			r.Values[i] = percentile(values, percent, interpolate)
-			r.IsAbsent[i] = math.IsNaN(r.Values[i])
-		}
-
-		return []*metricData{&r}
+		return aggregateSeries(e, args, func(values []float64) float64 {
+			return percentile(values, percent, interpolate)
+		})
 
 	case "summarize": // summarize(seriesList, intervalString, func='sum', alignToFrom=False
 		// TODO(dgryski): make sure the arrays are all the same 'size'
@@ -2000,6 +1924,34 @@ func forEachSeriesDo(e *expr, from, until int32, values map[metricRequest][]*met
 		results = append(results, function(a, &r))
 	}
 	return results
+}
+
+type aggregateFunc func([]float64) float64
+
+func aggregateSeries(e *expr, args []*metricData, function aggregateFunc) []*metricData {
+	length := len(args[0].Values)
+	r := *args[0]
+	r.Name = proto.String(fmt.Sprintf("%s(%s)", e.target, e.argString))
+	r.Values = make([]float64, length)
+	r.IsAbsent = make([]bool, length)
+
+	for i, _ := range args[0].Values {
+		values := make([]float64, 0)
+		for _, arg := range args {
+			if !arg.IsAbsent[i] {
+				values = append(values, arg.Values[i])
+			}
+		}
+
+		r.Values[i] = math.NaN()
+		if len(values) > 0 {
+			r.Values[i] = function(values)
+		}
+
+		r.IsAbsent[i] = math.IsNaN(r.Values[i])
+	}
+
+	return []*metricData{&r}
 }
 
 func summarizeValues(f string, values []float64) float64 {
