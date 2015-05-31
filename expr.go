@@ -628,13 +628,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 
 		e.target = "averageSeries"
-		return aggregateSeries(e, args, func(values []float64) float64 {
-			sum := 0.0
-			for _, value := range values {
-				sum += value
-			}
-			return sum / float64(len(values))
-		})
+		return aggregateSeries(e, args, average)
 
 	case "averageAbove", "averageBelow", "currentAbove", "currentBelow": // averageAbove(seriesList, n), averageBelow(seriesList, n), currentAbove(seriesList, n), currentBelow(seriesList, n)
 		args, err := getSeriesArg(e.args[0], from, until, values)
@@ -1267,127 +1261,12 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return min
 		})
 	case "movingAverage": // movingAverage(seriesList, windowSize)
-		var n int
-		var err error
-
-		var scaleByStep bool
-
-		switch e.args[1].etype {
-		case etConst:
-			n, err = getIntArg(e, 1)
-		case etString:
-			var n32 int32
-			n32, err = getIntervalArg(e, 1, 1)
-			n = int(n32)
-			scaleByStep = true
-		default:
-			err = ErrBadType
-		}
-		if err != nil {
-			return nil
-		}
-
-		windowSize := n
-
-		arg, err := getSeriesArg(e.args[0], from, until, values)
-		if err != nil {
-			return nil
-		}
-
-		if scaleByStep {
-			windowSize /= int(arg[0].GetStepTime())
-		}
-
-		var result []*metricData
-
-		for _, a := range arg {
-			w := &Windowed{data: make([]float64, windowSize)}
-
-			r := *a
-			r.Name = proto.String(fmt.Sprintf("movingAverage(%s,%d)", a.GetName(), windowSize))
-			r.Values = make([]float64, len(a.Values))
-			r.IsAbsent = make([]bool, len(a.Values))
-			r.StartTime = proto.Int32(from)
-			r.StopTime = proto.Int32(until)
-
-			for i, v := range a.Values {
-				if a.IsAbsent[i] {
-					// make sure missing values are ignored
-					v = math.NaN()
-				}
-				r.Values[i] = w.Mean()
-				w.Push(v)
-				if i < windowSize || math.IsNaN(r.Values[i]) {
-					r.Values[i] = 0
-					r.IsAbsent[i] = true
-				}
-			}
-			result = append(result, &r)
-		}
-		return result
+		return movingWindow(e, from, until, values, average)
 
 	case "movingMedian": // movingMedian(seriesList, windowSize)
-		var n int
-		var err error
-
-		var scaleByStep bool
-
-		switch e.args[1].etype {
-		case etConst:
-			n, err = getIntArg(e, 1)
-		case etString:
-			var n32 int32
-			n32, err = getIntervalArg(e, 1, 1)
-			n = int(n32)
-			scaleByStep = true
-		default:
-			err = ErrBadType
-		}
-		if err != nil {
-			return nil
-		}
-
-		windowSize := n
-
-		arg, err := getSeriesArg(e.args[0], from, until, values)
-		if err != nil {
-			return nil
-		}
-
-		if scaleByStep {
-			windowSize /= int(arg[0].GetStepTime())
-		}
-
-		var result []*metricData
-
-		for _, a := range arg {
-			r := *a
-			r.Name = proto.String(fmt.Sprintf("movingMedian(%s,%d)", a.GetName(), windowSize))
-			r.Values = make([]float64, len(a.Values))
-			r.IsAbsent = make([]bool, len(a.Values))
-			r.StartTime = proto.Int32(from)
-			r.StopTime = proto.Int32(until)
-
-			data := make([]float64, windowSize)
-
-			for i := range a.Values {
-				r.Values[i] = math.NaN()
-				if i >= (windowSize - 1) {
-					data = data[:0] // reset data pointer
-					for ii := 1 + i - windowSize; ii <= i; ii++ {
-						if !a.IsAbsent[ii] {
-							data = append(data, a.Values[ii])
-						}
-					}
-					r.Values[i] = median(data)
-				}
-				if math.IsNaN(r.Values[i]) {
-					r.IsAbsent[i] = true
-				}
-			}
-			result = append(result, &r)
-		}
-		return result
+		return movingWindow(e, from, until, values, func(values []float64) float64 {
+			return percentile(values, 50, true)
+		})
 
 	case "nonNegativeDerivative": // nonNegativeDerivative(seriesList, maxValue=None)
 		args, err := getSeriesArg(e.args[0], from, until, values)
@@ -1986,6 +1865,70 @@ func aggregateSeries(e *expr, args []*metricData, function aggregateFunc) []*met
 	return []*metricData{&r}
 }
 
+func movingWindow(e *expr, from, until int32, values map[metricRequest][]*metricData, function aggregateFunc) []*metricData {
+	var n int
+	var err error
+
+	var scaleByStep bool
+
+	switch e.args[1].etype {
+	case etConst:
+		n, err = getIntArg(e, 1)
+	case etString:
+		var n32 int32
+		n32, err = getIntervalArg(e, 1, 1)
+		n = int(n32)
+		scaleByStep = true
+	default:
+		err = ErrBadType
+	}
+	if err != nil {
+		return nil
+	}
+
+	windowSize := n
+
+	arg, err := getSeriesArg(e.args[0], from, until, values)
+	if err != nil {
+		return nil
+	}
+
+	if scaleByStep {
+		windowSize /= int(arg[0].GetStepTime())
+	}
+
+	var result []*metricData
+
+	for _, a := range arg {
+		r := *a
+		r.Name = proto.String(fmt.Sprintf("%s(%s,%d)", e.target, a.GetName(), windowSize))
+		r.Values = make([]float64, len(a.Values))
+		r.IsAbsent = make([]bool, len(a.Values))
+		r.StartTime = proto.Int32(from)
+		r.StopTime = proto.Int32(until)
+
+		data := make([]float64, windowSize)
+
+		for i := range a.Values {
+			r.Values[i] = math.NaN()
+			if i >= (windowSize - 1) {
+				data = data[:0] // reset data pointer
+				for ii := 1 + i - windowSize; ii <= i; ii++ {
+					if !a.IsAbsent[ii] {
+						data = append(data, a.Values[ii])
+					}
+				}
+				r.Values[i] = function(data)
+			}
+			if math.IsNaN(r.Values[i]) {
+				r.IsAbsent[i] = true
+			}
+		}
+		result = append(result, &r)
+	}
+	return result
+}
+
 func summarizeValues(f string, values []float64) float64 {
 	rv := 0.0
 
@@ -2127,8 +2070,12 @@ func (w *Windowed) Stdev() float64 {
 
 func (w *Windowed) Mean() float64 { return w.sum / float64(w.Len()) }
 
-func median(data []float64) float64 {
-	return percentile(data, 50, true)
+func average(data []float64) float64 {
+	sum := 0.0
+	for _, value := range data {
+		sum += value
+	}
+	return sum / float64(len(data))
 }
 
 func percentile(data []float64, percent float64, interpolate bool) float64 {
