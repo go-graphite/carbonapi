@@ -194,6 +194,65 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "percentileOfSeries",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 4, etype: etConst},
+				},
+				argString: "metric1,4",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, math.NaN()}, 1, now32)},
+			},
+			[]float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, math.NaN()},
+			"percentileOfSeries(metric1,4)",
+		},
+		{
+			&expr{
+				target: "percentileOfSeries",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1.foo.*.*"},
+					&expr{val: 50, etype: etConst},
+				},
+				argString: "metric1.foo.*.*,50",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1.foo.*.*", 0, 0}: []*metricData{
+					makeResponse("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, math.NaN(), math.NaN()}, 1, now32),
+					makeResponse("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10, math.NaN()}, 1, now32),
+					makeResponse("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15, math.NaN()}, 1, now32),
+					makeResponse("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11, math.NaN()}, 1, now32),
+				},
+			},
+			[]float64{7, 8, 9, 10, 11, math.NaN()},
+			"percentileOfSeries(metric1.foo.*.*,50)",
+		},
+		{
+			&expr{
+				target: "percentileOfSeries",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1.foo.*.*"},
+					&expr{val: 50, etype: etConst},
+					&expr{target: "true", etype: etName},
+				},
+				argString: "metric1.foo.*.*,50,true",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1.foo.*.*", 0, 0}: []*metricData{
+					makeResponse("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, math.NaN(), math.NaN()}, 1, now32),
+					makeResponse("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10, math.NaN()}, 1, now32),
+					makeResponse("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15, math.NaN()}, 1, now32),
+					makeResponse("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11, math.NaN()}, 1, now32),
+				},
+			},
+			[]float64{6.5, 7.5, 8.5, 9.5, 11, math.NaN()},
+			"percentileOfSeries(metric1.foo.*.*,50,true)",
+		},
+		{
+			&expr{
 				target: "nonNegativeDerivative",
 				etype:  etFunc,
 				args: []*expr{
@@ -247,9 +306,9 @@ func TestEvalExpression(t *testing.T) {
 				argString: "metric1,4",
 			},
 			map[metricRequest][]*metricData{
-				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8}, 1, now32)},
+				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
 			},
-			[]float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), 1, 1.25, 1.5, 1.75, 2.5, 3.5, 4, 5},
+			[]float64{math.NaN(), math.NaN(), math.NaN(), 1, 1.25, 1.5, 1.75, 2.5, 3.5, 4, 5, 6, 6, 7, 8, math.NaN()},
 			"movingAverage(metric1,4)",
 		},
 		{
@@ -263,9 +322,9 @@ func TestEvalExpression(t *testing.T) {
 				argString: "metric1,4",
 			},
 			map[metricRequest][]*metricData{
-				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8}, 1, now32)},
+				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
 			},
-			[]float64{math.NaN(), math.NaN(), math.NaN(), 1, 1, 1.5, 2, 2, 3, 4, 5, 6},
+			[]float64{math.NaN(), math.NaN(), math.NaN(), 1, 1, 1.5, 2, 2, 3, 4, 5, 6, 6, 7, 8, math.NaN()},
 			"movingMedian(metric1,4)",
 		},
 		{
@@ -556,6 +615,42 @@ func TestEvalExpression(t *testing.T) {
 			},
 			[]float64{0.5, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 2},
 			"divideSeries(metric1,metric2)",
+		},
+		{
+			&expr{
+				target: "multiplySeries",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{target: "metric2"},
+				},
+				argString: "metric1,metric2",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
+				metricRequest{"metric2", 0, 0}: []*metricData{makeResponse("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
+			},
+			[]float64{2, math.NaN(), math.NaN(), math.NaN(), 0, 72},
+			"multiplySeries(metric1,metric2)",
+		},
+		{
+			&expr{
+				target: "multiplySeries",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{target: "metric2"},
+					&expr{target: "metric3"},
+				},
+				argString: "metric1,metric2,metric3",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
+				metricRequest{"metric2", 0, 0}: []*metricData{makeResponse("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
+				metricRequest{"metric3", 0, 0}: []*metricData{makeResponse("metric3", []float64{3, math.NaN(), 4, math.NaN(), 7, 8}, 1, now32)},
+			},
+			[]float64{6, math.NaN(), math.NaN(), math.NaN(), 0, 576},
+			"multiplySeries(metric1,metric2,metric3)",
 		},
 		{
 			&expr{
