@@ -630,38 +630,53 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		e.target = "averageSeries"
 		return aggregateSeries(e, args, average)
 
-	case "averageAbove", "averageBelow", "currentAbove", "currentBelow": // averageAbove(seriesList, n), averageBelow(seriesList, n), currentAbove(seriesList, n), currentBelow(seriesList, n)
+	case "averageAbove", "averageBelow", "currentAbove", "currentBelow", "maximumAbove", "maximumBelow", "minimumAbove", "minimumBelow": // averageAbove(seriesList, n), averageBelow(seriesList, n), currentAbove(seriesList, n), currentBelow(seriesList, n), maximumAbove(seriesList, n), maximumBelow(seriesList, n), minimumAbove(seriesList, n), minimumBelow
 		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}
 
-		n, err := getIntArg(e, 1)
+		n, err := getFloatArg(e, 1)
 		if err != nil {
 			return nil
 		}
 
+		index := strings.IndexAny(e.target, "AB")
+		isAbove := e.target[index:] == "Above"
+		isInclusive := true
+		var compute func([]float64, []bool) float64
+		switch e.target[0:index] {
+		case "average":
+			compute = avgValue
+		case "current":
+			compute = currentValue
+		case "maximum":
+			compute = maxValue
+			isInclusive = false
+		case "minimum":
+			compute = minValue
+			isInclusive = false
+		}
 		var results []*metricData
 		for _, a := range args {
-			switch e.target {
-			case "averageAbove":
-				if avgValue(a.Values, a.IsAbsent) >= float64(n) {
-					results = append(results, a)
+			value := compute(a.Values, a.IsAbsent)
+			if isAbove {
+				if isInclusive {
+					if value >= n {
+						results = append(results, a)
+					}
+				} else {
+					if value > n {
+						results = append(results, a)
+					}
 				}
-			case "averageBelow":
-				if avgValue(a.Values, a.IsAbsent) <= float64(n) {
-					results = append(results, a)
-				}
-			case "currentAbove":
-				if currentValue(a.Values, a.IsAbsent) >= float64(n) {
-					results = append(results, a)
-				}
-			case "currentBelow":
-				if currentValue(a.Values, a.IsAbsent) <= float64(n) {
+			} else {
+				if value <= n {
 					results = append(results, a)
 				}
 			}
 		}
+
 		return results
 
 	case "derivative": // derivative(seriesList)
@@ -2112,6 +2127,19 @@ func maxValue(f64s []float64, absent []bool) float64 {
 			continue
 		}
 		if v > m {
+			m = v
+		}
+	}
+	return m
+}
+
+func minValue(f64s []float64, absent []bool) float64 {
+	m := math.Inf(1)
+	for i, v := range f64s {
+		if absent[i] {
+			continue
+		}
+		if v < m {
 			m = v
 		}
 	}

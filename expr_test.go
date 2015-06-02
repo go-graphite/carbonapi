@@ -927,6 +927,86 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "maximumAbove",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 6, etype: etConst},
+				},
+				argString: "metric1,6",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{
+					makeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					makeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					makeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+				},
+			},
+			[]float64{3, 4, 5, 6, 7, 8},
+			"metricB",
+		},
+		{
+			&expr{
+				target: "maximumBelow",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 5, etype: etConst},
+				},
+				argString: "metric1,5",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{
+					makeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					makeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					makeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+				},
+			},
+			[]float64{0, 0, 0, 0, 0, 0},
+			"metricA",
+		},
+		{
+			&expr{
+				target: "minimumAbove",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 1, etype: etConst},
+				},
+				argString: "metric1,1",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{
+					makeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					makeResponse("metricB", []float64{1, 4, 5, 6, 7, 8}, 1, now32),
+					makeResponse("metricC", []float64{2, 4, 4, 5, 5, 6}, 1, now32),
+				},
+			},
+			[]float64{2, 4, 4, 5, 5, 6},
+			"metricC",
+		},
+		{
+			&expr{
+				target: "minimumBelow",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: -2, etype: etConst},
+				},
+				argString: "metric1,-2",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{
+					makeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					makeResponse("metricB", []float64{-1, 4, 5, 6, 7, 8}, 1, now32),
+					makeResponse("metricC", []float64{-2, 4, 4, 5, 5, 6}, 1, now32),
+				},
+			},
+			[]float64{-2, 4, 4, 5, 5, 6},
+			"metricC",
+		},
+		{
+			&expr{
 				target: "invert",
 				etype:  etFunc,
 				args: []*expr{
