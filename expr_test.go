@@ -306,9 +306,9 @@ func TestEvalExpression(t *testing.T) {
 				argString: "metric1,4",
 			},
 			map[metricRequest][]*metricData{
-				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
+				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8}, 1, now32)},
 			},
-			[]float64{math.NaN(), math.NaN(), math.NaN(), 1, 1.25, 1.5, 1.75, 2.5, 3.5, 4, 5, 6, 6, 7, 8, math.NaN()},
+			[]float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), 1, 1.25, 1.5, 1.75, 2.5, 3.5, 4, 5},
 			"movingAverage(metric1,4)",
 		},
 		{
@@ -322,9 +322,9 @@ func TestEvalExpression(t *testing.T) {
 				argString: "metric1,4",
 			},
 			map[metricRequest][]*metricData{
-				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
+				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8}, 1, now32)},
 			},
-			[]float64{math.NaN(), math.NaN(), math.NaN(), 1, 1, 1.5, 2, 2, 3, 4, 5, 6, 6, 7, 8, math.NaN()},
+			[]float64{math.NaN(), math.NaN(), math.NaN(), 1, 1, 1.5, 2, 2, 3, 4, 5, 6},
 			"movingMedian(metric1,4)",
 		},
 		{
