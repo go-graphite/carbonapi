@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JaderDias/movingmedian"
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 	"github.com/gogo/protobuf/proto"
 	"github.com/wangjohn/quickselect"
@@ -1383,18 +1384,17 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			r.StartTime = proto.Int32(from)
 			r.StopTime = proto.Int32(until)
 
-			data := make([]float64, windowSize)
+			data := movingmedian.NewMovingMedian(windowSize)
 
-			for i := range a.Values {
+			for i, v := range a.Values {
 				r.Values[i] = math.NaN()
+				if a.IsAbsent[i] {
+					data.Push(math.NaN())
+				} else {
+					data.Push(v)
+				}
 				if i >= (windowSize - 1) {
-					data = data[:0] // reset data pointer
-					for ii := 1 + i - windowSize; ii <= i; ii++ {
-						if !a.IsAbsent[ii] {
-							data = append(data, a.Values[ii])
-						}
-					}
-					r.Values[i] = median(data)
+					r.Values[i] = data.Median()
 				}
 				if math.IsNaN(r.Values[i]) {
 					r.IsAbsent[i] = true
@@ -2141,10 +2141,6 @@ func (w *Windowed) Stdev() float64 {
 }
 
 func (w *Windowed) Mean() float64 { return w.sum / float64(w.Len()) }
-
-func median(data []float64) float64 {
-	return percentile(data, 50, true)
-}
 
 func percentile(data []float64, percent float64, interpolate bool) float64 {
 	if len(data) == 0 || percent < 0 || percent > 100 {
