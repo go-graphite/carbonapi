@@ -1720,10 +1720,6 @@ func TestExtractMetric(t *testing.T) {
 			"foo.bar.baz",
 		},
 		{
-			"movingMedian(foo.bar.baz,10)",
-			"foo.bar.baz",
-		},
-		{
 			"scale(scaleToSeconds(nonNegativeDerivative(foo.bar.baz),60),60)",
 			"foo.bar.baz",
 		},
