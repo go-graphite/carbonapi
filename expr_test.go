@@ -119,6 +119,13 @@ func TestParseExpr(t *testing.T) {
 				etype:  etName,
 			},
 		},
+		{
+			`foo.b[0-9].qux`,
+			&expr{
+				target: "foo.b[0-9].qux",
+				etype:  etName,
+			},
+		},
 	}
 
 	for _, tt := range tests {
