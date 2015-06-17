@@ -1451,6 +1451,39 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 		return result
 
+	case "nPercentile": // nPercentile(seriesList, n)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+		percent, err := getFloatArg(e, 1)
+		if err != nil {
+			return nil
+		}
+
+		var results []*metricData
+		for _, a := range arg {
+			r := *a
+			r.Name = proto.String(fmt.Sprintf("nPercentile(%s,%g)", a.GetName(), percent))
+			r.Values = make([]float64, len(a.Values))
+			r.IsAbsent = make([]bool, len(a.Values))
+
+			values := make([]float64, 0)
+			for i, v := range a.IsAbsent {
+				if !v {
+					values = append(values, a.Values[i])
+				}
+			}
+
+			value := percentile(values, percent, true)
+			for i := range r.Values {
+				r.Values[i] = value
+			}
+
+			results = append(results, &r)
+		}
+		return results
+
 	case "offsetToZero": // offsetToZero(seriesList)
 		return forEachSeriesDo(e, from, until, values, func(a *metricData, r *metricData) *metricData {
 			minimum := math.Inf(1)
