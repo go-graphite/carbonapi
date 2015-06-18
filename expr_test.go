@@ -260,6 +260,22 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "nPercentile",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 50, etype: etConst},
+				},
+				argString: "metric1,50",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{2, 4, 6, 10, 14, 20, math.NaN()}, 1, now32)},
+			},
+			[]float64{8, 8, 8, 8, 8, 8, 8},
+			"nPercentile(metric1,50)",
+		},
+		{
+			&expr{
 				target: "nonNegativeDerivative",
 				etype:  etFunc,
 				args: []*expr{
