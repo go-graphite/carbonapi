@@ -489,6 +489,9 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 				if f >= len(nodes) {
 					continue
 				}
+				if f < 0 {
+					f += len(nodes)
+				}
 				name = append(name, nodes[f])
 			}
 
