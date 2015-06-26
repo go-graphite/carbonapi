@@ -486,11 +486,11 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 			var name []string
 			for _, f := range fields {
-				if f >= len(nodes) {
-					continue
-				}
 				if f < 0 {
 					f += len(nodes)
+				}
+				if f >= len(nodes) || f < 0 {
+					continue
 				}
 				name = append(name, nodes[f])
 			}
