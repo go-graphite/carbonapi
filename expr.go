@@ -81,7 +81,7 @@ func parseExpr(e string) (*expr, string, error) {
 		e = e[1:]
 	}
 
-	if '0' <= e[0] && e[0] <= '9' {
+	if '0' <= e[0] && e[0] <= '9' || e[0] == '-' {
 		val, e, err := parseConst(e)
 		return &expr{val: val, etype: etConst}, e, err
 	}
