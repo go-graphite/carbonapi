@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"math"
+	"math/rand"
 	"strings"
 	"testing"
 )
@@ -96,5 +97,27 @@ func TestRawResponse(t *testing.T) {
 		if !bytes.Equal(b, tt.out) {
 			t.Errorf("marshalRaw(%+v)=%+v, want %+v", tt.results, string(b), string(tt.out))
 		}
+	}
+}
+
+func getData(rangeSize int) []float64 {
+	var data = make([]float64, rangeSize)
+	var r = rand.New(rand.NewSource(99))
+	for i := range data {
+		data[i] = math.Floor(1000 * r.Float64())
+	}
+
+	return data
+}
+
+func BenchmarkMarshalJSON(b *testing.B) {
+	data := []*metricData{
+		makeResponse("metric1", getData(10000), 100, 100),
+		makeResponse("metric2", getData(100000), 100, 100),
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = marshalJSON(data)
 	}
 }
