@@ -1275,13 +1275,13 @@ func TestEvalSummarize(t *testing.T) {
 				argString: "metric1,'5s'",
 			},
 			map[metricRequest][]*metricData{
-				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5}, 1, now32)},
+				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, math.NaN(), 2, 3, 4, 5, math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
 			},
-			[]float64{5, 10, 15, 20, 25},
+			[]float64{5, 10, 15, 20, 25, 14, math.NaN()},
 			"summarize(metric1,'5s')",
 			5,
 			now32,
-			now32 + 25*1,
+			now32 + 35,
 		},
 		{
 			&expr{
@@ -1295,13 +1295,13 @@ func TestEvalSummarize(t *testing.T) {
 				argString: "metric1,'5s','avg'",
 			},
 			map[metricRequest][]*metricData{
-				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5}, 1, now32)},
+				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 1, 2, 3, math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
 			},
-			[]float64{1, 2, 3, 4, 5},
+			[]float64{1, 2, 3, 4, 5, 2, math.NaN()},
 			"summarize(metric1,'5s','avg')",
 			5,
 			now32,
-			now32 + 25*1,
+			now32 + 35,
 		},
 		{
 			&expr{
