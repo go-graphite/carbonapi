@@ -237,10 +237,16 @@ GATHER:
 	return response
 }
 
+type nameleaf struct {
+	name string
+	leaf bool
+}
+
 func findHandlerPB(w http.ResponseWriter, req *http.Request, responses []serverResponse) ([]*pb.GlobMatch, map[string][]string) {
 
 	// metric -> [server1, ... ]
 	paths := make(map[string][]string)
+	seen := make(map[nameleaf]bool)
 
 	var metrics []*pb.GlobMatch
 	for _, r := range responses {
@@ -254,13 +260,16 @@ func findHandlerPB(w http.ResponseWriter, req *http.Request, responses []serverR
 		}
 
 		for _, match := range metric.Matches {
-			p, ok := paths[*match.Path]
+			n := nameleaf{*match.Path, *match.IsLeaf}
+			_, ok := seen[n]
 			if !ok {
 				// we haven't seen this name yet
 				// add the metric to the list of metrics to return
 				metrics = append(metrics, match)
+				seen[n] = true
 			}
 			// add the server to the list of servers that know about this metric
+			p := paths[*match.Path]
 			p = append(p, r.server)
 			paths[*match.Path] = p
 		}
