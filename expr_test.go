@@ -839,6 +839,7 @@ func TestEvalExpression(t *testing.T) {
 			},
 			map[metricRequest][]*metricData{
 				metricRequest{"metric1", 0, 0}: []*metricData{
+					makeResponse("metric0", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
 					makeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
 					makeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
 					makeResponse("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),

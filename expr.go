@@ -1006,6 +1006,9 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		for i, a := range arg {
 			m := compute(a.Values, a.IsAbsent)
+			if math.IsNaN(m) {
+				continue
+			}
 
 			if len(mh) < n {
 				heap.Push(&mh, metricHeapElement{idx: i, val: m})
