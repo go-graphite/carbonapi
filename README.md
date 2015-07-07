@@ -1,12 +1,15 @@
 carbonapi: replacement graphite API server
 ------------------------------------------
 
+[![Build Status](https://drone.io/github.com/dgryski/carbonapi/status.png)](https://drone.io/github.com/dgryski/carbonapi/latest)
+
+
 CarbonAPI supports a limited subset of graphite functions, but in our testing
 has shown to be 5x-10x faster than requesting data from graphite-web.
 
-To use this, you must have a carbonzipper install (
-https://github.com/dgryski/carbonzipper ), which in turn requires that your
-carbon stores are running carbonserver ( https://github.com/grobian/carbonserver )
+To use this, you must have a [carbonzipper](https://github.com/dgryski/carbonzipper)
+install, which in turn requires that your
+carbon stores are running [carbonserver](https://github.com/grobian/carbonserver)
 
 The only required parameter is the address of the zipper to connect to.
 

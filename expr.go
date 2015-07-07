@@ -615,7 +615,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 				r := results[j]
 				a := arg[j]
 
-				if a.IsAbsent[i] || math.IsNaN(total) {
+				if a.IsAbsent[i] || math.IsNaN(total) || total == 0 {
 					r.Values[i] = 0
 					r.IsAbsent[i] = true
 					continue

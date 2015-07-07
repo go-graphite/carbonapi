@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	_ "net/http/pprof"
 	"net/url"
@@ -304,7 +305,7 @@ func marshalJSON(results []*metricData) []byte {
 
 			b = append(b, '[')
 
-			if r.IsAbsent[i] {
+			if r.IsAbsent[i] || math.IsInf(v, 0) {
 				b = append(b, "null"...)
 			} else {
 				b = strconv.AppendFloat(b, v, 'f', -1, 64)
