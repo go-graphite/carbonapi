@@ -290,7 +290,11 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	v.Set("format", "protobuf")
 	rewrite.RawQuery = v.Encode()
 
-	tld := strings.SplitN(req.FormValue("query"), ".", 2)[0]
+	query := req.FormValue("query")
+	var tld string
+	if i := strings.IndexByte(query, '.'); i > 0 {
+		tld = query[:i]
+	}
 	// lookup tld in our map of where they live to reduce the set of
 	// servers we bug with our find
 	Config.mu.RLock()
