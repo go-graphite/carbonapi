@@ -1834,6 +1834,10 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 					values = values[:0]
 					skipped = 0
 				}
+
+				if t >= stop {
+					break
+				}
 			}
 
 			// last partial bucket
