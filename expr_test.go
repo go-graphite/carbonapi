@@ -12,6 +12,39 @@ import (
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 )
 
+func TestEvalExpr(t *testing.T) {
+	exp, _, err := parseExpr("summarize(general.tuning.topk.app.sqrumbles.change_aid,'1min')")
+	if err != nil {
+		t.Errorf("error %s", err)
+	}
+
+	metricMap := make(map[metricRequest][]*metricData)
+	request := metricRequest{
+		metric: "general.tuning.topk.app.sqrumbles.change_aid",
+		from:   1437127020,
+		until:  1437127140,
+	}
+
+	stepTime := int32(60)
+
+	data := metricData{
+		FetchResponse: pb.FetchResponse{
+			Name:      &request.metric,
+			StartTime: &request.from,
+			StopTime:  &request.until,
+			StepTime:  &stepTime,
+			Values:    []float64{343, 407, 385},
+			IsAbsent:  []bool{false, false, false},
+		},
+	}
+
+	metricMap[request] = []*metricData{
+		&data,
+	}
+
+	evalExpr(exp, int32(request.from), int32(request.until), metricMap)
+}
+
 func TestParseExpr(t *testing.T) {
 
 	tests := []struct {
