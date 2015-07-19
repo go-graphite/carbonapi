@@ -1044,23 +1044,19 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil
 		}
 
-		alignToInterval, err := getBoolArgDefault(e, 3, false)
+		alignToInterval, err := getBoolArgDefault(e, 2, false)
 		if err != nil {
 			return nil
 		}
 
 		start := args[0].GetStartTime()
 		stop := args[0].GetStopTime()
-
 		if alignToInterval {
-			start = int32(time.Unix(int64(start), 0).Truncate(time.Duration(bucketSize) * time.Second).Unix())
-			stop = int32(time.Unix(int64(stop), 0).Truncate(time.Duration(bucketSize) * time.Second).Unix())
+			start = alignStartToInterval(start, stop, bucketSize)
 		}
 
-		buckets := (stop - start) / bucketSize
-
-		var results []*metricData
-
+		buckets := getBuckets(start, stop, bucketSize)
+		results := make([]*metricData, 0, len(args))
 		for _, arg := range args {
 
 			var name string
@@ -1080,48 +1076,50 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 				StopTime:  proto.Int32(stop),
 			}}
 
-			bucketStart := args[0].GetStartTime() // unadjusted
-			bucketEnd := r.GetStartTime() + bucketSize
-			values := make([]float64, 0, bucketSize/arg.GetStepTime())
-			t := bucketStart
+			bucketEnd := start + bucketSize
+			t := arg.GetStartTime()
 			ridx := 0
-			skipped := 0
 			var count float64
+			bucketItems := 0
 			for i, v := range arg.Values {
-
+				bucketItems++
 				if !arg.IsAbsent[i] {
-					values = append(values, v)
-				} else {
-					skipped++
+					if math.IsNaN(count) {
+						count = 0
+					}
+
+					count += v * float64(arg.GetStepTime())
 				}
 
 				t += arg.GetStepTime()
 
-				count += v * float64(arg.GetStepTime())
+				if t >= stop {
+					break
+				}
 
 				if t >= bucketEnd {
-					rv := count
-
-					if math.IsNaN(rv) {
-						rv = 0
+					if math.IsNaN(count) {
+						r.Values[ridx] = 0
 						r.IsAbsent[ridx] = true
+					} else {
+						r.Values[ridx] = count
 					}
 
-					r.Values[ridx] = rv
 					ridx++
-					bucketStart += bucketSize
 					bucketEnd += bucketSize
-					values = values[:0]
-					skipped = 0
-					count = 0
+					count = math.NaN()
+					bucketItems = 0
 				}
 			}
 
 			// remaining values
-			if len(values) > 0 {
-				rv := count
-				r.Values = append(r.Values, rv)
-				r.IsAbsent = append(r.IsAbsent, false)
+			if bucketItems > 0 {
+				if math.IsNaN(count) {
+					r.Values[ridx] = 0
+					r.IsAbsent[ridx] = true
+				} else {
+					r.Values[ridx] = count
+				}
 			}
 
 			results = append(results, &r)
@@ -1745,7 +1743,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return percentile(values, percent, interpolate)
 		})
 
-	case "summarize": // summarize(seriesList, intervalString, func='sum', alignToFrom=False
+	case "summarize": // summarize(seriesList, intervalString, func='sum', alignToFrom=False)
 		// TODO(dgryski): make sure the arrays are all the same 'size'
 		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
@@ -1769,23 +1767,12 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		start := args[0].GetStartTime()
 		stop := args[0].GetStopTime()
-
 		if !alignToFrom {
-			start = int32(time.Unix(int64(start), 0).Truncate(time.Duration(bucketSize) * time.Second).Unix())
-			stop = int32(time.Unix(int64(stop), 0).Truncate(time.Duration(bucketSize) * time.Second).Unix())
-			// check if a partial bucket is needed
-			if stop != args[0].GetStopTime() {
-				stop += bucketSize
-			}
-		} else {
-			// adjust for partial buckets
-			stop += (stop - start) % bucketSize
+			start, stop = alignToBucketSize(start, stop, bucketSize)
 		}
 
-		buckets := (stop - start) / bucketSize
-
-		var results []*metricData
-
+		buckets := getBuckets(start, stop, bucketSize)
+		results := make([]*metricData, 0, len(args))
 		for _, arg := range args {
 
 			var name string
@@ -1806,20 +1793,23 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 				StartTime: proto.Int32(start),
 				StopTime:  proto.Int32(stop),
 			}}
-			t := args[0].GetStartTime() // unadjusted
-			bucketEnd := r.GetStartTime() + bucketSize
+
+			t := arg.GetStartTime() // unadjusted
+			bucketEnd := start + bucketSize
 			values := make([]float64, 0, bucketSize/arg.GetStepTime())
 			ridx := 0
-			skipped := 0
+			bucketItems := 0
 			for i, v := range arg.Values {
-
+				bucketItems++
 				if !arg.IsAbsent[i] {
 					values = append(values, v)
-				} else {
-					skipped++
 				}
 
 				t += arg.GetStepTime()
+
+				if t >= stop {
+					break
+				}
 
 				if t >= bucketEnd {
 					rv := summarizeValues(summarizeFunction, values)
@@ -1831,18 +1821,13 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 					r.Values[ridx] = rv
 					ridx++
 					bucketEnd += bucketSize
+					bucketItems = 0
 					values = values[:0]
-					skipped = 0
-				}
-
-				if t >= stop {
-					break
 				}
 			}
 
 			// last partial bucket
-			if t < stop {
-
+			if bucketItems > 0 {
 				rv := summarizeValues(summarizeFunction, values)
 				if math.IsNaN(rv) {
 					r.Values[ridx] = 0
@@ -1851,7 +1836,6 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 					r.Values[ridx] = rv
 					r.IsAbsent[ridx] = false
 				}
-
 			}
 
 			results = append(results, &r)
@@ -2091,6 +2075,33 @@ func summarizeValues(f string, values []float64) float64 {
 	}
 
 	return rv
+}
+
+func getBuckets(start, stop, bucketSize int32) int32 {
+	return int32(math.Ceil(float64(stop-start) / float64(bucketSize)))
+}
+
+func alignStartToInterval(start, stop, bucketSize int32) int32 {
+	for _, v := range []int32{86400, 3600, 60} {
+		if bucketSize >= v {
+			start -= start % v
+			break
+		}
+	}
+
+	return start
+}
+
+func alignToBucketSize(start, stop, bucketSize int32) (int32, int32) {
+	start = int32(time.Unix(int64(start), 0).Truncate(time.Duration(bucketSize) * time.Second).Unix())
+	newStop := int32(time.Unix(int64(stop), 0).Truncate(time.Duration(bucketSize) * time.Second).Unix())
+
+	// check if a partial bucket is needed
+	if stop != newStop {
+		newStop += bucketSize
+	}
+
+	return start, newStop
 }
 
 func extractMetric(m string) string {

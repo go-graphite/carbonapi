@@ -12,6 +12,99 @@ import (
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 )
 
+func TestGetBuckets(t *testing.T) {
+	tests := []struct {
+		start       int32
+		stop        int32
+		bucketSize  int32
+		wantBuckets int32
+	}{
+		{13, 18, 5, 1},
+		{13, 17, 5, 1},
+		{13, 19, 5, 2},
+	}
+
+	for _, test := range tests {
+		buckets := getBuckets(test.start, test.stop, test.bucketSize)
+		if buckets != test.wantBuckets {
+			t.Errorf("TestGetBuckets failed!\n%v\ngot buckets %d",
+				test,
+				buckets,
+			)
+		}
+	}
+}
+
+func TestAlignToBucketSize(t *testing.T) {
+	tests := []struct {
+		inputStart int32
+		inputStop  int32
+		bucketSize int32
+		wantStart  int32
+		wantStop   int32
+	}{
+		{
+			13, 18, 5,
+			10, 20,
+		},
+		{
+			13, 17, 5,
+			10, 20,
+		},
+		{
+			13, 19, 5,
+			10, 20,
+		},
+	}
+
+	for _, test := range tests {
+		start, stop := alignToBucketSize(test.inputStart, test.inputStop, test.bucketSize)
+		if start != test.wantStart || stop != test.wantStop {
+			t.Errorf("TestAlignToBucketSize failed!\n%v\ngot start %d stop %d",
+				test,
+				start,
+				stop,
+			)
+		}
+	}
+}
+
+func TestAlignToInterval(t *testing.T) {
+	tests := []struct {
+		inputStart int32
+		inputStop  int32
+		bucketSize int32
+		wantStart  int32
+	}{
+		{
+			91111, 92222, 5,
+			91111,
+		},
+		{
+			91111, 92222, 60,
+			91080,
+		},
+		{
+			91111, 92222, 3600,
+			90000,
+		},
+		{
+			91111, 92222, 86400,
+			86400,
+		},
+	}
+
+	for _, test := range tests {
+		start := alignStartToInterval(test.inputStart, test.inputStop, test.bucketSize)
+		if start != test.wantStart {
+			t.Errorf("TestAlignToInterval failed!\n%v\ngot start %d",
+				test,
+				start,
+			)
+		}
+	}
+}
+
 func TestEvalExpr(t *testing.T) {
 	exp, _, err := parseExpr("summarize(general.tuning.topk.app.sqrumbles.change_aid,'1min')")
 	if err != nil {
@@ -180,7 +273,7 @@ func TestParseExpr(t *testing.T) {
 			continue
 		}
 		if !reflect.DeepEqual(e, tt.e) {
-			t.Errorf("parse for %+v failed: got %+s want %+v", tt.s, spew.Sdump(e), spew.Sdump(tt.e))
+			t.Errorf("parse for %+v failed:\ngot  %+s\nwant %+v", tt.s, spew.Sdump(e), spew.Sdump(tt.e))
 		}
 	}
 }
@@ -1297,6 +1390,14 @@ func TestEvalSummarize(t *testing.T) {
 	}
 
 	tenThirtyTwo := int32(t0.Unix())
+
+	t0, err = time.Parse(time.UnixDate, "Wed Sep 10 10:59:00 CEST 2014")
+	if err != nil {
+		panic(err)
+	}
+
+	tenFiftyNine := int32(t0.Unix())
+
 	t0, err = time.Parse(time.UnixDate, "Wed Sep 10 10:30:00 CEST 2014")
 	if err != nil {
 		panic(err)
@@ -1326,7 +1427,15 @@ func TestEvalSummarize(t *testing.T) {
 				argString: "metric1,'5s'",
 			},
 			map[metricRequest][]*metricData{
-				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, math.NaN(), 2, 3, 4, 5, math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
+				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{
+					1, 1, 1, 1, 1,
+					2, 2, 2, 2, 2,
+					3, 3, 3, 3, 3,
+					4, 4, 4, 4, 4,
+					5, 5, 5, 5, 5,
+					math.NaN(), 2, 3, 4, 5,
+					math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(),
+				}, 1, now32)},
 			},
 			[]float64{5, 10, 15, 20, 25, 14, math.NaN()},
 			"summarize(metric1,'5s')",
@@ -1525,7 +1634,10 @@ func TestEvalSummarize(t *testing.T) {
 				argString: "metric1,'10min'",
 			},
 			map[metricRequest][]*metricData{
-				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5}, 60, tenThirtyTwo)},
+				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{
+					1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
+					3, 3, 3, 3, 3, 4, 4, 4, 4, 4,
+					5, 5, 5, 5, 5}, 60, tenThirtyTwo)},
 			},
 			[]float64{11, 31, 33},
 			"summarize(metric1,'10min')",
@@ -1546,13 +1658,16 @@ func TestEvalSummarize(t *testing.T) {
 				argString: "metric1,'10min','sum',true",
 			},
 			map[metricRequest][]*metricData{
-				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5}, 60, tenThirtyTwo)},
+				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{
+					1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
+					3, 3, 3, 3, 3, 4, 4, 4, 4, 4,
+					5, 5, 5, 5, 5}, 60, tenThirtyTwo)},
 			},
 			[]float64{15, 35, 25},
 			"summarize(metric1,'10min','sum',true)",
 			600,
 			tenThirtyTwo,
-			tenThirtyTwo + 3*10*60,
+			tenThirtyTwo + 25*60,
 		},
 		{
 			&expr{
@@ -1565,13 +1680,64 @@ func TestEvalSummarize(t *testing.T) {
 				argString: "metric1,'30s'",
 			},
 			map[metricRequest][]*metricData{
-				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5}, 5, now32)},
+				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{
+					1, 1, 1, 1, 1, 2,
+					2, 2, 2, 2, 3, 3,
+					3, 3, 3, 4, 4, 4,
+					4, 4, 5, 5, 5, 5,
+					math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(),
+					5}, 5, now32)},
 			},
-			[]float64{35, 70, 105, 140, 25},
+			[]float64{35, 70, 105, 140, math.NaN(), 25},
 			"hitcount(metric1,'30s')",
 			30,
 			now32,
-			now32 + 25*5,
+			now32 + 31*5,
+		},
+		{
+			&expr{
+				target: "hitcount",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{valStr: "1h", etype: etString},
+				},
+				argString: "metric1,'1h'",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{
+					1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3,
+					3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5,
+					5}, 5, tenFiftyNine)},
+			},
+			[]float64{375},
+			"hitcount(metric1,'1h')",
+			3600,
+			tenFiftyNine,
+			tenFiftyNine + 25*5,
+		},
+		{
+			&expr{
+				target: "hitcount",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{valStr: "1h", etype: etString},
+					&expr{target: "true", etype: etName},
+				},
+				argString: "metric1,'1h'",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 0}: []*metricData{makeResponse("metric1", []float64{
+					1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3,
+					3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5,
+					5}, 5, tenFiftyNine)},
+			},
+			[]float64{105, 270},
+			"hitcount(metric1,'1h',true)",
+			3600,
+			tenFiftyNine - (59 * 60),
+			tenFiftyNine + 25*5,
 		},
 	}
 
@@ -1582,7 +1748,7 @@ func TestEvalSummarize(t *testing.T) {
 			continue
 		}
 		if g[0].GetStepTime() != tt.step {
-			t.Errorf("bad step for %s: got %d want %d", g[0].GetName(), g[0].GetStepTime(), tt.step)
+			t.Errorf("bad step for %s:\ngot  %d\nwant %d", g[0].GetName(), g[0].GetStepTime(), tt.step)
 		}
 		if g[0].GetStartTime() != tt.start {
 			t.Errorf("bad start for %s: got %s want %s", g[0].GetName(), time.Unix(int64(g[0].GetStartTime()), 0).Format(time.StampNano), time.Unix(int64(tt.start), 0).Format(time.StampNano))
@@ -1592,7 +1758,7 @@ func TestEvalSummarize(t *testing.T) {
 		}
 
 		if !nearlyEqual(g[0].Values, g[0].IsAbsent, tt.w) {
-			t.Errorf("failed: %s: got %+v, want %+v", g[0].GetName(), g[0].Values, tt.w)
+			t.Errorf("failed: %s:\ngot  %+v,\nwant %+v", g[0].GetName(), g[0].Values, tt.w)
 		}
 		if g[0].GetName() != tt.name {
 			t.Errorf("bad name for %+v: got %v, want %v", g, g[0].GetName(), tt.name)
