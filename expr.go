@@ -2111,11 +2111,15 @@ func extractMetric(m string) string {
 
 	start := 0
 	end := 0
+	curlyBraces := 0
 	for end < len(m) {
-		if !isNameChar(m[end]) {
-			if m[end] == ',' || m[end] == ')' {
-				return m[start:end]
-			}
+		if m[end] == '{' {
+			curlyBraces++
+		} else if m[end] == '}' {
+			curlyBraces--
+		} else if m[end] == ')' || (m[end] == ',' && curlyBraces == 0) {
+			return m[start:end]
+		} else if !(isNameChar(m[end]) || m[end] == ',') {
 			start = end + 1
 		}
 
