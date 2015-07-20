@@ -1988,6 +1988,10 @@ func TestExtractMetric(t *testing.T) {
 			"divideSeries(foo.bar.baz,baz.qux.zot)",
 			"foo.bar.baz",
 		},
+		{
+			"{something}",
+			"{something}",
+		},
 	}
 
 	for _, tt := range tests {
