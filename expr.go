@@ -77,8 +77,12 @@ func (e *expr) metrics() []metricRequest {
 func parseExpr(e string) (*expr, string, error) {
 
 	// skip whitespace
-	for e[0] == ' ' {
+	for len(e) > 1 && e[0] == ' ' {
 		e = e[1:]
+	}
+
+	if len(e) == 0 {
+		return nil, "", ErrMissingExpr
 	}
 
 	if '0' <= e[0] && e[0] <= '9' || e[0] == '-' {
