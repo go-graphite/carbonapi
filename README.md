@@ -2,6 +2,7 @@ carbonapi: replacement graphite API server
 ------------------------------------------
 
 [![Build Status](https://drone.io/github.com/dgryski/carbonapi/status.png)](https://drone.io/github.com/dgryski/carbonapi/latest)
+[![GoDoc](https://godoc.org/github.com/dgryski/carbonapi?status.svg)](https://godoc.org/github.com/dgryski/carbonapi)
 
 
 CarbonAPI supports a limited subset of graphite functions, but in our testing
