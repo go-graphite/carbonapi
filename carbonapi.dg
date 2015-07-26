@@ -33,8 +33,12 @@ word :=
 	%range%(0-9)
 	_
 
+alpha :=
+	%range%(A-Z)
+	%range%(a-z)
+
 node :=
-	%repeat%(+word+)
+	%repeat%(+alpha+)%repeat%(+word+)
 
 %section% := variable
 
