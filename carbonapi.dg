@@ -1,0 +1,44 @@
+%%% carbonapi
+%%% for use with https://github.com/MozillaSecurity/dharma
+
+%const% VARIANCE_MAX := 1
+%const% VARIANCE_TEMPLATE := "%s"
+%const% MAX_REPEAT_POWER := 4
+
+%section% := value
+
+target :=
+	+metric+
+	+function+
+
+function :=
+	+node+(%repeat%(+argument+, ","))
+
+argument :=
+	+metric+
+	+function+
+	+string+
+	+common:integer+
+	+common:decimal_number+
+
+string :=
+	"+common:text+"
+
+metric :=
+	%repeat%(+node+, ".")
+
+word :=
+	%range%(A-Z)
+	%range%(a-z)
+	%range%(0-9)
+	_
+
+node :=
+	%repeat%(+word+)
+
+%section% := variable
+
+%section% := variance
+
+main :=
+	+target+
