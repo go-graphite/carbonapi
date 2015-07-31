@@ -450,16 +450,16 @@ type renderStats struct {
 }
 
 func buildParseErrorString(target, e string, err error) string {
-	error_message := fmt.Sprintf("%s\n\n%-20s: %s\n", http.StatusText(http.StatusBadRequest), "Target", target)
+	msg := fmt.Sprintf("%s\n\n%-20s: %s\n", http.StatusText(http.StatusBadRequest), "Target", target)
 	if err != nil {
-		error_message += fmt.Sprintf("%-20s: %s\n", "Error", err.Error())
+		msg += fmt.Sprintf("%-20s: %s\n", "Error", err.Error())
 	}
 	if e != "" {
-		error_message += fmt.Sprintf("%-20s: %s\n%-20s: %s\n",
+		msg += fmt.Sprintf("%-20s: %s\n%-20s: %s\n",
 			"Parsed so far", target[0:len(target)-len(e)],
 			"Could not parse", e)
 	}
-	return error_message
+	return msg
 }
 
 func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
@@ -536,8 +536,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 		exp, e, err := parseExpr(target)
 
 		if err != nil || e != "" {
-			error_message := buildParseErrorString(target, e, err)
-			http.Error(w, error_message, http.StatusBadRequest)
+			msg := buildParseErrorString(target, e, err)
+			http.Error(w, msg, http.StatusBadRequest)
 			return
 		}
 
