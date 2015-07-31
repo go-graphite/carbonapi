@@ -449,13 +449,26 @@ type renderStats struct {
 	zipperRequests int
 }
 
+func buildParseErrorString(target, e string, err error) string {
+	error_message := fmt.Sprintf("%s\n\n%-20s: %s\n", http.StatusText(http.StatusBadRequest), "Target", target)
+	if err != nil {
+		error_message += fmt.Sprintf("%-20s: %s\n", "Error", err.Error())
+	}
+	if e != "" {
+		error_message += fmt.Sprintf("%-20s: %s\n%-20s: %s\n",
+			"Parsed so far", target[0:len(target)-len(e)],
+			"Could not parse", e)
+	}
+	return error_message
+}
+
 func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 
 	Metrics.Requests.Add(1)
 
 	err := r.ParseForm()
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		http.Error(w, http.StatusText(http.StatusBadRequest)+": "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -521,8 +534,10 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 	for _, target := range targets {
 
 		exp, e, err := parseExpr(target)
+
 		if err != nil || e != "" {
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			error_message := buildParseErrorString(target, e, err)
+			http.Error(w, error_message, http.StatusBadRequest)
 			return
 		}
 

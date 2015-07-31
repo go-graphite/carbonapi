@@ -98,7 +98,7 @@ func parseExpr(e string) (*expr, string, error) {
 	name, e := parseName(e)
 
 	if name == "" {
-		return nil, "", ErrMissingArgument
+		return nil, e, ErrMissingArgument
 	}
 
 	if e != "" && e[0] == '(' {
@@ -138,7 +138,7 @@ func parseArgList(e string) (string, []*expr, string, error) {
 		var err error
 		arg, e, err = parseExpr(e)
 		if err != nil {
-			return "", nil, "", err
+			return "", nil, e, err
 		}
 		args = append(args, arg)
 
