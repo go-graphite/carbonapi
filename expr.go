@@ -1291,6 +1291,61 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			}
 			return min
 		})
+
+	case "mostDeviant": // mostDeviant(n, seriesList)
+		n, err := getIntArg(e, 0)
+		if err != nil {
+			return nil
+		}
+
+		args, err := getSeriesArg(e.args[1], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		var mh metricHeap
+
+		for index, arg := range args {
+			mean := avgValue(arg.Values, arg.IsAbsent)
+			if math.IsNaN(mean) {
+				continue
+			}
+
+			var square_sum float64
+			var elts int
+			for i, v := range arg.Values {
+				if arg.IsAbsent[i] {
+					continue
+				}
+				elts++
+				square_sum += math.Pow(mean-v, 2)
+			}
+			sigma := square_sum / float64(elts)
+			if math.IsNaN(sigma) {
+				continue
+			}
+
+			if len(mh) < n {
+				heap.Push(&mh, metricHeapElement{idx: index, val: sigma})
+				continue
+			}
+
+			if sigma > mh[0].val {
+				mh[0].idx = index
+				mh[0].val = sigma
+				heap.Fix(&mh, 0)
+			}
+		}
+
+		results := make([]*metricData, n)
+
+		for len(mh) > 0 {
+			v := heap.Pop(&mh).(metricHeapElement)
+			results[len(mh)] = args[v.idx]
+		}
+
+		return results
+
 	case "movingAverage": // movingAverage(seriesList, windowSize)
 		var n int
 		var err error
