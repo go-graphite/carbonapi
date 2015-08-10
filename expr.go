@@ -1306,33 +1306,19 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		var mh metricHeap
 
 		for index, arg := range args {
-			mean := avgValue(arg.Values, arg.IsAbsent)
-			if math.IsNaN(mean) {
-				continue
-			}
-
-			var square_sum float64
-			var elts int
-			for i, v := range arg.Values {
-				if arg.IsAbsent[i] {
-					continue
-				}
-				elts++
-				square_sum += math.Pow(mean-v, 2)
-			}
-			sigma := square_sum / float64(elts)
-			if math.IsNaN(sigma) {
+			variance := varianceValue(arg.Values, arg.IsAbsent)
+			if math.IsNaN(variance) {
 				continue
 			}
 
 			if len(mh) < n {
-				heap.Push(&mh, metricHeapElement{idx: index, val: sigma})
+				heap.Push(&mh, metricHeapElement{idx: index, val: variance})
 				continue
 			}
 
-			if sigma > mh[0].val {
+			if variance > mh[0].val {
 				mh[0].idx = index
-				mh[0].val = sigma
+				mh[0].val = variance
 				heap.Fix(&mh, 0)
 			}
 		}
@@ -2353,6 +2339,25 @@ func currentValue(f64s []float64, absent []bool) float64 {
 	}
 
 	return math.NaN()
+}
+
+func varianceValue(f64s []float64, absent []bool) float64 {
+	var squareSum float64
+	var elts int
+
+	mean := avgValue(f64s, absent)
+	if math.IsNaN(mean) {
+		return mean
+	}
+
+	for i, v := range f64s {
+		if absent[i] {
+			continue
+		}
+		elts++
+		squareSum += (mean - v) * (mean - v)
+	}
+	return squareSum / float64(elts)
 }
 
 type metricHeapElement struct {
