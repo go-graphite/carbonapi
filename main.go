@@ -501,6 +501,10 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 	// BUG(dgryski): doesn't handle timezones the same as graphite-web
 	from32 := dateParamToEpoch(from, timeNow().Add(-24*time.Hour).Unix())
 	until32 := dateParamToEpoch(until, timeNow().Unix())
+	if from32 == until32 {
+		http.Error(w, "Invalid empty time range", http.StatusBadRequest)
+		return
+	}
 
 	var results []*metricData
 	metricMap := make(map[metricRequest][]*metricData)
