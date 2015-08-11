@@ -937,16 +937,10 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 	case "isNonNull", "isNotNull": // isNonNull(seriesList), isNotNull(seriesList)
 
-		_, err := getSeriesArg(e.args[0], from, until, values)
-
 		e.target = "isNonNull"
 
-		if err != nil {
-			return nil
-		}
-
 		return forEachSeriesDo(e, from, until, values, func(a *metricData, r *metricData) *metricData {
-			for i, _ := range a.Values {
+			for i := range a.Values {
 				r.IsAbsent[i] = false
 				if a.IsAbsent[i] {
 					r.Values[i] = 0
