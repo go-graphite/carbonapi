@@ -106,14 +106,14 @@ func TestAlignToInterval(t *testing.T) {
 }
 
 func TestEvalExpr(t *testing.T) {
-	exp, _, err := parseExpr("summarize(general.tuning.topk.app.sqrumbles.change_aid,'1min')")
+	exp, _, err := parseExpr("summarize(metric1,'1min')")
 	if err != nil {
 		t.Errorf("error %s", err)
 	}
 
 	metricMap := make(map[metricRequest][]*metricData)
 	request := metricRequest{
-		metric: "general.tuning.topk.app.sqrumbles.change_aid",
+		metric: "metric1",
 		from:   1437127020,
 		until:  1437127140,
 	}
