@@ -1535,7 +1535,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			r.Values = make([]float64, len(a.Values))
 			r.IsAbsent = make([]bool, len(a.Values))
 
-			values := make([]float64, 0)
+			var values []float64
 			for i, v := range a.IsAbsent {
 				if !v {
 					values = append(values, a.Values[i])
@@ -2055,7 +2055,7 @@ func (s byVals) Less(i, j int) bool {
 	return s.vals[i] > s.vals[j]
 }
 
-// Sorting by name (sortByName)
+// ByName sorts metrics by name
 type ByName []*metricData
 
 func (s ByName) Len() int           { return len(s) }
@@ -2090,8 +2090,8 @@ func aggregateSeries(e *expr, args []*metricData, function aggregateFunc) []*met
 	r.Values = make([]float64, length)
 	r.IsAbsent = make([]bool, length)
 
-	for i, _ := range args[0].Values {
-		values := make([]float64, 0)
+	for i := range args[0].Values {
+		var values []float64
 		for _, arg := range args {
 			if !arg.IsAbsent[i] {
 				values = append(values, arg.Values[i])

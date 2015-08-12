@@ -71,7 +71,7 @@ var Metrics = struct {
 	MemcacheTimeouts: expvar.NewInt("memcache_timeouts"),
 }
 
-var BuildVersion string = "(development build)"
+var BuildVersion = "(development build)"
 
 var queryCache bytesCache
 var findCache bytesCache
