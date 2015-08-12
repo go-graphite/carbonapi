@@ -935,6 +935,23 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		return results
 
+	case "isNonNull", "isNotNull": // isNonNull(seriesList), isNotNull(seriesList)
+
+		e.target = "isNonNull"
+
+		return forEachSeriesDo(e, from, until, values, func(a *metricData, r *metricData) *metricData {
+			for i := range a.Values {
+				r.IsAbsent[i] = false
+				if a.IsAbsent[i] {
+					r.Values[i] = 0
+				} else {
+					r.Values[i] = 1
+				}
+
+			}
+			return r
+		})
+
 	case "lowestAverage", "lowestCurrent": // lowestAverage(seriesList, n) , lowestCurrent(seriesList, n)
 
 		arg, err := getSeriesArg(e.args[0], from, until, values)

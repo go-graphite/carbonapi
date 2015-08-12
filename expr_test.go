@@ -1082,6 +1082,21 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "isNonNull",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{math.NaN(), -1, math.NaN(), -3, 4, 5}, 1, now32)},
+			},
+			[]float64{0, 1, 0, 1, 1, 1},
+			"isNonNull(metric1)",
+		},
+		{
+			&expr{
 				target: "averageAbove",
 				etype:  etFunc,
 				args: []*expr{
