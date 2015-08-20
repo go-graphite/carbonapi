@@ -1784,7 +1784,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 		return results
 
-		case "avgSeriesWithWildcards": // avgSeriesWithWildcards(seriesList, *position)
+		case "averageSeriesWithWildcards": // averageSeriesWithWildcards(seriesList, *position)
 			// TODO(dgryski): make sure the arrays are all the same 'size'
 			args, err := getSeriesArg(e.args[0], from, until, values)
 			if err != nil {
@@ -1820,7 +1820,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 			for series, args := range groups {
 				r := *args[0]
-				r.Name = proto.String(fmt.Sprintf("avgSeriesWithWildcards(%s)", series))
+				r.Name = proto.String(fmt.Sprintf("averageSeriesWithWildcards(%s)", series))
 				r.Values = make([]float64, len(args[0].Values))
 				r.IsAbsent = make([]bool, len(args[0].Values))
 
