@@ -2079,6 +2079,34 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			result = append(result, &r)
 		}
 		return result
+	case "offset": // offset(seriesList, factor)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+		offset, err := getFloatArg(e, 1)
+		if err != nil {
+			return nil
+		}
+		var results []*metricData
+
+		for _, a := range arg {
+			r := *a
+			r.Name = proto.String(fmt.Sprintf("offset(%s,%g)", a.GetName(), offset))
+			r.Values = make([]float64, len(a.Values))
+			r.IsAbsent = make([]bool, len(a.Values))
+
+			for i, v := range a.Values {
+				if a.IsAbsent[i] {
+					r.Values[i] = 0
+					r.IsAbsent[i] = true
+					continue
+				}
+				r.Values[i] = v + offset
+			}
+			results = append(results, &r)
+		}
+		return results
 	}
 
 	log.Printf("unknown function in evalExpr:  %q\n", e.target)
