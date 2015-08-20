@@ -1784,6 +1784,69 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 		return results
 
+		case "avgSeriesWithWildcards": // avgSeriesWithWildcards(seriesList, *position)
+			// TODO(dgryski): make sure the arrays are all the same 'size'
+			args, err := getSeriesArg(e.args[0], from, until, values)
+			if err != nil {
+				return nil
+			}
+
+			fields, err := getIntArgs(e, 1)
+			if err != nil {
+				return nil
+			}
+
+			var results []*metricData
+
+			groups := make(map[string][]*metricData)
+
+			for _, a := range args {
+				metric := extractMetric(a.GetName())
+				nodes := strings.Split(metric, ".")
+				var s []string
+				// Yes, this is O(n^2), but len(nodes) < 10 and len(fields) < 3
+				// Iterating an int slice is faster than a map for n ~ 30
+				// http://www.antoine.im/posts/someone_is_wrong_on_the_internet
+				for i, n := range nodes {
+					if !contains(fields, i) {
+						s = append(s, n)
+					}
+				}
+
+				node := strings.Join(s, ".")
+
+				groups[node] = append(groups[node], a)
+			}
+
+			for series, args := range groups {
+				r := *args[0]
+				r.Name = proto.String(fmt.Sprintf("avgSeriesWithWildcards(%s)", series))
+				r.Values = make([]float64, len(args[0].Values))
+				r.IsAbsent = make([]bool, len(args[0].Values))
+
+				countPoints := make([]float64, len(args[0].Values))
+				for _, arg := range args {
+					for i, v := range arg.Values {
+						if arg.IsAbsent[i] {
+							continue
+						}
+						countPoints[i] += 1
+						r.Values[i] += v
+					}
+				}
+
+				for i, v := range countPoints {
+					if v == 0 {
+						r.IsAbsent[i] = true
+					} else {
+						r.Values[i] /= v
+					}
+				}
+
+				results = append(results, &r)
+			}
+			return results
+
 	case "percentileOfSeries": // percentileOfSeries(seriesList, n, interpolate=False)
 		// TODO(dgryski): make sure the arrays are all the same 'size'
 		args, err := getSeriesArg(e.args[0], from, until, values)
