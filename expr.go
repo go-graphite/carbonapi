@@ -2043,8 +2043,6 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil
 		}
 
-		step := int(arg[0].GetStepTime())
-
 		var result []*metricData
 		for _, a := range args {
 			var name string
@@ -2053,6 +2051,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			} else {
 				name = fmt.Sprintf("perSecond(%s,%g)", a.GetName(), maxValue)
 			}
+			step := float64(a.GetStepTime())
 
 			r := *a
 			r.Name = proto.String(name)
