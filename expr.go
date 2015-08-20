@@ -2031,6 +2031,55 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 
 		return []*metricData{&p}
+
+	case "perSecond":
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		maxValue, err := getFloatArgDefault(e, 1, math.NaN())
+		if err != nil {
+			return nil
+		}
+
+		step := int(arg[0].GetStepTime())
+
+		var result []*metricData
+		for _, a := range args {
+			var name string
+			if len(e.args) == 1 {
+				name = fmt.Sprintf("perSecond(%s)", a.GetName())
+			} else {
+				name = fmt.Sprintf("perSecond(%s,%g)", a.GetName(), maxValue)
+			}
+
+			r := *a
+			r.Name = proto.String(name)
+			r.Values = make([]float64, len(a.Values))
+			r.IsAbsent = make([]bool, len(a.Values))
+
+			prev := a.Values[0]
+			for i, v := range a.Values {
+				if i == 0 || a.IsAbsent[i] || a.IsAbsent[i-1] {
+					r.IsAbsent[i] = true
+					prev = v
+					continue
+				}
+				diff := v - prev
+				if diff >= 0 {
+					r.Values[i] = diff / step
+				} else if !math.IsNaN(maxValue) && maxValue >= v {
+					r.Values[i] = ((maxValue - prev) + v + 1) / step
+				} else {
+					r.Values[i] = 0
+					r.IsAbsent[i] = true
+				}
+				prev = v
+			}
+			result = append(result, &r)
+		}
+		return result
 	}
 
 	log.Printf("unknown function in evalExpr:  %q\n", e.target)
