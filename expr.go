@@ -1883,8 +1883,10 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		stop := args[0].GetStopTime()
 		step := args[0].GetStepTime()
 
+		// number of values we have
 		vals := int(math.Ceil(float64(stop - start) / float64(step)))
-		bucketSize := int32(math.Ceil(float64(vals / points)))
+		// number of seconds the new buckets represent
+		bucketSize := int32(math.Ceil(float64(vals / points)) * float64(step))
 
 		start, stop = alignToBucketSize(start, stop, bucketSize)
 
@@ -1895,9 +1897,9 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			// dont alert the series name for this expr
 			name := arg.GetName()
 			// make this more intelligent
-			summarizeFunction := "sum"
+			summarizeFunction := "avg"
 
-			if bucketSize <= 1 {
+			if bucketSize <= step {
 				r := *arg
 				results = append(results, &r)
 				continue
