@@ -1884,7 +1884,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		step := args[0].GetStepTime()
 
 		vals := int(math.Ceil(float64(stop - start) / float64(step)))
-		bucketSize := int32(math.Floor(float64(vals / points)))
+		bucketSize := int32(math.Ceil(float64(vals / points)))
 
 		start, stop = alignToBucketSize(start, stop, bucketSize)
 
@@ -1896,6 +1896,12 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			name := arg.GetName()
 			// make this more intelligent
 			summarizeFunction := "sum"
+
+			if bucketSize <= 1 {
+				r := *arg
+				results = append(results, &r)
+				continue
+			}
 
 			r := metricData{FetchResponse: pb.FetchResponse{
 				Name:      proto.String(name),
