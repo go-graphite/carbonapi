@@ -504,6 +504,17 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 		}
 	}
 
+	maxDataPoints := int32(0)
+
+	if mstr := r.FormValue("maxDataPoints"); mstr != "" {
+		m, err := strconv.Atoi(mstr)
+		if err != nil {
+			log.Printf("failed to parse maxDataPoints: %v: %v", mstr, m)
+		} else {
+			maxDataPoints = int32(m)
+		}
+	}
+
 	// make sure the cache key doesn't say noCache, because it will never hit
 	r.Form.Del("noCache")
 
@@ -536,7 +547,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 	metricMap := make(map[metricRequest][]*metricData)
 
 	for _, target := range targets {
-
+		if maxDataPoints > 0 {
+			target = fmt.Sprintf("maxDataPoints(%s, %d)", target, maxDataPoints)
+		}
 		exp, e, err := parseExpr(target)
 
 		if err != nil || e != "" {

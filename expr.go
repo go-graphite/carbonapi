@@ -1868,6 +1868,92 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return percentile(values, percent, interpolate)
 		})
 
+	case "maxDataPoints": // used to condense targets down to a a set of dat points
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		points, err := getIntArg(e, 1)
+		if err != nil {
+			return nil
+		}
+
+		start := args[0].GetStartTime()
+		stop := args[0].GetStopTime()
+		step := args[0].GetStepTime()
+
+		vals := int(math.Ceil(float64(stop - start) / float64(step)))
+		bucketSize := int32(math.Floor(float64(vals / points)))
+
+		start, stop = alignToBucketSize(start, stop, bucketSize)
+
+		buckets := getBuckets(start, stop, bucketSize)
+		results := make([]*metricData, 0, len(args))
+		for _, arg := range args {
+
+			// dont alert the series name for this expr
+			name := arg.GetName()
+			// make this more intelligent
+			summarizeFunction := "sum"
+
+			r := metricData{FetchResponse: pb.FetchResponse{
+				Name:      proto.String(name),
+				Values:    make([]float64, buckets, buckets),
+				IsAbsent:  make([]bool, buckets, buckets),
+				StepTime:  proto.Int32(bucketSize),
+				StartTime: proto.Int32(start),
+				StopTime:  proto.Int32(stop),
+			}}
+
+			t := arg.GetStartTime() // unadjusted
+			bucketEnd := start + bucketSize
+			values := make([]float64, 0, bucketSize/arg.GetStepTime())
+			ridx := 0
+			bucketItems := 0
+			for i, v := range arg.Values {
+				bucketItems++
+				if !arg.IsAbsent[i] {
+					values = append(values, v)
+				}
+
+				t += arg.GetStepTime()
+
+				if t >= stop {
+					break
+				}
+
+				if t >= bucketEnd {
+					rv := summarizeValues(summarizeFunction, values)
+
+					if math.IsNaN(rv) {
+						r.IsAbsent[ridx] = true
+					}
+
+					r.Values[ridx] = rv
+					ridx++
+					bucketEnd += bucketSize
+					bucketItems = 0
+					values = values[:0]
+				}
+			}
+
+			// last partial bucket
+			if bucketItems > 0 {
+				rv := summarizeValues(summarizeFunction, values)
+				if math.IsNaN(rv) {
+					r.Values[ridx] = 0
+					r.IsAbsent[ridx] = true
+				} else {
+					r.Values[ridx] = rv
+					r.IsAbsent[ridx] = false
+				}
+			}
+
+			results = append(results, &r)
+		}
+		return results
+
 	case "summarize": // summarize(seriesList, intervalString, func='sum', alignToFrom=False)
 		// TODO(dgryski): make sure the arrays are all the same 'size'
 		args, err := getSeriesArg(e.args[0], from, until, values)
@@ -1892,6 +1978,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		start := args[0].GetStartTime()
 		stop := args[0].GetStopTime()
+
 		if !alignToFrom {
 			start, stop = alignToBucketSize(start, stop, bucketSize)
 		}
