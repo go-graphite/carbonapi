@@ -831,7 +831,7 @@ func passthroughHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func proxyHandler(w http.ResponseWriter, r *http.Request) {
-	u, err := url.Parse(fmt.Sprintf("http://127.0.0.1:8080/%s", r.URL.RequestURI()))
+	u, err := url.Parse("http://127.0.0.1:8080/")
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
