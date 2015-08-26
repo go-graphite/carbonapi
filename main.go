@@ -12,6 +12,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"net/http/httputil"
 	_ "net/http/pprof"
 	"net/url"
 	"os"
@@ -829,6 +830,16 @@ func passthroughHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
+func proxyHandler(w http.ResponseWriter, r *http.Request) {
+	u, err := url.Parse(fmt.Sprintf("http://127.0.0.1:8080/%s", r.URL.RequestURI()))
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+  proxy := httputil.NewSingleHostReverseProxy(u)
+	proxy.ServeHTTP(w, r)
+}
+
 func lbcheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Ok\n"))
 }
@@ -1018,7 +1029,7 @@ func main() {
 	http.HandleFunc("/info", passthroughHandler)
 
 	http.HandleFunc("/lb_check", lbcheckHandler)
-	http.HandleFunc("/", usageHandler)
+	http.HandleFunc("/", proxyHandler)
 
 	log.Println("listening on port", *port)
 	log.Fatalln(http.ListenAndServe(":"+strconv.Itoa(*port), nil))
