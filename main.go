@@ -652,7 +652,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 	case "pickle":
 		body = marshalPickle(results)
 	case "png":
-		body = marshalPNG(r, results)
+		// body = marshalPNG(r, results)
 	}
 
 	writeResponse(w, body, format, jsonp)
