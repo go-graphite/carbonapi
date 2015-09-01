@@ -694,6 +694,50 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		return results
 
+	case "checkLess", "checkLessEqual", "checkGreater", "checkGreaterEqual", "checkEqual": // checkLess(seriesList, series)
+			if len(e.args) < 2 {
+				return nil
+			}
+			comparator, err := getSeriesArg(e.args[1], from, until, values)
+			if err != nil {
+				return nil
+			}
+			if len(comparator) != 1 {
+				return nil
+			}
+
+			index := strings.IndexAny(e.target, "LGE")
+			var compareFunc func(float64, float64) bool
+			switch e.target[index:] {
+			case "Less":
+				compareFunc = compareLess
+			case "LessEqual":
+				compareFunc = compareLessEqual
+			case "Greater":
+				compareFunc = compareGreater
+			case "GreaterEqual":
+				compareFunc = compareGreaterEqual
+			case "Equal":
+				compareFunc = compareEqual
+			}
+			c := comparator[0]
+			return forEachSeriesDo(e, from, until, values, func(a *metricData, r *metricData) *metricData {
+				r.drawAsInfinite = true
+				r.secondYAxis = true
+				for i, v := range a.Values {
+					if c.IsAbsent[i] || a.IsAbsent[i] {
+						r.IsAbsent[i] = true
+						continue
+					}
+					if compareFunc(v, c.Values[i]) {
+						r.Values[i] = 0
+					} else {
+						r.Values[i] = 1
+					}
+				}
+				return r
+			})
+
 	case "derivative": // derivative(seriesList)
 		return forEachSeriesDo(e, from, until, values, func(a *metricData, r *metricData) *metricData {
 			prev := a.Values[0]
@@ -2540,6 +2584,26 @@ func percentile(data []float64, percent float64, interpolate bool) float64 {
 		return top
 	}
 	return (top * remainder) + (secondTop * (1 - remainder))
+}
+
+func compareLess(a float64, b float64) bool {
+	return a < b
+}
+
+func compareLessEqual(a float64, b float64) bool {
+	return a <= b
+}
+
+func compareEqual(a float64, b float64) bool {
+	return a == b
+}
+
+func compareGreater(a float64, b float64) bool {
+	return a > b
+}
+
+func compareGreaterEqual(a float64, b float64) bool {
+	return a >= b
 }
 
 func maxValue(f64s []float64, absent []bool) float64 {
