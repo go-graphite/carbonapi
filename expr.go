@@ -724,12 +724,27 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return forEachSeriesDo(e, from, until, values, func(a *metricData, r *metricData) *metricData {
 				r.drawAsInfinite = true
 				r.secondYAxis = true
+				// hack for constantLine which only has two points
+				// in all other cases series are equal in step and length
+				if len(c.Values) == 2 {
+					gval := c.Values[0]
+				} else {
+					gval := -1
+				}
 				for i, v := range a.Values {
-					if c.IsAbsent[i] || a.IsAbsent[i] {
+					if a.IsAbsent[i] {
 						r.IsAbsent[i] = true
 						continue
 					}
-					if compareFunc(v, c.Values[i]) {
+					if gval != -1 {
+						v2 := gval
+					} else if c.IsAbsent[i] {
+						r.IsAbsent[i] = true
+						continue
+					} else {
+						v2 := c.Values[i]
+					}
+					if compareFunc(v, v2) {
 						r.Values[i] = 0
 					} else {
 						r.Values[i] = 1
