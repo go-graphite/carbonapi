@@ -708,28 +708,38 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 			index := strings.IndexAny(e.target, "LGE")
 			var compareFunc func(float64, float64) bool
+			var compareName string
 			switch e.target[index:] {
 			case "Less":
 				compareFunc = compareLess
+				compareName = "<"
 			case "LessEqual":
 				compareFunc = compareLessEqual
+				compareName = "<="
 			case "Greater":
 				compareFunc = compareGreater
+				compareName = ">"
 			case "GreaterEqual":
 				compareFunc = compareGreaterEqual
+				compareName = ">="
 			case "Equal":
 				compareFunc = compareEqual
+				compareName = "="
 			}
 			c := comparator[0]
 			var gval float64
+			var operandName string
 			// hack for constantLine which only has two points
 			// in all other cases series are equal in step and length
 			if len(c.Values) == 2 {
 				gval = c.Values[0]
+				operandName = strconv.Itoa(gval)
 			} else {
 				gval = -1
+				operandName = c.Name
 			}
 			return forEachSeriesDo(e, from, until, values, func(a *metricData, r *metricData) *metricData {
+				r.Name = proto.String(fmt.Sprintf("%s %s %s", a.Name, compareName, operandName))
 				r.drawAsInfinite = true
 				r.secondYAxis = true
 				for i, v := range a.Values {
