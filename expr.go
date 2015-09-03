@@ -739,7 +739,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 				operandName = c.GetName()
 			}
 			return forEachSeriesDo(e, from, until, values, func(a *metricData, r *metricData) *metricData {
-				r.Name = proto.String(fmt.Sprintf("%s %s %s", a.Name, compareName, operandName))
+				r.Name = proto.String(fmt.Sprintf("%s %s %s", a.GetName(), compareName, operandName))
 				r.drawAsInfinite = true
 				r.secondYAxis = true
 				for i, v := range a.Values {
