@@ -733,10 +733,10 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			// in all other cases series are equal in step and length
 			if len(c.Values) == 2 {
 				gval = c.Values[0]
-				operandName = strconv.Itoa(gval)
+				operandName = strconv.Itoa(int(gval))
 			} else {
 				gval = -1
-				operandName = c.Name
+				operandName = c.GetName()
 			}
 			return forEachSeriesDo(e, from, until, values, func(a *metricData, r *metricData) *metricData {
 				r.Name = proto.String(fmt.Sprintf("%s %s %s", a.Name, compareName, operandName))
