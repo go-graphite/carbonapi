@@ -765,6 +765,25 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 				return r
 			})
 
+	case "severity": // severity(seriesList, serverity)
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		severity, err := getIntArg(e, 1)
+		if err != nil {
+			return nil
+		}
+
+		var results []*metricData
+		for _, a := range args {
+			r := *a
+			r.Name = r.Name = proto.String(fmt.Sprintf("%s sev:%d", a.GetName(), severity))
+			results = append(results, &r)
+		}
+		return results
+
 	case "derivative": // derivative(seriesList)
 		return forEachSeriesDo(e, from, until, values, func(a *metricData, r *metricData) *metricData {
 			prev := a.Values[0]
