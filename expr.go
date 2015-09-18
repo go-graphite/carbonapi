@@ -738,20 +738,14 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			}
 
 			var sub float64
-			var atLeastOne bool
 			for _, s := range subtrahends {
 				if s.IsAbsent[i] {
 					continue
 				}
-				atLeastOne = true
 				sub += s.Values[i]
 			}
 
-			if atLeastOne {
-				r.Values[i] = v - sub
-			} else {
-				r.IsAbsent[i] = true
-			}
+			r.Values[i] = v - sub
 		}
 		return []*metricData{&r}
 

@@ -860,7 +860,7 @@ func TestEvalExpression(t *testing.T) {
 				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
 				metricRequest{"metric2", 0, 1}: []*metricData{makeResponse("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
 			},
-			[]float64{-1, math.NaN(), math.NaN(), math.NaN(), 4, 6},
+			[]float64{-1, math.NaN(), math.NaN(), 3, 4, 6},
 			"diffSeries(metric1,metric2)",
 		},
 		{
@@ -879,7 +879,7 @@ func TestEvalExpression(t *testing.T) {
 				metricRequest{"metric2", 0, 1}: []*metricData{makeResponse("metric2", []float64{3, math.NaN(), 3, math.NaN(), 0, 7}, 1, now32)},
 				metricRequest{"metric3", 0, 1}: []*metricData{makeResponse("metric3", []float64{1, math.NaN(), 3, math.NaN(), 0, 4}, 1, now32)},
 			},
-			[]float64{1, math.NaN(), math.NaN(), math.NaN(), 4, 1},
+			[]float64{1, math.NaN(), math.NaN(), 3, 4, 1},
 			"diffSeries(metric1,metric2,metric3)",
 		},
 		{
