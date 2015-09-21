@@ -417,7 +417,9 @@ func marshalCSV(results []*metricData) []byte {
 		t := r.GetStartTime()
 		for i, v := range r.Values {
 			if !r.IsAbsent[i] {
+				b = append(b, '"')
 				b = append(b, r.GetName()...)
+				b = append(b, '"')
 				b = append(b, ',')
 				b = append(b, time.Unix(int64(t), 0).Format("2006-01-02 15:04:05")...)
 				b = append(b, ',')
