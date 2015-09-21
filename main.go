@@ -364,7 +364,9 @@ func writeResponse(w http.ResponseWriter, b []byte, format string, jsonp string)
 	case "pickle":
 		w.Header().Set("Content-Type", contentTypePickle)
 		w.Write(b)
-
+	case "csv":
+		w.Header().Set("Content-Type", contentTypeCSV)
+		w.Write(b)
 	case "png":
 		w.Header().Set("Content-Type", contentTypePNG)
 		w.Write(b)
@@ -401,6 +403,29 @@ func marshalRaw(results []*metricData) []byte {
 		}
 
 		b = append(b, '\n')
+	}
+	return b
+}
+
+func marshalCSV(results []*metricData) []byte {
+
+	var b []byte
+
+	for _, r := range results {
+
+		step := r.GetStepTime()
+		t := r.GetStartTime()
+		for i, v := range r.Values {
+			if !r.IsAbsent[i] {
+				b = append(b, r.GetName()...)
+				b = append(b, ',')
+				b = append(b, time.Unix(int64(t), 0).Format("2006-01-02 15:04:05")...)
+				b = append(b, ',')
+				b = strconv.AppendFloat(b, v, 'f', -1, 64)
+				b = append(b, '\n')
+			}
+			t += step
+		}
 	}
 	return b
 }
@@ -443,6 +468,7 @@ const (
 	contentTypeRaw        = "text/plain"
 	contentTypePickle     = "application/pickle"
 	contentTypePNG        = "image/png"
+	contentTypeCSV        = "text/csv"
 )
 
 type renderStats struct {
@@ -635,6 +661,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 		body = marshalProtobuf(results)
 	case "raw":
 		body = marshalRaw(results)
+	case "csv":
+		body = marshalCSV(results)
 	case "pickle":
 		body = marshalPickle(results)
 	case "png":
