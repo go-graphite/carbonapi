@@ -14,6 +14,7 @@ import (
 
 	"github.com/JaderDias/movingmedian"
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
+	onlinestats "github.com/dgryski/go-onlinestats"
 	"github.com/gogo/protobuf/proto"
 	"github.com/wangjohn/quickselect"
 )
@@ -1776,6 +1777,75 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 			results = append(results, &r)
 		}
+		return results
+
+	case "pearsonClosest": // pearsonClosest(series, seriesList, n, direction=abs)
+		ref, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+		if len(ref) != 1 {
+			// TODO(nnuss) error("First argument must be single reference series")
+			return nil
+		}
+
+		compare, err := getSeriesArg(e.args[1], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		n, err := getIntArg(e, 2)
+		if err != nil {
+			return nil
+		}
+
+		direction, err := getStringArgDefault(e, 3, "abs")
+		if err != nil && len(e.args) > 3 {
+			return nil
+		}
+		if direction != "pos" && direction != "neg" && direction != "abs" {
+			// TODO(nnuss) error("pearsonClosest( _ , _ , direction=abs ) : direction must be one of { 'pos', 'neg', 'abs' }")
+			return nil
+		}
+
+		var p_score = make(map[float64][]*metricData)
+
+		var results []*metricData
+		for _, a := range compare {
+			if len(ref[0].Values) != len(a.Values) {
+				// Pearson will panic if arrays are not equal length; skip
+				continue
+			}
+			value := onlinestats.Pearson(ref[0].Values, a.Values)
+			// Standardize the value so sort ASC will have strongest correlation first
+			switch {
+			case direction == "abs":
+				value = math.Abs(value) * -1
+			case direction == "pos" && value >= 0:
+				value = value * -1
+			case direction == "neg" && value <= 0:
+			default:
+				continue
+			}
+			p_score[value] = append(p_score[value], a)
+		}
+
+		keys := make([]float64, len(p_score))
+		i := 0
+		for k := range p_score {
+			keys[i] = k
+			i++
+		}
+		sort.Float64s(keys)
+		for _, a := range keys {
+			for _, m := range p_score[a] {
+				if len(results)+1 > n {
+					break
+				}
+				results = append(results, m)
+			}
+		}
+
 		return results
 
 	case "percentileOfSeries": // percentileOfSeries(seriesList, n, interpolate=False)

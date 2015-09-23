@@ -1217,6 +1217,31 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "pearsonClosest",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{target: "metric2"},
+					&expr{val: 1, etype: etConst},
+				},
+				argString: "metric1,metric2,1",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{
+					makeResponse("metricX", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+				},
+				metricRequest{"metric2", 0, 1}: []*metricData{
+					makeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					//makeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					makeResponse("metricC", []float64{4, math.NaN(), 5, 5, 6, 6}, 1, now32),
+				},
+			},
+			[]float64{4, math.NaN(), 5, 5, 6, 6},
+			//[]float64{3, 4, 5, 6, 7, 8},
+			"metricC",
+		},
+		{
+			&expr{
 				target: "invert",
 				etype:  etFunc,
 				args: []*expr{
