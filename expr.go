@@ -1779,6 +1779,59 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 		return results
 
+	case "pearson": // pearson(series, series, windowSize)
+		arg1, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		arg2, err := getSeriesArg(e.args[1], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		if len(arg1) != 1 || len(arg2) != 1 {
+			// must be single series
+			return nil
+		}
+
+		a1 := arg1[0]
+		a2 := arg2[0]
+
+		windowSize, err := getIntArg(e, 2)
+		if err != nil {
+			return nil
+		}
+
+		w1 := &Windowed{data: make([]float64, windowSize)}
+		w2 := &Windowed{data: make([]float64, windowSize)}
+
+		r := *a1
+		r.Name = proto.String(fmt.Sprintf("pearson(%s,%s,%d)", a1.GetName(), a2.GetName(), windowSize))
+		r.Values = make([]float64, len(a1.Values))
+		r.IsAbsent = make([]bool, len(a1.Values))
+		r.StartTime = proto.Int32(from)
+		r.StopTime = proto.Int32(until)
+
+		for i, v1 := range a1.Values {
+			v2 := a2.Values[i]
+			if a1.IsAbsent[i] || a2.IsAbsent[i] {
+				// ignore if either is missing
+				v1 = math.NaN()
+				v2 = math.NaN()
+			}
+			w1.Push(v1)
+			w2.Push(v2)
+			if i+1 >= windowSize {
+				r.Values[i] = onlinestats.Pearson(w1.data, w2.data)
+			} else {
+				r.Values[i] = 0
+				r.IsAbsent[i] = true
+			}
+		}
+
+		return []*metricData{&r}
+
 	case "pearsonClosest": // pearsonClosest(series, seriesList, n, direction=abs)
 		ref, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {

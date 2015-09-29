@@ -538,6 +538,24 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "pearson",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{target: "metric2"},
+					&expr{val: 6, etype: etConst},
+				},
+				argString: "metric1,metric2,6",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{43, 21, 25, 42, 57, 59}, 1, now32)},
+				metricRequest{"metric2", 0, 1}: []*metricData{makeResponse("metric2", []float64{99, 65, 79, 75, 87, 81}, 1, now32)},
+			},
+			[]float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0.5298089018901744},
+			"pearson(metric1,metric2,6)",
+		},
+		{
+			&expr{
 				target: "scale",
 				etype:  etFunc,
 				args: []*expr{
