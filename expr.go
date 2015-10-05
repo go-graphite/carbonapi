@@ -2019,6 +2019,109 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 		return results
 
+	case "tukeyAbove": // tukeyAbove(seriesList,interval,basis,n)
+
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		var n int
+		var scaleByStep bool
+
+		switch e.args[1].etype {
+		case etConst:
+			n, err = getIntArg(e, 1)
+		case etString:
+			var n32 int32
+			n32, err = getIntervalArg(e, 1, 1)
+			n = int(n32)
+			scaleByStep = true
+		default:
+			err = ErrBadType
+		}
+		if err != nil {
+			return nil
+		}
+
+		windowSize := n
+
+		if scaleByStep {
+			windowSize /= int(arg[0].GetStepTime())
+		}
+
+		basis, err := getFloatArg(e, 2)
+		if err != nil {
+			return nil
+		}
+
+		n, err = getIntArg(e, 3)
+		if err != nil {
+			return nil
+		}
+
+		// gather all the valid points
+		var points []float64
+		for _, a := range arg {
+			for i, m := range a.Values {
+				if a.IsAbsent[i] {
+					continue
+				}
+				points = append(points, m)
+			}
+		}
+
+		sort.Float64s(points)
+
+		first := int(0.25 * float64(len(points)))
+		third := int(0.75 * float64(len(points)))
+
+		iqr := points[third] - points[first]
+
+		max := points[third] + basis*iqr
+		// min := points[first] - basis*iqr
+
+		var mh metricHeap
+
+		// count how many points are above the threshold
+		for i, a := range arg {
+			var outlier int
+			for i, m := range a.Values {
+				if a.IsAbsent[i] {
+					continue
+				}
+				if m >= max {
+					outlier++
+				}
+			}
+
+			// not even a single anomalous point -- ignore this metric
+			if outlier == 0 {
+				continue
+			}
+
+			if len(mh) < n {
+				heap.Push(&mh, metricHeapElement{idx: i, val: float64(outlier)})
+				continue
+			}
+			// current outlier count is is bigger than smallest max found so far
+			foutlier := float64(outlier)
+			if mh[0].val < foutlier {
+				mh[0].val = foutlier
+				mh[0].idx = i
+				heap.Fix(&mh, 0)
+			}
+		}
+
+		results := make([]*metricData, n)
+		// results should be ordered ascending
+		for len(mh) > 0 {
+			v := heap.Pop(&mh).(metricHeapElement)
+			results[len(mh)] = arg[v.idx]
+		}
+
+		return results
+
 	case "color": // color(seriesList, theColor) ignored
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
