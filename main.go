@@ -558,7 +558,7 @@ func infoHandlerPB(w http.ResponseWriter, req *http.Request, format string, resp
 		decoded[r.server] = d
 	}
 
-	logger.Traceln("request: %s: %v", req.URL.RequestURI(), decoded)
+	logger.Tracef("request: %s: %v", req.URL.RequestURI(), decoded)
 
 	return decoded
 }
