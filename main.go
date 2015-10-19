@@ -548,7 +548,7 @@ func infoHandlerPB(w http.ResponseWriter, req *http.Request, format string, resp
 			continue
 		}
 		var d pb.InfoResponse
-		err := json.Unmarshal(r.response, &d) // should be proto
+		err := proto.Unmarshal(r.response, &d)
 		if err != nil {
 			logger.Logf("error decoding protobuf response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
 			logger.Traceln("\n" + hex.Dump(r.response))
