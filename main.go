@@ -20,8 +20,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
-
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 	"github.com/dgryski/carbonzipper/mlog"
 	"github.com/dgryski/httputil"
@@ -250,7 +248,7 @@ func findHandlerPB(w http.ResponseWriter, req *http.Request, responses []serverR
 	var metrics []*pb.GlobMatch
 	for _, r := range responses {
 		var metric pb.GlobResponse
-		err := proto.Unmarshal(r.response, &metric)
+		err := metric.Unmarshal(r.response)
 		if err != nil && req != nil {
 			logger.Logf("error decoding protobuf response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
 			logger.Traceln("\n" + hex.Dump(r.response))
@@ -328,7 +326,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		query := req.FormValue("query")
 		result.Name = &query
 		result.Matches = metrics
-		b, _ := proto.Marshal(&result)
+		b, _ := result.Marshal()
 		w.Write(b)
 	case "json":
 		w.Header().Set("Content-Type", "application/json")
@@ -428,7 +426,7 @@ func returnRender(w http.ResponseWriter, format string, metrics pb.MultiFetchRes
 	switch format {
 	case "protobuf":
 		w.Header().Set("Content-Type", "application/protobuf")
-		b, _ := proto.Marshal(&metrics)
+		b, _ := metrics.Marshal()
 		w.Write(b)
 
 	case "json":
@@ -452,7 +450,7 @@ func handleRenderPB(w http.ResponseWriter, req *http.Request, format string, res
 
 	for _, r := range responses {
 		var d pb.MultiFetchResponse
-		err := proto.Unmarshal(r.response, &d)
+		err := d.Unmarshal(r.response)
 		if err != nil {
 			logger.Logf("error decoding protobuf response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
 			logger.Traceln("\n" + hex.Dump(r.response))
@@ -547,7 +545,7 @@ func infoHandlerPB(w http.ResponseWriter, req *http.Request, format string, resp
 			continue
 		}
 		var d pb.InfoResponse
-		err := proto.Unmarshal(r.response, &d)
+		err := d.Unmarshal(r.response)
 		if err != nil {
 			logger.Logf("error decoding protobuf response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
 			logger.Traceln("\n" + hex.Dump(r.response))
@@ -614,7 +612,7 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 			r.Info = &i
 			result.Responses = append(result.Responses, &r)
 		}
-		b, _ := proto.Marshal(&result)
+		b, _ := result.Marshal()
 		w.Write(b)
 	case "", "json":
 		w.Header().Set("Content-Type", "application/json")
