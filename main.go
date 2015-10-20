@@ -7,7 +7,6 @@ import (
 	"expvar"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -24,9 +23,9 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
+	"github.com/dgryski/carbonzipper/mlog"
 	"github.com/dgryski/httputil"
 	pickle "github.com/kisielk/og-rek"
-	"github.com/lestrrat/go-file-rotatelogs"
 	"github.com/peterbourgon/g2g"
 )
 
@@ -90,7 +89,7 @@ var BuildVersion = "(development version)"
 
 var Limiter serverLimiter
 
-var logger logLevel
+var logger mlog.Level
 
 type serverResponse struct {
 	server   string
@@ -696,21 +695,9 @@ func main() {
 	}
 
 	// set up our logging
+	mlog.SetOutput(*logdir, "carbonzipper", *logtostdout)
 
-	rl := rotatelogs.NewRotateLogs(
-		*logdir + "/carbonzipper.%Y%m%d%H%M.log",
-	)
-
-	// Optional fields must be set afterwards
-	rl.LinkName = *logdir + "/carbonzipper.log"
-
-	if *logtostdout {
-		log.SetOutput(io.MultiWriter(os.Stdout, rl))
-	} else {
-		log.SetOutput(rl)
-	}
-
-	logger = logLevel(*debugLevel)
+	logger = mlog.Level(*debugLevel)
 	logger.Logln("starting carbonzipper", BuildVersion)
 
 	logger.Logln("setting GOMAXPROCS=", Config.MaxProcs)
@@ -811,47 +798,6 @@ func bucketRequestTimes(req *http.Request, t time.Duration) {
 		atomic.AddInt64(&timeBuckets[Config.Buckets], 1)
 		logger.Logf("Slow Request: %s: %s", t.String(), req.URL.String())
 	}
-}
-
-// trivial logging classes
-
-type logLevel int
-
-const (
-	LOG_NORMAL logLevel = iota
-	LOG_DEBUG
-	LOG_TRACE
-)
-
-func (ll logLevel) Debugf(format string, a ...interface{}) {
-	if ll >= LOG_DEBUG {
-		log.Printf(format, a...)
-	}
-}
-
-func (ll logLevel) Debugln(a ...interface{}) {
-	if ll >= LOG_DEBUG {
-		log.Println(a...)
-	}
-}
-
-func (ll logLevel) Tracef(format string, a ...interface{}) {
-	if ll >= LOG_TRACE {
-		log.Printf(format, a...)
-	}
-}
-
-func (ll logLevel) Traceln(a ...interface{}) {
-	if ll >= LOG_TRACE {
-		log.Println(a...)
-	}
-}
-func (ll logLevel) Logln(a ...interface{}) {
-	log.Println(a...)
-}
-
-func (ll logLevel) Logf(format string, a ...interface{}) {
-	log.Printf(format, a...)
 }
 
 type serverLimiter map[string]chan struct{}
