@@ -62,3 +62,13 @@ func (ll Level) Logln(a ...interface{}) {
 func (ll Level) Logf(format string, a ...interface{}) {
 	log.Printf(format, a...)
 }
+
+func (ll Level) Fatalf(format string, a ...interface{}) {
+	log.Printf(format, a...)
+	os.Exit(1)
+}
+
+func (ll Level) Fatalln(a ...interface{}) {
+	log.Println(a...)
+	os.Exit(1)
+}
