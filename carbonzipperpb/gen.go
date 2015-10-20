@@ -1,3 +1,3 @@
 package carbonzipperpb
 
-//go:generate protoc --gogo_out=. carbonzipper.proto
+//go:generate protoc --gogofast_out=. carbonzipper.proto
