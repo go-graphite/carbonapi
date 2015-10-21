@@ -4,7 +4,6 @@ import (
 	"container/heap"
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"regexp"
 	"sort"
@@ -2368,7 +2367,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		return results
 	}
 
-	log.Printf("unknown function in evalExpr:  %q\n", e.target)
+	logger.Logf("unknown function in evalExpr: %q\n", e.target)
 
 	return nil
 }
