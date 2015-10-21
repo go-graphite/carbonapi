@@ -765,21 +765,61 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return r
 		})
 
-	case "checkVariance": // checkVariance(*series, stdevs, windows)
+	case "checkVariance": // checkVariance(*series, acceptableStdevs, windows)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}
+		acceptableStdevs, err := getFloatArg(e, 1)
+		if err != nil {
+			return nil
+		}
+		windows, err := getIntArg(e, 2)
+		if err != nil {
+			return nil
+		}
 
-		stdevSeries := aggregateSeries(e, arg, func(values []float64) float64 {
+		averages := aggregateSeries(e, arg, func(values []float64) float64 {
+			sum := 0.0
+			for _, value := range values {
+				sum += value
+			}
+			return sum / float64(len(values))
+		})[0].Values
+
+		stdevs := aggregateSeries(e, arg, func(values []float64) float64 {
 			w := &Windowed{data: make([]float64, len(values))}
 			for _, v := range values {
 				w.Push(v)
 			}
 			stdev := w.Stdev()
 			return stdev
+		})[0].Values
+
+		return forEachSeriesDo(e, from, until, values, func(a *metricData, r *metricData) *metricData {
+			r.Name = proto.String(fmt.Sprintf("stdev(%s) < %.2f (%d windows)", a.GetName(), acceptableStdevs, windows))
+			r.drawAsInfinite = true
+			r.secondYAxis = true
+
+			for i, v := range a.Values {
+				if a.IsAbsent[i] {
+					r.Values[i] = 0
+					r.IsAbsent[i] = true
+					continue
+				}
+
+				stdev := stdevs[i]
+				average := averages[i]
+				stdevsAway := math.Abs((v - average) / stdev)
+
+				if stdevsAway < acceptableStdevs {
+					r.Values[i] = 0
+				} else {
+					r.Values[i] = 1
+				}
+			}
+			return r
 		})
-		return stdevSeries
 
 	case "severity": // severity(seriesList, serverity)
 		args, err := getSeriesArg(e.args[0], from, until, values)
