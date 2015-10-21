@@ -20,7 +20,6 @@ import (
 
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 	"github.com/dgryski/carbonzipper/mlog"
-	"github.com/gogo/protobuf/proto"
 
 	"github.com/bradfitz/gomemcache/memcache"
 	pickle "github.com/kisielk/og-rek"
@@ -244,7 +243,11 @@ func (z zipper) Passthrough(metric string) ([]byte, error) {
 	return body, nil
 }
 
-func (z zipper) get(who string, u *url.URL, msg proto.Message) error {
+type unmarshaler interface {
+	Unmarshal([]byte) error
+}
+
+func (z zipper) get(who string, u *url.URL, msg unmarshaler) error {
 	resp, err := z.client.Get(u.String())
 	if err != nil {
 		return fmt.Errorf("http.Get: %+v", err)
@@ -256,7 +259,7 @@ func (z zipper) get(who string, u *url.URL, msg proto.Message) error {
 		return fmt.Errorf("ioutil.ReadAll: %+v", err)
 	}
 
-	err = proto.Unmarshal(body, msg)
+	err = msg.Unmarshal(body)
 	if err != nil {
 		return fmt.Errorf("proto.Unmarshal: %+v", err)
 	}
@@ -333,7 +336,7 @@ func marshalProtobuf(results []*metricData) []byte {
 	for _, metric := range results {
 		response.Metrics = append(response.Metrics, &((*metric).FetchResponse))
 	}
-	b, err := proto.Marshal(&response)
+	b, err := response.Marshal()
 	if err != nil {
 		logger.Logf("proto.Marshal: %v", err)
 	}
@@ -589,7 +592,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 
 			if response, ok := findCache.get(m.metric); useCache && ok {
 				Metrics.FindCacheHits.Add(1)
-				err := proto.Unmarshal(response, &glob)
+				err := glob.Unmarshal(response)
 				haveCacheData = err == nil
 			}
 
@@ -602,7 +605,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 					logger.Logf("Find: %v: %v", m.metric, err)
 					continue
 				}
-				b, err := proto.Marshal(&glob)
+				b, err := glob.Marshal()
 				if err == nil {
 					findCache.set(m.metric, b, 5*60)
 				}
