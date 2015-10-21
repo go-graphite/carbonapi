@@ -695,75 +695,174 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		return results
 
 	case "checkLess", "checkLessEqual", "checkGreater", "checkGreaterEqual", "checkEqual": // checkLess(seriesList, series)
-			if len(e.args) < 2 {
-				return nil
+		if len(e.args) < 2 {
+			return nil
+		}
+		comparator, err := getSeriesArg(e.args[1], from, until, values)
+		if err != nil {
+			return nil
+		}
+		if len(comparator) != 1 {
+			return nil
+		}
+
+		index := strings.IndexAny(e.target, "LGE")
+		var compareFunc func(float64, float64) bool
+		var compareName string
+		switch e.target[index:] {
+		case "Less":
+			compareFunc = compareLess
+			compareName = "<"
+		case "LessEqual":
+			compareFunc = compareLessEqual
+			compareName = "<="
+		case "Greater":
+			compareFunc = compareGreater
+			compareName = ">"
+		case "GreaterEqual":
+			compareFunc = compareGreaterEqual
+			compareName = ">="
+		case "Equal":
+			compareFunc = compareEqual
+			compareName = "="
+		}
+		c := comparator[0]
+		var gval float64
+		var operandName string
+		// hack for constantLine which only has two points
+		// in all other cases series are equal in step and length
+		if len(c.Values) == 2 {
+			gval = c.Values[0]
+			operandName = strconv.Itoa(int(gval))
+		} else {
+			gval = -1
+			operandName = c.GetName()
+		}
+		return forEachSeriesDo(e, from, until, values, func(a *metricData, r *metricData) *metricData {
+			r.Name = proto.String(fmt.Sprintf("%s %s %s", a.GetName(), compareName, operandName))
+			r.drawAsInfinite = true
+			r.secondYAxis = true
+			for i, v := range a.Values {
+				if a.IsAbsent[i] {
+					r.IsAbsent[i] = true
+					continue
+				}
+				var v2 float64
+				if gval != -1 {
+					v2 = gval
+				} else if c.IsAbsent[i] {
+					r.IsAbsent[i] = true
+					continue
+				} else {
+					v2 = c.Values[i]
+				}
+				if compareFunc(v, v2) {
+					r.Values[i] = 0
+				} else {
+					r.Values[i] = 1
+				}
 			}
-			comparator, err := getSeriesArg(e.args[1], from, until, values)
-			if err != nil {
-				return nil
+			return r
+		})
+
+	case "checkVariance": // checkVariance(*series, acceptableStdevs, windows)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+		acceptableStdevs, err := getFloatArg(e, 1)
+		if err != nil {
+			return nil
+		}
+		windows, err := getIntArg(e, 2)
+		if err != nil {
+			return nil
+		}
+
+		averages := aggregateSeries(e, arg, func(values []float64) float64 {
+			sum := 0.0
+			for _, value := range values {
+				sum += value
 			}
-			if len(comparator) != 1 {
-				return nil
+			return sum / float64(len(values))
+		})[0].Values
+
+		stdevs := aggregateSeries(e, arg, func(values []float64) float64 {
+			w := &Windowed{data: make([]float64, len(values))}
+			for _, v := range values {
+				w.Push(v)
+			}
+			stdev := w.Stdev()
+			return stdev
+		})[0].Values
+
+		return forEachSeriesDo(e, from, until, values, func(a *metricData, r *metricData) *metricData {
+			r.Name = proto.String(fmt.Sprintf("stdev(%s) < %.2f (%d windows)", a.GetName(), acceptableStdevs, windows))
+			r.drawAsInfinite = true
+			r.secondYAxis = true
+
+			single_failures := make([]int, len(r.Values))
+			for i, v := range a.Values {
+				if a.IsAbsent[i] {
+					single_failures[i] = 0
+					continue
+				}
+
+				stdev := stdevs[i]
+				average := averages[i]
+				stdevsAway := math.Abs((v - average) / stdev)
+
+				if stdevsAway < acceptableStdevs {
+					single_failures[i] = 0
+				} else {
+					single_failures[i] = 1
+				}
 			}
 
-			index := strings.IndexAny(e.target, "LGE")
-			var compareFunc func(float64, float64) bool
-			var compareName string
-			switch e.target[index:] {
-			case "Less":
-				compareFunc = compareLess
-				compareName = "<"
-			case "LessEqual":
-				compareFunc = compareLessEqual
-				compareName = "<="
-			case "Greater":
-				compareFunc = compareGreater
-				compareName = ">"
-			case "GreaterEqual":
-				compareFunc = compareGreaterEqual
-				compareName = ">="
-			case "Equal":
-				compareFunc = compareEqual
-				compareName = "="
-			}
-			c := comparator[0]
-			var gval float64
-			var operandName string
-			// hack for constantLine which only has two points
-			// in all other cases series are equal in step and length
-			if len(c.Values) == 2 {
-				gval = c.Values[0]
-				operandName = strconv.Itoa(int(gval))
-			} else {
-				gval = -1
-				operandName = c.GetName()
-			}
-			return forEachSeriesDo(e, from, until, values, func(a *metricData, r *metricData) *metricData {
-				r.Name = proto.String(fmt.Sprintf("%s %s %s", a.GetName(), compareName, operandName))
-				r.drawAsInfinite = true
-				r.secondYAxis = true
-				for i, v := range a.Values {
-					if a.IsAbsent[i] {
-						r.IsAbsent[i] = true
-						continue
-					}
-					var v2 float64
-					if gval != -1 {
-						v2 = gval
-					} else if c.IsAbsent[i] {
-						r.IsAbsent[i] = true
-						continue
-					} else {
-						v2 = c.Values[i]
-					}
-					if compareFunc(v, v2) {
-						r.Values[i] = 0
-					} else {
-						r.Values[i] = 1
-					}
+			left_failures := make([]int, len(r.Values))
+			failures := 0
+			for i, v := range single_failures {
+				left_failures[i] = failures
+				if v == 1 {
+					failures++
+				} else {
+					failures = 0
 				}
-				return r
-			})
+			}
+
+			right_failures := make([]int, len(r.Values))
+			failures = 0
+			for i := range single_failures {
+				reverseI := len(single_failures) - i - 1
+				right_failures[reverseI] = failures
+				if single_failures[reverseI] == 1 {
+					failures++
+				} else {
+					failures = 0
+				}
+			}
+
+			for i, v := range single_failures {
+				if v == 0 {
+					continue
+				}
+
+				failures := 1
+				if i-1 >= 0 {
+					failures += left_failures[i-1]
+				}
+				if i+1 < len(single_failures) {
+					failures += right_failures[i+1]
+				}
+
+				if failures < windows {
+					r.Values[i] = 0
+				} else {
+					r.Values[i] = 1
+				}
+			}
+			return r
+		})
 
 	case "severity": // severity(seriesList, serverity)
 		args, err := getSeriesArg(e.args[0], from, until, values)
@@ -1874,68 +1973,68 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 		return results
 
-		case "averageSeriesWithWildcards": // averageSeriesWithWildcards(seriesList, *position)
-			// TODO(dgryski): make sure the arrays are all the same 'size'
-			args, err := getSeriesArg(e.args[0], from, until, values)
-			if err != nil {
-				return nil
-			}
+	case "averageSeriesWithWildcards": // averageSeriesWithWildcards(seriesList, *position)
+		// TODO(dgryski): make sure the arrays are all the same 'size'
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
 
-			fields, err := getIntArgs(e, 1)
-			if err != nil {
-				return nil
-			}
+		fields, err := getIntArgs(e, 1)
+		if err != nil {
+			return nil
+		}
 
-			var results []*metricData
+		var results []*metricData
 
-			groups := make(map[string][]*metricData)
+		groups := make(map[string][]*metricData)
 
-			for _, a := range args {
-				metric := extractMetric(a.GetName())
-				nodes := strings.Split(metric, ".")
-				var s []string
-				// Yes, this is O(n^2), but len(nodes) < 10 and len(fields) < 3
-				// Iterating an int slice is faster than a map for n ~ 30
-				// http://www.antoine.im/posts/someone_is_wrong_on_the_internet
-				for i, n := range nodes {
-					if !contains(fields, i) {
-						s = append(s, n)
-					}
+		for _, a := range args {
+			metric := extractMetric(a.GetName())
+			nodes := strings.Split(metric, ".")
+			var s []string
+			// Yes, this is O(n^2), but len(nodes) < 10 and len(fields) < 3
+			// Iterating an int slice is faster than a map for n ~ 30
+			// http://www.antoine.im/posts/someone_is_wrong_on_the_internet
+			for i, n := range nodes {
+				if !contains(fields, i) {
+					s = append(s, n)
 				}
-
-				node := strings.Join(s, ".")
-
-				groups[node] = append(groups[node], a)
 			}
 
-			for series, args := range groups {
-				r := *args[0]
-				r.Name = proto.String(fmt.Sprintf("averageSeriesWithWildcards(%s)", series))
-				r.Values = make([]float64, len(args[0].Values))
-				r.IsAbsent = make([]bool, len(args[0].Values))
+			node := strings.Join(s, ".")
 
-				countPoints := make([]float64, len(args[0].Values))
-				for _, arg := range args {
-					for i, v := range arg.Values {
-						if arg.IsAbsent[i] {
-							continue
-						}
-						countPoints[i] += 1
-						r.Values[i] += v
+			groups[node] = append(groups[node], a)
+		}
+
+		for series, args := range groups {
+			r := *args[0]
+			r.Name = proto.String(fmt.Sprintf("averageSeriesWithWildcards(%s)", series))
+			r.Values = make([]float64, len(args[0].Values))
+			r.IsAbsent = make([]bool, len(args[0].Values))
+
+			countPoints := make([]float64, len(args[0].Values))
+			for _, arg := range args {
+				for i, v := range arg.Values {
+					if arg.IsAbsent[i] {
+						continue
 					}
+					countPoints[i] += 1
+					r.Values[i] += v
 				}
-
-				for i, v := range countPoints {
-					if v == 0 {
-						r.IsAbsent[i] = true
-					} else {
-						r.Values[i] /= v
-					}
-				}
-
-				results = append(results, &r)
 			}
-			return results
+
+			for i, v := range countPoints {
+				if v == 0 {
+					r.IsAbsent[i] = true
+				} else {
+					r.Values[i] /= v
+				}
+			}
+
+			results = append(results, &r)
+		}
+		return results
 
 	case "percentileOfSeries": // percentileOfSeries(seriesList, n, interpolate=False)
 		// TODO(dgryski): make sure the arrays are all the same 'size'
@@ -1974,9 +2073,9 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		step := args[0].GetStepTime()
 
 		// number of values we have
-		vals := int(math.Ceil(float64(stop - start) / float64(step)))
+		vals := int(math.Ceil(float64(stop-start) / float64(step)))
 		// number of seconds the new buckets represent
-		bucketSize := int32(math.Ceil(float64(vals / points)) * float64(step))
+		bucketSize := int32(math.Ceil(float64(vals/points)) * float64(step))
 
 		start, stop = alignToBucketSize(start, stop, bucketSize)
 
