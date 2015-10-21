@@ -765,6 +765,22 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return r
 		})
 
+	case "checkVariance": // checkVariance(*series, stdevs, windows)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		stdevSeries := aggregateSeries(e, arg, func(values []float64) float64 {
+			w := &Windowed{data: make([]float64, len(values))}
+			for _, v := range values {
+				w.Push(v)
+			}
+			stdev := w.Stdev()
+			return stdev
+		})
+		return stdevSeries
+
 	case "severity": // severity(seriesList, serverity)
 		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
