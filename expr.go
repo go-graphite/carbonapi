@@ -810,7 +810,10 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 				stdev := stdevs[i]
 				average := averages[i]
-				stdevsAway := math.Abs((v - average) / stdev)
+				stdevsAway := 0.0
+				if stdev > 0 {
+					stdevsAway = math.Abs((v - average) / stdev)
+				}
 
 				if stdevsAway < acceptableStdevs {
 					single_failures[i] = 0
