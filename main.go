@@ -868,6 +868,8 @@ func main() {
 	graphiteHost := flag.String("graphite", "", "graphite destination host")
 	logdir := flag.String("logdir", "/var/log/carbonapi/", "logging directory")
 	logtostdout := flag.Bool("stdout", false, "log also to stdout")
+	logDuration := flag.Duration("logDuration", 1 * time.Hour, "How long to keep a log file")
+	logMax := flag.Duration("logMagAge", 2 * time.Hour, "How long to keep rotated logs")
 
 	flag.Parse()
 
@@ -877,6 +879,8 @@ func main() {
 
 	// Optional fields must be set afterwards
 	rl.LinkName = *logdir + "/carbonapi.log"
+	rl.RotationTime = *logDuration
+	rl.MaxAge = *logMax
 
 	if *logtostdout {
 		log.SetOutput(io.MultiWriter(os.Stdout, rl))
