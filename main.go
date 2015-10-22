@@ -869,7 +869,7 @@ func main() {
 	logdir := flag.String("logdir", "/var/log/carbonapi/", "logging directory")
 	logtostdout := flag.Bool("stdout", false, "log also to stdout")
 	logDuration := flag.Duration("logDuration", 1 * time.Hour, "How long to keep a log file")
-	logMax := flag.Duration("logMagAge", 2 * time.Hour, "How long to keep rotated logs")
+	logMax := flag.Duration("logMaxAge", 2 * time.Hour, "How long to keep rotated logs")
 
 	flag.Parse()
 
