@@ -16,12 +16,12 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 	"github.com/dgryski/carbonzipper/mlog"
+	"github.com/dgryski/go-expirecache"
 	"github.com/dgryski/httputil"
 	pickle "github.com/kisielk/og-rek"
 	"github.com/peterbourgon/g2g"
@@ -39,8 +39,7 @@ var Config = struct {
 
 	GraphiteHost string
 
-	mu          sync.RWMutex
-	metricPaths map[string][]string
+	pathCache pathCache
 
 	MaxIdleConnsPerHost int
 
@@ -55,7 +54,7 @@ var Config = struct {
 
 	MaxIdleConnsPerHost: 100,
 
-	metricPaths: make(map[string][]string),
+	pathCache: pathCache{ec: expirecache.New(0)},
 }
 
 // grouped expvars for /debug/vars and graphite
@@ -70,6 +69,9 @@ var Metrics = struct {
 	InfoErrors   *expvar.Int
 
 	Timeouts *expvar.Int
+
+	CacheSize  expvar.Func
+	CacheItems expvar.Func
 }{
 	FindRequests: expvar.NewInt("find_requests"),
 	FindErrors:   expvar.NewInt("find_errors"),
@@ -112,12 +114,10 @@ func doProbe() {
 	_, paths := findHandlerPB(nil, nil, responses)
 
 	// update our cache of which servers have which metrics
-	Config.mu.Lock()
 	for k, v := range paths {
-		Config.metricPaths[k] = v
+		Config.pathCache.set(k, v)
 		logger.Debugln("TLD probe:", k, "servers =", v)
 	}
-	Config.mu.Unlock()
 }
 
 func probeTlds() {
@@ -294,13 +294,11 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	// lookup tld in our map of where they live to reduce the set of
 	// servers we bug with our find
-	Config.mu.RLock()
 	var backends []string
 	var ok bool
-	if backends, ok = Config.metricPaths[tld]; !ok || backends == nil || len(backends) == 0 {
+	if backends, ok = Config.pathCache.get(tld); !ok || backends == nil || len(backends) == 0 {
 		backends = Config.Backends
 	}
-	Config.mu.RUnlock()
 
 	responses := multiGet(backends, rewrite.RequestURI())
 
@@ -313,11 +311,9 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	metrics, paths := findHandlerPB(w, req, responses)
 
 	// update our cache of which servers have which metrics
-	Config.mu.Lock()
 	for k, v := range paths {
-		Config.metricPaths[k] = v
+		Config.pathCache.set(k, v)
 	}
-	Config.mu.Unlock()
 
 	switch format {
 	case "protobuf":
@@ -367,12 +363,10 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	var serverList []string
 	var ok bool
 
-	Config.mu.RLock()
 	// lookup the server list for this metric, or use all the servers if it's unknown
-	if serverList, ok = Config.metricPaths[target]; !ok || serverList == nil || len(serverList) == 0 {
+	if serverList, ok = Config.pathCache.get(target); !ok || serverList == nil || len(serverList) == 0 {
 		serverList = Config.Backends
 	}
-	Config.mu.RUnlock()
 
 	format := req.FormValue("format")
 	rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
@@ -577,12 +571,10 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 	var serverList []string
 	var ok bool
 
-	Config.mu.RLock()
 	// lookup the server list for this metric, or use all the servers if it's unknown
-	if serverList, ok = Config.metricPaths[target]; !ok || serverList == nil || len(serverList) == 0 {
+	if serverList, ok = Config.pathCache.get(target); !ok || serverList == nil || len(serverList) == 0 {
 		serverList = Config.Backends
 	}
-	Config.mu.RUnlock()
 
 	format := req.FormValue("format")
 	rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
@@ -715,6 +707,12 @@ func main() {
 	// export config via expvars
 	expvar.Publish("Config", expvar.Func(func() interface{} { return Config }))
 
+	Metrics.CacheSize = expvar.Func(func() interface{} { return Config.pathCache.ec.Size() })
+	expvar.Publish("cacheSize", Metrics.CacheSize)
+
+	Metrics.CacheItems = expvar.Func(func() interface{} { return Config.pathCache.ec.Items() })
+	expvar.Publish("cacheItems", Metrics.CacheItems)
+
 	http.HandleFunc("/metrics/find/", httputil.TrackConnections(httputil.TimeHandler(findHandler, bucketRequestTimes)))
 	http.HandleFunc("/render/", httputil.TrackConnections(httputil.TimeHandler(renderHandler, bucketRequestTimes)))
 	http.HandleFunc("/info/", httputil.TrackConnections(httputil.TimeHandler(infoHandler, bucketRequestTimes)))
@@ -765,6 +763,8 @@ func main() {
 	go probeTlds()
 	// force run now
 	probeForce <- 1
+
+	go Config.pathCache.ec.ApproximateCleaner(10 * time.Second)
 
 	portStr := fmt.Sprintf(":%d", Config.Port)
 	logger.Logln("listening on", portStr)
@@ -822,4 +822,23 @@ func (sl serverLimiter) leave(s string) {
 		return
 	}
 	<-sl[s]
+}
+
+type pathCache struct {
+	ec *expirecache.Cache
+}
+
+func (p *pathCache) set(k string, v []string) {
+	// expire cache entries after 10 minutes
+	const expireDelay = 60 * 10
+	p.ec.Set(k, v, 0, expireDelay)
+}
+
+func (p *pathCache) get(k string) ([]string, bool) {
+	v, ok := p.ec.Get(k)
+	if !ok {
+		return nil, false
+	}
+
+	return v.([]string), true
 }
