@@ -22,6 +22,7 @@ import (
 	"github.com/dgryski/carbonzipper/mlog"
 
 	"github.com/bradfitz/gomemcache/memcache"
+	ecache "github.com/dgryski/go-expirecache"
 	pickle "github.com/kisielk/og-rek"
 	"github.com/peterbourgon/g2g"
 )
@@ -920,26 +921,20 @@ func main() {
 		findCache = &memcachedCache{client: memcache.New(servers...)}
 
 	case "mem":
-		qcache := &expireCache{cache: make(map[string]cacheElement), maxSize: uint64(*memsize * 1024 * 1024)}
+		qcache := &expireCache{ec: ecache.New(uint64(*memsize * 1024 * 1024))}
 		queryCache = qcache
-		go queryCache.(*expireCache).cleaner()
+		go queryCache.(*expireCache).ec.Cleaner(5 * time.Minute)
 
-		findCache = &expireCache{cache: make(map[string]cacheElement)}
-		go findCache.(*expireCache).cleaner()
+		findCache = &expireCache{ec: ecache.New(0)}
+		go findCache.(*expireCache).ec.Cleaner(5 * time.Minute)
 
 		Metrics.CacheSize = expvar.Func(func() interface{} {
-			qcache.Lock()
-			size := qcache.totalSize
-			qcache.Unlock()
-			return size
+			return qcache.ec.Size()
 		})
 		expvar.Publish("cache_size", Metrics.CacheSize)
 
 		Metrics.CacheItems = expvar.Func(func() interface{} {
-			qcache.Lock()
-			size := len(qcache.keys)
-			qcache.Unlock()
-			return size
+			return qcache.ec.Items()
 		})
 		expvar.Publish("cache_items", Metrics.CacheItems)
 
