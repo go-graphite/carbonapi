@@ -583,10 +583,13 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 				return nil
 			}
 			getTotal = func(i int) float64 {
-				if total[0].IsAbsent[i] {
+				if len(total[0].IsAbsent) > i && total[0].IsAbsent[i] {
+					return math.NaN()
+				} else if len(total[0].Values) > i {
+					return total[0].Values[i]
+				} else {
 					return math.NaN()
 				}
-				return total[0].Values[i]
 			}
 			var totalString string
 			if e.args[1].etype == etName {
