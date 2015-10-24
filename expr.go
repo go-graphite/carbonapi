@@ -4,7 +4,6 @@ import (
 	"container/heap"
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"regexp"
 	"sort"
@@ -13,7 +12,9 @@ import (
 	"time"
 
 	"github.com/JaderDias/movingmedian"
+	"github.com/datastream/holtwinters"
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
+	"github.com/dgryski/go-onlinestats"
 	"github.com/gogo/protobuf/proto"
 	"github.com/wangjohn/quickselect"
 )
@@ -66,6 +67,10 @@ func (e *expr) metrics() []metricRequest {
 			for i := range r {
 				r[i].from += offs
 				r[i].until += offs
+			}
+		case "holtWintersForecast":
+			for i := range r {
+				r[i].from -= 7 * 86400 // starts -7 days from where the original starts
 			}
 		}
 		return r
@@ -933,20 +938,14 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			}
 
 			var sub float64
-			var atLeastOne bool
 			for _, s := range subtrahends {
 				if s.IsAbsent[i] {
 					continue
 				}
-				atLeastOne = true
 				sub += s.Values[i]
 			}
 
-			if atLeastOne {
-				r.Values[i] = v - sub
-			} else {
-				r.IsAbsent[i] = true
-			}
+			r.Values[i] = v - sub
 		}
 		return []*metricData{&r}
 
@@ -1416,6 +1415,65 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 		return results
 
+	case "kolmogorovSmirnovTest2", "ksTest2": // ksTest2(series, series, points|"interval")
+		arg1, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		arg2, err := getSeriesArg(e.args[1], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		if len(arg1) != 1 || len(arg2) != 1 {
+			// no wildcards allowed
+			return nil
+		}
+
+		a1 := arg1[0]
+		a2 := arg2[0]
+
+		windowSize, err := getIntArg(e, 2)
+		if err != nil {
+			return nil
+		}
+
+		w1 := &Windowed{data: make([]float64, windowSize)}
+		w2 := &Windowed{data: make([]float64, windowSize)}
+
+		r := *a1
+		r.Name = proto.String(fmt.Sprintf("kolmogorovSmirnovTest2(%s,%s,%d)", a1.GetName(), a2.GetName(), windowSize))
+		r.Values = make([]float64, len(a1.Values))
+		r.IsAbsent = make([]bool, len(a1.Values))
+		r.StartTime = proto.Int32(from)
+		r.StopTime = proto.Int32(until)
+
+		d1 := make([]float64, windowSize)
+		d2 := make([]float64, windowSize)
+
+		for i, v1 := range a1.Values {
+			v2 := a2.Values[i]
+			if a1.IsAbsent[i] || a2.IsAbsent[i] {
+				// make sure missing values are ignored
+				v1 = math.NaN()
+				v2 = math.NaN()
+			}
+			w1.Push(v1)
+			w2.Push(v2)
+
+			if i >= windowSize {
+				// need a copy here because KS is destructive
+				copy(d1, w1.data)
+				copy(d2, w2.data)
+				r.Values[i] = onlinestats.KS(d1, d2)
+			} else {
+				r.Values[i] = 0
+				r.IsAbsent[i] = true
+			}
+		}
+		return []*metricData{&r}
+
 	case "limit": // limit(seriesList, n)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
@@ -1744,6 +1802,136 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 			results = append(results, &r)
 		}
+		return results
+
+	case "pearson": // pearson(series, series, windowSize)
+		arg1, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		arg2, err := getSeriesArg(e.args[1], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		if len(arg1) != 1 || len(arg2) != 1 {
+			// must be single series
+			return nil
+		}
+
+		a1 := arg1[0]
+		a2 := arg2[0]
+
+		windowSize, err := getIntArg(e, 2)
+		if err != nil {
+			return nil
+		}
+
+		w1 := &Windowed{data: make([]float64, windowSize)}
+		w2 := &Windowed{data: make([]float64, windowSize)}
+
+		r := *a1
+		r.Name = proto.String(fmt.Sprintf("pearson(%s,%s,%d)", a1.GetName(), a2.GetName(), windowSize))
+		r.Values = make([]float64, len(a1.Values))
+		r.IsAbsent = make([]bool, len(a1.Values))
+		r.StartTime = proto.Int32(from)
+		r.StopTime = proto.Int32(until)
+
+		for i, v1 := range a1.Values {
+			v2 := a2.Values[i]
+			if a1.IsAbsent[i] || a2.IsAbsent[i] {
+				// ignore if either is missing
+				v1 = math.NaN()
+				v2 = math.NaN()
+			}
+			w1.Push(v1)
+			w2.Push(v2)
+			if i >= windowSize-1 {
+				r.Values[i] = onlinestats.Pearson(w1.data, w2.data)
+			} else {
+				r.Values[i] = 0
+				r.IsAbsent[i] = true
+			}
+		}
+
+		return []*metricData{&r}
+
+	case "pearsonClosest": // pearsonClosest(series, seriesList, n, direction=abs)
+		ref, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+		if len(ref) != 1 {
+			// TODO(nnuss) error("First argument must be single reference series")
+			return nil
+		}
+
+		compare, err := getSeriesArg(e.args[1], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		n, err := getIntArg(e, 2)
+		if err != nil {
+			return nil
+		}
+
+		direction, err := getStringArgDefault(e, 3, "abs")
+		if err != nil && len(e.args) > 3 {
+			return nil
+		}
+		if direction != "pos" && direction != "neg" && direction != "abs" {
+			// TODO(nnuss) error("pearsonClosest( _ , _ , direction=abs ) : direction must be one of { 'pos', 'neg', 'abs' }")
+			return nil
+		}
+
+		// NOTE: if direction == "abs" && len(compare) <= n : we'll still do the work to rank them
+
+		for i, v := range ref[0].IsAbsent {
+			if v == true {
+				ref[0].Values[i] = math.NaN()
+			}
+		}
+
+		var mh metricHeap
+
+		for index, a := range compare {
+			if len(ref[0].Values) != len(a.Values) {
+				// Pearson will panic if arrays are not equal length; skip
+				continue
+			}
+			for i, v := range a.IsAbsent {
+				if v == true {
+					a.Values[i] = math.NaN()
+				}
+			}
+			value := onlinestats.Pearson(ref[0].Values, a.Values)
+			// Standardize the value so sort ASC will have strongest correlation first
+			switch {
+			case math.IsNaN(value):
+				// special case of at least one series containing all zeros which leads to div-by-zero in Pearson
+				continue
+			case direction == "abs":
+				value = math.Abs(value) * -1
+			case direction == "pos" && value >= 0:
+				value = value * -1
+			case direction == "neg" && value <= 0:
+			default:
+				continue
+			}
+			heap.Push(&mh, metricHeapElement{idx: index, val: value})
+		}
+
+		results := make([]*metricData, n)
+		for len(mh) > 0 {
+			v := heap.Pop(&mh).(metricHeapElement)
+			results[len(results)-1] = compare[v.idx]
+			if len(mh) == n {
+				break
+			}
+		}
+
 		return results
 
 	case "offsetToZero": // offsetToZero(seriesList)
@@ -2318,6 +2506,109 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 		return results
 
+	case "tukeyAbove": // tukeyAbove(seriesList,interval,basis,n)
+
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		var n int
+		var scaleByStep bool
+
+		switch e.args[1].etype {
+		case etConst:
+			n, err = getIntArg(e, 1)
+		case etString:
+			var n32 int32
+			n32, err = getIntervalArg(e, 1, 1)
+			n = int(n32)
+			scaleByStep = true
+		default:
+			err = ErrBadType
+		}
+		if err != nil {
+			return nil
+		}
+
+		windowSize := n
+
+		if scaleByStep {
+			windowSize /= int(arg[0].GetStepTime())
+		}
+
+		basis, err := getFloatArg(e, 2)
+		if err != nil {
+			return nil
+		}
+
+		n, err = getIntArg(e, 3)
+		if err != nil {
+			return nil
+		}
+
+		// gather all the valid points
+		var points []float64
+		for _, a := range arg {
+			for i, m := range a.Values {
+				if a.IsAbsent[i] {
+					continue
+				}
+				points = append(points, m)
+			}
+		}
+
+		sort.Float64s(points)
+
+		first := int(0.25 * float64(len(points)))
+		third := int(0.75 * float64(len(points)))
+
+		iqr := points[third] - points[first]
+
+		max := points[third] + basis*iqr
+		// min := points[first] - basis*iqr
+
+		var mh metricHeap
+
+		// count how many points are above the threshold
+		for i, a := range arg {
+			var outlier int
+			for i, m := range a.Values {
+				if a.IsAbsent[i] {
+					continue
+				}
+				if m >= max {
+					outlier++
+				}
+			}
+
+			// not even a single anomalous point -- ignore this metric
+			if outlier == 0 {
+				continue
+			}
+
+			if len(mh) < n {
+				heap.Push(&mh, metricHeapElement{idx: i, val: float64(outlier)})
+				continue
+			}
+			// current outlier count is is bigger than smallest max found so far
+			foutlier := float64(outlier)
+			if mh[0].val < foutlier {
+				mh[0].val = foutlier
+				mh[0].idx = i
+				heap.Fix(&mh, 0)
+			}
+		}
+
+		results := make([]*metricData, n)
+		// results should be ordered ascending
+		for len(mh) > 0 {
+			v := heap.Pop(&mh).(metricHeapElement)
+			results[len(mh)] = arg[v.idx]
+		}
+
+		return results
+
 	case "color": // color(seriesList, theColor) ignored
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
@@ -2390,7 +2681,6 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		if err != nil {
 			return nil
 		}
-
 		maxValue, err := getFloatArgDefault(e, 1, math.NaN())
 		if err != nil {
 			return nil
@@ -2457,12 +2747,54 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 				}
 				r.Values[i] = v + offset
 			}
+		}
+		return results
+
+	case "holtWintersForecast":
+		var results []*metricData
+		args, err := getSeriesArgs(e.args, from-7*86400, until, values)
+		if err != nil {
+			return nil
+		}
+
+		const alpha = 0.1
+		const beta = 0.0035
+		const gamma = 0.1
+
+		for _, arg := range args {
+			stepTime := arg.GetStepTime()
+			numStepsToWalkToGetOriginalData := (int)((until - from) / stepTime)
+
+			//originalSeries := arg.Values[len(arg.Values)-numStepsToWalkToGetOriginalData:]
+			bootStrapSeries := arg.Values[:len(arg.Values)-numStepsToWalkToGetOriginalData]
+
+			//In line with graphite, we define a season as a single day.
+			//A period is the number of steps that make a season.
+			period := (int)((24 * 60 * 60) / stepTime)
+
+			predictions, err := holtwinters.Forecast(bootStrapSeries, alpha, beta, gamma, period, numStepsToWalkToGetOriginalData)
+			if err != nil {
+				return nil
+			}
+
+			predictionsOfInterest := predictions[len(predictions)-numStepsToWalkToGetOriginalData:]
+
+			r := metricData{FetchResponse: pb.FetchResponse{
+				Name:      proto.String(fmt.Sprintf("holtWintersForecast(%s)", arg.GetName())),
+				Values:    make([]float64, len(predictionsOfInterest)),
+				IsAbsent:  make([]bool, len(predictionsOfInterest)),
+				StepTime:  proto.Int32(arg.GetStepTime()),
+				StartTime: proto.Int32(arg.GetStartTime() + 7*86400),
+				StopTime:  proto.Int32(arg.GetStopTime()),
+			}}
+			r.Values = predictionsOfInterest
+
 			results = append(results, &r)
 		}
 		return results
 	}
 
-	log.Printf("unknown function in evalExpr:  %q\n", e.target)
+	logger.Logf("unknown function in evalExpr: %q\n", e.target)
 
 	return nil
 }

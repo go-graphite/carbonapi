@@ -1,5 +1,3 @@
-// +build ignore
-
 package main
 
 import (
@@ -58,7 +56,9 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 
 	// need different timeMarker's based on step size
 	p.Title.Text = r.FormValue("title")
-	p.X.Tick.Marker = NewTimeMarker(results[0].GetStepTime())
+	if len(results) > 0 {
+		p.X.Tick.Marker = NewTimeMarker(results[0].GetStepTime())
+	}
 
 	hideLegend := getBool(r.FormValue("hideLegend"), false)
 
@@ -73,6 +73,9 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 
 	var lines []plot.Plotter
 	for i, r := range results {
+		if r == nil {
+			continue
+		}
 		l := NewResponsePlotter(r)
 
 		l.LineStyle.Color = fgcolor

@@ -7,9 +7,7 @@ import (
 	"expvar"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
-	"log"
 	"math"
 	"net/http"
 	"net/http/httputil"
@@ -22,11 +20,11 @@ import (
 	"time"
 
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
-	"github.com/gogo/protobuf/proto"
+	"github.com/dgryski/carbonzipper/mlog"
 
 	"github.com/bradfitz/gomemcache/memcache"
+	ecache "github.com/dgryski/go-expirecache"
 	pickle "github.com/kisielk/og-rek"
-	"github.com/lestrrat/go-file-rotatelogs"
 	"github.com/peterbourgon/g2g"
 )
 
@@ -80,6 +78,8 @@ var findCache bytesCache
 var timeFormats = []string{"15:04 20060102", "20060102", "01/02/06"}
 
 var defaultTimeZone = time.Local
+
+var logger mlog.Level
 
 // dateParamToEpoch turns a passed string parameter into an epoch we can send to the Zipper
 func dateParamToEpoch(s string, d int64) int32 {
@@ -245,7 +245,11 @@ func (z zipper) Passthrough(metric string) ([]byte, error) {
 	return body, nil
 }
 
-func (z zipper) get(who string, u *url.URL, msg proto.Message) error {
+type unmarshaler interface {
+	Unmarshal([]byte) error
+}
+
+func (z zipper) get(who string, u *url.URL, msg unmarshaler) error {
 	resp, err := z.client.Get(u.String())
 	if err != nil {
 		return fmt.Errorf("http.Get: %+v", err)
@@ -257,7 +261,7 @@ func (z zipper) get(who string, u *url.URL, msg proto.Message) error {
 		return fmt.Errorf("ioutil.ReadAll: %+v", err)
 	}
 
-	err = proto.Unmarshal(body, msg)
+	err = msg.Unmarshal(body)
 	if err != nil {
 		return fmt.Errorf("proto.Unmarshal: %+v", err)
 	}
@@ -334,9 +338,9 @@ func marshalProtobuf(results []*metricData) []byte {
 	for _, metric := range results {
 		response.Metrics = append(response.Metrics, &((*metric).FetchResponse))
 	}
-	b, err := proto.Marshal(&response)
+	b, err := response.Marshal()
 	if err != nil {
-		log.Printf("proto.Marshal: %v", err)
+		logger.Logf("proto.Marshal: %v", err)
 	}
 
 	return b
@@ -365,7 +369,9 @@ func writeResponse(w http.ResponseWriter, b []byte, format string, jsonp string)
 	case "pickle":
 		w.Header().Set("Content-Type", contentTypePickle)
 		w.Write(b)
-
+	case "csv":
+		w.Header().Set("Content-Type", contentTypeCSV)
+		w.Write(b)
 	case "png":
 		w.Header().Set("Content-Type", contentTypePNG)
 		w.Write(b)
@@ -402,6 +408,31 @@ func marshalRaw(results []*metricData) []byte {
 		}
 
 		b = append(b, '\n')
+	}
+	return b
+}
+
+func marshalCSV(results []*metricData) []byte {
+
+	var b []byte
+
+	for _, r := range results {
+
+		step := r.GetStepTime()
+		t := r.GetStartTime()
+		for i, v := range r.Values {
+			if !r.IsAbsent[i] {
+				b = append(b, '"')
+				b = append(b, r.GetName()...)
+				b = append(b, '"')
+				b = append(b, ',')
+				b = append(b, time.Unix(int64(t), 0).Format("2006-01-02 15:04:05")...)
+				b = append(b, ',')
+				b = strconv.AppendFloat(b, v, 'f', -1, 64)
+				b = append(b, '\n')
+			}
+			t += step
+		}
 	}
 	return b
 }
@@ -444,6 +475,7 @@ const (
 	contentTypeRaw        = "text/plain"
 	contentTypePickle     = "application/pickle"
 	contentTypePNG        = "image/png"
+	contentTypeCSV        = "text/csv"
 )
 
 type renderStats struct {
@@ -499,7 +531,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 	if tstr := r.FormValue("cacheTimeout"); tstr != "" {
 		t, err := strconv.Atoi(tstr)
 		if err != nil {
-			log.Printf("failed to parse cacheTimeout: %v: %v", tstr, err)
+			logger.Logf("failed to parse cacheTimeout: %v: %v", tstr, err)
 		} else {
 			cacheTimeout = int32(t)
 		}
@@ -510,7 +542,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 	if mstr := r.FormValue("maxDataPoints"); mstr != "" {
 		m, err := strconv.Atoi(mstr)
 		if err != nil {
-			log.Printf("failed to parse maxDataPoints: %v: %v", mstr, m)
+			logger.Logf("failed to parse maxDataPoints: %v: %v", mstr, m)
 		} else {
 			maxDataPoints = int32(m)
 		}
@@ -575,7 +607,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 
 			if response, ok := findCache.get(m.metric); useCache && ok {
 				Metrics.FindCacheHits.Add(1)
-				err := proto.Unmarshal(response, &glob)
+				err := glob.Unmarshal(response)
 				haveCacheData = err == nil
 			}
 
@@ -585,10 +617,10 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 				stats.zipperRequests++
 				glob, err = Zipper.Find(m.metric)
 				if err != nil {
-					log.Printf("Find: %v: %v", m.metric, err)
+					logger.Logf("Find: %v: %v", m.metric, err)
 					continue
 				}
-				b, err := proto.Marshal(&glob)
+				b, err := glob.Marshal()
 				if err == nil {
 					findCache.set(m.metric, b, 5*60)
 				}
@@ -612,7 +644,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 					if err == nil {
 						rptr = &r
 					} else {
-						log.Printf("Render: %v: %v", m.GetPath(), err)
+						logger.Logf("Render: %v: %v", m.GetPath(), err)
 					}
 					rch <- rptr
 					Limiter.leave()
@@ -632,7 +664,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 				if r := recover(); r != nil {
 					var buf [1024]byte
 					runtime.Stack(buf[:], false)
-					log.Printf("panic during eval: %s: %s\n%s\n", cacheKey, r, string(buf[:]))
+					logger.Logf("panic during eval: %s: %s\n%s\n", cacheKey, r, string(buf[:]))
 				}
 			}()
 			exprs := evalExpr(exp, from32, until32, metricMap)
@@ -649,10 +681,12 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 		body = marshalProtobuf(results)
 	case "raw":
 		body = marshalRaw(results)
+	case "csv":
+		body = marshalCSV(results)
 	case "pickle":
 		body = marshalPickle(results)
 	case "png":
-		// body = marshalPNG(r, results)
+		body = marshalPNG(r, results)
 	}
 
 	writeResponse(w, body, format, jsonp)
@@ -868,28 +902,13 @@ func main() {
 	graphiteHost := flag.String("graphite", "", "graphite destination host")
 	logdir := flag.String("logdir", "/var/log/carbonapi/", "logging directory")
 	logtostdout := flag.Bool("stdout", false, "log also to stdout")
-	logDuration := flag.Duration("logDuration", 1 * time.Hour, "How long to keep a log file")
-	logMax := flag.Duration("logMaxAge", 2 * time.Hour, "How long to keep rotated logs")
 
 	flag.Parse()
 
-	rl := rotatelogs.NewRotateLogs(
-		*logdir + "/carbonapi.%Y%m%d%H%M.log",
-	)
-
-	// Optional fields must be set afterwards
-	rl.LinkName = *logdir + "/carbonapi.log"
-	rl.RotationTime = *logDuration
-	rl.MaxAge = *logMax
-
-	if *logtostdout {
-		log.SetOutput(io.MultiWriter(os.Stdout, rl))
-	} else {
-		log.SetOutput(rl)
-	}
+	mlog.SetOutput(*logdir, "carbonapi", *logtostdout)
 
 	expvar.NewString("BuildVersion").Set(BuildVersion)
-	log.Println("starting carbonapi", BuildVersion)
+	logger.Logln("starting carbonapi", BuildVersion)
 
 	if p := os.Getenv("PORT"); p != "" {
 		*port, _ = strconv.Atoi(p)
@@ -898,14 +917,14 @@ func main() {
 	Limiter = make(chan struct{}, *l)
 
 	if *z == "" {
-		log.Fatal("no zipper provided")
+		logger.Fatalln("no zipper provided")
 	}
 
 	if _, err := url.Parse(*z); err != nil {
-		log.Fatal("unable to parze zipper:", err)
+		logger.Fatalln("unable to parze zipper:", err)
 	}
 
-	log.Println("using zipper", *z)
+	logger.Logln("using zipper", *z)
 	Zipper = zipper{
 		z: *z,
 		client: &http.Client{
@@ -917,35 +936,29 @@ func main() {
 	switch *cacheType {
 	case "memcache":
 		if *mc == "" {
-			log.Fatal("memcache cache requested but no memcache servers provided")
+			logger.Fatalln("memcache cache requested but no memcache servers provided")
 		}
 
 		servers := strings.Split(*mc, ",")
-		log.Println("using memcache servers:", servers)
+		logger.Logln("using memcache servers:", servers)
 		queryCache = &memcachedCache{client: memcache.New(servers...)}
 		findCache = &memcachedCache{client: memcache.New(servers...)}
 
 	case "mem":
-		qcache := &expireCache{cache: make(map[string]cacheElement), maxSize: uint64(*memsize * 1024 * 1024)}
+		qcache := &expireCache{ec: ecache.New(uint64(*memsize * 1024 * 1024))}
 		queryCache = qcache
-		go queryCache.(*expireCache).cleaner()
+		go queryCache.(*expireCache).ec.Cleaner(5 * time.Minute)
 
-		findCache = &expireCache{cache: make(map[string]cacheElement)}
-		go findCache.(*expireCache).cleaner()
+		findCache = &expireCache{ec: ecache.New(0)}
+		go findCache.(*expireCache).ec.Cleaner(5 * time.Minute)
 
 		Metrics.CacheSize = expvar.Func(func() interface{} {
-			qcache.Lock()
-			size := qcache.totalSize
-			qcache.Unlock()
-			return size
+			return qcache.ec.Size()
 		})
 		expvar.Publish("cache_size", Metrics.CacheSize)
 
 		Metrics.CacheItems = expvar.Func(func() interface{} {
-			qcache.Lock()
-			size := len(qcache.keys)
-			qcache.Unlock()
-			return size
+			return qcache.ec.Items()
 		})
 		expvar.Publish("cache_items", Metrics.CacheItems)
 
@@ -957,21 +970,21 @@ func main() {
 	if *tz != "" {
 		fields := strings.Split(*tz, ",")
 		if len(fields) != 2 {
-			log.Fatalf("expected two fields for tz,seconds, got %d", len(fields))
+			logger.Fatalf("expected two fields for tz,seconds, got %d", len(fields))
 		}
 
 		var err error
 		offs, err := strconv.Atoi(fields[1])
 		if err != nil {
-			log.Fatalf("unable to parse seconds: %s: %s", fields[1], err)
+			logger.Fatalf("unable to parse seconds: %s: %s", fields[1], err)
 		}
 
 		defaultTimeZone = time.FixedZone(fields[0], offs)
-		log.Printf("using fixed timezone %s, offset %d ", defaultTimeZone.String(), offs)
+		logger.Logf("using fixed timezone %s, offset %d ", defaultTimeZone.String(), offs)
 	}
 
 	if *cpus != 0 {
-		log.Println("using GOMAXPROCS", *cpus)
+		logger.Logln("using GOMAXPROCS", *cpus)
 		runtime.GOMAXPROCS(*cpus)
 	}
 
@@ -988,12 +1001,12 @@ func main() {
 			host = *graphiteHost
 		}
 
-		log.Println("Using graphite host", host)
+		logger.Logln("Using graphite host", host)
 
 		// register our metrics with graphite
 		graphite, err := g2g.NewGraphite(host, 60*time.Second, 10*time.Second)
 		if err != nil {
-			log.Fatal("unable to connect to to graphite: ", host, ":", err)
+			logger.Fatalln("unable to connect to to graphite: ", host, ":", err)
 		}
 
 		hostname, _ := os.Hostname()
@@ -1020,7 +1033,7 @@ func main() {
 		t0 := time.Now()
 		renderHandler(w, r, &stats)
 		since := time.Since(t0)
-		log.Println(r.RequestURI, since.Nanoseconds()/int64(time.Millisecond), stats.zipperRequests)
+		logger.Logln(r.RequestURI, since.Nanoseconds()/int64(time.Millisecond), stats.zipperRequests)
 	}
 
 	http.HandleFunc("/render/", corsHandler(render))
@@ -1035,6 +1048,6 @@ func main() {
 	http.HandleFunc("/lb_check", lbcheckHandler)
 	http.HandleFunc("/", proxyHandler)
 
-	log.Println("listening on port", *port)
-	log.Fatalln(http.ListenAndServe(":"+strconv.Itoa(*port), nil))
+	logger.Logln("listening on port", *port)
+	logger.Fatalln(http.ListenAndServe(":"+strconv.Itoa(*port), nil))
 }
