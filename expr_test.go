@@ -1442,6 +1442,10 @@ func TestEvalExpression(t *testing.T) {
 			t.Errorf("failed to eval %v", tt.name)
 			continue
 		}
+		if g[0] == nil {
+			t.Errorf("returned no value %v", tt.e.argString)
+			continue
+		}
 		if g[0].GetStepTime() == 0 {
 			t.Errorf("missing step for %+v", g)
 		}
