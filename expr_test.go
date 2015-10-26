@@ -1466,6 +1466,21 @@ func TestEvalExpression(t *testing.T) {
 			[]float64{42.42, 42.42},
 			"42.42",
 		},
+		{
+			&expr{
+				target: "squareRoot",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+			},
+			[]float64{1, 1.4142135623730951, 0, 2.6457513110645907, 2.8284271247461903, 4.47213595499958, 5.477225575051661, math.NaN()},
+			"squareRoot(metric1)",
+		},
 	}
 
 	for _, tt := range tests {
