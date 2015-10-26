@@ -1274,6 +1274,22 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "offset",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 10, etype: etConst},
+				},
+				argString: "metric1,10",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{93, 94, 95, math.NaN(), 97, 98, 99, 100, 101}, 1, now32)},
+			},
+			[]float64{103, 104, 105, math.NaN(), 107, 108, 109, 110, 111},
+			"offset(metric1,10)",
+		},
+		{
+			&expr{
 				target: "offsetToZero",
 				etype:  etFunc,
 				args: []*expr{
