@@ -1529,7 +1529,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 		return result
 
-	case "nonNegativeDerivative": // nonNegativeDerivative(seriesList, maxValue=None)
+	case "nonNegativeDerivative", "perSecond": // nonNegativeDerivative(seriesList, maxValue=None), perSecond(seriesList, maxValue=None)
 		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
@@ -1542,15 +1542,12 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		var result []*metricData
 		for _, a := range args {
-			var name string
-			if len(e.args) == 1 {
-				name = fmt.Sprintf("nonNegativeDerivative(%s)", a.GetName())
-			} else {
-				name = fmt.Sprintf("nonNegativeDerivative(%s,%g)", a.GetName(), maxValue)
-			}
-
 			r := *a
-			r.Name = proto.String(name)
+			if len(e.args) == 1 {
+				r.Name = proto.String(fmt.Sprintf("%s(%s)", e.target, a.GetName()))
+			} else {
+				r.Name = proto.String(fmt.Sprintf("%s(%s,%g)", e.target, a.GetName(), maxValue))
+			}
 			r.Values = make([]float64, len(a.Values))
 			r.IsAbsent = make([]bool, len(a.Values))
 
@@ -1563,9 +1560,19 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 				}
 				diff := v - prev
 				if diff >= 0 {
-					r.Values[i] = diff
+					switch e.target {
+					case "nonNegativeDerivative":
+						r.Values[i] = diff
+					case "perSecond":
+						r.Values[i] = diff / float64(a.GetStepTime())
+					}
 				} else if !math.IsNaN(maxValue) && maxValue >= v {
-					r.Values[i] = ((maxValue - prev) + v + 1)
+					switch e.target {
+					case "nonNegativeDerivative":
+						r.Values[i] = ((maxValue - prev) + v + 1)
+					case "perSecond":
+						r.Values[i] = ((maxValue - prev) + v + 1/float64(a.GetStepTime()))
+					}
 				} else {
 					r.Values[i] = 0
 					r.IsAbsent[i] = true
