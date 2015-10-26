@@ -923,10 +923,10 @@ func main() {
 	case "mem":
 		qcache := &expireCache{ec: ecache.New(uint64(*memsize * 1024 * 1024))}
 		queryCache = qcache
-		go queryCache.(*expireCache).ec.Cleaner(5 * time.Minute)
+		go queryCache.(*expireCache).ec.ApproximateCleaner(10 * time.Second)
 
 		findCache = &expireCache{ec: ecache.New(0)}
-		go findCache.(*expireCache).ec.Cleaner(5 * time.Minute)
+		go findCache.(*expireCache).ec.ApproximateCleaner(10 * time.Second)
 
 		Metrics.CacheSize = expvar.Func(func() interface{} {
 			return qcache.ec.Size()
