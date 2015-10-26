@@ -588,6 +588,22 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "pow",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 3, etype: etConst},
+				},
+				argString: "metric1,3",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{5, 1, math.NaN(), 0, 12, 125, 10.4, 1.1}, 60, now32)},
+			},
+			[]float64{125, 1, math.NaN(), 0, 1728, 1953125, 1124.864, 1.331},
+			"pow(metric1,3)",
+		},
+		{
+			&expr{
 				target: "keepLastValue",
 				etype:  etFunc,
 				args: []*expr{
