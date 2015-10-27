@@ -458,6 +458,50 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "perSecond",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+				},
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{2, 4, 6, 10, 14, 20}, 2, now32)},
+			},
+			[]float64{math.NaN(), 1, 1, 2, 2, 3},
+			"perSecond(metric1)",
+		},
+		{
+			&expr{
+				target: "perSecond",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+				},
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{2, 4, 6, 1, 4, math.NaN(), 8}, 2, now32)},
+			},
+			[]float64{math.NaN(), 1, 1, math.NaN(), 1.5, math.NaN(), math.NaN()},
+			"perSecond(metric1)",
+		},
+		{
+			&expr{
+				target: "perSecond",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 32, etype: etConst},
+				},
+				argString: "metric1,32",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{2, 4, 0, 10, 1, math.NaN(), 8, 40, 37}, 2, now32)},
+			},
+			[]float64{math.NaN(), 1, 14.5, 5, 12, math.NaN(), math.NaN(), 16, math.NaN()},
+			"perSecond(metric1,32)",
+		},
+		{
+			&expr{
 				target: "movingAverage",
 				etype:  etFunc,
 				args: []*expr{
