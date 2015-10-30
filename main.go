@@ -834,7 +834,12 @@ type pathCache struct {
 func (p *pathCache) set(k string, v []string) {
 	// expire cache entries after 10 minutes
 	const expireDelay = 60 * 10
-	p.ec.Set(k, v, 0, expireDelay)
+	var size uint64
+	for _, vv := range v {
+		size += uint64(len(vv))
+	}
+
+	p.ec.Set(k, v, size, expireDelay)
 }
 
 func (p *pathCache) get(k string) ([]string, bool) {
