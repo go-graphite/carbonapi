@@ -9,7 +9,7 @@ import (
 
 var errUnknownTimeUnits = errors.New("unknown time units")
 
-// dateParamToEpoch turns a passed string parameter into an epoch we can send to the Zipper
+// dateParamToEpoch turns a passed string parameter into a unix epoch
 func dateParamToEpoch(s string, d int64) int32 {
 
 	if s == "" {
@@ -50,6 +50,7 @@ func dateParamToEpoch(s string, d int64) int32 {
 	return int32(d)
 }
 
+// intervalString converts a sign and string into a number of seconds
 func intervalString(s string, defaultSign int) (int32, error) {
 
 	sign := defaultSign
