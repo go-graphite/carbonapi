@@ -268,11 +268,6 @@ func (z zipper) get(who string, u *url.URL, msg unmarshaler) error {
 	return nil
 }
 
-type limiter chan struct{}
-
-func (l limiter) enter() { l <- struct{}{} }
-func (l limiter) leave() { <-l }
-
 var Limiter limiter
 
 // for testing
@@ -890,7 +885,7 @@ func main() {
 		*port, _ = strconv.Atoi(p)
 	}
 
-	Limiter = make(chan struct{}, *l)
+	Limiter = NewLimiter(*l)
 
 	if *z == "" {
 		logger.Fatalln("no zipper provided")
