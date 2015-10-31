@@ -313,16 +313,6 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 	}
 }
 
-func truthyBool(s string) bool {
-	switch s {
-	case "", "0", "false", "False", "no", "No":
-		return false
-	case "1", "true", "True", "yes", "Yes":
-		return true
-	}
-	return false
-}
-
 func findHandler(w http.ResponseWriter, r *http.Request) {
 
 	format := r.FormValue("format")

@@ -109,3 +109,13 @@ func intervalString(s string, defaultSign int) (int32, error) {
 
 	return totalInterval, nil
 }
+
+func truthyBool(s string) bool {
+	switch s {
+	case "", "0", "false", "False", "no", "No":
+		return false
+	case "1", "true", "True", "yes", "Yes":
+		return true
+	}
+	return false
+}
