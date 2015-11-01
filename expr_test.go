@@ -667,6 +667,21 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "changed",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0, 0, 0, math.NaN(), math.NaN(), 1, 1, 2, 3, 4, 4, 5, 5, 5, 6, 7}, 1, now32)},
+			},
+			[]float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1},
+			"changed(metric1)",
+		},
+		{
+			&expr{
 				target: "alias",
 				etype:  etFunc,
 				args: []*expr{
