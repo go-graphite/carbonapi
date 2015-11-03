@@ -2563,6 +2563,39 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			results = append(results, &r)
 		}
 		return results
+
+	case "removeBelowValue": // removeBelowValue(seriesLists, n)
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		threshold, err := getFloatArg(e, 1)
+		if err != nil {
+			return nil
+		}
+
+		var results []*metricData
+
+		for _, a := range args {
+			r := *a
+			r.Name = proto.String(fmt.Sprintf("removeBelowValue(%s, %g)", a.GetName(), threshold))
+			r.Values = make([]float64, len(a.Values))
+			r.IsAbsent = make([]bool, len(a.Values))
+
+			for i, v := range a.Values {
+				if a.IsAbsent[i] || v < threshold {
+					r.Values[i] = math.NaN()
+					r.IsAbsent[i] = true
+					continue
+				}
+
+				r.Values[i] = v
+			}
+
+			results = append(results, &r)
+		}
+		return results
 	}
 
 	logger.Logf("unknown function in evalExpr: %q\n", e.target)
