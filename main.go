@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"net/http/httputil"
 	_ "net/http/pprof"
 	"net/url"
 	"os"
@@ -167,6 +168,17 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 		}
 	}
 
+	maxDataPoints := int32(0)
+
+	if mstr := r.FormValue("maxDataPoints"); mstr != "" {
+		m, err := strconv.Atoi(mstr)
+		if err != nil {
+			logger.Logf("failed to parse maxDataPoints: %v: %v", mstr, m)
+		} else {
+			maxDataPoints = int32(m)
+		}
+	}
+
 	// make sure the cache key doesn't say noCache, because it will never hit
 	r.Form.Del("noCache")
 
@@ -199,7 +211,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 	metricMap := make(map[metricRequest][]*metricData)
 
 	for _, target := range targets {
-
+		if maxDataPoints > 0 {
+			target = fmt.Sprintf("maxDataPoints(%s, %d)", target, maxDataPoints)
+		}
 		exp, e, err := parseExpr(target)
 
 		if err != nil || e != "" {
@@ -471,6 +485,16 @@ func passthroughHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
+func proxyHandler(w http.ResponseWriter, r *http.Request) {
+	u, err := url.Parse("http://127.0.0.1:8080/")
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+  proxy := httputil.NewSingleHostReverseProxy(u)
+	proxy.ServeHTTP(w, r)
+}
+
 func lbcheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Ok\n"))
 }
@@ -643,7 +667,7 @@ func main() {
 	http.HandleFunc("/info", passthroughHandler)
 
 	http.HandleFunc("/lb_check", lbcheckHandler)
-	http.HandleFunc("/", usageHandler)
+	http.HandleFunc("/", proxyHandler)
 
 	logger.Logln("listening on port", *port)
 	logger.Fatalln(http.ListenAndServe(":"+strconv.Itoa(*port), nil))

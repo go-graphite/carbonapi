@@ -588,10 +588,13 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 				return nil
 			}
 			getTotal = func(i int) float64 {
-				if total[0].IsAbsent[i] {
+				if len(total[0].IsAbsent) > i && total[0].IsAbsent[i] {
+					return math.NaN()
+				} else if len(total[0].Values) > i {
+					return total[0].Values[i]
+				} else {
 					return math.NaN()
 				}
-				return total[0].Values[i]
 			}
 			var totalString string
 			if e.args[1].etype == etName {
@@ -763,6 +766,198 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			}
 		}
 
+		return results
+
+	case "checkLess", "checkLessEqual", "checkGreater", "checkGreaterEqual", "checkEqual": // checkLess(seriesList, series)
+		if len(e.args) < 2 {
+			return nil
+		}
+		comparator, err := getSeriesArg(e.args[1], from, until, values)
+		if err != nil {
+			return nil
+		}
+		if len(comparator) != 1 {
+			return nil
+		}
+
+		index := strings.IndexAny(e.target, "LGE")
+		var compareFunc func(float64, float64) bool
+		var compareName string
+		switch e.target[index:] {
+		case "Less":
+			compareFunc = compareLess
+			compareName = "<"
+		case "LessEqual":
+			compareFunc = compareLessEqual
+			compareName = "<="
+		case "Greater":
+			compareFunc = compareGreater
+			compareName = ">"
+		case "GreaterEqual":
+			compareFunc = compareGreaterEqual
+			compareName = ">="
+		case "Equal":
+			compareFunc = compareEqual
+			compareName = "="
+		}
+		c := comparator[0]
+		var gval float64
+		var operandName string
+		// hack for constantLine which only has two points
+		// in all other cases series are equal in step and length
+		if len(c.Values) == 2 {
+			gval = c.Values[0]
+			operandName = strconv.Itoa(int(gval))
+		} else {
+			gval = -1
+			operandName = c.GetName()
+		}
+		return forEachSeriesDo(e, from, until, values, func(a *metricData, r *metricData) *metricData {
+			r.Name = proto.String(fmt.Sprintf("%s %s %s", a.GetName(), compareName, operandName))
+			r.drawAsInfinite = true
+			r.secondYAxis = true
+			for i, v := range a.Values {
+				if a.IsAbsent[i] {
+					r.IsAbsent[i] = true
+					continue
+				}
+				var v2 float64
+				if gval != -1 {
+					v2 = gval
+				} else if c.IsAbsent[i] {
+					r.IsAbsent[i] = true
+					continue
+				} else {
+					v2 = c.Values[i]
+				}
+				if compareFunc(v, v2) {
+					r.Values[i] = 0
+				} else {
+					r.Values[i] = 1
+				}
+			}
+			return r
+		})
+
+	case "checkVariance": // checkVariance(*series, acceptableStdevs, windows)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+		acceptableStdevs, err := getFloatArg(e, 1)
+		if err != nil {
+			return nil
+		}
+		windows, err := getIntArg(e, 2)
+		if err != nil {
+			return nil
+		}
+
+		averages := aggregateSeries(e, arg, func(values []float64) float64 {
+			sum := 0.0
+			for _, value := range values {
+				sum += value
+			}
+			return sum / float64(len(values))
+		})[0].Values
+
+		stdevs := aggregateSeries(e, arg, func(values []float64) float64 {
+			w := &Windowed{data: make([]float64, len(values))}
+			for _, v := range values {
+				w.Push(v)
+			}
+			stdev := w.Stdev()
+			return stdev
+		})[0].Values
+
+		return forEachSeriesDo(e, from, until, values, func(a *metricData, r *metricData) *metricData {
+			r.Name = proto.String(fmt.Sprintf("stdev(%s) < %.2f (%d windows)", a.GetName(), acceptableStdevs, windows))
+			r.drawAsInfinite = true
+			r.secondYAxis = true
+
+			single_failures := make([]int, len(r.Values))
+			for i, v := range a.Values {
+				if a.IsAbsent[i] {
+					single_failures[i] = 0
+					continue
+				}
+
+				stdev := stdevs[i]
+				average := averages[i]
+				stdevsAway := 0.0
+				if stdev > 0 {
+					stdevsAway = math.Abs((v - average) / stdev)
+				}
+
+				if stdevsAway < acceptableStdevs {
+					single_failures[i] = 0
+				} else {
+					single_failures[i] = 1
+				}
+			}
+
+			left_failures := make([]int, len(r.Values))
+			failures := 0
+			for i, v := range single_failures {
+				left_failures[i] = failures
+				if v == 1 {
+					failures++
+				} else {
+					failures = 0
+				}
+			}
+
+			right_failures := make([]int, len(r.Values))
+			failures = 0
+			for i := range single_failures {
+				reverseI := len(single_failures) - i - 1
+				right_failures[reverseI] = failures
+				if single_failures[reverseI] == 1 {
+					failures++
+				} else {
+					failures = 0
+				}
+			}
+
+			for i, v := range single_failures {
+				if v == 0 {
+					continue
+				}
+
+				failures := 1
+				if i-1 >= 0 {
+					failures += left_failures[i-1]
+				}
+				if i+1 < len(single_failures) {
+					failures += right_failures[i+1]
+				}
+
+				if failures < windows {
+					r.Values[i] = 0
+				} else {
+					r.Values[i] = 1
+				}
+			}
+			return r
+		})
+
+	case "severity": // severity(seriesList, serverity)
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		severity, err := getIntArg(e, 1)
+		if err != nil {
+			return nil
+		}
+
+		var results []*metricData
+		for _, a := range args {
+			r := *a
+			r.Name = proto.String(fmt.Sprintf("%s sev:%d", a.GetName(), severity))
+			results = append(results, &r)
+		}
 		return results
 
 	case "derivative": // derivative(seriesList)
@@ -2191,6 +2386,100 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return percentile(values, percent, interpolate)
 		})
 
+	case "maxDataPoints": // used to condense targets down to a a set of dat points
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		points, err := getIntArg(e, 1)
+		if err != nil {
+			return nil
+		}
+
+		start := args[0].GetStartTime()
+		stop := args[0].GetStopTime()
+		step := args[0].GetStepTime()
+
+		// number of values we have
+		vals := int(math.Ceil(float64(stop-start) / float64(step)))
+		// number of seconds the new buckets represent
+		bucketSize := int32(math.Ceil(float64(vals/points)) * float64(step))
+
+		start, stop = alignToBucketSize(start, stop, bucketSize)
+
+		buckets := getBuckets(start, stop, bucketSize)
+		results := make([]*metricData, 0, len(args))
+		for _, arg := range args {
+
+			// dont alert the series name for this expr
+			name := arg.GetName()
+			// make this more intelligent
+			summarizeFunction := "avg"
+
+			if bucketSize <= step {
+				r := *arg
+				results = append(results, &r)
+				continue
+			}
+
+			r := metricData{FetchResponse: pb.FetchResponse{
+				Name:      proto.String(name),
+				Values:    make([]float64, buckets, buckets),
+				IsAbsent:  make([]bool, buckets, buckets),
+				StepTime:  proto.Int32(bucketSize),
+				StartTime: proto.Int32(start),
+				StopTime:  proto.Int32(stop),
+			}}
+
+			t := arg.GetStartTime() // unadjusted
+			bucketEnd := start + bucketSize
+			values := make([]float64, 0, bucketSize/arg.GetStepTime())
+			ridx := 0
+			bucketItems := 0
+			for i, v := range arg.Values {
+				bucketItems++
+				if !arg.IsAbsent[i] {
+					values = append(values, v)
+				}
+
+				t += arg.GetStepTime()
+
+				if t >= stop {
+					break
+				}
+
+				if t >= bucketEnd {
+					rv := summarizeValues(summarizeFunction, values)
+
+					if math.IsNaN(rv) {
+						r.IsAbsent[ridx] = true
+					}
+
+					r.Values[ridx] = rv
+					ridx++
+					bucketEnd += bucketSize
+					bucketItems = 0
+					values = values[:0]
+				}
+			}
+
+			// last partial bucket
+			if bucketItems > 0 {
+				rv := summarizeValues(summarizeFunction, values)
+				if math.IsNaN(rv) {
+					r.Values[ridx] = 0
+					r.IsAbsent[ridx] = true
+				} else {
+					r.Values[ridx] = rv
+					r.IsAbsent[ridx] = false
+				}
+			}
+
+			results = append(results, &r)
+		}
+		return results
+
 	case "summarize": // summarize(seriesList, intervalString, func='sum', alignToFrom=False)
 		// TODO(dgryski): make sure the arrays are all the same 'size'
 		args, err := getSeriesArg(e.args[0], from, until, values)
@@ -2215,6 +2504,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		start := args[0].GetStartTime()
 		stop := args[0].GetStopTime()
+
 		if !alignToFrom {
 			start, stop = alignToBucketSize(start, stop, bucketSize)
 		}
@@ -2929,6 +3219,26 @@ func percentile(data []float64, percent float64, interpolate bool) float64 {
 		return top
 	}
 	return (top * remainder) + (secondTop * (1 - remainder))
+}
+
+func compareLess(a float64, b float64) bool {
+	return a < b
+}
+
+func compareLessEqual(a float64, b float64) bool {
+	return a <= b
+}
+
+func compareEqual(a float64, b float64) bool {
+	return a == b
+}
+
+func compareGreater(a float64, b float64) bool {
+	return a > b
+}
+
+func compareGreaterEqual(a float64, b float64) bool {
+	return a >= b
 }
 
 func maxValue(f64s []float64, absent []bool) float64 {
