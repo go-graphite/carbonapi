@@ -463,25 +463,12 @@ func TestEvalExpression(t *testing.T) {
 				args: []*expr{
 					&expr{target: "metric1"},
 				},
+				argString: "metric1",
 			},
 			map[metricRequest][]*metricData{
-				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{2, 4, 6, 10, 14, 20}, 2, now32)},
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{27, 19, math.NaN(), 10, 1, 100, 1.5, 10.20}, 1, now32)},
 			},
-			[]float64{math.NaN(), 1, 1, 2, 2, 3},
-			"perSecond(metric1)",
-		},
-		{
-			&expr{
-				target: "perSecond",
-				etype:  etFunc,
-				args: []*expr{
-					&expr{target: "metric1"},
-				},
-			},
-			map[metricRequest][]*metricData{
-				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{2, 4, 6, 1, 4, math.NaN(), 8}, 2, now32)},
-			},
-			[]float64{math.NaN(), 1, 1, math.NaN(), 1.5, math.NaN(), math.NaN()},
+			[]float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 99, math.NaN(), 8.7},
 			"perSecond(metric1)",
 		},
 		{
@@ -495,9 +482,9 @@ func TestEvalExpression(t *testing.T) {
 				argString: "metric1,32",
 			},
 			map[metricRequest][]*metricData{
-				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{2, 4, 0, 10, 1, math.NaN(), 8, 40, 37}, 2, now32)},
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{math.NaN(), 1, 2, 3, 4, 30, 0, 32, math.NaN()}, 1, now32)},
 			},
-			[]float64{math.NaN(), 1, 14.5, 5, 12, math.NaN(), math.NaN(), 16, math.NaN()},
+			[]float64{math.NaN(), math.NaN(), 1, 1, 1, 26, 3, 32, math.NaN()},
 			"perSecond(metric1,32)",
 		},
 		{
@@ -677,6 +664,21 @@ func TestEvalExpression(t *testing.T) {
 			},
 			[]float64{math.NaN(), 2, 2, 2, 2, 2, 4, 5},
 			"keepLastValue(metric1)",
+		},
+		{
+			&expr{
+				target: "changed",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0, 0, 0, math.NaN(), math.NaN(), 1, 1, 2, 3, 4, 4, 5, 5, 5, 6, 7}, 1, now32)},
+			},
+			[]float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1},
+			"changed(metric1)",
 		},
 		{
 			&expr{

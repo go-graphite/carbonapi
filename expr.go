@@ -1286,6 +1286,35 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 		return results
 
+	case "changed": // changed(SeriesList)
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		var result []*metricData
+		for _, a := range args {
+			r := *a
+			r.Name = proto.String(fmt.Sprintf("%s(%s)", e.target, a.GetName()))
+			r.Values = make([]float64, len(a.Values))
+			r.IsAbsent = make([]bool, len(a.Values))
+
+			prev := math.NaN()
+			for i, v := range a.Values {
+				if math.IsNaN(prev) {
+					prev = v
+					r.Values[i] = 0
+				} else if !math.IsNaN(v) && prev != v {
+					r.Values[i] = 1
+					prev = v
+				} else {
+					r.Values[i] = 0
+				}
+			}
+			result = append(result, &r)
+		}
+		return result
+
 	case "kolmogorovSmirnovTest2", "ksTest2": // ksTest2(series, series, points|"interval")
 		arg1, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
@@ -1655,20 +1684,16 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		var result []*metricData
 		for _, a := range args {
-			var name string
-			if len(e.args) == 1 {
-				name = fmt.Sprintf("perSecond(%s)", a.GetName())
-			} else {
-				name = fmt.Sprintf("perSecond(%s,%g)", a.GetName(), maxValue)
-			}
-
 			r := *a
-			r.Name = proto.String(name)
+			if len(e.args) == 1 {
+				r.Name = proto.String(fmt.Sprintf("%s(%s)", e.target, a.GetName()))
+			} else {
+				r.Name = proto.String(fmt.Sprintf("%s(%s,%g)", e.target, a.GetName(), maxValue))
+			}
 			r.Values = make([]float64, len(a.Values))
 			r.IsAbsent = make([]bool, len(a.Values))
 
 			prev := a.Values[0]
-			step := float64(*a.StepTime)
 			for i, v := range a.Values {
 				if i == 0 || a.IsAbsent[i] || a.IsAbsent[i-1] {
 					r.IsAbsent[i] = true
@@ -1677,9 +1702,9 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 				}
 				diff := v - prev
 				if diff >= 0 {
-					r.Values[i] = diff / step
+					r.Values[i] = diff / float64(a.GetStepTime())
 				} else if !math.IsNaN(maxValue) && maxValue >= v {
-					r.Values[i] = ((maxValue - prev) + v + 1) / step
+					r.Values[i] = ((maxValue - prev) + v + 1/float64(a.GetStepTime()))
 				} else {
 					r.Values[i] = 0
 					r.IsAbsent[i] = true
