@@ -1543,6 +1543,22 @@ func TestEvalExpression(t *testing.T) {
 			[]float64{1, 2, math.NaN(), 7, 8, 20, 30, math.NaN()},
 			"removeBelowValue(metric1, 0)",
 		},
+		{
+			&expr{
+				target: "removeAboveValue",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 10, etype: etConst},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+			},
+			[]float64{1, 2, -1, 7, 8, math.NaN(), math.NaN(), math.NaN()},
+			"removeAboveValue(metric1, 10)",
+		},
 	}
 
 	for _, tt := range tests {
