@@ -650,6 +650,72 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return sum / float64(len(values))
 		})
 
+	case "averageSeriesWithWildcards": // averageSeriesWithWildcards(seriesLIst, *position)
+		/* TODO(dgryski): make sure the arrays are all the same 'size'
+		   (duplicated from sumSeriesWithWildcards because of similar logic but aggregation) */
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		fields, err := getIntArgs(e, 1)
+		if err != nil {
+			return nil
+		}
+
+		var results []*metricData
+
+		groups := make(map[string][]*metricData)
+
+		for _, a := range args {
+			metric := extractMetric(a.GetName())
+			nodes := strings.Split(metric, ".")
+			var s []string
+			// Yes, this is O(n^2), but len(nodes) < 10 and len(fields) < 3
+			// Iterating an int slice is faster than a map for n ~ 30
+			// http://www.antoine.im/posts/someone_is_wrong_on_the_internet
+			for i, n := range nodes {
+				if !contains(fields, i) {
+					s = append(s, n)
+				}
+			}
+
+			node := strings.Join(s, ".")
+
+			groups[node] = append(groups[node], a)
+		}
+
+		for series, args := range groups {
+			r := *args[0]
+			r.Name = proto.String(fmt.Sprintf("averageSeriesWithWildcards(%s)", series))
+			r.Values = make([]float64, len(args[0].Values))
+			r.IsAbsent = make([]bool, len(args[0].Values))
+
+			length := make([]float64, len(args[0].Values))
+			atLeastOne := make([]bool, len(args[0].Values))
+			for _, arg := range args {
+				for i, v := range arg.Values {
+					if arg.IsAbsent[i] {
+						continue
+					}
+					atLeastOne[i] = true
+					length[i] += 1
+					r.Values[i] += v
+				}
+			}
+
+			for i, v := range atLeastOne {
+				if v {
+					r.Values[i] = r.Values[i] / length[i]
+				} else {
+					r.IsAbsent[i] = true
+				}
+			}
+
+			results = append(results, &r)
+		}
+		return results
+
 	case "averageAbove", "averageBelow", "currentAbove", "currentBelow", "maximumAbove", "maximumBelow", "minimumAbove", "minimumBelow": // averageAbove(seriesList, n), averageBelow(seriesList, n), currentAbove(seriesList, n), currentBelow(seriesList, n), maximumAbove(seriesList, n), maximumBelow(seriesList, n), minimumAbove(seriesList, n), minimumBelow
 		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
@@ -2522,11 +2588,77 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			results = append(results, &r)
 		}
 		return results
+
+	case "removeBelowValue": // removeBelowValue(seriesLists, n)
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		threshold, err := getFloatArg(e, 1)
+		if err != nil {
+			return nil
+		}
+
+		var results []*metricData
+
+		for _, a := range args {
+			r := removeByValue(a, threshold, func(v float64, threshold float64) bool {
+				return v < threshold
+			})
+			r.Name = proto.String(fmt.Sprintf("removeBelowValue(%s, %g)", a.GetName(), threshold))
+
+			results = append(results, &r)
+		}
+		return results
+
+	case "removeAboveValue": // removeAboveValue(seriesLists, n)
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		threshold, err := getFloatArg(e, 1)
+		if err != nil {
+			return nil
+		}
+
+		var results []*metricData
+
+		for _, a := range args {
+			r := removeByValue(a, threshold, func(v float64, threshold float64) bool {
+				return v > threshold
+			})
+			r.Name = proto.String(fmt.Sprintf("removeAboveValue(%s, %g)", a.GetName(), threshold))
+
+			results = append(results, &r)
+		}
+		return results
 	}
 
 	logger.Logf("unknown function in evalExpr: %q\n", e.target)
 
 	return nil
+}
+
+type removeFunc func(float64, float64) bool
+
+func removeByValue(a *metricData, threshold float64, condition removeFunc) metricData {
+	r := *a
+	r.Values = make([]float64, len(a.Values))
+	r.IsAbsent = make([]bool, len(a.Values))
+
+	for i, v := range a.Values {
+		if a.IsAbsent[i] || condition(v, threshold) {
+			r.Values[i] = math.NaN()
+			r.IsAbsent[i] = true
+			continue
+		}
+
+		r.Values[i] = v
+	}
+
+	return r
 }
 
 // Total (sortByTotal), max (sortByMaxima), min (sortByMinima) sorting
