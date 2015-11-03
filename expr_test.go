@@ -1993,6 +1993,30 @@ func TestEvalMultipleReturns(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "averageSeriesWithWildcards",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1.foo.*.*"},
+					&expr{val: 1, etype: etConst},
+					&expr{val: 2, etype: etConst},
+				},
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1.foo.*.*", 0, 1}: []*metricData{
+					makeResponse("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
+					makeResponse("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, now32),
+					makeResponse("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
+					makeResponse("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11}, 1, now32),
+				},
+			},
+			"averageSeriesWithWildcards",
+			map[string][]*metricData{
+				"averageSeriesWithWildcards(metric1.baz)": []*metricData{makeResponse("averageSeriesWithWildcards(metric1.baz)", []float64{6, 7, 8, 9, 10}, 1, now32)},
+				"averageSeriesWithWildcards(metric1.qux)": []*metricData{makeResponse("averageSeriesWithWildcards(metric1.qux)", []float64{6.5, 7.5, 8.5, 9.5, 10.5}, 1, now32)},
+			},
+		},
+		{
+			&expr{
 				target: "highestCurrent",
 				etype:  etFunc,
 				args: []*expr{
