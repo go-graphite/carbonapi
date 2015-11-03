@@ -3,12 +3,9 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"expvar"
 	"flag"
 	"fmt"
-	"io/ioutil"
-	"math"
 	"net/http"
 	"net/http/httputil"
 	_ "net/http/pprof"
@@ -24,26 +21,8 @@ import (
 
 	"github.com/bradfitz/gomemcache/memcache"
 	ecache "github.com/dgryski/go-expirecache"
-	pickle "github.com/kisielk/og-rek"
 	"github.com/peterbourgon/g2g"
 )
-
-type metricData struct {
-	pb.FetchResponse
-
-	// extra options
-	drawAsInfinite bool
-	secondYAxis    bool
-	dashed         bool // TODO (ikruglov) smth like lineType would be better
-	color          string
-}
-
-type zipper struct {
-	z      string
-	client *http.Client
-}
-
-var Zipper zipper
 
 var Metrics = struct {
 	Requests         *expvar.Int
@@ -81,270 +60,12 @@ var defaultTimeZone = time.Local
 
 var logger mlog.Level
 
-// dateParamToEpoch turns a passed string parameter into an epoch we can send to the Zipper
-func dateParamToEpoch(s string, d int64) int32 {
-
-	if s == "" {
-		// return the default if nothing was passed
-		return int32(d)
-	}
-
-	// relative timestamp
-	if s[0] == '-' {
-
-		offset, err := intervalString(s, -1)
-		if err != nil {
-			return int32(d)
-		}
-
-		return int32(timeNow().Add(time.Duration(offset) * time.Second).Unix())
-	}
-
-	if s == "now" {
-		return int32(timeNow().Unix())
-	}
-
-	sint, err := strconv.Atoi(s)
-	if err == nil && len(s) > 8 {
-		return int32(sint) // We got a timestamp so returning it
-	}
-
-	if strings.Contains(s, "_") {
-		s = strings.Replace(s, "_", " ", 1) // Go can't parse _ in date strings
-	}
-
-	for _, format := range timeFormats {
-		t, err := time.ParseInLocation(format, s, defaultTimeZone)
-		if err == nil {
-			return int32(t.Unix())
-		}
-	}
-	return int32(d)
-}
-
-var errUnknownTimeUnits = errors.New("unknown time units")
-
-func intervalString(s string, defaultSign int) (int32, error) {
-
-	sign := defaultSign
-
-	switch s[0] {
-	case '-':
-		sign = -1
-		s = s[1:]
-	case '+':
-		sign = 1
-		s = s[1:]
-	}
-
-	var totalInterval int32
-	for len(s) > 0 {
-		var j int
-		for j < len(s) && '0' <= s[j] && s[j] <= '9' {
-			j++
-		}
-		var offsetStr string
-		offsetStr, s = s[:j], s[j:]
-
-		j = 0
-		for j < len(s) && (s[j] < '0' || '9' < s[j]) {
-			j++
-		}
-		var unitStr string
-		unitStr, s = s[:j], s[j:]
-
-		var units int
-		switch unitStr {
-		case "s", "sec", "secs", "second", "seconds":
-			units = 1
-		case "min", "mins", "minute", "minutes":
-			units = 60
-		case "h", "hour", "hours":
-			units = 60 * 60
-		case "d", "day", "days":
-			units = 24 * 60 * 60
-		case "w", "week", "weeks":
-			units = 7 * 24 * 60 * 60
-		case "mon", "month", "months":
-			units = 30 * 24 * 60 * 60
-		case "y", "year", "years":
-			units = 365 * 24 * 60 * 60
-		default:
-			return 0, errUnknownTimeUnits
-		}
-
-		offset, err := strconv.Atoi(offsetStr)
-		if err != nil {
-			return 0, err
-		}
-		totalInterval += int32(sign * offset * units)
-	}
-
-	return totalInterval, nil
-}
-
-func (z zipper) Find(metric string) (pb.GlobResponse, error) {
-
-	u, _ := url.Parse(string(z.z) + "/metrics/find/")
-
-	u.RawQuery = url.Values{
-		"query":  []string{metric},
-		"format": []string{"protobuf"},
-	}.Encode()
-
-	var pbresp pb.GlobResponse
-
-	err := z.get("Find", u, &pbresp)
-
-	return pbresp, err
-}
-
-var errNoMetrics = errors.New("no metrics")
-
-func (z zipper) Render(metric string, from, until int32) (metricData, error) {
-
-	u, _ := url.Parse(string(z.z) + "/render/")
-
-	u.RawQuery = url.Values{
-		"target": []string{metric},
-		"format": []string{"protobuf"},
-		"from":   []string{strconv.Itoa(int(from))},
-		"until":  []string{strconv.Itoa(int(until))},
-	}.Encode()
-
-	var pbresp pb.MultiFetchResponse
-	err := z.get("Render", u, &pbresp)
-	if err != nil {
-		return metricData{}, err
-	}
-
-	if m := pbresp.Metrics; len(m) == 0 {
-		return metricData{}, errNoMetrics
-	}
-
-	mdata := metricData{FetchResponse: *pbresp.Metrics[0]}
-
-	return mdata, nil
-}
-
-func (z zipper) Passthrough(metric string) ([]byte, error) {
-
-	u, _ := url.Parse(string(z.z) + metric)
-
-	resp, err := z.client.Get(u.String())
-	if err != nil {
-		return nil, fmt.Errorf("http.Get: %+v", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("ioutil.ReadAll: %+v", err)
-	}
-
-	return body, nil
-}
-
-type unmarshaler interface {
-	Unmarshal([]byte) error
-}
-
-func (z zipper) get(who string, u *url.URL, msg unmarshaler) error {
-	resp, err := z.client.Get(u.String())
-	if err != nil {
-		return fmt.Errorf("http.Get: %+v", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("ioutil.ReadAll: %+v", err)
-	}
-
-	err = msg.Unmarshal(body)
-	if err != nil {
-		return fmt.Errorf("proto.Unmarshal: %+v", err)
-	}
-
-	return nil
-}
-
-type limiter chan struct{}
-
-func (l limiter) enter() { l <- struct{}{} }
-func (l limiter) leave() { <-l }
+var Zipper zipper
 
 var Limiter limiter
 
 // for testing
 var timeNow = time.Now
-
-func marshalJSON(results []*metricData) []byte {
-
-	var b []byte
-
-	b = append(b, '[')
-
-	var topComma bool
-	for _, r := range results {
-		if r == nil {
-			continue
-		}
-
-		if topComma {
-			b = append(b, ',')
-		}
-		topComma = true
-
-		b = append(b, `{"target":`...)
-		b = strconv.AppendQuoteToASCII(b, r.GetName())
-		b = append(b, `,"datapoints":[`...)
-
-		var innerComma bool
-		t := r.GetStartTime()
-		for i, v := range r.Values {
-			if innerComma {
-				b = append(b, ',')
-			}
-			innerComma = true
-
-			b = append(b, '[')
-
-			if r.IsAbsent[i] || math.IsInf(v, 0) {
-				b = append(b, "null"...)
-			} else {
-				b = strconv.AppendFloat(b, v, 'f', -1, 64)
-			}
-
-			b = append(b, ',')
-
-			b = strconv.AppendInt(b, int64(t), 10)
-
-			b = append(b, ']')
-
-			t += r.GetStepTime()
-		}
-
-		b = append(b, `]}`...)
-	}
-
-	b = append(b, ']')
-
-	return b
-}
-
-func marshalProtobuf(results []*metricData) []byte {
-	response := pb.MultiFetchResponse{}
-	for _, metric := range results {
-		response.Metrics = append(response.Metrics, &((*metric).FetchResponse))
-	}
-	b, err := response.Marshal()
-	if err != nil {
-		logger.Logf("proto.Marshal: %v", err)
-	}
-
-	return b
-}
 
 func writeResponse(w http.ResponseWriter, b []byte, format string, jsonp string) {
 
@@ -376,96 +97,6 @@ func writeResponse(w http.ResponseWriter, b []byte, format string, jsonp string)
 		w.Header().Set("Content-Type", contentTypePNG)
 		w.Write(b)
 	}
-}
-
-func marshalRaw(results []*metricData) []byte {
-
-	var b []byte
-
-	for _, r := range results {
-
-		b = append(b, r.GetName()...)
-
-		b = append(b, ',')
-		b = strconv.AppendInt(b, int64(r.GetStartTime()), 10)
-		b = append(b, ',')
-		b = strconv.AppendInt(b, int64(r.GetStopTime()), 10)
-		b = append(b, ',')
-		b = strconv.AppendInt(b, int64(r.GetStepTime()), 10)
-		b = append(b, '|')
-
-		var comma bool
-		for i, v := range r.Values {
-			if comma {
-				b = append(b, ',')
-			}
-			comma = true
-			if r.IsAbsent[i] {
-				b = append(b, "None"...)
-			} else {
-				b = strconv.AppendFloat(b, v, 'f', -1, 64)
-			}
-		}
-
-		b = append(b, '\n')
-	}
-	return b
-}
-
-func marshalCSV(results []*metricData) []byte {
-
-	var b []byte
-
-	for _, r := range results {
-
-		step := r.GetStepTime()
-		t := r.GetStartTime()
-		for i, v := range r.Values {
-			if !r.IsAbsent[i] {
-				b = append(b, '"')
-				b = append(b, r.GetName()...)
-				b = append(b, '"')
-				b = append(b, ',')
-				b = append(b, time.Unix(int64(t), 0).Format("2006-01-02 15:04:05")...)
-				b = append(b, ',')
-				b = strconv.AppendFloat(b, v, 'f', -1, 64)
-				b = append(b, '\n')
-			}
-			t += step
-		}
-	}
-	return b
-}
-
-func marshalPickle(results []*metricData) []byte {
-
-	var p []map[string]interface{}
-
-	for _, r := range results {
-		values := make([]interface{}, len(r.Values))
-		for i, v := range r.Values {
-			if r.IsAbsent[i] {
-				values[i] = pickle.None{}
-			} else {
-				values[i] = v
-			}
-
-		}
-		p = append(p, map[string]interface{}{
-			"name":   r.GetName(),
-			"start":  r.GetStartTime(),
-			"end":    r.GetStopTime(),
-			"step":   r.GetStepTime(),
-			"values": values,
-		})
-	}
-
-	var buf bytes.Buffer
-
-	penc := pickle.NewEncoder(&buf)
-	penc.Encode(p)
-
-	return buf.Bytes()
 }
 
 const (
@@ -696,16 +327,6 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 	}
 }
 
-func truthyBool(s string) bool {
-	switch s {
-	case "", "0", "false", "False", "no", "No":
-		return false
-	case "1", "true", "True", "yes", "Yes":
-		return true
-	}
-	return false
-}
-
 func findHandler(w http.ResponseWriter, r *http.Request) {
 
 	format := r.FormValue("format")
@@ -914,7 +535,7 @@ func main() {
 		*port, _ = strconv.Atoi(p)
 	}
 
-	Limiter = make(chan struct{}, *l)
+	Limiter = NewLimiter(*l)
 
 	if *z == "" {
 		logger.Fatalln("no zipper provided")
@@ -947,10 +568,10 @@ func main() {
 	case "mem":
 		qcache := &expireCache{ec: ecache.New(uint64(*memsize * 1024 * 1024))}
 		queryCache = qcache
-		go queryCache.(*expireCache).ec.Cleaner(5 * time.Minute)
+		go queryCache.(*expireCache).ec.ApproximateCleaner(10 * time.Second)
 
 		findCache = &expireCache{ec: ecache.New(0)}
-		go findCache.(*expireCache).ec.Cleaner(5 * time.Minute)
+		go findCache.(*expireCache).ec.ApproximateCleaner(10 * time.Second)
 
 		Metrics.CacheSize = expvar.Func(func() interface{} {
 			return qcache.ec.Size()

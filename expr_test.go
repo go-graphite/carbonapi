@@ -458,6 +458,37 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "perSecond",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{27, 19, math.NaN(), 10, 1, 100, 1.5, 10.20}, 1, now32)},
+			},
+			[]float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 99, math.NaN(), 8.7},
+			"perSecond(metric1)",
+		},
+		{
+			&expr{
+				target: "perSecond",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 32, etype: etConst},
+				},
+				argString: "metric1,32",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{math.NaN(), 1, 2, 3, 4, 30, 0, 32, math.NaN()}, 1, now32)},
+			},
+			[]float64{math.NaN(), math.NaN(), 1, 1, 1, 26, 3, 32, math.NaN()},
+			"perSecond(metric1,32)",
+		},
+		{
+			&expr{
 				target: "movingAverage",
 				etype:  etFunc,
 				args: []*expr{
@@ -588,6 +619,22 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "pow",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 3, etype: etConst},
+				},
+				argString: "metric1,3",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{5, 1, math.NaN(), 0, 12, 125, 10.4, 1.1}, 60, now32)},
+			},
+			[]float64{125, 1, math.NaN(), 0, 1728, 1953125, 1124.864, 1.331},
+			"pow(metric1,3)",
+		},
+		{
+			&expr{
 				target: "keepLastValue",
 				etype:  etFunc,
 				args: []*expr{
@@ -617,6 +664,21 @@ func TestEvalExpression(t *testing.T) {
 			},
 			[]float64{math.NaN(), 2, 2, 2, 2, 2, 4, 5},
 			"keepLastValue(metric1)",
+		},
+		{
+			&expr{
+				target: "changed",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0, 0, 0, math.NaN(), math.NaN(), 1, 1, 2, 3, 4, 4, 5, 5, 5, 6, 7}, 1, now32)},
+			},
+			[]float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1},
+			"changed(metric1)",
 		},
 		{
 			&expr{
@@ -1274,6 +1336,22 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "offset",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 10, etype: etConst},
+				},
+				argString: "metric1,10",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{93, 94, 95, math.NaN(), 97, 98, 99, 100, 101}, 1, now32)},
+			},
+			[]float64{103, 104, 105, math.NaN(), 107, 108, 109, 110, 111},
+			"offset(metric1,10)",
+		},
+		{
+			&expr{
 				target: "offsetToZero",
 				etype:  etFunc,
 				args: []*expr{
@@ -1434,12 +1512,63 @@ func TestEvalExpression(t *testing.T) {
 			[]float64{42.42, 42.42},
 			"42.42",
 		},
+		{
+			&expr{
+				target: "squareRoot",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+			},
+			[]float64{1, 1.4142135623730951, 0, 2.6457513110645907, 2.8284271247461903, 4.47213595499958, 5.477225575051661, math.NaN()},
+			"squareRoot(metric1)",
+		},
+		{
+			&expr{
+				target: "removeBelowValue",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 0, etype: etConst},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+			},
+			[]float64{1, 2, math.NaN(), 7, 8, 20, 30, math.NaN()},
+			"removeBelowValue(metric1, 0)",
+		},
+		{
+			&expr{
+				target: "removeAboveValue",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 10, etype: etConst},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+			},
+			[]float64{1, 2, -1, 7, 8, math.NaN(), math.NaN(), math.NaN()},
+			"removeAboveValue(metric1, 10)",
+		},
 	}
 
 	for _, tt := range tests {
 		g := evalExpr(tt.e, 0, 1, tt.m)
 		if g == nil {
 			t.Errorf("failed to eval %v", tt.name)
+			continue
+		}
+		if g[0] == nil {
+			t.Errorf("returned no value %v", tt.e.argString)
 			continue
 		}
 		if g[0].GetStepTime() == 0 {
@@ -1894,6 +2023,30 @@ func TestEvalMultipleReturns(t *testing.T) {
 			map[string][]*metricData{
 				"sumSeriesWithWildcards(metric1.baz)": []*metricData{makeResponse("sumSeriesWithWildcards(metric1.baz)", []float64{12, 14, 16, 18, 20}, 1, now32)},
 				"sumSeriesWithWildcards(metric1.qux)": []*metricData{makeResponse("sumSeriesWithWildcards(metric1.qux)", []float64{13, 15, 17, 19, 21}, 1, now32)},
+			},
+		},
+		{
+			&expr{
+				target: "averageSeriesWithWildcards",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1.foo.*.*"},
+					&expr{val: 1, etype: etConst},
+					&expr{val: 2, etype: etConst},
+				},
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1.foo.*.*", 0, 1}: []*metricData{
+					makeResponse("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
+					makeResponse("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, now32),
+					makeResponse("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
+					makeResponse("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11}, 1, now32),
+				},
+			},
+			"averageSeriesWithWildcards",
+			map[string][]*metricData{
+				"averageSeriesWithWildcards(metric1.baz)": []*metricData{makeResponse("averageSeriesWithWildcards(metric1.baz)", []float64{6, 7, 8, 9, 10}, 1, now32)},
+				"averageSeriesWithWildcards(metric1.qux)": []*metricData{makeResponse("averageSeriesWithWildcards(metric1.qux)", []float64{6.5, 7.5, 8.5, 9.5, 10.5}, 1, now32)},
 			},
 		},
 		{

@@ -653,6 +653,72 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return sum / float64(len(values))
 		})
 
+	case "averageSeriesWithWildcards": // averageSeriesWithWildcards(seriesLIst, *position)
+		/* TODO(dgryski): make sure the arrays are all the same 'size'
+		   (duplicated from sumSeriesWithWildcards because of similar logic but aggregation) */
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		fields, err := getIntArgs(e, 1)
+		if err != nil {
+			return nil
+		}
+
+		var results []*metricData
+
+		groups := make(map[string][]*metricData)
+
+		for _, a := range args {
+			metric := extractMetric(a.GetName())
+			nodes := strings.Split(metric, ".")
+			var s []string
+			// Yes, this is O(n^2), but len(nodes) < 10 and len(fields) < 3
+			// Iterating an int slice is faster than a map for n ~ 30
+			// http://www.antoine.im/posts/someone_is_wrong_on_the_internet
+			for i, n := range nodes {
+				if !contains(fields, i) {
+					s = append(s, n)
+				}
+			}
+
+			node := strings.Join(s, ".")
+
+			groups[node] = append(groups[node], a)
+		}
+
+		for series, args := range groups {
+			r := *args[0]
+			r.Name = proto.String(fmt.Sprintf("averageSeriesWithWildcards(%s)", series))
+			r.Values = make([]float64, len(args[0].Values))
+			r.IsAbsent = make([]bool, len(args[0].Values))
+
+			length := make([]float64, len(args[0].Values))
+			atLeastOne := make([]bool, len(args[0].Values))
+			for _, arg := range args {
+				for i, v := range arg.Values {
+					if arg.IsAbsent[i] {
+						continue
+					}
+					atLeastOne[i] = true
+					length[i] += 1
+					r.Values[i] += v
+				}
+			}
+
+			for i, v := range atLeastOne {
+				if v {
+					r.Values[i] = r.Values[i] / length[i]
+				} else {
+					r.IsAbsent[i] = true
+				}
+			}
+
+			results = append(results, &r)
+		}
+		return results
+
 	case "averageAbove", "averageBelow", "currentAbove", "currentBelow", "maximumAbove", "maximumBelow", "minimumAbove", "minimumBelow": // averageAbove(seriesList, n), averageBelow(seriesList, n), currentAbove(seriesList, n), currentBelow(seriesList, n), maximumAbove(seriesList, n), maximumBelow(seriesList, n), minimumAbove(seriesList, n), minimumBelow
 		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
@@ -1415,6 +1481,35 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 		return results
 
+	case "changed": // changed(SeriesList)
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		var result []*metricData
+		for _, a := range args {
+			r := *a
+			r.Name = proto.String(fmt.Sprintf("%s(%s)", e.target, a.GetName()))
+			r.Values = make([]float64, len(a.Values))
+			r.IsAbsent = make([]bool, len(a.Values))
+
+			prev := math.NaN()
+			for i, v := range a.Values {
+				if math.IsNaN(prev) {
+					prev = v
+					r.Values[i] = 0
+				} else if !math.IsNaN(v) && prev != v {
+					r.Values[i] = 1
+					prev = v
+				} else {
+					r.Values[i] = 0
+				}
+			}
+			result = append(result, &r)
+		}
+		return result
+
 	case "kolmogorovSmirnovTest2", "ksTest2": // ksTest2(series, series, points|"interval")
 		arg1, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
@@ -1771,6 +1866,50 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 		return result
 
+	case "perSecond": // perSecond(seriesList, maxValue=None)
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		maxValue, err := getFloatArgDefault(e, 1, math.NaN())
+		if err != nil {
+			return nil
+		}
+
+		var result []*metricData
+		for _, a := range args {
+			r := *a
+			if len(e.args) == 1 {
+				r.Name = proto.String(fmt.Sprintf("%s(%s)", e.target, a.GetName()))
+			} else {
+				r.Name = proto.String(fmt.Sprintf("%s(%s,%g)", e.target, a.GetName(), maxValue))
+			}
+			r.Values = make([]float64, len(a.Values))
+			r.IsAbsent = make([]bool, len(a.Values))
+
+			prev := a.Values[0]
+			for i, v := range a.Values {
+				if i == 0 || a.IsAbsent[i] || a.IsAbsent[i-1] {
+					r.IsAbsent[i] = true
+					prev = v
+					continue
+				}
+				diff := v - prev
+				if diff >= 0 {
+					r.Values[i] = diff / float64(a.GetStepTime())
+				} else if !math.IsNaN(maxValue) && maxValue >= v {
+					r.Values[i] = ((maxValue - prev) + v + 1/float64(a.GetStepTime()))
+				} else {
+					r.Values[i] = 0
+					r.IsAbsent[i] = true
+				}
+				prev = v
+			}
+			result = append(result, &r)
+		}
+		return result
+
 	case "nPercentile": // nPercentile(seriesList, n)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
@@ -1934,6 +2073,35 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		return results
 
+	case "offset": // offset(seriesList,factor)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+		factor, err := getFloatArg(e, 1)
+		if err != nil {
+			return nil
+		}
+		var results []*metricData
+
+		for _, a := range arg {
+			r := *a
+			r.Name = proto.String(fmt.Sprintf("offset(%s,%g)", a.GetName(), factor))
+			r.Values = make([]float64, len(a.Values))
+			r.IsAbsent = make([]bool, len(a.Values))
+
+			for i, v := range a.Values {
+				if a.IsAbsent[i] {
+					r.Values[i] = 0
+					r.IsAbsent[i] = true
+					continue
+				}
+				r.Values[i] = v + factor
+			}
+			results = append(results, &r)
+		}
+		return results
+
 	case "offsetToZero": // offsetToZero(seriesList)
 		return forEachSeriesDo(e, from, until, values, func(a *metricData, r *metricData) *metricData {
 			minimum := math.Inf(1)
@@ -1952,6 +2120,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			}
 			return r
 		})
+
 	case "scale": // scale(seriesList, factor)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
@@ -2008,6 +2177,35 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 					continue
 				}
 				r.Values[i] = v * factor
+			}
+			results = append(results, &r)
+		}
+		return results
+
+	case "pow": // pow(seriesList,factor)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+		factor, err := getFloatArg(e, 1)
+		if err != nil {
+			return nil
+		}
+		var results []*metricData
+
+		for _, a := range arg {
+			r := *a
+			r.Name = proto.String(fmt.Sprintf("pow(%s,%g)", a.GetName(), factor))
+			r.Values = make([]float64, len(a.Values))
+			r.IsAbsent = make([]bool, len(a.Values))
+
+			for i, v := range a.Values {
+				if a.IsAbsent[i] {
+					r.Values[i] = 0
+					r.IsAbsent[i] = true
+					continue
+				}
+				r.Values[i] = math.Pow(v, factor)
 			}
 			results = append(results, &r)
 		}
@@ -2792,11 +2990,102 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			results = append(results, &r)
 		}
 		return results
+
+	case "squareRoot": // squareRoot(seriesList)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+		var results []*metricData
+
+		for _, a := range arg {
+			r := *a
+			r.Name = proto.String(fmt.Sprintf("squareRoot(%s)", a.GetName()))
+			r.Values = make([]float64, len(a.Values))
+			r.IsAbsent = make([]bool, len(a.Values))
+
+			for i, v := range a.Values {
+				if a.IsAbsent[i] {
+					r.Values[i] = 0
+					r.IsAbsent[i] = true
+					continue
+				}
+				r.Values[i] = math.Sqrt(v)
+			}
+			results = append(results, &r)
+		}
+		return results
+
+	case "removeBelowValue": // removeBelowValue(seriesLists, n)
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		threshold, err := getFloatArg(e, 1)
+		if err != nil {
+			return nil
+		}
+
+		var results []*metricData
+
+		for _, a := range args {
+			r := removeByValue(a, threshold, func(v float64, threshold float64) bool {
+				return v < threshold
+			})
+			r.Name = proto.String(fmt.Sprintf("removeBelowValue(%s, %g)", a.GetName(), threshold))
+
+			results = append(results, &r)
+		}
+		return results
+
+	case "removeAboveValue": // removeAboveValue(seriesLists, n)
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		threshold, err := getFloatArg(e, 1)
+		if err != nil {
+			return nil
+		}
+
+		var results []*metricData
+
+		for _, a := range args {
+			r := removeByValue(a, threshold, func(v float64, threshold float64) bool {
+				return v > threshold
+			})
+			r.Name = proto.String(fmt.Sprintf("removeAboveValue(%s, %g)", a.GetName(), threshold))
+
+			results = append(results, &r)
+		}
+		return results
 	}
 
 	logger.Logf("unknown function in evalExpr: %q\n", e.target)
 
 	return nil
+}
+
+type removeFunc func(float64, float64) bool
+
+func removeByValue(a *metricData, threshold float64, condition removeFunc) metricData {
+	r := *a
+	r.Values = make([]float64, len(a.Values))
+	r.IsAbsent = make([]bool, len(a.Values))
+
+	for i, v := range a.Values {
+		if a.IsAbsent[i] || condition(v, threshold) {
+			r.Values[i] = math.NaN()
+			r.IsAbsent[i] = true
+			continue
+		}
+
+		r.Values[i] = v
+	}
+
+	return r
 }
 
 // Total (sortByTotal), max (sortByMaxima), min (sortByMinima) sorting
