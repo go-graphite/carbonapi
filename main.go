@@ -92,7 +92,7 @@ func writeResponse(w http.ResponseWriter, b []byte, format string, jsonp string)
 	case "csv":
 		w.Header().Set("Content-Type", contentTypeCSV)
 		w.Write(b)
-	case "png":
+	case "png", "cairo":
 		w.Header().Set("Content-Type", contentTypePNG)
 		w.Write(b)
 	}
@@ -304,6 +304,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 		body = marshalPickle(results)
 	case "png":
 		body = marshalPNG(r, results)
+	case "cairo":
+		body = marshalPNGCairo(r, results)
 	}
 
 	writeResponse(w, body, format, jsonp)

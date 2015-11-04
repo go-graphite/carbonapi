@@ -2,11 +2,12 @@ package main
 
 import (
 	"bytes"
-	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
-	pickle "github.com/kisielk/og-rek"
 	"math"
 	"strconv"
 	"time"
+
+	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
+	pickle "github.com/kisielk/og-rek"
 )
 
 type metricData struct {
@@ -17,6 +18,7 @@ type metricData struct {
 	secondYAxis    bool
 	dashed         bool // TODO (ikruglov) smth like lineType would be better
 	color          string
+	lineWidth      float64
 }
 
 func marshalCSV(results []*metricData) []byte {
