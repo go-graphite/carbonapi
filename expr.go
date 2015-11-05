@@ -2307,7 +2307,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		for _, a := range arg {
 			r := *a
-			r.Name = proto.String(fmt.Sprintf("timeShift(%s)", a.GetName()))
+			r.Name = proto.String(fmt.Sprintf("timeShift(%s,'%s')", a.GetName(), offs))
 			r.StartTime = proto.Int32(a.GetStartTime() - offs)
 			r.StopTime = proto.Int32(a.GetStopTime() - offs)
 			results = append(results, &r)
