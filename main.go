@@ -31,7 +31,7 @@ import (
 var Config = struct {
 	Backends    []string
 	MaxProcs    int
-	IntervalSec time.Duration
+	IntervalSec int
 	Port        int
 	Buckets     int
 
@@ -47,7 +47,7 @@ var Config = struct {
 	ConcurrencyLimitPerServer int
 }{
 	MaxProcs:    1,
-	IntervalSec: 60 * time.Second,
+	IntervalSec: 60,
 	Port:        8080,
 	Buckets:     10,
 
@@ -647,7 +647,7 @@ func main() {
 	debugLevel := flag.Int("d", 0, "enable debug logging")
 	logtostdout := flag.Bool("stdout", false, "write logging output also to stdout")
 	logdir := flag.String("logdir", "/var/log/carbonzipper/", "logging directory")
-	interval := flag.Duration("i", 60*time.Second, "interval to report internal statistics to graphite")
+	interval := flag.Duration("i", 0, "interval to report internal statistics to graphite")
 
 	flag.Parse()
 
@@ -687,8 +687,8 @@ func main() {
 		Config.MaxProcs = *maxprocs
 	}
 
-	if *interval != 0 {
-		Config.IntervalSec = *interval
+	if *interval == 0 {
+		*interval = time.Duration(Config.IntervalSec) * time.Second
 	}
 
 	// set up our logging
@@ -700,7 +700,7 @@ func main() {
 	logger.Logln("setting GOMAXPROCS=", Config.MaxProcs)
 	runtime.GOMAXPROCS(Config.MaxProcs)
 
-	logger.Logln("setting stats interval to", Config.IntervalSec)
+	logger.Logln("setting stats interval to", *interval)
 
 	if Config.ConcurrencyLimitPerServer != 0 {
 		logger.Logln("Setting concurrencyLimit", Config.ConcurrencyLimitPerServer)
