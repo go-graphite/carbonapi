@@ -29,10 +29,11 @@ import (
 
 // configuration values
 var Config = struct {
-	Backends []string
-	MaxProcs int
-	Port     int
-	Buckets  int
+	Backends    []string
+	MaxProcs    int
+	IntervalSec time.Duration
+	Port        int
+	Buckets     int
 
 	TimeoutMs                int
 	TimeoutMsAfterAllStarted int
@@ -45,9 +46,10 @@ var Config = struct {
 
 	ConcurrencyLimitPerServer int
 }{
-	MaxProcs: 1,
-	Port:     8080,
-	Buckets:  10,
+	MaxProcs:    1,
+	IntervalSec: 60 * time.Second,
+	Port:        8080,
+	Buckets:     10,
 
 	TimeoutMs:                10000,
 	TimeoutMsAfterAllStarted: 2000,
@@ -645,6 +647,7 @@ func main() {
 	debugLevel := flag.Int("d", 0, "enable debug logging")
 	logtostdout := flag.Bool("stdout", false, "write logging output also to stdout")
 	logdir := flag.String("logdir", "/var/log/carbonzipper/", "logging directory")
+	interval := flag.Duration("i", 60*time.Second, "interval to report internal statistics to graphite")
 
 	flag.Parse()
 
@@ -684,6 +687,10 @@ func main() {
 		Config.MaxProcs = *maxprocs
 	}
 
+	if *interval != 0 {
+		Config.IntervalSec = *interval
+	}
+
 	// set up our logging
 	mlog.SetOutput(*logdir, "carbonzipper", *logtostdout)
 
@@ -692,6 +699,8 @@ func main() {
 
 	logger.Logln("setting GOMAXPROCS=", Config.MaxProcs)
 	runtime.GOMAXPROCS(Config.MaxProcs)
+
+	logger.Logln("setting stats interval to", Config.IntervalSec)
 
 	if Config.ConcurrencyLimitPerServer != 0 {
 		logger.Logln("Setting concurrencyLimit", Config.ConcurrencyLimitPerServer)
@@ -731,7 +740,7 @@ func main() {
 		logger.Logln("Using graphite host", Config.GraphiteHost)
 
 		// register our metrics with graphite
-		graphite, err := g2g.NewGraphite(Config.GraphiteHost, 60*time.Second, 10*time.Second)
+		graphite, err := g2g.NewGraphite(Config.GraphiteHost, *interval, 10*time.Second)
 		if err != nil {
 			log.Fatal("unable to connect to to graphite: ", Config.GraphiteHost, ":", err)
 		}
