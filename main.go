@@ -985,7 +985,7 @@ func main() {
 		}
 
 		// register our metrics with graphite
-		graphite, err := g2g.NewGraphite(host, *interval*time.Second, 10*time.Second)
+		graphite, err := g2g.NewGraphite(host, *interval, 10*time.Second)
 		if err != nil {
 			logger.Fatalln("unable to connect to to graphite: ", host, ":", err)
 		}
