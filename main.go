@@ -501,6 +501,7 @@ func main() {
 	graphiteHost := flag.String("graphite", "", "graphite destination host")
 	logdir := flag.String("logdir", "/var/log/carbonapi/", "logging directory")
 	logtostdout := flag.Bool("stdout", false, "log also to stdout")
+	interval := flag.Duration("i", 60*time.Second, "interval to report internal statistics to graphite")
 
 	flag.Parse()
 
@@ -602,8 +603,12 @@ func main() {
 
 		logger.Logln("Using graphite host", host)
 
+		if *interval != 0 {
+			logger.Logln("setting stats interval to", *interval)
+		}
+
 		// register our metrics with graphite
-		graphite, err := g2g.NewGraphite(host, 60*time.Second, 10*time.Second)
+		graphite, err := g2g.NewGraphite(host, *interval, 10*time.Second)
 		if err != nil {
 			logger.Fatalln("unable to connect to to graphite: ", host, ":", err)
 		}
