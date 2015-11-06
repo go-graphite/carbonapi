@@ -603,9 +603,7 @@ func main() {
 
 		logger.Logln("Using graphite host", host)
 
-		if *interval != 0 {
-			logger.Logln("setting stats interval to", *interval)
-		}
+		logger.Logln("setting stats interval to", *interval)
 
 		// register our metrics with graphite
 		graphite, err := g2g.NewGraphite(host, *interval, 10*time.Second)
