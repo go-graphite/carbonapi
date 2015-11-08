@@ -1415,9 +1415,9 @@ func TestEvalExpression(t *testing.T) {
 				argString: "metric1",
 			},
 			map[metricRequest][]*metricData{
-				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{1, 2, 3, 4, 5, math.NaN(), 7, 8}, 1, now32)},
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{1, 0, 2, 3, 4, 5, math.NaN(), 7, 8}, 1, now32)},
 			},
-			[]float64{1, 3, 6, 10, 15, math.NaN(), 22, 30},
+			[]float64{1, 1, 3, 6, 10, 15, math.NaN(), 22, 30},
 			"integral(metric1)",
 		},
 		{
