@@ -1,5 +1,5 @@
 carbonzipper: carbonserver proxy for graphite-web
-------------------------------------------
+=================================================
 
 CarbonZipper is the central part of a replacement graphite storage stack.  It
 proxies requests from graphite-web to a cluster of carbon storage backends.
