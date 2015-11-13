@@ -522,7 +522,7 @@ type Params struct {
 	width      float64
 	height     float64
 	margin     int
-	logBase    float32
+	logBase    float64
 	fgColor    color.RGBA
 	bgColor    color.RGBA
 	majorLine  color.RGBA
@@ -548,7 +548,7 @@ type Params struct {
 	pieMode        PieMode
 	lineColors     []string
 	lineWidth      float64
-	connectedLimit float64
+	connectedLimit int
 
 	yMin  float64
 	yMax  float64
@@ -562,6 +562,8 @@ type Params struct {
 	ySpan        float64
 	graphHeight  float64
 	yScaleFactor float64
+	yUnitSystem string
+	yDivisors []int
 
 	rightWidth  float64
 	rightDashed bool
@@ -600,7 +602,7 @@ func marshalPNGCairo(r *http.Request, results []*metricData) []byte {
 		width:          getFloat64(r.FormValue("width"), 600),
 		height:         getFloat64(r.FormValue("height"), 300),
 		margin:         getInt(r.FormValue("margin"), 10),
-		logBase:        getFloat32(r.FormValue("logBase"), 1.0),
+		logBase:        getFloat64(r.FormValue("logBase"), 1.0),
 		fgColor:        string2RGBA(getString(r.FormValue("fgcolor"), "black")),
 		bgColor:        string2RGBA(getString(r.FormValue("bgcolor"), "white")),
 		majorLine:      string2RGBA(getString(r.FormValue("majorLine"), "rose")),
@@ -615,7 +617,7 @@ func marshalPNGCairo(r *http.Request, results []*metricData) []byte {
 		hideAxes:       getBool(r.FormValue("hideLegend"), false),
 		hideYAxis:      getBool(r.FormValue("hideLegend"), false),
 		yAxisSide:      getAxisSide(r.FormValue("yAxisSide"), YAxisSideLeft),
-		connectedLimit: getFloat64(r.FormValue("connectedLimit"), math.Inf(1)),
+		connectedLimit: getInt(r.FormValue("connectedLimit"), math.MaxUint32),
 		lineMode:       getLineMode(r.FormValue("lineMode"), LineModeSlope),
 		areaMode:       getAreaMode(r.FormValue("areaMode"), AreaModeNone),
 		pieMode:        getPieMode(r.FormValue("pieMode"), PieModeAverage),
@@ -853,6 +855,18 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*metricDat
 	panic("Not Implemented yet")
 }
 
+type yaxisDivisor struct {
+    p float64
+    diff float64
+}
+
+type divisorInfo []yaxisDivisor
+
+func (d divisorInfo) Len() int { return len(d) }
+func (d divisorInfo) Less(i int, j int) bool { return d[i].diff < d[i].diff } 
+func (d divisorInfo) Swap(i int, j int) { d[i],d[j] = d[j],d[i] }
+
+
 func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	seriesWithMissingValues := list.New()
 	yMin := math.NaN()
@@ -890,7 +904,7 @@ func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 		yMin = 0
 	}
 	if math.IsNaN(yMax) {
-		yMax = 0
+		yMax = 1
 	}
 
 	if !math.IsNaN(params.yMax) {
@@ -900,6 +914,161 @@ func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 		yMin = params.yMin
 	}
 
+    if yMax<= yMin {
+      yMax= yMin+ 1
+  }
+
+  yVariance := yMax- yMin
+
+  var order float64
+  var orderFactor float64
+  if params.yUnitSystem == "binary" {
+      order = math.Log2(yVariance)
+      orderFactor = math.Pow(2, math.Floor(order))
+  } else {
+      order = math.Log10(yVariance)
+      orderFactor = math.Pow(10, math.floor(order))
+  }
+
+  v := yVariance / orderFactor // we work with a scaled down yVariance for simplicity
+
+    yDivisors = params.yDivisors
+
+    prettyValues := []float64{0.1,0.2,0.25,0.5,1.0,1.2,1.25,1.5,2.0,2.25,2.5}
+
+    var divinfo divisorInfo
+
+    for i, d := range yDivisors {
+	q := v / d // our scaled down quotient, must be in the open interval (0,10)
+	p := closest(q, prettyValues) // the prettyValue our quotient is closest to
+	divinfo = append(divinfo,yaxisDivisor{p:p,q:math.Abs(q-p)}) // make a  list so we can find the prettiest of the pretty
+  }
+
+  sort.Sort(divinfo) // sort our pretty values by 'closeness to a factor"
+
+  prettyValue := divinfo[0].p // our winner! Y-axis will have labels placed at multiples of our prettyValue
+  yStep := prettyValue * orderFactor // scale it back up to the order of yVariance
+
+  if !math.IsNaN(params.yStep) {
+      yStep = params.yStep
+  }
+
+  params.yStep = yStep
+
+    params.yBottom = params.yStep * math.Floor( yMinValue / params.yStep ) // start labels at the greatest multiple of yStep <= yMinValue
+    params.yTop = params.yStep * math.Ceil( yMaxValue / params.yStep ) // Extend the top of our graph to the lowest yStep multiple >= yMaxValue
+
+    if self.logBase and yMinValue > 0:
+      self.yBottom = math.pow(self.logBase, math.floor(math.log(yMinValue, self.logBase)))
+      self.yTop = math.pow(self.logBase, math.ceil(math.log(yMaxValue, self.logBase)))
+    elif self.logBase and yMinValue <= 0:
+        raise GraphError('Logarithmic scale specified with a dataset with a '
+                         'minimum value less than or equal to zero')
+
+    if 'yMax' in self.params:
+      if self.params['yMax'] == 'max':
+        scale = 1.0 * yMaxValue / self.yTop
+        self.yStep *= (scale - 0.000001)
+        self.yTop = yMaxValue
+      else:
+        self.yTop = self.params['yMax'] * 1.0
+    if 'yMin' in self.params:
+      self.yBottom = self.params['yMin']
+
+    self.ySpan = self.yTop - self.yBottom
+
+    if self.ySpan == 0:
+      self.yTop += 1
+      self.ySpan += 1
+
+    self.graphHeight = self.area['ymax'] - self.area['ymin']
+    self.yScaleFactor = float(self.graphHeight) / float(self.ySpan)
+
+    if not self.params.get('hideAxes',False):
+      #Create and measure the Y-labels
+
+      def makeLabel(yValue):
+        yValue, prefix = format_units(yValue, self.yStep,
+                system=self.params.get('yUnitSystem'))
+        ySpan, spanPrefix = format_units(self.ySpan, self.yStep,
+                system=self.params.get('yUnitSystem'))
+        if yValue < 0.1:
+          return "%g %s" % (float(yValue), prefix)
+        elif yValue < 1.0:
+          return "%.2f %s" % (float(yValue), prefix)
+        if ySpan > 10 or spanPrefix != prefix:
+          if type(yValue) is float:
+            return "%.1f %s" % (float(yValue), prefix)
+          else:
+            return "%d %s " % (int(yValue), prefix)
+        elif ySpan > 3:
+          return "%.1f %s " % (float(yValue), prefix)
+        elif ySpan > 0.1:
+          return "%.2f %s " % (float(yValue), prefix)
+        else:
+          return "%g %s" % (float(yValue), prefix)
+
+      self.yLabelValues = self.getYLabelValues(self.yBottom, self.yTop, self.yStep)
+      self.yLabels = map(makeLabel,self.yLabelValues)
+      self.yLabelWidth = max([self.getExtents(label)['width'] for label in self.yLabels])
+
+      if not self.params.get('hideYAxis'):
+        if self.params.get('yAxisSide') == 'left': #scoot the graph over to the left just enough to fit the y-labels
+          xMin = self.margin + (self.yLabelWidth * 1.02)
+          if self.area['xmin'] < xMin:
+            self.area['xmin'] = xMin
+        else: #scoot the graph over to the right just enough to fit the y-labels
+          xMin = 0
+          xMax = self.margin - (self.yLabelWidth * 1.02)
+          if self.area['xmax'] >= xMax:
+            self.area['xmax'] = xMax
+    else:
+      self.yLabelValues = []
+      self.yLabels = []
+      self.yLabelWidth = 0.0
+
+
+
+
+
+}
+
+func getYLabelValues(params *Params, minYValue, maxYValue, yStep float64) []float64 {
+	if params.logBase != 0 {
+		return logrange(params.logBase, minYValue, maxYValue)
+	}
+
+	return frange(minYValue, maxYValue, yStep)
+}
+
+func logrange(base, scaleMin, scaleMax float64) []float64 {
+	current := scaleMin
+	if scaleMin > 0 {
+		current = math.Floor(math.Log(scaleMin) / math.Log(base))
+	}
+	factor := current
+	var vals []float64
+	for current < scaleMax {
+		current = math.Pow(base, factor)
+		vals = append(vals, current)
+		factor += 1
+	}
+	return vals
+}
+
+func frange(start, end, step float64) []float64 {
+	var vals []float64
+	f := start
+	for f <= end {
+		vals = append(vals, f)
+		f += step
+		// Protect against rounding errors on very small float ranges
+		if f == start {
+			vals = append(vals, end)
+			break
+		}
+	}
+	return vals
 }
 
 func setupXAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) {
@@ -914,8 +1083,350 @@ func drawGridLines(cr *cairoSurfaceContext, params *Params, results []*metricDat
 	logger.Logln("stubbed drawGridLines()")
 }
 
+func str2linecap(s string) cairo.LineCap {
+	switch s {
+	case "butt":
+		return cairo.LineCapButt
+	case "round":
+		return cairo.LineCapRound
+	case "square":
+		return cairo.LineCapSquare
+	}
+	return cairo.LineCapButt
+}
+
+func str2linejoin(s string) cairo.LineJoin {
+	switch s {
+	case "miter":
+		return cairo.LineJoinMiter
+	case "round":
+		return cairo.LineJoinRound
+	case "bevel":
+		return cairo.LineJoinBevel
+	}
+	return cairo.LineJoinMiter
+}
+
+func getYCoord(params *Params, value float64, side string) float64 {
+
+	var yLabelValues []float64
+	var yTop float64
+	var yBottom float64
+
+	switch side {
+	case "left":
+		yLabelValues = params.yLabelValuesL
+		yTop = params.yTopL
+		yBottom = params.yBottomL
+	case "right":
+		yLabelValues = params.yLabelValuesR
+		yTop = params.yTopR
+		yBottom = params.yBottomR
+	default:
+		yLabelValues = params.yLabelValues
+		yTop = params.yTop
+		yBottom = params.yBottom
+	}
+
+	var highestValue float64
+	var lowestValue float64
+
+	if yLabelValues != nil {
+		highestValue = yLabelValues[len(yLabelValues)-1]
+		lowestValue = yLabelValues[0]
+	} else {
+		highestValue = yTop
+		lowestValue = yBottom
+	}
+	pixelRange := params.area.ymax - params.area.ymin
+	relativeValue := (value - lowestValue)
+	valueRange := (highestValue - lowestValue)
+	if params.logBase != 0 {
+		if value <= 0 {
+			return math.NaN()
+		}
+		relativeValue = (math.Log(value) / math.Log(params.logBase)) - (math.Log(lowestValue) / math.Log(params.logBase))
+		valueRange = (math.Log(highestValue) / math.Log(params.logBase)) - (math.Log(lowestValue) / math.Log(params.logBase))
+	}
+	pixelToValueRatio := (pixelRange / valueRange)
+	valueInPixels := (pixelToValueRatio * relativeValue)
+	return params.area.ymax - valueInPixels
+}
+
 func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
-	logger.Logln("stubbed drawLines()")
+
+	linecap := "butt"
+	linejoin := "miter"
+
+	width := params.lineWidth
+
+	cr.context.SetLineWidth(width)
+
+	originalWidth := width
+	width = (float64((int(width) % 2)) / 2)
+
+	dash := []float64{}
+
+	if dash != nil {
+		cr.context.SetDash(dash, 1)
+	} else {
+		cr.context.SetDash(nil, 0)
+	}
+
+	cr.context.SetLineCap(str2linecap(linecap))
+	cr.context.SetLineJoin(str2linejoin(linejoin))
+
+	/*
+		singleStacked = false;
+		var __iter0 = self.data;
+		if (! (__iter0 instanceof Array || typeof __iter0 == "string" || __is_typed_array(__iter0) || __is_some_array(__iter0) )) { __iter0 = __object_keys__(__iter0) }
+		for (var __n0 = 0; __n0 < __iter0.length; __n0++) {
+			var series = __iter0[ __n0 ];
+			if (__contains__(series.options, "stacked")) {
+				singleStacked = true;
+			}
+		}
+		if (singleStacked) {
+			self.data = sort_stacked(self.data);
+		}
+		if ((self.areaMode === "stacked" && ! (self.secondYAxis))) {
+			total = [];
+			var __iter0 = self.data;
+			if (! (__iter0 instanceof Array || typeof __iter0 == "string" || __is_typed_array(__iter0) || __is_some_array(__iter0) )) { __iter0 = __object_keys__(__iter0) }
+			for (var __n0 = 0; __n0 < __iter0.length; __n0++) {
+				var series = __iter0[ __n0 ];
+				if (__contains__(series.options, "drawAsInfinite")) {
+					continue
+				}
+				series.options["stacked"] = true;
+				var i;
+				i = -1;
+				var i__end__;
+				i__end__ = len(series);
+				while (++i < i__end__)
+				{
+					if (len(total) <= i) {
+						total.append(0);
+					}
+					if (series[i] !== null) {
+						original = series[i];
+						series[i] += total[i];
+						total[i] += original;
+					}
+				}
+			}
+		} else {
+			if (self.areaMode === "first") {
+				self.data[0].options["stacked"] = true;
+			} else {
+				if (self.areaMode === "all") {
+					var __iter0 = self.data;
+					if (! (__iter0 instanceof Array || typeof __iter0 == "string" || __is_typed_array(__iter0) || __is_some_array(__iter0) )) { __iter0 = __object_keys__(__iter0) }
+					for (var __n0 = 0; __n0 < __iter0.length; __n0++) {
+						var series = __iter0[ __n0 ];
+						if (! (__contains__(series.options, "drawAsInfinite"))) {
+							series.options["stacked"] = true;
+						}
+					}
+				}
+			}
+		}
+		if (__jsdict_get(self.params, "areaAlpha")) {
+		    try {
+			alpha = float(self.params["areaAlpha"]);
+		    } catch(__exception__) {
+			if (__exception__ == ValueError || __exception__ instanceof ValueError) {
+			    alpha = 0.5;
+			}
+		}
+			strokeSeries = [];
+			var __iter0 = self.data;
+			if (! (__iter0 instanceof Array || typeof __iter0 == "string" || __is_typed_array(__iter0) || __is_some_array(__iter0) )) { __iter0 = __object_keys__(__iter0) }
+			for (var __n0 = 0; __n0 < __iter0.length; __n0++) {
+				var series = __iter0[ __n0 ];
+				if (__contains__(series.options, "stacked")) {
+					series.options["alpha"] = alpha;
+					var __comp__0;
+					var idx0;
+					var iter0;
+					var get0;
+					__comp__0 = [];
+					idx0 = 0;
+					iter0 = series;
+					while (idx0 < iter0.length)
+					{
+						x = iter0[idx0];
+						__comp__0.push(x);
+						idx0 ++;
+					}
+					newSeries = TimeSeries(series.name, series.start, series.end, (series.step * series.valuesPerPoint), __comp__0);
+					newSeries.xStep = series.xStep;
+					newSeries.color = series.color;
+					if (__contains__(series.options, "secondYAxis")) {
+						newSeries.options["secondYAxis"] = true;
+					}
+					strokeSeries.append(newSeries);
+				}
+			}
+			self.data += strokeSeries;
+		}
+	*/
+
+	cr.context.SetLineWidth(1.0)
+	cr.context.Rectangle(params.area.xmin, params.area.ymin, (params.area.xmax - params.area.xmin), (params.area.ymax - params.area.ymin))
+	cr.context.Clip()
+	cr.context.SetLineWidth(originalWidth)
+	cr.context.Save()
+	clipRestored := false
+	for _, series := range results {
+		/*
+			if (! (__contains__(series.options, "stacked"))) {
+				if (! (clipRestored)) {
+					clipRestored = true;
+					cr.context.restore();
+				}
+			}
+		*/
+
+		cr.context.SetLineWidth(series.lineWidth)
+
+		/*
+			if (__contains__(series.options, "dashed")) {
+				cr.context.set_dash([series.options["dashed"]], 1);
+			} else {
+				cr.context.set_dash([], 0);
+			}
+		*/
+
+		//	missingPoints := ((series.GetStartTime() - self.startTime) / series.GetStepTime())
+		var missingPoints int
+		startShift := (series.xStep * (missingPoints / series.valuesPerPoint))
+		x := ((float32(params.area.xmin) + startShift) + (params.lineWidth / 2.0))
+		y := float32(params.area.ymin)
+		startX := x
+		/*
+			if (__jsdict_get(series.options, "invisible")) {
+				self.setColor(series.color, 0, true);
+			} else {
+				self.setColor(series.color, (__jsdict_get(series.options, "alpha") || 1.0));
+			}
+		*/
+		consecutiveNones := 0
+		var index int
+		var __iter1 = series
+		for i, value := range series.Values {
+			if params.drawNullAsZero && series.IsAbsent[i] {
+				value = 0
+			}
+
+			if false /*value === null*/ { /*
+					if (consecutiveNones === 0) {
+						cr.context.line_to(x, y);
+						if (__contains__(series.options, "stacked")) {
+							if (self.secondYAxis) {
+								if (__contains__(series.options, "secondYAxis")) {
+									self.fillAreaAndClip(x, y, startX, self.getYCoord(0, "right"));
+								} else {
+									self.fillAreaAndClip(x, y, startX, self.getYCoord(0, "left"));
+								}
+							} else {
+								self.fillAreaAndClip(x, y, startX, self.getYCoord(0));
+							}
+						}
+					}
+					x += series.xStep;
+					consecutiveNones ++; */
+			} else {
+				/*
+					if (params.secondYAxis) {
+						if (__contains__(series.options, "secondYAxis")) {
+							y = self.getYCoord(value, "right");
+						} else {
+							y = self.getYCoord(value, "left");
+						}
+					} else {
+						y = self.getYCoord(value);
+					}
+				*/
+				y := getYCoord(params, value, "left")
+				if math.IsNaN(y) {
+					value = y
+				} else {
+					if y < 0 {
+						y = 0
+					}
+				}
+				if series.drawAsInfinite && value > 0 {
+					cr.context.MoveTo(x, params.area.ymax)
+					cr.context.LineTo(x, params.area.ymin)
+					cr.context.Stroke()
+					x += series.xStep
+					continue
+				}
+				if consecutiveNones > 0 {
+					startX = x
+				}
+				switch params.lineMode {
+
+				case LineModeStaircase:
+					if consecutiveNones > 0 {
+						cr.context.MoveTo(x, y)
+					} else {
+						cr.context.LineTo(x, y)
+					}
+					x += series.xStep
+					cr.context.LineTo(x, y)
+				case LineModeSlope:
+					if consecutiveNones > 0 {
+						cr.context.MoveTo(x, y)
+					}
+					cr.context.LineTo(x, y)
+					x += series.xStep
+				case LineModeConnected:
+
+					if consecutiveNones > params.connectedLimit || consecutiveNones == index {
+						cr.context.MoveTo(x, y)
+					}
+					cr.context.LineTo(x, y)
+					x += series.xStep
+				}
+				consecutiveNones = 0
+			}
+			index++
+		}
+		/*
+			if (__contains__(series.options, "stacked")) {
+				if (self.lineMode === "staircase") {
+					xPos = x;
+				} else {
+					xPos = (x - series.xStep);
+				}
+				if (self.secondYAxis) {
+					if (__contains__(series.options, "secondYAxis")) {
+						areaYFrom = self.getYCoord(0, "right");
+					} else {
+						areaYFrom = self.getYCoord(0, "left");
+					}
+				} else {
+					areaYFrom = self.getYCoord(0);
+				}
+				self.fillAreaAndClip(xPos, y, startX, areaYFrom);
+			} else {
+				cr.context.stroke();
+			}
+		*/
+		cr.context.Stroke()
+		cr.context.SetLineWidth(originalWidth)
+		/*
+			if (__contains__(series.options, "dash")) {
+				if (dash) {
+					cr.context.set_dash(dash, 1);
+				} else {
+					cr.context.set_dash([], 0);
+				}
+			}
+		*/
+	}
 }
 
 type SeriesLegend struct {
