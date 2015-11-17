@@ -8,6 +8,7 @@ import (
 	"image/color"
 	"math"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -91,20 +92,25 @@ var customizable = [...]string{
 	"outputFormat",
 }
 
-var unitSystems = map[string]map[string]uint64{
+type unitPrefix struct {
+	prefix string
+	size   uint64
+}
+
+var unitSystems = map[string][]unitPrefix{
 	"binary": {
-		"Pi": 1125899906842624, // 1024^5
-		"Ti": 1099511627776,    // 1024^4
-		"Gi": 1073741824,       // 1024^3
-		"Mi": 1048576,          // 1024^2
-		"Ki": 1024,
+		{"Pi", 1125899906842624}, // 1024^5
+		{"Ti", 1099511627776},    // 1024^4
+		{"Gi", 1073741824},       // 1024^3
+		{"Mi", 1048576},          // 1024^2
+		{"Ki", 1024},
 	},
 	"si": {
-		"P": 1000000000000000, // 1000^5
-		"T": 1000000000000,    // 1000^4
-		"G": 1000000000,       // 1000^3
-		"M": 1000000,          // 1000^2
-		"K": 1000,
+		{"P", 1000000000000000}, // 1000^5
+		{"T", 1000000000000},    // 1000^4
+		{"G", 1000000000},       // 1000^3
+		{"M", 1000000},          // 1000^2
+		{"K", 1000},
 	},
 }
 
@@ -562,8 +568,18 @@ type Params struct {
 	ySpan        float64
 	graphHeight  float64
 	yScaleFactor float64
-	yUnitSystem string
-	yDivisors []int
+	yUnitSystem  string
+	yDivisors    []float64
+	yLabelValues []float64
+	yLabels      []string
+	yLabelWidth  int
+
+	yTopL         float64
+	yBottomL      float64
+	yLabelValuesL []float64
+	yTopR         float64
+	yBottomR      float64
+	yLabelValuesR []float64
 
 	rightWidth  float64
 	rightDashed bool
@@ -856,21 +872,20 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*metricDat
 }
 
 type yaxisDivisor struct {
-    p float64
-    diff float64
+	p    float64
+	diff float64
 }
 
 type divisorInfo []yaxisDivisor
 
-func (d divisorInfo) Len() int { return len(d) }
-func (d divisorInfo) Less(i int, j int) bool { return d[i].diff < d[i].diff } 
-func (d divisorInfo) Swap(i int, j int) { d[i],d[j] = d[j],d[i] }
-
+func (d divisorInfo) Len() int               { return len(d) }
+func (d divisorInfo) Less(i int, j int) bool { return d[i].diff < d[i].diff }
+func (d divisorInfo) Swap(i int, j int)      { d[i], d[j] = d[j], d[i] }
 
 func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	seriesWithMissingValues := list.New()
-	yMin := math.NaN()
-	yMax := math.NaN()
+	yMinValue := math.NaN()
+	yMaxValue := math.NaN()
 	for _, r := range results {
 		pushed := false
 		for i, v := range r.Values {
@@ -878,12 +893,12 @@ func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 				seriesWithMissingValues.PushBack(r)
 				pushed = true
 			} else {
-				if math.IsNaN(yMin) || yMin > v {
-					yMin = v
+				if math.IsNaN(yMinValue) || yMinValue > v {
+					yMinValue = v
 				}
 				// TODO: Implement 'drawAsInfinite'
-				if math.IsNaN(yMax) || yMax < v {
-					yMax = v
+				if math.IsNaN(yMaxValue) || yMaxValue < v {
+					yMaxValue = v
 				}
 			}
 		}
@@ -895,142 +910,184 @@ func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 		panic("Not Implemented yet")
 	}
 
-	if yMax < 0 && params.drawNullAsZero && seriesWithMissingValues.Len() > 0 {
-		yMax = 0
+	if yMaxValue < 0 && params.drawNullAsZero && seriesWithMissingValues.Len() > 0 {
+		yMaxValue = 0
 	}
 
 	// FIXME: Do we really need this check? It should be impossible to meet this conditions
-	if math.IsNaN(yMin) {
-		yMin = 0
+	if math.IsNaN(yMinValue) {
+		yMinValue = 0
 	}
-	if math.IsNaN(yMax) {
-		yMax = 1
+	if math.IsNaN(yMaxValue) {
+		yMaxValue = 1
 	}
 
 	if !math.IsNaN(params.yMax) {
-		yMax = params.yMax
+		yMaxValue = params.yMax
 	}
 	if !math.IsNaN(params.yMin) {
-		yMin = params.yMin
+		yMinValue = params.yMin
 	}
 
-    if yMax<= yMin {
-      yMax= yMin+ 1
-  }
+	if yMaxValue <= yMinValue {
+		yMaxValue = yMinValue + 1
+	}
 
-  yVariance := yMax- yMin
+	yVariance := yMaxValue - yMinValue
 
-  var order float64
-  var orderFactor float64
-  if params.yUnitSystem == "binary" {
-      order = math.Log2(yVariance)
-      orderFactor = math.Pow(2, math.Floor(order))
-  } else {
-      order = math.Log10(yVariance)
-      orderFactor = math.Pow(10, math.floor(order))
-  }
+	var order float64
+	var orderFactor float64
+	if params.yUnitSystem == "binary" {
+		order = math.Log2(yVariance)
+		orderFactor = math.Pow(2, math.Floor(order))
+	} else {
+		order = math.Log10(yVariance)
+		orderFactor = math.Pow(10, math.Floor(order))
+	}
 
-  v := yVariance / orderFactor // we work with a scaled down yVariance for simplicity
+	v := yVariance / orderFactor // we work with a scaled down yVariance for simplicity
 
-    yDivisors = params.yDivisors
+	yDivisors := params.yDivisors
 
-    prettyValues := []float64{0.1,0.2,0.25,0.5,1.0,1.2,1.25,1.5,2.0,2.25,2.5}
+	prettyValues := []float64{0.1, 0.2, 0.25, 0.5, 1.0, 1.2, 1.25, 1.5, 2.0, 2.25, 2.5}
 
-    var divinfo divisorInfo
+	var divinfo divisorInfo
 
-    for i, d := range yDivisors {
-	q := v / d // our scaled down quotient, must be in the open interval (0,10)
-	p := closest(q, prettyValues) // the prettyValue our quotient is closest to
-	divinfo = append(divinfo,yaxisDivisor{p:p,q:math.Abs(q-p)}) // make a  list so we can find the prettiest of the pretty
-  }
+	for _, d := range yDivisors {
+		q := v / d                                                           // our scaled down quotient, must be in the open interval (0,10)
+		p := closest(q, prettyValues)                                        // the prettyValue our quotient is closest to
+		divinfo = append(divinfo, yaxisDivisor{p: p, diff: math.Abs(q - p)}) // make a  list so we can find the prettiest of the pretty
+	}
 
-  sort.Sort(divinfo) // sort our pretty values by 'closeness to a factor"
+	sort.Sort(divinfo) // sort our pretty values by 'closeness to a factor"
 
-  prettyValue := divinfo[0].p // our winner! Y-axis will have labels placed at multiples of our prettyValue
-  yStep := prettyValue * orderFactor // scale it back up to the order of yVariance
+	prettyValue := divinfo[0].p        // our winner! Y-axis will have labels placed at multiples of our prettyValue
+	yStep := prettyValue * orderFactor // scale it back up to the order of yVariance
 
-  if !math.IsNaN(params.yStep) {
-      yStep = params.yStep
-  }
+	if !math.IsNaN(params.yStep) {
+		yStep = params.yStep
+	}
 
-  params.yStep = yStep
+	params.yStep = yStep
 
-    params.yBottom = params.yStep * math.Floor( yMinValue / params.yStep ) // start labels at the greatest multiple of yStep <= yMinValue
-    params.yTop = params.yStep * math.Ceil( yMaxValue / params.yStep ) // Extend the top of our graph to the lowest yStep multiple >= yMaxValue
+	params.yBottom = params.yStep * math.Floor(yMinValue/params.yStep) // start labels at the greatest multiple of yStep <= yMinValue
+	params.yTop = params.yStep * math.Ceil(yMaxValue/params.yStep)     // Extend the top of our graph to the lowest yStep multiple >= yMaxValue
 
-    if self.logBase and yMinValue > 0:
-      self.yBottom = math.pow(self.logBase, math.floor(math.log(yMinValue, self.logBase)))
-      self.yTop = math.pow(self.logBase, math.ceil(math.log(yMaxValue, self.logBase)))
-    elif self.logBase and yMinValue <= 0:
-        raise GraphError('Logarithmic scale specified with a dataset with a '
-                         'minimum value less than or equal to zero')
+	if params.logBase != 0 {
+		if yMinValue > 0 {
+			params.yBottom = math.Pow(params.logBase, math.Floor(math.Log(yMinValue)/math.Log(params.logBase)))
+			params.yTop = math.Pow(params.logBase, math.Ceil(math.Log(yMaxValue/math.Log(params.logBase))))
+		} else {
+			panic("logscale with minvalue <= 0")
+			// raise GraphError('Logarithmic scale specified with a dataset with a minimum value less than or equal to zero')
+		}
+	}
 
-    if 'yMax' in self.params:
-      if self.params['yMax'] == 'max':
-        scale = 1.0 * yMaxValue / self.yTop
-        self.yStep *= (scale - 0.000001)
-        self.yTop = yMaxValue
-      else:
-        self.yTop = self.params['yMax'] * 1.0
-    if 'yMin' in self.params:
-      self.yBottom = self.params['yMin']
+	/*
+	   if 'yMax' in self.params:
+	     if self.params['yMax'] == 'max':
+	       scale = 1.0 * yMaxValue / self.yTop
+	       self.yStep *= (scale - 0.000001)
+	       self.yTop = yMaxValue
+	     else:
+	       self.yTop = self.params['yMax'] * 1.0
+	   if 'yMin' in self.params:
+	     self.yBottom = self.params['yMin']
+	*/
 
-    self.ySpan = self.yTop - self.yBottom
+	params.ySpan = params.yTop - params.yBottom
 
-    if self.ySpan == 0:
-      self.yTop += 1
-      self.ySpan += 1
+	if params.ySpan == 0 {
+		params.yTop++
+		params.ySpan++
+	}
 
-    self.graphHeight = self.area['ymax'] - self.area['ymin']
-    self.yScaleFactor = float(self.graphHeight) / float(self.ySpan)
+	params.graphHeight = params.area.ymax - params.area.ymin
+	params.yScaleFactor = params.graphHeight / params.ySpan
 
-    if not self.params.get('hideAxes',False):
-      #Create and measure the Y-labels
+	if !params.hideAxes {
+		// Create and measure the Y-labels
 
-      def makeLabel(yValue):
-        yValue, prefix = format_units(yValue, self.yStep,
-                system=self.params.get('yUnitSystem'))
-        ySpan, spanPrefix = format_units(self.ySpan, self.yStep,
-                system=self.params.get('yUnitSystem'))
-        if yValue < 0.1:
-          return "%g %s" % (float(yValue), prefix)
-        elif yValue < 1.0:
-          return "%.2f %s" % (float(yValue), prefix)
-        if ySpan > 10 or spanPrefix != prefix:
-          if type(yValue) is float:
-            return "%.1f %s" % (float(yValue), prefix)
-          else:
-            return "%d %s " % (int(yValue), prefix)
-        elif ySpan > 3:
-          return "%.1f %s " % (float(yValue), prefix)
-        elif ySpan > 0.1:
-          return "%.2f %s " % (float(yValue), prefix)
-        else:
-          return "%g %s" % (float(yValue), prefix)
+		makeLabel := func(yValue float64) string {
+			yValue, prefix := formatUnits(yValue, params.yStep, params.yUnitSystem)
+			ySpan, spanPrefix := formatUnits(params.ySpan, params.yStep, params.yUnitSystem)
 
-      self.yLabelValues = self.getYLabelValues(self.yBottom, self.yTop, self.yStep)
-      self.yLabels = map(makeLabel,self.yLabelValues)
-      self.yLabelWidth = max([self.getExtents(label)['width'] for label in self.yLabels])
+			switch {
+			case yValue < 0.1:
+				return fmt.Sprintf("%g %s", yValue, prefix)
+			case yValue < 1.0:
+				return fmt.Sprintf("%.2f %s", yValue, prefix)
+			case ySpan > 10 || spanPrefix != prefix:
+				if yValue-math.Floor(yValue) < 0.00000000001 {
+					return fmt.Sprintf("%.1f %s", yValue, prefix)
+				} else {
+					return fmt.Sprintf("%d %s ", int(yValue), prefix)
+				}
+			case ySpan > 3:
+				return fmt.Sprintf("%.1f %s ", yValue, prefix)
+			case ySpan > 0.1:
+				return fmt.Sprintf("%.2f %s ", yValue, prefix)
+			default:
+				return fmt.Sprintf("%g %s", yValue, prefix)
+			}
+		}
 
-      if not self.params.get('hideYAxis'):
-        if self.params.get('yAxisSide') == 'left': #scoot the graph over to the left just enough to fit the y-labels
-          xMin = self.margin + (self.yLabelWidth * 1.02)
-          if self.area['xmin'] < xMin:
-            self.area['xmin'] = xMin
-        else: #scoot the graph over to the right just enough to fit the y-labels
-          xMin = 0
-          xMax = self.margin - (self.yLabelWidth * 1.02)
-          if self.area['xmax'] >= xMax:
-            self.area['xmax'] = xMax
-    else:
-      self.yLabelValues = []
-      self.yLabels = []
-      self.yLabelWidth = 0.0
+		params.yLabelValues = getYLabelValues(params, params.yBottom, params.yTop, params.yStep)
+		yLabels := make([]string, len(params.yLabelValues))
+		for i, v := range params.yLabelValues {
+			yLabels[i] = makeLabel(v)
+		}
+		//     params.yLabelWidth = max([self.getExtents(label)['width'] for label in self.yLabels])
 
+		if !params.hideYAxis {
+			if params.yAxisSide == YAxisSideLeft { // scoot the graph over to the left just enough to fit the y-labels
+				xMin := float64(params.margin) + float64(params.yLabelWidth)*1.02
+				if params.area.xmin < xMin {
+					params.area.xmin = xMin
+				}
+			} else { // scoot the graph over to the right just enough to fit the y-labels
+				// xMin := 0 // TODO(dgryski): bug?  Why is this set?
+				xMax := float64(params.margin) - float64(params.yLabelWidth)*1.02
+				if params.area.xmax >= xMax {
+					params.area.xmax = xMax
+				}
+			}
+		}
+	} else {
+		params.yLabelValues = nil
+		params.yLabels = nil
+		params.yLabelWidth = 0.0
+	}
+}
 
+// formatUnits formats the given value according to the given unit prefix system
+func formatUnits(v, step float64, system string) (float64, string) {
 
+	var condition func(float64) bool
 
+	if step == math.NaN() {
+		condition = func(size float64) bool { return math.Abs(v) >= size }
+	} else {
+		condition = func(size float64) bool { return math.Abs(v) >= size && step >= size }
+	}
 
+	unitsystem := unitSystems[system]
+
+	for _, p := range unitsystem {
+		fsize := float64(p.size)
+		if condition(fsize) {
+			v2 := v / fsize
+			if (v2-math.Floor(v2)) < 0.00000000001 && v > 1 {
+				v2 = math.Floor(v2)
+			}
+			return v2, p.prefix
+		}
+	}
+
+	if (v-math.Floor(v)) < 0.00000000001 && v > 1 {
+		v = math.Floor(v)
+	}
+	return v, ""
 }
 
 func getYLabelValues(params *Params, minYValue, maxYValue, yStep float64) []float64 {
@@ -1069,6 +1126,20 @@ func frange(start, end, step float64) []float64 {
 		}
 	}
 	return vals
+}
+
+func closest(number float64, neighbours []float64) float64 {
+	distance := math.Inf(1)
+	var closestNeighbor float64
+	for _, n := range neighbours {
+		d := math.Abs(n - number)
+		if d < distance {
+			distance = d
+			closestNeighbor = n
+		}
+	}
+
+	return closestNeighbor
 }
 
 func setupXAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) {
@@ -1277,7 +1348,7 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	cr.context.Clip()
 	cr.context.SetLineWidth(originalWidth)
 	cr.context.Save()
-	clipRestored := false
+	// clipRestored := false
 	for _, series := range results {
 		/*
 			if (! (__contains__(series.options, "stacked"))) {
@@ -1299,11 +1370,11 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 		*/
 
 		//	missingPoints := ((series.GetStartTime() - self.startTime) / series.GetStepTime())
-		var missingPoints int
+		var missingPoints float64
 		startShift := (series.xStep * (missingPoints / series.valuesPerPoint))
-		x := ((float32(params.area.xmin) + startShift) + (params.lineWidth / 2.0))
-		y := float32(params.area.ymin)
-		startX := x
+		x := ((float64(params.area.xmin) + startShift) + (params.lineWidth / 2.0))
+		//	y := float64(params.area.ymin)
+		// startX := x
 		/*
 			if (__jsdict_get(series.options, "invisible")) {
 				self.setColor(series.color, 0, true);
@@ -1313,7 +1384,6 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 		*/
 		consecutiveNones := 0
 		var index int
-		var __iter1 = series
 		for i, value := range series.Values {
 			if params.drawNullAsZero && series.IsAbsent[i] {
 				value = 0
@@ -1363,9 +1433,11 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 					x += series.xStep
 					continue
 				}
-				if consecutiveNones > 0 {
-					startX = x
-				}
+				/*
+					if consecutiveNones > 0 {
+						startX = x
+					}
+				*/
 				switch params.lineMode {
 
 				case LineModeStaircase:
