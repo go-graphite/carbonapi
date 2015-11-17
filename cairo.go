@@ -6,6 +6,7 @@ import (
 	"container/list"
 	"fmt"
 	"image/color"
+	"log"
 	"math"
 	"net/http"
 	"sort"
@@ -417,6 +418,37 @@ func getInt(s string, def int) int {
 	return int(n)
 }
 
+func getLogBase(s string) float64 {
+	if s == "e" {
+		return math.E
+	}
+
+	b, err := strconv.ParseFloat(s, 64)
+	if err != nil || b < 1 {
+		return 0
+	}
+
+	return b
+}
+
+func getFloatArray(s string, def []float64) []float64 {
+	if s == "" {
+		return def
+	}
+
+	ss := strings.Split(s, ",")
+	var fs []float64
+	for _, v := range ss {
+		f, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return def
+		}
+		fs = append(fs, f)
+	}
+
+	return fs
+}
+
 func getFontItalic(s string, def cairo.FontSlant) cairo.FontSlant {
 	if def != cairo.FontSlantNormal && def != cairo.FontSlantItalic {
 		panic("invalid default font Italic specified!!!!")
@@ -618,7 +650,7 @@ func marshalPNGCairo(r *http.Request, results []*metricData) []byte {
 		width:          getFloat64(r.FormValue("width"), 600),
 		height:         getFloat64(r.FormValue("height"), 300),
 		margin:         getInt(r.FormValue("margin"), 10),
-		logBase:        getFloat64(r.FormValue("logBase"), 1.0),
+		logBase:        getLogBase(r.FormValue("logBase")),
 		fgColor:        string2RGBA(getString(r.FormValue("fgcolor"), "black")),
 		bgColor:        string2RGBA(getString(r.FormValue("bgcolor"), "white")),
 		majorLine:      string2RGBA(getString(r.FormValue("majorLine"), "rose")),
@@ -664,9 +696,10 @@ func marshalPNGCairo(r *http.Request, results []*metricData) []byte {
 		xMin:           getFloat64(r.FormValue("xMin"), math.NaN()),
 		xMax:           getFloat64(r.FormValue("xMax"), math.NaN()),
 		xStep:          getFloat64(r.FormValue("xStep"), math.NaN()),
+
+		yDivisors: getFloatArray(r.FormValue("yDivisors"), []float64{4, 5, 6}),
 	}
 
-	fmt.Printf("")
 	margin := float64(params.margin)
 	params.area.xmin = margin + 10
 	params.area.xmax = params.width - margin
@@ -1226,6 +1259,8 @@ func getYCoord(params *Params, value float64, side string) float64 {
 
 func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 
+	log.Println("drawLines")
+
 	linecap := "butt"
 	linejoin := "miter"
 
@@ -1350,6 +1385,9 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	cr.context.Save()
 	// clipRestored := false
 	for _, series := range results {
+
+		log.Printf("series=%+v\n", series)
+
 		/*
 			if (! (__contains__(series.options, "stacked"))) {
 				if (! (clipRestored)) {
@@ -1373,6 +1411,9 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 		var missingPoints float64
 		startShift := (series.xStep * (missingPoints / series.valuesPerPoint))
 		x := ((float64(params.area.xmin) + startShift) + (params.lineWidth / 2.0))
+		log.Printf("params.area.xmin=%+v\n", params.area.xmin)
+		log.Printf("startShift=%+v\n", startShift)
+		log.Printf("params.lineWidth=%+v\n", params.lineWidth)
 		//	y := float64(params.area.ymin)
 		// startX := x
 		/*
@@ -1438,6 +1479,7 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 						startX = x
 					}
 				*/
+
 				switch params.lineMode {
 
 				case LineModeStaircase:
