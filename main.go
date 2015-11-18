@@ -391,7 +391,24 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	returnRender(w, format, metrics)
+	switch format {
+	case "protobuf":
+		w.Header().Set("Content-Type", "application/protobuf")
+		b, _ := metrics.Marshal()
+		w.Write(b)
+
+	case "json":
+		presponse := createRenderResponse(metrics, nil)
+		w.Header().Set("Content-Type", "application/json")
+		e := json.NewEncoder(w)
+		e.Encode(presponse)
+
+	case "", "pickle":
+		presponse := createRenderResponse(metrics, pickle.None{})
+		w.Header().Set("Content-Type", "application/pickle")
+		e := pickle.NewEncoder(w)
+		e.Encode(presponse)
+	}
 }
 
 func createRenderResponse(metrics *pb.MultiFetchResponse, missing interface{}) []map[string]interface{} {
@@ -421,29 +438,6 @@ func createRenderResponse(metrics *pb.MultiFetchResponse, missing interface{}) [
 	}
 
 	return response
-}
-
-func returnRender(w http.ResponseWriter, format string, metrics *pb.MultiFetchResponse) {
-
-	switch format {
-	case "protobuf":
-		w.Header().Set("Content-Type", "application/protobuf")
-		b, _ := metrics.Marshal()
-		w.Write(b)
-
-	case "json":
-		presponse := createRenderResponse(metrics, nil)
-		w.Header().Set("Content-Type", "application/json")
-		e := json.NewEncoder(w)
-		e.Encode(presponse)
-
-	case "", "pickle":
-		presponse := createRenderResponse(metrics, pickle.None{})
-		w.Header().Set("Content-Type", "application/pickle")
-		e := pickle.NewEncoder(w)
-		e.Encode(presponse)
-	}
-
 }
 
 func mergeResponses(req *http.Request, responses []serverResponse) *pb.MultiFetchResponse {
