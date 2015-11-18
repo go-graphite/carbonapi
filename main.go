@@ -385,7 +385,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	metrics := handleRenderPB(req, responses)
+	metrics := mergeResponses(req, responses)
 	if metrics == nil {
 		http.Error(w, "no decoded responses to merge", http.StatusInternalServerError)
 		return
@@ -446,7 +446,7 @@ func returnRender(w http.ResponseWriter, format string, metrics *pb.MultiFetchRe
 
 }
 
-func handleRenderPB(req *http.Request, responses []serverResponse) *pb.MultiFetchResponse {
+func mergeResponses(req *http.Request, responses []serverResponse) *pb.MultiFetchResponse {
 
 	metrics := make(map[string][]pb.FetchResponse)
 
