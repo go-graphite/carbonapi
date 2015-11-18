@@ -113,7 +113,7 @@ func doProbe() {
 		return
 	}
 
-	_, paths := findHandlerPB(nil, nil, responses)
+	_, paths := findHandlerPB(nil, responses)
 
 	// update our cache of which servers have which metrics
 	for k, v := range paths {
@@ -241,7 +241,7 @@ type nameleaf struct {
 	leaf bool
 }
 
-func findHandlerPB(w http.ResponseWriter, req *http.Request, responses []serverResponse) ([]*pb.GlobMatch, map[string][]string) {
+func findHandlerPB(req *http.Request, responses []serverResponse) ([]*pb.GlobMatch, map[string][]string) {
 
 	// metric -> [server1, ... ]
 	paths := make(map[string][]string)
@@ -310,7 +310,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	metrics, paths := findHandlerPB(w, req, responses)
+	metrics, paths := findHandlerPB(req, responses)
 
 	// update our cache of which servers have which metrics
 	for k, v := range paths {
@@ -533,7 +533,7 @@ func mergeValues(req *http.Request, metric *pb.FetchResponse, decoded []pb.Fetch
 	}
 }
 
-func infoHandlerPB(w http.ResponseWriter, req *http.Request, format string, responses []serverResponse) map[string]pb.InfoResponse {
+func infoHandlerPB(req *http.Request, format string, responses []serverResponse) map[string]pb.InfoResponse {
 
 	decoded := make(map[string]pb.InfoResponse)
 	for _, r := range responses {
@@ -593,7 +593,7 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	infos := infoHandlerPB(w, req, format, responses)
+	infos := infoHandlerPB(req, format, responses)
 
 	switch format {
 	case "protobuf":
