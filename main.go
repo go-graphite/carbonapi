@@ -385,10 +385,16 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	handleRenderPB(w, req, format, responses)
+	metrics := handleRenderPB(req, responses)
+	if metrics == nil {
+		http.Error(w, "no decoded responses to merge", http.StatusInternalServerError)
+		return
+	}
+
+	returnRender(w, format, metrics)
 }
 
-func createRenderResponse(metrics pb.MultiFetchResponse, missing interface{}) []map[string]interface{} {
+func createRenderResponse(metrics *pb.MultiFetchResponse, missing interface{}) []map[string]interface{} {
 
 	var response []map[string]interface{}
 
@@ -417,7 +423,7 @@ func createRenderResponse(metrics pb.MultiFetchResponse, missing interface{}) []
 	return response
 }
 
-func returnRender(w http.ResponseWriter, format string, metrics pb.MultiFetchResponse) {
+func returnRender(w http.ResponseWriter, format string, metrics *pb.MultiFetchResponse) {
 
 	switch format {
 	case "protobuf":
@@ -440,7 +446,7 @@ func returnRender(w http.ResponseWriter, format string, metrics pb.MultiFetchRes
 
 }
 
-func handleRenderPB(w http.ResponseWriter, req *http.Request, format string, responses []serverResponse) {
+func handleRenderPB(req *http.Request, responses []serverResponse) *pb.MultiFetchResponse {
 
 	metrics := make(map[string][]pb.FetchResponse)
 
@@ -463,9 +469,7 @@ func handleRenderPB(w http.ResponseWriter, req *http.Request, format string, res
 	if len(metrics) == 0 {
 		err := fmt.Sprintf("no decoded responses to merge for req: %s", req.URL.RequestURI())
 		logger.Logln(err)
-		http.Error(w, err, http.StatusInternalServerError)
-		Metrics.RenderErrors.Add(1)
-		return
+		return nil
 	}
 
 	for name, decoded := range metrics {
@@ -494,7 +498,8 @@ func handleRenderPB(w http.ResponseWriter, req *http.Request, format string, res
 		multi.Metrics = append(multi.Metrics, &metric)
 	}
 
-	returnRender(w, format, multi)
+	return &multi
+
 }
 
 func mergeValues(req *http.Request, metric *pb.FetchResponse, decoded []pb.FetchResponse) {
