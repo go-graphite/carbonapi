@@ -160,14 +160,14 @@ func singleGet(uri, server string, ch chan<- serverResponse, started chan<- stru
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == 404 {
+	if resp.StatusCode == http.StatusNotFound {
 		// carbonsserver replies with Not Found if we request a
 		// metric that it doesn't have -- makes sense
 		ch <- serverResponse{server, nil}
 		return
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		logger.Logln("bad response code ", server, "/", uri, ":", resp.StatusCode)
 		ch <- serverResponse{server, nil}
 		return
