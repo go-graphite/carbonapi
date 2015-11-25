@@ -580,6 +580,7 @@ type Params struct {
 	vtitle      string
 	vtitleRight string
 	tz          string
+	timeRange   int32
 
 	lineMode       LineMode
 	areaMode       AreaMode
@@ -599,6 +600,7 @@ type Params struct {
 	yBottom      float64
 	ySpan        float64
 	graphHeight  float64
+	graphWidth   int
 	yScaleFactor float64
 	yUnitSystem  string
 	yDivisors    []float64
@@ -719,6 +721,7 @@ func marshalPNGCairo(r *http.Request, results []*metricData) []byte {
 		cr.context.SetFontOptions(fontOpts)
 	*/
 
+	log.Printf("params.bgColor=%+v\n", params.bgColor)
 	setColor(&cr, &params.bgColor)
 	drawRectangle(&cr, &params, 0, 0, params.width, params.height, true)
 
@@ -869,7 +872,9 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 		}
 	}
 
-	//TODO: consolidateDataPoints
+	params.timeRange = timeRange
+
+	consolidateDataPoints(params, results)
 	currentXMin := params.area.xmin
 	currentXMax := params.area.xmax
 	if params.secondYAxis {
@@ -898,6 +903,27 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	}
 
 	drawLines(cr, params, results)
+}
+
+func consolidateDataPoints(params *Params, results []*metricData) {
+	params.graphWidth = int(params.area.xmax - params.area.xmin - (params.lineWidth + 1))
+	numberOfPixels := float64(params.graphWidth)
+
+	for _, series := range results {
+		numberOfDataPoints := params.timeRange / series.GetStepTime()
+		// minXStep := params.minXStep
+		minXStep := 1.0
+		divisor := float64(params.timeRange) / float64(series.GetStepTime())
+		bestXStep := numberOfPixels / divisor
+		if bestXStep < minXStep {
+			drawableDataPoints := int(numberOfPixels / minXStep)
+			pointsPerPixel := math.Ceil(float64(numberOfDataPoints) / float64(drawableDataPoints))
+			// series.consolidate(pointsPerPixel)
+			series.xStep = (numberOfPixels * pointsPerPixel) / float64(numberOfDataPoints)
+		} else {
+			series.xStep = bestXStep
+		}
+	}
 }
 
 func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*metricData) {
@@ -1211,7 +1237,7 @@ func str2linejoin(s string) cairo.LineJoin {
 	return cairo.LineJoinMiter
 }
 
-func getYCoord(params *Params, value float64, side string) float64 {
+func getYCoord(params *Params, value float64, side string) (y float64) {
 
 	var yLabelValues []float64
 	var yTop float64
@@ -1409,11 +1435,9 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 
 		//	missingPoints := ((series.GetStartTime() - self.startTime) / series.GetStepTime())
 		var missingPoints float64
+		series.valuesPerPoint = 1
 		startShift := (series.xStep * (missingPoints / series.valuesPerPoint))
 		x := ((float64(params.area.xmin) + startShift) + (params.lineWidth / 2.0))
-		log.Printf("params.area.xmin=%+v\n", params.area.xmin)
-		log.Printf("startShift=%+v\n", startShift)
-		log.Printf("params.lineWidth=%+v\n", params.lineWidth)
 		//	y := float64(params.area.ymin)
 		// startX := x
 		/*
@@ -1423,6 +1447,9 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 				self.setColor(series.color, (__jsdict_get(series.options, "alpha") || 1.0));
 			}
 		*/
+
+		setColor(cr, string2RGBAptr("black"))
+
 		consecutiveNones := 0
 		var index int
 		for i, value := range series.Values {
@@ -1459,7 +1486,7 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 						y = self.getYCoord(value);
 					}
 				*/
-				y := getYCoord(params, value, "left")
+				y := getYCoord(params, value, "")
 				if math.IsNaN(y) {
 					value = y
 				} else {
@@ -1480,6 +1507,7 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 					}
 				*/
 
+				log.Printf("x=%+v y=%+v\n", x, y)
 				switch params.lineMode {
 
 				case LineModeStaircase:
@@ -1497,7 +1525,6 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 					cr.context.LineTo(x, y)
 					x += series.xStep
 				case LineModeConnected:
-
 					if consecutiveNones > params.connectedLimit || consecutiveNones == index {
 						cr.context.MoveTo(x, y)
 					}
