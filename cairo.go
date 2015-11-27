@@ -44,25 +44,42 @@ const (
 type AreaMode int
 
 const (
-	AreaModeNone    = 1
-	AreaModeFirst   = 2
-	AreaModeAll     = 4
-	AreaModeStacked = 8
+	AreaModeNone    AreaMode = 1
+	AreaModeFirst   AreaMode = 2
+	AreaModeAll     AreaMode = 4
+	AreaModeStacked AreaMode = 8
 )
 
 type PieMode int
 
 const (
-	PieModeMaximum = 1
-	PieModeMinimum = 2
-	PieModeAverage = 4
+	PieModeMaximum PieMode = 1
+	PieModeMinimum PieMode = 2
+	PieModeAverage PieMode = 4
 )
 
 type YAxisSide int
 
 const (
-	YAxisSideRight = 1
-	YAxisSideLeft  = 2
+	YAxisSideRight YAxisSide = 1
+	YAxisSideLeft  YAxisSide = 2
+)
+
+type YCoordSide int
+
+const (
+	YCoordSideLeft  YCoordSide = 1
+	YCoordSideRight YCoordSide = 2
+	YCoordSideNone  YCoordSide = 3
+)
+
+type TimeUnit int
+
+const (
+	SEC  TimeUnit = 1
+	MIN  TimeUnit = 2
+	HOUR TimeUnit = 3
+	DAY  TimeUnit = 4
 )
 
 /*
@@ -575,6 +592,7 @@ type Params struct {
 	hideGrid    bool
 	hideAxes    bool
 	hideYAxis   bool
+	hideXAxis   bool
 	yAxisSide   YAxisSide
 	title       string
 	vtitle      string
@@ -666,6 +684,7 @@ func marshalPNGCairo(r *http.Request, results []*metricData) []byte {
 		hideGrid:       getBool(r.FormValue("hideLegend"), false),
 		hideAxes:       getBool(r.FormValue("hideLegend"), false),
 		hideYAxis:      getBool(r.FormValue("hideLegend"), false),
+		hideXAxis:      getBool(r.FormValue("hideLegend"), false),
 		yAxisSide:      getAxisSide(r.FormValue("yAxisSide"), YAxisSideLeft),
 		connectedLimit: getInt(r.FormValue("connectedLimit"), math.MaxUint32),
 		lineMode:       getLineMode(r.FormValue("lineMode"), LineModeSlope),
@@ -941,6 +960,30 @@ func (d divisorInfo) Len() int               { return len(d) }
 func (d divisorInfo) Less(i int, j int) bool { return d[i].diff < d[i].diff }
 func (d divisorInfo) Swap(i int, j int)      { d[i], d[j] = d[j], d[i] }
 
+func makeLabel(params *Params, yValue float64) string {
+	yValue, prefix := formatUnits(yValue, params.yStep, params.yUnitSystem)
+	ySpan, spanPrefix := formatUnits(params.ySpan, params.yStep, params.yUnitSystem)
+
+	switch {
+	case yValue < 0.1:
+		return fmt.Sprintf("%g %s", yValue, prefix)
+	case yValue < 1.0:
+		return fmt.Sprintf("%.2f %s", yValue, prefix)
+	case ySpan > 10 || spanPrefix != prefix:
+		if yValue-math.Floor(yValue) < 0.00000000001 {
+			return fmt.Sprintf("%.1f %s", yValue, prefix)
+		} else {
+			return fmt.Sprintf("%d %s ", int(yValue), prefix)
+		}
+	case ySpan > 3:
+		return fmt.Sprintf("%.1f %s ", yValue, prefix)
+	case ySpan > 0.1:
+		return fmt.Sprintf("%.2f %s ", yValue, prefix)
+	default:
+		return fmt.Sprintf("%g %s", yValue, prefix)
+	}
+}
+
 func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	seriesWithMissingValues := list.New()
 	yMinValue := math.NaN()
@@ -1067,35 +1110,7 @@ func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 	if !params.hideAxes {
 		// Create and measure the Y-labels
 
-		makeLabel := func(yValue float64) string {
-			yValue, prefix := formatUnits(yValue, params.yStep, params.yUnitSystem)
-			ySpan, spanPrefix := formatUnits(params.ySpan, params.yStep, params.yUnitSystem)
-
-			switch {
-			case yValue < 0.1:
-				return fmt.Sprintf("%g %s", yValue, prefix)
-			case yValue < 1.0:
-				return fmt.Sprintf("%.2f %s", yValue, prefix)
-			case ySpan > 10 || spanPrefix != prefix:
-				if yValue-math.Floor(yValue) < 0.00000000001 {
-					return fmt.Sprintf("%.1f %s", yValue, prefix)
-				} else {
-					return fmt.Sprintf("%d %s ", int(yValue), prefix)
-				}
-			case ySpan > 3:
-				return fmt.Sprintf("%.1f %s ", yValue, prefix)
-			case ySpan > 0.1:
-				return fmt.Sprintf("%.2f %s ", yValue, prefix)
-			default:
-				return fmt.Sprintf("%g %s", yValue, prefix)
-			}
-		}
-
 		params.yLabelValues = getYLabelValues(params, params.yBottom, params.yTop, params.yStep)
-		yLabels := make([]string, len(params.yLabelValues))
-		for i, v := range params.yLabelValues {
-			yLabels[i] = makeLabel(v)
-		}
 		//     params.yLabelWidth = max([self.getExtents(label)['width'] for label in self.yLabels])
 
 		if !params.hideYAxis {
@@ -1206,7 +1221,46 @@ func setupXAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 }
 
 func drawLabels(cr *cairoSurfaceContext, params *Params, results []*metricData) {
-	logger.Logln("stubbed drawLabels()")
+	if !params.hideYAxis {
+		drawYAxis(cr, params, results)
+	}
+	if !params.hideXAxis {
+		drawXAxis(cr, params, results)
+	}
+}
+
+func drawYAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) {
+	var x float64
+	if params.secondYAxis {
+		logger.Logln("stubbed drawYAxis with secondYAxis support")
+		return
+	}
+
+	for _, value := range params.yLabelValues {
+		label := makeLabel(params, value)
+		y := getYCoord(params, value, YCoordSideNone)
+		if y == math.NaN() {
+			value = math.NaN()
+		} else if y < 0 {
+			y = 0
+		}
+
+		if params.yAxisSide == YAxisSideLeft {
+			x = params.area.xmin - float64(params.yLabelWidth)*0.02
+			drawText(cr, params, label, x, y, H_ALIGN_RIGHT, V_ALIGN_CENTER, 0)
+		} else {
+			x = params.area.xmax + float64(params.yLabelWidth)*0.02
+			drawText(cr, params, label, x, y, H_ALIGN_LEFT, V_ALIGN_CENTER, 0)
+		}
+	}
+}
+
+func findXTimes(start float64, unit TimeUnit, step float64) {
+	logger.Logln("stubbed findXTimes")
+}
+
+func drawXAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) {
+	logger.Logln("stubbed drawXAxis")
 }
 
 func drawGridLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
@@ -1237,18 +1291,18 @@ func str2linejoin(s string) cairo.LineJoin {
 	return cairo.LineJoinMiter
 }
 
-func getYCoord(params *Params, value float64, side string) (y float64) {
+func getYCoord(params *Params, value float64, side YCoordSide) (y float64) {
 
 	var yLabelValues []float64
 	var yTop float64
 	var yBottom float64
 
 	switch side {
-	case "left":
+	case YCoordSideLeft:
 		yLabelValues = params.yLabelValuesL
 		yTop = params.yTopL
 		yBottom = params.yBottomL
-	case "right":
+	case YCoordSideRight:
 		yLabelValues = params.yLabelValuesR
 		yTop = params.yTopR
 		yBottom = params.yBottomR
@@ -1408,11 +1462,13 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	cr.context.Rectangle(params.area.xmin, params.area.ymin, (params.area.xmax - params.area.xmin), (params.area.ymax - params.area.ymin))
 	cr.context.Clip()
 	cr.context.SetLineWidth(originalWidth)
-	cr.context.Save()
+	// cr.context.Save()
 	// clipRestored := false
 	for _, series := range results {
 
-		log.Printf("series=%+v\n", series)
+		// log.Printf("series=%+v\n", series)
+		cr.context.SetLineWidth(params.lineWidth)
+		setColor(cr, string2RGBAptr(series.color))
 
 		/*
 			if (! (__contains__(series.options, "stacked"))) {
@@ -1422,8 +1478,6 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 				}
 			}
 		*/
-
-		cr.context.SetLineWidth(series.lineWidth)
 
 		/*
 			if (__contains__(series.options, "dashed")) {
@@ -1448,8 +1502,6 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 			}
 		*/
 
-		setColor(cr, string2RGBAptr("black"))
-
 		consecutiveNones := 0
 		var index int
 		for i, value := range series.Values {
@@ -1463,9 +1515,9 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 						if (__contains__(series.options, "stacked")) {
 							if (self.secondYAxis) {
 								if (__contains__(series.options, "secondYAxis")) {
-									self.fillAreaAndClip(x, y, startX, self.getYCoord(0, "right"));
+									self.fillAreaAndClip(x, y, startX, self.getYCoord(0, YCoordSideRight));
 								} else {
-									self.fillAreaAndClip(x, y, startX, self.getYCoord(0, "left"));
+									self.fillAreaAndClip(x, y, startX, self.getYCoord(0, YCoordSideLeft));
 								}
 							} else {
 								self.fillAreaAndClip(x, y, startX, self.getYCoord(0));
@@ -1478,15 +1530,15 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 				/*
 					if (params.secondYAxis) {
 						if (__contains__(series.options, "secondYAxis")) {
-							y = self.getYCoord(value, "right");
+							y = self.getYCoord(value, YCoordSideRight);
 						} else {
-							y = self.getYCoord(value, "left");
+							y = self.getYCoord(value, YCoordSideNone);
 						}
 					} else {
 						y = self.getYCoord(value);
 					}
 				*/
-				y := getYCoord(params, value, "")
+				y := getYCoord(params, value, YCoordSideNone)
 				if math.IsNaN(y) {
 					value = y
 				} else {
@@ -1507,7 +1559,7 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 					}
 				*/
 
-				log.Printf("x=%+v y=%+v\n", x, y)
+				// log.Printf("x=%+v y=%+v\n", x, y)
 				switch params.lineMode {
 
 				case LineModeStaircase:
@@ -1729,6 +1781,10 @@ func drawTitle(cr *cairoSurfaceContext, params *Params) {
 		params.area.ymin += float64(params.margin)
 	}
 }
+
+/*
+
+ */
 
 func drawVTitle(cr *cairoSurfaceContext, params *Params, rightAlign bool) {
 	lineHeight := params.fontExtents.Height
