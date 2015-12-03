@@ -1867,13 +1867,13 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			heap.Push(&mh, metricHeapElement{idx: index, val: value})
 		}
 
+		if n > len(mh) {
+			n = len(mh)
+		}
 		results := make([]*metricData, n)
-		for len(mh) > 0 {
+		for i := range results {
 			v := heap.Pop(&mh).(metricHeapElement)
-			results[len(results)-1] = compare[v.idx]
-			if len(mh) == n {
-				break
-			}
+			results[i] = compare[v.idx]
 		}
 
 		return results

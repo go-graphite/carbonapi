@@ -2173,12 +2173,73 @@ func TestEvalMultipleReturns(t *testing.T) {
 				"metricE": []*metricData{makeResponse("metricE", []float64{4, 7, 7, 7, 7, 1}, 1, now32)},
 			},
 		},
+		{
+			&expr{
+				target: "pearsonClosest",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metricC"},
+					&expr{target: "metric*"},
+					&expr{val: 2, etype: etConst},
+				},
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric*", 0, 1}: []*metricData{
+					makeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					makeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					makeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					makeResponse("metricD", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					makeResponse("metricE", []float64{4, 7, 7, 7, 7, 1}, 1, now32),
+				},
+				metricRequest{"metricC", 0, 1}: []*metricData{
+					makeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+				},
+			},
+			"pearsonClosest",
+			map[string][]*metricData{
+				"metricC": []*metricData{makeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32)},
+				"metricD": []*metricData{makeResponse("metricD", []float64{4, 4, 5, 5, 6, 6}, 1, now32)},
+			},
+		},
+		{
+			&expr{
+				target: "pearsonClosest",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metricC"},
+					&expr{target: "metric*"},
+					&expr{val: 3, etype: etConst},
+				},
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric*", 0, 1}: []*metricData{
+					makeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					makeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					makeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					makeResponse("metricD", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					makeResponse("metricE", []float64{4, 7, 7, 7, 7, 1}, 1, now32),
+				},
+				metricRequest{"metricC", 0, 1}: []*metricData{
+					makeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+				},
+			},
+			"pearsonClosest",
+			map[string][]*metricData{
+				"metricB": []*metricData{makeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32)},
+				"metricC": []*metricData{makeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32)},
+				"metricD": []*metricData{makeResponse("metricD", []float64{4, 4, 5, 5, 6, 6}, 1, now32)},
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		g := evalExpr(tt.e, 0, 1, tt.m)
 		if g == nil {
 			t.Errorf("failed to eval %v", tt.name)
+			continue
+		}
+		if g[0] == nil {
+			t.Errorf("returned no value %v", tt.name)
 			continue
 		}
 		if g[0].GetStepTime() == 0 {
