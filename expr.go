@@ -2364,7 +2364,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 
 		n, err := getIntArg(e, 2)
-		if err != nil {
+		if err != nil || n < 1 {
 			return nil
 		}
 
@@ -2439,6 +2439,9 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			}
 		}
 
+		if len(mh) < n {
+			n = len(mh)
+		}
 		results := make([]*metricData, n)
 		// results should be ordered ascending
 		for len(mh) > 0 {
