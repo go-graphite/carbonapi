@@ -2351,45 +2351,39 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 		return results
 
-	case "tukeyAbove": // tukeyAbove(seriesList,interval,basis,n)
+	case "tukeyAbove": // tukeyAbove(seriesList,basis,n,interval=0)
 
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}
 
-		var n int
-		var scaleByStep bool
-
-		switch e.args[1].etype {
-		case etConst:
-			n, err = getIntArg(e, 1)
-		case etString:
-			var n32 int32
-			n32, err = getIntervalArg(e, 1, 1)
-			n = int(n32)
-			scaleByStep = true
-		default:
-			err = ErrBadType
-		}
+		basis, err := getFloatArg(e, 1)
 		if err != nil {
 			return nil
 		}
 
-		windowSize := n
-
-		if scaleByStep {
-			windowSize /= int(arg[0].GetStepTime())
-		}
-
-		basis, err := getFloatArg(e, 2)
+		n, err := getIntArg(e, 2)
 		if err != nil {
 			return nil
 		}
 
-		n, err = getIntArg(e, 3)
-		if err != nil {
-			return nil
+		var interval int = 0
+		if len(e.args) >= 4 {
+			switch e.args[3].etype {
+			case etConst:
+				interval, err = getIntArg(e, 3)
+			case etString:
+				var i32 int32
+				i32, err = getIntervalArg(e, 3, 1)
+				interval = int(i32)
+				interval /= int(arg[0].GetStepTime())
+			default:
+				err = ErrBadType
+			}
+			if err != nil {
+				return nil
+			}
 		}
 
 		// gather all the valid points
