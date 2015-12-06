@@ -2282,6 +2282,57 @@ func TestEvalMultipleReturns(t *testing.T) {
 				"metricE": []*metricData{makeResponse("metricE", []float64{17, 21, 8, 30, 18, 28}, 1, now32)},
 			},
 		},
+		{
+			&expr{
+				target: "tukeyBelow",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric*"},
+					&expr{val: 1.5, etype: etConst},
+					&expr{val: 5, etype: etConst},
+				},
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric*", 0, 1}: []*metricData{
+					makeResponse("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32),
+					makeResponse("metricB", []float64{20, 18, 21, 19, 20, 20}, 1, now32),
+					makeResponse("metricC", []float64{19, 19, 21, 17, 23, 20}, 1, now32),
+					makeResponse("metricD", []float64{18, 20, 22, 14, 26, 20}, 1, now32),
+					makeResponse("metricE", []float64{17, 21, 8, 30, 18, 28}, 1, now32),
+				},
+			},
+
+			"tukeyBelow",
+			map[string][]*metricData{
+				"metricA": []*metricData{makeResponse("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32)},
+				"metricE": []*metricData{makeResponse("metricE", []float64{17, 21, 8, 30, 18, 28}, 1, now32)},
+			},
+		},
+		{
+			&expr{
+				target: "tukeyBelow",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric*"},
+					&expr{val: 3, etype: etConst},
+					&expr{val: 5, etype: etConst},
+				},
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric*", 0, 1}: []*metricData{
+					makeResponse("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32),
+					makeResponse("metricB", []float64{20, 18, 21, 19, 20, 20}, 1, now32),
+					makeResponse("metricC", []float64{19, 19, 21, 17, 23, 20}, 1, now32),
+					makeResponse("metricD", []float64{18, 20, 22, 14, 26, 20}, 1, now32),
+					makeResponse("metricE", []float64{17, 21, 8, 30, 18, 28}, 1, now32),
+				},
+			},
+
+			"tukeyBelow",
+			map[string][]*metricData{
+				"metricE": []*metricData{makeResponse("metricE", []float64{17, 21, 8, 30, 18, 28}, 1, now32)},
+			},
+		},
 	}
 
 	for _, tt := range tests {
