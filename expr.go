@@ -727,19 +727,18 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil
 		}
 
-		index := strings.IndexAny(e.target, "AB")
-		isAbove := e.target[index:] == "Above"
+		isAbove := strings.HasSuffix(e.target, "Above")
 		isInclusive := true
 		var compute func([]float64, []bool) float64
-		switch e.target[0:index] {
-		case "average":
+		switch {
+		case strings.HasPrefix(e.target, "average"):
 			compute = avgValue
-		case "current":
+		case strings.HasPrefix(e.target, "current"):
 			compute = currentValue
-		case "maximum":
+		case strings.HasPrefix(e.target, "maximum"):
 			compute = maxValue
 			isInclusive = false
-		case "minimum":
+		case strings.HasPrefix(e.target, "minimum"):
 			compute = minValue
 			isInclusive = false
 		}
