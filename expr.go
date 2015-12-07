@@ -2351,46 +2351,42 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 		return results
 
-	case "tukeyAbove": // tukeyAbove(seriesList,interval,basis,n)
+	case "tukeyAbove", "tukeyBelow": // tukeyAbove(seriesList,basis,n,interval=0) , tukeyBelow(seriesList,basis,n,interval=0)
 
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}
 
-		var n int
-		var scaleByStep bool
-
-		switch e.args[1].etype {
-		case etConst:
-			n, err = getIntArg(e, 1)
-		case etString:
-			var n32 int32
-			n32, err = getIntervalArg(e, 1, 1)
-			n = int(n32)
-			scaleByStep = true
-		default:
-			err = ErrBadType
-		}
-		if err != nil {
+		basis, err := getFloatArg(e, 1)
+		if err != nil || basis <= 0 {
 			return nil
 		}
 
-		windowSize := n
-
-		if scaleByStep {
-			windowSize /= int(arg[0].GetStepTime())
-		}
-
-		basis, err := getFloatArg(e, 2)
-		if err != nil {
+		n, err := getIntArg(e, 2)
+		if err != nil || n < 1 {
 			return nil
 		}
 
-		n, err = getIntArg(e, 3)
-		if err != nil {
-			return nil
+		var interval int = 0
+		if len(e.args) >= 4 {
+			switch e.args[3].etype {
+			case etConst:
+				interval, err = getIntArg(e, 3)
+			case etString:
+				var i32 int32
+				i32, err = getIntervalArg(e, 3, 1)
+				interval = int(i32)
+				interval /= int(arg[0].GetStepTime())
+				// TODO(nnuss): make sure the arrays are all the same 'size'
+			default:
+				err = ErrBadType
+			}
+			if err != nil {
+				return nil
+			}
 		}
+		// TODO(nnuss): negative intervals
 
 		// gather all the valid points
 		var points []float64
@@ -2411,7 +2407,9 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		iqr := points[third] - points[first]
 
 		max := points[third] + basis*iqr
-		// min := points[first] - basis*iqr
+		min := points[first] - basis*iqr
+
+		isAbove := strings.HasSuffix(e.target, "Above")
 
 		var mh metricHeap
 
@@ -2422,8 +2420,14 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 				if a.IsAbsent[i] {
 					continue
 				}
-				if m >= max {
-					outlier++
+				if isAbove {
+					if m >= max {
+						outlier++
+					}
+				} else {
+					if m <= min {
+						outlier++
+					}
 				}
 			}
 
@@ -2445,6 +2449,9 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			}
 		}
 
+		if len(mh) < n {
+			n = len(mh)
+		}
 		results := make([]*metricData, n)
 		// results should be ordered ascending
 		for len(mh) > 0 {
