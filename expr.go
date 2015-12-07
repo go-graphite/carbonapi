@@ -2359,7 +2359,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 
 		basis, err := getFloatArg(e, 1)
-		if err != nil {
+		if err != nil || basis <= 0 {
 			return nil
 		}
 
@@ -2378,6 +2378,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 				i32, err = getIntervalArg(e, 3, 1)
 				interval = int(i32)
 				interval /= int(arg[0].GetStepTime())
+				// TODO(nnuss): make sure the arrays are all the same 'size'
 			default:
 				err = ErrBadType
 			}
@@ -2385,6 +2386,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 				return nil
 			}
 		}
+		// TODO(nnuss): negative intervals
 
 		// gather all the valid points
 		var points []float64
