@@ -2351,7 +2351,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 		return results
 
-	case "tukeyAbove": // tukeyAbove(seriesList,basis,n,interval=0)
+	case "tukeyAbove", "tukeyBelow": // tukeyAbove(seriesList,basis,n,interval=0) , tukeyBelow(seriesList,basis,n,interval=0)
 
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
@@ -2405,7 +2405,9 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		iqr := points[third] - points[first]
 
 		max := points[third] + basis*iqr
-		// min := points[first] - basis*iqr
+		min := points[first] - basis*iqr
+
+		isAbove := strings.HasSuffix(e.target, "Above")
 
 		var mh metricHeap
 
@@ -2416,8 +2418,14 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 				if a.IsAbsent[i] {
 					continue
 				}
-				if m >= max {
-					outlier++
+				if isAbove {
+					if m >= max {
+						outlier++
+					}
+				} else {
+					if m <= min {
+						outlier++
+					}
 				}
 			}
 
