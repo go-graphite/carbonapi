@@ -3,11 +3,12 @@ package main
 import (
 	"errors"
 	"fmt"
-	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
+
+	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 )
 
 var errNoMetrics = errors.New("no metrics")
