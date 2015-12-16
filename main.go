@@ -387,6 +387,9 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 
 	metrics := mergeResponses(req, responses)
 	if metrics == nil {
+		Metrics.RenderErrors.Add(1)
+		err := fmt.Sprintf("no decoded responses to merge for req: %s", req.URL.RequestURI())
+		logger.Logln(err)
 		http.Error(w, "no decoded responses to merge", http.StatusInternalServerError)
 		return
 	}
@@ -461,8 +464,6 @@ func mergeResponses(req *http.Request, responses []serverResponse) *pb.MultiFetc
 	var multi pb.MultiFetchResponse
 
 	if len(metrics) == 0 {
-		err := fmt.Sprintf("no decoded responses to merge for req: %s", req.URL.RequestURI())
-		logger.Logln(err)
 		return nil
 	}
 
