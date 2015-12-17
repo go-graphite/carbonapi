@@ -16,6 +16,8 @@ import (
 	cairo "github.com/martine/gocairo/cairo"
 )
 
+const defaultImageRender = "cairo"
+
 type HAlign int
 
 const (

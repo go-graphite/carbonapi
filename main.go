@@ -153,7 +153,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 	}
 
 	if format == "" {
-		format = "png"
+		format = defaultImageRender
 	}
 
 	cacheTimeout := int32(60)
