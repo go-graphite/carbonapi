@@ -14,6 +14,8 @@ type metricData struct {
 	pb.FetchResponse
 
 	// extra options
+	xStep          float64
+	valuesPerPoint int
 	drawAsInfinite bool
 	secondYAxis    bool
 	dashed         bool // TODO (ikruglov) smth like lineType would be better
