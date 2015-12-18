@@ -2481,11 +2481,17 @@ func (r *metricData) AggregatedTimeStep() int32 {
 }
 
 func (r *metricData) AggregatedValues() []float64 {
-
-	// this should be cached somewhere
-
+	// TODO(dgryski): this should be cached somewhere
 	if r.valuesPerPoint == 1 || r.valuesPerPoint == 0 {
-		return r.Values
+		v := make([]float64, len(r.Values))
+		for i, vv := range r.Values {
+			if r.IsAbsent[i] {
+				vv = math.NaN()
+			}
+			v[i] = vv
+		}
+
+		return v
 	}
 
 	avg := make([]float64, 0, len(r.Values)/r.valuesPerPoint+1)
