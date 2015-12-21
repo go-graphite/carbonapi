@@ -103,6 +103,8 @@ var customizable = [...]string{
 	"outputFormat",
 }
 
+var defaultColorList = []string{"blue", "green", "red", "purple", "brown", "yellow", "aqua", "grey", "magenta", "pink", "gold", "rose"}
+
 type unitPrefix struct {
 	prefix string
 	size   uint64
@@ -459,6 +461,20 @@ func getFloatArray(s string, def []float64) []float64 {
 	return fs
 }
 
+func getStringArray(s string, def []string) []string {
+	if s == "" {
+		return def
+	}
+
+	ss := strings.Split(s, ",")
+	var strs []string
+	for _, v := range ss {
+		strs = append(strs, strings.TrimSpace(v))
+	}
+
+	return strs
+}
+
 func getFontItalic(s string, def cairo.FontSlant) cairo.FontSlant {
 	if def != cairo.FontSlantNormal && def != cairo.FontSlantItalic {
 		panic("invalid default font Italic specified!!!!")
@@ -598,7 +614,7 @@ type Params struct {
 	lineMode       LineMode
 	areaMode       AreaMode
 	pieMode        PieMode
-	lineColors     []string
+	colorList      []string
 	lineWidth      float64
 	connectedLimit int
 
@@ -731,8 +747,8 @@ func marshalPNGCairo(r *http.Request, results []*metricData) []byte {
 		vtitle:      getString(r.FormValue("vtitle"), ""),
 		vtitleRight: getString(r.FormValue("vtitleRight"), ""),
 
-		lineColors: []string{"blue", "green", "red", "purple", "brown", "yellow", "aqua", "grey", "magenta", "pink", "gold", "rose"},
-		isPng:      true,
+		colorList: getStringArray(r.FormValue("colorList"), defaultColorList),
+		isPng:     true,
 
 		majorGridLineColor: getString(r.FormValue("majorline"), "rose"),
 		minorGridLineColor: getString(r.FormValue("minorline"), "grey"),
@@ -865,9 +881,7 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 		params.lineMode = LineModeStaircase
 	}
 
-	var colorsCur, lineColorsLen int
-	colorsCur = 0
-	lineColorsLen = len(params.lineColors)
+	var colorsCur int
 	for _, res := range results {
 		if params.secondYAxis && res.secondYAxis {
 			res.lineWidth = params.rightWidth
@@ -879,9 +893,9 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 			res.color = params.leftColor
 		}
 		if res.color == "" {
-			res.color = params.lineColors[colorsCur]
+			res.color = params.colorList[colorsCur]
 			colorsCur += 1
-			if colorsCur >= lineColorsLen {
+			if colorsCur >= len(params.colorList) {
 				colorsCur = 0
 			}
 		}
