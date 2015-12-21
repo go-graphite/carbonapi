@@ -814,7 +814,7 @@ func marshalPNGCairo(r *http.Request, results []*metricData) []byte {
 }
 
 func drawGraph(cr *cairoSurfaceContext, params *Params, results []*metricData) {
-	var tmp, minNumberOfPoints, maxNumberOfPoints int32
+	var minNumberOfPoints, maxNumberOfPoints int32
 	params.secondYAxis = false
 
 	params.startTime = -1
@@ -822,7 +822,7 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	minNumberOfPoints = -1
 	maxNumberOfPoints = -1
 	for _, res := range results {
-		tmp = res.GetStartTime()
+		tmp := res.GetStartTime()
 		if params.startTime == -1 || params.startTime > tmp {
 			params.startTime = tmp
 		}
@@ -930,10 +930,10 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	}
 
 	if !(params.lineMode == LineModeStaircase || ((minNumberOfPoints == maxNumberOfPoints) && (minNumberOfPoints == 2))) {
-		params.endTime = -1
+		params.endTime = 0
 		for _, res := range results {
-			tmp = res.GetStopTime() - res.GetStepTime()
-			if params.endTime == -1 || params.endTime > tmp {
+			tmp := res.GetStopTime() - res.GetStepTime()
+			if params.endTime < tmp {
 				params.endTime = tmp
 			}
 		}
