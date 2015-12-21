@@ -901,7 +901,7 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 		}
 	}
 
-	if params.title != "" || params.vtitle != "" {
+	if params.title != "" || params.vtitle != "" || params.vtitleRight != "" {
 		titleSize := params.fontSize + math.Floor(math.Log(params.fontSize))
 
 		setColor(cr, &params.fgColor)
