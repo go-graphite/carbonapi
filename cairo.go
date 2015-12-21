@@ -278,7 +278,7 @@ var xAxisConfigs = []xAxisStruct{
 		majorGridStep: 4,
 		labelUnit:     HOUR,
 		labelStep:     4,
-		format:        "%a %l%p",
+		format:        "%a %I%p", // BUG(dgryski): should be %l, but limitation of strftime library
 		maxInterval:   2 * 24 * 60 * 60,
 	},
 	xAxisStruct{
@@ -289,7 +289,7 @@ var xAxisConfigs = []xAxisStruct{
 		majorGridStep: 12,
 		labelUnit:     HOUR,
 		labelStep:     12,
-		format:        "%a %l%p",
+		format:        "%a %I%p", // BUG(dgryski): should be %l, but limitation of strftime library
 		maxInterval:   10 * 24 * 60 * 60,
 	},
 	xAxisStruct{
