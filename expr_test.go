@@ -1106,6 +1106,22 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "ewma",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 0.1, etype: etConst},
+				},
+				argString: "metric1,0.1",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{0, 1, 1, 1, math.NaN(), 1, 1}, 1, now32)},
+			},
+			[]float64{0, 0.9, 0.99, 0.999, math.NaN(), 0.9999, 0.99999},
+			"ewma(metric1,0.1)",
+		},
+		{
+			&expr{
 				target: "grep",
 				etype:  etFunc,
 				args: []*expr{
