@@ -979,7 +979,7 @@ func consolidateDataPoints(params *Params, results []*metricData) {
 	params.graphWidth = int(numberOfPixels)
 
 	for _, series := range results {
-		numberOfDataPoints := math.Floor(float64(params.timeRange / series.AggregatedTimeStep()))
+		numberOfDataPoints := math.Floor(float64(params.timeRange / series.GetStepTime()))
 		// minXStep := params.minXStep
 		minXStep := 1.0
 		divisor := float64(params.timeRange) / float64(series.GetStepTime())
