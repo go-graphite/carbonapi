@@ -1291,7 +1291,7 @@ func makeLabel(yValue, yStep, ySpan float64, yUnitSystem string) string {
 
 	switch {
 	case yValue < 0.1:
-		return fmt.Sprintf("%g %s", yValue, prefix)
+		return fmt.Sprintf("%.9g %s", yValue, prefix)
 	case yValue < 1.0:
 		return fmt.Sprintf("%.2f %s", yValue, prefix)
 	case ySpan > 10 || spanPrefix != prefix:
