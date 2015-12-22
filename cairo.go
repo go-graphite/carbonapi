@@ -2208,7 +2208,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 		padding = 5
 	)
 	var longestName *string
-	var longestNameLen int = -1
+	var longestNameLen int
 	var uniqueNames map[string]bool
 	var numRight int = 0
 	var legend []SeriesLegend
@@ -2217,8 +2217,11 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 	}
 
 	for _, res := range results {
-		nameLen := len(*(res.Name))
-		if longestNameLen == -1 || nameLen > longestNameLen {
+		nameLen := len(res.GetName())
+		if nameLen == 0 {
+			continue
+		}
+		if nameLen > longestNameLen {
 			longestNameLen = nameLen
 			longestName = res.Name
 		}
@@ -2226,13 +2229,13 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 			numRight += 1
 		}
 		if params.uniqueLegend {
-			if _, ok := uniqueNames[*(res.Name)]; !ok {
+			if _, ok := uniqueNames[res.GetName()]; !ok {
 				var tmp = SeriesLegend{
 					res.Name,
 					&res.color,
 					res.secondYAxis,
 				}
-				uniqueNames[*(res.Name)] = true
+				uniqueNames[res.GetName()] = true
 				legend = append(legend, tmp)
 			}
 		} else {
