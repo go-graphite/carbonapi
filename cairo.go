@@ -87,22 +87,6 @@ const (
 	DAY           = 24 * HOUR
 )
 
-var customizable = [...]string{
-	"width",
-	"height",
-	"margin",
-	"bgcolor",
-	"fgcolor",
-	"fontName",
-	"fontSize",
-	"fontBold",
-	"fontItalic",
-	"colorList",
-	"template",
-	"yAxisSide",
-	"outputFormat",
-}
-
 var defaultColorList = []string{"blue", "green", "red", "purple", "brown", "yellow", "aqua", "grey", "magenta", "pink", "gold", "rose"}
 
 type unitPrefix struct {
@@ -125,15 +109,6 @@ var unitSystems = map[string][]unitPrefix{
 		{"M", 1000000},          // 1000^2
 		{"K", 1000},
 	},
-}
-
-// TODO: Current colors are not perfect match with graphite-api.
-// TODO: Migrate to custom type
-type cairoColor struct {
-	r float64 // 0.0 .. 1.0
-	g float64 // 0.0 .. 1.0
-	b float64 // 0.0 .. 1.0
-	a float64
 }
 
 type xAxisStruct struct {
@@ -402,19 +377,6 @@ var xAxisConfigs = []xAxisStruct{
 		format:        "%m/%d %Y",
 		maxInterval:   365 * 24 * 60 * 60,
 	},
-}
-
-func getFloat32(s string, def float32) float32 {
-	if s == "" {
-		return def
-	}
-
-	n, err := strconv.ParseFloat(s, 32)
-	if err != nil {
-		return def
-	}
-
-	return float32(n)
 }
 
 func getInt(s string, def int) int {
@@ -692,14 +654,6 @@ type Params struct {
 	drawAsInfinite bool
 
 	xConf xAxisStruct
-}
-
-func bool2int(b bool) int {
-	if b {
-		return 0
-	} else {
-		return 1
-	}
 }
 
 type cairoSurfaceContext struct {

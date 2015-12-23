@@ -16,8 +16,6 @@ import (
 	vgdraw "github.com/gonum/plot/vg/draw"
 )
 
-var linesColors = `blue,green,red,purple,brown,yellow,aqua,grey,magenta,pink,gold,rose`
-
 func marshalPNG(r *http.Request, results []*metricData) []byte {
 	p, err := plot.New()
 	if err != nil {
