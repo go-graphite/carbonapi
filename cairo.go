@@ -19,8 +19,6 @@ import (
 	cairo "github.com/martine/gocairo/cairo"
 )
 
-const defaultImageRender = "cairo"
-
 type HAlign int
 
 const (
@@ -661,7 +659,7 @@ type cairoSurfaceContext struct {
 	surface *cairo.ImageSurface
 }
 
-func marshalPNGCairo(r *http.Request, results []*metricData) []byte {
+func marshalPNG(r *http.Request, results []*metricData) []byte {
 	var params = Params{
 		width:          getFloat64(r.FormValue("width"), 330),
 		height:         getFloat64(r.FormValue("height"), 250),

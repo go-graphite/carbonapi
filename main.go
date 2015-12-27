@@ -92,7 +92,7 @@ func writeResponse(w http.ResponseWriter, b []byte, format string, jsonp string)
 	case "csv":
 		w.Header().Set("Content-Type", contentTypeCSV)
 		w.Write(b)
-	case "png", "cairo":
+	case "png":
 		w.Header().Set("Content-Type", contentTypePNG)
 		w.Write(b)
 	}
@@ -153,7 +153,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 	}
 
 	if format == "" {
-		format = defaultImageRender
+		format = "png"
 	}
 
 	cacheTimeout := int32(60)
@@ -304,8 +304,6 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 		body = marshalPickle(results)
 	case "png":
 		body = marshalPNG(r, results)
-	case "cairo":
-		body = marshalPNGCairo(r, results)
 	}
 
 	writeResponse(w, body, format, jsonp)
