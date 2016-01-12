@@ -32,16 +32,16 @@ func marshalCSV(results []*metricData) []byte {
 		step := r.GetStepTime()
 		t := r.GetStartTime()
 		for i, v := range r.Values {
+			b = append(b, '"')
+			b = append(b, r.GetName()...)
+			b = append(b, '"')
+			b = append(b, ',')
+			b = append(b, time.Unix(int64(t), 0).Format("2006-01-02 15:04:05")...)
+			b = append(b, ',')
 			if !r.IsAbsent[i] {
-				b = append(b, '"')
-				b = append(b, r.GetName()...)
-				b = append(b, '"')
-				b = append(b, ',')
-				b = append(b, time.Unix(int64(t), 0).Format("2006-01-02 15:04:05")...)
-				b = append(b, ',')
 				b = strconv.AppendFloat(b, v, 'f', -1, 64)
-				b = append(b, '\n')
 			}
+			b = append(b, '\n')
 			t += step
 		}
 	}
