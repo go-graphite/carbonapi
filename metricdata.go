@@ -20,6 +20,7 @@ type metricData struct {
 	secondYAxis    bool
 	dashed         bool // TODO (ikruglov) smth like lineType would be better
 	color          string
+	alpha          float64
 	lineWidth      float64
 }
 

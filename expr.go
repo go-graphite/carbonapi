@@ -2476,7 +2476,27 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		for _, a := range arg {
 			r := *a
 			r.color = color
+			results = append(results, &r)
+		}
 
+		return results
+
+	case "alpha": // alpha(seriesList, theAlpha)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		alpha, err := getFloatArg(e, 1)
+		if err != nil {
+			return nil
+		}
+
+		var results []*metricData
+
+		for _, a := range arg {
+			r := *a
+			r.alpha = alpha
 			results = append(results, &r)
 		}
 
