@@ -749,7 +749,7 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 		cr.context.SetFontOptions(fontOpts)
 	*/
 
-	setColor(&cr, &params.bgColor)
+	setColor(&cr, params.bgColor)
 	drawRectangle(&cr, &params, 0, 0, params.width, params.height, true)
 
 	drawGraph(&cr, &params, results)
@@ -797,7 +797,7 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	if params.timeRange <= 0 {
 		x := params.width / 2.0
 		y := params.height / 2.0
-		setColor(cr, string2RGBAptr("red"))
+		setColor(cr, string2RGBA("red"))
 		fontSize := math.Log(params.width * params.height)
 		setFont(cr, params, fontSize)
 		drawText(cr, params, "No Data", x, y, H_ALIGN_CENTER, V_ALIGN_TOP, 0)
@@ -856,7 +856,7 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	if params.title != "" || params.vtitle != "" || params.vtitleRight != "" {
 		titleSize := params.fontSize + math.Floor(math.Log(params.fontSize))
 
-		setColor(cr, &params.fgColor)
+		setColor(cr, params.fgColor)
 		setFont(cr, params, titleSize)
 	}
 
@@ -1686,7 +1686,7 @@ func drawGridLines(cr *cairoSurfaceContext, params *Params, results []*metricDat
 
 	for i, value := range labels {
 		cr.context.SetLineWidth(0.4)
-		setColor(cr, string2RGBAptr(params.majorGridLineColor))
+		setColor(cr, string2RGBA(params.majorGridLineColor))
 
 		var y float64
 		if params.secondYAxis {
@@ -1715,7 +1715,7 @@ func drawGridLines(cr *cairoSurfaceContext, params *Params, results []*metricDat
 			// for each minor gridline that we wish to draw, and then draw it.
 			for minor := 0; minor < params.minorY; minor++ {
 				cr.context.SetLineWidth(0.3)
-				setColor(cr, string2RGBAptr(params.minorGridLineColor))
+				setColor(cr, string2RGBA(params.minorGridLineColor))
 
 				// the current minor gridline value is halfway between the current and next major gridline values
 				value = (valueLower + ((1 + float64(minor)) * distance))
@@ -1761,7 +1761,7 @@ func drawGridLines(cr *cairoSurfaceContext, params *Params, results []*metricDat
 
 	// First we do the minor grid lines (majors will paint over them)
 	cr.context.SetLineWidth(0.25)
-	setColor(cr, string2RGBAptr(params.minorGridLineColor))
+	setColor(cr, string2RGBA(params.minorGridLineColor))
 	dt, xMinorDelta := findXTimes(params.startTime, params.xConf.minorGridUnit, params.xConf.minorGridStep)
 
 	for dt < params.endTime {
@@ -1778,7 +1778,7 @@ func drawGridLines(cr *cairoSurfaceContext, params *Params, results []*metricDat
 
 	// Now we do the major grid lines
 	cr.context.SetLineWidth(0.33)
-	setColor(cr, string2RGBAptr(params.majorGridLineColor))
+	setColor(cr, string2RGBA(params.majorGridLineColor))
 	dt, xMajorDelta := findXTimes(params.startTime, params.xConf.majorGridUnit, float64(params.xConf.majorGridStep))
 
 	for dt < params.endTime {
@@ -2000,7 +2000,7 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	for _, series := range results {
 
 		cr.context.SetLineWidth(params.lineWidth)
-		setColor(cr, string2RGBAptr(series.color))
+		setColor(cr, string2RGBA(series.color))
 
 		/*
 			if (! (__contains__(series.options, "stacked"))) {
@@ -2228,14 +2228,14 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 		nRight := 0
 		n := 0
 		for _, item := range legend {
-			setColor(cr, string2RGBAptr(*item.color))
+			setColor(cr, string2RGBA(*item.color))
 			if item.secondYAxis {
 				nRight += 1
 				drawRectangle(cr, params, xRight-padding, yRight, boxSize, boxSize, true)
 				color := colors["darkgray"]
-				setColor(cr, &color)
+				setColor(cr, color)
 				drawRectangle(cr, params, xRight-padding, yRight, boxSize, boxSize, false)
-				setColor(cr, &params.fgColor)
+				setColor(cr, params.fgColor)
 				drawText(cr, params, *item.name, xRight-boxSize, yRight, H_ALIGN_RIGHT, V_ALIGN_TOP, 0.0)
 				xRight -= labelWidth
 				if nRight%int(columns) == 0 {
@@ -2246,9 +2246,9 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 				n += 1
 				drawRectangle(cr, params, x, y, boxSize, boxSize, true)
 				color := colors["darkgray"]
-				setColor(cr, &color)
+				setColor(cr, color)
 				drawRectangle(cr, params, x, y, boxSize, boxSize, false)
-				setColor(cr, &params.fgColor)
+				setColor(cr, params.fgColor)
 				drawText(cr, params, *item.name, x+boxSize+padding, y, H_ALIGN_LEFT, V_ALIGN_TOP, 0.0)
 				x += labelWidth
 				if n%int(columns) == 0 {
@@ -2267,21 +2267,21 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 	y := params.area.ymax + (2 * padding)
 	cnt := 0
 	for _, item := range legend {
-		setColor(cr, string2RGBAptr(*item.color))
+		setColor(cr, string2RGBA(*item.color))
 		if item.secondYAxis {
 			drawRectangle(cr, params, x+labelWidth+padding, y, boxSize, boxSize, true)
 			color := colors["darkgray"]
-			setColor(cr, &color)
+			setColor(cr, color)
 			drawRectangle(cr, params, x+labelWidth+padding, y, boxSize, boxSize, false)
-			setColor(cr, &params.fgColor)
+			setColor(cr, params.fgColor)
 			drawText(cr, params, *item.name, x+labelWidth, y, H_ALIGN_RIGHT, V_ALIGN_TOP, 0.0)
 			x += labelWidth
 		} else {
 			drawRectangle(cr, params, x, y, boxSize, boxSize, true)
 			color := colors["darkgray"]
-			setColor(cr, &color)
+			setColor(cr, color)
 			drawRectangle(cr, params, x, y, boxSize, boxSize, false)
-			setColor(cr, &params.fgColor)
+			setColor(cr, params.fgColor)
 			drawText(cr, params, *item.name, x+boxSize+padding, y, H_ALIGN_LEFT, V_ALIGN_TOP, 0.0)
 			x += labelWidth
 		}
@@ -2377,7 +2377,7 @@ func drawText(cr *cairoSurfaceContext, params *Params, text string, x, y float64
 	cr.context.SetMatrix(&origMatrix)
 }
 
-func setColor(cr *cairoSurfaceContext, color *color.RGBA) {
+func setColor(cr *cairoSurfaceContext, color color.RGBA) {
 	r, g, b, a := color.RGBA()
 	// For some reason, RGBA in Go 1.5 returns 16bit value, even though it's not RGBA64
 	cr.context.SetSourceRGBA(float64(r)/65536, float64(g)/65536, float64(b)/65536, float64(a)/65536)
@@ -2411,11 +2411,6 @@ func string2RGBA(clr string) color.RGBA {
 		return c
 	}
 	return hexToRGBA(clr)
-}
-
-func string2RGBAptr(clr string) *color.RGBA {
-	c := string2RGBA(clr)
-	return &c
 }
 
 // https://code.google.com/p/sadbox/source/browse/color/hex.go
