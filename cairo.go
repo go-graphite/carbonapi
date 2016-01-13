@@ -2430,6 +2430,8 @@ func hexToRGBA(h string) color.RGBA {
 		h = h[:1] + h[:1] + h[1:2] + h[1:2] + h[2:] + h[2:]
 	}
 
+	alpha := byte(255)
+
 	if len(h) == 6 {
 		if rgb, err := strconv.ParseUint(string(h), 16, 32); err == nil {
 			r = uint8(rgb >> 16)
@@ -2438,7 +2440,16 @@ func hexToRGBA(h string) color.RGBA {
 		}
 	}
 
-	return color.RGBA{r, g, b, 255}
+	if len(h) == 8 {
+		if rgb, err := strconv.ParseUint(string(h), 16, 32); err == nil {
+			r = uint8(rgb >> 24)
+			g = uint8((rgb >> 16) & 0xFF)
+			b = uint8((rgb >> 8) & 0xFF)
+			alpha = uint8(rgb & 0xFF)
+		}
+	}
+
+	return color.RGBA{r, g, b, alpha}
 }
 
 func (r *metricData) AggregatedTimeStep() int32 {
