@@ -16,12 +16,14 @@ type metricData struct {
 	// extra options
 	xStep          float64
 	valuesPerPoint int
-	drawAsInfinite bool
-	secondYAxis    bool
-	dashed         bool // TODO (ikruglov) smth like lineType would be better
 	color          string
 	alpha          float64
 	lineWidth      float64
+
+	drawAsInfinite bool
+	secondYAxis    bool
+	dashed         bool // TODO (ikruglov) smth like lineType would be better
+	hasAlpha       bool
 }
 
 func marshalCSV(results []*metricData) []byte {

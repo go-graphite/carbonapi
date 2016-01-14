@@ -2000,7 +2000,11 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	for _, series := range results {
 
 		cr.context.SetLineWidth(params.lineWidth)
-		setColor(cr, string2RGBA(series.color))
+		if series.hasAlpha {
+			setColorAlpha(cr, string2RGBA(series.color), series.alpha)
+		} else {
+			setColor(cr, string2RGBA(series.color))
+		}
 
 		/*
 			if (! (__contains__(series.options, "stacked"))) {
@@ -2377,9 +2381,13 @@ func drawText(cr *cairoSurfaceContext, params *Params, text string, x, y float64
 	cr.context.SetMatrix(&origMatrix)
 }
 
+func setColorAlpha(cr *cairoSurfaceContext, color color.RGBA, alpha float64) {
+	r, g, b, _ := color.RGBA()
+	cr.context.SetSourceRGBA(float64(r)/65536, float64(g)/65536, float64(b)/65536, alpha)
+}
+
 func setColor(cr *cairoSurfaceContext, color color.RGBA) {
 	r, g, b, a := color.RGBA()
-	// For some reason, RGBA in Go 1.5 returns 16bit value, even though it's not RGBA64
 	cr.context.SetSourceRGBA(float64(r)/65536, float64(g)/65536, float64(b)/65536, float64(a)/65536)
 }
 
