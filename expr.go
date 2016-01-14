@@ -2460,7 +2460,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		return results
 
-	case "color": // color(seriesList, theColor) ignored
+	case "color": // color(seriesList, theColor)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
@@ -2503,7 +2503,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		return results
 
-	case "dashed", "drawAsInfinite", "secondYAxis": // ignored
+	case "dashed", "drawAsInfinite", "secondYAxis":
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
