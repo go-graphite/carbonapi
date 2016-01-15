@@ -980,6 +980,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 
 		for k, v := range groups {
+			k := k // k's reference is used later, so it's important to make it unique per loop
 
 			// create a stub context to evaluate the callback in
 			nexpr, _, err := parseExpr(fmt.Sprintf("%s(%s)", callback, k))
@@ -993,6 +994,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 			r := evalExpr(nexpr, from, until, nvalues)
 			if r != nil {
+				r[0].Name = &k
 				results = append(results, r...)
 			}
 		}

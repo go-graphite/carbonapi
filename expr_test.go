@@ -1997,8 +1997,8 @@ func TestEvalMultipleReturns(t *testing.T) {
 			},
 			"groupByNode",
 			map[string][]*metricData{
-				"sumSeries(baz)": []*metricData{makeResponse("sumSeries(baz)", []float64{12, 14, 16, 18, 20}, 1, now32)},
-				"sumSeries(qux)": []*metricData{makeResponse("sumSeries(qux)", []float64{13, 15, 17, 19, 21}, 1, now32)},
+				"baz": []*metricData{makeResponse("baz", []float64{12, 14, 16, 18, 20}, 1, now32)},
+				"qux": []*metricData{makeResponse("qux", []float64{13, 15, 17, 19, 21}, 1, now32)},
 			},
 		},
 		{
@@ -2356,6 +2356,9 @@ func TestEvalMultipleReturns(t *testing.T) {
 			if !ok {
 				t.Errorf("missing result name: %v", gg.GetName())
 				continue
+			}
+			if r[0].GetName() != gg.GetName() {
+				t.Errorf("result name mismatch, got\n%#v,\nwant\n%#v", gg.GetName(), r[0].GetName())
 			}
 			if !reflect.DeepEqual(r[0].Values, gg.Values) || !reflect.DeepEqual(r[0].IsAbsent, gg.IsAbsent) ||
 				r[0].GetStartTime() != gg.GetStartTime() ||
