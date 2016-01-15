@@ -1266,6 +1266,9 @@ func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 	yMinValue := math.NaN()
 	yMaxValue := math.NaN()
 	for _, r := range results {
+		if r.drawAsInfinite {
+			continue
+		}
 		pushed := false
 		for i, v := range r.AggregatedValues() {
 			if r.IsAbsent[i] && !pushed {
@@ -1275,7 +1278,6 @@ func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 				if math.IsNaN(yMinValue) || yMinValue > v {
 					yMinValue = v
 				}
-				// TODO: Implement 'drawAsInfinite'
 				if math.IsNaN(yMaxValue) || yMaxValue < v {
 					yMaxValue = v
 				}
