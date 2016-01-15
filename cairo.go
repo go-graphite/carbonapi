@@ -22,18 +22,18 @@ import (
 type HAlign int
 
 const (
-	H_ALIGN_LEFT   HAlign = 1
-	H_ALIGN_CENTER        = 2
-	H_ALIGN_RIGHT         = 4
+	HAlignLeft   HAlign = 1
+	HAlignCenter        = 2
+	HAlignRight         = 4
 )
 
 type VAlign int
 
 const (
-	V_ALIGN_TOP      VAlign = 8
-	V_ALIGN_CENTER          = 16
-	V_ALIGN_BOTTOM          = 32
-	V_ALIGN_BASELINE        = 64
+	VAlignTop      VAlign = 8
+	VAlignCenter          = 16
+	VAlignBottom          = 32
+	VAlignBaseline        = 64
 )
 
 type LineMode int
@@ -800,7 +800,7 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 		setColor(cr, string2RGBA("red"))
 		fontSize := math.Log(params.width * params.height)
 		setFont(cr, params, fontSize)
-		drawText(cr, params, "No Data", x, y, H_ALIGN_CENTER, V_ALIGN_TOP, 0)
+		drawText(cr, params, "No Data", x, y, HAlignCenter, VAlignTop, 0)
 
 		return
 	}
@@ -1583,7 +1583,7 @@ func drawYAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 			}
 
 			x = params.area.xmin - float64(params.yLabelWidthL)*0.02
-			drawText(cr, params, label, x, y, H_ALIGN_RIGHT, V_ALIGN_CENTER, 0)
+			drawText(cr, params, label, x, y, HAlignRight, VAlignCenter, 0)
 
 		}
 
@@ -1597,7 +1597,7 @@ func drawYAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 			}
 
 			x = params.area.xmax + float64(params.yLabelWidth)*0.02
-			drawText(cr, params, label, x, y, H_ALIGN_LEFT, V_ALIGN_CENTER, 0)
+			drawText(cr, params, label, x, y, HAlignLeft, VAlignCenter, 0)
 		}
 		return
 	}
@@ -1613,10 +1613,10 @@ func drawYAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 
 		if params.yAxisSide == YAxisSideLeft {
 			x = params.area.xmin - float64(params.yLabelWidth)*0.02
-			drawText(cr, params, label, x, y, H_ALIGN_RIGHT, V_ALIGN_CENTER, 0)
+			drawText(cr, params, label, x, y, HAlignRight, VAlignCenter, 0)
 		} else {
 			x = params.area.xmax + float64(params.yLabelWidth)*0.02
-			drawText(cr, params, label, x, y, H_ALIGN_LEFT, V_ALIGN_CENTER, 0)
+			drawText(cr, params, label, x, y, HAlignLeft, VAlignCenter, 0)
 		}
 	}
 }
@@ -1665,7 +1665,7 @@ func drawXAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 		label, _ := strftime.Format(xFormat, time.Unix(int64(dt), 0))
 		x := params.area.xmin + float64(dt-params.startTime)*params.xScaleFactor
 		y := params.area.ymax + maxAscent
-		drawText(cr, params, label, x, y, H_ALIGN_CENTER, V_ALIGN_TOP, 0)
+		drawText(cr, params, label, x, y, HAlignCenter, VAlignTop, 0)
 		dt += xDelta
 	}
 }
@@ -2240,7 +2240,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 				setColor(cr, color)
 				drawRectangle(cr, params, xRight-padding, yRight, boxSize, boxSize, false)
 				setColor(cr, params.fgColor)
-				drawText(cr, params, *item.name, xRight-boxSize, yRight, H_ALIGN_RIGHT, V_ALIGN_TOP, 0.0)
+				drawText(cr, params, *item.name, xRight-boxSize, yRight, HAlignRight, VAlignTop, 0.0)
 				xRight -= labelWidth
 				if nRight%int(columns) == 0 {
 					xRight = params.area.xmax - params.area.xmin
@@ -2253,7 +2253,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 				setColor(cr, color)
 				drawRectangle(cr, params, x, y, boxSize, boxSize, false)
 				setColor(cr, params.fgColor)
-				drawText(cr, params, *item.name, x+boxSize+padding, y, H_ALIGN_LEFT, V_ALIGN_TOP, 0.0)
+				drawText(cr, params, *item.name, x+boxSize+padding, y, HAlignLeft, VAlignTop, 0.0)
 				x += labelWidth
 				if n%int(columns) == 0 {
 					x = params.area.xmin
@@ -2278,7 +2278,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 			setColor(cr, color)
 			drawRectangle(cr, params, x+labelWidth+padding, y, boxSize, boxSize, false)
 			setColor(cr, params.fgColor)
-			drawText(cr, params, *item.name, x+labelWidth, y, H_ALIGN_RIGHT, V_ALIGN_TOP, 0.0)
+			drawText(cr, params, *item.name, x+labelWidth, y, HAlignRight, VAlignTop, 0.0)
 			x += labelWidth
 		} else {
 			drawRectangle(cr, params, x, y, boxSize, boxSize, true)
@@ -2286,7 +2286,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 			setColor(cr, color)
 			drawRectangle(cr, params, x, y, boxSize, boxSize, false)
 			setColor(cr, params.fgColor)
-			drawText(cr, params, *item.name, x+boxSize+padding, y, H_ALIGN_LEFT, V_ALIGN_TOP, 0.0)
+			drawText(cr, params, *item.name, x+boxSize+padding, y, HAlignLeft, VAlignTop, 0.0)
 			x += labelWidth
 		}
 		if (cnt+1)%int(columns) == 0 {
@@ -2305,7 +2305,7 @@ func drawTitle(cr *cairoSurfaceContext, params *Params) {
 	lineHeight := params.fontExtents.Height
 
 	for _, line := range lines {
-		drawText(cr, params, line, x, y, H_ALIGN_CENTER, V_ALIGN_TOP, 0.0)
+		drawText(cr, params, line, x, y, HAlignCenter, VAlignTop, 0.0)
 		y += lineHeight
 	}
 	params.area.ymin = y
@@ -2321,7 +2321,7 @@ func drawVTitle(cr *cairoSurfaceContext, params *Params, title string, rightAlig
 		x := params.area.xmax - lineHeight
 		y := params.height / 2.0
 		for _, line := range strings.Split(title, "\n") {
-			drawText(cr, params, line, x, y, H_ALIGN_CENTER, V_ALIGN_BASELINE, 90.0)
+			drawText(cr, params, line, x, y, HAlignCenter, VAlignBaseline, 90.0)
 			x -= lineHeight
 		}
 		params.area.xmax = x - float64(params.margin) - lineHeight
@@ -2329,7 +2329,7 @@ func drawVTitle(cr *cairoSurfaceContext, params *Params, title string, rightAlig
 		x := params.area.xmin + lineHeight
 		y := params.height / 2.0
 		for _, line := range strings.Split(title, "\n") {
-			drawText(cr, params, line, x, y, H_ALIGN_CENTER, V_ALIGN_BASELINE, 270.0)
+			drawText(cr, params, line, x, y, HAlignCenter, VAlignBaseline, 270.0)
 			x += lineHeight
 		}
 		params.area.xmin = x + float64(params.margin) + lineHeight
@@ -2354,21 +2354,21 @@ func drawText(cr *cairoSurfaceContext, params *Params, text string, x, y float64
 	angle_sin, angle_cos := math.Sincos(angle)
 
 	switch align {
-	case H_ALIGN_LEFT:
+	case HAlignLeft:
 		h_align = 0.0
-	case H_ALIGN_CENTER:
+	case HAlignCenter:
 		h_align = textExtents.Width / 2.0
-	case H_ALIGN_RIGHT:
+	case HAlignRight:
 		h_align = textExtents.Width
 	}
 	switch valign {
-	case V_ALIGN_TOP:
+	case VAlignTop:
 		v_align = fontExtents.Ascent
-	case V_ALIGN_CENTER:
+	case VAlignCenter:
 		v_align = fontExtents.Height/2.0 - fontExtents.Descent/2.0
-	case V_ALIGN_BOTTOM:
+	case VAlignBottom:
 		v_align = -fontExtents.Descent
-	case V_ALIGN_BASELINE:
+	case VAlignBaseline:
 		v_align = 0.0
 	}
 
