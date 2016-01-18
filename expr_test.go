@@ -1579,6 +1579,29 @@ func TestEvalExpression(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		oldValues := map[metricRequest][]*metricData{}
+		for key, metrics := range tt.m {
+			entry := []*metricData{}
+			for _, value := range metrics {
+				newValue := metricData{
+					FetchResponse: pb.FetchResponse{
+						Name:      value.Name,
+						StartTime: value.StartTime,
+						StopTime:  value.StopTime,
+						StepTime:  value.StepTime,
+						Values:    make([]float64, len(value.Values)),
+						IsAbsent:  make([]bool, len(value.IsAbsent)),
+					},
+				}
+
+				copy(newValue.Values, value.Values)
+				copy(newValue.IsAbsent, value.IsAbsent)
+				entry = append(entry, &newValue)
+			}
+
+			oldValues[key] = entry
+		}
+
 		g := evalExpr(tt.e, 0, 1, tt.m)
 		if g == nil {
 			t.Errorf("failed to eval %v", tt.name)
@@ -1588,6 +1611,16 @@ func TestEvalExpression(t *testing.T) {
 			t.Errorf("returned no value %v", tt.e.argString)
 			continue
 		}
+
+		for key, metrics := range tt.m {
+			for i, newValue := range metrics {
+				oldValue := oldValues[key][i]
+				if !reflect.DeepEqual(oldValue, newValue) {
+					t.Errorf("%s: source data was modified key %v index %v want:\n%v\n got:\n%v", tt.e.target, key, i, oldValue, newValue)
+				}
+			}
+		}
+
 		if g[0].GetStepTime() == 0 {
 			t.Errorf("missing step for %+v", g)
 		}

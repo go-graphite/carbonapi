@@ -859,16 +859,25 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		return []*metricData{&r}
 
 	case "multiplySeries": // multiplySeries(factorsSeriesList)
-		var r *metricData
+		r := metricData{
+			FetchResponse: pb.FetchResponse{
+				Name:      proto.String(fmt.Sprintf("multiplySeries(%s)", e.argString)),
+				StartTime: &from,
+				StopTime:  &until,
+			},
+		}
 		for _, arg := range e.args {
 			series, err := getSeriesArg(arg, from, until, values)
 			if err != nil {
 				return nil
 			}
 
-			if r == nil {
-				r = series[0]
-				r.Name = proto.String(fmt.Sprintf("multiplySeries(%s)", e.argString))
+			if r.Values == nil {
+				r.IsAbsent = make([]bool, len(series[0].IsAbsent))
+				r.StepTime = series[0].StepTime
+				r.Values = make([]float64, len(series[0].Values))
+				copy(r.IsAbsent, series[0].IsAbsent)
+				copy(r.Values, series[0].Values)
 				series = series[1:]
 			}
 
@@ -885,7 +894,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			}
 		}
 
-		return []*metricData{r}
+		return []*metricData{&r}
 
 	case "exclude": // exclude(seriesList, pattern)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
@@ -1830,25 +1839,29 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		// NOTE: if direction == "abs" && len(compare) <= n : we'll still do the work to rank them
 
+		refValues := make([]float64, len(ref[0].Values))
+		copy(refValues, ref[0].Values)
 		for i, v := range ref[0].IsAbsent {
 			if v == true {
-				ref[0].Values[i] = math.NaN()
+				refValues[i] = math.NaN()
 			}
 		}
 
 		var mh metricHeap
 
 		for index, a := range compare {
-			if len(ref[0].Values) != len(a.Values) {
+			compareValues := make([]float64, len(a.Values))
+			copy(compareValues, a.Values)
+			if len(refValues) != len(compareValues) {
 				// Pearson will panic if arrays are not equal length; skip
 				continue
 			}
 			for i, v := range a.IsAbsent {
 				if v == true {
-					a.Values[i] = math.NaN()
+					compareValues[i] = math.NaN()
 				}
 			}
-			value := onlinestats.Pearson(ref[0].Values, a.Values)
+			value := onlinestats.Pearson(refValues, compareValues)
 			// Standardize the value so sort ASC will have strongest correlation first
 			switch {
 			case math.IsNaN(value):
@@ -2015,11 +2028,13 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		return results
 
 	case "sortByMaxima", "sortByMinima", "sortByTotal": // sortByMaxima(seriesList), sortByMinima(seriesList), sortByTotal(seriesList)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		original, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}
 
+		arg := make([]*metricData, len(original))
+		copy(arg, original)
 		vals := make([]float64, len(arg))
 
 		for i, a := range arg {
@@ -2038,11 +2053,13 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		return arg
 
 	case "sortByName": // sortByName(seriesList)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		original, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}
 
+		arg := make([]*metricData, len(original))
+		copy(arg, original)
 		sort.Sort(ByName(arg))
 
 		return arg
