@@ -914,6 +914,23 @@ func TestEvalExpression(t *testing.T) {
 				args: []*expr{
 					&expr{target: "metric1"},
 					&expr{target: "metric2"},
+				},
+				argString: "metric[12]",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
+				metricRequest{"metric2", 0, 1}: []*metricData{makeResponse("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
+			},
+			[]float64{2, math.NaN(), math.NaN(), math.NaN(), 0, 72},
+			"multiplySeries(metric[12])",
+		},
+		{
+			&expr{
+				target: "multiplySeries",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{target: "metric2"},
 					&expr{target: "metric3"},
 				},
 				argString: "metric1,metric2,metric3",

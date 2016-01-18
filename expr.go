@@ -859,36 +859,33 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		return []*metricData{&r}
 
 	case "multiplySeries": // multiplySeries(factorsSeriesList)
-		firstFactor, err := getSeriesArg(e.args[0], from, until, values)
-		if err != nil || len(firstFactor) != 1 {
-			return nil
-		}
-
-		r := *firstFactor[0]
-		r.Name = proto.String(fmt.Sprintf("multiplySeries(%s)", e.argString))
-
-		for j := 1; j < len(e.args); j++ {
-			otherFactor, err := getSeriesArg(e.args[j], from, until, values)
-			if err != nil || len(otherFactor) != 1 {
+		var r *metricData
+		for _, arg := range e.args {
+			series, err := getSeriesArg(arg, from, until, values)
+			if err != nil {
 				return nil
 			}
 
-			if r.GetStepTime() != otherFactor[0].GetStepTime() || len(r.Values) != len(otherFactor[0].Values) {
-				return nil
+			if r == nil {
+				r = series[0]
+				r.Name = proto.String(fmt.Sprintf("multiplySeries(%s)", e.argString))
+				series = series[1:]
 			}
 
-			for i, v := range r.Values {
-				if r.IsAbsent[i] || otherFactor[0].IsAbsent[i] {
-					r.IsAbsent[i] = true
-					r.Values[i] = math.NaN()
-					continue
+			for _, factor := range series {
+				for i, v := range r.Values {
+					if r.IsAbsent[i] || factor.IsAbsent[i] {
+						r.IsAbsent[i] = true
+						r.Values[i] = math.NaN()
+						continue
+					}
+
+					r.Values[i] = v * factor.Values[i]
 				}
-
-				r.Values[i] = v * otherFactor[0].Values[i]
 			}
 		}
 
-		return []*metricData{&r}
+		return []*metricData{r}
 
 	case "exclude": // exclude(seriesList, pattern)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
