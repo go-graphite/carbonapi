@@ -17,8 +17,8 @@ type bytesCache interface {
 
 type nullCache struct{}
 
-func (_ nullCache) get(string) ([]byte, bool) { return nil, false }
-func (_ nullCache) set(string, []byte, int32) {}
+func (nullCache) get(string) ([]byte, bool) { return nil, false }
+func (nullCache) set(string, []byte, int32) {}
 
 type expireCache struct {
 	ec *ecache.Cache
