@@ -2167,7 +2167,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 	var longestName *string
 	var longestNameLen int
 	var uniqueNames map[string]bool
-	var numRight int = 0
+	var numRight int
 	var legend []SeriesLegend
 	if params.uniqueLegend {
 		uniqueNames = make(map[string]bool)
