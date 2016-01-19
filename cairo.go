@@ -2343,7 +2343,7 @@ func radians(angle float64) float64 {
 }
 
 func drawText(cr *cairoSurfaceContext, params *Params, text string, x, y float64, align HAlign, valign VAlign, rotate float64) {
-	var h_align, v_align float64
+	var hAlign, vAlign float64
 	var textExtents cairo.TextExtents
 	var fontExtents cairo.FontExtents
 	var origMatrix cairo.Matrix
@@ -2352,31 +2352,31 @@ func drawText(cr *cairoSurfaceContext, params *Params, text string, x, y float64
 
 	cr.context.GetMatrix(&origMatrix)
 	angle := radians(rotate)
-	angle_sin, angle_cos := math.Sincos(angle)
+	angleSin, angleCos := math.Sincos(angle)
 
 	switch align {
 	case HAlignLeft:
-		h_align = 0.0
+		hAlign = 0.0
 	case HAlignCenter:
-		h_align = textExtents.Width / 2.0
+		hAlign = textExtents.Width / 2.0
 	case HAlignRight:
-		h_align = textExtents.Width
+		hAlign = textExtents.Width
 	}
 	switch valign {
 	case VAlignTop:
-		v_align = fontExtents.Ascent
+		vAlign = fontExtents.Ascent
 	case VAlignCenter:
-		v_align = fontExtents.Height/2.0 - fontExtents.Descent/2.0
+		vAlign = fontExtents.Height/2.0 - fontExtents.Descent/2.0
 	case VAlignBottom:
-		v_align = -fontExtents.Descent
+		vAlign = -fontExtents.Descent
 	case VAlignBaseline:
-		v_align = 0.0
+		vAlign = 0.0
 	}
 
 	cr.context.MoveTo(x, y)
-	cr.context.RelMoveTo(angle_sin*(-v_align), angle_cos*v_align)
+	cr.context.RelMoveTo(angleSin*(-vAlign), angleCos*vAlign)
 	cr.context.Rotate(angle)
-	cr.context.RelMoveTo(-h_align, 0)
+	cr.context.RelMoveTo(-hAlign, 0)
 	cr.context.TextPath(text)
 	cr.context.Fill()
 	cr.context.SetMatrix(&origMatrix)
