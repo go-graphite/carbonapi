@@ -1249,9 +1249,8 @@ func makeLabel(yValue, yStep, ySpan float64, yUnitSystem string) string {
 	case ySpan > 10 || spanPrefix != prefix:
 		if yValue-math.Floor(yValue) < 0.00000000001 {
 			return fmt.Sprintf("%.1f %s", yValue, prefix)
-		} else {
-			return fmt.Sprintf("%d %s ", int(yValue), prefix)
 		}
+		return fmt.Sprintf("%d %s ", int(yValue), prefix)
 	case ySpan > 3:
 		return fmt.Sprintf("%.1f %s ", yValue, prefix)
 	case ySpan > 0.1:
