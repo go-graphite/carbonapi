@@ -820,41 +820,48 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		return []*metricData{&r}
 
 	case "divideSeries": // divideSeries(dividendSeriesList, divisorSeriesList)
-		if len(e.args) != 2 {
+		if len(e.args) < 1 {
 			return nil
 		}
 
-		numerator, err := getSeriesArg(e.args[0], from, until, values)
+		numerators, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}
 
-		denominator, err := getSeriesArg(e.args[1], from, until, values)
-		if err != nil {
+		var numerator, denominator *metricData
+		if len(numerators) == 1 && len(e.args) == 2 {
+			numerator = numerators[0]
+			denominators, err := getSeriesArg(e.args[1], from, until, values)
+			if err != nil || len(denominators) != 1 {
+				return nil
+			}
+
+			denominator = denominators[0]
+		} else if len(numerators) == 2 && len(e.args) == 1 {
+			numerator = numerators[0]
+			denominator = numerators[1]
+		} else {
 			return nil
 		}
 
-		if len(numerator) != 1 || len(denominator) != 1 {
+		if numerator.GetStepTime() != denominator.GetStepTime() || len(numerator.Values) != len(denominator.Values) {
 			return nil
 		}
 
-		if numerator[0].GetStepTime() != denominator[0].GetStepTime() || len(numerator[0].Values) != len(denominator[0].Values) {
-			return nil
-		}
-
-		r := *numerator[0]
+		r := *numerator
 		r.Name = proto.String(fmt.Sprintf("divideSeries(%s)", e.argString))
-		r.Values = make([]float64, len(numerator[0].Values))
-		r.IsAbsent = make([]bool, len(numerator[0].Values))
+		r.Values = make([]float64, len(numerator.Values))
+		r.IsAbsent = make([]bool, len(numerator.Values))
 
-		for i, v := range numerator[0].Values {
+		for i, v := range numerator.Values {
 
-			if numerator[0].IsAbsent[i] || denominator[0].IsAbsent[i] || denominator[0].Values[i] == 0 {
+			if numerator.IsAbsent[i] || denominator.IsAbsent[i] || denominator.Values[i] == 0 {
 				r.IsAbsent[i] = true
 				continue
 			}
 
-			r.Values[i] = v / denominator[0].Values[i]
+			r.Values[i] = v / denominator.Values[i]
 		}
 		return []*metricData{&r}
 
