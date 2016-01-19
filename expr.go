@@ -699,7 +699,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 						continue
 					}
 					atLeastOne[i] = true
-					length[i] += 1
+					length[i]++
 					r.Values[i] += v
 				}
 			}
@@ -2383,7 +2383,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil
 		}
 
-		var interval int = 0
+		var interval int
 		if len(e.args) >= 4 {
 			switch e.args[3].etype {
 			case etConst:
