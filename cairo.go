@@ -846,7 +846,7 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 		}
 		if res.color == "" {
 			res.color = params.colorList[colorsCur]
-			colorsCur += 1
+			colorsCur++
 			if colorsCur >= len(params.colorList) {
 				colorsCur = 0
 			}
@@ -1174,12 +1174,12 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*metricDat
 	params.ySpanR = params.yTopR - params.yBottomR
 
 	if params.ySpanL == 0 {
-		params.yTopL += 1
-		params.ySpanL += 1
+		params.yTopL++
+		params.ySpanL++
 	}
 	if params.ySpanR == 0 {
-		params.yTopR += 1
-		params.ySpanR += 1
+		params.yTopR++
+		params.ySpanR++
 	}
 
 	params.graphHeight = params.area.ymax - params.area.ymin
@@ -1495,7 +1495,7 @@ func logrange(base, scaleMin, scaleMax float64) []float64 {
 	for current < scaleMax {
 		current = math.Pow(base, factor)
 		vals = append(vals, current)
-		factor += 1
+		factor++
 	}
 	return vals
 }
@@ -2184,7 +2184,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 			longestName = res.Name
 		}
 		if res.secondYAxis {
-			numRight += 1
+			numRight++
 		}
 		if params.uniqueLegend {
 			if _, ok := uniqueNames[res.GetName()]; !ok {
@@ -2236,7 +2236,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 		for _, item := range legend {
 			setColor(cr, string2RGBA(*item.color))
 			if item.secondYAxis {
-				nRight += 1
+				nRight++
 				drawRectangle(cr, params, xRight-padding, yRight, boxSize, boxSize, true)
 				color := colors["darkgray"]
 				setColor(cr, color)
@@ -2249,7 +2249,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 					yRight += lineHeight
 				}
 			} else {
-				n += 1
+				n++
 				drawRectangle(cr, params, x, y, boxSize, boxSize, true)
 				color := colors["darkgray"]
 				setColor(cr, color)
@@ -2295,7 +2295,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 			x = params.area.xmin
 			y += lineHeight
 		}
-		cnt += 1
+		cnt++
 	}
 	return
 }
