@@ -1,8 +1,8 @@
 package mstats
 
 import (
-	"fmt"
 	"runtime"
+	"strconv"
 	"sync/atomic"
 	"time"
 )
@@ -17,7 +17,7 @@ func (a *Var) String() string {
 	if v == nil {
 		return "0"
 	}
-	return fmt.Sprintf("%d", v.(uint64))
+	return strconv.FormatUint(v.(uint64), 10)
 }
 
 // PauseNS is the total number of nanoseconds the GC has paused the application
