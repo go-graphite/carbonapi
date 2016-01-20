@@ -21,6 +21,7 @@ import (
 
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 	"github.com/dgryski/carbonzipper/mlog"
+	"github.com/dgryski/carbonzipper/mstats"
 	"github.com/dgryski/go-expirecache"
 	"github.com/dgryski/httputil"
 	pickle "github.com/kisielk/og-rek"
@@ -764,6 +765,12 @@ func main() {
 
 		graphite.Register(fmt.Sprintf("carbon.zipper.%s.cache_size", hostname), Metrics.CacheSize)
 		graphite.Register(fmt.Sprintf("carbon.zipper.%s.cache_items", hostname), Metrics.CacheItems)
+
+		go mstats.Start(*interval)
+
+		graphite.Register(fmt.Sprintf("carbon.zipper.%s.alloc", hostname), &mstats.Alloc)
+		graphite.Register(fmt.Sprintf("carbon.zipper.%s.num_gc", hostname), &mstats.NumGC)
+		graphite.Register(fmt.Sprintf("carbon.zipper.%s.pause_ns", hostname), &mstats.PauseNS)
 	}
 
 	// configure the storage client
