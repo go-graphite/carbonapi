@@ -13,8 +13,11 @@ type Var struct {
 }
 
 func (a *Var) String() string {
-	v := a.Load().(uint64)
-	return fmt.Sprintf("%d", v)
+	v := a.Load()
+	if v == nil {
+		return "0"
+	}
+	return fmt.Sprintf("%d", v.(uint64))
 }
 
 // PauseNS is the total number of nanoseconds the GC has paused the application
