@@ -17,6 +17,7 @@ import (
 
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 	"github.com/dgryski/carbonzipper/mlog"
+	"github.com/dgryski/carbonzipper/mstats"
 
 	"github.com/bradfitz/gomemcache/memcache"
 	ecache "github.com/dgryski/go-expirecache"
@@ -626,6 +627,13 @@ func main() {
 			graphite.Register(fmt.Sprintf("carbon.api.%s.cache_size", hostname), Metrics.CacheSize)
 			graphite.Register(fmt.Sprintf("carbon.api.%s.cache_items", hostname), Metrics.CacheItems)
 		}
+
+		go mstats.Start(*interval)
+
+		graphite.Register(fmt.Sprintf("carbon.api.%s.alloc", hostname), &mstats.Alloc)
+		graphite.Register(fmt.Sprintf("carbon.api.%s.num_gc", hostname), &mstats.NumGC)
+		graphite.Register(fmt.Sprintf("carbon.api.%s.pause_ns", hostname), &mstats.PauseNS)
+
 	}
 
 	render := func(w http.ResponseWriter, r *http.Request) {
