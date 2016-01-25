@@ -29,6 +29,9 @@ var NumGC Var
 // Alloc is the number of bytes allocated and not yet freed by the application
 var Alloc Var
 
+// TotalAlloc is the total number of bytes allocated by the application
+var TotalAlloc Var
+
 // Start polls runtime.ReadMemStats with interval d and updates the package level variables
 func Start(d time.Duration) {
 	for range time.Tick(d) {
@@ -36,6 +39,7 @@ func Start(d time.Duration) {
 		runtime.ReadMemStats(&m)
 		PauseNS.Store(m.PauseTotalNs)
 		Alloc.Store(m.Alloc)
+		TotalAlloc.Store(m.TotalAlloc)
 		NumGC.Store(uint64(m.NumGC))
 	}
 }
