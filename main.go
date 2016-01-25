@@ -631,6 +631,7 @@ func main() {
 		go mstats.Start(*interval)
 
 		graphite.Register(fmt.Sprintf("carbon.api.%s.alloc", hostname), &mstats.Alloc)
+		graphite.Register(fmt.Sprintf("carbon.api.%s.total_alloc", hostname), &mstats.TotalAlloc)
 		graphite.Register(fmt.Sprintf("carbon.api.%s.num_gc", hostname), &mstats.NumGC)
 		graphite.Register(fmt.Sprintf("carbon.api.%s.pause_ns", hostname), &mstats.PauseNS)
 
