@@ -769,6 +769,7 @@ func main() {
 		go mstats.Start(*interval)
 
 		graphite.Register(fmt.Sprintf("carbon.zipper.%s.alloc", hostname), &mstats.Alloc)
+		graphite.Register(fmt.Sprintf("carbon.zipper.%s.total_alloc", hostname), &mstats.TotalAlloc)
 		graphite.Register(fmt.Sprintf("carbon.zipper.%s.num_gc", hostname), &mstats.NumGC)
 		graphite.Register(fmt.Sprintf("carbon.zipper.%s.pause_ns", hostname), &mstats.PauseNS)
 	}
