@@ -917,6 +917,7 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	setupXAxis(cr, params, results)
 
 	if !params.hideAxes {
+		setColor(cr, params.fgColor)
 		drawLabels(cr, params, results)
 		if !params.hideGrid {
 			drawGridLines(cr, params, results)
