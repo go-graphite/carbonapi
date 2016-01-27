@@ -131,7 +131,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Second,
 		labelStep:     5,
 		format:        "%H:%M:%S",
-		maxInterval:   10 * 60, // 10 * MIN
+		maxInterval:   10 * Minute,
 	},
 	xAxisStruct{
 		seconds:       0.07,
@@ -142,7 +142,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Second,
 		labelStep:     10,
 		format:        "%H:%M:%S",
-		maxInterval:   20 * 60, // 10 * MIN
+		maxInterval:   20 * Minute,
 	},
 	xAxisStruct{
 		seconds:       0.14,
@@ -153,7 +153,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Second,
 		labelStep:     15,
 		format:        "%H:%M:%S",
-		maxInterval:   30 * 60, // 30 * MIN
+		maxInterval:   30 * Minute,
 	},
 	xAxisStruct{
 		seconds:       0.27,
@@ -164,7 +164,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Minute,
 		labelStep:     1,
 		format:        "%H:%M",
-		maxInterval:   2 * 60 * 60, // 2 * HOUR
+		maxInterval:   2 * Hour,
 	},
 	xAxisStruct{
 		seconds:       0.5,
@@ -175,7 +175,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Minute,
 		labelStep:     1,
 		format:        "%H:%M",
-		maxInterval:   2 * 60 * 60,
+		maxInterval:   2 * Hour,
 	},
 	xAxisStruct{
 		seconds:       1.2,
@@ -186,7 +186,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Minute,
 		labelStep:     2,
 		format:        "%H:%M",
-		maxInterval:   3 * 60 * 60,
+		maxInterval:   3 * Hour,
 	},
 	xAxisStruct{
 		seconds:       2,
@@ -197,7 +197,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Minute,
 		labelStep:     5,
 		format:        "%H:%M",
-		maxInterval:   6 * 60 * 60,
+		maxInterval:   6 * Hour,
 	},
 	xAxisStruct{
 		seconds:       5,
@@ -208,7 +208,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Minute,
 		labelStep:     10,
 		format:        "%H:%M",
-		maxInterval:   12 * 60 * 60,
+		maxInterval:   12 * Hour,
 	},
 	xAxisStruct{
 		seconds:       10,
@@ -219,7 +219,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Minute,
 		labelStep:     20,
 		format:        "%H:%M",
-		maxInterval:   1 * 24 * 60 * 60,
+		maxInterval:   Day,
 	},
 	xAxisStruct{
 		seconds:       30,
@@ -230,7 +230,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Hour,
 		labelStep:     1,
 		format:        "%H:%M",
-		maxInterval:   2 * 24 * 60 * 60,
+		maxInterval:   2 * Day,
 	},
 	xAxisStruct{
 		seconds:       60,
@@ -241,7 +241,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Hour,
 		labelStep:     2,
 		format:        "%H:%M",
-		maxInterval:   2 * 24 * 60 * 60,
+		maxInterval:   2 * Day,
 	},
 	xAxisStruct{
 		seconds:       100,
@@ -252,7 +252,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Hour,
 		labelStep:     4,
 		format:        "%a %I%p", // BUG(dgryski): should be %l, but limitation of strftime library
-		maxInterval:   2 * 24 * 60 * 60,
+		maxInterval:   2 * Day,
 	},
 	xAxisStruct{
 		seconds:       255,
@@ -263,7 +263,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Hour,
 		labelStep:     12,
 		format:        "%a %I%p", // BUG(dgryski): should be %l, but limitation of strftime library
-		maxInterval:   10 * 24 * 60 * 60,
+		maxInterval:   10 * Day,
 	},
 	xAxisStruct{
 		seconds:       600,
@@ -274,7 +274,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Day,
 		labelStep:     1,
 		format:        "%m/%d",
-		maxInterval:   14 * 24 * 60 * 60,
+		maxInterval:   14 * Day,
 	},
 	xAxisStruct{
 		seconds:       1200,
@@ -285,7 +285,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Day,
 		labelStep:     1,
 		format:        "%m/%d",
-		maxInterval:   365 * 24 * 60 * 60,
+		maxInterval:   365 * Day,
 	},
 	xAxisStruct{
 		seconds:       2000,
@@ -296,7 +296,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Day,
 		labelStep:     2,
 		format:        "%m/%d",
-		maxInterval:   365 * 24 * 60 * 60,
+		maxInterval:   365 * Day,
 	},
 	xAxisStruct{
 		seconds:       4000,
@@ -307,7 +307,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Day,
 		labelStep:     4,
 		format:        "%m/%d",
-		maxInterval:   365 * 24 * 60 * 60,
+		maxInterval:   365 * Day,
 	},
 	xAxisStruct{
 		seconds:       8000,
@@ -318,7 +318,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Day,
 		labelStep:     7,
 		format:        "%m/%d",
-		maxInterval:   365 * 24 * 60 * 60,
+		maxInterval:   365 * Day,
 	},
 	xAxisStruct{
 		seconds:       16000,
@@ -329,7 +329,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Day,
 		labelStep:     14,
 		format:        "%m/%d",
-		maxInterval:   365 * 24 * 60 * 60,
+		maxInterval:   365 * Day,
 	},
 	xAxisStruct{
 		seconds:       32000,
@@ -340,7 +340,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Day,
 		labelStep:     30,
 		format:        "%m/%d",
-		maxInterval:   365 * 24 * 60 * 60,
+		maxInterval:   365 * Day,
 	},
 	xAxisStruct{
 		seconds:       64000,
@@ -351,7 +351,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Day,
 		labelStep:     60,
 		format:        "%m/%d %Y",
-		maxInterval:   365 * 24 * 60 * 60,
+		maxInterval:   365 * Day,
 	},
 	xAxisStruct{
 		seconds:       100000,
@@ -362,7 +362,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Day,
 		labelStep:     120,
 		format:        "%m/%d %Y",
-		maxInterval:   365 * 24 * 60 * 60,
+		maxInterval:   365 * Day,
 	},
 	xAxisStruct{
 		seconds:       120000,
@@ -373,7 +373,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Day,
 		labelStep:     240,
 		format:        "%m/%d %Y",
-		maxInterval:   365 * 24 * 60 * 60,
+		maxInterval:   365 * Day,
 	},
 }
 
