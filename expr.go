@@ -68,6 +68,34 @@ func (e *expr) metrics() []metricRequest {
 				r[i].from += offs
 				r[i].until += offs
 			}
+		case "timeStack":
+			offs, err := getIntervalArg(e, 1, -1)
+			if err != nil {
+				return nil
+			}
+
+			start, err := getIntArg(e, 2)
+			if err != nil {
+				return nil
+			}
+
+			end, err := getIntArg(e, 3)
+			if err != nil {
+				return nil
+			}
+
+			var r2 []metricRequest
+			for _, v := range r {
+				for i := int32(start); i < int32(end); i++ {
+					r2 = append(r2, metricRequest{
+						metric: v.metric,
+						from:   v.from + (int32(i) * offs),
+						until:  v.until + (int32(i) * offs),
+					})
+				}
+			}
+
+			return r2
 		case "holtWintersForecast":
 			for i := range r {
 				r[i].from -= 7 * 86400 // starts -7 days from where the original starts
@@ -2334,6 +2362,41 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			r.StopTime = proto.Int32(a.GetStopTime() - offs)
 			results = append(results, &r)
 		}
+		return results
+
+	case "timeStack": // timeStack(seriesList, timeShiftUnit, timeShiftStart, timeShiftEnd)
+		unit, err := getIntervalArg(e, 1, -1)
+		if err != nil {
+			return nil
+		}
+
+		start, err := getIntArg(e, 2)
+		if err != nil {
+			return nil
+		}
+
+		end, err := getIntArg(e, 3)
+		if err != nil {
+			return nil
+		}
+
+		var results []*metricData
+		for i := int32(start); i < int32(end); i++ {
+			offs := i * unit
+			arg, err := getSeriesArg(e.args[0], from+offs, until+offs, values)
+			if err != nil {
+				return nil
+			}
+
+			for _, a := range arg {
+				r := *a
+				r.Name = proto.String(fmt.Sprintf("timeShift(%s,%d)", a.GetName(), offs))
+				r.StartTime = proto.Int32(a.GetStartTime() - offs)
+				r.StopTime = proto.Int32(a.GetStopTime() - offs)
+				results = append(results, &r)
+			}
+		}
+
 		return results
 
 	case "transformNull": // transformNull(seriesList, default=0)
