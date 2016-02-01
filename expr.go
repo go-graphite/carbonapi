@@ -2701,6 +2701,25 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 		return results
 
+	case "removeEmptySeries": // removeEmptySeries(seriesLists, n)
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		var results []*metricData
+
+		for _, a := range args {
+			for _, v := range a.IsAbsent {
+				if !v {
+					results = append(results, a)
+					break
+				}
+			}
+		}
+
+		return results
+
 	case "removeBelowValue": // removeBelowValue(seriesLists, n)
 		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {

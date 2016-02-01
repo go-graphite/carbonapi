@@ -1564,6 +1564,24 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "removeEmptySeries",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric*"},
+				},
+				argString: "metric*",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric*", 0, 1}: []*metricData{
+					makeResponse("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32),
+					makeResponse("metric2", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
+				},
+			},
+			[]float64{1, 2, -1, 7, 8, 20, 30, math.NaN()},
+			"metric1",
+		},
+		{
+			&expr{
 				target: "removeBelowValue",
 				etype:  etFunc,
 				args: []*expr{
