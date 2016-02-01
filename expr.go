@@ -2765,6 +2765,46 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			results = append(results, &r)
 		}
 		return results
+
+	case "removeBelowPercentile", "removeAbovePercentile": // removeBelowPercentile(seriesLists, percent), removeAbovePercentile(seriesLists, percent)
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		percent, err := getFloatArg(e, 1)
+		if err != nil {
+			return nil
+		}
+
+		comparer := func(v float64, threshold float64) bool {
+			return v < threshold
+		}
+
+		if e.target == "removeAbovePercentile" {
+			comparer = func(v float64, threshold float64) bool {
+				return v > threshold
+			}
+		}
+
+		var results []*metricData
+
+		for _, a := range args {
+			var values []float64
+			for i, v := range a.IsAbsent {
+				if !v {
+					values = append(values, a.Values[i])
+				}
+			}
+
+			threshold := percentile(values, percent, true)
+			r := removeByValue(a, threshold, comparer)
+			r.Name = proto.String(fmt.Sprintf("%s(%s, %g)", e.target, a.GetName(), percent))
+
+			results = append(results, &r)
+		}
+
+		return results
 	}
 
 	logger.Logf("unknown function in evalExpr: %q\n", e.target)

@@ -1612,6 +1612,38 @@ func TestEvalExpression(t *testing.T) {
 			[]float64{1, 2, -1, 7, 8, math.NaN(), math.NaN(), math.NaN()},
 			"removeAboveValue(metric1, 10)",
 		},
+		{
+			&expr{
+				target: "removeBelowPercentile",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 50, etype: etConst},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+			},
+			[]float64{math.NaN(), math.NaN(), math.NaN(), 7, 8, 20, 30, math.NaN()},
+			"removeBelowPercentile(metric1, 50)",
+		},
+		{
+			&expr{
+				target: "removeAbovePercentile",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 50, etype: etConst},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+			},
+			[]float64{1, 2, -1, 7, math.NaN(), math.NaN(), math.NaN(), math.NaN()},
+			"removeAbovePercentile(metric1, 50)",
+		},
 	}
 
 	for _, tt := range tests {
