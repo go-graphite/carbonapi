@@ -2735,7 +2735,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return v < threshold
 		}
 
-		if e.target[6:11] == "Above" {
+		if strings.HasPrefix(e.target, "removeAbove") {
 			condition = func(v float64, threshold float64) bool {
 				return v > threshold
 			}
@@ -2745,7 +2745,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		for _, a := range args {
 			threshold := number
-			if e.target[11:] == "Percentile" {
+			if strings.HasSuffix(e.target, "Percentile") {
 				var values []float64
 				for i, v := range a.IsAbsent {
 					if !v {
