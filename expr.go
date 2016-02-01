@@ -2720,69 +2720,23 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		return results
 
-	case "removeBelowValue": // removeBelowValue(seriesLists, n)
+	case "removeBelowValue", "removeAboveValue", "removeBelowPercentile", "removeAbovePercentile": // removeBelowValue(seriesLists, n), removeAboveValue(seriesLists, n), removeBelowPercentile(seriesLists, percent), removeAbovePercentile(seriesLists, percent)
 		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
 		}
 
-		threshold, err := getFloatArg(e, 1)
+		number, err := getFloatArg(e, 1)
 		if err != nil {
 			return nil
 		}
 
-		var results []*metricData
-
-		for _, a := range args {
-			r := removeByValue(a, threshold, func(v float64, threshold float64) bool {
-				return v < threshold
-			})
-			r.Name = proto.String(fmt.Sprintf("removeBelowValue(%s, %g)", a.GetName(), threshold))
-
-			results = append(results, &r)
-		}
-		return results
-
-	case "removeAboveValue": // removeAboveValue(seriesLists, n)
-		args, err := getSeriesArg(e.args[0], from, until, values)
-		if err != nil {
-			return nil
-		}
-
-		threshold, err := getFloatArg(e, 1)
-		if err != nil {
-			return nil
-		}
-
-		var results []*metricData
-
-		for _, a := range args {
-			r := removeByValue(a, threshold, func(v float64, threshold float64) bool {
-				return v > threshold
-			})
-			r.Name = proto.String(fmt.Sprintf("removeAboveValue(%s, %g)", a.GetName(), threshold))
-
-			results = append(results, &r)
-		}
-		return results
-
-	case "removeBelowPercentile", "removeAbovePercentile": // removeBelowPercentile(seriesLists, percent), removeAbovePercentile(seriesLists, percent)
-		args, err := getSeriesArg(e.args[0], from, until, values)
-		if err != nil {
-			return nil
-		}
-
-		percent, err := getFloatArg(e, 1)
-		if err != nil {
-			return nil
-		}
-
-		comparer := func(v float64, threshold float64) bool {
+		condition := func(v float64, threshold float64) bool {
 			return v < threshold
 		}
 
-		if e.target == "removeAbovePercentile" {
-			comparer = func(v float64, threshold float64) bool {
+		if e.target[6:11] == "Above" {
+			condition = func(v float64, threshold float64) bool {
 				return v > threshold
 			}
 		}
@@ -2790,16 +2744,32 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		var results []*metricData
 
 		for _, a := range args {
-			var values []float64
-			for i, v := range a.IsAbsent {
-				if !v {
-					values = append(values, a.Values[i])
+			threshold := number
+			if e.target[11:] == "Percentile" {
+				var values []float64
+				for i, v := range a.IsAbsent {
+					if !v {
+						values = append(values, a.Values[i])
+					}
 				}
+
+				threshold = percentile(values, number, true)
 			}
 
-			threshold := percentile(values, percent, true)
-			r := removeByValue(a, threshold, comparer)
-			r.Name = proto.String(fmt.Sprintf("%s(%s, %g)", e.target, a.GetName(), percent))
+			r := *a
+			r.Name = proto.String(fmt.Sprintf("%s(%s, %g)", e.target, a.GetName(), number))
+			r.IsAbsent = make([]bool, len(a.Values))
+			r.Values = make([]float64, len(a.Values))
+
+			for i, v := range a.Values {
+				if a.IsAbsent[i] || condition(v, threshold) {
+					r.Values[i] = math.NaN()
+					r.IsAbsent[i] = true
+					continue
+				}
+
+				r.Values[i] = v
+			}
 
 			results = append(results, &r)
 		}
@@ -2810,26 +2780,6 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 	logger.Logf("unknown function in evalExpr: %q\n", e.target)
 
 	return nil
-}
-
-type removeFunc func(float64, float64) bool
-
-func removeByValue(a *metricData, threshold float64, condition removeFunc) metricData {
-	r := *a
-	r.Values = make([]float64, len(a.Values))
-	r.IsAbsent = make([]bool, len(a.Values))
-
-	for i, v := range a.Values {
-		if a.IsAbsent[i] || condition(v, threshold) {
-			r.Values[i] = math.NaN()
-			r.IsAbsent[i] = true
-			continue
-		}
-
-		r.Values[i] = v
-	}
-
-	return r
 }
 
 // Total (sortByTotal), max (sortByMaxima), min (sortByMinima) sorting
