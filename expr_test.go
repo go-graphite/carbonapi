@@ -1565,10 +1565,33 @@ func TestEvalExpression(t *testing.T) {
 				metricRequest{"metric*", 0, 1}: []*metricData{
 					makeResponse("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32),
 					makeResponse("metric2", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
+					makeResponse("metric3", []float64{0, 0, 0, 0, 0, 0, 0, 0}, 1, now32),
 				},
 			},
-			[]*metricData{makeResponse("metric1",
-				[]float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+			[]*metricData{
+				makeResponse("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32),
+				makeResponse("metric3", []float64{0, 0, 0, 0, 0, 0, 0, 0}, 1, now32),
+			},
+		},
+		{
+			&expr{
+				target: "removeZeroSeries",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric*"},
+				},
+				argString: "metric*",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric*", 0, 1}: []*metricData{
+					makeResponse("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32),
+					makeResponse("metric2", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
+					makeResponse("metric3", []float64{0, 0, 0, 0, 0, 0, 0, 0}, 1, now32),
+				},
+			},
+			[]*metricData{
+				makeResponse("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32),
+			},
 		},
 		{
 			&expr{
