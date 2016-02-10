@@ -2633,6 +2633,43 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		return []*metricData{&p}
 
+	case "timeFunction", "time":
+		name, err := getStringArg(e, 0)
+		if err != nil {
+			return nil
+		}
+
+		step_int, err := getIntArgDefault(e, 1, 60)
+		if err != nil || step_int <= 0 {
+			return nil
+		}
+		step := int32(step_int)
+
+		// emulate the behavior of this Python code:
+		//   while when < requestContext["endTime"]:
+		//     values.append(time.mktime(when.timetuple()))
+		//     when += delta
+
+		values := make([]float64, (until-from-1+step)/step)
+		value := from
+		for i := 0; i < len(values); i++ {
+			values[i] = float64(value)
+			value += step
+		}
+
+		p := metricData{
+			FetchResponse: pb.FetchResponse{
+				Name:      proto.String(name),
+				StartTime: proto.Int32(from),
+				StopTime:  proto.Int32(until),
+				StepTime:  proto.Int32(step),
+				Values:    values,
+				IsAbsent:  make([]bool, len(values)),
+			},
+		}
+
+		return []*metricData{&p}
+
 	case "holtWintersForecast":
 		var results []*metricData
 		args, err := getSeriesArgs(e.args, from-7*86400, until, values)

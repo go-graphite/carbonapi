@@ -2535,6 +2535,88 @@ func TestExtractMetric(t *testing.T) {
 	}
 }
 
+func TestEvalCustomFromUntil(t *testing.T) {
+
+	tests := []struct {
+		e     *expr
+		m     map[metricRequest][]*metricData
+		w     []float64
+		name  string
+		from  int32
+		until int32
+	}{
+		{
+			&expr{
+				target: "timeFunction",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{valStr: "footime", etype: etString},
+				},
+				argString: "footime",
+			},
+			map[metricRequest][]*metricData{},
+			[]float64{4200.0, 4260.0, 4320.0},
+			"footime",
+			4200,
+			4350,
+		},
+	}
+
+	for _, tt := range tests {
+		oldValues := map[metricRequest][]*metricData{}
+		for key, metrics := range tt.m {
+			entry := []*metricData{}
+			for _, value := range metrics {
+				newValue := metricData{
+					FetchResponse: pb.FetchResponse{
+						Name:      value.Name,
+						StartTime: value.StartTime,
+						StopTime:  value.StopTime,
+						StepTime:  value.StepTime,
+						Values:    make([]float64, len(value.Values)),
+						IsAbsent:  make([]bool, len(value.IsAbsent)),
+					},
+				}
+
+				copy(newValue.Values, value.Values)
+				copy(newValue.IsAbsent, value.IsAbsent)
+				entry = append(entry, &newValue)
+			}
+
+			oldValues[key] = entry
+		}
+
+		g := evalExpr(tt.e, tt.from, tt.until, tt.m)
+		if g == nil {
+			t.Errorf("failed to eval %v", tt.name)
+			continue
+		}
+		if g[0] == nil {
+			t.Errorf("returned no value %v", tt.e.argString)
+			continue
+		}
+
+		for key, metrics := range tt.m {
+			for i, newValue := range metrics {
+				oldValue := oldValues[key][i]
+				if !reflect.DeepEqual(oldValue, newValue) {
+					t.Errorf("%s: source data was modified key %v index %v want:\n%v\n got:\n%v", tt.e.target, key, i, oldValue, newValue)
+				}
+			}
+		}
+
+		if g[0].GetStepTime() == 0 {
+			t.Errorf("missing step for %+v", g)
+		}
+		if !nearlyEqual(g[0].Values, g[0].IsAbsent, tt.w) {
+			t.Errorf("failed: %s: got %+v, want %+v", g[0].GetName(), g[0].Values, tt.w)
+		}
+		if g[0].GetName() != tt.name {
+			t.Errorf("bad name for %+v: got %v, want %v", g, g[0].GetName(), tt.name)
+		}
+	}
+}
+
 const eps = 0.0000000001
 
 func nearlyEqual(a []float64, absent []bool, b []float64) bool {
