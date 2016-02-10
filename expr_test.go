@@ -1700,6 +1700,7 @@ func TestEvalExpression(t *testing.T) {
 				}
 			}
 		}
+
 		for i, want := range tt.want {
 			actual := g[i]
 			if actual == nil {
@@ -1712,13 +1713,9 @@ func TestEvalExpression(t *testing.T) {
 			if actual.GetName() != want.GetName() {
 				t.Errorf("bad name for %s metric %d: got %s, want %s", tt.e.target, i, actual.GetName(), want.GetName())
 			}
-			for j := range want.IsAbsent {
-				if actual.IsAbsent[j] != want.IsAbsent[j] {
-					t.Errorf("failed IsAbsent %s metric %s: got %+v, want %+v", tt.e.target, actual.GetName(), actual.IsAbsent, want.IsAbsent)
-				}
-				if !actual.IsAbsent[j] && math.Abs(actual.Values[j]-want.Values[j]) > eps {
-					t.Errorf("failed Value %s metric %s: got %+v, want %+v", tt.e.target, actual.GetName(), actual.Values, want.Values)
-				}
+			if !nearlyEqualMetrics(actual, want) {
+				t.Errorf("different values for %s metric %s: got %v, want %v", tt.e.target, actual.GetName(), actual.Values, want.Values)
+				continue
 			}
 		}
 	}
@@ -2659,6 +2656,25 @@ func nearlyEqual(a []float64, absent []bool, b []float64) bool {
 		}
 		// "close enough"
 		if math.Abs(v-b[i]) > eps {
+			return false
+		}
+	}
+
+	return true
+}
+
+func nearlyEqualMetrics(a, b *metricData) bool {
+
+	if len(a.IsAbsent) != len(b.IsAbsent) {
+		return false
+	}
+
+	for i := range a.IsAbsent {
+		if a.IsAbsent[i] != b.IsAbsent[i] {
+			return false
+		}
+		// "close enough"
+		if math.Abs(a.Values[i]-b.Values[i]) > eps {
 			return false
 		}
 	}
