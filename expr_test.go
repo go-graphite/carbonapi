@@ -306,9 +306,9 @@ func TestEvalExpression(t *testing.T) {
 	now32 := int32(time.Now().Unix())
 
 	tests := []struct {
-		e *expr
-		m map[metricRequest][]*metricData
-		r []*metricData
+		e    *expr
+		m    map[metricRequest][]*metricData
+		want []*metricData
 	}{
 		{
 			&expr{target: "metric"},
@@ -1688,8 +1688,8 @@ func TestEvalExpression(t *testing.T) {
 			t.Errorf("failed to eval %s", tt.e.target)
 			continue
 		}
-		if len(g) != len(tt.r) {
-			t.Errorf("%s returned a different number of metrics, actual %v, want %v", tt.e.target, len(g), len(tt.r))
+		if len(g) != len(tt.want) {
+			t.Errorf("%s returned a different number of metrics, actual %v, want %v", tt.e.target, len(g), len(tt.want))
 			continue
 		}
 		for key, metrics := range tt.m {
@@ -1700,7 +1700,7 @@ func TestEvalExpression(t *testing.T) {
 				}
 			}
 		}
-		for i, want := range tt.r {
+		for i, want := range tt.want {
 			actual := g[i]
 			if actual == nil {
 				t.Errorf("returned no value %v", tt.e.argString)
