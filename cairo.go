@@ -835,6 +835,10 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 
 	var colorsCur int
 	for _, res := range results {
+		if res.color != "" {
+			// already has a color defined -- skip
+			continue
+		}
 		if params.secondYAxis && res.secondYAxis {
 			res.lineWidth = params.rightWidth
 			res.dashed = params.rightDashed
