@@ -24,6 +24,7 @@ type metricData struct {
 	secondYAxis    bool
 	dashed         bool // TODO (ikruglov) smth like lineType would be better
 	hasAlpha       bool
+	stacked        bool
 
 	aggregatedValues []float64
 }

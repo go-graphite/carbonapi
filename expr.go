@@ -2589,7 +2589,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		return results
 
-	case "dashed", "drawAsInfinite", "secondYAxis":
+	case "dashed", "drawAsInfinite", "secondYAxis", "stacked":
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
@@ -2608,6 +2608,8 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 				r.drawAsInfinite = true
 			case "secondYAxis":
 				r.secondYAxis = true
+			case "stacked":
+				r.stacked = true
 			}
 
 			results = append(results, &r)
