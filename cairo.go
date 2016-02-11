@@ -2471,6 +2471,11 @@ func (r *metricData) AggregatedTimeStep() int32 {
 
 func (r *metricData) AggregatedValues() []float64 {
 	// TODO(dgryski): this should be cached somewhere
+
+	if r.aggregatedValues != nil {
+		return r.aggregatedValues
+	}
+
 	if r.valuesPerPoint == 1 || r.valuesPerPoint == 0 {
 		v := make([]float64, len(r.Values))
 		for i, vv := range r.Values {
@@ -2480,7 +2485,8 @@ func (r *metricData) AggregatedValues() []float64 {
 			v[i] = vv
 		}
 
-		return v
+		r.aggregatedValues = v
+		return r.aggregatedValues
 	}
 
 	avg := make([]float64, 0, len(r.Values)/r.valuesPerPoint+1)
@@ -2516,5 +2522,6 @@ func (r *metricData) AggregatedValues() []float64 {
 		avg = append(avg, sum/float64(n))
 	}
 
-	return avg
+	r.aggregatedValues = avg
+	return r.aggregatedValues
 }
