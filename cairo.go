@@ -1016,27 +1016,38 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*metricDat
 		}
 	}
 
-	/*
-	   if self.areaMode == 'stacked':
-	     yMaxValueL = safeSum( [safeMax(series) for series in Ldata] )
-	     yMaxValueR = safeSum( [safeMax(series) for series in Rdata] )
-	   else:
-	*/
-
-	yMaxValueL := math.Inf(-1)
-	for _, s := range Ldata {
-		for _, v := range s.AggregatedValues() {
-			if v > yMaxValueL {
-				yMaxValueL = v
+	var yMaxValueL, yMaxValueR float64
+	if params.areaMode == AreaModeStacked {
+		yMaxValueL = 0
+		for _, s := range Ldata {
+			for _, v := range s.AggregatedValues() {
+				yMaxValueL += v
 			}
 		}
-	}
 
-	yMaxValueR := math.Inf(-1)
-	for _, s := range Rdata {
-		for _, v := range s.AggregatedValues() {
-			if v > yMaxValueR {
-				yMaxValueR = v
+		yMaxValueR = 0
+		for _, s := range Rdata {
+			for _, v := range s.AggregatedValues() {
+				yMaxValueR += v
+			}
+		}
+
+	} else {
+		yMaxValueL = math.Inf(-1)
+		for _, s := range Ldata {
+			for _, v := range s.AggregatedValues() {
+				if v > yMaxValueL {
+					yMaxValueL = v
+				}
+			}
+		}
+
+		yMaxValueR = math.Inf(-1)
+		for _, s := range Rdata {
+			for _, v := range s.AggregatedValues() {
+				if v > yMaxValueR {
+					yMaxValueR = v
+				}
 			}
 		}
 	}
@@ -1267,32 +1278,62 @@ func makeLabel(yValue, yStep, ySpan float64, yUnitSystem string) string {
 
 func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	var seriesWithMissingValues []*metricData
-	yMinValue := math.NaN()
-	yMaxValue := math.NaN()
-	for _, r := range results {
-		if r.drawAsInfinite {
-			continue
+
+	var yMinValue, yMaxValue float64
+
+	if params.areaMode == AreaModeStacked {
+
+		// first, find the min length of all aggregated values
+		var l = ^int(0)
+		l = int(uint(l) >> 1)
+		var aggs [][]float64
+		for _, r := range results {
+			if r.drawAsInfinite {
+				continue
+			}
+			v := r.AggregatedValues()
+			if l > len(v) {
+				l = len(v)
+			}
+			aggs = append(aggs, v)
 		}
-		pushed := false
-		for i, v := range r.AggregatedValues() {
-			if r.IsAbsent[i] && !pushed {
-				seriesWithMissingValues = append(seriesWithMissingValues, r)
-				pushed = true
-			} else {
-				if math.IsNaN(yMinValue) || yMinValue > v {
-					yMinValue = v
+
+		// find the max of the sum of all the points at a given index
+		max := math.Inf(-1)
+		for i := 0; i < l; i++ {
+			var s float64
+			for _, a := range aggs {
+				if !math.IsNaN(a[i]) {
+					s += a[i]
 				}
-				if math.IsNaN(yMaxValue) || yMaxValue < v {
-					yMaxValue = v
+			}
+			if s > max {
+				max = s
+			}
+		}
+
+		yMaxValue = max
+
+	} else {
+		for _, r := range results {
+			if r.drawAsInfinite {
+				continue
+			}
+			pushed := false
+			for i, v := range r.AggregatedValues() {
+				if r.IsAbsent[i] && !pushed {
+					seriesWithMissingValues = append(seriesWithMissingValues, r)
+					pushed = true
+				} else {
+					if math.IsNaN(yMinValue) || yMinValue > v {
+						yMinValue = v
+					}
+					if math.IsNaN(yMaxValue) || yMaxValue < v {
+						yMaxValue = v
+					}
 				}
 			}
 		}
-	}
-
-	if params.areaMode == AreaModeStacked {
-		//TODO: https://github.com/brutasse/graphite-api/blob/master/graphite_api/render/glyph.py#L1274
-		// Need to implement function that'll sum all results by element and will produce max of it
-		panic("Not Implemented yet")
 	}
 
 	if yMaxValue < 0 && params.drawNullAsZero && len(seriesWithMissingValues) > 0 {
@@ -2001,9 +2042,15 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	cr.context.Rectangle(params.area.xmin, params.area.ymin, (params.area.xmax - params.area.xmin), (params.area.ymax - params.area.ymin))
 	cr.context.Clip()
 	cr.context.SetLineWidth(originalWidth)
-	// cr.context.Save()
-	// clipRestored := false
+
+	cr.context.Save()
+	clipRestored := false
 	for _, series := range results {
+
+		if !series.stacked && !clipRestored {
+			cr.context.Restore()
+			clipRestored = true
+		}
 
 		cr.context.SetLineWidth(params.lineWidth)
 		if series.hasAlpha {
@@ -2011,15 +2058,6 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 		} else {
 			setColor(cr, string2RGBA(series.color))
 		}
-
-		/*
-			if (! (__contains__(series.options, "stacked"))) {
-				if (! (clipRestored)) {
-					clipRestored = true;
-					cr.context.restore();
-				}
-			}
-		*/
 
 		/*
 			if (__contains__(series.options, "dashed")) {
