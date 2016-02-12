@@ -495,14 +495,14 @@ func getAreaMode(s string, def AreaMode) AreaMode {
 		return def
 	}
 
-	if s == "first" {
+	switch s {
+	case "first":
 		return AreaModeFirst
-	}
-	if s == "all" {
+	case "all":
 		return AreaModeAll
-	}
-	if s == "stacked" {
+	case "stacked":
 		return AreaModeStacked
+
 	}
 
 	return AreaModeNone
