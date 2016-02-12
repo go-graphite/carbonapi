@@ -1942,19 +1942,15 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	cr.context.SetLineCap(str2linecap(linecap))
 	cr.context.SetLineJoin(str2linejoin(linejoin))
 
+	for _, r := range results {
+		if r.stacked {
+			// group together all stacked metrics
+			results = partitionStacked(results)
+			break
+		}
+	}
+
 	/*
-		singleStacked = false;
-		var __iter0 = self.data;
-		if (! (__iter0 instanceof Array || typeof __iter0 == "string" || __is_typed_array(__iter0) || __is_some_array(__iter0) )) { __iter0 = __object_keys__(__iter0) }
-		for (var __n0 = 0; __n0 < __iter0.length; __n0++) {
-			var series = __iter0[ __n0 ];
-			if (__contains__(series.options, "stacked")) {
-				singleStacked = true;
-			}
-		}
-		if (singleStacked) {
-			self.data = sort_stacked(self.data);
-		}
 		if ((self.areaMode === "stacked" && ! (self.secondYAxis))) {
 			total = [];
 			var __iter0 = self.data;
@@ -2562,4 +2558,22 @@ func (r *metricData) AggregatedValues() []float64 {
 
 	r.aggregatedValues = avg
 	return r.aggregatedValues
+}
+
+func partitionStacked(results []*metricData) []*metricData {
+
+	stacked := make([]*metricData, 0, len(results))
+	unstacked := make([]*metricData, 0, len(results))
+
+	for _, r := range results {
+		if r.stacked {
+			stacked = append(stacked, r)
+		} else {
+			unstacked = append(unstacked, r)
+		}
+	}
+
+	stacked = append(stacked, unstacked...)
+
+	return stacked
 }
