@@ -1539,6 +1539,49 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "threshold",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{val: 42.42, etype: etConst},
+				},
+				argString: "42.42",
+			},
+			map[metricRequest][]*metricData{},
+			[]*metricData{makeResponse("42.42",
+				[]float64{42.42, 42.42}, 1, now32)},
+		},
+		{
+			&expr{
+				target: "threshold",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{val: 42.42, etype: etConst},
+					&expr{valStr: "fourty-two", etype: etString},
+				},
+				argString: "42.42",
+			},
+			map[metricRequest][]*metricData{},
+			[]*metricData{makeResponse("fourty-two",
+				[]float64{42.42, 42.42}, 1, now32)},
+		},
+		{
+			&expr{
+				target: "threshold",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{val: 42.42, etype: etConst},
+					&expr{valStr: "fourty-two-blue", etype: etString},
+					&expr{valStr: "blue", etype: etString},
+					//TODO(nnuss): test blue is being set rather than just not causing expression to parse/fail
+				},
+				argString: "42.42",
+			},
+			map[metricRequest][]*metricData{},
+			[]*metricData{makeResponse("fourty-two-blue",
+				[]float64{42.42, 42.42}, 1, now32)},
+		},
+		{
+			&expr{
 				target: "squareRoot",
 				etype:  etFunc,
 				args: []*expr{

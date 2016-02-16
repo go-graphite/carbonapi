@@ -2672,6 +2672,43 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		return []*metricData{&p}
 
+	case "threshold":
+		value, err := getFloatArg(e, 0)
+
+		if err != nil {
+			return nil
+		}
+
+		name := fmt.Sprintf("%g", value)
+		if len(e.args) > 1 {
+			name, err = getStringArg(e, 1)
+			if err != nil {
+				return nil
+			}
+		}
+
+		var color string
+		if len(e.args) > 2 {
+			color, err = getStringArg(e, 2)
+			if err != nil {
+				return nil
+			}
+		}
+
+		p := metricData{
+			FetchResponse: pb.FetchResponse{
+				Name:      proto.String(name),
+				StartTime: proto.Int32(from),
+				StopTime:  proto.Int32(until),
+				StepTime:  proto.Int32(until - from),
+				Values:    []float64{value, value},
+				IsAbsent:  []bool{false, false},
+			},
+			color: color,
+		}
+
+		return []*metricData{&p}
+
 	case "holtWintersForecast":
 		var results []*metricData
 		args, err := getSeriesArgs(e.args, from-7*86400, until, values)
