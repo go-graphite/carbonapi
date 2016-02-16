@@ -14,8 +14,10 @@ import (
 	"strings"
 	"time"
 
-	"bitbucket.org/tebeka/strftime"
+	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 
+	"bitbucket.org/tebeka/strftime"
+	"github.com/gogo/protobuf/proto"
 	cairo "github.com/martine/gocairo/cairo"
 )
 
@@ -573,6 +575,7 @@ type Params struct {
 
 	lineMode       LineMode
 	areaMode       AreaMode
+	areaAlpha      float64
 	pieMode        PieMode
 	colorList      []string
 	lineWidth      float64
@@ -683,6 +686,7 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 		connectedLimit: getInt(r.FormValue("connectedLimit"), math.MaxUint32),
 		lineMode:       getLineMode(r.FormValue("lineMode"), LineModeSlope),
 		areaMode:       getAreaMode(r.FormValue("areaMode"), AreaModeNone),
+		areaAlpha:      getFloat64(r.FormValue("areaAlpha"), 0.5),
 		pieMode:        getPieMode(r.FormValue("pieMode"), PieModeAverage),
 		lineWidth:      getFloat64(r.FormValue("lineWidth"), 1.2),
 
@@ -1315,6 +1319,7 @@ func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 		yMaxValue = max
 
 	} else {
+		yMinValue, yMaxValue = math.NaN(), math.NaN()
 		for _, r := range results {
 			if r.drawAsInfinite {
 				continue
@@ -1950,89 +1955,63 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 		}
 	}
 
-	/*
-		if ((self.areaMode === "stacked" && ! (self.secondYAxis))) {
-			total = [];
-			var __iter0 = self.data;
-			if (! (__iter0 instanceof Array || typeof __iter0 == "string" || __is_typed_array(__iter0) || __is_some_array(__iter0) )) { __iter0 = __object_keys__(__iter0) }
-			for (var __n0 = 0; __n0 < __iter0.length; __n0++) {
-				var series = __iter0[ __n0 ];
-				if (__contains__(series.options, "drawAsInfinite")) {
-					continue
-				}
-				series.options["stacked"] = true;
-				var i;
-				i = -1;
-				var i__end__;
-				i__end__ = len(series);
-				while (++i < i__end__)
-				{
-					if (len(total) <= i) {
-						total.append(0);
-					}
-					if (series[i] !== null) {
-						original = series[i];
-						series[i] += total[i];
-						total[i] += original;
-					}
-				}
+	if params.areaMode == AreaModeStacked && !params.secondYAxis {
+		var total []float64
+
+		for _, r := range results {
+			if r.drawAsInfinite {
+				continue
 			}
-		} else {
-			if (self.areaMode === "first") {
-				self.data[0].options["stacked"] = true;
-			} else {
-				if (self.areaMode === "all") {
-					var __iter0 = self.data;
-					if (! (__iter0 instanceof Array || typeof __iter0 == "string" || __is_typed_array(__iter0) || __is_some_array(__iter0) )) { __iter0 = __object_keys__(__iter0) }
-					for (var __n0 = 0; __n0 < __iter0.length; __n0++) {
-						var series = __iter0[ __n0 ];
-						if (! (__contains__(series.options, "drawAsInfinite"))) {
-							series.options["stacked"] = true;
-						}
-					}
+
+			r.stacked = true
+			agg := r.AggregatedValues()
+			for i, v := range agg {
+
+				if len(total) < i {
+					total = append(total, 0)
+				}
+
+				if !math.IsNaN(v) {
+					agg[i] += total[i]
+					total[i] += v
 				}
 			}
 		}
-		if (__jsdict_get(self.params, "areaAlpha")) {
-		    try {
-			alpha = float(self.params["areaAlpha"]);
-		    } catch(__exception__) {
-			if (__exception__ == ValueError || __exception__ instanceof ValueError) {
-			    alpha = 0.5;
+	}
+	// TODO(dgryski): areaMode all, first
+
+	alpha := params.areaAlpha
+	var strokeSeries []*metricData
+	for _, r := range results {
+		if r.stacked {
+			r.alpha = alpha
+			r.hasAlpha = true
+
+			newSeries := metricData{
+				FetchResponse: pb.FetchResponse{
+					Name:      r.Name,
+					StopTime:  proto.Int32(r.GetStopTime()),
+					StartTime: proto.Int32(r.GetStartTime()),
+					StepTime:  proto.Int32(r.AggregatedTimeStep()),
+					Values:    make([]float64, len(r.AggregatedValues())),
+					IsAbsent:  make([]bool, len(r.AggregatedValues())),
+				},
+				color:       r.color,
+				xStep:       r.xStep,
+				secondYAxis: r.secondYAxis,
 			}
-		}
-			strokeSeries = [];
-			var __iter0 = self.data;
-			if (! (__iter0 instanceof Array || typeof __iter0 == "string" || __is_typed_array(__iter0) || __is_some_array(__iter0) )) { __iter0 = __object_keys__(__iter0) }
-			for (var __n0 = 0; __n0 < __iter0.length; __n0++) {
-				var series = __iter0[ __n0 ];
-				if (__contains__(series.options, "stacked")) {
-					series.options["alpha"] = alpha;
-					var __comp__0;
-					var idx0;
-					var iter0;
-					var get0;
-					__comp__0 = [];
-					idx0 = 0;
-					iter0 = series;
-					while (idx0 < iter0.length)
-					{
-						x = iter0[idx0];
-						__comp__0.push(x);
-						idx0 ++;
-					}
-					newSeries = TimeSeries(series.name, series.start, series.end, (series.step * series.valuesPerPoint), __comp__0);
-					newSeries.xStep = series.xStep;
-					newSeries.color = series.color;
-					if (__contains__(series.options, "secondYAxis")) {
-						newSeries.options["secondYAxis"] = true;
-					}
-					strokeSeries.append(newSeries);
+			copy(newSeries.Values, r.AggregatedValues())
+			for i, v := range newSeries.Values {
+				if math.IsNaN(v) {
+					newSeries.IsAbsent[i] = true
 				}
 			}
-			self.data += strokeSeries;
+			strokeSeries = append(strokeSeries, &newSeries)
 		}
-	*/
+	}
+	if len(strokeSeries) > 0 {
+		results = append(results, strokeSeries...)
+	}
 
 	cr.context.SetLineWidth(1.0)
 	cr.context.Rectangle(params.area.xmin, params.area.ymin, (params.area.xmax - params.area.xmin), (params.area.ymax - params.area.ymin))
@@ -2066,8 +2045,8 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 		missingPoints := float64(series.GetStartTime()-params.startTime) / float64(series.GetStepTime())
 		startShift := (series.xStep * (missingPoints / float64(series.valuesPerPoint)))
 		x := ((float64(params.area.xmin) + startShift) + (params.lineWidth / 2.0))
-		//	y := float64(params.area.ymin)
-		// startX := x
+		y := float64(params.area.ymin)
+		startX := x
 		/*
 			if (__jsdict_get(series.options, "invisible")) {
 				self.setColor(series.color, 0, true);
@@ -2102,7 +2081,6 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 					x += series.xStep;
 					consecutiveNones ++; */
 			} else {
-				var y float64
 				if params.secondYAxis {
 					if series.secondYAxis {
 						y = getYCoord(params, value, YCoordSideRight)
@@ -2158,38 +2136,31 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 			x += series.xStep
 			index++
 		}
-		/*
-			if (__contains__(series.options, "stacked")) {
-				if (self.lineMode === "staircase") {
-					xPos = x;
-				} else {
-					xPos = (x - series.xStep);
-				}
-				if (self.secondYAxis) {
-					if (__contains__(series.options, "secondYAxis")) {
-						areaYFrom = self.getYCoord(0, "right");
-					} else {
-						areaYFrom = self.getYCoord(0, "left");
-					}
-				} else {
-					areaYFrom = self.getYCoord(0);
-				}
-				self.fillAreaAndClip(xPos, y, startX, areaYFrom);
+
+		if series.stacked {
+			var xPos float64
+			if params.lineMode == LineModeStaircase {
+				xPos = x
 			} else {
-				cr.context.stroke();
+				xPos = (x - series.xStep)
 			}
-		*/
-		cr.context.Stroke()
-		cr.context.SetLineWidth(originalWidth)
-		/*
-			if (__contains__(series.options, "dash")) {
-				if (dash) {
-					cr.context.set_dash(dash, 1);
+
+			var areaYFrom float64
+			if params.secondYAxis {
+				if series.secondYAxis {
+					areaYFrom = getYCoord(params, 0, YCoordSideRight)
 				} else {
-					cr.context.set_dash([], 0);
+					areaYFrom = getYCoord(params, 0, YCoordSideLeft)
 				}
+			} else {
+				areaYFrom = getYCoord(params, 0, YCoordSideNone)
 			}
-		*/
+			fillAreaAndClip(cr, params, xPos, y, startX, areaYFrom)
+		} else {
+			cr.context.Stroke()
+		}
+		cr.context.SetLineWidth(originalWidth)
+		// TODO(dgryski): if series.dash ...
 	}
 }
 
@@ -2452,6 +2423,44 @@ func drawRectangle(cr *cairoSurfaceContext, params *Params, x float64, y float64
 		cr.context.SetDash([]float64{}, 0.0)
 		cr.context.Stroke()
 	}
+}
+
+func fillAreaAndClip(cr *cairoSurfaceContext, params *Params, x, y, startX, areaYFrom float64) {
+
+	if math.IsNaN(startX) {
+		startX = params.area.xmin
+	}
+
+	if math.IsNaN(areaYFrom) {
+		areaYFrom = params.area.ymax
+	}
+
+	pattern := cr.context.CopyPath()
+
+	// fill
+	cr.context.LineTo(x, areaYFrom)      // bottom endX
+	cr.context.LineTo(startX, areaYFrom) // bottom startX
+	cr.context.ClosePath()
+	cr.context.Fill()
+
+	// clip above y axis
+	cr.context.AppendPath(pattern)
+	cr.context.LineTo(x, areaYFrom)                       // yZero endX
+	cr.context.LineTo(params.area.xmax, areaYFrom)        // yZero right
+	cr.context.LineTo(params.area.xmax, params.area.ymin) // top right
+	cr.context.LineTo(params.area.xmin, params.area.ymin) // top left
+	cr.context.LineTo(params.area.xmin, areaYFrom)        // yZero left
+	cr.context.LineTo(startX, areaYFrom)                  // yZero startX
+
+	// clip below y axis
+	cr.context.LineTo(x, areaYFrom)                       // yZero endX
+	cr.context.LineTo(params.area.xmax, areaYFrom)        // yZero right
+	cr.context.LineTo(params.area.xmax, params.area.ymax) // bottom right
+	cr.context.LineTo(params.area.xmin, params.area.ymax) // bottom left
+	cr.context.LineTo(params.area.xmin, areaYFrom)        // yZero left
+	cr.context.LineTo(startX, areaYFrom)                  // yZero startX
+	cr.context.ClosePath()
+	cr.context.Clip()
 }
 
 func string2RGBA(clr string) color.RGBA {
