@@ -2044,8 +2044,8 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 		*/
 
 		missingPoints := float64(series.GetStartTime()-params.startTime) / float64(series.GetStepTime())
-		startShift := (series.xStep * (missingPoints / float64(series.valuesPerPoint)))
-		x := ((float64(params.area.xmin) + startShift) + (params.lineWidth / 2.0))
+		startShift := series.xStep * (missingPoints / float64(series.valuesPerPoint))
+		x := float64(params.area.xmin) + startShift + (params.lineWidth / 2.0)
 		y := float64(params.area.ymin)
 		startX := x
 		/*
@@ -2143,7 +2143,7 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 			if params.lineMode == LineModeStaircase {
 				xPos = x
 			} else {
-				xPos = (x - series.xStep)
+				xPos = x - series.xStep
 			}
 
 			var areaYFrom float64
