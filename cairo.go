@@ -1967,7 +1967,7 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 			agg := r.AggregatedValues()
 			for i, v := range agg {
 
-				if len(total) < i {
+				if len(total) <= i {
 					total = append(total, 0)
 				}
 
