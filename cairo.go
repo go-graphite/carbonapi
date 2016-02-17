@@ -686,7 +686,7 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 		connectedLimit: getInt(r.FormValue("connectedLimit"), math.MaxUint32),
 		lineMode:       getLineMode(r.FormValue("lineMode"), LineModeSlope),
 		areaMode:       getAreaMode(r.FormValue("areaMode"), AreaModeNone),
-		areaAlpha:      getFloat64(r.FormValue("areaAlpha"), 0.5),
+		areaAlpha:      getFloat64(r.FormValue("areaAlpha"), 1),
 		pieMode:        getPieMode(r.FormValue("pieMode"), PieModeAverage),
 		lineWidth:      getFloat64(r.FormValue("lineWidth"), 1.2),
 
