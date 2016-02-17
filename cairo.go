@@ -1996,9 +1996,10 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 					Values:    make([]float64, len(r.AggregatedValues())),
 					IsAbsent:  make([]bool, len(r.AggregatedValues())),
 				},
-				color:       r.color,
-				xStep:       r.xStep,
-				secondYAxis: r.secondYAxis,
+				color:          r.color,
+				xStep:          r.xStep,
+				secondYAxis:    r.secondYAxis,
+				valuesPerPoint: r.valuesPerPoint,
 			}
 			copy(newSeries.Values, r.AggregatedValues())
 			for i, v := range newSeries.Values {
