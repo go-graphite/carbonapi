@@ -2064,23 +2064,23 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 				value = 0
 			}
 
-			if false /*value === null*/ { /*
-					if (consecutiveNones === 0) {
-						cr.context.line_to(x, y);
-						if (__contains__(series.options, "stacked")) {
-							if (self.secondYAxis) {
-								if (__contains__(series.options, "secondYAxis")) {
-									self.fillAreaAndClip(x, y, startX, self.getYCoord(0, YCoordSideRight));
-								} else {
-									self.fillAreaAndClip(x, y, startX, self.getYCoord(0, YCoordSideLeft));
-								}
+			if math.IsNaN(value) {
+				if consecutiveNones == 0 {
+					cr.context.LineTo(x, y)
+					if series.stacked {
+						if params.secondYAxis {
+							if series.secondYAxis {
+								fillAreaAndClip(cr, params, x, y, startX, getYCoord(params, 0, YCoordSideRight))
 							} else {
-								self.fillAreaAndClip(x, y, startX, self.getYCoord(0));
+								fillAreaAndClip(cr, params, x, y, startX, getYCoord(params, 0, YCoordSideLeft))
 							}
+						} else {
+							fillAreaAndClip(cr, params, x, y, startX, getYCoord(params, 0, YCoordSideNone))
 						}
 					}
-					x += series.xStep;
-					consecutiveNones ++; */
+				}
+				x += series.xStep
+				consecutiveNones++
 			} else {
 				if params.secondYAxis {
 					if series.secondYAxis {
@@ -2105,11 +2105,9 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 					x += series.xStep
 					continue
 				}
-				/*
-					if consecutiveNones > 0 {
-						startX = x
-					}
-				*/
+				if consecutiveNones > 0 {
+					startX = x
+				}
 
 				if !math.IsNaN(y) {
 					switch params.lineMode {
