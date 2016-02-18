@@ -2079,7 +2079,6 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 						}
 					}
 				}
-				x += series.xStep
 				consecutiveNones++
 			} else {
 				if params.secondYAxis {
