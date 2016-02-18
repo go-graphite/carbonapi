@@ -2057,8 +2057,8 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 		*/
 
 		consecutiveNones := 0
-		var index int
-		for _, value := range series.AggregatedValues() {
+		for index, value := range series.AggregatedValues() {
+			x = startX + (float64(index) * series.xStep)
 
 			if params.drawNullAsZero && math.IsNaN(value) {
 				value = 0
@@ -2131,8 +2131,6 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 				}
 				consecutiveNones = 0
 			}
-			x += series.xStep
-			index++
 		}
 
 		if series.stacked {
