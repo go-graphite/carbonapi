@@ -2047,6 +2047,7 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 		startShift := series.xStep * (missingPoints / float64(series.valuesPerPoint))
 		x := float64(params.area.xmin) + startShift + (params.lineWidth / 2.0)
 		y := float64(params.area.ymin)
+		origX := x
 		startX := x
 		/*
 			if (__jsdict_get(series.options, "invisible")) {
@@ -2058,7 +2059,7 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 
 		consecutiveNones := 0
 		for index, value := range series.AggregatedValues() {
-			x = startX + (float64(index) * series.xStep)
+			x = origX + (float64(index) * series.xStep)
 
 			if params.drawNullAsZero && math.IsNaN(value) {
 				value = 0
@@ -2101,7 +2102,6 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 					cr.context.MoveTo(x, params.area.ymax)
 					cr.context.LineTo(x, params.area.ymin)
 					cr.context.Stroke()
-					x += series.xStep
 					continue
 				}
 				if consecutiveNones > 0 {
