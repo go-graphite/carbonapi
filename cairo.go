@@ -686,7 +686,7 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 		connectedLimit: getInt(r.FormValue("connectedLimit"), math.MaxUint32),
 		lineMode:       getLineMode(r.FormValue("lineMode"), LineModeSlope),
 		areaMode:       getAreaMode(r.FormValue("areaMode"), AreaModeNone),
-		areaAlpha:      getFloat64(r.FormValue("areaAlpha"), 1),
+		areaAlpha:      getFloat64(r.FormValue("areaAlpha"), math.NaN()),
 		pieMode:        getPieMode(r.FormValue("pieMode"), PieModeAverage),
 		lineWidth:      getFloat64(r.FormValue("lineWidth"), 1.2),
 
@@ -1980,38 +1980,40 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	}
 	// TODO(dgryski): areaMode all, first
 
-	alpha := params.areaAlpha
-	var strokeSeries []*metricData
-	for _, r := range results {
-		if r.stacked {
-			r.alpha = alpha
-			r.hasAlpha = true
+	if !math.IsNaN(params.areaAlpha) {
+		alpha := params.areaAlpha
+		var strokeSeries []*metricData
+		for _, r := range results {
+			if r.stacked {
+				r.alpha = alpha
+				r.hasAlpha = true
 
-			newSeries := metricData{
-				FetchResponse: pb.FetchResponse{
-					Name:      r.Name,
-					StopTime:  proto.Int32(r.GetStopTime()),
-					StartTime: proto.Int32(r.GetStartTime()),
-					StepTime:  proto.Int32(r.AggregatedTimeStep()),
-					Values:    make([]float64, len(r.AggregatedValues())),
-					IsAbsent:  make([]bool, len(r.AggregatedValues())),
-				},
-				color:          r.color,
-				xStep:          r.xStep,
-				secondYAxis:    r.secondYAxis,
-				valuesPerPoint: 1,
-			}
-			copy(newSeries.Values, r.AggregatedValues())
-			for i, v := range newSeries.Values {
-				if math.IsNaN(v) {
-					newSeries.IsAbsent[i] = true
+				newSeries := metricData{
+					FetchResponse: pb.FetchResponse{
+						Name:      r.Name,
+						StopTime:  proto.Int32(r.GetStopTime()),
+						StartTime: proto.Int32(r.GetStartTime()),
+						StepTime:  proto.Int32(r.AggregatedTimeStep()),
+						Values:    make([]float64, len(r.AggregatedValues())),
+						IsAbsent:  make([]bool, len(r.AggregatedValues())),
+					},
+					color:          r.color,
+					xStep:          r.xStep,
+					secondYAxis:    r.secondYAxis,
+					valuesPerPoint: 1,
 				}
+				copy(newSeries.Values, r.AggregatedValues())
+				for i, v := range newSeries.Values {
+					if math.IsNaN(v) {
+						newSeries.IsAbsent[i] = true
+					}
+				}
+				strokeSeries = append(strokeSeries, &newSeries)
 			}
-			strokeSeries = append(strokeSeries, &newSeries)
 		}
-	}
-	if len(strokeSeries) > 0 {
-		results = append(results, strokeSeries...)
+		if len(strokeSeries) > 0 {
+			results = append(results, strokeSeries...)
+		}
 	}
 
 	cr.context.SetLineWidth(1.0)
