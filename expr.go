@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/rand"
 	"regexp"
 	"sort"
 	"strconv"
@@ -2776,6 +2777,28 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			results = append(results, &r)
 		}
 		return results
+
+	case "randomWalk", "randomWalkFunction":
+		name, err := getStringArg(e, 0)
+		if err != nil {
+			name = "randomWalk"
+		}
+
+		size := until - from
+
+		r := metricData{FetchResponse: pb.FetchResponse{
+			Name:      proto.String(name),
+			Values:    make([]float64, size),
+			IsAbsent:  make([]bool, size),
+			StepTime:  proto.Int32(1),
+			StartTime: proto.Int32(from),
+			StopTime:  proto.Int32(until),
+		}}
+
+		for i := 1; i < len(r.Values)-1; i++ {
+			r.Values[i+1] = r.Values[i] + (rand.Float64() - 0.5)
+		}
+		return []*metricData{&r}
 
 	case "removeEmptySeries", "removeZeroSeries": // removeEmptySeries(seriesLists, n), removeZeroSeries(seriesLists, n)
 		args, err := getSeriesArg(e.args[0], from, until, values)
