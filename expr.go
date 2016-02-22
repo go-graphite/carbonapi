@@ -90,8 +90,8 @@ func (e *expr) metrics() []metricRequest {
 				for i := int32(start); i < int32(end); i++ {
 					r2 = append(r2, metricRequest{
 						metric: v.metric,
-						from:   v.from + (int32(i) * offs),
-						until:  v.until + (int32(i) * offs),
+						from:   v.from + (i * offs),
+						until:  v.until + (i * offs),
 					})
 				}
 			}

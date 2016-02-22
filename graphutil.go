@@ -38,7 +38,7 @@ func getFloat64(s string, def float64) float64 {
 		return def
 	}
 
-	return float64(n)
+	return n
 }
 
 var colors = map[string]color.RGBA{

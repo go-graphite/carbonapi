@@ -23,7 +23,7 @@ type zipper struct {
 
 func (z zipper) Find(metric string) (pb.GlobResponse, error) {
 
-	u, _ := url.Parse(string(z.z) + "/metrics/find/")
+	u, _ := url.Parse(z.z + "/metrics/find/")
 
 	u.RawQuery = url.Values{
 		"query":  []string{metric},
@@ -59,7 +59,7 @@ func (z zipper) get(who string, u *url.URL, msg unmarshaler) error {
 
 func (z zipper) Passthrough(metric string) ([]byte, error) {
 
-	u, _ := url.Parse(string(z.z) + metric)
+	u, _ := url.Parse(z.z + metric)
 
 	resp, err := z.client.Get(u.String())
 	if err != nil {
@@ -77,7 +77,7 @@ func (z zipper) Passthrough(metric string) ([]byte, error) {
 
 func (z zipper) Render(metric string, from, until int32) (metricData, error) {
 
-	u, _ := url.Parse(string(z.z) + "/render/")
+	u, _ := url.Parse(z.z + "/render/")
 
 	u.RawQuery = url.Values{
 		"target": []string{metric},

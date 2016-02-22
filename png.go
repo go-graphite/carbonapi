@@ -182,7 +182,7 @@ func hexToColor(h string) color.Color {
 	}
 
 	if len(h) == 6 {
-		if rgb, err := strconv.ParseUint(string(h), 16, 32); err == nil {
+		if rgb, err := strconv.ParseUint(h, 16, 32); err == nil {
 			r = uint8(rgb >> 16)
 			g = uint8((rgb >> 8) & 0xFF)
 			b = uint8(rgb & 0xFF)
