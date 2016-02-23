@@ -25,6 +25,7 @@ type metricData struct {
 	dashed         bool // TODO (ikruglov) smth like lineType would be better
 	hasAlpha       bool
 	stacked        bool
+	stackName      string
 
 	aggregatedValues []float64
 }

@@ -2611,6 +2611,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 				r.secondYAxis = true
 			case "stacked":
 				r.stacked = true
+				r.stackName = "stack"
 			}
 
 			results = append(results, &r)

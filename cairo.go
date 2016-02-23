@@ -1950,7 +1950,7 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	for _, r := range results {
 		if r.stacked {
 			// group together all stacked metrics
-			results = partitionStacked(results)
+			sort.Stable(ByStacked(results))
 			break
 		}
 	}
@@ -2567,20 +2567,12 @@ func (r *metricData) AggregatedValues() []float64 {
 	return r.aggregatedValues
 }
 
-func partitionStacked(results []*metricData) []*metricData {
+type ByStacked []*metricData
 
-	stacked := make([]*metricData, 0, len(results))
-	unstacked := make([]*metricData, 0, len(results))
+func (b ByStacked) Len() int { return len(b) }
 
-	for _, r := range results {
-		if r.stacked {
-			stacked = append(stacked, r)
-		} else {
-			unstacked = append(unstacked, r)
-		}
-	}
-
-	stacked = append(stacked, unstacked...)
-
-	return stacked
+func (b ByStacked) Less(i int, j int) bool {
+	return (b[i].stacked && !b[j].stacked) || (b[i].stacked && b[j].stacked && b[i].stackName < b[j].stackName)
 }
+
+func (b ByStacked) Swap(i int, j int) { b[i], b[j] = b[j], b[i] }
