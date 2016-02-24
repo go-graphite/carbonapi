@@ -2511,8 +2511,6 @@ func (r *metricData) AggregatedTimeStep() int32 {
 }
 
 func (r *metricData) AggregatedValues() []float64 {
-	// TODO(dgryski): this should be cached somewhere
-
 	if r.aggregatedValues != nil {
 		return r.aggregatedValues
 	}
