@@ -580,6 +580,7 @@ type Params struct {
 	colorList      []string
 	lineWidth      float64
 	connectedLimit int
+	hasStack       bool
 
 	yMin   float64
 	yMax   float64
@@ -904,6 +905,60 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	}
 
 	consolidateDataPoints(params, results)
+
+	// look for at least one stacked value
+	for _, r := range results {
+		if r.stacked {
+			params.hasStack = true
+			break
+		}
+	}
+
+	// check if we need to stack all the things
+	if params.areaMode == AreaModeStacked {
+		params.hasStack = true
+		for _, r := range results {
+			r.stacked = true
+			r.stackName = "stack"
+		}
+	}
+
+	if params.hasStack {
+		sort.Stable(ByStacked(results))
+		// perform all aggregations / summations up so the rest of the graph drawing code doesn't need to care
+
+		var stackName = results[0].stackName
+		var total []float64
+		for _, r := range results {
+			if r.drawAsInfinite {
+				continue
+			}
+
+			// reached the end of the stacks -- we're done
+			if !r.stacked {
+				break
+			}
+
+			if r.stackName != stackName {
+				// got to a new named stack -- reset accumulator
+				total = total[:0]
+			}
+
+			agg := r.AggregatedValues()
+			for i, v := range agg {
+
+				if len(total) <= i {
+					total = append(total, 0)
+				}
+
+				if !math.IsNaN(v) {
+					agg[i] += total[i]
+					total[i] += v
+				}
+			}
+		}
+	}
+
 	currentXMin := params.area.xmin
 	currentXMax := params.area.xmax
 	if params.secondYAxis {
@@ -1021,37 +1076,20 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*metricDat
 	}
 
 	var yMaxValueL, yMaxValueR float64
-	if params.areaMode == AreaModeStacked {
-		yMaxValueL = 0
-		for _, s := range Ldata {
-			for _, v := range s.AggregatedValues() {
-				yMaxValueL += v
+	yMaxValueL = math.Inf(-1)
+	for _, s := range Ldata {
+		for _, v := range s.AggregatedValues() {
+			if v > yMaxValueL {
+				yMaxValueL = v
 			}
 		}
+	}
 
-		yMaxValueR = 0
-		for _, s := range Rdata {
-			for _, v := range s.AggregatedValues() {
-				yMaxValueR += v
-			}
-		}
-
-	} else {
-		yMaxValueL = math.Inf(-1)
-		for _, s := range Ldata {
-			for _, v := range s.AggregatedValues() {
-				if v > yMaxValueL {
-					yMaxValueL = v
-				}
-			}
-		}
-
-		yMaxValueR = math.Inf(-1)
-		for _, s := range Rdata {
-			for _, v := range s.AggregatedValues() {
-				if v > yMaxValueR {
-					yMaxValueR = v
-				}
+	yMaxValueR = math.Inf(-1)
+	for _, s := range Rdata {
+		for _, v := range s.AggregatedValues() {
+			if v > yMaxValueR {
+				yMaxValueR = v
 			}
 		}
 	}
@@ -1285,57 +1323,22 @@ func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 
 	var yMinValue, yMaxValue float64
 
-	if params.areaMode == AreaModeStacked {
-
-		// first, find the min length of all aggregated values
-		var l = ^int(0)
-		l = int(uint(l) >> 1)
-		var aggs [][]float64
-		for _, r := range results {
-			if r.drawAsInfinite {
-				continue
-			}
-			v := r.AggregatedValues()
-			if l > len(v) {
-				l = len(v)
-			}
-			aggs = append(aggs, v)
+	yMinValue, yMaxValue = math.NaN(), math.NaN()
+	for _, r := range results {
+		if r.drawAsInfinite {
+			continue
 		}
-
-		// find the max of the sum of all the points at a given index
-		max := math.Inf(-1)
-		for i := 0; i < l; i++ {
-			var s float64
-			for _, a := range aggs {
-				if !math.IsNaN(a[i]) {
-					s += a[i]
+		pushed := false
+		for i, v := range r.AggregatedValues() {
+			if r.IsAbsent[i] && !pushed {
+				seriesWithMissingValues = append(seriesWithMissingValues, r)
+				pushed = true
+			} else {
+				if math.IsNaN(yMinValue) || yMinValue > v {
+					yMinValue = v
 				}
-			}
-			if s > max {
-				max = s
-			}
-		}
-
-		yMaxValue = max
-
-	} else {
-		yMinValue, yMaxValue = math.NaN(), math.NaN()
-		for _, r := range results {
-			if r.drawAsInfinite {
-				continue
-			}
-			pushed := false
-			for i, v := range r.AggregatedValues() {
-				if r.IsAbsent[i] && !pushed {
-					seriesWithMissingValues = append(seriesWithMissingValues, r)
-					pushed = true
-				} else {
-					if math.IsNaN(yMinValue) || yMinValue > v {
-						yMinValue = v
-					}
-					if math.IsNaN(yMaxValue) || yMaxValue < v {
-						yMaxValue = v
-					}
+				if math.IsNaN(yMaxValue) || yMaxValue < v {
+					yMaxValue = v
 				}
 			}
 		}
@@ -1947,37 +1950,6 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	cr.context.SetLineCap(str2linecap(linecap))
 	cr.context.SetLineJoin(str2linejoin(linejoin))
 
-	for _, r := range results {
-		if r.stacked {
-			// group together all stacked metrics
-			sort.Stable(ByStacked(results))
-			break
-		}
-	}
-
-	if params.areaMode == AreaModeStacked && !params.secondYAxis {
-		var total []float64
-
-		for _, r := range results {
-			if r.drawAsInfinite {
-				continue
-			}
-
-			r.stacked = true
-			agg := r.AggregatedValues()
-			for i, v := range agg {
-
-				if len(total) <= i {
-					total = append(total, 0)
-				}
-
-				if !math.IsNaN(v) {
-					agg[i] += total[i]
-					total[i] += v
-				}
-			}
-		}
-	}
 	// TODO(dgryski): areaMode all, first
 
 	if !math.IsNaN(params.areaAlpha) {

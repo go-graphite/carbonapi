@@ -2568,6 +2568,28 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		return results
 
+	case "stacked": // stacked(seriesList, stackname="__DEFAULT__")
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		stackName, err := getStringArg(e, 1) // get stackName
+		if err != nil {
+			stackName = "__DEFAULT__"
+		}
+
+		var results []*metricData
+
+		for _, a := range arg {
+			r := *a
+			r.stacked = true
+			r.stackName = stackName
+			results = append(results, &r)
+		}
+
+		return results
+
 	case "alpha": // alpha(seriesList, theAlpha)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
@@ -2590,7 +2612,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		return results
 
-	case "dashed", "drawAsInfinite", "secondYAxis", "stacked":
+	case "dashed", "drawAsInfinite", "secondYAxis":
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
@@ -2609,9 +2631,6 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 				r.drawAsInfinite = true
 			case "secondYAxis":
 				r.secondYAxis = true
-			case "stacked":
-				r.stacked = true
-				r.stackName = "stack"
 			}
 
 			results = append(results, &r)
