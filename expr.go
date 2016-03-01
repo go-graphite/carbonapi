@@ -932,6 +932,44 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		return []*metricData{&r}
 
+	case "ewma", "exponentialWeightedMovingAverage": // ewma(seriesList, alpha)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil
+		}
+
+		alpha, err := getFloatArg(e, 1)
+		if err != nil {
+			return nil
+		}
+
+		e.target = "ewma"
+
+		// ugh, forEachSeriesDo does not handle arguments properly
+		var results []*metricData
+		for _, a := range arg {
+			name := fmt.Sprintf("ewma(%s,%v)", a.GetName(), alpha)
+
+			r := *a
+			r.Name = proto.String(name)
+			r.Values = make([]float64, len(a.Values))
+			r.IsAbsent = make([]bool, len(a.Values))
+
+			ewma := onlinestats.NewExpWeight(alpha)
+
+			for i, v := range a.Values {
+				if a.IsAbsent[i] {
+					r.IsAbsent[i] = true
+					continue
+				}
+
+				ewma.Push(v)
+				r.Values[i] = ewma.Mean()
+			}
+			results = append(results, &r)
+		}
+		return results
+
 	case "exclude": // exclude(seriesList, pattern)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
