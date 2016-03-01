@@ -605,10 +605,7 @@ func main() {
 		logger.Logln("setting stats interval to", *interval)
 
 		// register our metrics with graphite
-		graphite, err := g2g.NewGraphite(host, *interval, 10*time.Second)
-		if err != nil {
-			logger.Fatalln("unable to connect to to graphite: ", host, ":", err)
-		}
+		graphite := g2g.NewGraphite(host, *interval, 10*time.Second)
 
 		hostname, _ := os.Hostname()
 		hostname = strings.Replace(hostname, ".", "_", -1)
