@@ -1558,6 +1558,35 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "sortByName",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{target: "true", etype: etName},
+				},
+				argString: "metric1,true",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{
+					makeResponse("metric1", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					makeResponse("metric12", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
+					makeResponse("metric1234567890", []float64{0, 0, 0, 5, 0, 0}, 1, now32),
+					makeResponse("metric2", []float64{0, 0, 2, 0, 0, 0}, 1, now32),
+					makeResponse("metric11", []float64{0, 0, 0, 3, 0, 0}, 1, now32),
+					makeResponse("metric", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+				},
+			},
+			[]*metricData{
+				makeResponse("metric", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+				makeResponse("metric1", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+				makeResponse("metric2", []float64{0, 0, 2, 0, 0, 0}, 1, now32),
+				makeResponse("metric11", []float64{0, 0, 0, 3, 0, 0}, 1, now32),
+				makeResponse("metric12", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
+				makeResponse("metric1234567890", []float64{0, 0, 0, 5, 0, 0}, 1, now32),
+			},
+		},
+		{
+			&expr{
 				target: "constantLine",
 				etype:  etFunc,
 				args: []*expr{
