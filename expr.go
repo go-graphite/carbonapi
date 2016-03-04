@@ -2976,13 +2976,9 @@ func (s ByName) Less(i, j int) bool { return s[i].GetName() < s[j].GetName() }
 // ByNameNatural sorts metric naturally by name
 type ByNameNatural []*metricData
 
-var dre *regexp.Regexp
+var dre = regexp.MustCompile(`\d+`)
 
 func (s ByNameNatural) pad(str string) string {
-	if dre == nil {
-		dre, _ = regexp.Compile(`\d+`)
-	}
-
 	f := func(match []byte) []byte {
 		n, _ := strconv.ParseInt(string(match), 10, 64)
 		return []byte(fmt.Sprintf("%010d", n))
