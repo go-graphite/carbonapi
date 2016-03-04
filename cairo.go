@@ -437,44 +437,20 @@ func getStringArray(s string, def []string) []string {
 	return strs
 }
 
-func getFontItalic(s string, def cairo.FontSlant) cairo.FontSlant {
-	if def != cairo.FontSlantNormal && def != cairo.FontSlantItalic {
-		panic("invalid default font Italic specified!!!!")
-		// return cairo.FontSlantNormal
-	}
-
-	if s == "" {
-		return def
-	}
-
-	switch s {
-	case "True", "true", "1":
+func getFontItalic(s string) cairo.FontSlant {
+	if truthyBool(s) {
 		return cairo.FontSlantItalic
-	case "False", "false", "0":
-		return cairo.FontSlantNormal
 	}
 
-	return def
+	return cairo.FontSlantNormal
 }
 
-func getFontWeight(s string, def cairo.FontWeight) cairo.FontWeight {
-	if def != cairo.FontWeightBold && def != cairo.FontWeightNormal {
-		panic("invalid default font Weight specified!!!!")
-		// return cairo.FontWeightNormal
-	}
-
-	if s == "" {
-		return def
-	}
-
-	switch s {
-	case "True", "true", "1":
+func getFontWeight(s string) cairo.FontWeight {
+	if truthyBool(s) {
 		return cairo.FontWeightBold
-	case "False", "false", "0":
-		return cairo.FontWeightNormal
 	}
 
-	return def
+	return cairo.FontWeightNormal
 }
 
 func getLineMode(s string, def LineMode) LineMode {
@@ -675,8 +651,8 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 		minorLine:      string2RGBA(getString(r.FormValue("minorLine"), "grey")),
 		fontName:       getString(r.FormValue("fontName"), "Sans"),
 		fontSize:       getFloat64(r.FormValue("fontSize"), 10.0),
-		fontBold:       getFontWeight(r.FormValue("fontBold"), cairo.FontWeightNormal),
-		fontItalic:     getFontItalic(r.FormValue("fontItalic"), cairo.FontSlantNormal),
+		fontBold:       getFontWeight(r.FormValue("fontBold")),
+		fontItalic:     getFontItalic(r.FormValue("fontItalic")),
 		graphOnly:      getBool(r.FormValue("graphOnly"), false),
 		hideLegend:     getBool(r.FormValue("hideLegend"), false),
 		hideGrid:       getBool(r.FormValue("hideGrid"), false),
