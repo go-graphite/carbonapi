@@ -2183,7 +2183,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil
 		}
 
-		natSort, err := getBoolArgDefault(e, 1, false)
+		natSort, err := getBoolNamedOrPosArgDefault(e, "natural", 1, false)
 		if err != nil {
 			return nil
 		}
