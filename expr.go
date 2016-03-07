@@ -422,17 +422,32 @@ func getIntArgDefault(e *expr, n int, d int) (int, error) {
 	return int(e.args[n].val), nil
 }
 
-func getBoolArgDefault(e *expr, n int, b bool) (bool, error) {
+func getBoolNamedOrPosArgDefault(e *expr, k string, n int, b bool) (bool, error) {
 	if len(e.args) <= n {
 		return b, nil
 	}
 
-	if e.args[n].etype != etName {
+	if a := getNamedArg(e.args, k); a != nil {
+		return doGetBoolArgDefault(a, b)
+	}
+
+	return getBoolArgDefault(e, n, b)
+}
+
+func getBoolArgDefault(e *expr, n int, b bool) (bool, error) {
+	if len(e.args) <= n {
+		return b, nil
+	}
+	return doGetBoolArgDefault(e.args[n], b)
+}
+
+func doGetBoolArgDefault(e *expr, b bool) (bool, error) {
+	if e.etype != etName {
 		return false, ErrBadType
 	}
 
 	// names go into 'target'
-	switch e.args[n].target {
+	switch e.target {
 	case "False", "false":
 		return false, nil
 	case "True", "true":
@@ -473,6 +488,16 @@ func getSeriesArgs(e []*expr, from, until int32, values map[metricRequest][]*met
 	}
 
 	return args, nil
+}
+
+func getNamedArg(e []*expr, name string) *expr {
+	for _, a := range e {
+		if a.etype == etKV && a.key == name {
+			return a
+		}
+	}
+
+	return nil
 }
 
 func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData) []*metricData {
