@@ -319,11 +319,7 @@ func getStringArg(e *expr, n int) (string, error) {
 		return "", ErrMissingArgument
 	}
 
-	if e.args[n].etype != etString {
-		return "", ErrBadType
-	}
-
-	return e.args[n].valStr, nil
+	return doGetStringArgDefault(e.args[n], "")
 }
 
 func getStringArgDefault(e *expr, n int, s string) (string, error) {
@@ -331,11 +327,32 @@ func getStringArgDefault(e *expr, n int, s string) (string, error) {
 		return s, nil
 	}
 
-	if e.args[n].etype != etString {
+	return doGetStringArgDefault(e.args[n], s)
+}
+
+func getStringNamedOrPosArgDefault(e *expr, k string, n int, s string) (string, error) {
+	if len(e.args) <= n {
+		return s, nil
+	}
+
+	if a := getNamedArg(e.args, k); a != nil {
+		return doGetStringArgDefault(a, s)
+	}
+
+	return getStringArgDefault(e, n, s)
+}
+
+func doGetStringArgDefault(e *expr, s string) (string, error) {
+	if e.etype != etString {
 		return "", ErrBadType
 	}
 
-	return e.args[n].valStr, nil
+	v := e.valStr
+	if v == "" {
+		return s, nil
+	}
+
+	return v, nil
 }
 
 func getIntervalArg(e *expr, n int, defaultSign int) (int32, error) {
