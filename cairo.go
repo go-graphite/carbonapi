@@ -1320,6 +1320,10 @@ func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 		}
 	}
 
+	if yMinValue > 0 && params.drawNullAsZero && len(seriesWithMissingValues) > 0 {
+		yMinValue = 0
+	}
+
 	if yMaxValue < 0 && params.drawNullAsZero && len(seriesWithMissingValues) > 0 {
 		yMaxValue = 0
 	}
