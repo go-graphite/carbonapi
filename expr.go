@@ -29,11 +29,13 @@ const (
 	etFunc
 	etConst
 	etString
+	etKV
 )
 
 type expr struct {
 	target    string
 	etype     exprType
+	key       string
 	val       float64
 	valStr    string
 	args      []*expr
@@ -174,6 +176,30 @@ func parseArgList(e string) (string, []*expr, string, error) {
 		if err != nil {
 			return "", nil, e, err
 		}
+
+		// we now know we're parsing a key-value pair
+		if arg.etype == etName && e[0] == '=' {
+			e = e[1:]
+			argCont, eCont, errCont := parseExpr(e)
+			if errCont != nil {
+				return "", nil, eCont, errCont
+			}
+
+			if argCont.etype != etConst && argCont.etype != etName && argCont.etype != etString {
+				return "", nil, eCont, ErrBadType
+			}
+
+			arg = &expr{
+				etype:  etKV,
+				key:    arg.target,
+				val:    argCont.val,
+				valStr: argCont.valStr,
+				target: argCont.target,
+			}
+
+			e = eCont
+		}
+
 		args = append(args, arg)
 
 		if e == "" {
