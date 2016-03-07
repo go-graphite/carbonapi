@@ -250,6 +250,128 @@ func TestParseExpr(t *testing.T) {
 				argString: "metric1, -3",
 			},
 		},
+
+		{
+			"func(metric, key='value')",
+			&expr{
+				target: "func",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric"},
+					&expr{
+						etype:  etKV,
+						valStr: "value",
+						key:    "key",
+					},
+				},
+				argString: "metric, key='value'",
+			},
+		},
+		{
+			"func(metric, key=true)",
+			&expr{
+				target: "func",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric"},
+					&expr{
+						etype:  etKV,
+						key:    "key",
+						target: "true",
+					},
+				},
+				argString: "metric, key=true",
+			},
+		},
+		{
+			"func(metric, key=1)",
+			&expr{
+				target: "func",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric"},
+					&expr{
+						etype: etKV,
+						key:   "key",
+						val:   1,
+					},
+				},
+				argString: "metric, key=1",
+			},
+		},
+		{
+			"func(metric, key=0.1)",
+			&expr{
+				target: "func",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric"},
+					&expr{
+						etype: etKV,
+						key:   "key",
+						val:   0.1,
+					},
+				},
+				argString: "metric, key=0.1",
+			},
+		},
+
+		{
+			"func(metric, 1, key='value')",
+			&expr{
+				target: "func",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric"},
+					&expr{etype: etConst, val: 1},
+					&expr{
+						etype:  etKV,
+						key:    "key",
+						valStr: "value",
+					},
+				},
+				argString: "metric, 1, key='value'",
+			},
+		},
+		{
+			"func(metric, key='value', 1)",
+			&expr{
+				target: "func",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric"},
+					&expr{
+						etype:  etKV,
+						key:    "key",
+						valStr: "value",
+					},
+					&expr{etype: etConst, val: 1},
+				},
+				argString: "metric, key='value', 1",
+			},
+		},
+		{
+			"func(metric, key1='value1', key2='value2')",
+			&expr{
+				target: "func",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric"},
+					&expr{
+						etype:  etKV,
+						key:    "key1",
+						valStr: "value1",
+					},
+					&expr{
+						etype:  etKV,
+						key:    "key2",
+						valStr: "value2",
+					},
+				},
+				argString: "metric, key1='value1', key2='value2'",
+			},
+		},
+
 		{
 			`foo.{bar,baz}.qux`,
 			&expr{
