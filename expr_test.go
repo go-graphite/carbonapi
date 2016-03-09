@@ -2419,6 +2419,30 @@ func TestEvalMultipleReturns(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "mostDeviant",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric*"},
+					&expr{val: 2, etype: etConst},
+				},
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric*", 0, 1}: []*metricData{
+					makeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					makeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					makeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					makeResponse("metricD", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					makeResponse("metricE", []float64{4, 7, 7, 7, 7, 1}, 1, now32),
+				},
+			},
+			"mostDeviant",
+			map[string][]*metricData{
+				"metricB": []*metricData{makeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32)},
+				"metricE": []*metricData{makeResponse("metricE", []float64{4, 7, 7, 7, 7, 1}, 1, now32)},
+			},
+		},
+		{
+			&expr{
 				target: "pearsonClosest",
 				etype:  etFunc,
 				args: []*expr{
