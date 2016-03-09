@@ -343,7 +343,7 @@ func getStringNamedOrPosArgDefault(e *expr, k string, n int, s string) (string, 
 }
 
 func doGetStringArgDefault(e *expr, s string) (string, error) {
-	if e.etype != etString {
+	if e.etype != etString && e.etype != etKV {
 		return "", ErrBadType
 	}
 
@@ -377,11 +377,7 @@ func getFloatArg(e *expr, n int) (float64, error) {
 		return 0, ErrMissingArgument
 	}
 
-	if e.args[n].etype != etConst {
-		return 0, ErrBadType
-	}
-
-	return e.args[n].val, nil
+	return doGetFloatArgDefault(e.args[n], 0)
 }
 
 func getFloatArgDefault(e *expr, n int, v float64) (float64, error) {
@@ -389,11 +385,32 @@ func getFloatArgDefault(e *expr, n int, v float64) (float64, error) {
 		return v, nil
 	}
 
-	if e.args[n].etype != etConst {
+	return doGetFloatArgDefault(e.args[n], v)
+}
+
+func getFloatNamedOrPosArgDefault(e *expr, k string, n int, v float64) (float64, error) {
+	if len(e.args) <= n {
+		return v, nil
+	}
+
+	if a := getNamedArg(e.args, k); a != nil {
+		return doGetFloatArgDefault(a, v)
+	}
+
+	return getFloatArgDefault(e, n, v)
+}
+
+func doGetFloatArgDefault(e *expr, v float64) (float64, error) {
+	if e.etype != etConst && e.etype != etKV {
 		return 0, ErrBadType
 	}
 
-	return e.args[n].val, nil
+	f := e.val
+	if f == 0 {
+		return v, nil
+	}
+
+	return f, nil
 }
 
 func getIntArg(e *expr, n int) (int, error) {
@@ -401,11 +418,7 @@ func getIntArg(e *expr, n int) (int, error) {
 		return 0, ErrMissingArgument
 	}
 
-	if e.args[n].etype != etConst {
-		return 0, ErrBadType
-	}
-
-	return int(e.args[n].val), nil
+	return doGetIntArgDefault(e.args[n], 0)
 }
 
 func getIntArgs(e *expr, n int) ([]int, error) {
@@ -432,11 +445,32 @@ func getIntArgDefault(e *expr, n int, d int) (int, error) {
 		return d, nil
 	}
 
-	if e.args[n].etype != etConst {
+	return doGetIntArgDefault(e.args[n], d)
+}
+
+func getIntNamedOrPasArgDefault(e *expr, k string, n int, d int) (int, error) {
+	if len(e.args) <= n {
+		return d, nil
+	}
+
+	if a := getNamedArg(e.args, k); a != nil {
+		return doGetIntArgDefault(a, d)
+	}
+
+	return getIntArgDefault(e, n, d)
+}
+
+func doGetIntArgDefault(e *expr, d int) (int, error) {
+	if e.etype != etConst && e.etype != etKV {
 		return 0, ErrBadType
 	}
 
-	return int(e.args[n].val), nil
+	v := int(e.val)
+	if v == 0 {
+		return d, nil
+	}
+
+	return v, nil
 }
 
 func getBoolNamedOrPosArgDefault(e *expr, k string, n int, b bool) (bool, error) {
@@ -459,7 +493,7 @@ func getBoolArgDefault(e *expr, n int, b bool) (bool, error) {
 }
 
 func doGetBoolArgDefault(e *expr, b bool) (bool, error) {
-	if e.etype != etName {
+	if e.etype != etName && e.etype != etKV {
 		return false, ErrBadType
 	}
 
