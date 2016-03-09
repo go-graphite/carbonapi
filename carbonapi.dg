@@ -15,8 +15,12 @@ function :=
 	+node+(%repeat%(+argument+, ","))
 
 argument :=
+	+literal+
 	+metric+
 	+function+
+	+namedparam+
+
+literal :=
 	+string+
 	+common:integer+
 	+common:decimal_number+
@@ -39,6 +43,9 @@ alpha :=
 
 node :=
 	%repeat%(+alpha+)%repeat%(+word+)
+
+namedparam :=
+	+word+=+literal+
 
 %section% := variable
 
