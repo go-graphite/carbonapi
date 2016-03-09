@@ -1313,7 +1313,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil
 		}
 
-		alignToInterval, err := getBoolArgDefault(e, 2, false)
+		alignToInterval, err := getBoolNamedOrPosArgDefault(e, "alignToInterval", 2, false)
 		if err != nil {
 			return nil
 		}
@@ -1427,10 +1427,12 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		if err != nil {
 			return nil
 		}
-		keep, err := getIntArgDefault(e, 1, -1)
+
+		keep, err := getIntNamedOrPasArgDefault(e, "limit", 1, -1)
 		if err != nil {
 			return nil
 		}
+
 		var results []*metricData
 
 		for _, a := range arg {
@@ -1579,7 +1581,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		if err != nil {
 			return nil
 		}
-		base, err := getIntArgDefault(e, 1, 10)
+		base, err := getIntNamedOrPasArgDefault(e, "base", 1, 10)
 		if err != nil {
 			return nil
 		}
@@ -1813,7 +1815,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil
 		}
 
-		maxValue, err := getFloatArgDefault(e, 1, math.NaN())
+		maxValue, err := getFloatNamedOrPosArgDefault(e, "maxValue", 1, math.NaN())
 		if err != nil {
 			return nil
 		}
@@ -2004,7 +2006,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil
 		}
 
-		direction, err := getStringArgDefault(e, 3, "abs")
+		direction, err := getStringNamedOrPosArgDefault(e, "direction", 3, "abs")
 		if err != nil && len(e.args) > 3 {
 			return nil
 		}
@@ -2382,7 +2384,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil
 		}
 
-		interpolate, err := getBoolArgDefault(e, 2, false)
+		interpolate, err := getBoolNamedOrPosArgDefault(e, "interpolate", 2, false)
 		if err != nil {
 			return nil
 		}
@@ -2403,12 +2405,12 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil
 		}
 
-		summarizeFunction, err := getStringArgDefault(e, 2, "sum")
+		summarizeFunction, err := getStringNamedOrPosArgDefault(e, "func", 2, "sum")
 		if err != nil {
 			return nil
 		}
 
-		alignToFrom, err := getBoolArgDefault(e, 3, false)
+		alignToFrom, err := getBoolNamedOrPosArgDefault(e, "alignToFrom", 3, false)
 		if err != nil {
 			return nil
 		}
@@ -2554,7 +2556,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		if err != nil {
 			return nil
 		}
-		defv, err := getFloatArgDefault(e, 1, 0)
+		defv, err := getFloatNamedOrPosArgDefault(e, "default", 1, 0)
 		if err != nil {
 			return nil
 		}
@@ -2723,9 +2725,9 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil
 		}
 
-		stackName, err := getStringArg(e, 1) // get stackName
+		stackName, err := getStringNamedOrPosArgDefault(e, "stackname", 1, "__DEFAULT__")
 		if err != nil {
-			stackName = "__DEFAULT__"
+			return nil
 		}
 
 		var results []*metricData
@@ -2842,27 +2844,23 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		return []*metricData{&p}
 
-	case "threshold":
+	case "threshold": // threshold(value, label=None, color=None)
+		// XXX does not match graphite's signature
+
 		value, err := getFloatArg(e, 0)
 
 		if err != nil {
 			return nil
 		}
 
-		name := fmt.Sprintf("%g", value)
-		if len(e.args) > 1 {
-			name, err = getStringArg(e, 1)
-			if err != nil {
-				return nil
-			}
+		name, err := getStringNamedOrPosArgDefault(e, "label", 1, fmt.Sprintf("%g", value))
+		if err != nil {
+			return nil
 		}
 
-		var color string
-		if len(e.args) > 2 {
-			color, err = getStringArg(e, 2)
-			if err != nil {
-				return nil
-			}
+		color, err := getStringNamedOrPosArgDefault(e, "color", 2, "")
+		if err != nil {
+			return nil
 		}
 
 		p := metricData{
