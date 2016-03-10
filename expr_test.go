@@ -371,6 +371,27 @@ func TestParseExpr(t *testing.T) {
 				argString: "metric, key1='value1', key2='value2'",
 			},
 		},
+		{
+			"func(metric, key2='value2', key1='value1')",
+			&expr{
+				target: "func",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric"},
+					&expr{
+						etype:  etKV,
+						key:    "key2",
+						valStr: "value2",
+					},
+					&expr{
+						etype:  etKV,
+						key:    "key1",
+						valStr: "value1",
+					},
+				},
+				argString: "metric, key2='value2', key1='value1'",
+			},
+		},
 
 		{
 			`foo.{bar,baz}.qux`,
@@ -2220,10 +2241,10 @@ func TestEvalSummarize(t *testing.T) {
 				args: []*expr{
 					&expr{target: "metric1"},
 					&expr{valStr: "10min", etype: etString},
-					&expr{key: "func", valStr: "sum", etype: etKV},
 					&expr{key: "alignToFrom", target: "true", etype: etKV},
+					&expr{key: "func", valStr: "sum", etype: etKV},
 				},
-				argString: "metric1,'10min',func='sum',alignToFrom=true",
+				argString: "metric1,'10min',alignToFrom=true,func='sum'",
 			},
 			map[metricRequest][]*metricData{
 				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{
@@ -2282,6 +2303,29 @@ func TestEvalSummarize(t *testing.T) {
 			"hitcount(metric1,'1h')",
 			3600,
 			tenFiftyNine,
+			tenFiftyNine + 25*5,
+		},
+		{
+			&expr{
+				target: "hitcount",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{valStr: "1h", etype: etString},
+					&expr{target: "true", etype: etName},
+				},
+				argString: "metric1,'1h',true",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{
+					1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3,
+					3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5,
+					5}, 5, tenFiftyNine)},
+			},
+			[]float64{105, 270},
+			"hitcount(metric1,'1h',true)",
+			3600,
+			tenFiftyNine - (59 * 60),
 			tenFiftyNine + 25*5,
 		},
 		{
