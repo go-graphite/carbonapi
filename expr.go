@@ -1333,7 +1333,12 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			case 2:
 				name = fmt.Sprintf("hitcount(%s,'%s')", arg.GetName(), e.args[1].valStr)
 			case 3:
-				name = fmt.Sprintf("hitcount(%s,'%s',%s)", arg.GetName(), e.args[1].valStr, e.args[2].target)
+				name = fmt.Sprintf(
+					"hitcount(%s,'%s',%v)",
+					arg.GetName(),
+					e.args[1].valStr,
+					alignToInterval,
+				)
 			}
 
 			r := metricData{FetchResponse: pb.FetchResponse{
@@ -2430,9 +2435,20 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			case 2:
 				name = fmt.Sprintf("summarize(%s,'%s')", arg.GetName(), e.args[1].valStr)
 			case 3:
-				name = fmt.Sprintf("summarize(%s,'%s','%s')", arg.GetName(), e.args[1].valStr, e.args[2].valStr)
+				name = fmt.Sprintf(
+					"summarize(%s,'%s','%s')",
+					arg.GetName(),
+					e.args[1].valStr,
+					summarizeFunction,
+				)
 			case 4:
-				name = fmt.Sprintf("summarize(%s,'%s','%s',%s)", arg.GetName(), e.args[1].valStr, e.args[2].valStr, e.args[3].target)
+				name = fmt.Sprintf(
+					"summarize(%s,'%s','%s',%v)",
+					arg.GetName(),
+					e.args[1].valStr,
+					summarizeFunction,
+					alignToFrom,
+				)
 			}
 
 			r := metricData{FetchResponse: pb.FetchResponse{
