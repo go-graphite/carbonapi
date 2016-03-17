@@ -448,7 +448,7 @@ func getIntArgDefault(e *expr, n int, d int) (int, error) {
 	return doGetIntArgDefault(e.args[n], d)
 }
 
-func getIntNamedOrPasArgDefault(e *expr, k string, n int, d int) (int, error) {
+func getIntNamedOrPosArgDefault(e *expr, k string, n int, d int) (int, error) {
 	if len(e.args) <= n {
 		return d, nil
 	}
@@ -1433,7 +1433,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil
 		}
 
-		keep, err := getIntNamedOrPasArgDefault(e, "limit", 1, -1)
+		keep, err := getIntNamedOrPosArgDefault(e, "limit", 1, -1)
 		if err != nil {
 			return nil
 		}
@@ -1586,7 +1586,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		if err != nil {
 			return nil
 		}
-		base, err := getIntNamedOrPasArgDefault(e, "base", 1, 10)
+		base, err := getIntNamedOrPosArgDefault(e, "base", 1, 10)
 		if err != nil {
 			return nil
 		}
