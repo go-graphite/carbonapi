@@ -29,16 +29,15 @@ const (
 	etFunc
 	etConst
 	etString
-	etKV
 )
 
 type expr struct {
 	target    string
 	etype     exprType
-	key       string
 	val       float64
 	valStr    string
-	args      []*expr
+	args      []*expr // positional
+	namedArgs map[string]*expr
 	argString string
 }
 
@@ -140,9 +139,10 @@ func parseExpr(e string) (*expr, string, error) {
 	if e != "" && e[0] == '(' {
 		exp := &expr{target: name, etype: etFunc}
 
-		argString, args, e, err := parseArgList(e)
+		argString, posArgs, namedArgs, e, err := parseArgList(e)
 		exp.argString = argString
-		exp.args = args
+		exp.args = posArgs
+		exp.namedArgs = namedArgs
 
 		return exp, e, err
 	}
@@ -157,9 +157,12 @@ var (
 	ErrUnexpectedCharacter = errors.New("unexpected character")
 )
 
-func parseArgList(e string) (string, []*expr, string, error) {
+func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 
-	var args []*expr
+	var (
+		posArgs   []*expr
+		namedArgs map[string]*expr
+	)
 
 	if e[0] != '(' {
 		panic("arg list should start with paren")
@@ -174,7 +177,7 @@ func parseArgList(e string) (string, []*expr, string, error) {
 		var err error
 		arg, e, err = parseExpr(e)
 		if err != nil {
-			return "", nil, e, err
+			return "", nil, nil, e, err
 		}
 
 		// we now know we're parsing a key-value pair
@@ -182,36 +185,39 @@ func parseArgList(e string) (string, []*expr, string, error) {
 			e = e[1:]
 			argCont, eCont, errCont := parseExpr(e)
 			if errCont != nil {
-				return "", nil, eCont, errCont
+				return "", nil, nil, eCont, errCont
 			}
 
 			if argCont.etype != etConst && argCont.etype != etName && argCont.etype != etString {
-				return "", nil, eCont, ErrBadType
+				return "", nil, nil, eCont, ErrBadType
 			}
 
-			arg = &expr{
-				etype:  etKV,
-				key:    arg.target,
+			if namedArgs == nil {
+				namedArgs = make(map[string]*expr)
+			}
+
+			namedArgs[arg.target] = &expr{
+				etype:  argCont.etype,
 				val:    argCont.val,
 				valStr: argCont.valStr,
 				target: argCont.target,
 			}
 
 			e = eCont
+		} else {
+			posArgs = append(posArgs, arg)
 		}
 
-		args = append(args, arg)
-
 		if e == "" {
-			return "", nil, "", ErrMissingComma
+			return "", nil, nil, "", ErrMissingComma
 		}
 
 		if e[0] == ')' {
-			return argString[:len(argString)-len(e)], args, e[1:], nil
+			return argString[:len(argString)-len(e)], posArgs, namedArgs, e[1:], nil
 		}
 
 		if e[0] != ',' && e[0] != ' ' {
-			return "", nil, "", ErrUnexpectedCharacter
+			return "", nil, nil, "", ErrUnexpectedCharacter
 		}
 
 		e = e[1:]
@@ -331,7 +337,7 @@ func getStringArgDefault(e *expr, n int, s string) (string, error) {
 }
 
 func getStringNamedOrPosArgDefault(e *expr, k string, n int, s string) (string, error) {
-	if a := getNamedArg(e.args, k); a != nil {
+	if a := getNamedArg(e, k); a != nil {
 		return doGetStringArgDefault(a, s)
 	}
 
@@ -339,7 +345,7 @@ func getStringNamedOrPosArgDefault(e *expr, k string, n int, s string) (string, 
 }
 
 func doGetStringArgDefault(e *expr, s string) (string, error) {
-	if e.etype != etString && e.etype != etKV {
+	if e.etype != etString {
 		return "", ErrBadType
 	}
 
@@ -385,7 +391,7 @@ func getFloatArgDefault(e *expr, n int, v float64) (float64, error) {
 }
 
 func getFloatNamedOrPosArgDefault(e *expr, k string, n int, v float64) (float64, error) {
-	if a := getNamedArg(e.args, k); a != nil {
+	if a := getNamedArg(e, k); a != nil {
 		return doGetFloatArgDefault(a, v)
 	}
 
@@ -393,7 +399,7 @@ func getFloatNamedOrPosArgDefault(e *expr, k string, n int, v float64) (float64,
 }
 
 func doGetFloatArgDefault(e *expr, v float64) (float64, error) {
-	if e.etype != etConst && e.etype != etKV {
+	if e.etype != etConst {
 		return 0, ErrBadType
 	}
 
@@ -441,7 +447,7 @@ func getIntArgDefault(e *expr, n int, d int) (int, error) {
 }
 
 func getIntNamedOrPosArgDefault(e *expr, k string, n int, d int) (int, error) {
-	if a := getNamedArg(e.args, k); a != nil {
+	if a := getNamedArg(e, k); a != nil {
 		return doGetIntArgDefault(a, d)
 	}
 
@@ -449,7 +455,7 @@ func getIntNamedOrPosArgDefault(e *expr, k string, n int, d int) (int, error) {
 }
 
 func doGetIntArgDefault(e *expr, d int) (int, error) {
-	if e.etype != etConst && e.etype != etKV {
+	if e.etype != etConst {
 		return 0, ErrBadType
 	}
 
@@ -462,7 +468,7 @@ func doGetIntArgDefault(e *expr, d int) (int, error) {
 }
 
 func getBoolNamedOrPosArgDefault(e *expr, k string, n int, b bool) (bool, error) {
-	if a := getNamedArg(e.args, k); a != nil {
+	if a := getNamedArg(e, k); a != nil {
 		return doGetBoolArgDefault(a, b)
 	}
 
@@ -477,7 +483,7 @@ func getBoolArgDefault(e *expr, n int, b bool) (bool, error) {
 }
 
 func doGetBoolArgDefault(e *expr, b bool) (bool, error) {
-	if e.etype != etName && e.etype != etKV {
+	if e.etype != etName {
 		return false, ErrBadType
 	}
 
@@ -525,11 +531,9 @@ func getSeriesArgs(e []*expr, from, until int32, values map[metricRequest][]*met
 	return args, nil
 }
 
-func getNamedArg(e []*expr, name string) *expr {
-	for _, a := range e {
-		if a.etype == etKV && a.key == name {
-			return a
-		}
+func getNamedArg(e *expr, name string) *expr {
+	if a, ok := e.namedArgs[name]; ok {
+		return a
 	}
 
 	return nil
@@ -1301,6 +1305,10 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		if err != nil {
 			return nil
 		}
+		_, ok := e.namedArgs["alignToInterval"]
+		if !ok {
+			ok = len(e.args) > 2
+		}
 
 		start := args[0].GetStartTime()
 		stop := args[0].GetStopTime()
@@ -1312,18 +1320,11 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		results := make([]*metricData, 0, len(args))
 		for _, arg := range args {
 
-			var name string
-			switch len(e.args) {
-			case 2:
-				name = fmt.Sprintf("hitcount(%s,'%s')", arg.GetName(), e.args[1].valStr)
-			case 3:
-				name = fmt.Sprintf(
-					"hitcount(%s,'%s',%v)",
-					arg.GetName(),
-					e.args[1].valStr,
-					alignToInterval,
-				)
+			name := fmt.Sprintf("hitcount(%s,'%s'", arg.GetName(), e.args[1].valStr)
+			if ok {
+				name += fmt.Sprintf(",%v", alignToInterval)
 			}
+			name += ")"
 
 			r := metricData{FetchResponse: pb.FetchResponse{
 				Name:      proto.String(name),
@@ -1421,15 +1422,19 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		if err != nil {
 			return nil
 		}
+		_, ok := e.namedArgs["limit"]
+		if !ok {
+			ok = len(e.args) > 1
+		}
 
 		var results []*metricData
 
 		for _, a := range arg {
 			var name string
-			if len(e.args) == 1 {
-				name = fmt.Sprintf("keepLastValue(%s)", a.GetName())
-			} else {
+			if ok {
 				name = fmt.Sprintf("keepLastValue(%s,%d)", a.GetName(), keep)
+			} else {
+				name = fmt.Sprintf("keepLastValue(%s)", a.GetName())
 			}
 
 			r := *a
@@ -1574,6 +1579,11 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		if err != nil {
 			return nil
 		}
+		_, ok := e.namedArgs["base"]
+		if !ok {
+			ok = len(e.args) > 1
+		}
+
 		baseLog := math.Log(float64(base))
 
 		var results []*metricData
@@ -1581,10 +1591,10 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		for _, a := range arg {
 
 			var name string
-			if len(e.args) == 1 {
-				name = fmt.Sprintf("logarithm(%s)", a.GetName())
-			} else {
+			if ok {
 				name = fmt.Sprintf("logarithm(%s,%d)", a.GetName(), base)
+			} else {
+				name = fmt.Sprintf("logarithm(%s)", a.GetName())
 			}
 
 			r := *a
@@ -1808,14 +1818,18 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		if err != nil {
 			return nil
 		}
+		_, ok := e.namedArgs["maxValue"]
+		if !ok {
+			ok = len(e.args) > 1
+		}
 
 		var result []*metricData
 		for _, a := range args {
 			var name string
-			if len(e.args) == 1 {
-				name = fmt.Sprintf("nonNegativeDerivative(%s)", a.GetName())
-			} else {
+			if ok {
 				name = fmt.Sprintf("nonNegativeDerivative(%s,%g)", a.GetName(), maxValue)
+			} else {
+				name = fmt.Sprintf("nonNegativeDerivative(%s)", a.GetName())
 			}
 
 			r := *a
@@ -2398,10 +2412,18 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		if err != nil {
 			return nil
 		}
+		_, funcOk := e.namedArgs["func"]
+		if !funcOk {
+			funcOk = len(e.args) > 2
+		}
 
 		alignToFrom, err := getBoolNamedOrPosArgDefault(e, "alignToFrom", 3, false)
 		if err != nil {
 			return nil
+		}
+		_, alignOk := e.namedArgs["alignToFrom"]
+		if !alignOk {
+			alignOk = len(e.args) > 3
 		}
 
 		start := args[0].GetStartTime()
@@ -2414,26 +2436,22 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		results := make([]*metricData, 0, len(args))
 		for _, arg := range args {
 
-			var name string
-			switch len(e.args) {
-			case 2:
-				name = fmt.Sprintf("summarize(%s,'%s')", arg.GetName(), e.args[1].valStr)
-			case 3:
-				name = fmt.Sprintf(
-					"summarize(%s,'%s','%s')",
-					arg.GetName(),
-					e.args[1].valStr,
-					summarizeFunction,
-				)
-			case 4:
-				name = fmt.Sprintf(
-					"summarize(%s,'%s','%s',%v)",
-					arg.GetName(),
-					e.args[1].valStr,
-					summarizeFunction,
-					alignToFrom,
-				)
+			name := fmt.Sprintf("summarize(%s,'%s'", arg.GetName(), e.args[1].valStr)
+			if funcOk || alignOk {
+				// we include the "func" argument in the presence of
+				// "alignToFrom", even if the former was omitted
+				// this is so that a call like "summarize(foo, '5min', alignToFrom=true)"
+				// doesn't produce a metric name that has a boolean value
+				// where a function name should be
+				// so we show "summarize(foo,'5min','sum',true)" instead of "summarize(foo,'5min',true)"
+				//
+				// this does not match graphite's behaviour but seems more correct
+				name += fmt.Sprintf(",'%s'", summarizeFunction)
 			}
+			if alignOk {
+				name += fmt.Sprintf(",%v", alignToFrom)
+			}
+			name += ")"
 
 			r := metricData{FetchResponse: pb.FetchResponse{
 				Name:      proto.String(name),
@@ -2560,15 +2578,21 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		if err != nil {
 			return nil
 		}
+
+		_, ok := e.namedArgs["default"]
+		if !ok {
+			ok = len(e.args) > 1
+		}
+
 		var results []*metricData
 
 		for _, a := range arg {
 
 			var name string
-			if len(e.args) == 1 {
-				name = fmt.Sprintf("transformNull(%s)", a.GetName())
-			} else {
+			if ok {
 				name = fmt.Sprintf("transformNull(%s,%g)", a.GetName(), defv)
+			} else {
+				name = fmt.Sprintf("transformNull(%s)", a.GetName())
 			}
 
 			r := *a
