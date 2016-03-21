@@ -331,10 +331,6 @@ func getStringArgDefault(e *expr, n int, s string) (string, error) {
 }
 
 func getStringNamedOrPosArgDefault(e *expr, k string, n int, s string) (string, error) {
-	if len(e.args) <= n {
-		return s, nil
-	}
-
 	if a := getNamedArg(e.args, k); a != nil {
 		return doGetStringArgDefault(a, s)
 	}
@@ -389,10 +385,6 @@ func getFloatArgDefault(e *expr, n int, v float64) (float64, error) {
 }
 
 func getFloatNamedOrPosArgDefault(e *expr, k string, n int, v float64) (float64, error) {
-	if len(e.args) <= n {
-		return v, nil
-	}
-
 	if a := getNamedArg(e.args, k); a != nil {
 		return doGetFloatArgDefault(a, v)
 	}
@@ -449,10 +441,6 @@ func getIntArgDefault(e *expr, n int, d int) (int, error) {
 }
 
 func getIntNamedOrPosArgDefault(e *expr, k string, n int, d int) (int, error) {
-	if len(e.args) <= n {
-		return d, nil
-	}
-
 	if a := getNamedArg(e.args, k); a != nil {
 		return doGetIntArgDefault(a, d)
 	}
@@ -474,10 +462,6 @@ func doGetIntArgDefault(e *expr, d int) (int, error) {
 }
 
 func getBoolNamedOrPosArgDefault(e *expr, k string, n int, b bool) (bool, error) {
-	if len(e.args) <= n {
-		return b, nil
-	}
-
 	if a := getNamedArg(e.args, k); a != nil {
 		return doGetBoolArgDefault(a, b)
 	}
