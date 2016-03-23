@@ -325,7 +325,7 @@ func getStringArg(e *expr, n int) (string, error) {
 		return "", ErrMissingArgument
 	}
 
-	return doGetStringArgDefault(e.args[n], "")
+	return doGetStringArg(e.args[n])
 }
 
 func getStringArgDefault(e *expr, n int, s string) (string, error) {
@@ -333,28 +333,23 @@ func getStringArgDefault(e *expr, n int, s string) (string, error) {
 		return s, nil
 	}
 
-	return doGetStringArgDefault(e.args[n], s)
+	return doGetStringArg(e.args[n])
 }
 
 func getStringNamedOrPosArgDefault(e *expr, k string, n int, s string) (string, error) {
 	if a := getNamedArg(e, k); a != nil {
-		return doGetStringArgDefault(a, s)
+		return doGetStringArg(a)
 	}
 
 	return getStringArgDefault(e, n, s)
 }
 
-func doGetStringArgDefault(e *expr, s string) (string, error) {
+func doGetStringArg(e *expr) (string, error) {
 	if e.etype != etString {
 		return "", ErrBadType
 	}
 
-	v := e.valStr
-	if v == "" {
-		return s, nil
-	}
-
-	return v, nil
+	return e.valStr, nil
 }
 
 func getIntervalArg(e *expr, n int, defaultSign int) (int32, error) {
@@ -379,7 +374,7 @@ func getFloatArg(e *expr, n int) (float64, error) {
 		return 0, ErrMissingArgument
 	}
 
-	return doGetFloatArgDefault(e.args[n], 0)
+	return doGetFloatArg(e.args[n])
 }
 
 func getFloatArgDefault(e *expr, n int, v float64) (float64, error) {
@@ -387,28 +382,23 @@ func getFloatArgDefault(e *expr, n int, v float64) (float64, error) {
 		return v, nil
 	}
 
-	return doGetFloatArgDefault(e.args[n], v)
+	return doGetFloatArg(e.args[n])
 }
 
 func getFloatNamedOrPosArgDefault(e *expr, k string, n int, v float64) (float64, error) {
 	if a := getNamedArg(e, k); a != nil {
-		return doGetFloatArgDefault(a, v)
+		return doGetFloatArg(a)
 	}
 
 	return getFloatArgDefault(e, n, v)
 }
 
-func doGetFloatArgDefault(e *expr, v float64) (float64, error) {
+func doGetFloatArg(e *expr) (float64, error) {
 	if e.etype != etConst {
 		return 0, ErrBadType
 	}
 
-	f := e.val
-	if f == 0 {
-		return v, nil
-	}
-
-	return f, nil
+	return e.val, nil
 }
 
 func getIntArg(e *expr, n int) (int, error) {
@@ -416,7 +406,7 @@ func getIntArg(e *expr, n int) (int, error) {
 		return 0, ErrMissingArgument
 	}
 
-	return doGetIntArgDefault(e.args[n], 0)
+	return doGetIntArg(e.args[n])
 }
 
 func getIntArgs(e *expr, n int) ([]int, error) {
@@ -443,33 +433,28 @@ func getIntArgDefault(e *expr, n int, d int) (int, error) {
 		return d, nil
 	}
 
-	return doGetIntArgDefault(e.args[n], d)
+	return doGetIntArg(e.args[n])
 }
 
 func getIntNamedOrPosArgDefault(e *expr, k string, n int, d int) (int, error) {
 	if a := getNamedArg(e, k); a != nil {
-		return doGetIntArgDefault(a, d)
+		return doGetIntArg(a)
 	}
 
 	return getIntArgDefault(e, n, d)
 }
 
-func doGetIntArgDefault(e *expr, d int) (int, error) {
+func doGetIntArg(e *expr) (int, error) {
 	if e.etype != etConst {
 		return 0, ErrBadType
 	}
 
-	v := int(e.val)
-	if v == 0 {
-		return d, nil
-	}
-
-	return v, nil
+	return int(e.val), nil
 }
 
 func getBoolNamedOrPosArgDefault(e *expr, k string, n int, b bool) (bool, error) {
 	if a := getNamedArg(e, k); a != nil {
-		return doGetBoolArgDefault(a, b)
+		return doGetBoolArg(a)
 	}
 
 	return getBoolArgDefault(e, n, b)
@@ -479,10 +464,11 @@ func getBoolArgDefault(e *expr, n int, b bool) (bool, error) {
 	if len(e.args) <= n {
 		return b, nil
 	}
-	return doGetBoolArgDefault(e.args[n], b)
+
+	return doGetBoolArg(e.args[n])
 }
 
-func doGetBoolArgDefault(e *expr, b bool) (bool, error) {
+func doGetBoolArg(e *expr) (bool, error) {
 	if e.etype != etName {
 		return false, ErrBadType
 	}
