@@ -1973,9 +1973,9 @@ func TestEvalExpression(t *testing.T) {
 			oldValues[key] = entry
 		}
 
-		g := evalExpr(tt.e, 0, 1, tt.m)
-		if g == nil {
-			t.Errorf("failed to eval %s", tt.e.target)
+		g, err := evalExpr(tt.e, 0, 1, tt.m)
+		if err != nil {
+			t.Errorf("failed to eval %s: %s", tt.e.target, err)
 			continue
 		}
 		if len(g) != len(tt.want) {
@@ -2431,9 +2431,9 @@ func TestEvalSummarize(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		g := evalExpr(tt.e, 0, 1, tt.m)
-		if g == nil {
-			t.Errorf("failed to eval %v", tt.name)
+		g, err := evalExpr(tt.e, 0, 1, tt.m)
+		if err != nil {
+			t.Errorf("failed to eval %v: %s", tt.name, err)
 			continue
 		}
 		if g[0].GetStepTime() != tt.step {
@@ -2876,9 +2876,9 @@ func TestEvalMultipleReturns(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		g := evalExpr(tt.e, 0, 1, tt.m)
-		if g == nil {
-			t.Errorf("failed to eval %v", tt.name)
+		g, err := evalExpr(tt.e, 0, 1, tt.m)
+		if err != nil {
+			t.Errorf("failed to eval %v: %s", tt.name, err)
 			continue
 		}
 		if g[0] == nil {
@@ -3008,9 +3008,9 @@ func TestEvalCustomFromUntil(t *testing.T) {
 			oldValues[key] = entry
 		}
 
-		g := evalExpr(tt.e, tt.from, tt.until, tt.m)
-		if g == nil {
-			t.Errorf("failed to eval %v", tt.name)
+		g, err := evalExpr(tt.e, tt.from, tt.until, tt.m)
+		if err != nil {
+			t.Errorf("failed to eval %v: %s", tt.name, err)
 			continue
 		}
 		if g[0] == nil {
