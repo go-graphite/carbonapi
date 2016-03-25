@@ -417,10 +417,10 @@ func getBoolArgDefault(e *expr, n int, b bool) (bool, error) {
 }
 
 func getSeriesArg(arg *expr, from, until int32, values map[metricRequest][]*metricData) ([]*metricData, error) {
-
 	if arg.etype != etName && arg.etype != etFunc {
 		return nil, ErrMissingTimeseries
 	}
+
 	a := evalExpr(arg, from, until, values)
 
 	if len(a) == 0 {
@@ -1030,7 +1030,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		return args
 
-	case "groupByNode": // groupByNode(seriesList, nodeNum, callback)
+	case "groupByNode", "applyByNode": // groupByNode(seriesList, nodeNum, callback), applyByNode(seriesList, nodeNum, templateFunction)
 		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil
@@ -1055,6 +1055,9 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			metric := extractMetric(a.GetName())
 			nodes := strings.Split(metric, ".")
 			node := nodes[field]
+			if e.target == "applyByNode" {
+				node = strings.Join(nodes[0:field+1], ".")
+			}
 
 			groups[node] = append(groups[node], a)
 		}
@@ -1062,14 +1065,22 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		for k, v := range groups {
 			k := k // k's reference is used later, so it's important to make it unique per loop
 
+			expr := fmt.Sprintf("%s(%s)", callback, k)
+			if e.target == "applyByNode" {
+				expr = strings.Replace(callback, "%", k, -1)
+			}
+
 			// create a stub context to evaluate the callback in
-			nexpr, _, err := parseExpr(fmt.Sprintf("%s(%s)", callback, k))
+			nexpr, _, err := parseExpr(expr)
 			if err != nil {
 				return nil
 			}
 
-			nvalues := map[metricRequest][]*metricData{
-				metricRequest{k, from, until}: v,
+			nvalues := values
+			if e.target == "groupByNode" {
+				nvalues = map[metricRequest][]*metricData{
+					metricRequest{k, from, until}: v,
+				}
 			}
 
 			r := evalExpr(nexpr, from, until, nvalues)

@@ -2247,6 +2247,34 @@ func TestEvalMultipleReturns(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "applyByNode",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1.foo.*.*"},
+					&expr{val: 2, etype: etConst},
+					&expr{valStr: "sumSeries(%.baz)", etype: etString},
+				},
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1.foo.*.*", 0, 1}: []*metricData{
+					makeResponse("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
+					makeResponse("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
+				},
+				metricRequest{"metric1.foo.bar1.baz", 0, 1}: []*metricData{
+					makeResponse("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
+				},
+				metricRequest{"metric1.foo.bar2.baz", 0, 1}: []*metricData{
+					makeResponse("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
+				},
+			},
+			"applyByNode",
+			map[string][]*metricData{
+				"metric1.foo.bar1": []*metricData{makeResponse("metric1.foo.bar1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				"metric1.foo.bar2": []*metricData{makeResponse("metric1.foo.bar2", []float64{11, 12, 13, 14, 15}, 1, now32)},
+			},
+		},
+		{
+			&expr{
 				target: "sumSeriesWithWildcards",
 				etype:  etFunc,
 				args: []*expr{
