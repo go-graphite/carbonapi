@@ -1554,13 +1554,20 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return min
 		})
 
-	case "mostDeviant": // mostDeviant(n, seriesList)
-		n, err := getIntArg(e, 0)
+	case "mostDeviant": // mostDeviant(seriesList, n) -or- mostDeviant(n, seriesList)
+		var nArg int
+		if e.args[0].etype != etConst {
+			// mostDeviant(seriesList, n)
+			nArg = 1
+		}
+		seriesArg := nArg ^ 1 // XOR to make seriesArg the opposite argument. ( 0^1 -> 1 ; 1^1 -> 0 )
+
+		n, err := getIntArg(e, nArg)
 		if err != nil {
 			return nil
 		}
 
-		args, err := getSeriesArg(e.args[1], from, until, values)
+		args, err := getSeriesArg(e.args[seriesArg], from, until, values)
 		if err != nil {
 			return nil
 		}
