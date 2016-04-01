@@ -197,6 +197,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 	}
 
 	var results []*metricData
+	var errors []string
 	metricMap := make(map[metricRequest][]*metricData)
 
 	for _, target := range targets {
@@ -285,9 +286,19 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 					logger.Logf("panic during eval: %s: %s\n%s\n", cacheKey, r, string(buf[:]))
 				}
 			}()
-			exprs := evalExpr(exp, from32, until32, metricMap)
+			exprs, err := evalExpr(exp, from32, until32, metricMap)
+			if err != nil {
+				errors = append(errors, target+": "+err.Error())
+				return
+			}
 			results = append(results, exprs...)
 		}()
+	}
+
+	if len(errors) > 0 {
+		errors = append([]string{"Encountered the following errors:"}, errors...)
+		http.Error(w, strings.Join(errors, "\n"), http.StatusBadRequest)
+		return
 	}
 
 	var body []byte
