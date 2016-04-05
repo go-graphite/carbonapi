@@ -3,6 +3,8 @@ package main
 import (
 	"math"
 	"reflect"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -1973,20 +1975,33 @@ func TestEvalExpression(t *testing.T) {
 			oldValues[key] = entry
 		}
 
+		metricTargets := make([]string, len(tt.e.args))
+		for i, e := range tt.e.args {
+			switch e.etype {
+			case etName:
+				metricTargets[i] = e.target
+			case etConst:
+				metricTargets[i] = strconv.FormatFloat(e.val, 'f', -1, 64)
+			case etString:
+				metricTargets[i] = e.valStr
+			}
+		}
+
+		testName := tt.e.target + "(" + strings.Join(metricTargets, ", ") + ")"
 		g, err := evalExpr(tt.e, 0, 1, tt.m)
 		if err != nil {
-			t.Errorf("failed to eval %s: %s", tt.e.target, err)
+			t.Errorf("failed to eval %s: %s", testName, err)
 			continue
 		}
 		if len(g) != len(tt.want) {
-			t.Errorf("%s returned a different number of metrics, actual %v, want %v", tt.e.target, len(g), len(tt.want))
+			t.Errorf("%s returned a different number of metrics, actual %v, want %v", testName, len(g), len(tt.want))
 			continue
 		}
 		for key, metrics := range tt.m {
 			for i, newValue := range metrics {
 				oldValue := oldValues[key][i]
 				if !reflect.DeepEqual(oldValue, newValue) {
-					t.Errorf("%s: source data was modified key %v index %v want:\n%v\n got:\n%v", tt.e.target, key, i, oldValue, newValue)
+					t.Errorf("%s: source data was modified key %v index %v want:\n%v\n got:\n%v", testName, key, i, oldValue, newValue)
 				}
 			}
 		}
@@ -2001,10 +2016,10 @@ func TestEvalExpression(t *testing.T) {
 				t.Errorf("missing step for %+v", g)
 			}
 			if actual.GetName() != want.GetName() {
-				t.Errorf("bad name for %s metric %d: got %s, want %s", tt.e.target, i, actual.GetName(), want.GetName())
+				t.Errorf("bad name for %s metric %d: got %s, want %s", testName, i, actual.GetName(), want.GetName())
 			}
 			if !nearlyEqualMetrics(actual, want) {
-				t.Errorf("different values for %s metric %s: got %v, want %v", tt.e.target, actual.GetName(), actual.Values, want.Values)
+				t.Errorf("different values for %s metric %s: got %v, want %v", testName, actual.GetName(), actual.Values, want.Values)
 				continue
 			}
 		}
