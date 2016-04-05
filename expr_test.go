@@ -3,8 +3,6 @@ package main
 import (
 	"math"
 	"reflect"
-	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -1975,19 +1973,7 @@ func TestEvalExpression(t *testing.T) {
 			oldValues[key] = entry
 		}
 
-		metricTargets := make([]string, len(tt.e.args))
-		for i, e := range tt.e.args {
-			switch e.etype {
-			case etName:
-				metricTargets[i] = e.target
-			case etConst:
-				metricTargets[i] = strconv.FormatFloat(e.val, 'f', -1, 64)
-			case etString:
-				metricTargets[i] = e.valStr
-			}
-		}
-
-		testName := tt.e.target + "(" + strings.Join(metricTargets, ", ") + ")"
+		testName := tt.e.target + "(" + tt.e.argString + ")"
 		g, err := evalExpr(tt.e, 0, 1, tt.m)
 		if err != nil {
 			t.Errorf("failed to eval %s: %s", testName, err)
