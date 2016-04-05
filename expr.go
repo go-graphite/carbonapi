@@ -893,10 +893,6 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		})
 
 	case "diffSeries": // diffSeries(*seriesLists)
-		if len(e.args) < 2 {
-			return nil, ErrMissingTimeseries
-		}
-
 		minuend, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
@@ -904,7 +900,11 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		subtrahends, err := getSeriesArgs(e.args[1:], from, until, values)
 		if err != nil {
-			return nil, err
+			if len(minuend) < 2 {
+				return nil, err
+			}
+			subtrahends = minuend[1:]
+			err = nil
 		}
 
 		// FIXME: need more error checking on minuend, subtrahends here
