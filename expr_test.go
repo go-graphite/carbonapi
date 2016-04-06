@@ -1117,6 +1117,25 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "rangeOfSeries",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric*"},
+				},
+				argString: "metric*",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric*", 0, 1}: []*metricData{
+					makeResponse("metric1", []float64{math.NaN(), math.NaN(), math.NaN(), 3, 4, 12, -10}, 1, now32),
+					makeResponse("metric2", []float64{2, math.NaN(), math.NaN(), 15, 0, 6, 10}, 1, now32),
+					makeResponse("metric3", []float64{1, 2, math.NaN(), 4, 5, 6, 7}, 1, now32),
+				},
+			},
+			[]*metricData{makeResponse("rangeOfSeries(metric*)",
+				[]float64{1, math.NaN(), math.NaN(), 12, 5, 6, 20}, 1, now32)},
+		},
+		{
+			&expr{
 				target: "transformNull",
 				etype:  etFunc,
 				args: []*expr{
