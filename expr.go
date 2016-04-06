@@ -931,6 +931,43 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			r.Values[i] = v - sub
 		}
 		return []*metricData{&r}, err
+	case "rangeOfSeries": // rangeOfSeries(*seriesLists)
+		series, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		r := *series[0]
+		r.Name = proto.String(fmt.Sprintf("%s(%s)", e.target, e.argString))
+		r.Values = make([]float64, len(series[0].Values))
+		r.IsAbsent = make([]bool, len(series[0].Values))
+
+		for i, _ := range series[0].Values {
+			var min, max float64
+			count := 0
+			for _, s := range series {
+				if s.IsAbsent[i] {
+					continue
+				}
+
+				if count == 0 {
+					min = s.Values[i]
+					max = s.Values[i]
+				} else {
+					min = math.Min(min, s.Values[i])
+					max = math.Max(max, s.Values[i])
+				}
+
+				count++
+			}
+
+			if count >= 2 {
+				r.Values[i] = max - min
+			} else {
+				r.IsAbsent[i] = true
+			}
+		}
+		return []*metricData{&r}, err
 
 	case "divideSeries": // divideSeries(dividendSeriesList, divisorSeriesList)
 		if len(e.args) < 1 {
