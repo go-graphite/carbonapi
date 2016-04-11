@@ -3180,7 +3180,7 @@ type seriesFunc func(*metricData, *metricData) *metricData
 func forEachSeriesDo(e *expr, from, until int32, values map[metricRequest][]*metricData, function seriesFunc) ([]*metricData, error) {
 	arg, err := getSeriesArg(e.args[0], from, until, values)
 	if err != nil {
-		return nil, ErrMissingTimeseries
+		return nil, err
 	}
 	var results []*metricData
 
