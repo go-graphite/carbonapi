@@ -287,7 +287,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 				}
 			}()
 			exprs, err := evalExpr(exp, from32, until32, metricMap)
-			if err != nil {
+			if err != nil && err != ErrSeriesDoesNotExist {
 				errors = append(errors, target+": "+err.Error())
 				return
 			}
