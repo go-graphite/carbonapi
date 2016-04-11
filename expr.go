@@ -315,9 +315,10 @@ func parseString(s string) (string, string, error) {
 }
 
 var (
-	ErrBadType           = errors.New("bad type")
-	ErrMissingArgument   = errors.New("missing argument")
-	ErrMissingTimeseries = errors.New("missing time series")
+	ErrBadType            = errors.New("bad type")
+	ErrMissingArgument    = errors.New("missing argument")
+	ErrMissingTimeseries  = errors.New("missing time series argument")
+	ErrSeriesDoesNotExist = errors.New("no timeseries with that name")
 )
 
 func getStringArg(e *expr, n int) (string, error) {
@@ -492,7 +493,7 @@ func getSeriesArg(arg *expr, from, until int32, values map[metricRequest][]*metr
 	a, _ := evalExpr(arg, from, until, values)
 
 	if len(a) == 0 {
-		return nil, ErrMissingTimeseries
+		return nil, ErrSeriesDoesNotExist
 	}
 
 	return a, nil
@@ -511,7 +512,7 @@ func getSeriesArgs(e []*expr, from, until int32, values map[metricRequest][]*met
 	}
 
 	if len(args) == 0 {
-		return nil, ErrMissingTimeseries
+		return nil, ErrSeriesDoesNotExist
 	}
 
 	return args, nil
