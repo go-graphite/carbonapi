@@ -351,8 +351,13 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	switch format {
 	case "treejson", "json":
 		b, err = findTreejson(globs)
+		format = "json"
 	case "completer":
 		b, err = findCompleter(globs)
+		format = "json"
+	case "raw":
+		b, err = findList(globs)
+		format = "raw"
 	}
 
 	if err != nil {
@@ -360,7 +365,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeResponse(w, b, "json", jsonp)
+	writeResponse(w, b, format, jsonp)
 }
 
 type completer struct {
@@ -400,6 +405,23 @@ func findCompleter(globs pb.GlobResponse) ([]byte, error) {
 		Metrics: complete},
 	)
 	return b.Bytes(), err
+}
+
+func findList(globs pb.GlobResponse) ([]byte, error) {
+	var b bytes.Buffer
+
+	for _, g := range globs.GetMatches() {
+
+		var dot string
+		// make sure non-leaves end in one dot
+		if !g.GetIsLeaf() && !strings.HasSuffix(g.GetPath(), ".") {
+			dot = "."
+		}
+
+		fmt.Fprintln(&b, g.GetPath()+dot)
+	}
+
+	return b.Bytes(), nil
 }
 
 type treejson struct {
