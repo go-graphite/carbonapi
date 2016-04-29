@@ -41,6 +41,9 @@ var Config = struct {
 	TimeoutMs                int
 	TimeoutMsAfterAllStarted int
 
+	SearchBackend string
+	SearchPrefix  string
+
 	GraphiteHost string
 
 	pathCache pathCache
@@ -67,6 +70,8 @@ var Metrics = struct {
 	FindRequests *expvar.Int
 	FindErrors   *expvar.Int
 
+	SearchRequests *expvar.Int
+
 	RenderRequests *expvar.Int
 	RenderErrors   *expvar.Int
 
@@ -80,6 +85,8 @@ var Metrics = struct {
 }{
 	FindRequests: expvar.NewInt("find_requests"),
 	FindErrors:   expvar.NewInt("find_errors"),
+
+	SearchRequests: expvar.NewInt("search_requests"),
 
 	RenderRequests: expvar.NewInt("render_requests"),
 	RenderErrors:   expvar.NewInt("render_errors"),
@@ -294,38 +301,62 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 
 	Metrics.FindRequests.Add(1)
 
+	queries := []string{req.FormValue("query")}
+
 	rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
 	v := rewrite.Query()
 	format := req.FormValue("format")
 	v.Set("format", "protobuf")
 	rewrite.RawQuery = v.Encode()
 
-	query := req.FormValue("query")
-	var tld string
-	if i := strings.IndexByte(query, '.'); i > 0 {
-		tld = query[:i]
-	}
-	// lookup tld in our map of where they live to reduce the set of
-	// servers we bug with our find
-	var backends []string
-	var ok bool
-	if backends, ok = Config.pathCache.get(tld); !ok || backends == nil || len(backends) == 0 {
-		backends = Config.Backends
+	if strings.HasPrefix(queries[0], Config.SearchPrefix) {
+		Metrics.SearchRequests.Add(1)
+		// Send query to SearchBackend. The result is []queries for StorageBackends
+		searchResponse := multiGet([]string{Config.SearchBackend}, rewrite.RequestURI())
+		m, _ := findUnpackPB(req, searchResponse)
+		queries = make([]string, 0, len(m))
+		for _, v := range m {
+			queries = append(queries, *v.Path)
+		}
 	}
 
-	responses := multiGet(backends, rewrite.RequestURI())
+	var metrics []*pb.GlobMatch
+	// TODO(nnuss): Rewrite the result queries to a series of brace expansions based on TLD?
+	// [a.b, a.c, a.dee.eee.eff, x.y] => [ "a.{b,c,dee.eee.eff}", "x.y" ]
+	// Be mindful that carbonserver's default MaxGlobs is 10
+	for _, query := range queries {
 
-	if len(responses) == 0 {
-		logger.Logln("find: error querying backends for: ", rewrite.RequestURI())
-		http.Error(w, "find: error querying backends", http.StatusInternalServerError)
-		return
-	}
+		v.Set("query", query)
+		rewrite.RawQuery = v.Encode()
 
-	metrics, paths := findUnpackPB(req, responses)
+		var tld string
+		if i := strings.IndexByte(query, '.'); i > 0 {
+			tld = query[:i]
+		}
 
-	// update our cache of which servers have which metrics
-	for k, v := range paths {
-		Config.pathCache.set(k, v)
+		// lookup tld in our map of where they live to reduce the set of
+		// servers we bug with our find
+		var backends []string
+		var ok bool
+		if backends, ok = Config.pathCache.get(tld); !ok || backends == nil || len(backends) == 0 {
+			backends = Config.Backends
+		}
+
+		responses := multiGet(backends, rewrite.RequestURI())
+
+		if len(responses) == 0 {
+			logger.Logln("find: error querying backends for: ", rewrite.RequestURI())
+			http.Error(w, "find: error querying backends", http.StatusInternalServerError)
+			return
+		}
+
+		m, paths := findUnpackPB(req, responses)
+		metrics = append(metrics, m...)
+
+		// update our cache of which servers have which metrics
+		for k, v := range paths {
+			Config.pathCache.set(k, v)
+		}
 	}
 
 	switch format {
