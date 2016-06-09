@@ -534,6 +534,7 @@ func main() {
 	logdir := flag.String("logdir", "/var/log/carbonapi/", "logging directory")
 	logtostdout := flag.Bool("stdout", false, "log also to stdout")
 	interval := flag.Duration("i", 60*time.Second, "interval to report internal statistics to graphite")
+	idleconns := flag.Int("idleconns", 10, "max idle connections")
 
 	flag.Parse()
 
@@ -561,7 +562,8 @@ func main() {
 		z: *z,
 		client: &http.Client{
 			Transport: &http.Transport{
-				MaxIdleConnsPerHost: *l / 2},
+				MaxIdleConnsPerHost: *idleconns,
+			},
 		},
 	}
 
