@@ -691,8 +691,11 @@ func main() {
 		*interval = time.Duration(Config.IntervalSec) * time.Second
 	}
 
-	// set up our logging
-	mlog.SetOutput(*logdir, "carbonzipper", *logtostdout)
+	if *logdir == "" {
+		mlog.SetRawStream(os.Stdout)
+	} else {
+		mlog.SetOutput(*logdir, "carbonzipper", *logtostdout)
+	}
 
 	logger = mlog.Level(*debugLevel)
 	logger.Logln("starting carbonzipper", BuildVersion)

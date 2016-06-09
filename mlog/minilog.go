@@ -32,6 +32,11 @@ func SetOutput(logdir, service string, stdout bool) {
 	}
 }
 
+func SetRawStream(w io.Writer) {
+	log.SetFlags(0)
+	log.SetOutput(w)
+}
+
 func (ll Level) Debugf(format string, a ...interface{}) {
 	if ll >= Debug {
 		log.Printf(format, a...)
