@@ -538,7 +538,11 @@ func main() {
 
 	flag.Parse()
 
-	mlog.SetOutput(*logdir, "carbonapi", *logtostdout)
+	if *logdir == "" {
+		mlog.SetRawStream(os.Stdout)
+	} else {
+		mlog.SetOutput(*logdir, "carbonapi", *logtostdout)
+	}
 
 	expvar.NewString("BuildVersion").Set(BuildVersion)
 	logger.Logln("starting carbonapi", BuildVersion)
