@@ -27,7 +27,8 @@ type metricData struct {
 	stacked        bool
 	stackName      string
 
-	aggregatedValues []float64
+	aggregatedValues  []float64
+	aggregateFunction func([]float64, []bool) float64
 }
 
 func marshalCSV(results []*metricData) []byte {
@@ -184,4 +185,95 @@ func marshalRaw(results []*metricData) []byte {
 		b = append(b, '\n')
 	}
 	return b
+}
+
+func (r *metricData) AggregatedTimeStep() int32 {
+	if r.valuesPerPoint == 1 || r.valuesPerPoint == 0 {
+		return r.GetStepTime()
+	}
+
+	return r.GetStepTime() * int32(r.valuesPerPoint)
+}
+
+func (r *metricData) AggregatedValues() []float64 {
+	if r.aggregatedValues != nil {
+		return r.aggregatedValues
+	}
+
+	if r.valuesPerPoint == 1 || r.valuesPerPoint == 0 {
+		v := make([]float64, len(r.Values))
+		for i, vv := range r.Values {
+			if r.IsAbsent[i] {
+				vv = math.NaN()
+			}
+			v[i] = vv
+		}
+
+		r.aggregatedValues = v
+		return r.aggregatedValues
+	}
+
+	if r.aggregateFunction == nil {
+		r.aggregateFunction = aggMean
+	}
+
+	agg := make([]float64, 0, len(r.Values)/r.valuesPerPoint+1)
+
+	v := r.Values
+	absent := r.IsAbsent
+
+	for len(v) >= r.valuesPerPoint {
+		agg = append(agg, r.aggregateFunction(v[:r.valuesPerPoint], absent[:r.valuesPerPoint]))
+		v = v[r.valuesPerPoint:]
+		absent = absent[r.valuesPerPoint:]
+	}
+
+	if len(v) > 0 {
+		agg = append(agg, r.aggregateFunction(v, absent))
+	}
+
+	r.aggregatedValues = agg
+	return r.aggregatedValues
+}
+
+func aggMean(v []float64, absent []bool) float64 {
+	var sum float64
+	var n int
+	for i, vv := range v {
+		if !math.IsNaN(vv) && !absent[i] {
+			sum += vv
+			n++
+		}
+	}
+	return sum / float64(n)
+}
+
+func aggMax(v []float64, absent []bool) float64 {
+	var m float64 = math.Inf(-1)
+	for i, vv := range v {
+		if !math.IsNaN(vv) && !absent[i] && m < vv {
+			m = vv
+		}
+	}
+	return m
+}
+
+func aggMin(v []float64, absent []bool) float64 {
+	var m float64 = math.Inf(1)
+	for i, vv := range v {
+		if !math.IsNaN(vv) && !absent[i] && m > vv {
+			m = vv
+		}
+	}
+	return m
+}
+
+func aggSum(v []float64, absent []bool) float64 {
+	var sum float64
+	for i, vv := range v {
+		if !math.IsNaN(vv) && !absent[i] {
+			sum += vv
+		}
+	}
+	return sum
 }

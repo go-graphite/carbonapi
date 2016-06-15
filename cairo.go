@@ -2454,69 +2454,6 @@ func hexToRGBA(h string) color.RGBA {
 	return color.RGBA{r, g, b, alpha}
 }
 
-func (r *metricData) AggregatedTimeStep() int32 {
-	if r.valuesPerPoint == 1 || r.valuesPerPoint == 0 {
-		return r.GetStepTime()
-	}
-
-	return r.GetStepTime() * int32(r.valuesPerPoint)
-}
-
-func (r *metricData) AggregatedValues() []float64 {
-	if r.aggregatedValues != nil {
-		return r.aggregatedValues
-	}
-
-	if r.valuesPerPoint == 1 || r.valuesPerPoint == 0 {
-		v := make([]float64, len(r.Values))
-		for i, vv := range r.Values {
-			if r.IsAbsent[i] {
-				vv = math.NaN()
-			}
-			v[i] = vv
-		}
-
-		r.aggregatedValues = v
-		return r.aggregatedValues
-	}
-
-	avg := make([]float64, 0, len(r.Values)/r.valuesPerPoint+1)
-
-	v := r.Values
-	absent := r.IsAbsent
-
-	for len(v) >= r.valuesPerPoint {
-		var sum float64
-		var n int
-		for i := 0; i < r.valuesPerPoint; i++ {
-			if !math.IsNaN(v[i]) && !absent[i] {
-				sum += v[i]
-				n++
-			}
-		}
-		v = v[r.valuesPerPoint:]
-		absent = absent[r.valuesPerPoint:]
-		avg = append(avg, sum/float64(n))
-	}
-
-	if len(v) > 0 {
-		var sum float64
-		var n int
-		for len(v) > 0 {
-			if !math.IsNaN(v[0]) && !absent[0] {
-				sum += v[0]
-				n++
-			}
-			v = v[1:]
-			absent = absent[1:]
-		}
-		avg = append(avg, sum/float64(n))
-	}
-
-	r.aggregatedValues = avg
-	return r.aggregatedValues
-}
-
 type ByStacked []*metricData
 
 func (b ByStacked) Len() int { return len(b) }
