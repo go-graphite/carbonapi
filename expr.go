@@ -2888,6 +2888,41 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		return []*metricData{&p}, nil
 
+	case "consolidateBy":
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+		name, err := getStringArg(e, 1)
+		if err != nil {
+			return nil, err
+		}
+
+		var results []*metricData
+
+		for _, a := range arg {
+			r := *a
+
+			var f func([]float64, []bool) float64
+
+			switch name {
+			case "max":
+				f = aggMax
+			case "min":
+				f = aggMin
+			case "sum":
+				f = aggSum
+			case "average":
+				f = aggMean
+			}
+
+			r.aggregateFunction = f
+
+			results = append(results, &r)
+		}
+
+		return results, nil
+
 	case "timeFunction", "time":
 		name, err := getStringArg(e, 0)
 		if err != nil {
