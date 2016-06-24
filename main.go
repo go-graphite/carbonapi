@@ -110,7 +110,7 @@ func doProbe() {
 
 	responses := multiGet(Config.Backends, query)
 
-	if responses == nil || len(responses) == 0 {
+	if len(responses) == 0 {
 		return
 	}
 
@@ -305,7 +305,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 
 	responses := multiGet(backends, rewrite.RequestURI())
 
-	if responses == nil || len(responses) == 0 {
+	if len(responses) == 0 {
 		logger.Logln("find: error querying backends for: ", rewrite.RequestURI())
 		http.Error(w, "find: error querying backends", http.StatusInternalServerError)
 		return
@@ -379,7 +379,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 
 	responses := multiGet(serverList, rewrite.RequestURI())
 
-	if responses == nil || len(responses) == 0 {
+	if len(responses) == 0 {
 		logger.Logln("render: error querying backends for:", req.URL.RequestURI(), "backends:", serverList)
 		http.Error(w, "render: error querying backends", http.StatusInternalServerError)
 		Metrics.RenderErrors.Add(1)
@@ -586,7 +586,7 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 
 	responses := multiGet(serverList, rewrite.RequestURI())
 
-	if responses == nil || len(responses) == 0 {
+	if len(responses) == 0 {
 		logger.Logln("info: error querying backends for:", req.URL.RequestURI(), "backends:", serverList)
 		http.Error(w, "info: error querying backends", http.StatusInternalServerError)
 		Metrics.InfoErrors.Add(1)
