@@ -278,6 +278,12 @@ func findUnpackPB(req *http.Request, responses []serverResponse) ([]*pb.GlobMatc
 	return metrics, paths
 }
 
+const (
+	contentTypeJSON     = "application/json"
+	contentTypeProtobuf = "application/x-protobuf"
+	contentTypePickle   = "application/pickle"
+)
+
 func findHandler(w http.ResponseWriter, req *http.Request) {
 
 	logger.Debugln("request: ", req.URL.RequestURI())
@@ -320,7 +326,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 
 	switch format {
 	case "protobuf":
-		w.Header().Set("Content-Type", "application/protobuf")
+		w.Header().Set("Content-Type", contentTypeProtobuf)
 		var result pb.GlobResponse
 		query := req.FormValue("query")
 		result.Name = &query
@@ -328,11 +334,11 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		b, _ := result.Marshal()
 		w.Write(b)
 	case "json":
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", contentTypeJSON)
 		jEnc := json.NewEncoder(w)
 		jEnc.Encode(metrics)
 	case "", "pickle":
-		w.Header().Set("Content-Type", "application/pickle")
+		w.Header().Set("Content-Type", contentTypePickle)
 
 		var result []map[string]interface{}
 
@@ -397,19 +403,19 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 
 	switch format {
 	case "protobuf":
-		w.Header().Set("Content-Type", "application/protobuf")
+		w.Header().Set("Content-Type", contentTypeProtobuf)
 		b, _ := metrics.Marshal()
 		w.Write(b)
 
 	case "json":
 		presponse := createRenderResponse(metrics, nil)
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", contentTypeJSON)
 		e := json.NewEncoder(w)
 		e.Encode(presponse)
 
 	case "", "pickle":
 		presponse := createRenderResponse(metrics, pickle.None{})
-		w.Header().Set("Content-Type", "application/pickle")
+		w.Header().Set("Content-Type", contentTypePickle)
 		e := pickle.NewEncoder(w)
 		e.Encode(presponse)
 	}
@@ -597,7 +603,7 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 
 	switch format {
 	case "protobuf":
-		w.Header().Set("Content-Type", "application/protobuf")
+		w.Header().Set("Content-Type", contentTypeProtobuf)
 		var result pb.ZipperInfoResponse
 		result.Responses = make([]*pb.ServerInfoResponse, len(infos))
 		for s, i := range infos {
@@ -609,7 +615,7 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 		b, _ := result.Marshal()
 		w.Write(b)
 	case "", "json":
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", contentTypeJSON)
 		jEnc := json.NewEncoder(w)
 		jEnc.Encode(infos)
 	}
