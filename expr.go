@@ -779,6 +779,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 		var results []*metricData
 
+		nodeList := []string{}
 		groups := make(map[string][]*metricData)
 
 		for _, a := range args {
@@ -796,10 +797,15 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 			node := strings.Join(s, ".")
 
+			if len(groups[node]) == 0 {
+				nodeList = append(nodeList, node)
+			}
+
 			groups[node] = append(groups[node], a)
 		}
 
-		for series, args := range groups {
+		for _, series := range nodeList {
+			args := groups[series]
 			r := *args[0]
 			r.Name = proto.String(fmt.Sprintf("averageSeriesWithWildcards(%s)", series))
 			r.Values = make([]float64, len(args[0].Values))
@@ -1174,6 +1180,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		var results []*metricData
 
 		groups := make(map[string][]*metricData)
+		nodeList := []string{}
 
 		for _, a := range args {
 
@@ -1184,11 +1191,16 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 				node = strings.Join(nodes[0:field+1], ".")
 			}
 
+			if len(groups[node]) == 0 {
+				nodeList = append(nodeList, node)
+			}
+
 			groups[node] = append(groups[node], a)
 		}
 
-		for k, v := range groups {
+		for _, k := range nodeList {
 			k := k // k's reference is used later, so it's important to make it unique per loop
+			v := groups[k]
 
 			expr := fmt.Sprintf("%s(%s)", callback, k)
 			if e.target == "applyByNode" {
