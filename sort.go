@@ -100,7 +100,13 @@ func ByExample(metrics []*metricData, part int, examples []string) sort.Interfac
 }
 
 func sortMetrics(metrics []*metricData, mfetch metricRequest) {
+	// Don't do any work if there are no globs in the metric name
+	if !strings.ContainsAny(mfetch.metric, "*?[{") {
+		return false
+	}
 	parts := strings.Split(mfetch.metric, ".")
+	// Proceed backwards by segments, sorting once for each segment that has a glob that calls for sorting.
+	// By using a stable sort, the rightmost segments will be preserved as "sub-sorts" of any more leftward segments.
 	for i := len(parts) - 1; i >= 0; i-- {
 		if strings.ContainsAny(parts[i], "*?[") {
 			sort.Stable(AlphabeticallyByPart(metrics, i))
