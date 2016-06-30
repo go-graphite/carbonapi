@@ -102,7 +102,7 @@ func ByExample(metrics []*metricData, part int, examples []string) sort.Interfac
 func sortMetrics(metrics []*metricData, mfetch metricRequest) {
 	// Don't do any work if there are no globs in the metric name
 	if !strings.ContainsAny(mfetch.metric, "*?[{") {
-		return false
+		return
 	}
 	parts := strings.Split(mfetch.metric, ".")
 	// Proceed backwards by segments, sorting once for each segment that has a glob that calls for sorting.
