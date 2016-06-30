@@ -1,6 +1,7 @@
 package main
 
 import (
+	"path/filepath"
 	"sort"
 	"strings"
 )
@@ -26,9 +27,9 @@ func (b byPartBase) Swap(i, j int) {
 	b.keys[i], b.keys[j] = b.keys[j], b.keys[i]
 }
 
-func getPart(metric *metricData, part int) *string {
+func getPart(metric *metricData, part int) string {
 	parts := strings.Split(metric.GetName(), ".")
-	return &parts[part]
+	return parts[part]
 }
 
 // Given two indices, i and j, and a comparator function that returns whether
@@ -37,10 +38,12 @@ func getPart(metric *metricData, part int) *string {
 // suitable for use as the Less() method of a sort.Interface.
 func (b byPartBase) compareBy(i, j int, comparator func(string, string) bool) bool {
 	if b.keys[i] == nil {
-		b.keys[i] = getPart(b.metrics[i], b.part)
+		part := getPart(b.metrics[i], b.part)
+		b.keys[i] = &part
 	}
 	if b.keys[j] == nil {
-		b.keys[j] = getPart(b.metrics[j], b.part)
+		part := getPart(b.metrics[j], b.part)
+		b.keys[j] = &part
 	}
 	return comparator(*b.keys[i], *b.keys[j])
 }
@@ -70,32 +73,41 @@ func AlphabeticallyByPart(metrics []*metricData, part int) sort.Interface {
 	return byPartAlphabetical{ByPart(metrics, part)}
 }
 
-// type for sorting a list of metrics 'by example' (a la perl Sort::ByExample)
-// strings in the examples list sort in the order they appear in that list, while
-// any strings not in the list sort at the end.
-type byPartExample struct {
-	byPartBase
-	order map[string]int
-}
-
-func (b byPartExample) Less(i, j int) bool {
-	return b.compareBy(i, j, func(first, second string) bool {
-		return b.order[first] < b.order[second]
-	})
-}
-
-// returns a byPartExample that will sort 'metrics', using the 'part'th part, with
-// 'examples' as a list of examples to sort by.
-func ByExample(metrics []*metricData, part int, examples []string) sort.Interface {
-	order := map[string]int{}
-	for i, example := range examples {
-		// make them range from -n through -1, so that 0 (not found) will be last
-		order[example] = i - len(examples)
+func sortByBraces(metrics []*metricData, part int, pattern string) {
+	bStart := strings.IndexRune(pattern, '{')
+	bEnd := strings.IndexRune(pattern, '}')
+	if bStart == -1 || bEnd <= bStart {
+		return
 	}
 
-	return byPartExample{
-		byPartBase: ByPart(metrics, part),
-		order:      order,
+	parts := make([]string, len(metrics))
+	for i, metric := range metrics {
+		parts[i] = getPart(metric, part)
+	}
+	src := make([]*metricData, len(metrics))
+	used := make([]bool, len(metrics))
+	copy(src, metrics)
+	j := 0
+
+	alternatives := strings.Split(pattern[bStart+1:bEnd], ",")
+	for _, alternative := range alternatives {
+		glob := pattern[:bStart] + alternative + pattern[bEnd+1:]
+		for i := 0; i < len(src); i++ {
+			if used[i] {
+				continue
+			}
+			if match, _ := filepath.Match(glob, parts[i]); match {
+				metrics[j] = src[i]
+				j = j + 1
+				used[i] = true
+			}
+		}
+	}
+	for i, metric := range src { // catch any leftovers
+		if !used[i] {
+			metrics[j] = metric
+			j = j + 1
+		}
 	}
 }
 
@@ -108,8 +120,11 @@ func sortMetrics(metrics []*metricData, mfetch metricRequest) {
 	// Proceed backwards by segments, sorting once for each segment that has a glob that calls for sorting.
 	// By using a stable sort, the rightmost segments will be preserved as "sub-sorts" of any more leftward segments.
 	for i := len(parts) - 1; i >= 0; i-- {
-		if strings.ContainsAny(parts[i], "*?[") {
+		if strings.ContainsAny(parts[i], "*?[{") {
 			sort.Stable(AlphabeticallyByPart(metrics, i))
+		}
+		if strings.ContainsRune(parts[i], '{') {
+			sortByBraces(metrics, i, parts[i])
 		}
 	}
 }
