@@ -531,6 +531,8 @@ var (
 	ErrTooManyArguments   = errors.New("too many arguments")
 )
 
+var backref = regexp.MustCompile(`\\(\d+)`)
+
 func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData) ([]*metricData, error) {
 
 	switch e.etype {
@@ -642,6 +644,8 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		if err != nil {
 			return nil, err
 		}
+
+		replace = backref.ReplaceAllString(replace, "$${$1}")
 
 		var results []*metricData
 

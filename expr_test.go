@@ -890,6 +890,22 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "aliasSub",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1.TCP100"},
+					&expr{valStr: "^.*TCP(\\d+)", etype: etString},
+					&expr{valStr: "\\1", etype: etString},
+				},
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1.TCP100", 0, 1}: []*metricData{makeResponse("metric1.TCP100", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			},
+			[]*metricData{makeResponse("100",
+				[]float64{1, 2, 3, 4, 5}, 1, now32)},
+		},
+		{
+			&expr{
 				target: "derivative",
 				etype:  etFunc,
 				args: []*expr{
