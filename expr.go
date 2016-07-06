@@ -1329,7 +1329,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			}
 		}
 
-		results = make([]*metricData, n)
+		results = make([]*metricData, len(mh))
 
 		// results should be ordered ascending
 		for len(mh) > 0 {
