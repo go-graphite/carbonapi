@@ -1733,7 +1733,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			}
 		}
 
-		results := make([]*metricData, n)
+		results := make([]*metricData, len(mh))
 
 		for len(mh) > 0 {
 			v := heap.Pop(&mh).(metricHeapElement)
