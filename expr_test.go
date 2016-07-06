@@ -1246,6 +1246,33 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "highestCurrent",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{val: 4, etype: etConst},
+				},
+				argString: "metric1,4",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{
+					makeResponse("metric0", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
+					makeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
+					makeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					makeResponse("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
+				},
+			},
+			[]*metricData{
+				makeResponse("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
+				makeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
+				makeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+				//NOTE(nnuss): highest* functions filter null-valued series as a side-effect when `n` >= number of series
+				//TODO(nnuss): bring lowest* functions into harmony with this side effect or get rid of it
+				//makeResponse("metric0", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
+			},
+		},
+		{
+			&expr{
 				target: "highestAverage",
 				etype:  etFunc,
 				args: []*expr{
