@@ -2572,6 +2572,54 @@ func TestEvalMultipleReturns(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "groupByNode",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1.foo.*.*"},
+					&expr{val: 3, etype: etConst},
+					&expr{valStr: "sum", etype: etString},
+				},
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1.foo.*.*", 0, 1}: []*metricData{
+					makeResponse("metric1.foo.bar1.01", []float64{1, 2, 3, 4, 5}, 1, now32),
+					makeResponse("metric1.foo.bar1.10", []float64{6, 7, 8, 9, 10}, 1, now32),
+					makeResponse("metric1.foo.bar2.01", []float64{11, 12, 13, 14, 15}, 1, now32),
+					makeResponse("metric1.foo.bar2.10", []float64{7, 8, 9, 10, 11}, 1, now32),
+				},
+			},
+			"groupByNode_names_with_int",
+			map[string][]*metricData{
+				"01": []*metricData{makeResponse("01", []float64{12, 14, 16, 18, 20}, 1, now32)},
+				"10": []*metricData{makeResponse("10", []float64{13, 15, 17, 19, 21}, 1, now32)},
+			},
+		},
+		{
+			&expr{
+				target: "groupByNode",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1.foo.*.*"},
+					&expr{val: 3, etype: etConst},
+					&expr{valStr: "sum", etype: etString},
+				},
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1.foo.*.*", 0, 1}: []*metricData{
+					makeResponse("metric1.foo.bar1.127_0_0_1:2003", []float64{1, 2, 3, 4, 5}, 1, now32),
+					makeResponse("metric1.foo.bar1.127_0_0_1:2004", []float64{6, 7, 8, 9, 10}, 1, now32),
+					makeResponse("metric1.foo.bar2.127_0_0_1:2003", []float64{11, 12, 13, 14, 15}, 1, now32),
+					makeResponse("metric1.foo.bar2.127_0_0_1:2004", []float64{7, 8, 9, 10, 11}, 1, now32),
+				},
+			},
+			"groupByNode_names_with_colons",
+			map[string][]*metricData{
+				"127_0_0_1:2003": []*metricData{makeResponse("127_0_0_1:2003", []float64{12, 14, 16, 18, 20}, 1, now32)},
+				"127_0_0_1:2004": []*metricData{makeResponse("127_0_0_1:2004", []float64{13, 15, 17, 19, 21}, 1, now32)},
+			},
+		},
+		{
+			&expr{
 				target: "applyByNode",
 				etype:  etFunc,
 				args: []*expr{
@@ -2960,6 +3008,10 @@ func TestEvalMultipleReturns(t *testing.T) {
 		g, err := evalExpr(tt.e, 0, 1, tt.m)
 		if err != nil {
 			t.Errorf("failed to eval %v: %s", tt.name, err)
+			continue
+		}
+		if len(g) == 0 {
+			t.Errorf("returned no data %v", tt.name)
 			continue
 		}
 		if g[0] == nil {

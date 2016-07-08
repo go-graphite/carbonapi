@@ -1194,13 +1194,19 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		for k, v := range groups {
 			k := k // k's reference is used later, so it's important to make it unique per loop
 
-			expr := fmt.Sprintf("%s(%s)", callback, k)
+			// Ensure that names won't be parsed as consts, appending stub to them
+			expr := fmt.Sprintf("%s(stub_%s)", callback, k)
 			if e.target == "applyByNode" {
 				expr = strings.Replace(callback, "%", k, -1)
 			}
 
 			// create a stub context to evaluate the callback in
 			nexpr, _, err := parseExpr(expr)
+			// remove all stub_ prefixes we've prepended before
+			nexpr.argString = strings.Replace(nexpr.argString, "stub_", "", 1)
+			for argIdx := range nexpr.args {
+				nexpr.args[argIdx].target = strings.Replace(nexpr.args[0].target, "stub_", "", 1)
+			}
 			if err != nil {
 				return nil, err
 			}
