@@ -276,6 +276,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 					metricMap[mfetch] = append(metricMap[mfetch], r)
 				}
 			}
+
+			sortMetrics(metricMap[mfetch], mfetch)
+
 		}
 
 		func() {
