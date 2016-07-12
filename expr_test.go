@@ -455,6 +455,23 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "countSeries",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+					&expr{target: "metric2"},
+					&expr{target: "metric3"}},
+				argString: "metric1,metric2,metric3",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{1, math.NaN(), 3, 4, 5, math.NaN()}, 1, now32)},
+				metricRequest{"metric2", 0, 1}: []*metricData{makeResponse("metric2", []float64{2, math.NaN(), math.NaN(), 5, 6, math.NaN()}, 1, now32)},
+				metricRequest{"metric3", 0, 1}: []*metricData{makeResponse("metric3", []float64{3, math.NaN(), 5, 6, math.NaN(), math.NaN()}, 1, now32)},
+			},
+			[]*metricData{makeResponse("countSeries(metric1,metric2,metric3)", []float64{3, 3, 3, 3, 3, 3}, 1, now32)},
+		},
+		{
+			&expr{
 				target: "percentileOfSeries",
 				etype:  etFunc,
 				args: []*expr{

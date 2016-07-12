@@ -902,6 +902,24 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			}
 			return r
 		})
+	case "countSeries": // countSeries(seriesList)
+		// TODO(civil): Check that series have equal length
+		args, err := getSeriesArgs(e.args, from, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		r := *args[0]
+		r.Name = proto.String(fmt.Sprintf("countSeries(%s)", e.argString))
+		r.Values = make([]float64, len(args[0].Values))
+		r.IsAbsent = make([]bool, len(args[0].Values))
+		count := float64(len(args))
+
+		for i := range args[0].Values {
+			r.Values[i] = count
+		}
+
+		return []*metricData{&r}, nil
 
 	case "diffSeries": // diffSeries(*seriesLists)
 		minuend, err := getSeriesArg(e.args[0], from, until, values)
