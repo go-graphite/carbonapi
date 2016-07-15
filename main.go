@@ -354,7 +354,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 
 	switch format {
 	case "json":
-		body = expr.MarshalJSON(results)
+		body = expr.MarshalJSON(r, results)
 	case "protobuf":
 		body, err = expr.MarshalProtobuf(results)
 		if err != nil {
