@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"math"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -56,7 +57,44 @@ func marshalCSV(results []*metricData) []byte {
 	return b
 }
 
-func marshalJSON(results []*metricData) []byte {
+func consolidate(req *http.Request, results []*metricData) {
+	// TODO: unify this with consolidateDataPoints in cairo.go?
+	maxDataPoints, _ := strconv.ParseInt(req.FormValue("maxDataPoints"), 10, 32)
+	if maxDataPoints == 0 {
+		return
+	}
+
+	var startTime int32 = -1
+	var endTime int32 = -1
+
+	for _, r := range results {
+		t := r.GetStartTime()
+		if startTime == -1 || startTime > t {
+			startTime = t
+		}
+		t = r.GetStopTime()
+		if endTime == -1 || endTime < t {
+			endTime = t
+		}
+	}
+
+	timeRange := endTime - startTime
+
+	if timeRange <= 0 {
+		return
+	}
+
+	for _, r := range results {
+		numberOfDataPoints := math.Floor(float64(timeRange / r.GetStepTime()))
+		if numberOfDataPoints > float64(maxDataPoints) {
+			valuesPerPoint := math.Ceil(numberOfDataPoints / float64(maxDataPoints))
+			r.valuesPerPoint = int(valuesPerPoint)
+		}
+	}
+}
+
+func marshalJSON(req *http.Request, results []*metricData) []byte {
+	consolidate(req, results)
 
 	var b []byte
 	b = append(b, '[')
@@ -78,7 +116,7 @@ func marshalJSON(results []*metricData) []byte {
 
 		var innerComma bool
 		t := r.GetStartTime()
-		for i, v := range r.Values {
+		for i, v := range r.AggregatedValues() {
 			if innerComma {
 				b = append(b, ',')
 			}
@@ -86,7 +124,7 @@ func marshalJSON(results []*metricData) []byte {
 
 			b = append(b, '[')
 
-			if r.IsAbsent[i] || math.IsInf(v, 0) {
+			if r.IsAbsent[i] || math.IsInf(v, 0) || math.IsNaN(v) {
 				b = append(b, "null"...)
 			} else {
 				b = strconv.AppendFloat(b, v, 'f', -1, 64)
@@ -98,7 +136,7 @@ func marshalJSON(results []*metricData) []byte {
 
 			b = append(b, ']')
 
-			t += r.GetStepTime()
+			t += r.AggregatedTimeStep()
 		}
 
 		b = append(b, `]}`...)
