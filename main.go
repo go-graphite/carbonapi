@@ -6,6 +6,7 @@ import (
 	"expvar"
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"net/url"
@@ -19,6 +20,7 @@ import (
 	"github.com/dgryski/carbonzipper/mlog"
 	"github.com/dgryski/carbonzipper/mstats"
 
+	"github.com/JaderDias/go-httpaccesslog"
 	"github.com/bradfitz/gomemcache/memcache"
 	ecache "github.com/dgryski/go-expirecache"
 	"github.com/peterbourgon/g2g"
@@ -681,17 +683,18 @@ func main() {
 		logger.Logln(r.RequestURI, since.Nanoseconds()/int64(time.Millisecond), stats.zipperRequests)
 	}
 
-	http.HandleFunc("/render/", corsHandler(render))
-	http.HandleFunc("/render", corsHandler(render))
+	accessLogger := httpaccesslog.AccessLogger{log.New(os.Stdout, "", 0)}
+	http.HandleFunc("/render/", accessLogger.Handle(corsHandler(render)))
+	http.HandleFunc("/render", accessLogger.Handle(corsHandler(render)))
 
-	http.HandleFunc("/metrics/find/", corsHandler(findHandler))
-	http.HandleFunc("/metrics/find", corsHandler(findHandler))
+	http.HandleFunc("/metrics/find/", accessLogger.Handle(corsHandler(findHandler)))
+	http.HandleFunc("/metrics/find", accessLogger.Handle(corsHandler(findHandler)))
 
-	http.HandleFunc("/info/", passthroughHandler)
-	http.HandleFunc("/info", passthroughHandler)
+	http.HandleFunc("/info/", accessLogger.Handle(passthroughHandler))
+	http.HandleFunc("/info", accessLogger.Handle(passthroughHandler))
 
-	http.HandleFunc("/lb_check", lbcheckHandler)
-	http.HandleFunc("/", usageHandler)
+	http.HandleFunc("/lb_check", accessLogger.Handle(lbcheckHandler))
+	http.HandleFunc("/", accessLogger.Handle(usageHandler))
 
 	logger.Logln("listening on port", *port)
 	logger.Fatalln(http.ListenAndServe(":"+strconv.Itoa(*port), nil))
