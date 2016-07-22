@@ -1925,6 +1925,27 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{42.42, 42.42}, 1, now32)},
 		},
 		{
+			// BUG(nnuss): This test actually fails with color = "" because of
+			// how getStringNamedOrPosArgDefault works but we don't notice
+			// because we're not testing color is set.
+			// You may manually verify with this request URI: /render/?format=png&target=threshold(42.42,"gold",label="fourty-two-aurum")
+			&expr{
+				target: "threshold",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{val: 42.42, etype: etConst},
+					&expr{valStr: "gold", etype: etString},
+				},
+				namedArgs: map[string]*expr{
+					"label": &expr{valStr: "fourty-two-aurum", etype: etString},
+				},
+				argString: "42.42,'gold',label='fourty-two-aurum'",
+			},
+			map[metricRequest][]*metricData{},
+			[]*metricData{makeResponse("fourty-two-aurum",
+				[]float64{42.42, 42.42}, 1, now32)},
+		},
+		{
 			&expr{
 				target: "squareRoot",
 				etype:  etFunc,

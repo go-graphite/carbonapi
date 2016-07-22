@@ -3011,6 +3011,12 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 
 	case "threshold": // threshold(value, label=None, color=None)
 		// XXX does not match graphite's signature
+		// BUG(nnuss): the signature *does* match but there is an edge case because of named argument handling if you use it *just* wrong:
+		//			   threshold(value, "gold", label="Aurum")
+		//			   will result in:
+		//			   value = value
+		//			   label = "Aurum" (by named argument)
+		//			   color = "" (by default as len(positionalArgs) == 2 and there is no named 'color' arg)
 
 		value, err := getFloatArg(e, 0)
 
