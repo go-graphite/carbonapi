@@ -101,7 +101,7 @@ absolute(seriesList)                                                      |  0.9
 aggregateLine(seriesList, func='avg')                                     |  0.9.14 |
 alias(seriesList, newName)                                                |  0.9.9  | Supported
 aliasByMetric(seriesList)                                                 |  0.9.10 | Supported
-aliasByNode(seriesList, *nodes)                                           |  0.9.14 | Supported <sup>[1](#footnote-1)</sup>
+aliasByNode(seriesList, *nodes)                                           |  0.9.14 | Supported
 aliasSub(seriesList, search, replace)                                     |  0.9.10 | Supported
 alpha(seriesList, alpha)                                                  |  0.9.10 |
 areaBetween(seriesList)                                                   |  0.9.14 |
@@ -212,7 +212,5 @@ useSeriesAbove(seriesList, value, search, replace)                        |  0.9
 weightedAverage(seriesListAvg, seriesListWeight, node)                    |  0.9.14 |
 
 -----
-
-<a name="footnote-1"></a><sup>1</sup>: Carbonapi regex match replace is "$1" vs "\1"
 
 <a name="footnote-2"></a><sup>2</sup>: Rendered graph support is experimental
