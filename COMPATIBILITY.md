@@ -200,7 +200,7 @@ substr(seriesList, start=0, stop=0)                                       |  0.9
 sumSeries(*seriesLists), Short form: sum()                                |  0.9.9  | Supported
 sumSeriesWithWildcards(seriesList, *position)                             |  0.9.10 | Supported
 summarize(seriesList, intervalString, func='sum', alignToFrom=False)      |  0.9.9  | Supported
-threshold(value, label=None, color=None)                                  |  0.9.9  |
+threshold(value, label=None, color=None)                                  |  0.9.9  | Supported
 timeFunction(name, step=60), Short Alias: time()                          |  0.9.9  | Supported
 timeShift(seriesList, timeShift, resetEnd=True)                           |  0.9.11 | Supported
 timeSlice(seriesList, startSliceAt, endSliceAt='now')                     |  0.9.14 |
