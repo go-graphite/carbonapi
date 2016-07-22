@@ -172,7 +172,7 @@ pearsonClosest(series, seriesList, windowSize, direction="abs")           |  not
 perSecond(seriesList, maxValue=None)                                      |  0.9.14 | Supported
 percentileOfSeries(seriesList, n, interpolate=False)                      |  0.9.10 | Supported
 pow(seriesList, factor)                                                   |  0.9.14 | Supported
-randomWalkFunction(name, step=60), Short Alias: randomWalk()              |  0.9.9  |
+randomWalkFunction(name, step=60), Short Alias: randomWalk()              |  0.9.9  | Supported
 rangeOfSeries(*seriesLists)                                               |  0.9.10 | Supported
 reduceSeries(seriesLists, reduceFunction, reduceNode, *reduceMatchers)    |  0.9.14 |
 + reduce() Short form of reduceSeries()                                   |  - - -  |
