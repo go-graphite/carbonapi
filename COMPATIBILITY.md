@@ -113,14 +113,14 @@ averageSeries(*seriesLists), Short Alias: avg()                           |  0.9
 averageSeriesWithWildcards(seriesList, *position)                         |  0.9.10 |
 cactiStyle(seriesList, system=None)                                       |  0.9.14 |
 changed(seriesList)                                                       |  0.9.14 | Supported
-color(seriesList, theColor)                                               |  0.9.9  | Supported <sup>[2](#footnote-2)</sup>
+color(seriesList, theColor)                                               |  0.9.9  | Supported
 consolidateBy(seriesList, consolidationFunc)                              |  0.9.14 | Supported
 cumulative(seriesList, consolidationFunc='sum')                           |  0.9.14 |
 constantLine(value)                                                       |  0.9.9  |
 countSeries(*seriesLists)                                                 |  0.9.14 |
 currentAbove(seriesList, n)                                               |  0.9.9  | Supported
 currentBelow(seriesList, n)                                               |  0.9.9  | Supported
-dashed(*seriesList)                                                       |  0.9.9  | Supported <sup>[2](#footnote-2)</sup>
+dashed(*seriesList)                                                       |  0.9.9  | Supported
 derivative(seriesList)                                                    |  0.9.9  | Supported
 diffSeries(*seriesLists)                                                  |  0.9.9  | Supported
 divideSeries(dividendSeriesList, divisorSeries)                           |  0.9.14 | Supported
@@ -185,7 +185,7 @@ removeEmptySeries(seriesList)                                             |  0.9
 removeZeroSeries(seriesList)                                              |  0.9.14 | Supported
 scale(seriesList, factor)                                                 |  0.9.9  | Supported
 scaleToSeconds(seriesList, seconds)                                       |  0.9.10 | Supported
-secondYAxis(seriesList)                                                   |  0.9.10 | Supported <sup>[2](#footnote-2)</sup> 
+secondYAxis(seriesList)                                                   |  0.9.10 | Supported
 sinFunction(name, amplitude=1, step=60), Short Alias: sin()               |  0.9.9  |
 smartSummarize(seriesList, intervalString, func='sum', alignToFrom=False) |  0.9.10 |
 sortByMaxima(seriesList)                                                  |  0.9.9  | Supported
@@ -213,4 +213,3 @@ weightedAverage(seriesListAvg, seriesListWeight, node)                    |  0.9
 
 -----
 
-<a name="footnote-2"></a><sup>2</sup>: Rendered graph support is experimental
