@@ -1,5 +1,10 @@
 # CarbonAPI compatibility with Graphite
 
+Topics:
+* [URI Parameters](#uri-params)
+* [Functions](#functions)
+
+<a name="uri-params"></a>
 ## URI Parameters
 
 ### /render/?...
@@ -85,6 +90,7 @@ _When `format=png`_ (default if not specified)
 
 ---
 
+<a name="functions"></a>
 ## Functions
 
 **Note:** _Version_ listed in the table below represents the earliest graphite version where the function appeared with the current signature. In **most** cases this was when the function was introduced.
