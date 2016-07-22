@@ -5,7 +5,7 @@ carbonapi: replacement graphite API server
 [![GoDoc](https://godoc.org/github.com/dgryski/carbonapi?status.svg)](https://godoc.org/github.com/dgryski/carbonapi)
 
 
-CarbonAPI supports a limited subset of graphite functions, but in our testing
+CarbonAPI supports a limited subset of graphite functions [see [COMPATIBILITY](COMPATIBILITY.md)]. In our testing it
 has shown to be 5x-10x faster than requesting data from graphite-web.
 
 To use this, you must have a [carbonzipper](https://github.com/dgryski/carbonzipper)
