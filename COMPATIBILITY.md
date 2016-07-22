@@ -1,6 +1,8 @@
-# URI Parameters
+# CarbonAPI compatibility with Graphite
 
-## /render/?...
+## URI Parameters
+
+### /render/?...
 
 * `target` : graphite series, seriesList or function (likely containing series or seriesList)
 * `from`, `until` : time specifiers. Eg. "1d", "10min", "04:37_20150822", "now", "today", ... (**NOTE** does not handle timezones the same as graphite)
@@ -75,7 +77,7 @@ _When `format=png`_ (default if not specified)
 * `yUnitSystem` : ("si") also recognizes { "binary" }
 * `yDivisors` : (4,5,6) ...
 
-## /metrics/find/?
+### /metrics/find/?
 
 * `format` : ("treejson") also recognizes { "json" (same as "treejson"), "completer", "raw" }
 * `jsonp` : ...
@@ -83,7 +85,7 @@ _When `format=png`_ (default if not specified)
 
 ---
 
-# Functions
+## Functions
 
 **Note:** _Version_ listed in the table below represents the earliest graphite version where the function appeared with the current signature. In **most** cases this was when the function was introduced.
 
