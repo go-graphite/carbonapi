@@ -117,7 +117,7 @@ color(seriesList, theColor)                                               |  0.9
 consolidateBy(seriesList, consolidationFunc)                              |  0.9.14 | Supported
 cumulative(seriesList, consolidationFunc='sum')                           |  0.9.14 |
 constantLine(value)                                                       |  0.9.9  |
-countSeries(*seriesLists)                                                 |  0.9.14 |
+countSeries(*seriesLists)                                                 |  0.9.14 | Supported
 currentAbove(seriesList, n)                                               |  0.9.9  | Supported
 currentBelow(seriesList, n)                                               |  0.9.9  | Supported
 dashed(*seriesList)                                                       |  0.9.9  | Supported
