@@ -103,7 +103,7 @@ alias(seriesList, newName)                                                |  0.9
 aliasByMetric(seriesList)                                                 |  0.9.10 | Supported
 aliasByNode(seriesList, *nodes)                                           |  0.9.14 | Supported
 aliasSub(seriesList, search, replace)                                     |  0.9.10 | Supported
-alpha(seriesList, alpha)                                                  |  0.9.10 |
+alpha(seriesList, alpha)                                                  |  0.9.10 | Supported
 areaBetween(seriesList)                                                   |  0.9.14 |
 asPercent(seriesList, total=None)                                         |  0.9.10 | Supported
 averageAbove(seriesList, n)                                               |  0.9.9  | Supported
