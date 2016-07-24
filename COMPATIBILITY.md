@@ -116,7 +116,7 @@ changed(seriesList)                                                       |  0.9
 color(seriesList, theColor)                                               |  0.9.9  | Supported
 consolidateBy(seriesList, consolidationFunc)                              |  0.9.14 | Supported
 cumulative(seriesList, consolidationFunc='sum')                           |  0.9.14 |
-constantLine(value)                                                       |  0.9.9  |
+constantLine(value)                                                       |  0.9.9  | Supported
 countSeries(*seriesLists)                                                 |  0.9.14 | Supported
 currentAbove(seriesList, n)                                               |  0.9.9  | Supported
 currentBelow(seriesList, n)                                               |  0.9.9  | Supported
