@@ -104,6 +104,7 @@ aliasByMetric(seriesList)                                                 |  0.9
 aliasByNode(seriesList, *nodes)                                           |  0.9.14 | Supported
 aliasSub(seriesList, search, replace)                                     |  0.9.10 | Supported
 alpha(seriesList, alpha)                                                  |  0.9.10 | Supported
+applyByNode(seriesList, nodeNum, templateFunction, newName=None)          |  latest |
 areaBetween(seriesList)                                                   |  0.9.14 |
 asPercent(seriesList, total=None)                                         |  0.9.10 | Supported
 averageAbove(seriesList, n)                                               |  0.9.9  | Supported
@@ -115,9 +116,9 @@ cactiStyle(seriesList, system=None)                                       |  0.9
 changed(seriesList)                                                       |  0.9.14 | Supported
 color(seriesList, theColor)                                               |  0.9.9  | Supported
 consolidateBy(seriesList, consolidationFunc)                              |  0.9.14 | Supported
-cumulative(seriesList, consolidationFunc='sum')                           |  0.9.14 |
 constantLine(value)                                                       |  0.9.9  | Supported
 countSeries(*seriesLists)                                                 |  0.9.14 | Supported
+cumulative(seriesList, consolidationFunc='sum')                           |  0.9.14 |
 currentAbove(seriesList, n)                                               |  0.9.9  | Supported
 currentBelow(seriesList, n)                                               |  0.9.9  | Supported
 dashed(*seriesList)                                                       |  0.9.9  | Supported
@@ -131,6 +132,7 @@ fallbackSeries( seriesList, fallback )                                    |  0.9
 grep(seriesList, pattern)                                                 |  0.9.14 | Supported
 group(*seriesLists)                                                       |  0.9.10 | Supported
 groupByNode(seriesList, nodeNum, callback)                                |  0.9.9  | Supported
+groupByNodes(seriesList, callback, *nodes)                                |  latest |
 highestAverage(seriesList, n)                                             |  0.9.9  | Supported
 highestCurrent(seriesList, n)                                             |  0.9.9  | Supported
 highestMax(seriesList, n)                                                 |  0.9.9  | Supported
@@ -141,6 +143,7 @@ holtWintersConfidenceBands(seriesList, delta=3)                           |  0.9
 holtWintersForecast(seriesList)                                           |  0.9.10 | Supported - but see: [#66](/dgryski/carbonapi/issues/66)
 identity(name)                                                            |  0.9.14 |
 integral(seriesList)                                                      |  0.9.9  | Supported
+integralByInterval(seriesList, intervalUnit)                              |  latest |
 invert(seriesList)                                                        |  0.9.14 | Supported
 isNonNull(seriesList)                                                     |  0.9.11 | Supported (also isNotNull alias)
 keepLastValue(seriesList, limit=inf)                                      |  0.9.14 | Supported
@@ -148,6 +151,8 @@ kolmogorovSmirnovTest2(series, series, windowSize) alias ksTest2()        |  not
 legendValue(seriesList, *valueTypes)                                      |  0.9.10 |
 limit(seriesList, n)                                                      |  0.9.9  | Supported
 lineWidth(seriesList, width)                                              |  0.9.9  |
+linearRegression(seriesList, startSourceAt=None, endSourceAt=None)        |  latest |
+linearRegressionAnalysis(series)                                          |  latest |
 logarithm(seriesList, base=10), alias log()                               |  0.9.10 | Supported
 lowestAverage(seriesList, n)                                              |  0.9.9  | Supported
 lowestCurrent(seriesList, n)                                              |  0.9.9  | Supported
