@@ -110,7 +110,7 @@ averageAbove(seriesList, n)                                               |  0.9
 averageBelow(seriesList, n)                                               |  0.9.9  | Supported
 averageOutsidePercentile(seriesList, n)                                   |  0.9.11 |
 averageSeries(*seriesLists), Short Alias: avg()                           |  0.9.9  | Supported
-averageSeriesWithWildcards(seriesList, *position)                         |  0.9.10 |
+averageSeriesWithWildcards(seriesList, *position)                         |  0.9.10 | Supported
 cactiStyle(seriesList, system=None)                                       |  0.9.14 |
 changed(seriesList)                                                       |  0.9.14 | Supported
 color(seriesList, theColor)                                               |  0.9.9  | Supported
