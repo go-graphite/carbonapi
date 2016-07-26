@@ -29,7 +29,8 @@ type metricData struct {
 	stackName      string
 
 	aggregatedValues  []float64
-	aggregateFunction func([]float64, []bool) float64
+	aggregatedAbsent  []bool
+	aggregateFunction func([]float64, []bool) (float64, bool)
 }
 
 func marshalCSV(results []*metricData) []byte {
@@ -234,47 +235,63 @@ func (r *metricData) AggregatedTimeStep() int32 {
 }
 
 func (r *metricData) AggregatedValues() []float64 {
-	if r.aggregatedValues != nil {
-		return r.aggregatedValues
+	if r.aggregatedValues == nil {
+		r.aggregateValues()
 	}
+	return r.aggregatedValues
+}
 
+func (r *metricData) AggregatedAbsent() []bool {
+	if r.aggregatedAbsent == nil {
+		r.aggregateValues()
+	}
+	return r.aggregatedAbsent
+}
+
+func (r *metricData) aggregateValues() {
 	if r.valuesPerPoint == 1 || r.valuesPerPoint == 0 {
 		v := make([]float64, len(r.Values))
-		for i, vv := range r.Values {
-			if r.IsAbsent[i] {
-				vv = math.NaN()
-			}
-			v[i] = vv
+		a := make([]bool, len(r.Values))
+		for i, _ := range r.Values {
+			a[i] = r.IsAbsent[i]
+			v[i] = r.Values[i]
 		}
 
 		r.aggregatedValues = v
-		return r.aggregatedValues
+		r.aggregatedAbsent = a
+		return
 	}
 
 	if r.aggregateFunction == nil {
 		r.aggregateFunction = aggMean
 	}
 
-	agg := make([]float64, 0, len(r.Values)/r.valuesPerPoint+1)
+	n := len(r.Values)/r.valuesPerPoint + 1
+	aggV := make([]float64, 0, n)
+	aggA := make([]bool, 0, n)
 
 	v := r.Values
 	absent := r.IsAbsent
 
 	for len(v) >= r.valuesPerPoint {
-		agg = append(agg, r.aggregateFunction(v[:r.valuesPerPoint], absent[:r.valuesPerPoint]))
+		val, abs := r.aggregateFunction(v[:r.valuesPerPoint], absent[:r.valuesPerPoint])
+		aggV = append(aggV, val)
+		aggA = append(aggA, abs)
 		v = v[r.valuesPerPoint:]
 		absent = absent[r.valuesPerPoint:]
 	}
 
 	if len(v) > 0 {
-		agg = append(agg, r.aggregateFunction(v, absent))
+		val, abs := r.aggregateFunction(v, absent)
+		aggV = append(aggV, val)
+		aggA = append(aggA, abs)
 	}
 
-	r.aggregatedValues = agg
-	return r.aggregatedValues
+	r.aggregatedValues = aggV
+	r.aggregatedAbsent = aggA
 }
 
-func aggMean(v []float64, absent []bool) float64 {
+func aggMean(v []float64, absent []bool) (float64, bool) {
 	var sum float64
 	var n int
 	for i, vv := range v {
@@ -283,35 +300,45 @@ func aggMean(v []float64, absent []bool) float64 {
 			n++
 		}
 	}
-	return sum / float64(n)
+	return sum / float64(n), n == 0
 }
 
-func aggMax(v []float64, absent []bool) float64 {
+func aggMax(v []float64, absent []bool) (float64, bool) {
 	var m float64 = math.Inf(-1)
+	var abs bool = true
 	for i, vv := range v {
-		if !math.IsNaN(vv) && !absent[i] && m < vv {
-			m = vv
+		if !absent[i] && !math.IsNaN(vv) {
+			abs = false
+			if m < vv {
+				m = vv
+			}
 		}
 	}
-	return m
+	return m, abs
 }
 
-func aggMin(v []float64, absent []bool) float64 {
-	var m float64 = math.Inf(1)
+func aggMin(v []float64, absent []bool) (float64, bool) {
+	var m float64 = math.Inf(-1)
+	var abs bool = true
 	for i, vv := range v {
-		if !math.IsNaN(vv) && !absent[i] && m > vv {
-			m = vv
+		if !absent[i] && !math.IsNaN(vv) {
+			abs = false
+			if m > vv {
+				m = vv
+			}
 		}
 	}
-	return m
+	return m, abs
 }
 
-func aggSum(v []float64, absent []bool) float64 {
+func aggSum(v []float64, absent []bool) (float64, bool) {
 	var sum float64
+	var abs bool = true
 	for i, vv := range v {
 		if !math.IsNaN(vv) && !absent[i] {
 			sum += vv
+			abs = false
 		}
 	}
-	return sum
+	return sum, abs
 }

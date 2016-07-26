@@ -2949,7 +2949,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		for _, a := range arg {
 			r := *a
 
-			var f func([]float64, []bool) float64
+			var f func([]float64, []bool) (float64, bool)
 
 			switch name {
 			case "max":
