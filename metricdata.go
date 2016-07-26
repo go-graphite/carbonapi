@@ -116,7 +116,7 @@ func marshalJSON(req *http.Request, results []*metricData) []byte {
 
 		var innerComma bool
 		t := r.GetStartTime()
-		for i, v := range r.AggregatedValues() {
+		for _, v := range r.AggregatedValues() {
 			if innerComma {
 				b = append(b, ',')
 			}
@@ -124,7 +124,7 @@ func marshalJSON(req *http.Request, results []*metricData) []byte {
 
 			b = append(b, '[')
 
-			if r.IsAbsent[i] || math.IsInf(v, 0) || math.IsNaN(v) {
+			if math.IsInf(v, 0) || math.IsNaN(v) {
 				b = append(b, "null"...)
 			} else {
 				b = strconv.AppendFloat(b, v, 'f', -1, 64)
