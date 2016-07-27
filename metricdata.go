@@ -319,7 +319,7 @@ func aggMax(v []float64, absent []bool) (float64, bool) {
 }
 
 func aggMin(v []float64, absent []bool) (float64, bool) {
-	var m float64 = math.Inf(-1)
+	var m float64 = math.Inf(1)
 	var abs bool = true
 	for i, vv := range v {
 		if !absent[i] && !math.IsNaN(vv) {
