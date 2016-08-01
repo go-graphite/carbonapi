@@ -875,6 +875,22 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "substr",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1.foo.bar.baz"},
+					&expr{val: 1, etype: etConst},
+					&expr{val: 3, etype: etConst},
+				},
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1.foo.bar.baz", 0, 1}: []*metricData{makeResponse("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			},
+			[]*metricData{makeResponse("foo.bar",
+				[]float64{1, 2, 3, 4, 5}, 1, now32)},
+		},
+		{
+			&expr{
 				target: "aliasSub",
 				etype:  etFunc,
 				args: []*expr{

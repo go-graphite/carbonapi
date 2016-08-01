@@ -201,7 +201,7 @@ squareRoot(seriesList)                                                    |  0.9
 stacked(seriesLists, stackName='__DEFAULT__')                             |  0.9.10 | [#74](https://github.com/dgryski/carbonapi/issues/74)
 stddevSeries(*seriesLists)                                                |  0.9.14 |
 stdev(seriesList, points, windowTolerance=0.1)                            |  0.9.10 | Supported + alias stddev()
-substr(seriesList, start=0, stop=0)                                       |  0.9.9  |
+substr(seriesList, start=0, stop=0)                                       |  0.9.9  | Supported
 sumSeries(*seriesLists), Short form: sum()                                |  0.9.9  | Supported
 sumSeriesWithWildcards(seriesList, *position)                             |  0.9.10 | Supported
 summarize(seriesList, intervalString, func='sum', alignToFrom=False)      |  0.9.9  | Supported

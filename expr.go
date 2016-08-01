@@ -2496,6 +2496,43 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return percentile(values, percent, interpolate)
 		})
 
+	case "substr": // aliasSub(seriesList, start, stop)
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		startField, err := getIntNamedOrPosArgDefault(e, "start", 1, 0)
+		if err != nil {
+			return nil, err
+		}
+
+		stopField, err := getIntNamedOrPosArgDefault(e, "stop", 2, 0)
+		if err != nil {
+			return nil, err
+		}
+
+		fmt.Println(startField, stopField)
+
+		var results []*metricData
+
+		for _, a := range args {
+			metric := extractMetric(a.GetName())
+			nodes := strings.Split(metric, ".")
+			if startField != 0 {
+				nodes = nodes[startField:]
+			}
+			if stopField != 0 {
+				nodes = nodes[:stopField-startField]
+			}
+
+			r := *a
+			r.Name = proto.String(strings.Join(nodes, "."))
+			results = append(results, &r)
+		}
+
+		return results, nil
+
 	case "summarize": // summarize(seriesList, intervalString, func='sum', alignToFrom=False)
 		// TODO(dgryski): make sure the arrays are all the same 'size'
 		args, err := getSeriesArg(e.args[0], from, until, values)
