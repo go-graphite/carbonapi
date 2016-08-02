@@ -2497,6 +2497,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		})
 
 	case "substr": // aliasSub(seriesList, start, stop)
+		// BUG: affected by the same positional arg issue as 'threshold'.
 		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
@@ -2512,17 +2513,21 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil, err
 		}
 
-		fmt.Println(startField, stopField)
-
 		var results []*metricData
 
 		for _, a := range args {
 			metric := extractMetric(a.GetName())
 			nodes := strings.Split(metric, ".")
 			if startField != 0 {
+				if startField < 0 || startField > len(nodes)-1 {
+					return nil, errors.New("start out of range")
+				}
 				nodes = nodes[startField:]
 			}
 			if stopField != 0 {
+				if stopField <= startField || stopField - startField > len(nodes) {
+					return nil, errors.New("stop out of range")
+				}
 				nodes = nodes[:stopField-startField]
 			}
 
