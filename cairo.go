@@ -1611,9 +1611,7 @@ func drawYAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 		for _, value := range params.yLabelValuesL {
 			label := makeLabel(value, params.yStepL, params.ySpanL, params.yUnitSystem)
 			y := getYCoord(params, value, YCoordSideLeft)
-			if y == math.NaN() {
-				value = math.NaN()
-			} else if y < 0 {
+			if y < 0 {
 				y = 0
 			}
 
@@ -1625,9 +1623,7 @@ func drawYAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 		for _, value := range params.yLabelValuesR {
 			label := makeLabel(value, params.yStepR, params.ySpanR, params.yUnitSystem)
 			y := getYCoord(params, value, YCoordSideRight)
-			if y == math.NaN() {
-				value = math.NaN()
-			} else if y < 0 {
+			if y < 0 {
 				y = 0
 			}
 
@@ -1640,9 +1636,7 @@ func drawYAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	for _, value := range params.yLabelValues {
 		label := makeLabel(value, params.yStep, params.ySpan, params.yUnitSystem)
 		y := getYCoord(params, value, YCoordSideNone)
-		if y == math.NaN() {
-			value = math.NaN()
-		} else if y < 0 {
+		if y < 0 {
 			y = 0
 		}
 
@@ -1912,12 +1906,9 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	linecap := "butt"
 	linejoin := "miter"
 
-	width := params.lineWidth
-
-	cr.context.SetLineWidth(width)
+	cr.context.SetLineWidth(params.lineWidth)
 
 	originalWidth := width
-	width = (float64((int(width) % 2)) / 2)
 
 	dash := []float64{}
 
