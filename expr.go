@@ -2117,7 +2117,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		refValues := make([]float64, len(ref[0].Values))
 		copy(refValues, ref[0].Values)
 		for i, v := range ref[0].IsAbsent {
-			if v == true {
+			if v {
 				refValues[i] = math.NaN()
 			}
 		}
@@ -2132,7 +2132,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 				continue
 			}
 			for i, v := range a.IsAbsent {
-				if v == true {
+				if v {
 					compareValues[i] = math.NaN()
 				}
 			}

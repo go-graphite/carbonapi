@@ -140,7 +140,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 	from := r.FormValue("from")
 	until := r.FormValue("until")
 	format := r.FormValue("format")
-	useCache := truthyBool(r.FormValue("noCache")) == false
+	useCache := !truthyBool(r.FormValue("noCache"))
 
 	var jsonp string
 

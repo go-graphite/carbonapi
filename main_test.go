@@ -48,7 +48,7 @@ func TestInterval(t *testing.T) {
 		if secs != tt.seconds {
 			t.Errorf("intervalString(%q)=%d, want %d\n", tt.t, secs, tt.seconds)
 		}
-		if strings.Index(err.Error(), tt.err) == -1 {
+		if !strings.Contains(err.Error(), tt.err) {
 			t.Errorf("Error of intervalString(%q)=%v, expected to contain %v\n", tt.t, err.Error(), tt.err)
 		}
 	}
