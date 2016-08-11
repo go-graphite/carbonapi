@@ -971,7 +971,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		r.Values = make([]float64, len(series[0].Values))
 		r.IsAbsent = make([]bool, len(series[0].Values))
 
-		for i, _ := range series[0].Values {
+		for i := range series[0].Values {
 			var min, max float64
 			count := 0
 			for _, s := range series {
@@ -2525,7 +2525,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 				nodes = nodes[startField:]
 			}
 			if stopField != 0 {
-				if stopField <= startField || stopField - startField > len(nodes) {
+				if stopField <= startField || stopField-startField > len(nodes) {
 					return nil, errors.New("stop out of range")
 				}
 				nodes = nodes[:stopField-startField]
