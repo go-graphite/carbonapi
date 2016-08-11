@@ -2774,6 +2774,8 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil, errors.New("n must be larger or equal to 1")
 		}
 
+		//BUG(nnuss): interval is being determined here but not used later (found via ineffassign).
+		//            Expected behavior is to limit the tukey test to the recent data rather than the whole timespan.
 		var interval int
 		if len(e.args) >= 4 {
 			switch e.args[3].etype {
