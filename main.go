@@ -308,7 +308,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 
 	switch format {
 	case "json":
-		body = marshalJSON(results)
+		body = marshalJSON(r, results)
 	case "protobuf":
 		body = marshalProtobuf(results)
 	case "raw":
