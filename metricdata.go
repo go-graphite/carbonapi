@@ -249,7 +249,7 @@ func aggMean(v []float64, absent []bool) float64 {
 }
 
 func aggMax(v []float64, absent []bool) float64 {
-	var m float64 = math.Inf(-1)
+	m := math.Inf(-1)
 	for i, vv := range v {
 		if !math.IsNaN(vv) && !absent[i] && m < vv {
 			m = vv
@@ -259,7 +259,7 @@ func aggMax(v []float64, absent []bool) float64 {
 }
 
 func aggMin(v []float64, absent []bool) float64 {
-	var m float64 = math.Inf(1)
+	m := math.Inf(1)
 	for i, vv := range v {
 		if !math.IsNaN(vv) && !absent[i] && m > vv {
 			m = vv
