@@ -1,7 +1,7 @@
 package main
 
 import (
-	"crypto/md5"
+	"crypto/sha1"
 	"fmt"
 	"time"
 
@@ -43,7 +43,7 @@ type memcachedCache struct {
 }
 
 func (m *memcachedCache) get(k string) ([]byte, bool) {
-	hk := fmt.Sprintf("%x", md5.Sum([]byte(k)))
+	hk := fmt.Sprintf("%x", sha1.Sum([]byte(k)))
 	done := make(chan bool, 1)
 
 	var err error
@@ -71,6 +71,6 @@ func (m *memcachedCache) get(k string) ([]byte, bool) {
 }
 
 func (m *memcachedCache) set(k string, v []byte, expire int32) {
-	hk := fmt.Sprintf("%x", md5.Sum([]byte(k)))
+	hk := fmt.Sprintf("%x", sha1.Sum([]byte(k)))
 	go m.client.Set(&memcache.Item{Key: hk, Value: v, Expiration: expire})
 }
