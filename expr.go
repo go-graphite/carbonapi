@@ -2792,18 +2792,18 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			if err != nil {
 				return nil, err
 			}
-			if beginInterval < 0 && (-1*beginInterval) < len(arg[0].Values) {
+			if beginInterval < 0 && (-1*beginInterval) < endInterval {
 				// negative intervals are everything preceding the last 'interval' points
-				endInterval = len(arg[0].Values) + beginInterval
+				endInterval += beginInterval
 				beginInterval = 0
-			} else if beginInterval > 0 && beginInterval < len(arg[0].Values) {
+			} else if beginInterval > 0 && beginInterval < endInterval {
 				// positive intervals are the last 'interval' points
-				beginInterval = len(arg[0].Values) - beginInterval
-				endInterval = len(arg[0].Values)
+				beginInterval = endInterval - beginInterval
+				//endInterval = len(arg[0].Values)
 			} else {
 				// zero -or- beyond the len() of the series ; will revert to whole range
 				beginInterval = 0
-				endInterval = len(arg[0].Values)
+				//endInterval = len(arg[0].Values)
 			}
 		}
 
