@@ -2774,16 +2774,17 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil, errors.New("n must be larger or equal to 1")
 		}
 
-		var interval int
+		var beginInterval int
+		endInterval := len(arg[0].Values)
 		if len(e.args) >= 4 {
 			switch e.args[3].etype {
 			case etConst:
-				interval, err = getIntArg(e, 3)
+				beginInterval, err = getIntArg(e, 3)
 			case etString:
 				var i32 int32
 				i32, err = getIntervalArg(e, 3, 1)
-				interval = int(i32)
-				interval /= int(arg[0].GetStepTime())
+				beginInterval = int(i32)
+				beginInterval /= int(arg[0].GetStepTime())
 				// TODO(nnuss): make sure the arrays are all the same 'size'
 			default:
 				err = ErrBadType
@@ -2791,14 +2792,26 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			if err != nil {
 				return nil, err
 			}
+			if beginInterval < 0 && (-1*beginInterval) < endInterval {
+				// negative intervals are everything preceding the last 'interval' points
+				endInterval += beginInterval
+				beginInterval = 0
+			} else if beginInterval > 0 && beginInterval < endInterval {
+				// positive intervals are the last 'interval' points
+				beginInterval = endInterval - beginInterval
+				//endInterval = len(arg[0].Values)
+			} else {
+				// zero -or- beyond the len() of the series ; will revert to whole range
+				beginInterval = 0
+				//endInterval = len(arg[0].Values)
+			}
 		}
-		// TODO(nnuss): negative intervals
 
 		// gather all the valid points
 		var points []float64
 		for _, a := range arg {
-			for i, m := range a.Values {
-				if a.IsAbsent[i] {
+			for i, m := range a.Values[beginInterval:endInterval] {
+				if a.IsAbsent[beginInterval+i] {
 					continue
 				}
 				points = append(points, m)
@@ -2822,8 +2835,8 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		// count how many points are above the threshold
 		for i, a := range arg {
 			var outlier int
-			for i, m := range a.Values {
-				if a.IsAbsent[i] {
+			for i, m := range a.Values[beginInterval:endInterval] {
+				if a.IsAbsent[beginInterval+i] {
 					continue
 				}
 				if isAbove {

@@ -3007,6 +3007,62 @@ func TestEvalMultipleReturns(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "tukeyAbove",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric*"},
+					{val: 1.5, etype: etConst},
+					{val: 5, etype: etConst},
+					{val: 6, etype: etConst},
+				},
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric*", 0, 1}: {
+					makeResponse("metricA", []float64{20, 20, 20, 20, 21, 17, 20, 20, 10, 29}, 1, now32),
+					makeResponse("metricB", []float64{20, 20, 20, 20, 20, 18, 21, 19, 20, 20}, 1, now32),
+					makeResponse("metricC", []float64{20, 20, 20, 20, 19, 19, 21, 17, 23, 20}, 1, now32),
+					makeResponse("metricD", []float64{20, 20, 20, 20, 18, 20, 22, 14, 26, 20}, 1, now32),
+					makeResponse("metricE", []float64{20, 20, 20, 20, 17, 21, 8, 30, 18, 28}, 1, now32),
+				},
+			},
+
+			"tukeyAbove(metric*, 1.5, 5, 6)",
+			map[string][]*metricData{
+				"metricA": {makeResponse("metricA", []float64{20, 20, 20, 20, 21, 17, 20, 20, 10, 29}, 1, now32)},
+				"metricD": {makeResponse("metricD", []float64{20, 20, 20, 20, 18, 20, 22, 14, 26, 20}, 1, now32)},
+				"metricE": {makeResponse("metricE", []float64{20, 20, 20, 20, 17, 21, 8, 30, 18, 28}, 1, now32)},
+			},
+		},
+		{
+			&expr{
+				target: "tukeyAbove",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric*"},
+					{val: 1.5, etype: etConst},
+					{val: 5, etype: etConst},
+					{valStr: "6s", etype: etString},
+				},
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric*", 0, 1}: {
+					makeResponse("metricA", []float64{20, 20, 20, 20, 21, 17, 20, 20, 10, 29}, 1, now32),
+					makeResponse("metricB", []float64{20, 20, 20, 20, 20, 18, 21, 19, 20, 20}, 1, now32),
+					makeResponse("metricC", []float64{20, 20, 20, 20, 19, 19, 21, 17, 23, 20}, 1, now32),
+					makeResponse("metricD", []float64{20, 20, 20, 20, 18, 20, 22, 14, 26, 20}, 1, now32),
+					makeResponse("metricE", []float64{20, 20, 20, 20, 17, 21, 8, 30, 18, 28}, 1, now32),
+				},
+			},
+
+			`tukeyAbove(metric*, 1.5, 5, "6s")`,
+			map[string][]*metricData{
+				"metricA": {makeResponse("metricA", []float64{20, 20, 20, 20, 21, 17, 20, 20, 10, 29}, 1, now32)},
+				"metricD": {makeResponse("metricD", []float64{20, 20, 20, 20, 18, 20, 22, 14, 26, 20}, 1, now32)},
+				"metricE": {makeResponse("metricE", []float64{20, 20, 20, 20, 17, 21, 8, 30, 18, 28}, 1, now32)},
+			},
+		},
+		{
+			&expr{
 				target: "tukeyBelow",
 				etype:  etFunc,
 				args: []*expr{
@@ -3029,6 +3085,60 @@ func TestEvalMultipleReturns(t *testing.T) {
 			map[string][]*metricData{
 				"metricA": {makeResponse("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32)},
 				"metricE": {makeResponse("metricE", []float64{17, 21, 8, 30, 18, 28}, 1, now32)},
+			},
+		},
+		{
+			&expr{
+				target: "tukeyBelow",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric*"},
+					{val: 1.5, etype: etConst},
+					{val: 5, etype: etConst},
+					{val: -4, etype: etConst},
+				},
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric*", 0, 1}: {
+					makeResponse("metricA", []float64{21, 17, 20, 20, 10, 29, 20, 20, 20, 20}, 1, now32),
+					makeResponse("metricB", []float64{20, 18, 21, 19, 20, 20, 20, 20, 20, 20}, 1, now32),
+					makeResponse("metricC", []float64{19, 19, 21, 17, 23, 20, 20, 20, 20, 20}, 1, now32),
+					makeResponse("metricD", []float64{18, 20, 22, 14, 26, 20, 20, 20, 20, 20}, 1, now32),
+					makeResponse("metricE", []float64{17, 21, 8, 30, 18, 28, 20, 20, 20, 20}, 1, now32),
+				},
+			},
+
+			"tukeyBelow",
+			map[string][]*metricData{
+				"metricA": {makeResponse("metricA", []float64{21, 17, 20, 20, 10, 29, 20, 20, 20, 20}, 1, now32)},
+				"metricE": {makeResponse("metricE", []float64{17, 21, 8, 30, 18, 28, 20, 20, 20, 20}, 1, now32)},
+			},
+		},
+		{
+			&expr{
+				target: "tukeyBelow",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric*"},
+					{val: 1.5, etype: etConst},
+					{val: 5, etype: etConst},
+					{valStr: "-4s", etype: etString},
+				},
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric*", 0, 1}: {
+					makeResponse("metricA", []float64{21, 17, 20, 20, 10, 29, 20, 20, 20, 20}, 1, now32),
+					makeResponse("metricB", []float64{20, 18, 21, 19, 20, 20, 20, 20, 20, 20}, 1, now32),
+					makeResponse("metricC", []float64{19, 19, 21, 17, 23, 20, 20, 20, 20, 20}, 1, now32),
+					makeResponse("metricD", []float64{18, 20, 22, 14, 26, 20, 20, 20, 20, 20}, 1, now32),
+					makeResponse("metricE", []float64{17, 21, 8, 30, 18, 28, 20, 20, 20, 20}, 1, now32),
+				},
+			},
+
+			"tukeyBelow",
+			map[string][]*metricData{
+				"metricA": {makeResponse("metricA", []float64{21, 17, 20, 20, 10, 29, 20, 20, 20, 20}, 1, now32)},
+				"metricE": {makeResponse("metricE", []float64{17, 21, 8, 30, 18, 28, 20, 20, 20, 20}, 1, now32)},
 			},
 		},
 		{
