@@ -1908,7 +1908,7 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 
 	cr.context.SetLineWidth(params.lineWidth)
 
-	originalWidth := width
+	originalWidth := params.lineWidth
 
 	dash := []float64{}
 
