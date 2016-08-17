@@ -151,9 +151,13 @@ func parseExpr(e string) (*expr, string, error) {
 }
 
 var (
-	ErrMissingExpr         = errors.New("missing expression")
-	ErrMissingComma        = errors.New("missing comma")
-	ErrMissingQuote        = errors.New("missing quote")
+	// ErrMissingExpr is a parse error returned when an expression is missing.
+	ErrMissingExpr = errors.New("missing expression")
+	// ErrMissingComma is a parse error returned when an expression is missing a comma.
+	ErrMissingComma = errors.New("missing comma")
+	// ErrMissingQuote is a parse error returned when an expression is missing a quote.
+	ErrMissingQuote = errors.New("missing quote")
+	// ErrUnexpectedCharacter is a parse error returned when an expression contains an unexpected character.
 	ErrUnexpectedCharacter = errors.New("unexpected character")
 )
 
@@ -315,9 +319,13 @@ func parseString(s string) (string, string, error) {
 }
 
 var (
-	ErrBadType            = errors.New("bad type")
-	ErrMissingArgument    = errors.New("missing argument")
-	ErrMissingTimeseries  = errors.New("missing time series argument")
+	// ErrBadType is an eval error returned when a argument has wrong type.
+	ErrBadType = errors.New("bad type")
+	// ErrMissingArgument is an eval error returned when a argument is missing.
+	ErrMissingArgument = errors.New("missing argument")
+	// ErrMissingTimeseries is an eval error returned when a time series argument is missing.
+	ErrMissingTimeseries = errors.New("missing time series argument")
+	// ErrSeriesDoesNotExist is an eval error returned when a requested time series argument does not exist.
 	ErrSeriesDoesNotExist = errors.New("no timeseries with that name")
 )
 
@@ -527,8 +535,10 @@ func getNamedArg(e *expr, name string) *expr {
 }
 
 var (
+	// ErrWildcardNotAllowed is an eval error returned when a wildcard/glob argument is found where a single series is required.
 	ErrWildcardNotAllowed = errors.New("found wildcard where series expected")
-	ErrTooManyArguments   = errors.New("too many arguments")
+	// ErrTooManyArguments is an eval error returned when too many arguments are provided.
+	ErrTooManyArguments = errors.New("too many arguments")
 )
 
 var backref = regexp.MustCompile(`\\(\d+)`)
