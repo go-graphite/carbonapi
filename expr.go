@@ -2273,6 +2273,51 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		}
 		return results, nil
 
+	case "smma", "smoothedMovingAverage": // smma(seriesList)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		e.target = "smma"
+
+		// ugh, forEachSeriesDo does not handle arguments properly
+		var results []*metricData
+		for _, a := range arg {
+			var n float64
+			for _, miss := range a.IsAbsent {
+				if miss {
+					continue
+				}
+				n++
+			}
+			if n < 1 {
+				continue
+			}
+			alpha := 1 / n
+
+			name := fmt.Sprintf("smma(%s)", a.GetName())
+
+			r := *a
+			r.Name = proto.String(name)
+			r.Values = make([]float64, len(a.Values))
+			r.IsAbsent = make([]bool, len(a.Values))
+
+			smma := onlinestats.NewExpWeight(alpha)
+
+			for i, v := range a.Values {
+				if a.IsAbsent[i] {
+					r.IsAbsent[i] = true
+					continue
+				}
+
+				smma.Push(v)
+				r.Values[i] = smma.Mean()
+			}
+			results = append(results, &r)
+		}
+		return results, nil
+
 	case "pow": // pow(seriesList,factor)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {

@@ -1380,6 +1380,22 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "smma",
+				etype:  etFunc,
+				args: []*expr{
+					&expr{target: "metric1"},
+				},
+				argString: "metric1",
+			},
+			map[metricRequest][]*metricData{
+				metricRequest{"metric1", 0, 1}: []*metricData{makeResponse("metric1", []float64{0, 1, 1, math.NaN(), 1, 1, 1, 1, 1, 1, 1}, 1, now32)},
+			},
+			[]*metricData{
+				makeResponse("smma(metric1)", []float64{0, 0.9, 0.99, math.NaN(), 0.999, 0.9999, 0.99999, 0.999999, 0.9999999, 0.99999999, 0.999999999}, 1, now32),
+			},
+		},
+		{
+			&expr{
 				target: "grep",
 				etype:  etFunc,
 				args: []*expr{
