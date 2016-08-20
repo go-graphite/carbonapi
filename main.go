@@ -66,6 +66,7 @@ var logger mlog.Level
 // Zipper is API entry to carbonzipper
 var Zipper zipper
 
+// Limiter limits concurrent zipper requests
 var Limiter limiter
 
 // for testing
