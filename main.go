@@ -6,7 +6,6 @@ import (
 	"expvar"
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"net/url"
@@ -683,7 +682,7 @@ func main() {
 		logger.Logln(r.RequestURI, since.Nanoseconds()/int64(time.Millisecond), stats.zipperRequests)
 	}
 
-	accessLogger := httpaccesslog.AccessLogger{log.New(mlog.GetOutput(), "", 0)}
+	accessLogger := httpaccesslog.New(mlog.GetOutput())
 	http.HandleFunc("/render/", accessLogger.Handle(corsHandler(render)))
 	http.HandleFunc("/render", accessLogger.Handle(corsHandler(render)))
 
