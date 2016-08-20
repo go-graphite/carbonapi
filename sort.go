@@ -49,7 +49,7 @@ func (b byPartBase) compareBy(i, j int, comparator func(string, string) bool) bo
 }
 
 // Returns a byPartBase suitable for sorting 'metrics' by 'part'.
-func ByPart(metrics []*metricData, part int) byPartBase {
+func byPart(metrics []*metricData, part int) byPartBase {
 	return byPartBase{
 		metrics: metrics,
 		keys:    make([]*string, len(metrics)),
@@ -70,7 +70,7 @@ func (b byPartAlphabetical) Less(i, j int) bool {
 
 // returns a byPartAlphabetical that will sort 'metrics' alphabetically by 'part'.
 func AlphabeticallyByPart(metrics []*metricData, part int) sort.Interface {
-	return byPartAlphabetical{ByPart(metrics, part)}
+	return byPartAlphabetical{byPart(metrics, part)}
 }
 
 func sortByBraces(metrics []*metricData, part int, pattern string) {
