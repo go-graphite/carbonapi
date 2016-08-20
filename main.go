@@ -25,6 +25,7 @@ import (
 	"github.com/peterbourgon/g2g"
 )
 
+// Metrics contains exported counters and values for graphite
 var Metrics = struct {
 	Requests         *expvar.Int
 	RequestCacheHits *expvar.Int
@@ -61,6 +62,7 @@ var defaultTimeZone = time.Local
 
 var logger mlog.Level
 
+// Zipper is API entry to carbonzipper
 var Zipper zipper
 
 var Limiter limiter
