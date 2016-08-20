@@ -16,8 +16,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JaderDias/carbonzipper/mlog"
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
-	"github.com/dgryski/carbonzipper/mlog"
 	"github.com/dgryski/carbonzipper/mstats"
 
 	"github.com/JaderDias/go-httpaccesslog"
@@ -683,7 +683,7 @@ func main() {
 		logger.Logln(r.RequestURI, since.Nanoseconds()/int64(time.Millisecond), stats.zipperRequests)
 	}
 
-	accessLogger := httpaccesslog.AccessLogger{log.New(os.Stdout, "", 0)}
+	accessLogger := httpaccesslog.AccessLogger{log.New(mlog.GetOutput(), "", 0)}
 	http.HandleFunc("/render/", accessLogger.Handle(corsHandler(render)))
 	http.HandleFunc("/render", accessLogger.Handle(corsHandler(render)))
 
