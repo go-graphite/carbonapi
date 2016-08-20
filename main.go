@@ -555,7 +555,7 @@ func main() {
 		*port, _ = strconv.Atoi(p)
 	}
 
-	Limiter = NewLimiter(*l)
+	Limiter = newLimiter(*l)
 
 	if *z == "" {
 		logger.Fatalln("no zipper provided")
