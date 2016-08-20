@@ -699,5 +699,7 @@ func main() {
 	r.HandleFunc("/", usageHandler)
 
 	logger.Logln("listening on port", *port)
-	logger.Fatalln(http.ListenAndServe(":"+strconv.Itoa(*port), handlers.CompressHandler(r)))
+	handler := handlers.CompressHandler(r)
+	handler = handlers.CombinedLoggingHandler(os.Stdout, handler)
+	logger.Fatalln(http.ListenAndServe(":"+strconv.Itoa(*port), handler))
 }
