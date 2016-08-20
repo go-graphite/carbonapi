@@ -21,6 +21,7 @@ import (
 
 	"github.com/bradfitz/gomemcache/memcache"
 	ecache "github.com/dgryski/go-expirecache"
+	"github.com/gorilla/handlers"
 	"github.com/peterbourgon/g2g"
 )
 
@@ -684,18 +685,19 @@ func main() {
 		logger.Logln(r.RequestURI, since.Nanoseconds()/int64(time.Millisecond), stats.zipperRequests)
 	}
 
-	http.HandleFunc("/render/", corsHandler(render))
-	http.HandleFunc("/render", corsHandler(render))
+	r := http.NewServeMux()
+	r.HandleFunc("/render/", corsHandler(render))
+	r.HandleFunc("/render", corsHandler(render))
 
-	http.HandleFunc("/metrics/find/", corsHandler(findHandler))
-	http.HandleFunc("/metrics/find", corsHandler(findHandler))
+	r.HandleFunc("/metrics/find/", corsHandler(findHandler))
+	r.HandleFunc("/metrics/find", corsHandler(findHandler))
 
-	http.HandleFunc("/info/", passthroughHandler)
-	http.HandleFunc("/info", passthroughHandler)
+	r.HandleFunc("/info/", passthroughHandler)
+	r.HandleFunc("/info", passthroughHandler)
 
-	http.HandleFunc("/lb_check", lbcheckHandler)
-	http.HandleFunc("/", usageHandler)
+	r.HandleFunc("/lb_check", lbcheckHandler)
+	r.HandleFunc("/", usageHandler)
 
 	logger.Logln("listening on port", *port)
-	logger.Fatalln(http.ListenAndServe(":"+strconv.Itoa(*port), nil))
+	logger.Fatalln(http.ListenAndServe(":"+strconv.Itoa(*port), handlers.CompressHandler(r)))
 }
