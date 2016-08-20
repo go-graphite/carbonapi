@@ -3040,14 +3040,14 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil, err
 		}
 
-		step_int, err := getIntArgDefault(e, 1, 60)
+		stepInt, err := getIntArgDefault(e, 1, 60)
 		if err != nil {
 			return nil, err
 		}
-		if step_int <= 0 {
+		if stepInt <= 0 {
 			return nil, errors.New("step can't be less than 0")
 		}
-		step := int32(step_int)
+		step := int32(stepInt)
 
 		// emulate the behavior of this Python code:
 		//   while when < requestContext["endTime"]:
