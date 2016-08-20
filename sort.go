@@ -48,7 +48,7 @@ func (b byPartBase) compareBy(i, j int, comparator func(string, string) bool) bo
 	return comparator(*b.keys[i], *b.keys[j])
 }
 
-// Returns a byPartBase suitable for sorting 'metrics' by 'part'.
+// byPart returns a byPartBase suitable for sorting 'metrics' by 'part'.
 func byPart(metrics []*metricData, part int) byPartBase {
 	return byPartBase{
 		metrics: metrics,
@@ -68,8 +68,8 @@ func (b byPartAlphabetical) Less(i, j int) bool {
 	})
 }
 
-// returns a byPartAlphabetical that will sort 'metrics' alphabetically by 'part'.
-func AlphabeticallyByPart(metrics []*metricData, part int) sort.Interface {
+// alphabeticallyByPart returns a byPartAlphabetical that will sort 'metrics' alphabetically by 'part'.
+func alphabeticallyByPart(metrics []*metricData, part int) sort.Interface {
 	return byPartAlphabetical{byPart(metrics, part)}
 }
 
@@ -121,7 +121,7 @@ func sortMetrics(metrics []*metricData, mfetch metricRequest) {
 	// By using a stable sort, the rightmost segments will be preserved as "sub-sorts" of any more leftward segments.
 	for i := len(parts) - 1; i >= 0; i-- {
 		if strings.ContainsAny(parts[i], "*?[{") {
-			sort.Stable(AlphabeticallyByPart(metrics, i))
+			sort.Stable(alphabeticallyByPart(metrics, i))
 		}
 		if strings.ContainsRune(parts[i], '{') {
 			sortByBraces(metrics, i, parts[i])
