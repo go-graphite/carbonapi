@@ -140,17 +140,17 @@ func marshalPickle(results []*metricData) []byte {
 	return buf.Bytes()
 }
 
-func marshalProtobuf(results []*metricData) []byte {
+func marshalProtobuf(results []*metricData) ([]byte, error) {
 	response := pb.MultiFetchResponse{}
 	for _, metric := range results {
 		response.Metrics = append(response.Metrics, &((*metric).FetchResponse))
 	}
 	b, err := response.Marshal()
 	if err != nil {
-		logger.Logf("proto.Marshal: %v", err)
+		return nil, err
 	}
 
-	return b
+	return b, nil
 }
 
 func marshalRaw(results []*metricData) []byte {

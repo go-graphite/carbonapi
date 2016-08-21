@@ -311,7 +311,11 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 	case "json":
 		body = marshalJSON(results)
 	case "protobuf":
-		body = marshalProtobuf(results)
+		body, err = marshalProtobuf(results)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	case "raw":
 		body = marshalRaw(results)
 	case "csv":
