@@ -1,4 +1,4 @@
-package main
+package expr
 
 import (
 	"path/filepath"
@@ -13,7 +13,7 @@ import (
 // the relevant metric name part to avoid excessive calls to strings.Split.
 type byPartBase struct {
 	// the metrics to be sorted
-	metrics []*metricData
+	metrics []*MetricData
 	// which part of the name we are sorting on
 	part int
 	// a cache of the relevant part of the name for each metric in metrics
@@ -27,7 +27,7 @@ func (b byPartBase) Swap(i, j int) {
 	b.keys[i], b.keys[j] = b.keys[j], b.keys[i]
 }
 
-func getPart(metric *metricData, part int) string {
+func getPart(metric *MetricData, part int) string {
 	parts := strings.Split(metric.GetName(), ".")
 	return parts[part]
 }
@@ -48,8 +48,8 @@ func (b byPartBase) compareBy(i, j int, comparator func(string, string) bool) bo
 	return comparator(*b.keys[i], *b.keys[j])
 }
 
-// byPart returns a byPartBase suitable for sorting 'metrics' by 'part'.
-func byPart(metrics []*metricData, part int) byPartBase {
+// ByPart returns a byPartBase suitable for sorting 'metrics' by 'part'.
+func ByPart(metrics []*MetricData, part int) byPartBase {
 	return byPartBase{
 		metrics: metrics,
 		keys:    make([]*string, len(metrics)),
@@ -68,12 +68,12 @@ func (b byPartAlphabetical) Less(i, j int) bool {
 	})
 }
 
-// alphabeticallyByPart returns a byPartAlphabetical that will sort 'metrics' alphabetically by 'part'.
-func alphabeticallyByPart(metrics []*metricData, part int) sort.Interface {
-	return byPartAlphabetical{byPart(metrics, part)}
+// AlphabeticallyByPart returns a byPartAlphabetical that will sort 'metrics' alphabetically by 'part'.
+func AlphabeticallyByPart(metrics []*MetricData, part int) sort.Interface {
+	return byPartAlphabetical{ByPart(metrics, part)}
 }
 
-func sortByBraces(metrics []*metricData, part int, pattern string) {
+func sortByBraces(metrics []*MetricData, part int, pattern string) {
 	bStart := strings.IndexRune(pattern, '{')
 	bEnd := strings.IndexRune(pattern, '}')
 	if bStart == -1 || bEnd <= bStart {
@@ -84,7 +84,7 @@ func sortByBraces(metrics []*metricData, part int, pattern string) {
 	for i, metric := range metrics {
 		parts[i] = getPart(metric, part)
 	}
-	src := make([]*metricData, len(metrics))
+	src := make([]*MetricData, len(metrics))
 	used := make([]bool, len(metrics))
 	copy(src, metrics)
 	j := 0
@@ -111,12 +111,12 @@ func sortByBraces(metrics []*metricData, part int, pattern string) {
 	}
 }
 
-func sortMetrics(metrics []*metricData, mfetch metricRequest) {
+func SortMetrics(metrics []*MetricData, mfetch MetricRequest) {
 	// Don't do any work if there are no globs in the metric name
-	if !strings.ContainsAny(mfetch.metric, "*?[{") {
+	if !strings.ContainsAny(mfetch.Metric, "*?[{") {
 		return
 	}
-	parts := strings.Split(mfetch.metric, ".")
+	parts := strings.Split(mfetch.Metric, ".")
 	// Proceed backwards by segments, sorting once for each segment that has a glob that calls for sorting.
 	// By using a stable sort, the rightmost segments will be preserved as "sub-sorts" of any more leftward segments.
 	for i := len(parts) - 1; i >= 0; i-- {

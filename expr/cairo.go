@@ -1,6 +1,6 @@
 // +build cairo
 
-package main
+package expr
 
 import (
 	"bufio"
@@ -438,7 +438,7 @@ func getStringArray(s string, def []string) []string {
 }
 
 func getFontItalic(s string) cairo.FontSlant {
-	if truthyBool(s) {
+	if TruthyBool(s) {
 		return cairo.FontSlantItalic
 	}
 
@@ -446,7 +446,7 @@ func getFontItalic(s string) cairo.FontSlant {
 }
 
 func getFontWeight(s string) cairo.FontWeight {
-	if truthyBool(s) {
+	if TruthyBool(s) {
 		return cairo.FontWeightBold
 	}
 
@@ -610,8 +610,8 @@ type Params struct {
 	yMinLeft    float64
 	yMinRight   float64
 
-	dataLeft  []*metricData
-	dataRight []*metricData
+	dataLeft  []*MetricData
+	dataRight []*MetricData
 
 	rightWidth  float64
 	rightDashed bool
@@ -639,7 +639,7 @@ type cairoSurfaceContext struct {
 	surface *cairo.ImageSurface
 }
 
-func marshalPNG(r *http.Request, results []*metricData) []byte {
+func MarshalPNG(r *http.Request, results []*MetricData) []byte {
 	var params = Params{
 		width:          getFloat64(r.FormValue("width"), 330),
 		height:         getFloat64(r.FormValue("height"), 250),
@@ -746,7 +746,7 @@ func marshalPNG(r *http.Request, results []*metricData) []byte {
 	return b.Bytes()
 }
 
-func drawGraph(cr *cairoSurfaceContext, params *Params, results []*metricData) {
+func drawGraph(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 	var minNumberOfPoints, maxNumberOfPoints int32
 	params.secondYAxis = false
 
@@ -966,7 +966,7 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	drawLines(cr, params, results)
 }
 
-func consolidateDataPoints(params *Params, results []*metricData) {
+func consolidateDataPoints(params *Params, results []*MetricData) {
 	numberOfPixels := params.area.xmax - params.area.xmin - (params.lineWidth + 1)
 	params.graphWidth = int(numberOfPixels)
 
@@ -989,13 +989,13 @@ func consolidateDataPoints(params *Params, results []*metricData) {
 	}
 }
 
-func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*metricData) {
+func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 
-	var Ldata []*metricData
-	var Rdata []*metricData
+	var Ldata []*MetricData
+	var Rdata []*MetricData
 
-	var seriesWithMissingValuesL []*metricData
-	var seriesWithMissingValuesR []*metricData
+	var seriesWithMissingValuesL []*MetricData
+	var seriesWithMissingValuesR []*MetricData
 
 	Ldata = params.dataLeft
 	Rdata = params.dataRight
@@ -1294,8 +1294,8 @@ func makeLabel(yValue, yStep, ySpan float64, yUnitSystem string) string {
 	}
 }
 
-func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) {
-	var seriesWithMissingValues []*metricData
+func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
+	var seriesWithMissingValues []*MetricData
 
 	var yMinValue, yMaxValue float64
 
@@ -1562,7 +1562,7 @@ func closest(number float64, neighbours []float64) float64 {
 	return closestNeighbor
 }
 
-func setupXAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) {
+func setupXAxis(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 
 	/*
 	   if self.userTimeZone:
@@ -1595,7 +1595,7 @@ func setupXAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 	params.xMajorGridStep = int32(params.xConf.majorGridUnit) * params.xConf.majorGridStep
 }
 
-func drawLabels(cr *cairoSurfaceContext, params *Params, results []*metricData) {
+func drawLabels(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 	if !params.hideYAxis {
 		drawYAxis(cr, params, results)
 	}
@@ -1604,7 +1604,7 @@ func drawLabels(cr *cairoSurfaceContext, params *Params, results []*metricData) 
 	}
 }
 
-func drawYAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) {
+func drawYAxis(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 	var x float64
 	if params.secondYAxis {
 
@@ -1679,7 +1679,7 @@ func findXTimes(start int32, unit TimeUnit, step float64) (int32, int32) {
 	return int32(t.Unix()), int32(d / time.Second)
 }
 
-func drawXAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) {
+func drawXAxis(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 
 	dt, xDelta := findXTimes(params.startTime, params.xConf.labelUnit, float64(params.xConf.labelStep))
 
@@ -1699,7 +1699,7 @@ func drawXAxis(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 	}
 }
 
-func drawGridLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
+func drawGridLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 	// Horizontal grid lines
 	leftside := params.area.xmin
 	rightside := params.area.xmax
@@ -1901,7 +1901,7 @@ func getYCoord(params *Params, value float64, side YCoordSide) (y float64) {
 	return params.area.ymax - valueInPixels
 }
 
-func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
+func drawLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 
 	linecap := "butt"
 	linejoin := "miter"
@@ -1925,13 +1925,13 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*metricData) {
 
 	if !math.IsNaN(params.areaAlpha) {
 		alpha := params.areaAlpha
-		var strokeSeries []*metricData
+		var strokeSeries []*MetricData
 		for _, r := range results {
 			if r.stacked {
 				r.alpha = alpha
 				r.hasAlpha = true
 
-				newSeries := metricData{
+				newSeries := MetricData{
 					FetchResponse: pb.FetchResponse{
 						Name:      r.Name,
 						StopTime:  proto.Int32(r.GetStopTime()),
@@ -2111,7 +2111,7 @@ type SeriesLegend struct {
 	secondYAxis bool
 }
 
-func drawLegend(cr *cairoSurfaceContext, params *Params, results []*metricData) {
+func drawLegend(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 	const (
 		padding = 5
 	)
@@ -2445,7 +2445,7 @@ func hexToRGBA(h string) color.RGBA {
 	return color.RGBA{r, g, b, alpha}
 }
 
-type ByStacked []*metricData
+type ByStacked []*MetricData
 
 func (b ByStacked) Len() int { return len(b) }
 

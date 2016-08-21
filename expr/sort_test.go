@@ -1,4 +1,4 @@
-package main
+package expr
 
 import (
 	"testing"
@@ -15,12 +15,12 @@ func TestSortMetrics(t *testing.T) {
 		fourth = "a.fourth.c.d"
 	)
 	tests := []struct {
-		metrics []*metricData
-		mfetch  metricRequest
-		sorted  []*metricData
+		metrics []*MetricData
+		mfetch  MetricRequest
+		sorted  []*MetricData
 	}{
 		{
-			[]*metricData{
+			[]*MetricData{
 				//NOTE(nnuss): keep these lines lexically sorted ;)
 				makeResponse(bronze, []float64{}, 1, 0),
 				makeResponse(first, []float64{}, 1, 0),
@@ -30,12 +30,12 @@ func TestSortMetrics(t *testing.T) {
 				makeResponse(silver, []float64{}, 1, 0),
 				makeResponse(third, []float64{}, 1, 0),
 			},
-			metricRequest{
-				metric: "a.{first,second,third,fourth}.c.d",
-				from:   0,
-				until:  1,
+			MetricRequest{
+				Metric: "a.{first,second,third,fourth}.c.d",
+				From:   0,
+				Until:  1,
 			},
-			[]*metricData{
+			[]*MetricData{
 				//These are in the brace appearance order
 				makeResponse(first, []float64{}, 1, 0),
 				makeResponse(second, []float64{}, 1, 0),
@@ -53,7 +53,7 @@ func TestSortMetrics(t *testing.T) {
 		if len(test.metrics) != len(test.sorted) {
 			t.Skipf("Error in test %d : length mismatch %d vs. %d", i, len(test.metrics), len(test.sorted))
 		}
-		sortMetrics(test.metrics, test.mfetch)
+		SortMetrics(test.metrics, test.mfetch)
 		for i := range test.metrics {
 			if *test.metrics[i].Name != *test.sorted[i].Name {
 				t.Errorf("[%d] Expected %q but have %q", i, *test.sorted[i].Name, *test.metrics[i].Name)

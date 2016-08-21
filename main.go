@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dgryski/carbonapi/expr"
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 	"github.com/dgryski/carbonzipper/mlog"
 	"github.com/dgryski/carbonzipper/mstats"
@@ -131,6 +132,46 @@ func buildParseErrorString(target, e string, err error) string {
 	return msg
 }
 
+// dateParamToEpoch turns a passed string parameter into a unix epoch
+func dateParamToEpoch(s string, d int64) int32 {
+
+	if s == "" {
+		// return the default if nothing was passed
+		return int32(d)
+	}
+
+	// relative timestamp
+	if s[0] == '-' {
+		offset, err := expr.IntervalString(s, -1)
+		if err != nil {
+			return int32(d)
+		}
+
+		return int32(timeNow().Add(time.Duration(offset) * time.Second).Unix())
+	}
+
+	if s == "now" {
+		return int32(timeNow().Unix())
+	}
+
+	sint, err := strconv.Atoi(s)
+	if err == nil && len(s) > 8 {
+		return int32(sint) // We got a timestamp so returning it
+	}
+
+	if strings.Contains(s, "_") {
+		s = strings.Replace(s, "_", " ", 1) // Go can't parse _ in date strings
+	}
+
+	for _, format := range timeFormats {
+		t, err := time.ParseInLocation(format, s, defaultTimeZone)
+		if err == nil {
+			return int32(t.Unix())
+		}
+	}
+	return int32(d)
+}
+
 func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 
 	Metrics.Requests.Add(1)
@@ -145,7 +186,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 	from := r.FormValue("from")
 	until := r.FormValue("until")
 	format := r.FormValue("format")
-	useCache := !truthyBool(r.FormValue("noCache"))
+	useCache := !expr.TruthyBool(r.FormValue("noCache"))
 
 	var jsonp string
 
@@ -154,7 +195,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 		jsonp = r.FormValue("jsonp")
 	}
 
-	if format == "" && (truthyBool(r.FormValue("rawData")) || truthyBool(r.FormValue("rawdata"))) {
+	if format == "" && (expr.TruthyBool(r.FormValue("rawData")) || expr.TruthyBool(r.FormValue("rawdata"))) {
 		format = "raw"
 	}
 
@@ -201,13 +242,13 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 		return
 	}
 
-	var results []*metricData
+	var results []*expr.MetricData
 	var errors []string
-	metricMap := make(map[metricRequest][]*metricData)
+	metricMap := make(map[expr.MetricRequest][]*expr.MetricData)
 
 	for _, target := range targets {
 
-		exp, e, err := parseExpr(target)
+		exp, e, err := expr.ParseExpr(target)
 
 		if err != nil || e != "" {
 			msg := buildParseErrorString(target, e, err)
@@ -215,11 +256,11 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 			return
 		}
 
-		for _, m := range exp.metrics() {
+		for _, m := range exp.Metrics() {
 
 			mfetch := m
-			mfetch.from += from32
-			mfetch.until += until32
+			mfetch.From += from32
+			mfetch.Until += until32
 
 			if _, ok := metricMap[mfetch]; ok {
 				// already fetched this metric for this request
@@ -229,7 +270,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 			var glob pb.GlobResponse
 			var haveCacheData bool
 
-			if response, ok := findCache.get(m.metric); useCache && ok {
+			if response, ok := findCache.get(m.Metric); useCache && ok {
 				Metrics.FindCacheHits.Add(1)
 				err := glob.Unmarshal(response)
 				haveCacheData = err == nil
@@ -239,20 +280,20 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 				var err error
 				Metrics.FindRequests.Add(1)
 				stats.zipperRequests++
-				glob, err = Zipper.Find(m.metric)
+				glob, err = Zipper.Find(m.Metric)
 				if err != nil {
-					logger.Logf("Find: %v: %v", m.metric, err)
+					logger.Logf("Find: %v: %v", m.Metric, err)
 					continue
 				}
 				b, err := glob.Marshal()
 				if err == nil {
-					findCache.set(m.metric, b, 5*60)
+					findCache.set(m.Metric, b, 5*60)
 				}
 			}
 
 			// For each metric returned in the Find response, query Render
 			// This is a conscious decision to *not* cache render data
-			rch := make(chan *metricData, len(glob.GetMatches()))
+			rch := make(chan *expr.MetricData, len(glob.GetMatches()))
 			leaves := 0
 			for _, m := range glob.GetMatches() {
 				if !m.GetIsLeaf() {
@@ -263,7 +304,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 				Limiter.enter()
 				stats.zipperRequests++
 				go func(m *pb.GlobMatch, from, until int32) {
-					var rptr *metricData
+					var rptr *expr.MetricData
 					r, err := Zipper.Render(m.GetPath(), from, until)
 					if err == nil {
 						rptr = &r
@@ -272,7 +313,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 					}
 					rch <- rptr
 					Limiter.leave()
-				}(m, mfetch.from, mfetch.until)
+				}(m, mfetch.From, mfetch.Until)
 			}
 
 			for i := 0; i < leaves; i++ {
@@ -282,7 +323,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 				}
 			}
 
-			sortMetrics(metricMap[mfetch], mfetch)
+			expr.SortMetrics(metricMap[mfetch], mfetch)
 
 		}
 
@@ -294,8 +335,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 					logger.Logf("panic during eval: %s: %s\n%s\n", cacheKey, r, string(buf[:]))
 				}
 			}()
-			exprs, err := evalExpr(exp, from32, until32, metricMap)
-			if err != nil && err != ErrSeriesDoesNotExist {
+			exprs, err := expr.EvalExpr(exp, from32, until32, metricMap)
+			if err != nil && err != expr.ErrSeriesDoesNotExist {
 				errors = append(errors, target+": "+err.Error())
 				return
 			}
@@ -313,21 +354,21 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 
 	switch format {
 	case "json":
-		body = marshalJSON(results)
+		body = expr.MarshalJSON(results)
 	case "protobuf":
-		body, err = marshalProtobuf(results)
+		body, err = expr.MarshalProtobuf(results)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	case "raw":
-		body = marshalRaw(results)
+		body = expr.MarshalRaw(results)
 	case "csv":
-		body = marshalCSV(results)
+		body = expr.MarshalCSV(results)
 	case "pickle":
-		body = marshalPickle(results)
+		body = expr.MarshalPickle(results)
 	case "png":
-		body = marshalPNG(r, results)
+		body = expr.MarshalPNG(r, results)
 	}
 
 	writeResponse(w, body, format, jsonp)
