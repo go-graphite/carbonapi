@@ -489,19 +489,6 @@ func findTreejson(globs pb.GlobResponse) ([]byte, error) {
 	return b.Bytes(), err
 }
 
-func corsHandler(handler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Add("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-
-		if r.Method == "OPTIONS" {
-			// nothing to do, CORS headers already sent
-			return
-		}
-		handler(w, r)
-	}
-}
-
 func passthroughHandler(w http.ResponseWriter, r *http.Request) {
 	var data []byte
 	var err error
@@ -690,11 +677,11 @@ func main() {
 	}
 
 	r := http.NewServeMux()
-	r.HandleFunc("/render/", corsHandler(render))
-	r.HandleFunc("/render", corsHandler(render))
+	r.HandleFunc("/render/", render)
+	r.HandleFunc("/render", render)
 
-	r.HandleFunc("/metrics/find/", corsHandler(findHandler))
-	r.HandleFunc("/metrics/find", corsHandler(findHandler))
+	r.HandleFunc("/metrics/find/", findHandler)
+	r.HandleFunc("/metrics/find", findHandler)
 
 	r.HandleFunc("/info/", passthroughHandler)
 	r.HandleFunc("/info", passthroughHandler)
@@ -704,6 +691,7 @@ func main() {
 
 	logger.Logln("listening on port", *port)
 	handler := handlers.CompressHandler(r)
+	handler = handlers.CORS()(handler)
 	handler = handlers.CombinedLoggingHandler(os.Stdout, handler)
 	logger.Fatalln(http.ListenAndServe(":"+strconv.Itoa(*port), handler))
 }
