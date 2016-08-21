@@ -51,6 +51,7 @@ var Metrics = struct {
 	MemcacheTimeouts: expvar.NewInt("memcache_timeouts"),
 }
 
+// BuildVersion is provided to be overridden at build time. Eg. go build -ldflags -X 'main.BuildVersion=...'
 var BuildVersion = "(development build)"
 
 var queryCache bytesCache
