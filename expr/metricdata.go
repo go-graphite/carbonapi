@@ -3,7 +3,6 @@ package expr
 import (
 	"bytes"
 	"math"
-	"net/http"
 	"strconv"
 	"time"
 
@@ -58,13 +57,7 @@ func MarshalCSV(results []*MetricData) []byte {
 	return b
 }
 
-func consolidate(req *http.Request, results []*MetricData) {
-	// TODO: unify this with consolidateDataPoints in cairo.go?
-	maxDataPoints, _ := strconv.ParseInt(req.FormValue("maxDataPoints"), 10, 32)
-	if maxDataPoints == 0 {
-		return
-	}
-
+func ConsolidateJSON(maxDataPoints int, results []*MetricData) {
 	var startTime int32 = -1
 	var endTime int32 = -1
 
@@ -94,9 +87,7 @@ func consolidate(req *http.Request, results []*MetricData) {
 	}
 }
 
-func MarshalJSON(r *http.Request, results []*MetricData) []byte {
-	consolidate(r, results)
-
+func MarshalJSON(results []*MetricData) []byte {
 	var b []byte
 	b = append(b, '[')
 

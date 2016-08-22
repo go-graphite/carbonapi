@@ -354,7 +354,11 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 
 	switch format {
 	case "json":
-		body = expr.MarshalJSON(r, results)
+		if maxDataPoints, _ := strconv.Atoi(r.FormValue("maxDataPoints")); maxDataPoints != 0 {
+			expr.ConsolidateJSON(maxDataPoints, results)
+		}
+
+		body = expr.MarshalJSON(results)
 	case "protobuf":
 		body, err = expr.MarshalProtobuf(results)
 		if err != nil {
