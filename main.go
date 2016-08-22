@@ -692,6 +692,6 @@ func main() {
 	logger.Logln("listening on port", *port)
 	handler := handlers.CompressHandler(r)
 	handler = handlers.CORS()(handler)
-	handler = handlers.CombinedLoggingHandler(os.Stdout, handler)
+	handler = handlers.CombinedLoggingHandler(mlog.GetOutput(), handler)
 	logger.Fatalln(http.ListenAndServe(":"+strconv.Itoa(*port), handler))
 }
