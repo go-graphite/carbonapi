@@ -121,7 +121,7 @@ func SortMetrics(metrics []*MetricData, mfetch MetricRequest) {
 	// By using a stable sort, the rightmost segments will be preserved as "sub-sorts" of any more leftward segments.
 	for i := len(parts) - 1; i >= 0; i-- {
 		if strings.ContainsAny(parts[i], "*?[{") {
-			sort.Stable(alphabeticallyByPart(metrics, i))
+			sort.Stable(AlphabeticallyByPart(metrics, i))
 		}
 		if strings.ContainsRune(parts[i], '{') {
 			sortByBraces(metrics, i, parts[i])
