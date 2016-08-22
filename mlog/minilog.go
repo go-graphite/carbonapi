@@ -11,11 +11,22 @@ import (
 
 type Level int
 
+var output io.Writer
+
 const (
 	Normal Level = iota
 	Debug
 	Trace
 )
+
+func setOutputWriter(writer io.Writer) {
+	output = writer
+	log.SetOutput(writer)
+}
+
+func GetOutput() io.Writer {
+	return output
+}
 
 func SetOutput(logdir, service string, stdout bool) {
 	rl := rotatelogs.NewRotateLogs(
@@ -26,15 +37,15 @@ func SetOutput(logdir, service string, stdout bool) {
 	rl.LinkName = logdir + "/" + service + ".log"
 
 	if stdout {
-		log.SetOutput(io.MultiWriter(os.Stdout, rl))
+		setOutputWriter(io.MultiWriter(os.Stdout, rl))
 	} else {
-		log.SetOutput(rl)
+		setOutputWriter(rl)
 	}
 }
 
 func SetRawStream(w io.Writer) {
 	log.SetFlags(0)
-	log.SetOutput(w)
+	setOutputWriter(w)
 }
 
 func (ll Level) Debugf(format string, a ...interface{}) {
