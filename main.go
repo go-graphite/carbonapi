@@ -25,6 +25,7 @@ import (
 	"github.com/peterbourgon/g2g"
 )
 
+// Metrics contains exported counters and values for graphite
 var Metrics = struct {
 	Requests         *expvar.Int
 	RequestCacheHits *expvar.Int
@@ -50,6 +51,7 @@ var Metrics = struct {
 	MemcacheTimeouts: expvar.NewInt("memcache_timeouts"),
 }
 
+// BuildVersion is provided to be overridden at build time. Eg. go build -ldflags -X 'main.BuildVersion=...'
 var BuildVersion = "(development build)"
 
 var queryCache bytesCache
@@ -61,8 +63,10 @@ var defaultTimeZone = time.Local
 
 var logger mlog.Level
 
+// Zipper is API entry to carbonzipper
 var Zipper zipper
 
+// Limiter limits concurrent zipper requests
 var Limiter limiter
 
 // for testing
@@ -546,7 +550,7 @@ func main() {
 		*port, _ = strconv.Atoi(p)
 	}
 
-	Limiter = NewLimiter(*l)
+	Limiter = newLimiter(*l)
 
 	if *z == "" {
 		logger.Fatalln("no zipper provided")

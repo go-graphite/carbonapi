@@ -151,9 +151,13 @@ func parseExpr(e string) (*expr, string, error) {
 }
 
 var (
-	ErrMissingExpr         = errors.New("missing expression")
-	ErrMissingComma        = errors.New("missing comma")
-	ErrMissingQuote        = errors.New("missing quote")
+	// ErrMissingExpr is a parse error returned when an expression is missing.
+	ErrMissingExpr = errors.New("missing expression")
+	// ErrMissingComma is a parse error returned when an expression is missing a comma.
+	ErrMissingComma = errors.New("missing comma")
+	// ErrMissingQuote is a parse error returned when an expression is missing a quote.
+	ErrMissingQuote = errors.New("missing quote")
+	// ErrUnexpectedCharacter is a parse error returned when an expression contains an unexpected character.
 	ErrUnexpectedCharacter = errors.New("unexpected character")
 )
 
@@ -315,9 +319,13 @@ func parseString(s string) (string, string, error) {
 }
 
 var (
-	ErrBadType            = errors.New("bad type")
-	ErrMissingArgument    = errors.New("missing argument")
-	ErrMissingTimeseries  = errors.New("missing time series argument")
+	// ErrBadType is an eval error returned when a argument has wrong type.
+	ErrBadType = errors.New("bad type")
+	// ErrMissingArgument is an eval error returned when a argument is missing.
+	ErrMissingArgument = errors.New("missing argument")
+	// ErrMissingTimeseries is an eval error returned when a time series argument is missing.
+	ErrMissingTimeseries = errors.New("missing time series argument")
+	// ErrSeriesDoesNotExist is an eval error returned when a requested time series argument does not exist.
 	ErrSeriesDoesNotExist = errors.New("no timeseries with that name")
 )
 
@@ -527,8 +535,10 @@ func getNamedArg(e *expr, name string) *expr {
 }
 
 var (
+	// ErrWildcardNotAllowed is an eval error returned when a wildcard/glob argument is found where a single series is required.
 	ErrWildcardNotAllowed = errors.New("found wildcard where series expected")
-	ErrTooManyArguments   = errors.New("too many arguments")
+	// ErrTooManyArguments is an eval error returned when too many arguments are provided.
+	ErrTooManyArguments = errors.New("too many arguments")
 )
 
 var backref = regexp.MustCompile(`\\(\d+)`)
@@ -1603,8 +1613,8 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil, err
 		}
 
-		w1 := &Windowed{data: make([]float64, windowSize)}
-		w2 := &Windowed{data: make([]float64, windowSize)}
+		w1 := &windowed{data: make([]float64, windowSize)}
+		w2 := &windowed{data: make([]float64, windowSize)}
 
 		r := *a1
 		r.Name = proto.String(fmt.Sprintf("kolmogorovSmirnovTest2(%s,%s,%d)", a1.GetName(), a2.GetName(), windowSize))
@@ -1813,7 +1823,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		var result []*metricData
 
 		for _, a := range arg {
-			w := &Windowed{data: make([]float64, windowSize)}
+			w := &windowed{data: make([]float64, windowSize)}
 
 			r := *a
 			r.Name = proto.String(fmt.Sprintf("movingAverage(%s,%d)", a.GetName(), windowSize))
@@ -2051,8 +2061,8 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil, err
 		}
 
-		w1 := &Windowed{data: make([]float64, windowSize)}
-		w2 := &Windowed{data: make([]float64, windowSize)}
+		w1 := &windowed{data: make([]float64, windowSize)}
+		w2 := &windowed{data: make([]float64, windowSize)}
 
 		r := *a1
 		r.Name = proto.String(fmt.Sprintf("pearson(%s,%s,%d)", a1.GetName(), a2.GetName(), windowSize))
@@ -2369,7 +2379,7 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 		var result []*metricData
 
 		for _, a := range arg {
-			w := &Windowed{data: make([]float64, points)}
+			w := &windowed{data: make([]float64, points)}
 
 			r := *a
 			r.Name = proto.String(fmt.Sprintf("stdev(%s,%d)", a.GetName(), points))
@@ -3030,14 +3040,14 @@ func evalExpr(e *expr, from, until int32, values map[metricRequest][]*metricData
 			return nil, err
 		}
 
-		step_int, err := getIntArgDefault(e, 1, 60)
+		stepInt, err := getIntArgDefault(e, 1, 60)
 		if err != nil {
 			return nil, err
 		}
-		if step_int <= 0 {
+		if stepInt <= 0 {
 			return nil, errors.New("step can't be less than 0")
 		}
-		step := int32(step_int)
+		step := int32(stepInt)
 
 		// emulate the behavior of this Python code:
 		//   while when < requestContext["endTime"]:
@@ -3480,7 +3490,7 @@ func contains(a []int, i int) bool {
 // Note that this uses a slightly unstable but faster implementation of
 // standard deviation.  This is also required to be compatible with graphite.
 
-type Windowed struct {
+type windowed struct {
 	data   []float64
 	head   int
 	length int
@@ -3489,7 +3499,7 @@ type Windowed struct {
 	nans   int
 }
 
-func (w *Windowed) Push(n float64) {
+func (w *windowed) Push(n float64) {
 	old := w.data[w.head]
 
 	w.length++
@@ -3515,7 +3525,7 @@ func (w *Windowed) Push(n float64) {
 	}
 }
 
-func (w *Windowed) Len() int {
+func (w *windowed) Len() int {
 	if w.length < len(w.data) {
 		return w.length - w.nans
 	}
@@ -3523,7 +3533,7 @@ func (w *Windowed) Len() int {
 	return len(w.data) - w.nans
 }
 
-func (w *Windowed) Stdev() float64 {
+func (w *windowed) Stdev() float64 {
 	l := w.Len()
 
 	if l == 0 {
@@ -3534,7 +3544,7 @@ func (w *Windowed) Stdev() float64 {
 	return math.Sqrt(n*w.sumsq-(w.sum*w.sum)) / n
 }
 
-func (w *Windowed) Mean() float64 { return w.sum / float64(w.Len()) }
+func (w *windowed) Mean() float64 { return w.sum / float64(w.Len()) }
 
 func percentile(data []float64, percent float64, interpolate bool) float64 {
 	if len(data) == 0 || percent < 0 || percent > 100 {
