@@ -1,4 +1,4 @@
-package main
+package expr
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 	pickle "github.com/kisielk/og-rek"
 )
 
-type metricData struct {
+type MetricData struct {
 	pb.FetchResponse
 
 	// extra options
@@ -31,7 +31,7 @@ type metricData struct {
 	aggregateFunction func([]float64, []bool) float64
 }
 
-func marshalCSV(results []*metricData) []byte {
+func MarshalCSV(results []*MetricData) []byte {
 
 	var b []byte
 
@@ -56,7 +56,7 @@ func marshalCSV(results []*metricData) []byte {
 	return b
 }
 
-func marshalJSON(results []*metricData) []byte {
+func MarshalJSON(results []*MetricData) []byte {
 
 	var b []byte
 	b = append(b, '[')
@@ -109,7 +109,7 @@ func marshalJSON(results []*metricData) []byte {
 	return b
 }
 
-func marshalPickle(results []*metricData) []byte {
+func MarshalPickle(results []*MetricData) []byte {
 
 	var p []map[string]interface{}
 
@@ -140,7 +140,7 @@ func marshalPickle(results []*metricData) []byte {
 	return buf.Bytes()
 }
 
-func marshalProtobuf(results []*metricData) ([]byte, error) {
+func MarshalProtobuf(results []*MetricData) ([]byte, error) {
 	response := pb.MultiFetchResponse{}
 	for _, metric := range results {
 		response.Metrics = append(response.Metrics, &((*metric).FetchResponse))
@@ -153,7 +153,7 @@ func marshalProtobuf(results []*metricData) ([]byte, error) {
 	return b, nil
 }
 
-func marshalRaw(results []*metricData) []byte {
+func MarshalRaw(results []*MetricData) []byte {
 
 	var b []byte
 
@@ -187,7 +187,7 @@ func marshalRaw(results []*metricData) []byte {
 	return b
 }
 
-func (r *metricData) AggregatedTimeStep() int32 {
+func (r *MetricData) AggregatedTimeStep() int32 {
 	if r.valuesPerPoint == 1 || r.valuesPerPoint == 0 {
 		return r.GetStepTime()
 	}
@@ -195,7 +195,7 @@ func (r *metricData) AggregatedTimeStep() int32 {
 	return r.GetStepTime() * int32(r.valuesPerPoint)
 }
 
-func (r *metricData) AggregatedValues() []float64 {
+func (r *MetricData) AggregatedValues() []float64 {
 	if r.aggregatedValues != nil {
 		return r.aggregatedValues
 	}

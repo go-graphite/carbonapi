@@ -1,57 +1,14 @@
-package main
+package expr
 
 import (
 	"errors"
 	"strconv"
-	"strings"
-	"time"
 )
 
 var errUnknownTimeUnits = errors.New("unknown time units")
 
-// dateParamToEpoch turns a passed string parameter into a unix epoch
-func dateParamToEpoch(s string, d int64) int32 {
-
-	if s == "" {
-		// return the default if nothing was passed
-		return int32(d)
-	}
-
-	// relative timestamp
-	if s[0] == '-' {
-
-		offset, err := intervalString(s, -1)
-		if err != nil {
-			return int32(d)
-		}
-
-		return int32(timeNow().Add(time.Duration(offset) * time.Second).Unix())
-	}
-
-	if s == "now" {
-		return int32(timeNow().Unix())
-	}
-
-	sint, err := strconv.Atoi(s)
-	if err == nil && len(s) > 8 {
-		return int32(sint) // We got a timestamp so returning it
-	}
-
-	if strings.Contains(s, "_") {
-		s = strings.Replace(s, "_", " ", 1) // Go can't parse _ in date strings
-	}
-
-	for _, format := range timeFormats {
-		t, err := time.ParseInLocation(format, s, defaultTimeZone)
-		if err == nil {
-			return int32(t.Unix())
-		}
-	}
-	return int32(d)
-}
-
-// intervalString converts a sign and string into a number of seconds
-func intervalString(s string, defaultSign int) (int32, error) {
+// IntervalString converts a sign and string into a number of seconds
+func IntervalString(s string, defaultSign int) (int32, error) {
 
 	sign := defaultSign
 
@@ -110,7 +67,7 @@ func intervalString(s string, defaultSign int) (int32, error) {
 	return totalInterval, nil
 }
 
-func truthyBool(s string) bool {
+func TruthyBool(s string) bool {
 	switch s {
 	case "", "0", "false", "False", "no", "No":
 		return false

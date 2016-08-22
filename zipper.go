@@ -3,11 +3,13 @@ package main
 import (
 	"errors"
 	"fmt"
-	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
+
+	"github.com/dgryski/carbonapi/expr"
+	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 )
 
 var errNoMetrics = errors.New("no metrics")
@@ -75,7 +77,7 @@ func (z zipper) Passthrough(metric string) ([]byte, error) {
 	return body, nil
 }
 
-func (z zipper) Render(metric string, from, until int32) (metricData, error) {
+func (z zipper) Render(metric string, from, until int32) (expr.MetricData, error) {
 
 	u, _ := url.Parse(z.z + "/render/")
 
@@ -89,14 +91,14 @@ func (z zipper) Render(metric string, from, until int32) (metricData, error) {
 	var pbresp pb.MultiFetchResponse
 	err := z.get("Render", u, &pbresp)
 	if err != nil {
-		return metricData{}, err
+		return expr.MetricData{}, err
 	}
 
 	if m := pbresp.Metrics; len(m) == 0 {
-		return metricData{}, errNoMetrics
+		return expr.MetricData{}, errNoMetrics
 	}
 
-	mdata := metricData{FetchResponse: *pbresp.Metrics[0]}
+	mdata := expr.MetricData{FetchResponse: *pbresp.Metrics[0]}
 
 	return mdata, nil
 }
