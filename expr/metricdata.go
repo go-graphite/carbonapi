@@ -227,8 +227,8 @@ func (r *MetricData) AggregatedTimeStep() int32 {
 }
 
 func (r *MetricData) AggregatedValues() []float64 {
-	if r.aggregatedValues != nil {
-		return r.aggregatedValues
+	if r.aggregatedValues == nil {
+		r.AggregateValues()
 	}
 	return r.aggregatedValues
 }
