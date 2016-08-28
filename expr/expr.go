@@ -184,12 +184,20 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 			return "", nil, nil, e, err
 		}
 
+		if e == "" {
+			return "", nil, nil, "", ErrMissingComma
+		}
+
 		// we now know we're parsing a key-value pair
 		if arg.etype == etName && e[0] == '=' {
 			e = e[1:]
 			argCont, eCont, errCont := ParseExpr(e)
 			if errCont != nil {
 				return "", nil, nil, eCont, errCont
+			}
+
+			if eCont == "" {
+				return "", nil, nil, "", ErrMissingComma
 			}
 
 			if argCont.etype != etConst && argCont.etype != etName && argCont.etype != etString {
@@ -210,10 +218,6 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 			e = eCont
 		} else {
 			posArgs = append(posArgs, arg)
-		}
-
-		if e == "" {
-			return "", nil, nil, "", ErrMissingComma
 		}
 
 		if e[0] == ')' {
