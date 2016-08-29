@@ -24,6 +24,7 @@ import (
 	"github.com/dgryski/carbonzipper/mstats"
 	"github.com/dgryski/go-expirecache"
 	"github.com/dgryski/httputil"
+	"github.com/facebookgo/grace/gracehttp"
 	pickle "github.com/kisielk/og-rek"
 	"github.com/peterbourgon/g2g"
 )
@@ -793,7 +794,15 @@ func main() {
 
 	portStr := fmt.Sprintf(":%d", Config.Port)
 	logger.Logln("listening on", portStr)
-	log.Fatal(http.ListenAndServe(portStr, nil))
+
+	err = gracehttp.Serve(&http.Server{
+		Addr:    portStr,
+		Handler: nil,
+	})
+
+	if err != nil {
+		log.Fatalln("error during gracehttp.Serve():", err)
+	}
 }
 
 var timeBuckets []int64
