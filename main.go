@@ -22,6 +22,7 @@ import (
 
 	"github.com/bradfitz/gomemcache/memcache"
 	ecache "github.com/dgryski/go-expirecache"
+	"github.com/facebookgo/grace/gracehttp"
 	"github.com/gorilla/handlers"
 	"github.com/peterbourgon/g2g"
 )
@@ -742,5 +743,13 @@ func main() {
 	handler := handlers.CompressHandler(r)
 	handler = handlers.CORS()(handler)
 	handler = handlers.CombinedLoggingHandler(mlog.GetOutput(), handler)
-	logger.Fatalln(http.ListenAndServe(":"+strconv.Itoa(*port), handler))
+
+	err := gracehttp.Serve(&http.Server{
+		Addr:    ":" + strconv.Itoa(*port),
+		Handler: handler,
+	})
+
+	if err != nil {
+		logger.Fatalln(err)
+	}
 }
