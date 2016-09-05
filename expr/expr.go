@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/JaderDias/movingmedian"
-	"github.com/datastream/holtwinters"
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 	"github.com/dgryski/go-onlinestats"
 	"github.com/gogo/protobuf/proto"
@@ -3124,37 +3123,22 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			return nil, err
 		}
 
-		const alpha = 0.1
-		const beta = 0.0035
-		const gamma = 0.1
-
 		for _, arg := range args {
 			stepTime := arg.GetStepTime()
-			numStepsToWalkToGetOriginalData := (int)((until - from) / stepTime)
 
-			//originalSeries := arg.Values[len(arg.Values)-numStepsToWalkToGetOriginalData:]
-			bootStrapSeries := arg.Values[:len(arg.Values)-numStepsToWalkToGetOriginalData]
+			predictions := holtWintersAnalysis(arg.Values, stepTime)
 
-			//In line with graphite, we define a season as a single day.
-			//A period is the number of steps that make a season.
-			period := (int)((24 * 60 * 60) / stepTime)
-
-			predictions, err := holtwinters.Forecast(bootStrapSeries, alpha, beta, gamma, period, numStepsToWalkToGetOriginalData)
-			if err != nil {
-				return nil, err
-			}
-
-			predictionsOfInterest := predictions[len(predictions)-numStepsToWalkToGetOriginalData:]
+			windowPoints := 7 * 86400 / stepTime
+			predictionsOfInterest := predictions[windowPoints:]
 
 			r := MetricData{FetchResponse: pb.FetchResponse{
 				Name:      proto.String(fmt.Sprintf("holtWintersForecast(%s)", arg.GetName())),
-				Values:    make([]float64, len(predictionsOfInterest)),
+				Values:    predictionsOfInterest,
 				IsAbsent:  make([]bool, len(predictionsOfInterest)),
 				StepTime:  proto.Int32(arg.GetStepTime()),
 				StartTime: proto.Int32(arg.GetStartTime() + 7*86400),
 				StopTime:  proto.Int32(arg.GetStopTime()),
 			}}
-			r.Values = predictionsOfInterest
 
 			results = append(results, &r)
 		}
