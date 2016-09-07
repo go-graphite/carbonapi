@@ -2097,6 +2097,8 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 				areaYFrom = getYCoord(params, 0, YCoordSideNone)
 			}
 			fillAreaAndClip(cr, params, xPos, y, startX, areaYFrom)
+		} else if series.drawAsInfinite {
+			// nothing -- don't hook up last point to edge of graph
 		} else {
 			cr.context.Stroke()
 		}
