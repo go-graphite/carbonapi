@@ -26,10 +26,14 @@ OSX Build Notes
 Some additional steps may be needed to build carbonapi with cairo rendering on MacOSX.
 
 Install cairo:
-`$ brew install cairo --with-x11`
 
-Set `PKG_CONFIG_PATH` and `-tags cairo` when building
-`$ PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig go test -v -tags cairo`
+$ brew install Caskroom/cask/xquartz
+
+$ brew install cairo --with-x11
+
+Set `PKG_CONFIG_PATH` and `-tags cairo` when building:
+
+$ PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig go test -v -tags cairo
 
 Acknowledgement
 ---------------
