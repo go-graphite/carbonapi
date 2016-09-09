@@ -21,6 +21,20 @@ or if the GRAPHITEHOST/GRAPHITEPORT environment variables are found.
 
 Request data will be stored in memory (default) or in memcache.
 
+OSX Build Notes
+---------------
+Some additional steps may be needed to build carbonapi with cairo rendering on MacOSX.
+
+Install cairo:
+
+$ brew install Caskroom/cask/xquartz
+
+$ brew install cairo --with-x11
+
+Set `PKG_CONFIG_PATH` and `-tags cairo` when building:
+
+$ PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig go build -v -tags cairo
+
 Acknowledgement
 ---------------
 This program was originally developed for Booking.com.  With approval
