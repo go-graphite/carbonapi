@@ -33,7 +33,7 @@ $ brew install cairo --with-x11
 
 Set `PKG_CONFIG_PATH` and `-tags cairo` when building:
 
-$ PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig go test -v -tags cairo
+$ PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig go build -v -tags cairo
 
 Acknowledgement
 ---------------
