@@ -726,7 +726,7 @@ func main() {
 		logger.Logln(r.RequestURI, since.Nanoseconds()/int64(time.Millisecond), stats.zipperRequests)
 	}
 
-	r := http.NewServeMux()
+	r := http.DefaultServeMux
 	r.HandleFunc("/render/", render)
 	r.HandleFunc("/render", render)
 
