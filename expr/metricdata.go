@@ -239,18 +239,12 @@ func (r *MetricData) AggregatedAbsent() []bool {
 	}
 	return r.aggregatedAbsent
 }
-
 func (r *MetricData) AggregateValues() {
 	if r.valuesPerPoint == 1 || r.valuesPerPoint == 0 {
-		v := make([]float64, len(r.Values))
-		a := make([]bool, len(r.Values))
-		for i, _ := range r.Values {
-			a[i] = r.IsAbsent[i]
-			v[i] = r.Values[i]
-		}
-
-		r.aggregatedValues = v
-		r.aggregatedAbsent = a
+		r.aggregatedValues = make([]float64, len(r.Values))
+		r.aggregatedAbsent = make([]bool, len(r.Values))
+		copy(r.aggregatedValues, r.Values)
+		copy(r.aggregatedAbsent, r.IsAbsent)
 		return
 	}
 
