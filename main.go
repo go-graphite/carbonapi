@@ -151,14 +151,20 @@ func dateParamToEpoch(s string, d int64) int32 {
 		return int32(timeNow().Add(time.Duration(offset) * time.Second).Unix())
 	}
 
-	if s == "now" {
+	switch s {
+	case "now":
 		return int32(timeNow().Unix())
-	}
+	case "yesterday", "today", "tomorrow":
+		t := timeNow()
+		switch s {
+		case "yesterday":
+			t.AddDate(0, 0, -1)
+		case "tomorrow":
+			t.AddDate(0, 0, 1)
+		}
 
-	if s == "today" {
-		now := timeNow()
-		yy, mm, dd := now.Date()
-		midnight := time.Date(yy, mm, dd, 0, 0, 0, 0, now.Location())
+		yy, mm, dd := t.Date()
+		midnight := time.Date(yy, mm, dd, 0, 0, 0, 0, defaultTimeZone)
 		return int32(midnight.Unix())
 	}
 
