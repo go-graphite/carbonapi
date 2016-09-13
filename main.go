@@ -155,6 +155,13 @@ func dateParamToEpoch(s string, d int64) int32 {
 		return int32(timeNow().Unix())
 	}
 
+	if s == "today" {
+		now := timeNow()
+		yy, mm, dd := now.Date()
+		midnight := time.Date(yy, mm, dd, 0, 0, 0, 0, now.Location())
+		return int32(midnight.Unix())
+	}
+
 	sint, err := strconv.Atoi(s)
 	if err == nil && len(s) > 8 {
 		return int32(sint) // We got a timestamp so returning it
