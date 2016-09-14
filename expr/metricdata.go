@@ -290,8 +290,8 @@ func aggMean(v []float64, absent []bool) (float64, bool) {
 }
 
 func aggMax(v []float64, absent []bool) (float64, bool) {
-	var m float64 = math.Inf(-1)
-	var abs bool = true
+	var m = math.Inf(-1)
+	var abs = true
 	for i, vv := range v {
 		if !absent[i] && !math.IsNaN(vv) {
 			abs = false
@@ -304,8 +304,8 @@ func aggMax(v []float64, absent []bool) (float64, bool) {
 }
 
 func aggMin(v []float64, absent []bool) (float64, bool) {
-	var m float64 = math.Inf(1)
-	var abs bool = true
+	var m = math.Inf(1)
+	var abs = true
 	for i, vv := range v {
 		if !absent[i] && !math.IsNaN(vv) {
 			abs = false
@@ -319,7 +319,7 @@ func aggMin(v []float64, absent []bool) (float64, bool) {
 
 func aggSum(v []float64, absent []bool) (float64, bool) {
 	var sum float64
-	var abs bool = true
+	var abs = true
 	for i, vv := range v {
 		if !math.IsNaN(vv) && !absent[i] {
 			sum += vv
