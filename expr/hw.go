@@ -7,16 +7,16 @@ import (
 	"math"
 )
 
-func holtWintersIntercept(alpha, actual, last_season, last_intercept, last_slope float64) float64 {
-	return alpha*(actual-last_season) + (1-alpha)*(last_intercept+last_slope)
+func holtWintersIntercept(alpha, actual, lastSeason, lastIntercept, lastSlope float64) float64 {
+	return alpha*(actual-lastSeason) + (1-alpha)*(lastIntercept+lastSlope)
 }
 
-func holtWintersSlope(beta, intercept, last_intercept, last_slope float64) float64 {
-	return beta*(intercept-last_intercept) + (1-beta)*last_slope
+func holtWintersSlope(beta, intercept, lastIntercept, lastSlope float64) float64 {
+	return beta*(intercept-lastIntercept) + (1-beta)*lastSlope
 }
 
-func holtWintersSeasonal(gamma, actual, intercept, last_season float64) float64 {
-	return gamma*(actual-intercept) + (1-gamma)*last_season
+func holtWintersSeasonal(gamma, actual, intercept, lastSeason float64) float64 {
+	return gamma*(actual-intercept) + (1-gamma)*lastSeason
 
 }
 
@@ -28,7 +28,7 @@ func holtWintersAnalysis(series []float64, step int32) []float64 {
 	)
 
 	// season is currently one day
-	season_length := 24 * 60 * 60 / int(step)
+	seasonLength := 24 * 60 * 60 / int(step)
 
 	var (
 		intercepts  []float64
@@ -38,14 +38,14 @@ func holtWintersAnalysis(series []float64, step int32) []float64 {
 	)
 
 	getLastSeasonal := func(i int) float64 {
-		j := i - season_length
+		j := i - seasonLength
 		if j >= 0 {
 			return seasonals[j]
 		}
 		return 0
 	}
 
-	var next_pred = math.NaN()
+	var nextPred = math.NaN()
 
 	for i, actual := range series {
 		if math.IsNaN(actual) {
@@ -54,37 +54,37 @@ func holtWintersAnalysis(series []float64, step int32) []float64 {
 			intercepts = append(intercepts, math.NaN())
 			slopes = append(slopes, 0)
 			seasonals = append(seasonals, 0)
-			predictions = append(predictions, next_pred)
-			next_pred = math.NaN()
+			predictions = append(predictions, nextPred)
+			nextPred = math.NaN()
 			continue
 		}
 
 		var (
-			last_slope     float64
-			last_intercept float64
-			prediction     float64
+			lastSlope     float64
+			lastIntercept float64
+			prediction    float64
 		)
 		if i == 0 {
-			last_intercept = actual
-			last_slope = 0
+			lastIntercept = actual
+			lastSlope = 0
 			// seed the first prediction as the first actual
 			prediction = actual
 		} else {
-			last_intercept = intercepts[len(intercepts)-1]
-			last_slope = slopes[len(slopes)-1]
-			if math.IsNaN(last_intercept) {
-				last_intercept = actual
+			lastIntercept = intercepts[len(intercepts)-1]
+			lastSlope = slopes[len(slopes)-1]
+			if math.IsNaN(lastIntercept) {
+				lastIntercept = actual
 			}
-			prediction = next_pred
+			prediction = nextPred
 		}
 
-		last_seasonal := getLastSeasonal(i)
-		next_last_seasonal := getLastSeasonal(i + 1)
+		lastSeasonal := getLastSeasonal(i)
+		nextLastSeasonal := getLastSeasonal(i + 1)
 
-		intercept := holtWintersIntercept(alpha, actual, last_seasonal, last_intercept, last_slope)
-		slope := holtWintersSlope(beta, intercept, last_intercept, last_slope)
-		seasonal := holtWintersSeasonal(gamma, actual, intercept, last_seasonal)
-		next_pred = intercept + slope + next_last_seasonal
+		intercept := holtWintersIntercept(alpha, actual, lastSeasonal, lastIntercept, lastSlope)
+		slope := holtWintersSlope(beta, intercept, lastIntercept, lastSlope)
+		seasonal := holtWintersSeasonal(gamma, actual, intercept, lastSeasonal)
+		nextPred = intercept + slope + nextLastSeasonal
 
 		intercepts = append(intercepts, intercept)
 		slopes = append(slopes, slope)
