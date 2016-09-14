@@ -45,7 +45,7 @@ func holtWintersAnalysis(series []float64, step int32) []float64 {
 		return 0
 	}
 
-	var next_pred float64 = math.NaN()
+	var next_pred = math.NaN()
 
 	for i, actual := range series {
 		if math.IsNaN(actual) {
