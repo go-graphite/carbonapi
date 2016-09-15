@@ -187,12 +187,16 @@ func dateParamToEpoch(s string, d int64) int32 {
 	}
 
 	for _, format := range timeFormats {
+		var ts, ds string
 		split := strings.Fields(s)
-		if len(split) > 2 {
+
+		switch {
+		case len(split) == 2:
+			ts, ds = split[0], split[1]
+		case len(split) > 2:
 			return int32(d)
 		}
 
-		ts, ds := split[0], split[1]
 		var t time.Time
 		switch ts {
 		case "midnight", "noon", "teatime":
