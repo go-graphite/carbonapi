@@ -159,20 +159,22 @@ func dateParamToEpoch(s string, d int64) int32 {
 		switch s {
 		case "yesterday":
 			t = t.AddDate(0, 0, -1)
-		case "tomorrow", "midnight":
+		case "tomorrow":
 			t = t.AddDate(0, 0, 1)
 		}
 
 		yy, mm, dd := t.Date()
-		midnight := time.Date(yy, mm, dd, 0, 0, 0, 0, defaultTimeZone)
+		var dt time.Time
 		switch s {
 		case "noon":
-			midnight = midnight.Add(time.Hour * 12)
+			dt = time.Date(yy, mm, dd, 12, 0, 0, 0, defaultTimeZone)
 		case "teatime":
-			midnight = midnight.Add(time.Hour * 16)
+			dt = time.Date(yy, mm, dd, 16, 0, 0, 0, defaultTimeZone)
+		default:
+			dt = time.Date(yy, mm, dd, 0, 0, 0, 0, defaultTimeZone)
 		}
 
-		return int32(midnight.Unix())
+		return int32(dt.Unix())
 	}
 
 	sint, err := strconv.Atoi(s)
@@ -186,8 +188,11 @@ func dateParamToEpoch(s string, d int64) int32 {
 
 	for _, format := range timeFormats {
 		split := strings.Fields(s)
-		ts, ds := split[0], split[1]
+		if len(split) > 2 {
+			return int32(d)
+		}
 
+		ts, ds := split[0], split[1]
 		var t time.Time
 		switch ts {
 		case "midnight", "noon", "teatime":
@@ -197,11 +202,13 @@ func dateParamToEpoch(s string, d int64) int32 {
 		}
 
 		if err == nil {
+			yy, mm, dd := t.Date()
+
 			switch ts {
 			case "noon":
-				t = t.Add(time.Hour * 12)
+				t = time.Date(yy, mm, dd, 12, 0, 0, 0, defaultTimeZone)
 			case "teatime":
-				t = t.Add(time.Hour * 16)
+				t = time.Date(yy, mm, dd, 16, 0, 0, 0, defaultTimeZone)
 			}
 
 			return int32(t.Unix())

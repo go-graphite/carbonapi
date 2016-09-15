@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
@@ -18,7 +19,7 @@ func TestDateParamToEpoch(t *testing.T) {
 		input  string
 		output string
 	}{
-		{"midnight", "00:00 1994-Aug-17"},
+		{"midnight", "00:00 1994-Aug-16"},
 		{"noon", "12:00 1994-Aug-16"},
 		{"teatime", "16:00 1994-Aug-16"},
 
@@ -30,16 +31,15 @@ func TestDateParamToEpoch(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		parsedTime := dateParamToEpoch(tt.input, int64(0))
+		got := dateParamToEpoch(tt.input, 0)
 		ts, err := time.ParseInLocation(shortForm, tt.output, defaultTimeZone)
-		if err == nil {
-			actualTime := int32(ts.Unix())
+		if err != nil {
+			panic(fmt.Sprintf("error parsing time: %q: %v", tt.output, err))
+		}
 
-			if parsedTime != actualTime {
-				t.Errorf("Expected %v, got %v", actualTime, parsedTime)
-			}
-		} else {
-			t.Error("Couldn't parse time")
+		want := int32(ts.Unix())
+		if got != want {
+			t.Errorf("dateParamToEpoch(%q, 0)=%v, want %v", tt.input, got, want)
 		}
 	}
 }
