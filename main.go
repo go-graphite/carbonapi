@@ -154,18 +154,27 @@ func dateParamToEpoch(s string, d int64) int32 {
 	switch s {
 	case "now":
 		return int32(timeNow().Unix())
-	case "yesterday", "today", "tomorrow":
+	case "yesterday", "today", "tomorrow", "midnight", "noon", "teatime":
 		t := timeNow()
 		switch s {
 		case "yesterday":
-			t.AddDate(0, 0, -1)
+			t = t.AddDate(0, 0, -1)
 		case "tomorrow":
-			t.AddDate(0, 0, 1)
+			t = t.AddDate(0, 0, 1)
 		}
 
 		yy, mm, dd := t.Date()
-		midnight := time.Date(yy, mm, dd, 0, 0, 0, 0, defaultTimeZone)
-		return int32(midnight.Unix())
+		var dt time.Time
+		switch s {
+		case "noon":
+			dt = time.Date(yy, mm, dd, 12, 0, 0, 0, defaultTimeZone)
+		case "teatime":
+			dt = time.Date(yy, mm, dd, 16, 0, 0, 0, defaultTimeZone)
+		default:
+			dt = time.Date(yy, mm, dd, 0, 0, 0, 0, defaultTimeZone)
+		}
+
+		return int32(dt.Unix())
 	}
 
 	sint, err := strconv.Atoi(s)
@@ -178,11 +187,38 @@ func dateParamToEpoch(s string, d int64) int32 {
 	}
 
 	for _, format := range timeFormats {
-		t, err := time.ParseInLocation(format, s, defaultTimeZone)
+		var ts, ds string
+		split := strings.Fields(s)
+
+		switch {
+		case len(split) == 2:
+			ts, ds = split[0], split[1]
+		case len(split) > 2:
+			return int32(d)
+		}
+
+		var t time.Time
+		switch ts {
+		case "midnight", "noon", "teatime":
+			t, err = time.ParseInLocation(format, ds, defaultTimeZone)
+		default:
+			t, err = time.ParseInLocation(format, s, defaultTimeZone)
+		}
+
 		if err == nil {
+			yy, mm, dd := t.Date()
+
+			switch ts {
+			case "noon":
+				t = time.Date(yy, mm, dd, 12, 0, 0, 0, defaultTimeZone)
+			case "teatime":
+				t = time.Date(yy, mm, dd, 16, 0, 0, 0, defaultTimeZone)
+			}
+
 			return int32(t.Unix())
 		}
 	}
+
 	return int32(d)
 }
 
