@@ -29,12 +29,11 @@ func GetOutput() io.Writer {
 }
 
 func SetOutput(logdir, service string, stdout bool) {
-	rl := rotatelogs.NewRotateLogs(
-		logdir + "/" + service + ".%Y%m%d%H%M.log",
+	rl := rotatelogs.New(
+		logdir+"/"+service+".%Y%m%d%H%M.log",
+		rotatelogs.WithClock(rotatelogs.Local),
+		rotatelogs.WithLinkName(logdir+"/"+service+".log"),
 	)
-
-	// Optional fields must be set afterwards
-	rl.LinkName = logdir + "/" + service + ".log"
 
 	if stdout {
 		setOutputWriter(io.MultiWriter(os.Stdout, rl))
