@@ -2357,7 +2357,7 @@ func drawRectangle(cr *cairoSurfaceContext, params *Params, x float64, y float64
 		h -= offset
 		w -= offset
 	}
-	cr.context.Rectangle(x, y, w, h-1.0)
+	cr.context.Rectangle(x, y, w, h)
 	if fill {
 		cr.context.Fill()
 	} else {
