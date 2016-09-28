@@ -3,12 +3,13 @@
 package expr
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"image/color"
+	"io/ioutil"
 	"math"
 	"net/http"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -17,8 +18,8 @@ import (
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 
 	"bitbucket.org/tebeka/strftime"
+	"github.com/evmar/gocairo/cairo"
 	"github.com/gogo/protobuf/proto"
-	cairo "github.com/martine/gocairo/cairo"
 )
 
 type HAlign int
@@ -636,10 +637,24 @@ type Params struct {
 
 type cairoSurfaceContext struct {
 	context *cairo.Context
-	surface *cairo.ImageSurface
+}
+
+type cairoBackend int
+
+const (
+	cairoPNG cairoBackend = iota
+	cairoSVG
+)
+
+func MarshalSVG(r *http.Request, results []*MetricData) []byte {
+	return marshalCairo(r, results, cairoSVG)
 }
 
 func MarshalPNG(r *http.Request, results []*MetricData) []byte {
+	return marshalCairo(r, results, cairoPNG)
+}
+
+func marshalCairo(r *http.Request, results []*MetricData, backend cairoBackend) []byte {
 	var params = Params{
 		width:          getFloat64(r.FormValue("width"), 330),
 		height:         getFloat64(r.FormValue("height"), 250),
@@ -719,8 +734,23 @@ func MarshalPNG(r *http.Request, results []*MetricData) []byte {
 	params.hideLegend = getBool(r.FormValue("hideLegend"), len(results) > 10)
 
 	var cr cairoSurfaceContext
-	cr.surface = cairo.ImageSurfaceCreate(cairo.FormatARGB32, int(params.width), int(params.height))
-	cr.context = cairo.Create(cr.surface.Surface)
+	var surface *cairo.Surface
+	var tmpfile *os.File
+	switch backend {
+	case cairoSVG:
+		var err error
+		tmpfile, err = ioutil.TempFile("/dev/shm", "cairosvg")
+		if err != nil {
+			return nil
+		}
+		defer os.Remove(tmpfile.Name())
+		s := cairo.SVGSurfaceCreate(tmpfile.Name(), params.width, params.height)
+		surface = s.Surface
+	case cairoPNG:
+		s := cairo.ImageSurfaceCreate(cairo.FormatARGB32, int(params.width), int(params.height))
+		surface = s.Surface
+	}
+	cr.context = cairo.Create(surface)
 
 	// Setting font parameters
 	/*
@@ -735,15 +765,22 @@ func MarshalPNG(r *http.Request, results []*MetricData) []byte {
 
 	drawGraph(&cr, &params, results)
 
-	cr.surface.Flush()
+	surface.Flush()
 
-	var b bytes.Buffer
-	writer := bufio.NewWriter(&b)
-	cr.surface.WriteToPNG(writer)
-	cr.surface.Finish()
-	writer.Flush()
+	var b []byte
 
-	return b.Bytes()
+	switch backend {
+	case cairoPNG:
+		var buf bytes.Buffer
+		surface.WriteToPNG(&buf)
+		surface.Finish()
+		b = buf.Bytes()
+	case cairoSVG:
+		surface.Finish()
+		b, _ = ioutil.ReadFile(tmpfile.Name())
+	}
+
+	return b
 }
 
 func drawGraph(cr *cairoSurfaceContext, params *Params, results []*MetricData) {

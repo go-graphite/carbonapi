@@ -103,6 +103,9 @@ func writeResponse(w http.ResponseWriter, b []byte, format string, jsonp string)
 	case "png":
 		w.Header().Set("Content-Type", contentTypePNG)
 		w.Write(b)
+	case "svg":
+		w.Header().Set("Content-Type", contentTypeSVG)
+		w.Write(b)
 	}
 }
 
@@ -114,6 +117,7 @@ const (
 	contentTypePickle     = "application/pickle"
 	contentTypePNG        = "image/png"
 	contentTypeCSV        = "text/csv"
+	contentTypeSVG        = "image/svg+xml"
 )
 
 type renderStats struct {
@@ -423,6 +427,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 		body = expr.MarshalPickle(results)
 	case "png":
 		body = expr.MarshalPNG(r, results)
+	case "svg":
+		body = expr.MarshalSVG(r, results)
 	}
 
 	writeResponse(w, body, format, jsonp)
