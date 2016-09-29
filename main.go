@@ -23,6 +23,7 @@ import (
 	"github.com/bradfitz/gomemcache/memcache"
 	ecache "github.com/dgryski/go-expirecache"
 	"github.com/facebookgo/grace/gracehttp"
+	"github.com/facebookgo/pidfile"
 	"github.com/gorilla/handlers"
 	"github.com/peterbourgon/g2g"
 )
@@ -635,6 +636,7 @@ func main() {
 	logtostdout := flag.Bool("stdout", false, "log also to stdout")
 	interval := flag.Duration("i", 60*time.Second, "interval to report internal statistics to graphite")
 	idleconns := flag.Int("idleconns", 10, "max idle connections")
+	pidFile := flag.String("pid", "", "pidfile (default: empty, don't create pidfile)")
 
 	flag.Parse()
 
@@ -779,6 +781,14 @@ func main() {
 		renderHandler(w, r, &stats)
 		since := time.Since(t0)
 		logger.Logln(r.RequestURI, since.Nanoseconds()/int64(time.Millisecond), stats.zipperRequests)
+	}
+
+	if *pidFile != "" {
+		pidfile.SetPidfilePath(*pidFile)
+		err := pidfile.Write()
+		if err != nil {
+			logger.Fatalln("error during pidfile.Write():", err)
+		}
 	}
 
 	r := http.DefaultServeMux
