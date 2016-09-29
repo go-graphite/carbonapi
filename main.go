@@ -25,6 +25,7 @@ import (
 	"github.com/dgryski/go-expirecache"
 	"github.com/dgryski/httputil"
 	"github.com/facebookgo/grace/gracehttp"
+	"github.com/facebookgo/pidfile"
 	pickle "github.com/kisielk/og-rek"
 	"github.com/peterbourgon/g2g"
 )
@@ -655,6 +656,7 @@ func main() {
 	logtostdout := flag.Bool("stdout", false, "write logging output also to stdout")
 	logdir := flag.String("logdir", "/var/log/carbonzipper/", "logging directory")
 	interval := flag.Duration("i", 0, "interval to report internal statistics to graphite")
+	pidFile := flag.String("pid", "", "pidfile (default: empty, don't create pidfile)")
 
 	flag.Parse()
 
@@ -791,6 +793,14 @@ func main() {
 	probeForce <- 1
 
 	go Config.pathCache.ec.ApproximateCleaner(10 * time.Second)
+
+	if *pidFile != "" {
+		pidfile.SetPidfilePath(*pidFile)
+		err = pidfile.Write()
+		if err != nil {
+			log.Fatalln("error during pidfile.Write():", err)
+		}
+	}
 
 	portStr := fmt.Sprintf(":%d", Config.Port)
 	logger.Logln("listening on", portStr)
