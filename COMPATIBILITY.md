@@ -11,7 +11,7 @@ Topics:
 
 * `target` : graphite series, seriesList or function (likely containing series or seriesList)
 * `from`, `until` : time specifiers. Eg. "1d", "10min", "04:37_20150822", "now", "today", ... (**NOTE** does not handle timezones the same as graphite)
-* `format` : support graphite values of { json, raw, pickle, csv, png } adds { protobuf } and does not support { svg, pdf }
+* `format` : support graphite values of { json, raw, pickle, csv, png, svg } adds { protobuf } and does not support { pdf }
 * `jsonp` : (...)
 * `noCache` : prevent query-response caching (which is 60s if enabled)
 * `cacheTimeout` : override default result cache (60s)
