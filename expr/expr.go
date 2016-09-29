@@ -15,6 +15,7 @@ import (
 	"github.com/JaderDias/movingmedian"
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 	"github.com/dgryski/go-onlinestats"
+	"github.com/dustin/go-humanize"
 	"github.com/gogo/protobuf/proto"
 	"github.com/wangjohn/quickselect"
 )
@@ -3266,6 +3267,83 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		}
 
 		return results, nil
+
+	case "cactiStyle": // cactiStyle(seriesList, system=None, units=None)
+		// Get the series data
+		original, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		// Get the arguments
+		system, err := getStringNamedOrPosArgDefault(e, "system", 1, "")
+		if err != nil {
+			return nil, err
+		}
+		unit, err := getStringNamedOrPosArgDefault(e, "units", 2, "")
+		if err != nil {
+			return nil, err
+		}
+
+		// Deal with each of the series
+		var metrics []*MetricData
+		for _, a := range original {
+			// Calculate min, max, current
+			//
+			// This saves calling summarizeValues 3 times and looping over
+			// the metrics 3 times
+			//
+			// For min:
+			// Ignoring any absent values and inf (if we have a value)
+			// Using summarizeValues("min", ...) results in incorrect values, when absent
+			// values are present
+			//
+			minVal := math.Inf(1)
+			currentVal := math.Inf(-1)
+			maxVal := math.Inf(-1)
+			for i, av := range a.GetValues() {
+				if !a.IsAbsent[i] {
+					minVal = math.Min(minVal, av)
+					maxVal = math.Max(maxVal, av)
+					currentVal = av
+				}
+			}
+
+			// Format the output correctly
+			min := ""
+			max := ""
+			current := ""
+			if system == "si" {
+				mv, mf := humanize.ComputeSI(minVal)
+				xv, xf := humanize.ComputeSI(maxVal)
+				cv, cf := humanize.ComputeSI(currentVal)
+
+				min = fmt.Sprintf("%.0f%s", mv, mf)
+				max = fmt.Sprintf("%.0f%s", xv, xf)
+				current = fmt.Sprintf("%.0f%s", cv, cf)
+
+			} else if system == "" {
+				min = fmt.Sprintf("%.0f", minVal)
+				max = fmt.Sprintf("%.0f", maxVal)
+				current = fmt.Sprintf("%.0f", currentVal)
+
+			} else {
+				return nil, fmt.Errorf("%s is not supported for system", system)
+			}
+
+			// Append the unit if specified
+			if len(unit) > 0 {
+				min = fmt.Sprintf("%s %s", min, unit)
+				max = fmt.Sprintf("%s %s", max, unit)
+				current = fmt.Sprintf("%s %s", current, unit)
+			}
+
+			r := *a
+			r.Name = proto.String(fmt.Sprintf("%s Current: %s Max: %s Min: %s", *a.Name, current, max, min))
+			metrics = append(metrics, &r)
+		}
+
+		return metrics, nil
 	}
 
 	return nil, fmt.Errorf("unknown function in evalExpr: %q", e.target)
