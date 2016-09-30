@@ -778,6 +778,12 @@ func marshalCairo(r *http.Request, results []*MetricData, backend cairoBackend) 
 	case cairoSVG:
 		surface.Finish()
 		b, _ = ioutil.ReadFile(tmpfile.Name())
+		// NOTE(dgryski): This is the dumbest thing ever, but needed
+		// for compatibility.  I'm not doing the rest of the svg
+		// munging that graphite does.
+		// We could speed this up with Index(`pt"`) and overwriting the
+		// `t` twice
+		b = bytes.Replace(b, []byte(`pt"`), []byte(`px"`), 2)
 	}
 
 	return b
