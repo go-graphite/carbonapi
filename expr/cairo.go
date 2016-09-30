@@ -255,7 +255,7 @@ var xAxisConfigs = []xAxisStruct{
 		labelUnit:     Hour,
 		labelStep:     4,
 		format:        "%a %I%p", // BUG(dgryski): should be %l, but limitation of strftime library
-		maxInterval:   2 * Day,
+		maxInterval:   6 * Day,
 	},
 	{
 		seconds:       255,
