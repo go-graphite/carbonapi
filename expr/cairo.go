@@ -988,6 +988,7 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 	}
 
 	for currentXMin != params.area.xmin || currentXMax != params.area.xmax {
+		consolidateDataPoints(params, results)
 		currentXMin = params.area.xmin
 		currentXMax = params.area.xmax
 		if params.secondYAxis {
