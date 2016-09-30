@@ -514,6 +514,19 @@ func getAxisSide(s string, def YAxisSide) YAxisSide {
 	return YAxisSideLeft
 }
 
+func getTimeZone(s string, def *time.Location) *time.Location {
+	if s == "" {
+		return def
+	}
+
+	tz, err := time.LoadLocation(s)
+	if err != nil {
+		return def
+	}
+
+	return tz
+}
+
 type Area struct {
 	xmin float64
 	xmax float64
@@ -545,7 +558,7 @@ type Params struct {
 	title       string
 	vtitle      string
 	vtitleRight string
-	tz          string
+	tz          *time.Location
 	timeRange   int32
 	startTime   int32
 	endTime     int32
@@ -694,6 +707,7 @@ func marshalCairo(r *http.Request, results []*MetricData, backend cairoBackend) 
 		title:       getString(r.FormValue("title"), ""),
 		vtitle:      getString(r.FormValue("vtitle"), ""),
 		vtitleRight: getString(r.FormValue("vtitleRight"), ""),
+		tz:          getTimeZone(r.FormValue("tz"), time.Local),
 
 		colorList: getStringArray(r.FormValue("colorList"), defaultColorList),
 		isPng:     true,
@@ -1758,7 +1772,7 @@ func drawXAxis(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 	maxAscent := getFontExtents(cr).Ascent
 
 	for dt < params.endTime {
-		label, _ := strftime.Format(xFormat, time.Unix(int64(dt), 0))
+		label, _ := strftime.Format(xFormat, time.Unix(int64(dt), 0).In(params.tz))
 		x := params.area.xmin + float64(dt-params.startTime)*params.xScaleFactor
 		y := params.area.ymax + maxAscent
 		drawText(cr, params, label, x, y, HAlignCenter, VAlignTop, 0)
