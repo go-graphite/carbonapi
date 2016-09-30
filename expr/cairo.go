@@ -963,6 +963,7 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 				total = total[:0]
 			}
 
+			absent := r.AggregatedAbsent()
 			agg := r.AggregatedValues()
 			for i, v := range agg {
 
@@ -970,7 +971,7 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 					total = append(total, 0)
 				}
 
-				if !math.IsNaN(v) {
+				if !absent[i] {
 					agg[i] += total[i]
 					total[i] += v
 				}
@@ -1070,7 +1071,11 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*MetricDat
 			if s.drawAsInfinite {
 				continue
 			}
-			for _, v := range s.AggregatedValues() {
+			absent := s.AggregatedAbsent()
+			for i, v := range s.AggregatedValues() {
+				if absent[i] {
+					continue
+				}
 				if v < yMinValueL {
 					yMinValueL = v
 				}
@@ -1086,7 +1091,11 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*MetricDat
 			if s.drawAsInfinite {
 				continue
 			}
-			for _, v := range s.AggregatedValues() {
+			absent := s.AggregatedAbsent()
+			for i, v := range s.AggregatedValues() {
+				if absent[i] {
+					continue
+				}
 				if v < yMinValueR {
 					yMinValueR = v
 				}
@@ -1097,7 +1106,12 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*MetricDat
 	var yMaxValueL, yMaxValueR float64
 	yMaxValueL = math.Inf(-1)
 	for _, s := range Ldata {
-		for _, v := range s.AggregatedValues() {
+		absent := s.AggregatedAbsent()
+		for i, v := range s.AggregatedValues() {
+			if absent[i] {
+				continue
+			}
+
 			if v > yMaxValueL {
 				yMaxValueL = v
 			}
@@ -1106,7 +1120,12 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*MetricDat
 
 	yMaxValueR = math.Inf(-1)
 	for _, s := range Rdata {
-		for _, v := range s.AggregatedValues() {
+		absent := s.AggregatedAbsent()
+		for i, v := range s.AggregatedValues() {
+			if absent[i] {
+				continue
+			}
+
 			if v > yMaxValueR {
 				yMaxValueR = v
 			}
@@ -1348,11 +1367,15 @@ func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 			continue
 		}
 		pushed := false
+		absent := r.AggregatedAbsent()
 		for i, v := range r.AggregatedValues() {
-			if r.IsAbsent[i] && !pushed {
+			if absent[i] && !pushed {
 				seriesWithMissingValues = append(seriesWithMissingValues, r)
 				pushed = true
 			} else {
+				if absent[i] {
+					continue
+				}
 				if math.IsNaN(yMinValue) || yMinValue > v {
 					yMinValue = v
 				}
@@ -1989,11 +2012,7 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 					valuesPerPoint: 1,
 				}
 				copy(newSeries.Values, r.AggregatedValues())
-				for i, v := range newSeries.Values {
-					if math.IsNaN(v) {
-						newSeries.IsAbsent[i] = true
-					}
-				}
+				copy(newSeries.IsAbsent, r.AggregatedAbsent())
 				strokeSeries = append(strokeSeries, &newSeries)
 			}
 		}
@@ -2045,9 +2064,14 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 			}
 		*/
 
+		absent := series.AggregatedAbsent()
 		consecutiveNones := 0
 		for index, value := range series.AggregatedValues() {
 			x = origX + (float64(index) * series.xStep)
+
+			if absent[index] {
+				value = math.NaN()
+			}
 
 			if params.drawNullAsZero && math.IsNaN(value) {
 				value = 0
