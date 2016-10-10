@@ -12,6 +12,33 @@ import (
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
 )
 
+func deepClone(original map[MetricRequest][]*MetricData) map[MetricRequest][]*MetricData {
+	clone := map[MetricRequest][]*MetricData{}
+	for key, originalMetrics := range original {
+		copiedMetrics := []*MetricData{}
+		for _, originalMetric := range originalMetrics {
+			copiedMetric := MetricData{
+				FetchResponse: pb.FetchResponse{
+					Name:      originalMetric.Name,
+					StartTime: originalMetric.StartTime,
+					StopTime:  originalMetric.StopTime,
+					StepTime:  originalMetric.StepTime,
+					Values:    make([]float64, len(originalMetric.Values)),
+					IsAbsent:  make([]bool, len(originalMetric.IsAbsent)),
+				},
+			}
+
+			copy(copiedMetric.Values, originalMetric.Values)
+			copy(copiedMetric.IsAbsent, originalMetric.IsAbsent)
+			copiedMetrics = append(copiedMetrics, &copiedMetric)
+		}
+
+		clone[key] = copiedMetrics
+	}
+
+	return clone
+}
+
 func TestGetBuckets(t *testing.T) {
 	tests := []struct {
 		start       int32
@@ -2286,29 +2313,7 @@ func TestEvalExpression(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		oldValues := map[MetricRequest][]*MetricData{}
-		for key, metrics := range tt.m {
-			entry := []*MetricData{}
-			for _, value := range metrics {
-				newValue := MetricData{
-					FetchResponse: pb.FetchResponse{
-						Name:      value.Name,
-						StartTime: value.StartTime,
-						StopTime:  value.StopTime,
-						StepTime:  value.StepTime,
-						Values:    make([]float64, len(value.Values)),
-						IsAbsent:  make([]bool, len(value.IsAbsent)),
-					},
-				}
-
-				copy(newValue.Values, value.Values)
-				copy(newValue.IsAbsent, value.IsAbsent)
-				entry = append(entry, &newValue)
-			}
-
-			oldValues[key] = entry
-		}
-
+		originalMetrics := deepClone(tt.m)
 		testName := tt.e.target + "(" + tt.e.argString + ")"
 		g, err := EvalExpr(tt.e, 0, 1, tt.m)
 		if err != nil {
@@ -2321,7 +2326,7 @@ func TestEvalExpression(t *testing.T) {
 		}
 		for key, metrics := range tt.m {
 			for i, newValue := range metrics {
-				oldValue := oldValues[key][i]
+				oldValue := originalMetrics[key][i]
 				if !reflect.DeepEqual(oldValue, newValue) {
 					t.Errorf("%s: source data was modified key %v index %v want:\n%v\n got:\n%v", testName, key, i, oldValue, newValue)
 				}
@@ -3484,29 +3489,7 @@ func TestEvalCustomFromUntil(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		oldValues := map[MetricRequest][]*MetricData{}
-		for key, metrics := range tt.m {
-			entry := []*MetricData{}
-			for _, value := range metrics {
-				newValue := MetricData{
-					FetchResponse: pb.FetchResponse{
-						Name:      value.Name,
-						StartTime: value.StartTime,
-						StopTime:  value.StopTime,
-						StepTime:  value.StepTime,
-						Values:    make([]float64, len(value.Values)),
-						IsAbsent:  make([]bool, len(value.IsAbsent)),
-					},
-				}
-
-				copy(newValue.Values, value.Values)
-				copy(newValue.IsAbsent, value.IsAbsent)
-				entry = append(entry, &newValue)
-			}
-
-			oldValues[key] = entry
-		}
-
+		originalMetrics := deepClone(tt.m)
 		g, err := EvalExpr(tt.e, tt.from, tt.until, tt.m)
 		if err != nil {
 			t.Errorf("failed to eval %v: %s", tt.name, err)
@@ -3519,7 +3502,7 @@ func TestEvalCustomFromUntil(t *testing.T) {
 
 		for key, metrics := range tt.m {
 			for i, newValue := range metrics {
-				oldValue := oldValues[key][i]
+				oldValue := originalMetrics[key][i]
 				if !reflect.DeepEqual(oldValue, newValue) {
 					t.Errorf("%s: source data was modified key %v index %v want:\n%v\n got:\n%v", tt.e.target, key, i, oldValue, newValue)
 				}
