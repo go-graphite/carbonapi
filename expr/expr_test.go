@@ -2793,11 +2793,13 @@ func TestEvalSummarize(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		originalMetrics := deepClone(tt.m)
 		g, err := EvalExpr(tt.e, 0, 1, tt.m)
 		if err != nil {
 			t.Errorf("failed to eval %v: %s", tt.name, err)
 			continue
 		}
+		deepEqual(t, g[0].GetName(), originalMetrics, tt.m)
 		if g[0].GetStepTime() != tt.step {
 			t.Errorf("bad step for %s:\ngot  %d\nwant %d", g[0].GetName(), g[0].GetStepTime(), tt.step)
 		}
