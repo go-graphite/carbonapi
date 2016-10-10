@@ -39,6 +39,33 @@ func deepClone(original map[MetricRequest][]*MetricData) map[MetricRequest][]*Me
 	return clone
 }
 
+func deepEqual(t *testing.T, target string, original, modified map[MetricRequest][]*MetricData) {
+	for key := range original {
+		if len(original[key]) == len(modified[key]) {
+			for i := range original[key] {
+				if !reflect.DeepEqual(original[key][i], modified[key][i]) {
+					t.Errorf(
+						"%s: source data was modified key %v index %v original:\n%v\n modified:\n%v",
+						target,
+						key,
+						i,
+						original[key][i],
+						modified[key][i],
+					)
+				}
+			}
+		} else {
+			t.Errorf(
+				"%s: source data was modified key %v original length %d, new length %d",
+				target,
+				key,
+				len(original[key]),
+				len(modified[key]),
+			)
+		}
+	}
+}
+
 func TestGetBuckets(t *testing.T) {
 	tests := []struct {
 		start       int32
@@ -2324,14 +2351,7 @@ func TestEvalExpression(t *testing.T) {
 			t.Errorf("%s returned a different number of metrics, actual %v, want %v", testName, len(g), len(tt.want))
 			continue
 		}
-		for key, metrics := range tt.m {
-			for i, newValue := range metrics {
-				oldValue := originalMetrics[key][i]
-				if !reflect.DeepEqual(oldValue, newValue) {
-					t.Errorf("%s: source data was modified key %v index %v want:\n%v\n got:\n%v", testName, key, i, oldValue, newValue)
-				}
-			}
-		}
+		deepEqual(t, testName, originalMetrics, tt.m)
 
 		for i, want := range tt.want {
 			actual := g[i]
@@ -3500,14 +3520,7 @@ func TestEvalCustomFromUntil(t *testing.T) {
 			continue
 		}
 
-		for key, metrics := range tt.m {
-			for i, newValue := range metrics {
-				oldValue := originalMetrics[key][i]
-				if !reflect.DeepEqual(oldValue, newValue) {
-					t.Errorf("%s: source data was modified key %v index %v want:\n%v\n got:\n%v", tt.e.target, key, i, oldValue, newValue)
-				}
-			}
-		}
+		deepEqual(t, tt.e.target, originalMetrics, tt.m)
 
 		if g[0].GetStepTime() == 0 {
 			t.Errorf("missing step for %+v", g)
