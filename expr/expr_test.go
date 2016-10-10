@@ -3398,11 +3398,13 @@ func TestEvalMultipleReturns(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		originalMetrics := deepClone(tt.m)
 		g, err := EvalExpr(tt.e, 0, 1, tt.m)
 		if err != nil {
 			t.Errorf("failed to eval %v: %s", tt.name, err)
 			continue
 		}
+		deepEqual(t, tt.name, originalMetrics, tt.m)
 		if len(g) == 0 {
 			t.Errorf("returned no data %v", tt.name)
 			continue
