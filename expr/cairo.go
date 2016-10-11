@@ -1391,10 +1391,10 @@ func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 				if absent[i] {
 					continue
 				}
-				if math.IsNaN(yMinValue) || yMinValue > v {
+				if !math.IsInf(v, 0) && (math.IsNaN(yMinValue) || yMinValue > v) {
 					yMinValue = v
 				}
-				if math.IsNaN(yMaxValue) || yMaxValue < v {
+				if !math.IsInf(v, 0) && (math.IsNaN(yMaxValue) || yMaxValue < v) {
 					yMaxValue = v
 				}
 			}
