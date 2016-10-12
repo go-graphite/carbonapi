@@ -30,7 +30,7 @@ import (
 	"github.com/peterbourgon/g2g"
 )
 
-// configuration values
+// Config contains configuration values
 var Config = struct {
 	Backends    []string
 	MaxProcs    int
@@ -62,7 +62,7 @@ var Config = struct {
 	pathCache: pathCache{ec: expirecache.New(0)},
 }
 
-// grouped expvars for /debug/vars and graphite
+// Metrics contains grouped expvars for /debug/vars and graphite
 var Metrics = struct {
 	FindRequests *expvar.Int
 	FindErrors   *expvar.Int
@@ -90,8 +90,10 @@ var Metrics = struct {
 	Timeouts: expvar.NewInt("timeouts"),
 }
 
+// BuildVersion is defined at build and reported at startup and as expvar
 var BuildVersion = "(development version)"
 
+// Limiter limits our concurrency to a particular server
 var Limiter serverLimiter
 
 var logger mlog.Level
