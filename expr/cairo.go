@@ -634,8 +634,6 @@ type Params struct {
 	leftDashed  bool
 	leftColor   string
 
-	dashed bool
-
 	area        Area
 	isPng       bool // TODO: png and svg use the same code
 	fontExtents cairo.FontExtents
@@ -695,7 +693,6 @@ func marshalCairo(r *http.Request, results []*MetricData, backend cairoBackend) 
 		pieMode:        getPieMode(r.FormValue("pieMode"), PieModeAverage),
 		lineWidth:      getFloat64(r.FormValue("lineWidth"), 1.2),
 
-		dashed:      getBool(r.FormValue("dashed"), false),
 		rightWidth:  getFloat64(r.FormValue("rightWidth"), 1.2),
 		rightDashed: getBool(r.FormValue("rightDashed"), false),
 		rightColor:  getString(r.FormValue("rightColor"), ""),
@@ -879,11 +876,15 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 		}
 		if params.secondYAxis && res.secondYAxis {
 			res.lineWidth = params.rightWidth
-			res.dashed = params.rightDashed
+			if params.rightDashed && res.dashed == 0 {
+				res.dashed = 2.5
+			}
 			res.color = params.rightColor
 		} else if params.secondYAxis {
 			res.lineWidth = params.leftWidth
-			res.dashed = params.leftDashed
+			if params.leftDashed && res.dashed == 0 {
+				res.dashed = 2.5
+			}
 			res.color = params.leftColor
 		}
 		if res.color == "" {
@@ -1991,13 +1992,7 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 
 	originalWidth := params.lineWidth
 
-	dash := []float64{}
-
-	if dash != nil {
-		cr.context.SetDash(dash, 1)
-	} else {
-		cr.context.SetDash(nil, 0)
-	}
+	cr.context.SetDash(nil, 0)
 
 	cr.context.SetLineCap(str2linecap(linecap))
 	cr.context.SetLineJoin(str2linejoin(linejoin))
@@ -2051,19 +2046,16 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 		}
 
 		cr.context.SetLineWidth(params.lineWidth)
+
+		if series.dashed != 0 {
+			cr.context.SetDash([]float64{series.dashed}, 1)
+		}
+
 		if series.hasAlpha {
 			setColorAlpha(cr, string2RGBA(series.color), series.alpha)
 		} else {
 			setColor(cr, string2RGBA(series.color))
 		}
-
-		/*
-			if (__contains__(series.options, "dashed")) {
-				cr.context.set_dash([series.options["dashed"]], 1);
-			} else {
-				cr.context.set_dash([], 0);
-			}
-		*/
 
 		missingPoints := float64(series.GetStartTime()-params.startTime) / float64(series.GetStepTime())
 		startShift := series.xStep * (missingPoints / float64(series.valuesPerPoint))
@@ -2183,7 +2175,10 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 			cr.context.Stroke()
 		}
 		cr.context.SetLineWidth(originalWidth)
-		// TODO(dgryski): if series.dash ...
+
+		if series.dashed != 0 {
+			cr.context.SetDash(nil, 0)
+		}
 	}
 }
 

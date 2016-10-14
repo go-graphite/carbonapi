@@ -2906,7 +2906,11 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 			switch e.target {
 			case "dashed":
-				r.dashed = true
+				d, err := getFloatArgDefault(e, 1, 2.5)
+				if err != nil {
+					return nil, err
+				}
+				r.dashed = d
 			case "drawAsInfinite":
 				r.drawAsInfinite = true
 			case "secondYAxis":

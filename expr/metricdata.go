@@ -22,7 +22,7 @@ type MetricData struct {
 
 	drawAsInfinite bool
 	secondYAxis    bool
-	dashed         bool // TODO (ikruglov) smth like lineType would be better
+	dashed         float64
 	hasAlpha       bool
 	stacked        bool
 	stackName      string
