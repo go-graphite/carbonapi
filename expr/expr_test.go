@@ -491,6 +491,19 @@ func TestEvalExpression(t *testing.T) {
 			[]*MetricData{makeResponse("metric", []float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
+			&expr{target: "metric*"},
+			map[MetricRequest][]*MetricData{
+				MetricRequest{"metric*", 0, 1}: {
+					makeResponse("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
+					makeResponse("metric2", []float64{2, 3, 4, 5, 6}, 1, now32),
+				},
+			},
+			[]*MetricData{
+				makeResponse("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
+				makeResponse("metric2", []float64{2, 3, 4, 5, 6}, 1, now32),
+			},
+		},
+		{
 			&expr{
 				target: "sum",
 				etype:  etFunc,
@@ -837,6 +850,26 @@ func TestEvalExpression(t *testing.T) {
 				MetricRequest{"metric1", 0, 1}: {makeResponse("metric1", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32)},
 			},
 			[]*MetricData{makeResponse("keepLastValue(metric1)", []float64{math.NaN(), 2, 2, 2, 2, 2, 4, 5}, 1, now32)},
+		},
+		{
+			&expr{
+				target: "keepLastValue",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric*"},
+				},
+				argString: "metric*",
+			},
+			map[MetricRequest][]*MetricData{
+				MetricRequest{"metric*", 0, 1}: {
+					makeResponse("metric1", []float64{1, math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32),
+					makeResponse("metric2", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32),
+				},
+			},
+			[]*MetricData{
+				makeResponse("keepLastValue(metric1)", []float64{1, 1, 1, 1, 1, 1, 4, 5}, 1, now32),
+				makeResponse("keepLastValue(metric2)", []float64{math.NaN(), 2, 2, 2, 2, 2, 4, 5}, 1, now32),
+			},
 		},
 		{
 			&expr{
