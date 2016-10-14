@@ -2438,7 +2438,7 @@ func drawRectangle(cr *cairoSurfaceContext, params *Params, x float64, y float64
 	if fill {
 		cr.context.Fill()
 	} else {
-		cr.context.SetDash([]float64{}, 0.0)
+		cr.context.SetDash(nil, 0)
 		cr.context.Stroke()
 	}
 }
