@@ -816,30 +816,14 @@ func TestEvalExpression(t *testing.T) {
 				namedArgs: map[string]*expr{
 					"limit": {val: 3, etype: etConst},
 				},
-				argString: "metric1,3",
+				argString: "metric1,limit=3",
 			},
 			map[MetricRequest][]*MetricData{
 				MetricRequest{"metric1", 0, 1}: {makeResponse("metric1", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32)},
 			},
 			[]*MetricData{makeResponse("keepLastValue(metric1,3)", []float64{math.NaN(), 2, 2, 2, 2, math.NaN(), 4, 5}, 1, now32)},
 		},
-		{
-			&expr{
-				target: "keepLastValue",
-				etype:  etFunc,
-				args: []*expr{
-					{target: "metric1"},
-				},
-				namedArgs: map[string]*expr{
-					"limit": {val: 3, etype: etConst},
-				},
-				argString: "metric1,limit=3",
-			},
-			map[MetricRequest][]*MetricData{
-				MetricRequest{"metric1", 0, 1}: {makeResponse("metric1", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32)},
-			},
-			[]*MetricData{makeResponse("keepLastValue(metric1,limit=3)", []float64{math.NaN(), 2, 2, 2, 2, math.NaN(), 4, 5}, 1, now32)},
-		},
+
 		{
 			&expr{
 				target: "keepLastValue",
@@ -1493,30 +1477,12 @@ func TestEvalExpression(t *testing.T) {
 				namedArgs: map[string]*expr{
 					"base": {val: 2, etype: etConst},
 				},
-				argString: "metric1,2",
-			},
-			map[MetricRequest][]*MetricData{
-				MetricRequest{"metric1", 0, 1}: {makeResponse("metric1", []float64{1, 2, 4, 8, 16, 32}, 1, now32)},
-			},
-			[]*MetricData{makeResponse("logarithm(metric1,2)",
-				[]float64{0, 1, 2, 3, 4, 5}, 1, now32)},
-		},
-		{
-			&expr{
-				target: "logarithm",
-				etype:  etFunc,
-				args: []*expr{
-					{target: "metric1"},
-				},
-				namedArgs: map[string]*expr{
-					"base": {val: 2, etype: etConst},
-				},
 				argString: "metric1,base=2",
 			},
 			map[MetricRequest][]*MetricData{
 				MetricRequest{"metric1", 0, 1}: {makeResponse("metric1", []float64{1, 2, 4, 8, 16, 32}, 1, now32)},
 			},
-			[]*MetricData{makeResponse("logarithm(metric1,base=2)",
+			[]*MetricData{makeResponse("logarithm(metric1,2)",
 				[]float64{0, 1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
