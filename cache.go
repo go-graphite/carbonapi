@@ -2,7 +2,7 @@ package main
 
 import (
 	"crypto/sha1"
-	"fmt"
+	"encoding/hex"
 	"time"
 
 	"github.com/bradfitz/gomemcache/memcache"
@@ -43,7 +43,8 @@ type memcachedCache struct {
 }
 
 func (m *memcachedCache) get(k string) ([]byte, bool) {
-	hk := fmt.Sprintf("%x", sha1.Sum([]byte(k)))
+	key := sha1.Sum([]byte(k))
+	hk := hex.EncodeToString(key[:])
 	done := make(chan bool, 1)
 
 	var err error
@@ -71,6 +72,7 @@ func (m *memcachedCache) get(k string) ([]byte, bool) {
 }
 
 func (m *memcachedCache) set(k string, v []byte, expire int32) {
-	hk := fmt.Sprintf("%x", sha1.Sum([]byte(k)))
+	key := sha1.Sum([]byte(k))
+	hk := hex.EncodeToString(key[:])
 	go m.client.Set(&memcache.Item{Key: hk, Value: v, Expiration: expire})
 }
