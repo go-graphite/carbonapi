@@ -1040,10 +1040,10 @@ func consolidateDataPoints(params *Params, results []*MetricData) {
 			drawableDataPoints := int(numberOfPixels / minXStep)
 			pointsPerPixel := math.Ceil(numberOfDataPoints / float64(drawableDataPoints))
 			// dumb variable naming :(
-			series.valuesPerPoint = int(pointsPerPixel)
-			series.xStep = float64((numberOfPixels * pointsPerPixel) / numberOfDataPoints)
+			series.setValuesPerPoint(int(pointsPerPixel))
+			series.xStep = (numberOfPixels * pointsPerPixel) / numberOfDataPoints
 		} else {
-			series.valuesPerPoint = 1
+			series.setValuesPerPoint(1)
 			series.xStep = bestXStep
 		}
 	}

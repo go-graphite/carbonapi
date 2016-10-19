@@ -82,7 +82,7 @@ func ConsolidateJSON(maxDataPoints int, results []*MetricData) {
 		numberOfDataPoints := math.Floor(float64(timeRange / r.GetStepTime()))
 		if numberOfDataPoints > float64(maxDataPoints) {
 			valuesPerPoint := math.Ceil(numberOfDataPoints / float64(maxDataPoints))
-			r.valuesPerPoint = int(valuesPerPoint)
+			r.setValuesPerPoint(int(valuesPerPoint))
 		}
 	}
 }
@@ -216,6 +216,12 @@ func MarshalRaw(results []*MetricData) []byte {
 		b = append(b, '\n')
 	}
 	return b
+}
+
+func (r *MetricData) setValuesPerPoint(v int) {
+	r.valuesPerPoint = v
+	r.aggregatedValues = nil
+	r.aggregatedAbsent = nil
 }
 
 func (r *MetricData) AggregatedTimeStep() int32 {
