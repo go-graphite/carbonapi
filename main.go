@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"expvar"
 	"flag"
 	"fmt"
@@ -59,8 +60,6 @@ var BuildVersion = "(development build)"
 
 var queryCache bytesCache
 var findCache bytesCache
-
-var timeFormats = []string{"15:04 20060102", "20060102", "01/02/06"}
 
 var defaultTimeZone = time.Local
 
@@ -138,6 +137,41 @@ func buildParseErrorString(target, e string, err error) string {
 	return msg
 }
 
+var errBadTime = errors.New("bad time")
+
+// parseTime parses a time and returns hours and minutes
+func parseTime(s string) (hour, minute int, err error) {
+
+	switch s {
+	case "midnight":
+		return 0, 0, nil
+	case "noon":
+		return 12, 0, nil
+	case "teatime":
+		return 16, 0, nil
+	}
+
+	parts := strings.Split(s, ":")
+
+	if len(parts) != 2 {
+		return 0, 0, errBadTime
+	}
+
+	hour, err = strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, 0, errBadTime
+	}
+
+	minute, err = strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, 0, errBadTime
+	}
+
+	return hour, minute, nil
+}
+
+var timeFormats = []string{"20060102", "01/02/06"}
+
 // dateParamToEpoch turns a passed string parameter into a unix epoch
 func dateParamToEpoch(s string, d int64) int32 {
 
@@ -159,72 +193,64 @@ func dateParamToEpoch(s string, d int64) int32 {
 	switch s {
 	case "now":
 		return int32(timeNow().Unix())
-	case "yesterday", "today", "tomorrow", "midnight", "noon", "teatime":
-		t := timeNow()
-		switch s {
-		case "yesterday":
-			t = t.AddDate(0, 0, -1)
-		case "tomorrow":
-			t = t.AddDate(0, 0, 1)
-		}
-
-		yy, mm, dd := t.Date()
-		var dt time.Time
-		switch s {
-		case "noon":
-			dt = time.Date(yy, mm, dd, 12, 0, 0, 0, defaultTimeZone)
-		case "teatime":
-			dt = time.Date(yy, mm, dd, 16, 0, 0, 0, defaultTimeZone)
-		default:
-			dt = time.Date(yy, mm, dd, 0, 0, 0, 0, defaultTimeZone)
-		}
-
+	case "midnight", "noon", "teatime":
+		yy, mm, dd := timeNow().Date()
+		hh, min, _ := parseTime(s) // error ignored, we know it's valid
+		dt := time.Date(yy, mm, dd, hh, min, 0, 0, defaultTimeZone)
 		return int32(dt.Unix())
 	}
 
 	sint, err := strconv.Atoi(s)
+	// need to check that len(s) > 8 to avoid turning 20060102 into seconds
 	if err == nil && len(s) > 8 {
 		return int32(sint) // We got a timestamp so returning it
 	}
 
-	if strings.Contains(s, "_") {
-		s = strings.Replace(s, "_", " ", 1) // Go can't parse _ in date strings
+	s = strings.Replace(s, "_", " ", 1) // Go can't parse _ in date strings
+
+	var ts, ds string
+	split := strings.Fields(s)
+
+	switch {
+	case len(split) == 1:
+		ds = s
+	case len(split) == 2:
+		ts, ds = split[0], split[1]
+	case len(split) > 2:
+		return int32(d)
 	}
 
-	for _, format := range timeFormats {
-		var ts, ds string
-		split := strings.Fields(s)
-
-		switch {
-		case len(split) == 2:
-			ts, ds = split[0], split[1]
-		case len(split) > 2:
-			return int32(d)
-		}
-
-		var t time.Time
-		switch ts {
-		case "midnight", "noon", "teatime":
+	var t time.Time
+dateStringSwitch:
+	switch ds {
+	case "today":
+		t = timeNow()
+		// nothing
+	case "yesterday":
+		t = timeNow().AddDate(0, 0, -1)
+	case "tomorrow":
+		t = timeNow().AddDate(0, 0, 1)
+	default:
+		for _, format := range timeFormats {
 			t, err = time.ParseInLocation(format, ds, defaultTimeZone)
-		default:
-			t, err = time.ParseInLocation(format, s, defaultTimeZone)
-		}
-
-		if err == nil {
-			yy, mm, dd := t.Date()
-
-			switch ts {
-			case "noon":
-				t = time.Date(yy, mm, dd, 12, 0, 0, 0, defaultTimeZone)
-			case "teatime":
-				t = time.Date(yy, mm, dd, 16, 0, 0, 0, defaultTimeZone)
+			if err == nil {
+				break dateStringSwitch
 			}
-
-			return int32(t.Unix())
 		}
+
+		return int32(d)
 	}
 
-	return int32(d)
+	var hour, minute int
+	if ts != "" {
+		hour, minute, _ = parseTime(ts)
+		// defaults to hour=0, minute=0 on error, which is midnight, which is fine for now
+	}
+
+	yy, mm, dd := t.Date()
+	t = time.Date(yy, mm, dd, hour, minute, 0, 0, defaultTimeZone)
+
+	return int32(t.Unix())
 }
 
 func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
