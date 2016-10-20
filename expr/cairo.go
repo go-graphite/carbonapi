@@ -938,8 +938,6 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 		}
 	}
 
-	consolidateDataPoints(params, results)
-
 	// look for at least one stacked value
 	for _, r := range results {
 		if r.stacked {
@@ -979,20 +977,27 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 			}
 
 			absent := r.AggregatedAbsent()
-			agg := r.AggregatedValues()
-			for i, v := range agg {
+			vals := r.AggregatedValues()
+			for i, v := range vals {
 
 				if len(total) <= i {
 					total = append(total, 0)
 				}
 
 				if !absent[i] {
-					agg[i] += total[i]
+					vals[i] += total[i]
 					total[i] += v
 				}
 			}
+			// replace the values for the metric with our newly calculated ones
+			// since these are now post-aggregation, reset the valuesPerPoint
+			r.valuesPerPoint = 1
+			r.Values = vals
+			r.IsAbsent = absent
 		}
 	}
+
+	consolidateDataPoints(params, results)
 
 	currentXMin := params.area.xmin
 	currentXMax := params.area.xmax
