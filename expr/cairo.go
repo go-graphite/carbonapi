@@ -2158,13 +2158,6 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 		}
 
 		if series.stacked {
-			var xPos float64
-			if params.lineMode == LineModeStaircase {
-				xPos = x
-			} else {
-				xPos = x - series.xStep
-			}
-
 			var areaYFrom float64
 			if params.secondYAxis {
 				if series.secondYAxis {
@@ -2175,7 +2168,7 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 			} else {
 				areaYFrom = getYCoord(params, 0, YCoordSideNone)
 			}
-			fillAreaAndClip(cr, params, xPos, y, startX, areaYFrom)
+			fillAreaAndClip(cr, params, x, y, startX, areaYFrom)
 		} else {
 			cr.context.Stroke()
 		}
