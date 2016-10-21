@@ -974,6 +974,7 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 			if r.stackName != stackName {
 				// got to a new named stack -- reset accumulator
 				total = total[:0]
+				stackName = r.stackName
 			}
 
 			absent := r.AggregatedAbsent()
