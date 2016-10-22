@@ -588,9 +588,14 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			return nil, err
 		}
 
-		r := *arg[0]
-		r.Name = proto.String(alias)
-		return []*MetricData{&r}, nil
+		var results []*MetricData
+
+		for _, a := range arg {
+			r := *a
+			r.Name = proto.String(alias)
+			results = append(results, &r)
+		}
+		return results, nil
 
 	case "aliasByMetric": // aliasByMetric(seriesList)
 		return forEachSeriesDo(e, from, until, values, func(a *MetricData, r *MetricData) *MetricData {
