@@ -161,6 +161,8 @@ var (
 	ErrUnexpectedCharacter = errors.New("unexpected character")
 )
 
+const defaultStackName = "__DEFAULT__"
+
 func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 
 	var (
@@ -2926,7 +2928,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			return nil, err
 		}
 
-		stackName, err := getStringNamedOrPosArgDefault(e, "stackname", 1, "__DEFAULT__")
+		stackName, err := getStringNamedOrPosArgDefault(e, "stackname", 1, defaultStackName)
 		if err != nil {
 			return nil, err
 		}
