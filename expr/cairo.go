@@ -2057,7 +2057,9 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 			cr.context.SetDash([]float64{series.dashed}, 1)
 		}
 
-		if series.hasAlpha {
+		if series.invisible {
+			setColorAlpha(cr, color.RGBA{0, 0, 0, 0}, 0)
+		} else if series.hasAlpha {
 			setColorAlpha(cr, string2RGBA(series.color), series.alpha)
 		} else {
 			setColor(cr, string2RGBA(series.color))
@@ -2069,13 +2071,6 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 		y := float64(params.area.ymin)
 		origX := x
 		startX := x
-		/*
-			if (__jsdict_get(series.options, "invisible")) {
-				self.setColor(series.color, 0, true);
-			} else {
-				self.setColor(series.color, (__jsdict_get(series.options, "alpha") || 1.0));
-			}
-		*/
 
 		absent := series.AggregatedAbsent()
 		consecutiveNones := 0

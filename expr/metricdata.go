@@ -19,6 +19,7 @@ type MetricData struct {
 	color          string
 	alpha          float64
 	lineWidth      float64
+	invisible      bool
 
 	drawAsInfinite bool
 	secondYAxis    bool

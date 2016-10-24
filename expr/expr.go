@@ -2944,6 +2944,46 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		return results, nil
 
+	case "areaBetween":
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(arg) != 2 {
+			return nil, fmt.Errorf("areaBetween needs exactly two arguments (%d given)", len(arg))
+		}
+
+		name := proto.String(fmt.Sprintf("%s(%s)", e.target, e.argString))
+
+		lower := *arg[0]
+		lower.stacked = true
+		lower.stackName = defaultStackName
+		lower.invisible = true
+		lower.Name = name
+
+		upper := *arg[1]
+		upper.stacked = true
+		upper.stackName = defaultStackName
+		upper.Name = name
+
+		vals := make([]float64, len(upper.Values))
+		absent := make([]bool, len(upper.Values))
+
+		for i, v := range upper.Values {
+			if upper.IsAbsent[i] || lower.IsAbsent[i] {
+				absent[i] = true
+				continue
+			}
+
+			vals[i] = v - lower.Values[i]
+		}
+
+		upper.Values = vals
+		upper.IsAbsent = absent
+
+		return []*MetricData{&lower, &upper}, nil
+
 	case "alpha": // alpha(seriesList, theAlpha)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
