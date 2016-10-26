@@ -102,6 +102,17 @@ func (e *expr) Metrics() []MetricRequest {
 			for i := range r {
 				r[i].From -= 7 * 86400 // starts -7 days from where the original starts
 			}
+		case "movingAverage", "movingMedian":
+			switch e.args[1].etype {
+			case etString:
+				offs, err := getIntervalArg(e, 1, 1)
+				if err != nil {
+					return nil
+				}
+				for i := range r {
+					r[i].From -= offs
+				}
+			}
 		}
 		return r
 	}
@@ -1805,12 +1816,16 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		var scaleByStep bool
 
+		var argstr string
+
 		switch e.args[1].etype {
 		case etConst:
 			n, err = getIntArg(e, 1)
+			argstr = strconv.Itoa(n)
 		case etString:
 			var n32 int32
 			n32, err = getIntervalArg(e, 1, 1)
+			argstr = fmt.Sprintf("%q", e.args[1].valStr)
 			n = int(n32)
 			scaleByStep = true
 		default:
@@ -1822,13 +1837,21 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		windowSize := n
 
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		start := from
+		if scaleByStep {
+			start -= int32(n)
+		}
+
+		arg, err := getSeriesArg(e.args[0], start, until, values)
 		if err != nil {
 			return nil, err
 		}
 
+		var offset int
+
 		if scaleByStep {
 			windowSize /= int(arg[0].GetStepTime())
+			offset = windowSize
 		}
 
 		var result []*MetricData
@@ -1837,9 +1860,9 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			w := &windowed{data: make([]float64, windowSize)}
 
 			r := *a
-			r.Name = proto.String(fmt.Sprintf("movingAverage(%s,%d)", a.GetName(), windowSize))
-			r.Values = make([]float64, len(a.Values))
-			r.IsAbsent = make([]bool, len(a.Values))
+			r.Name = proto.String(fmt.Sprintf("movingAverage(%s,%s)", a.GetName(), argstr))
+			r.Values = make([]float64, len(a.Values)-offset)
+			r.IsAbsent = make([]bool, len(a.Values)-offset)
 			r.StartTime = proto.Int32(from)
 			r.StopTime = proto.Int32(until)
 
@@ -1848,12 +1871,15 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 					// make sure missing values are ignored
 					v = math.NaN()
 				}
-				r.Values[i] = w.Mean()
-				w.Push(v)
-				if i < windowSize || math.IsNaN(r.Values[i]) {
-					r.Values[i] = 0
-					r.IsAbsent[i] = true
+
+				if ridx := i - offset; ridx >= 0 {
+					r.Values[ridx] = w.Mean()
+					if i < windowSize || math.IsNaN(r.Values[ridx]) {
+						r.Values[ridx] = 0
+						r.IsAbsent[ridx] = true
+					}
 				}
+				w.Push(v)
 			}
 			result = append(result, &r)
 		}
@@ -1865,13 +1891,17 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		var scaleByStep bool
 
+		var argstr string
+
 		switch e.args[1].etype {
 		case etConst:
 			n, err = getIntArg(e, 1)
+			argstr = strconv.Itoa(n)
 		case etString:
 			var n32 int32
 			n32, err = getIntervalArg(e, 1, 1)
 			n = int(n32)
+			argstr = fmt.Sprintf("%q", e.args[1].valStr)
 			scaleByStep = true
 		default:
 			err = ErrBadType
@@ -1882,39 +1912,49 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		windowSize := n
 
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		start := from
+		if scaleByStep {
+			start -= int32(n)
+		}
+
+		arg, err := getSeriesArg(e.args[0], start, until, values)
 		if err != nil {
 			return nil, err
 		}
 
+		var offset int = 0
+
 		if scaleByStep {
 			windowSize /= int(arg[0].GetStepTime())
+			offset = windowSize
 		}
 
 		var result []*MetricData
 
 		for _, a := range arg {
 			r := *a
-			r.Name = proto.String(fmt.Sprintf("movingMedian(%s,%d)", a.GetName(), windowSize))
-			r.Values = make([]float64, len(a.Values))
-			r.IsAbsent = make([]bool, len(a.Values))
+			r.Name = proto.String(fmt.Sprintf("movingMedian(%s,%s)", a.GetName(), argstr))
+			r.Values = make([]float64, len(a.Values)-offset)
+			r.IsAbsent = make([]bool, len(a.Values)-offset)
 			r.StartTime = proto.Int32(from)
 			r.StopTime = proto.Int32(until)
 
 			data := movingmedian.NewMovingMedian(windowSize)
 
 			for i, v := range a.Values {
-				r.Values[i] = math.NaN()
 				if a.IsAbsent[i] {
 					data.Push(math.NaN())
 				} else {
 					data.Push(v)
 				}
-				if i >= (windowSize - 1) {
-					r.Values[i] = data.Median()
-				}
-				if math.IsNaN(r.Values[i]) {
-					r.IsAbsent[i] = true
+				if ridx := i - offset; ridx >= 0 {
+					r.Values[ridx] = math.NaN()
+					if i >= (windowSize - 1) {
+						r.Values[ridx] = data.Median()
+					}
+					if math.IsNaN(r.Values[ridx]) {
+						r.IsAbsent[ridx] = true
+					}
 				}
 			}
 			result = append(result, &r)

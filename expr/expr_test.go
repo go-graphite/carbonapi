@@ -738,9 +738,9 @@ func TestEvalExpression(t *testing.T) {
 				argString: "metric1,1s",
 			},
 			map[MetricRequest][]*MetricData{
-				MetricRequest{"metric1", 0, 1}: {makeResponse("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, math.NaN()}, 1, now32)},
+				MetricRequest{"metric1", -1, 1}: {makeResponse("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, 0}, 1, now32)},
 			},
-			[]*MetricData{makeResponse("movingMedian(metric1,1)", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, math.NaN()}, 1, now32)},
+			[]*MetricData{makeResponse("movingMedian(metric1,\"1s\")", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, 0}, 1, now32)},
 		},
 		{
 			&expr{
@@ -748,14 +748,14 @@ func TestEvalExpression(t *testing.T) {
 				etype:  etFunc,
 				args: []*expr{
 					{target: "metric1"},
-					{valStr: "1min", etype: etString},
+					{valStr: "3s", etype: etString},
 				},
-				argString: "metric1,1min",
+				argString: "metric1,3s",
 			},
 			map[MetricRequest][]*MetricData{
-				MetricRequest{"metric1", 0, 1}: {makeResponse("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, math.NaN()}, 1, now32)},
+				MetricRequest{"metric1", -3, 1}: {makeResponse("metric1", []float64{0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2}, 1, now32)},
 			},
-			[]*MetricData{makeResponse("movingMedian(metric1,60)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
+			[]*MetricData{makeResponse("movingMedian(metric1,\"3s\")", []float64{0, 1, 1, 1, 1, 2, 2, 2, 4, 4, 6, 6, 6, 2}, 1, now32)},
 		},
 		{
 			&expr{
