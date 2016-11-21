@@ -309,7 +309,8 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	v.Set("format", "protobuf")
 	rewrite.RawQuery = v.Encode()
 
-	if strings.HasPrefix(queries[0], Config.SearchPrefix) {
+	searchConfigured := len(Config.SearchPrefix) > 0 && len(Config.SearchBackend) > 0
+	if searchConfigured && strings.HasPrefix(queries[0], Config.SearchPrefix) {
 		Metrics.SearchRequests.Add(1)
 		// Send query to SearchBackend. The result is []queries for StorageBackends
 		searchResponse := multiGet([]string{Config.SearchBackend}, rewrite.RequestURI())
