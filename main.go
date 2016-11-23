@@ -110,6 +110,9 @@ type serverResponse struct {
 	response []byte
 }
 
+// set during startup, read-only after that
+var searchConfigured = false
+
 var storageClient = &http.Client{}
 
 var probeTicker = time.NewTicker(10 * time.Minute)
@@ -309,7 +312,6 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	v.Set("format", "protobuf")
 	rewrite.RawQuery = v.Encode()
 
-	searchConfigured := len(Config.SearchPrefix) > 0 && len(Config.SearchBackend) > 0
 	if searchConfigured && strings.HasPrefix(queries[0], Config.SearchPrefix) {
 		Metrics.SearchRequests.Add(1)
 		// Send query to SearchBackend. The result is []queries for StorageBackends
@@ -740,6 +742,8 @@ func main() {
 		mlog.SetOutput(*logdir, "carbonzipper", *logtostdout)
 	}
 
+	searchConfigured = len(Config.SearchPrefix) > 0 && len(Config.SearchBackend) > 0
+
 	logger = mlog.Level(*debugLevel)
 	logger.Logln("starting carbonzipper", BuildVersion)
 
@@ -750,7 +754,11 @@ func main() {
 
 	if Config.ConcurrencyLimitPerServer != 0 {
 		logger.Logln("Setting concurrencyLimit", Config.ConcurrencyLimitPerServer)
-		Limiter = newServerLimiter(Config.Backends, Config.ConcurrencyLimitPerServer)
+		limiterServers := Config.Backends
+		if searchConfigured {
+			limiterServers = append(limiterServers, Config.SearchBackend)
+		}
+		Limiter = newServerLimiter(limiterServers, Config.ConcurrencyLimitPerServer)
 	}
 
 	// +1 to track every over the number of buckets we track
