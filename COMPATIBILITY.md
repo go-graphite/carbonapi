@@ -122,6 +122,7 @@ cumulative(seriesList, consolidationFunc='sum')                           |  0.9
 currentAbove(seriesList, n)                                               |  0.9.9  | Supported
 currentBelow(seriesList, n)                                               |  0.9.9  | Supported
 dashed(*seriesList)                                                       |  0.9.9  | Supported
+delay(seriesList, steps)                                                  |  latest |
 derivative(seriesList)                                                    |  0.9.9  | Supported
 diffSeries(*seriesLists)                                                  |  0.9.9  | Supported
 divideSeries(dividendSeriesList, divisorSeries)                           |  0.9.14 | Supported
