@@ -304,7 +304,8 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 
 	Metrics.FindRequests.Add(1)
 
-	queries := []string{req.FormValue("query")}
+	originalQuery := req.FormValue("query")
+	queries := []string{originalQuery}
 
 	rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
 	v := rewrite.Query()
@@ -314,6 +315,18 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 
 	if searchConfigured && strings.HasPrefix(queries[0], Config.SearchPrefix) {
 		Metrics.SearchRequests.Add(1)
+		// 'completer' requests are translated into standard Find requests with
+		// a trailing '*' by graphite-web
+		if strings.HasSuffix(queries[0], "*") {
+			searchCompleterResponse := multiGet([]string{Config.SearchBackend}, rewrite.RequestURI())
+			matches, _ := findUnpackPB(nil, searchCompleterResponse)
+			// this is a completer request, and so we should return the set of
+			// virtual metrics returned by carbonsearch verbatim, rather than trying
+			// to find them on the stores
+			encodeFindResponse(format, originalQuery, w, matches)
+			return
+		}
+
 		// Send query to SearchBackend. The result is []queries for StorageBackends
 		searchResponse := multiGet([]string{Config.SearchBackend}, rewrite.RequestURI())
 		m, _ := findUnpackPB(req, searchResponse)
@@ -362,11 +375,14 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	encodeFindResponse(format, originalQuery, w, metrics)
+}
+
+func encodeFindResponse(format, query string, w http.ResponseWriter, metrics []*pb.GlobMatch) {
 	switch format {
 	case "protobuf":
 		w.Header().Set("Content-Type", contentTypeProtobuf)
 		var result pb.GlobResponse
-		query := req.FormValue("query")
 		result.Name = &query
 		result.Matches = metrics
 		b, _ := result.Marshal()
