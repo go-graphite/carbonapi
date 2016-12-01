@@ -348,61 +348,19 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 				continue
 			}
 
-			var glob pb.GlobResponse
-			var haveCacheData bool
-
-			if response, ok := findCache.get(m.Metric); useCache && ok {
-				Metrics.FindCacheHits.Add(1)
-				err := glob.Unmarshal(response)
-				haveCacheData = err == nil
-			}
-
-			if !haveCacheData {
-				var err error
-				Metrics.FindRequests.Add(1)
-				stats.zipperRequests++
-				glob, err = Zipper.Find(m.Metric)
-				if err != nil {
-					logger.Logf("Find: %v: %v", m.Metric, err)
-					continue
-				}
-				b, err := glob.Marshal()
-				if err == nil {
-					findCache.set(m.Metric, b, 5*60)
-				}
-			}
-
 			// For each metric returned in the Find response, query Render
 			// This is a conscious decision to *not* cache render data
-			rch := make(chan *expr.MetricData, len(glob.GetMatches()))
-			leaves := 0
-			for _, m := range glob.GetMatches() {
-				if !m.GetIsLeaf() {
-					continue
-				}
-				Metrics.RenderRequests.Add(1)
-				leaves++
-				Limiter.enter()
-				stats.zipperRequests++
-				go func(m *pb.GlobMatch, from, until int32) {
-					var rptr *expr.MetricData
-					r, err := Zipper.Render(m.GetPath(), from, until)
-					if err == nil {
-						rptr = &r
-					} else {
-						logger.Logf("Render: %v: %v", m.GetPath(), err)
-					}
-					rch <- rptr
-					Limiter.leave()
-				}(m, mfetch.From, mfetch.Until)
-			}
+			Metrics.RenderRequests.Add(1)
+			Limiter.enter()
+			stats.zipperRequests++
 
-			for i := 0; i < leaves; i++ {
-				r := <-rch
-				if r != nil {
-					metricMap[mfetch] = append(metricMap[mfetch], r)
-				}
+			r, err := Zipper.Render(m.Metric, mfetch.From, mfetch.Until)
+			if err != nil {
+				logger.Logf("Render: %v: %v", m.Metric, err)
+			} else {
+				metricMap[mfetch] = r
 			}
+			Limiter.leave()
 
 			expr.SortMetrics(metricMap[mfetch], mfetch)
 
