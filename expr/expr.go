@@ -2941,140 +2941,6 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		return results, nil
 
-	case "color": // color(seriesList, theColor)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
-		if err != nil {
-			return nil, err
-		}
-
-		color, err := getStringArg(e, 1) // get color
-		if err != nil {
-			return nil, err
-		}
-
-		var results []*MetricData
-
-		for _, a := range arg {
-			r := *a
-			r.color = color
-			results = append(results, &r)
-		}
-
-		return results, nil
-
-	case "stacked": // stacked(seriesList, stackname="__DEFAULT__")
-		arg, err := getSeriesArg(e.args[0], from, until, values)
-		if err != nil {
-			return nil, err
-		}
-
-		stackName, err := getStringNamedOrPosArgDefault(e, "stackname", 1, defaultStackName)
-		if err != nil {
-			return nil, err
-		}
-
-		var results []*MetricData
-
-		for _, a := range arg {
-			r := *a
-			r.stacked = true
-			r.stackName = stackName
-			results = append(results, &r)
-		}
-
-		return results, nil
-
-	case "areaBetween":
-		arg, err := getSeriesArg(e.args[0], from, until, values)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(arg) != 2 {
-			return nil, fmt.Errorf("areaBetween needs exactly two arguments (%d given)", len(arg))
-		}
-
-		name := proto.String(fmt.Sprintf("%s(%s)", e.target, e.argString))
-
-		lower := *arg[0]
-		lower.stacked = true
-		lower.stackName = defaultStackName
-		lower.invisible = true
-		lower.Name = name
-
-		upper := *arg[1]
-		upper.stacked = true
-		upper.stackName = defaultStackName
-		upper.Name = name
-
-		vals := make([]float64, len(upper.Values))
-		absent := make([]bool, len(upper.Values))
-
-		for i, v := range upper.Values {
-			if upper.IsAbsent[i] || lower.IsAbsent[i] {
-				absent[i] = true
-				continue
-			}
-
-			vals[i] = v - lower.Values[i]
-		}
-
-		upper.Values = vals
-		upper.IsAbsent = absent
-
-		return []*MetricData{&lower, &upper}, nil
-
-	case "alpha": // alpha(seriesList, theAlpha)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
-		if err != nil {
-			return nil, err
-		}
-
-		alpha, err := getFloatArg(e, 1)
-		if err != nil {
-			return nil, err
-		}
-
-		var results []*MetricData
-
-		for _, a := range arg {
-			r := *a
-			r.alpha = alpha
-			r.hasAlpha = true
-			results = append(results, &r)
-		}
-
-		return results, nil
-
-	case "dashed", "drawAsInfinite", "secondYAxis":
-		arg, err := getSeriesArg(e.args[0], from, until, values)
-		if err != nil {
-			return nil, err
-		}
-
-		var results []*MetricData
-
-		for _, a := range arg {
-			r := *a
-			r.Name = proto.String(fmt.Sprintf("%s(%s)", e.target, a.GetName()))
-
-			switch e.target {
-			case "dashed":
-				d, err := getFloatArgDefault(e, 1, 2.5)
-				if err != nil {
-					return nil, err
-				}
-				r.dashed = d
-			case "drawAsInfinite":
-				r.drawAsInfinite = true
-			case "secondYAxis":
-				r.secondYAxis = true
-			}
-
-			results = append(results, &r)
-		}
-		return results, nil
-
 	case "constantLine":
 		value, err := getFloatArg(e, 0)
 
@@ -3165,45 +3031,6 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 				Values:    values,
 				IsAbsent:  make([]bool, len(values)),
 			},
-		}
-
-		return []*MetricData{&p}, nil
-
-	case "threshold": // threshold(value, label=None, color=None)
-		// XXX does not match graphite's signature
-		// BUG(nnuss): the signature *does* match but there is an edge case because of named argument handling if you use it *just* wrong:
-		//			   threshold(value, "gold", label="Aurum")
-		//			   will result in:
-		//			   value = value
-		//			   label = "Aurum" (by named argument)
-		//			   color = "" (by default as len(positionalArgs) == 2 and there is no named 'color' arg)
-
-		value, err := getFloatArg(e, 0)
-
-		if err != nil {
-			return nil, err
-		}
-
-		name, err := getStringNamedOrPosArgDefault(e, "label", 1, fmt.Sprintf("%g", value))
-		if err != nil {
-			return nil, err
-		}
-
-		color, err := getStringNamedOrPosArgDefault(e, "color", 2, "")
-		if err != nil {
-			return nil, err
-		}
-
-		p := MetricData{
-			FetchResponse: pb.FetchResponse{
-				Name:      proto.String(name),
-				StartTime: proto.Int32(from),
-				StopTime:  proto.Int32(until),
-				StepTime:  proto.Int32(until - from),
-				Values:    []float64{value, value},
-				IsAbsent:  []bool{false, false},
-			},
-			color: color,
 		}
 
 		return []*MetricData{&p}, nil
@@ -3437,7 +3264,18 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return metrics, nil
 	}
 
-	return nil, fmt.Errorf("unknown function in evalExpr: %q", e.target)
+	if haveGraphSupport {
+		return evalExprGraph(e, from, until, values)
+	}
+
+	return nil, errUnknownFunction(e.target)
+}
+
+type errUnknownFunction string
+
+func (e errUnknownFunction) Error() string {
+	return fmt.Sprintf("unknown function in evalExpr: %q", string(e))
+
 }
 
 // Total (sortByTotal), max (sortByMaxima), min (sortByMinima) sorting

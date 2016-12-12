@@ -22,6 +22,24 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
+const haveGraphSupport = true
+
+type graphOptions struct {
+	// extra options
+	xStep     float64
+	color     string
+	alpha     float64
+	lineWidth float64
+	invisible bool
+
+	drawAsInfinite bool
+	secondYAxis    bool
+	dashed         float64
+	hasAlpha       bool
+	stacked        bool
+	stackName      string
+}
+
 type HAlign int
 
 const (
@@ -656,6 +674,188 @@ const (
 	cairoPNG cairoBackend = iota
 	cairoSVG
 )
+
+func evalExprGraph(e *expr, from, until int32, values map[MetricRequest][]*MetricData) ([]*MetricData, error) {
+
+	switch e.target {
+
+	case "color": // color(seriesList, theColor)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		color, err := getStringArg(e, 1) // get color
+		if err != nil {
+			return nil, err
+		}
+
+		var results []*MetricData
+
+		for _, a := range arg {
+			r := *a
+			r.color = color
+			results = append(results, &r)
+		}
+
+		return results, nil
+
+	case "stacked": // stacked(seriesList, stackname="__DEFAULT__")
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		stackName, err := getStringNamedOrPosArgDefault(e, "stackname", 1, defaultStackName)
+		if err != nil {
+			return nil, err
+		}
+
+		var results []*MetricData
+
+		for _, a := range arg {
+			r := *a
+			r.stacked = true
+			r.stackName = stackName
+			results = append(results, &r)
+		}
+
+		return results, nil
+
+	case "areaBetween":
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(arg) != 2 {
+			return nil, fmt.Errorf("areaBetween needs exactly two arguments (%d given)", len(arg))
+		}
+
+		name := proto.String(fmt.Sprintf("%s(%s)", e.target, e.argString))
+
+		lower := *arg[0]
+		lower.stacked = true
+		lower.stackName = defaultStackName
+		lower.invisible = true
+		lower.Name = name
+
+		upper := *arg[1]
+		upper.stacked = true
+		upper.stackName = defaultStackName
+		upper.Name = name
+
+		vals := make([]float64, len(upper.Values))
+		absent := make([]bool, len(upper.Values))
+
+		for i, v := range upper.Values {
+			if upper.IsAbsent[i] || lower.IsAbsent[i] {
+				absent[i] = true
+				continue
+			}
+
+			vals[i] = v - lower.Values[i]
+		}
+
+		upper.Values = vals
+		upper.IsAbsent = absent
+
+		return []*MetricData{&lower, &upper}, nil
+
+	case "alpha": // alpha(seriesList, theAlpha)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		alpha, err := getFloatArg(e, 1)
+		if err != nil {
+			return nil, err
+		}
+
+		var results []*MetricData
+
+		for _, a := range arg {
+			r := *a
+			r.alpha = alpha
+			r.hasAlpha = true
+			results = append(results, &r)
+		}
+
+		return results, nil
+
+	case "dashed", "drawAsInfinite", "secondYAxis":
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		var results []*MetricData
+
+		for _, a := range arg {
+			r := *a
+			r.Name = proto.String(fmt.Sprintf("%s(%s)", e.target, a.GetName()))
+
+			switch e.target {
+			case "dashed":
+				d, err := getFloatArgDefault(e, 1, 2.5)
+				if err != nil {
+					return nil, err
+				}
+				r.dashed = d
+			case "drawAsInfinite":
+				r.drawAsInfinite = true
+			case "secondYAxis":
+				r.secondYAxis = true
+			}
+
+			results = append(results, &r)
+		}
+		return results, nil
+
+	case "threshold": // threshold(value, label=None, color=None)
+		// XXX does not match graphite's signature
+		// BUG(nnuss): the signature *does* match but there is an edge case because of named argument handling if you use it *just* wrong:
+		//			   threshold(value, "gold", label="Aurum")
+		//			   will result in:
+		//			   value = value
+		//			   label = "Aurum" (by named argument)
+		//			   color = "" (by default as len(positionalArgs) == 2 and there is no named 'color' arg)
+
+		value, err := getFloatArg(e, 0)
+
+		if err != nil {
+			return nil, err
+		}
+
+		name, err := getStringNamedOrPosArgDefault(e, "label", 1, fmt.Sprintf("%g", value))
+		if err != nil {
+			return nil, err
+		}
+
+		color, err := getStringNamedOrPosArgDefault(e, "color", 2, "")
+		if err != nil {
+			return nil, err
+		}
+
+		p := MetricData{
+			FetchResponse: pb.FetchResponse{
+				Name:      proto.String(name),
+				StartTime: proto.Int32(from),
+				StopTime:  proto.Int32(until),
+				StepTime:  proto.Int32(until - from),
+				Values:    []float64{value, value},
+				IsAbsent:  []bool{false, false},
+			},
+			graphOptions: graphOptions{color: color},
+		}
+
+		return []*MetricData{&p}, nil
+
+	}
+
+	return nil, errUnknownFunction(e.target)
+}
 
 func MarshalSVG(r *http.Request, results []*MetricData) []byte {
 	return marshalCairo(r, results, cairoSVG)
@@ -2022,10 +2222,12 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 						Values:    make([]float64, len(r.AggregatedValues())),
 						IsAbsent:  make([]bool, len(r.AggregatedValues())),
 					},
-					color:          r.color,
-					xStep:          r.xStep,
-					secondYAxis:    r.secondYAxis,
 					valuesPerPoint: 1,
+					graphOptions: graphOptions{
+						color:       r.color,
+						xStep:       r.xStep,
+						secondYAxis: r.secondYAxis,
+					},
 				}
 				copy(newSeries.Values, r.AggregatedValues())
 				copy(newSeries.IsAbsent, r.AggregatedAbsent())

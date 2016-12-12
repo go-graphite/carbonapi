@@ -13,21 +13,9 @@ import (
 type MetricData struct {
 	pb.FetchResponse
 
-	// extra options
-	xStep          float64
-	valuesPerPoint int
-	color          string
-	alpha          float64
-	lineWidth      float64
-	invisible      bool
+	graphOptions
 
-	drawAsInfinite bool
-	secondYAxis    bool
-	dashed         float64
-	hasAlpha       bool
-	stacked        bool
-	stackName      string
-
+	valuesPerPoint    int
 	aggregatedValues  []float64
 	aggregatedAbsent  []bool
 	aggregateFunction func([]float64, []bool) (float64, bool)
