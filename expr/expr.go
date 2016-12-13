@@ -17,6 +17,7 @@ import (
 	"github.com/dgryski/go-onlinestats"
 	"github.com/dustin/go-humanize"
 	"github.com/gogo/protobuf/proto"
+	"github.com/gonum/matrix/mat64"
 	"github.com/wangjohn/quickselect"
 )
 
@@ -2557,6 +2558,83 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			return percentile(values, percent, interpolate)
 		})
 
+	case "polyfit": // polyfit(seriesList, degree=1, offset="0d")
+		// Fitting Nth degree polynom to the dataset
+		// https://en.wikipedia.org/wiki/Polynomial_regression#Matrix_form_and_calculation_of_estimates
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		degree, err := getIntNamedOrPosArgDefault(e, "degree", 1, 1)
+		if err != nil {
+			return nil, err
+		} else if degree < 1 {
+			return nil, errors.New("degree must be larger or equal to 1")
+		}
+
+		offs_str, err := getStringNamedOrPosArgDefault(e, "offset", 2, "0d")
+		if err != nil {
+			return nil, err
+		}
+		offs, err := IntervalString(offs_str, 1)
+		if err != nil {
+			return nil, err
+		}
+
+		var results []*MetricData
+
+		for _, a := range arg {
+			r := *a
+			if len(e.args) > 2 {
+				r.Name = proto.String(fmt.Sprintf("polyfit(%s,%d,'%s')", a.GetName(), degree, e.args[2].valStr))
+			} else if len(e.args) > 1 {
+				r.Name = proto.String(fmt.Sprintf("polyfit(%s,%d)", a.GetName(), degree))
+			} else {
+				r.Name = proto.String(fmt.Sprintf("polyfit(%s)", a.GetName()))
+			}
+			// Extending slice by "offset" so our graph slides into future!
+			r.Values = make([]float64, len(a.Values)+int(offs / *r.StepTime))
+			r.IsAbsent = make([]bool, len(r.Values))
+			r.StopTime = proto.Int32(a.GetStopTime() + offs)
+
+			// Removing absent values from original dataset
+			nonNulls := make([]float64, 0)
+			for i, _ := range a.Values {
+				if !a.IsAbsent[i] {
+					nonNulls = append(nonNulls, a.Values[i])
+				}
+			}
+			if len(nonNulls) < 2 {
+				for i, _ := range r.IsAbsent {
+					r.IsAbsent[i] = true
+				}
+				results = append(results, &r)
+				continue
+			}
+
+			// STEP 1: Creating Vandermonde (X)
+			v := vandermonde(a.IsAbsent, degree)
+			// STEP 2: Creating (X^T * X)**-1
+			var t mat64.Dense
+			t.Mul(v.T(), v)
+			var i mat64.Dense
+			err := i.Inverse(&t)
+			if err != nil {
+				continue
+			}
+			// STEP 3: Creating I * X^T * y
+			var c mat64.Dense
+			c.Product(&i, v.T(), mat64.NewDense(len(nonNulls), 1, nonNulls))
+			// END OF STEPS
+
+			for i, _ := range r.Values {
+				r.Values[i] = poly(float64(i), c.RawMatrix().Data...)
+			}
+			results = append(results, &r)
+		}
+		return results, nil
+
 	case "substr": // aliasSub(seriesList, start, stop)
 		// BUG: affected by the same positional arg issue as 'threshold'.
 		args, err := getSeriesArg(e.args[0], from, until, values)
@@ -3632,6 +3710,32 @@ func varianceValue(f64s []float64, absent []bool) float64 {
 		squareSum += (mean - v) * (mean - v)
 	}
 	return squareSum / float64(elts)
+}
+
+// Create a Vandermonde matrix
+func vandermonde(absent []bool, deg int) *mat64.Dense {
+	e := []float64{}
+	for i, _ := range absent {
+		if absent[i] {
+			continue
+		}
+		v := 1
+		for j := 0; j < deg+1; j++ {
+			e = append(e, float64(v))
+			v *= i
+		}
+	}
+	return mat64.NewDense(len(e)/(deg+1), deg+1, e)
+}
+
+func poly(x float64, coeffs ...float64) float64 {
+	y := coeffs[0]
+	v := 1.0
+	for _, c := range coeffs[1:] {
+		v *= x
+		y += c * v
+	}
+	return y
 }
 
 type metricHeapElement struct {

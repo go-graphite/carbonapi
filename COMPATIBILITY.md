@@ -177,6 +177,7 @@ pearson(series, series, n)                                                |  not
 pearsonClosest(series, seriesList, windowSize, direction="abs")           |  not in graphite | Experimental
 perSecond(seriesList, maxValue=None)                                      |  0.9.14 | Supported
 percentileOfSeries(seriesList, n, interpolate=False)                      |  0.9.10 | Supported
+polyfit(seriesList, degree=1, offset='0d')                                |  not in graphite | Experimental
 pow(seriesList, factor)                                                   |  0.9.14 | Supported
 randomWalkFunction(name, step=60), Short Alias: randomWalk()              |  0.9.9  | Supported
 rangeOfSeries(*seriesLists)                                               |  0.9.10 | Supported
