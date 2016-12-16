@@ -99,7 +99,7 @@ func (e *expr) Metrics() []MetricRequest {
 			}
 
 			return r2
-		case "holtWintersForecast", "holtWintersConfidenceBands":
+		case "holtWintersForecast", "holtWintersConfidenceBands", "holtWintersAberration":
 			for i := range r {
 				r[i].From -= 7 * 86400 // starts -7 days from where the original starts
 			}
@@ -3192,6 +3192,54 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 			results = append(results, &lowerSeries)
 			results = append(results, &upperSeries)
+		}
+		return results, nil
+
+	case "holtWintersAberration":
+		var results []*MetricData
+		args, err := getSeriesArg(e.args[0], from-7*86400, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		delta, err := getFloatNamedOrPosArgDefault(e, "delta", 1, 3)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, arg := range args {
+			var aberration []float64
+
+			stepTime := arg.GetStepTime()
+
+			lowerBand, upperBand := holtWintersConfidenceBands(arg.Values, stepTime, delta)
+
+			windowPoints := 7 * 86400 / stepTime
+			series := arg.Values[windowPoints:]
+			absent := arg.IsAbsent[windowPoints:]
+
+			for i, _ := range series {
+				if absent[i] {
+					aberration = append(aberration, 0)
+				} else if !math.IsNaN(upperBand[i]) && series[i] > upperBand[i] {
+					aberration = append(aberration, series[i]-upperBand[i])
+				} else if !math.IsNaN(lowerBand[i]) && series[i] < lowerBand[i] {
+					aberration = append(aberration, series[i]-lowerBand[i])
+				} else {
+					aberration = append(aberration, 0)
+				}
+			}
+
+			r := MetricData{FetchResponse: pb.FetchResponse{
+				Name:      proto.String(fmt.Sprintf("holtWintersAberration(%s)", arg.GetName())),
+				Values:    aberration,
+				IsAbsent:  make([]bool, len(aberration)),
+				StepTime:  proto.Int32(arg.GetStepTime()),
+				StartTime: proto.Int32(arg.GetStartTime() + 7*86400),
+				StopTime:  proto.Int32(arg.GetStopTime()),
+			}}
+
+			results = append(results, &r)
 		}
 		return results, nil
 
