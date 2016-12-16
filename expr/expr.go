@@ -99,7 +99,7 @@ func (e *expr) Metrics() []MetricRequest {
 			}
 
 			return r2
-		case "holtWintersForecast":
+		case "holtWintersForecast", "holtWintersConfidenceBands":
 			for i := range r {
 				r[i].From -= 7 * 86400 // starts -7 days from where the original starts
 			}
@@ -3138,6 +3138,60 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			}}
 
 			results = append(results, &r)
+		}
+		return results, nil
+
+	case "holtWintersConfidenceBands":
+		var results []*MetricData
+		args, err := getSeriesArg(e.args[0], from-7*86400, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		delta, err := getFloatNamedOrPosArgDefault(e, "delta", 1, 3)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, arg := range args {
+			stepTime := arg.GetStepTime()
+
+			lowerBand, upperBand := holtWintersConfidenceBands(arg.Values, stepTime, delta)
+
+			lowerSeries := MetricData{FetchResponse: pb.FetchResponse{
+				Name:      proto.String(fmt.Sprintf("holtWintersConfidenceLower(%s)", arg.GetName())),
+				Values:    lowerBand,
+				IsAbsent:  make([]bool, len(lowerBand)),
+				StepTime:  proto.Int32(arg.GetStepTime()),
+				StartTime: proto.Int32(arg.GetStartTime() + 7*86400),
+				StopTime:  proto.Int32(arg.GetStopTime()),
+			}}
+
+			for i, val := range lowerSeries.Values {
+				if math.IsNaN(val) {
+					lowerSeries.Values[i] = 0
+					lowerSeries.IsAbsent[i] = true
+				}
+			}
+
+			upperSeries := MetricData{FetchResponse: pb.FetchResponse{
+				Name:      proto.String(fmt.Sprintf("holtWintersConfidenceUpper(%s)", arg.GetName())),
+				Values:    upperBand,
+				IsAbsent:  make([]bool, len(upperBand)),
+				StepTime:  proto.Int32(arg.GetStepTime()),
+				StartTime: proto.Int32(arg.GetStartTime() + 7*86400),
+				StopTime:  proto.Int32(arg.GetStopTime()),
+			}}
+
+			for i, val := range upperSeries.Values {
+				if math.IsNaN(val) {
+					upperSeries.Values[i] = 0
+					upperSeries.IsAbsent[i] = true
+				}
+			}
+
+			results = append(results, &lowerSeries)
+			results = append(results, &upperSeries)
 		}
 		return results, nil
 
