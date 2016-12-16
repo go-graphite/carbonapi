@@ -138,10 +138,10 @@ highestAverage(seriesList, n)                                             |  0.9
 highestCurrent(seriesList, n)                                             |  0.9.9  | Supported
 highestMax(seriesList, n)                                                 |  0.9.9  | Supported
 hitcount(seriesList, intervalString, alignToInterval=False)               |  0.9.10 | Supported
-holtWintersAberration(seriesList, delta=3)                                |  0.9.10 | [#66](https://github.com/dgryski/carbonapi/issues/66)
+holtWintersAberration(seriesList, delta=3)                                |  0.9.10 | Supported
 holtWintersConfidenceArea(seriesList, delta=3)                            |  0.9.10 | [#66](https://github.com/dgryski/carbonapi/issues/66)
-holtWintersConfidenceBands(seriesList, delta=3)                           |  0.9.10 | [#66](https://github.com/dgryski/carbonapi/issues/66)
-holtWintersForecast(seriesList)                                           |  0.9.10 | Supported - but see: [#66](https://github.com/dgryski/carbonapi/issues/66)
+holtWintersConfidenceBands(seriesList, delta=3)                           |  0.9.10 | Supported
+holtWintersForecast(seriesList)                                           |  0.9.10 | Supported
 identity(name)                                                            |  0.9.14 |
 integral(seriesList)                                                      |  0.9.9  | Supported
 integralByInterval(seriesList, intervalUnit)                              |  latest |
