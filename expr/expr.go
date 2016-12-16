@@ -3123,7 +3123,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		for _, arg := range args {
 			stepTime := arg.GetStepTime()
 
-			predictions := holtWintersAnalysis(arg.Values, stepTime)
+			predictions, _ := holtWintersAnalysis(arg.Values, stepTime)
 
 			windowPoints := 7 * 86400 / stepTime
 			predictionsOfInterest := predictions[windowPoints:]
