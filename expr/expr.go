@@ -99,7 +99,7 @@ func (e *expr) Metrics() []MetricRequest {
 			}
 
 			return r2
-		case "holtWintersForecast":
+		case "holtWintersForecast", "holtWintersConfidenceBands", "holtWintersAberration":
 			for i := range r {
 				r[i].From -= 7 * 86400 // starts -7 days from where the original starts
 			}
@@ -3123,7 +3123,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		for _, arg := range args {
 			stepTime := arg.GetStepTime()
 
-			predictions := holtWintersAnalysis(arg.Values, stepTime)
+			predictions, _ := holtWintersAnalysis(arg.Values, stepTime)
 
 			windowPoints := 7 * 86400 / stepTime
 			predictionsOfInterest := predictions[windowPoints:]
@@ -3132,6 +3132,108 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 				Name:      proto.String(fmt.Sprintf("holtWintersForecast(%s)", arg.GetName())),
 				Values:    predictionsOfInterest,
 				IsAbsent:  make([]bool, len(predictionsOfInterest)),
+				StepTime:  proto.Int32(arg.GetStepTime()),
+				StartTime: proto.Int32(arg.GetStartTime() + 7*86400),
+				StopTime:  proto.Int32(arg.GetStopTime()),
+			}}
+
+			results = append(results, &r)
+		}
+		return results, nil
+
+	case "holtWintersConfidenceBands":
+		var results []*MetricData
+		args, err := getSeriesArg(e.args[0], from-7*86400, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		delta, err := getFloatNamedOrPosArgDefault(e, "delta", 1, 3)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, arg := range args {
+			stepTime := arg.GetStepTime()
+
+			lowerBand, upperBand := holtWintersConfidenceBands(arg.Values, stepTime, delta)
+
+			lowerSeries := MetricData{FetchResponse: pb.FetchResponse{
+				Name:      proto.String(fmt.Sprintf("holtWintersConfidenceLower(%s)", arg.GetName())),
+				Values:    lowerBand,
+				IsAbsent:  make([]bool, len(lowerBand)),
+				StepTime:  proto.Int32(arg.GetStepTime()),
+				StartTime: proto.Int32(arg.GetStartTime() + 7*86400),
+				StopTime:  proto.Int32(arg.GetStopTime()),
+			}}
+
+			for i, val := range lowerSeries.Values {
+				if math.IsNaN(val) {
+					lowerSeries.Values[i] = 0
+					lowerSeries.IsAbsent[i] = true
+				}
+			}
+
+			upperSeries := MetricData{FetchResponse: pb.FetchResponse{
+				Name:      proto.String(fmt.Sprintf("holtWintersConfidenceUpper(%s)", arg.GetName())),
+				Values:    upperBand,
+				IsAbsent:  make([]bool, len(upperBand)),
+				StepTime:  proto.Int32(arg.GetStepTime()),
+				StartTime: proto.Int32(arg.GetStartTime() + 7*86400),
+				StopTime:  proto.Int32(arg.GetStopTime()),
+			}}
+
+			for i, val := range upperSeries.Values {
+				if math.IsNaN(val) {
+					upperSeries.Values[i] = 0
+					upperSeries.IsAbsent[i] = true
+				}
+			}
+
+			results = append(results, &lowerSeries)
+			results = append(results, &upperSeries)
+		}
+		return results, nil
+
+	case "holtWintersAberration":
+		var results []*MetricData
+		args, err := getSeriesArg(e.args[0], from-7*86400, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		delta, err := getFloatNamedOrPosArgDefault(e, "delta", 1, 3)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, arg := range args {
+			var aberration []float64
+
+			stepTime := arg.GetStepTime()
+
+			lowerBand, upperBand := holtWintersConfidenceBands(arg.Values, stepTime, delta)
+
+			windowPoints := 7 * 86400 / stepTime
+			series := arg.Values[windowPoints:]
+			absent := arg.IsAbsent[windowPoints:]
+
+			for i, _ := range series {
+				if absent[i] {
+					aberration = append(aberration, 0)
+				} else if !math.IsNaN(upperBand[i]) && series[i] > upperBand[i] {
+					aberration = append(aberration, series[i]-upperBand[i])
+				} else if !math.IsNaN(lowerBand[i]) && series[i] < lowerBand[i] {
+					aberration = append(aberration, series[i]-lowerBand[i])
+				} else {
+					aberration = append(aberration, 0)
+				}
+			}
+
+			r := MetricData{FetchResponse: pb.FetchResponse{
+				Name:      proto.String(fmt.Sprintf("holtWintersAberration(%s)", arg.GetName())),
+				Values:    aberration,
+				IsAbsent:  make([]bool, len(aberration)),
 				StepTime:  proto.Int32(arg.GetStepTime()),
 				StartTime: proto.Int32(arg.GetStartTime() + 7*86400),
 				StopTime:  proto.Int32(arg.GetStopTime()),
