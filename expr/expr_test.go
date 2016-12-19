@@ -306,6 +306,20 @@ func TestParseExpr(t *testing.T) {
 		},
 
 		{
+			"func1(metric1, -3 , 'foo' )",
+			&expr{
+				target: "func1",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{val: -3, etype: etConst},
+					{valStr: "foo", etype: etString},
+				},
+				argString: "metric1, -3 , 'foo' ",
+			},
+		},
+
+		{
 			"func(metric, key='value')",
 			&expr{
 				target: "func",

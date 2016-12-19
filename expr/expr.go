@@ -234,6 +234,11 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 			posArgs = append(posArgs, arg)
 		}
 
+		// after the argument, trim any trailing spaces
+		for len(e) > 0 && e[0] == ' ' {
+			e = e[1:]
+		}
+
 		if e[0] == ')' {
 			return argString[:len(argString)-len(e)], posArgs, namedArgs, e[1:], nil
 		}
