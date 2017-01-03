@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/cmplx"
 	"math/rand"
 	"regexp"
 	"sort"
@@ -18,6 +19,7 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gonum/matrix/mat64"
+	"github.com/mjibson/go-dsp/fft"
 	"github.com/wangjohn/quickselect"
 )
 
@@ -1185,6 +1187,95 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			}
 		}
 
+		return results, nil
+
+	case "fft": // fft(seriesList, mode)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		mode, _ := getStringArg(e, 1)
+
+		var results []*MetricData
+		for _, a := range arg {
+			values := fft.FFTReal(a.Values)
+
+			if mode != "phase" {
+				name := fmt.Sprintf("fft(%s,'abs')", a.GetName())
+				abs := *a
+				abs.Name = proto.String(name)
+				abs.Values = make([]float64, len(values))
+				abs.IsAbsent = make([]bool, len(values))
+				for i, v := range values {
+					abs.Values[i] = cmplx.Abs(v)
+				}
+
+				results = append(results, &abs)
+			}
+
+			if mode != "abs" {
+				name := fmt.Sprintf("fft(%s,'phase')", a.GetName())
+				phase := *a
+				phase.Name = proto.String(name)
+				phase.Values = make([]float64, len(values))
+				phase.IsAbsent = make([]bool, len(values))
+				for i, v := range values {
+					phase.Values[i] = cmplx.Phase(v)
+				}
+
+				results = append(results, &phase)
+			}
+		}
+		return results, nil
+
+	case "ifft": // ifft(absSeriesList, phaseSeriesList)
+		absSeriesList, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		var phaseSeriesList []*MetricData
+		if len(e.args) > 1 {
+			phaseSeriesList, err = getSeriesArg(e.args[1], from, until, values)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		var results []*MetricData
+		for j, a := range absSeriesList {
+			r := *a
+			r.Values = make([]float64, len(a.Values))
+			r.IsAbsent = make([]bool, len(a.Values))
+			if len(phaseSeriesList) > j {
+				p := phaseSeriesList[j]
+				name := fmt.Sprintf("ifft(%s, %s)", a.GetName(), p.GetName())
+				r.Name = proto.String(name)
+				values := make([]complex128, len(a.Values))
+				for i, v := range a.Values {
+					if a.IsAbsent[i] {
+						v = 0
+					}
+
+					values[i] = cmplx.Rect(v, p.Values[i])
+				}
+
+				values = fft.IFFT(values)
+				for i, v := range values {
+					r.Values[i] = cmplx.Abs(v)
+				}
+			} else {
+				name := fmt.Sprintf("ifft(%s)", a.GetName())
+				r.Name = proto.String(name)
+				values := fft.IFFTReal(a.Values)
+				for i, v := range values {
+					r.Values[i] = cmplx.Abs(v)
+				}
+			}
+
+			results = append(results, &r)
+		}
 		return results, nil
 
 	case "grep": // grep(seriesList, pattern)
