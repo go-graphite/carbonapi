@@ -1198,33 +1198,31 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		mode, _ := getStringArg(e, 1)
 
 		var results []*MetricData
+
+		extractComponent := func(m *MetricData, values []complex128, t string, f func(x complex128) float64) *MetricData {
+			name := fmt.Sprintf("fft(%s,'%s')", m.GetName(), t)
+			r := *m
+			r.Name = proto.String(name)
+			r.Values = make([]float64, len(values))
+			r.IsAbsent = make([]bool, len(values))
+			for i, v := range values {
+				r.Values[i] = f(v)
+			}
+			return &r
+		}
+
 		for _, a := range arg {
 			values := fft.FFTReal(a.Values)
 
-			if mode != "phase" {
-				name := fmt.Sprintf("fft(%s,'abs')", a.GetName())
-				abs := *a
-				abs.Name = proto.String(name)
-				abs.Values = make([]float64, len(values))
-				abs.IsAbsent = make([]bool, len(values))
-				for i, v := range values {
-					abs.Values[i] = cmplx.Abs(v)
-				}
+			switch mode {
+			case "":
+				results = append(results, extractComponent(a, values, "abs", cmplx.Abs))
+				results = append(results, extractComponent(a, values, "phase", cmplx.Phase))
+			case "abs":
+				results = append(results, extractComponent(a, values, "abs", cmplx.Abs))
+			case "phase":
+				results = append(results, extractComponent(a, values, "phase", cmplx.Phase))
 
-				results = append(results, &abs)
-			}
-
-			if mode != "abs" {
-				name := fmt.Sprintf("fft(%s,'phase')", a.GetName())
-				phase := *a
-				phase.Name = proto.String(name)
-				phase.Values = make([]float64, len(values))
-				phase.IsAbsent = make([]bool, len(values))
-				for i, v := range values {
-					phase.Values[i] = cmplx.Phase(v)
-				}
-
-				results = append(results, &phase)
 			}
 		}
 		return results, nil
