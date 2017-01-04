@@ -28,9 +28,11 @@ func GetOutput() io.Writer {
 	return output
 }
 
+const strftimeFormat = ".%Y%m%d%H%M.log"
+
 func SetOutput(logdir, service string, stdout bool) {
-	rl := rotatelogs.New(
-		logdir+"/"+service+".%Y%m%d%H%M.log",
+	rl, _ := rotatelogs.New(
+		logdir+"/"+service+strftimeFormat,
 		rotatelogs.WithClock(rotatelogs.Local),
 		rotatelogs.WithLinkName(logdir+"/"+service+".log"),
 	)
