@@ -1189,7 +1189,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		return results, nil
 
-	case "fft": // fft(seriesList, mode)
+	case "fft": // fft(seriesList, mode, skipInterval)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
@@ -1197,31 +1197,44 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		mode, _ := getStringArg(e, 1)
 
+		skipInterval, _ := getIntervalArg(e, 2, 1)
+
 		var results []*MetricData
 
-		extractComponent := func(m *MetricData, values []complex128, t string, f func(x complex128) float64) *MetricData {
+		extractComponent := func(m *MetricData, spectrum []complex128, t string, skipUnits int, f func(x complex128) float64) *MetricData {
 			name := fmt.Sprintf("fft(%s,'%s')", m.GetName(), t)
+			startMiddle := (len(m.Values) - skipUnits) / 2
+			endMiddle := startMiddle + skipUnits
 			r := *m
 			r.Name = proto.String(name)
-			r.Values = make([]float64, len(values))
-			r.IsAbsent = make([]bool, len(values))
-			for i, v := range values {
-				r.Values[i] = f(v)
+			r.Values = make([]float64, len(m.Values))
+			r.IsAbsent = make([]bool, len(m.Values))
+			for i, _ := range m.Values {
+				if i <= startMiddle {
+					r.Values[i] = f(spectrum[i])
+				} else if i > endMiddle {
+					r.Values[i] = f(spectrum[i-skipUnits])
+				} else {
+					r.IsAbsent[i] = true
+				}
 			}
 			return &r
 		}
 
 		for _, a := range arg {
-			values := fft.FFTReal(a.Values)
+			skipUnits := int(skipInterval / a.GetStepTime())
+			window := make([]float64, len(a.Values)-skipUnits)
+			copy(window, a.Values)
+			spectrum := fft.FFTReal(window)
 
 			switch mode {
 			case "":
-				results = append(results, extractComponent(a, values, "abs", cmplx.Abs))
-				results = append(results, extractComponent(a, values, "phase", cmplx.Phase))
+				results = append(results, extractComponent(a, spectrum, "abs", skipUnits, cmplx.Abs))
+				results = append(results, extractComponent(a, spectrum, "phase", skipUnits, cmplx.Phase))
 			case "abs":
-				results = append(results, extractComponent(a, values, "abs", cmplx.Abs))
+				results = append(results, extractComponent(a, spectrum, "abs", skipUnits, cmplx.Abs))
 			case "phase":
-				results = append(results, extractComponent(a, values, "phase", cmplx.Phase))
+				results = append(results, extractComponent(a, spectrum, "phase", skipUnits, cmplx.Phase))
 
 			}
 		}
@@ -1259,7 +1272,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		}
 		return results, nil
 
-	case "ifft": // ifft(absSeriesList, phaseSeriesList)
+	case "ifft": // ifft(absSeriesList, phaseSeriesList, extrapolateInterval)
 		absSeriesList, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
@@ -1273,8 +1286,11 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			}
 		}
 
+		extrapolateInterval, _ := getIntervalArg(e, 2, 1)
+
 		var results []*MetricData
 		for j, a := range absSeriesList {
+			extrapolateUnits := int(extrapolateInterval / a.GetStepTime())
 			r := *a
 			r.Values = make([]float64, len(a.Values))
 			r.IsAbsent = make([]bool, len(a.Values))
@@ -1282,18 +1298,32 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 				p := phaseSeriesList[j]
 				name := fmt.Sprintf("ifft(%s, %s)", a.GetName(), p.GetName())
 				r.Name = proto.String(name)
-				values := make([]complex128, len(a.Values))
+				spectrum := make([]complex128, len(a.Values)-extrapolateUnits)
+				startMiddle := (len(a.Values) - extrapolateUnits) / 2
+				endMiddle := startMiddle + extrapolateUnits
 				for i, v := range a.Values {
-					if a.IsAbsent[i] {
-						v = 0
-					}
+					if i <= startMiddle {
+						if a.IsAbsent[i] {
+							v = 0
+						}
 
-					values[i] = cmplx.Rect(v, p.Values[i])
+						spectrum[i] = cmplx.Rect(v, p.Values[i])
+					} else if i > endMiddle {
+						if a.IsAbsent[i] {
+							v = 0
+						}
+
+						spectrum[i-extrapolateUnits] = cmplx.Rect(v, p.Values[i])
+					}
 				}
 
-				values = fft.IFFT(values)
-				for i, v := range values {
-					r.Values[i] = cmplx.Abs(v)
+				timeseries := fft.IFFT(spectrum)
+				for i, _ := range r.Values {
+					if i < len(timeseries) {
+						r.Values[i] = cmplx.Abs(timeseries[i])
+					} else {
+						r.Values[i] = cmplx.Abs(timeseries[i-len(timeseries)])
+					}
 				}
 			} else {
 				name := fmt.Sprintf("ifft(%s)", a.GetName())
