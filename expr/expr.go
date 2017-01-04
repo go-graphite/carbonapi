@@ -1229,6 +1229,38 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		}
 		return results, nil
 
+	case "lowPass": // lowPass(seriesList, cutPercent)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		cutPercent, err := getFloatArg(e, 1)
+		if err != nil {
+			return nil, err
+		}
+
+		var results []*MetricData
+		for _, a := range arg {
+			name := fmt.Sprintf("lowPass(%s,%v)", a.GetName(), cutPercent)
+			r := *a
+			r.Name = proto.String(name)
+			r.Values = make([]float64, len(a.Values))
+			r.IsAbsent = make([]bool, len(a.Values))
+			lowCut := int((cutPercent / 200) * float64(len(a.Values)))
+			highCut := len(a.Values) - lowCut
+			for i, v := range a.Values {
+				if i < lowCut || i >= highCut {
+					r.Values[i] = v
+				} else {
+					r.IsAbsent[i] = true
+				}
+			}
+
+			results = append(results, &r)
+		}
+		return results, nil
+
 	case "ifft": // ifft(absSeriesList, phaseSeriesList)
 		absSeriesList, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {

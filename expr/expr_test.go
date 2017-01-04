@@ -536,6 +536,21 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "lowPass",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{val: 40, etype: etConst},
+				},
+				argString: "metric1,40",
+			},
+			map[MetricRequest][]*MetricData{
+				MetricRequest{"metric1", 0, 1}: {makeResponse("metric1", []float64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, 1, now32)},
+			},
+			[]*MetricData{makeResponse("lowPass(metric1,40)", []float64{0, 1, math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 8, 9}, 1, now32)},
+		},
+		{
+			&expr{
 				target: "countSeries",
 				etype:  etFunc,
 				args: []*expr{
