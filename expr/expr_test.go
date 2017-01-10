@@ -451,6 +451,13 @@ func TestParseExpr(t *testing.T) {
 				etype:  etName,
 			},
 		},
+		{
+			`virt.v1.*.text-match:<foo.bar.qux>`,
+			&expr{
+				target: "virt.v1.*.text-match:<foo.bar.qux>",
+				etype:  etName,
+			},
+		},
 	}
 
 	for _, tt := range tests {
