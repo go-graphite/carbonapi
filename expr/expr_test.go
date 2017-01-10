@@ -488,15 +488,17 @@ func makeResponse(name string, values []float64, step, start int32) *MetricData 
 	}}
 }
 
+type evalTestItem struct {
+	e    *expr
+	m    map[MetricRequest][]*MetricData
+	want []*MetricData
+}
+
 func TestEvalExpression(t *testing.T) {
 
 	now32 := int32(time.Now().Unix())
 
-	tests := []struct {
-		e    *expr
-		m    map[MetricRequest][]*MetricData
-		want []*MetricData
-	}{
+	tests := []evalTestItem{
 		{
 			&expr{target: "metric"},
 			map[MetricRequest][]*MetricData{
@@ -1985,120 +1987,6 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
-				target: "threshold",
-				etype:  etFunc,
-				args: []*expr{
-					{val: 42.42, etype: etConst},
-				},
-				argString: "42.42",
-			},
-			map[MetricRequest][]*MetricData{},
-			[]*MetricData{makeResponse("42.42",
-				[]float64{42.42, 42.42}, 1, now32)},
-		},
-		{
-			&expr{
-				target: "threshold",
-				etype:  etFunc,
-				args: []*expr{
-					{val: 42.42, etype: etConst},
-					{valStr: "fourty-two", etype: etString},
-				},
-				argString: "42.42,'fourty-two'",
-			},
-			map[MetricRequest][]*MetricData{},
-			[]*MetricData{makeResponse("fourty-two",
-				[]float64{42.42, 42.42}, 1, now32)},
-		},
-		{
-			&expr{
-				target: "threshold",
-				etype:  etFunc,
-				args: []*expr{
-					{val: 42.42, etype: etConst},
-					{valStr: "fourty-two", etype: etString},
-					{valStr: "blue", etype: etString},
-				},
-				argString: "42.42,'fourty-two','blue'",
-			},
-			map[MetricRequest][]*MetricData{},
-			[]*MetricData{makeResponse("fourty-two",
-				[]float64{42.42, 42.42}, 1, now32)},
-		},
-		{
-			&expr{
-				target: "threshold",
-				etype:  etFunc,
-				args: []*expr{
-					{val: 42.42, etype: etConst},
-				},
-				namedArgs: map[string]*expr{
-					"label": {valStr: "fourty-two", etype: etString},
-				},
-				argString: "42.42,label='fourty-two'",
-			},
-			map[MetricRequest][]*MetricData{},
-			[]*MetricData{makeResponse("fourty-two",
-				[]float64{42.42, 42.42}, 1, now32)},
-		},
-		{
-			&expr{
-				target: "threshold",
-				etype:  etFunc,
-				args: []*expr{
-					{val: 42.42, etype: etConst},
-				},
-				namedArgs: map[string]*expr{
-					"color": {valStr: "blue", etype: etString},
-					//TODO(nnuss): test blue is being set rather than just not causing expression to parse/fail
-				},
-				argString: "42.42,color='blue'",
-			},
-			map[MetricRequest][]*MetricData{},
-			[]*MetricData{makeResponse("42.42",
-				[]float64{42.42, 42.42}, 1, now32)},
-		},
-		{
-			&expr{
-				target: "threshold",
-				etype:  etFunc,
-				args: []*expr{
-					{val: 42.42, etype: etConst},
-				},
-				namedArgs: map[string]*expr{
-					"label": {valStr: "fourty-two-blue", etype: etString},
-					"color": {valStr: "blue", etype: etString},
-					//TODO(nnuss): test blue is being set rather than just not causing expression to parse/fail
-				},
-				argString: "42.42,label='fourty-two-blue',color='blue'",
-			},
-			map[MetricRequest][]*MetricData{},
-			[]*MetricData{makeResponse("fourty-two-blue",
-				[]float64{42.42, 42.42}, 1, now32)},
-		},
-		{
-			// BUG(nnuss): This test actually fails with color = "" because of
-			// how getStringNamedOrPosArgDefault works but we don't notice
-			// because we're not testing color is set.
-			// You may manually verify with this request URI: /render/?format=png&target=threshold(42.42,"gold",label="fourty-two-aurum")
-			&expr{
-				target: "threshold",
-				etype:  etFunc,
-				args: []*expr{
-					{val: 42.42, etype: etConst},
-					{valStr: "gold", etype: etString},
-				},
-				namedArgs: map[string]*expr{
-					"label": {valStr: "fourty-two-aurum", etype: etString},
-				},
-				argString: "42.42,'gold',label='fourty-two-aurum'",
-			},
-			map[MetricRequest][]*MetricData{},
-			[]*MetricData{makeResponse("fourty-two-aurum",
-				[]float64{42.42, 42.42}, 1, now32)},
-		},
-		{
-			&expr{
 				target: "squareRoot",
 				etype:  etFunc,
 				args: []*expr{
@@ -2506,35 +2394,40 @@ func TestEvalExpression(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		originalMetrics := deepClone(tt.m)
-		testName := tt.e.target + "(" + tt.e.argString + ")"
-		g, err := EvalExpr(tt.e, 0, 1, tt.m)
-		if err != nil {
-			t.Errorf("failed to eval %s: %s", testName, err)
-			continue
-		}
-		if len(g) != len(tt.want) {
-			t.Errorf("%s returned a different number of metrics, actual %v, want %v", testName, len(g), len(tt.want))
-			continue
-		}
-		deepEqual(t, testName, originalMetrics, tt.m)
+		testEvalExpr(t, &tt)
+	}
+}
 
-		for i, want := range tt.want {
-			actual := g[i]
-			if actual == nil {
-				t.Errorf("returned no value %v", tt.e.argString)
-				continue
-			}
-			if actual.GetStepTime() == 0 {
-				t.Errorf("missing step for %+v", g)
-			}
-			if actual.GetName() != want.GetName() {
-				t.Errorf("bad name for %s metric %d: got %s, want %s", testName, i, actual.GetName(), want.GetName())
-			}
-			if !nearlyEqualMetrics(actual, want) {
-				t.Errorf("different values for %s metric %s: got %v, want %v", testName, actual.GetName(), actual.Values, want.Values)
-				continue
-			}
+func testEvalExpr(t *testing.T, tt *evalTestItem) {
+	originalMetrics := deepClone(tt.m)
+	testName := tt.e.target + "(" + tt.e.argString + ")"
+	g, err := EvalExpr(tt.e, 0, 1, tt.m)
+	if err != nil {
+		t.Errorf("failed to eval %s: %s", testName, err)
+		return
+	}
+	if len(g) != len(tt.want) {
+		t.Errorf("%s returned a different number of metrics, actual %v, want %v", testName, len(g), len(tt.want))
+		return
+
+	}
+	deepEqual(t, testName, originalMetrics, tt.m)
+
+	for i, want := range tt.want {
+		actual := g[i]
+		if actual == nil {
+			t.Errorf("returned no value %v", tt.e.argString)
+			return
+		}
+		if actual.GetStepTime() == 0 {
+			t.Errorf("missing step for %+v", g)
+		}
+		if actual.GetName() != want.GetName() {
+			t.Errorf("bad name for %s metric %d: got %s, want %s", testName, i, actual.GetName(), want.GetName())
+		}
+		if !nearlyEqualMetrics(actual, want) {
+			t.Errorf("different values for %s metric %s: got %v, want %v", testName, actual.GetName(), actual.Values, want.Values)
+			return
 		}
 	}
 }
