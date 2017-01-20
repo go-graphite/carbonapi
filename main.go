@@ -687,7 +687,7 @@ func stripCommentHeader(cfg []byte) []byte {
 	// strip out the comment header block that begins with '#' characters
 	// as soon as we see a line that starts with something _other_ than '#', we're done
 
-	idx := 0
+	var idx int
 	for cfg[0] == '#' {
 		idx = bytes.Index(cfg, []byte("\n"))
 		if idx == -1 || idx+1 == len(cfg) {
