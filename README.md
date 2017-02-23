@@ -13,6 +13,7 @@ field is the list of carbonserver backends to connect to.
 Other pieces of the stack are:
    - [carbonapi](https://github.com/dgryski/carbonapi)
    - [carbonmem](https://github.com/dgryski/carbonmem)
+   - [carbonsearch](https://github.com/kanatohodets/carbonsearch)
 
 Acknowledgement
 ---------------
