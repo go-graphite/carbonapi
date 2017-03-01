@@ -14,10 +14,9 @@ import (
 	"time"
 
 	"github.com/JaderDias/movingmedian"
-	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
+	pb "github.com/dgryski/carbonzipper/carbonzipperpb3"
 	"github.com/dgryski/go-onlinestats"
 	"github.com/dustin/go-humanize"
-	"github.com/gogo/protobuf/proto"
 	"github.com/gonum/matrix/mat64"
 	"github.com/mjibson/go-dsp/fft"
 	"github.com/wangjohn/quickselect"
@@ -575,7 +574,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 	case etName:
 		return values[MetricRequest{Metric: e.target, From: from, Until: until}], nil
 	case etConst:
-		p := MetricData{FetchResponse: pb.FetchResponse{Name: proto.String(e.target), Values: []float64{e.val}}}
+		p := MetricData{FetchResponse: pb.FetchResponse{Name: e.target, Values: []float64{e.val}}}
 		return []*MetricData{&p}, nil
 	}
 
@@ -614,7 +613,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		for _, a := range arg {
 			r := *a
-			r.Name = proto.String(alias)
+			r.Name = alias
 			results = append(results, &r)
 		}
 		return results, nil
@@ -623,7 +622,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return forEachSeriesDo(e, from, until, values, func(a *MetricData, r *MetricData) *MetricData {
 			metric := extractMetric(a.GetName())
 			part := strings.Split(metric, ".")
-			r.Name = proto.String(part[len(part)-1])
+			r.Name = part[len(part)-1]
 			r.Values = a.Values
 			r.IsAbsent = a.IsAbsent
 			return r
@@ -659,7 +658,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			}
 
 			r := *a
-			r.Name = proto.String(strings.Join(name, "."))
+			r.Name = strings.Join(name, ".")
 			results = append(results, &r)
 		}
 
@@ -694,7 +693,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			metric := extractMetric(a.GetName())
 
 			r := *a
-			r.Name = proto.String(re.ReplaceAllString(metric, replace))
+			r.Name = re.ReplaceAllString(metric, replace)
 			results = append(results, &r)
 		}
 
@@ -769,7 +768,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		for _, a := range arg {
 			r := *a
-			r.Name = proto.String(formatName(a))
+			r.Name = formatName(a)
 			r.Values = make([]float64, len(a.Values))
 			r.IsAbsent = make([]bool, len(a.Values))
 			results = append(results, &r)
@@ -852,7 +851,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		for _, series := range nodeList {
 			args := groups[series]
 			r := *args[0]
-			r.Name = proto.String(fmt.Sprintf("averageSeriesWithWildcards(%s)", series))
+			r.Name = fmt.Sprintf("averageSeriesWithWildcards(%s)", series)
 			r.Values = make([]float64, len(args[0].Values))
 			r.IsAbsent = make([]bool, len(args[0].Values))
 
@@ -951,7 +950,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		}
 
 		r := *args[0]
-		r.Name = proto.String(fmt.Sprintf("countSeries(%s)", e.argString))
+		r.Name = fmt.Sprintf("countSeries(%s)", e.argString)
 		r.Values = make([]float64, len(args[0].Values))
 		r.IsAbsent = make([]bool, len(args[0].Values))
 		count := float64(len(args))
@@ -979,7 +978,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		// FIXME: need more error checking on minuend, subtrahends here
 		r := *minuend[0]
-		r.Name = proto.String(fmt.Sprintf("diffSeries(%s)", e.argString))
+		r.Name = fmt.Sprintf("diffSeries(%s)", e.argString)
 		r.Values = make([]float64, len(minuend[0].Values))
 		r.IsAbsent = make([]bool, len(minuend[0].Values))
 
@@ -1008,7 +1007,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		}
 
 		r := *series[0]
-		r.Name = proto.String(fmt.Sprintf("%s(%s)", e.target, e.argString))
+		r.Name = fmt.Sprintf("%s(%s)", e.target, e.argString)
 		r.Values = make([]float64, len(series[0].Values))
 		r.IsAbsent = make([]bool, len(series[0].Values))
 
@@ -1073,7 +1072,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		}
 
 		r := *numerator
-		r.Name = proto.String(fmt.Sprintf("divideSeries(%s)", e.argString))
+		r.Name = fmt.Sprintf("divideSeries(%s)", e.argString)
 		r.Values = make([]float64, len(numerator.Values))
 		r.IsAbsent = make([]bool, len(numerator.Values))
 
@@ -1091,9 +1090,9 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 	case "multiplySeries": // multiplySeries(factorsSeriesList)
 		r := MetricData{
 			FetchResponse: pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("multiplySeries(%s)", e.argString)),
-				StartTime: &from,
-				StopTime:  &until,
+				Name:      fmt.Sprintf("multiplySeries(%s)", e.argString),
+				StartTime: from,
+				StopTime:  until,
 			},
 		}
 		for _, arg := range e.args {
@@ -1145,7 +1144,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			name := fmt.Sprintf("ewma(%s,%v)", a.GetName(), alpha)
 
 			r := *a
-			r.Name = proto.String(name)
+			r.Name = name
 			r.Values = make([]float64, len(a.Values))
 			r.IsAbsent = make([]bool, len(a.Values))
 
@@ -1203,7 +1202,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		extractComponent := func(m *MetricData, values []complex128, t string, f func(x complex128) float64) *MetricData {
 			name := fmt.Sprintf("fft(%s,'%s')", m.GetName(), t)
 			r := *m
-			r.Name = proto.String(name)
+			r.Name = name
 			r.Values = make([]float64, len(values))
 			r.IsAbsent = make([]bool, len(values))
 			for i, v := range values {
@@ -1243,7 +1242,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		for _, a := range arg {
 			name := fmt.Sprintf("lowPass(%s,%v)", a.GetName(), cutPercent)
 			r := *a
-			r.Name = proto.String(name)
+			r.Name = name
 			r.Values = make([]float64, len(a.Values))
 			r.IsAbsent = make([]bool, len(a.Values))
 			lowCut := int((cutPercent / 200) * float64(len(a.Values)))
@@ -1282,7 +1281,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			if len(phaseSeriesList) > j {
 				p := phaseSeriesList[j]
 				name := fmt.Sprintf("ifft(%s, %s)", a.GetName(), p.GetName())
-				r.Name = proto.String(name)
+				r.Name = name
 				values := make([]complex128, len(a.Values))
 				for i, v := range a.Values {
 					if a.IsAbsent[i] {
@@ -1298,7 +1297,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 				}
 			} else {
 				name := fmt.Sprintf("ifft(%s)", a.GetName())
-				r.Name = proto.String(name)
+				r.Name = name
 				values := fft.IFFTReal(a.Values)
 				for i, v := range values {
 					r.Values[i] = cmplx.Abs(v)
@@ -1410,7 +1409,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 			r, _ := EvalExpr(nexpr, from, until, nvalues)
 			if r != nil {
-				r[0].Name = &k
+				r[0].Name = k
 				results = append(results, r...)
 			}
 		}
@@ -1573,12 +1572,12 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			name += ")"
 
 			r := MetricData{FetchResponse: pb.FetchResponse{
-				Name:      proto.String(name),
+				Name:      name,
 				Values:    make([]float64, buckets, buckets+1),
 				IsAbsent:  make([]bool, buckets, buckets+1),
-				StepTime:  proto.Int32(bucketSize),
-				StartTime: proto.Int32(start),
-				StopTime:  proto.Int32(stop),
+				StepTime:  bucketSize,
+				StartTime: start,
+				StopTime:  stop,
 			}}
 
 			bucketEnd := start + bucketSize
@@ -1684,7 +1683,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			}
 
 			r := *a
-			r.Name = proto.String(name)
+			r.Name = name
 			r.Values = make([]float64, len(a.Values))
 			r.IsAbsent = make([]bool, len(a.Values))
 
@@ -1720,7 +1719,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		var result []*MetricData
 		for _, a := range args {
 			r := *a
-			r.Name = proto.String(fmt.Sprintf("%s(%s)", e.target, a.GetName()))
+			r.Name = fmt.Sprintf("%s(%s)", e.target, a.GetName())
 			r.Values = make([]float64, len(a.Values))
 			r.IsAbsent = make([]bool, len(a.Values))
 
@@ -1767,11 +1766,11 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		w2 := &windowed{data: make([]float64, windowSize)}
 
 		r := *a1
-		r.Name = proto.String(fmt.Sprintf("kolmogorovSmirnovTest2(%s,%s,%d)", a1.GetName(), a2.GetName(), windowSize))
+		r.Name = fmt.Sprintf("kolmogorovSmirnovTest2(%s,%s,%d)", a1.GetName(), a2.GetName(), windowSize)
 		r.Values = make([]float64, len(a1.Values))
 		r.IsAbsent = make([]bool, len(a1.Values))
-		r.StartTime = proto.Int32(from)
-		r.StopTime = proto.Int32(until)
+		r.StartTime = from
+		r.StopTime = until
 
 		d1 := make([]float64, windowSize)
 		d2 := make([]float64, windowSize)
@@ -1843,7 +1842,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			}
 
 			r := *a
-			r.Name = proto.String(name)
+			r.Name = name
 			r.Values = make([]float64, len(a.Values))
 			r.IsAbsent = make([]bool, len(a.Values))
 
@@ -1988,11 +1987,11 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			w := &windowed{data: make([]float64, windowSize)}
 
 			r := *a
-			r.Name = proto.String(fmt.Sprintf("movingAverage(%s,%s)", a.GetName(), argstr))
+			r.Name = fmt.Sprintf("movingAverage(%s,%s)", a.GetName(), argstr)
 			r.Values = make([]float64, len(a.Values)-offset)
 			r.IsAbsent = make([]bool, len(a.Values)-offset)
-			r.StartTime = proto.Int32(from)
-			r.StopTime = proto.Int32(until)
+			r.StartTime = from
+			r.StopTime = until
 
 			for i, v := range a.Values {
 				if a.IsAbsent[i] {
@@ -2061,11 +2060,11 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		for _, a := range arg {
 			r := *a
-			r.Name = proto.String(fmt.Sprintf("movingMedian(%s,%s)", a.GetName(), argstr))
+			r.Name = fmt.Sprintf("movingMedian(%s,%s)", a.GetName(), argstr)
 			r.Values = make([]float64, len(a.Values)-offset)
 			r.IsAbsent = make([]bool, len(a.Values)-offset)
-			r.StartTime = proto.Int32(from)
-			r.StopTime = proto.Int32(until)
+			r.StartTime = from
+			r.StopTime = until
 
 			data := movingmedian.NewMovingMedian(windowSize)
 
@@ -2114,7 +2113,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			}
 
 			r := *a
-			r.Name = proto.String(name)
+			r.Name = name
 			r.Values = make([]float64, len(a.Values))
 			r.IsAbsent = make([]bool, len(a.Values))
 
@@ -2155,9 +2154,9 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		for _, a := range args {
 			r := *a
 			if len(e.args) == 1 {
-				r.Name = proto.String(fmt.Sprintf("%s(%s)", e.target, a.GetName()))
+				r.Name = fmt.Sprintf("%s(%s)", e.target, a.GetName())
 			} else {
-				r.Name = proto.String(fmt.Sprintf("%s(%s,%g)", e.target, a.GetName(), maxValue))
+				r.Name = fmt.Sprintf("%s(%s,%g)", e.target, a.GetName(), maxValue)
 			}
 			r.Values = make([]float64, len(a.Values))
 			r.IsAbsent = make([]bool, len(a.Values))
@@ -2197,7 +2196,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		var results []*MetricData
 		for _, a := range arg {
 			r := *a
-			r.Name = proto.String(fmt.Sprintf("nPercentile(%s,%g)", a.GetName(), percent))
+			r.Name = fmt.Sprintf("nPercentile(%s,%g)", a.GetName(), percent)
 			r.Values = make([]float64, len(a.Values))
 			r.IsAbsent = make([]bool, len(a.Values))
 
@@ -2244,11 +2243,11 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		w2 := &windowed{data: make([]float64, windowSize)}
 
 		r := *a1
-		r.Name = proto.String(fmt.Sprintf("pearson(%s,%s,%d)", a1.GetName(), a2.GetName(), windowSize))
+		r.Name = fmt.Sprintf("pearson(%s,%s,%d)", a1.GetName(), a2.GetName(), windowSize)
 		r.Values = make([]float64, len(a1.Values))
 		r.IsAbsent = make([]bool, len(a1.Values))
-		r.StartTime = proto.Int32(from)
-		r.StopTime = proto.Int32(until)
+		r.StartTime = from
+		r.StopTime = until
 
 		for i, v1 := range a1.Values {
 			v2 := a2.Values[i]
@@ -2366,7 +2365,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		for _, a := range arg {
 			r := *a
-			r.Name = proto.String(fmt.Sprintf("offset(%s,%g)", a.GetName(), factor))
+			r.Name = fmt.Sprintf("offset(%s,%g)", a.GetName(), factor)
 			r.Values = make([]float64, len(a.Values))
 			r.IsAbsent = make([]bool, len(a.Values))
 
@@ -2414,7 +2413,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		for _, a := range arg {
 			r := *a
-			r.Name = proto.String(fmt.Sprintf("scale(%s,%g)", a.GetName(), scale))
+			r.Name = fmt.Sprintf("scale(%s,%g)", a.GetName(), scale)
 			r.Values = make([]float64, len(a.Values))
 			r.IsAbsent = make([]bool, len(a.Values))
 
@@ -2444,7 +2443,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		for _, a := range arg {
 			r := *a
-			r.Name = proto.String(fmt.Sprintf("scaleToSeconds(%s,%d)", a.GetName(), int(seconds)))
+			r.Name = fmt.Sprintf("scaleToSeconds(%s,%d)", a.GetName(), int(seconds))
 			r.Values = make([]float64, len(a.Values))
 			r.IsAbsent = make([]bool, len(a.Values))
 
@@ -2475,7 +2474,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		for _, a := range arg {
 			r := *a
-			r.Name = proto.String(fmt.Sprintf("pow(%s,%g)", a.GetName(), factor))
+			r.Name = fmt.Sprintf("pow(%s,%g)", a.GetName(), factor)
 			r.Values = make([]float64, len(a.Values))
 			r.IsAbsent = make([]bool, len(a.Values))
 
@@ -2561,7 +2560,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			w := &windowed{data: make([]float64, points)}
 
 			r := *a
-			r.Name = proto.String(fmt.Sprintf("stdev(%s,%d)", a.GetName(), points))
+			r.Name = fmt.Sprintf("stdev(%s,%d)", a.GetName(), points)
 			r.Values = make([]float64, len(a.Values))
 			r.IsAbsent = make([]bool, len(a.Values))
 
@@ -2639,7 +2638,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		for _, series := range nodeList {
 			args := groups[series]
 			r := *args[0]
-			r.Name = proto.String(fmt.Sprintf("sumSeriesWithWildcards(%s)", series))
+			r.Name = fmt.Sprintf("sumSeriesWithWildcards(%s)", series)
 			r.Values = make([]float64, len(args[0].Values))
 			r.IsAbsent = make([]bool, len(args[0].Values))
 
@@ -2714,16 +2713,16 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		for _, a := range arg {
 			r := *a
 			if len(e.args) > 2 {
-				r.Name = proto.String(fmt.Sprintf("polyfit(%s,%d,'%s')", a.GetName(), degree, e.args[2].valStr))
+				r.Name = fmt.Sprintf("polyfit(%s,%d,'%s')", a.GetName(), degree, e.args[2].valStr)
 			} else if len(e.args) > 1 {
-				r.Name = proto.String(fmt.Sprintf("polyfit(%s,%d)", a.GetName(), degree))
+				r.Name = fmt.Sprintf("polyfit(%s,%d)", a.GetName(), degree)
 			} else {
-				r.Name = proto.String(fmt.Sprintf("polyfit(%s)", a.GetName()))
+				r.Name = fmt.Sprintf("polyfit(%s)", a.GetName())
 			}
 			// Extending slice by "offset" so our graph slides into future!
-			r.Values = make([]float64, len(a.Values)+int(offs / *r.StepTime))
+			r.Values = make([]float64, len(a.Values)+int(offs/r.StepTime))
 			r.IsAbsent = make([]bool, len(r.Values))
-			r.StopTime = proto.Int32(a.GetStopTime() + offs)
+			r.StopTime = a.GetStopTime() + offs
 
 			// Removing absent values from original dataset
 			nonNulls := make([]float64, 0)
@@ -2798,7 +2797,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			}
 
 			r := *a
-			r.Name = proto.String(strings.Join(nodes, "."))
+			r.Name = strings.Join(nodes, ".")
 			results = append(results, &r)
 		}
 
@@ -2862,12 +2861,12 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			name += ")"
 
 			r := MetricData{FetchResponse: pb.FetchResponse{
-				Name:      proto.String(name),
+				Name:      name,
 				Values:    make([]float64, buckets, buckets),
 				IsAbsent:  make([]bool, buckets, buckets),
-				StepTime:  proto.Int32(bucketSize),
-				StartTime: proto.Int32(start),
-				StopTime:  proto.Int32(stop),
+				StepTime:  bucketSize,
+				StartTime: start,
+				StopTime:  stop,
 			}}
 
 			t := arg.GetStartTime() // unadjusted
@@ -2935,9 +2934,9 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		for _, a := range arg {
 			r := *a
-			r.Name = proto.String(fmt.Sprintf("timeShift(%s,'%d')", a.GetName(), offs))
-			r.StartTime = proto.Int32(a.GetStartTime() - offs)
-			r.StopTime = proto.Int32(a.GetStopTime() - offs)
+			r.Name = fmt.Sprintf("timeShift(%s,'%d')", a.GetName(), offs)
+			r.StartTime = a.GetStartTime() - offs
+			r.StopTime = a.GetStopTime() - offs
 			results = append(results, &r)
 		}
 		return results, nil
@@ -2968,9 +2967,9 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 			for _, a := range arg {
 				r := *a
-				r.Name = proto.String(fmt.Sprintf("timeShift(%s,%d)", a.GetName(), offs))
-				r.StartTime = proto.Int32(a.GetStartTime() - offs)
-				r.StopTime = proto.Int32(a.GetStopTime() - offs)
+				r.Name = fmt.Sprintf("timeShift(%s,%d)", a.GetName(), offs)
+				r.StartTime = a.GetStartTime() - offs
+				r.StopTime = a.GetStopTime() - offs
 				results = append(results, &r)
 			}
 		}
@@ -3004,7 +3003,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			}
 
 			r := *a
-			r.Name = proto.String(name)
+			r.Name = name
 			r.Values = make([]float64, len(a.Values))
 			r.IsAbsent = make([]bool, len(a.Values))
 
@@ -3154,10 +3153,10 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		}
 		p := MetricData{
 			FetchResponse: pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("%g", value)),
-				StartTime: proto.Int32(from),
-				StopTime:  proto.Int32(until),
-				StepTime:  proto.Int32(until - from),
+				Name:      fmt.Sprintf("%g", value),
+				StartTime: from,
+				StopTime:  until,
+				StepTime:  until - from,
 				Values:    []float64{value, value},
 				IsAbsent:  []bool{false, false},
 			},
@@ -3229,10 +3228,10 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		p := MetricData{
 			FetchResponse: pb.FetchResponse{
-				Name:      proto.String(name),
-				StartTime: proto.Int32(from),
-				StopTime:  proto.Int32(until),
-				StepTime:  proto.Int32(step),
+				Name:      name,
+				StartTime: from,
+				StopTime:  until,
+				StepTime:  step,
 				Values:    values,
 				IsAbsent:  make([]bool, len(values)),
 			},
@@ -3256,12 +3255,12 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			predictionsOfInterest := predictions[windowPoints:]
 
 			r := MetricData{FetchResponse: pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("holtWintersForecast(%s)", arg.GetName())),
+				Name:      fmt.Sprintf("holtWintersForecast(%s)", arg.GetName()),
 				Values:    predictionsOfInterest,
 				IsAbsent:  make([]bool, len(predictionsOfInterest)),
-				StepTime:  proto.Int32(arg.GetStepTime()),
-				StartTime: proto.Int32(arg.GetStartTime() + 7*86400),
-				StopTime:  proto.Int32(arg.GetStopTime()),
+				StepTime:  arg.GetStepTime(),
+				StartTime: arg.GetStartTime() + 7*86400,
+				StopTime:  arg.GetStopTime(),
 			}}
 
 			results = append(results, &r)
@@ -3286,12 +3285,12 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			lowerBand, upperBand := holtWintersConfidenceBands(arg.Values, stepTime, delta)
 
 			lowerSeries := MetricData{FetchResponse: pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("holtWintersConfidenceLower(%s)", arg.GetName())),
+				Name:      fmt.Sprintf("holtWintersConfidenceLower(%s)", arg.GetName()),
 				Values:    lowerBand,
 				IsAbsent:  make([]bool, len(lowerBand)),
-				StepTime:  proto.Int32(arg.GetStepTime()),
-				StartTime: proto.Int32(arg.GetStartTime() + 7*86400),
-				StopTime:  proto.Int32(arg.GetStopTime()),
+				StepTime:  arg.GetStepTime(),
+				StartTime: arg.GetStartTime() + 7*86400,
+				StopTime:  arg.GetStopTime(),
 			}}
 
 			for i, val := range lowerSeries.Values {
@@ -3302,12 +3301,12 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			}
 
 			upperSeries := MetricData{FetchResponse: pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("holtWintersConfidenceUpper(%s)", arg.GetName())),
+				Name:      fmt.Sprintf("holtWintersConfidenceUpper(%s)", arg.GetName()),
 				Values:    upperBand,
 				IsAbsent:  make([]bool, len(upperBand)),
-				StepTime:  proto.Int32(arg.GetStepTime()),
-				StartTime: proto.Int32(arg.GetStartTime() + 7*86400),
-				StopTime:  proto.Int32(arg.GetStopTime()),
+				StepTime:  arg.GetStepTime(),
+				StartTime: arg.GetStartTime() + 7*86400,
+				StopTime:  arg.GetStopTime(),
 			}}
 
 			for i, val := range upperSeries.Values {
@@ -3358,12 +3357,12 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			}
 
 			r := MetricData{FetchResponse: pb.FetchResponse{
-				Name:      proto.String(fmt.Sprintf("holtWintersAberration(%s)", arg.GetName())),
+				Name:      fmt.Sprintf("holtWintersAberration(%s)", arg.GetName()),
 				Values:    aberration,
 				IsAbsent:  make([]bool, len(aberration)),
-				StepTime:  proto.Int32(arg.GetStepTime()),
-				StartTime: proto.Int32(arg.GetStartTime() + 7*86400),
-				StopTime:  proto.Int32(arg.GetStopTime()),
+				StepTime:  arg.GetStepTime(),
+				StartTime: arg.GetStartTime() + 7*86400,
+				StopTime:  arg.GetStopTime(),
 			}}
 
 			results = append(results, &r)
@@ -3379,7 +3378,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		for _, a := range arg {
 			r := *a
-			r.Name = proto.String(fmt.Sprintf("squareRoot(%s)", a.GetName()))
+			r.Name = fmt.Sprintf("squareRoot(%s)", a.GetName())
 			r.Values = make([]float64, len(a.Values))
 			r.IsAbsent = make([]bool, len(a.Values))
 
@@ -3404,12 +3403,12 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		size := until - from
 
 		r := MetricData{FetchResponse: pb.FetchResponse{
-			Name:      proto.String(name),
+			Name:      name,
 			Values:    make([]float64, size),
 			IsAbsent:  make([]bool, size),
-			StepTime:  proto.Int32(1),
-			StartTime: proto.Int32(from),
-			StopTime:  proto.Int32(until),
+			StepTime:  1,
+			StartTime: from,
+			StopTime:  until,
 		}}
 
 		for i := 1; i < len(r.Values)-1; i++ {
@@ -3474,7 +3473,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			}
 
 			r := *a
-			r.Name = proto.String(fmt.Sprintf("%s(%s, %g)", e.target, a.GetName(), number))
+			r.Name = fmt.Sprintf("%s(%s, %g)", e.target, a.GetName(), number)
 			r.IsAbsent = make([]bool, len(a.Values))
 			r.Values = make([]float64, len(a.Values))
 
@@ -3564,7 +3563,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			}
 
 			r := *a
-			r.Name = proto.String(fmt.Sprintf("%s Current: %s Max: %s Min: %s", *a.Name, current, max, min))
+			r.Name = fmt.Sprintf("%s Current: %s Max: %s Min: %s", a.Name, current, max, min)
 			metrics = append(metrics, &r)
 		}
 
@@ -3637,7 +3636,7 @@ func forEachSeriesDo(e *expr, from, until int32, values map[MetricRequest][]*Met
 
 	for _, a := range arg {
 		r := *a
-		r.Name = proto.String(fmt.Sprintf("%s(%s)", e.target, a.GetName()))
+		r.Name = fmt.Sprintf("%s(%s)", e.target, a.GetName())
 		r.Values = make([]float64, len(a.Values))
 		r.IsAbsent = make([]bool, len(a.Values))
 		results = append(results, function(a, &r))
@@ -3650,7 +3649,7 @@ type aggregateFunc func([]float64) float64
 func aggregateSeries(e *expr, args []*MetricData, function aggregateFunc) ([]*MetricData, error) {
 	length := len(args[0].Values)
 	r := *args[0]
-	r.Name = proto.String(fmt.Sprintf("%s(%s)", e.target, e.argString))
+	r.Name = fmt.Sprintf("%s(%s)", e.target, e.argString)
 	r.Values = make([]float64, length)
 	r.IsAbsent = make([]bool, length)
 

@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"github.com/dgryski/carbonapi/expr"
-	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
+	pb "github.com/dgryski/carbonzipper/carbonzipperpb3"
 	"github.com/dgryski/carbonzipper/mlog"
 	"github.com/dgryski/carbonzipper/mstats"
 

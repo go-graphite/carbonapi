@@ -55,8 +55,8 @@ func TestSortMetrics(t *testing.T) {
 		}
 		SortMetrics(test.metrics, test.mfetch)
 		for i := range test.metrics {
-			if *test.metrics[i].Name != *test.sorted[i].Name {
-				t.Errorf("[%d] Expected %q but have %q", i, *test.sorted[i].Name, *test.metrics[i].Name)
+			if test.metrics[i].Name != test.sorted[i].Name {
+				t.Errorf("[%d] Expected %q but have %q", i, test.sorted[i].Name, test.metrics[i].Name)
 			}
 		}
 	}

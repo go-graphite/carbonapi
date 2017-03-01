@@ -9,7 +9,7 @@ import (
 	"strconv"
 
 	"github.com/dgryski/carbonapi/expr"
-	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
+	pb "github.com/dgryski/carbonzipper/carbonzipperpb3"
 )
 
 var errNoMetrics = errors.New("no metrics")
@@ -29,7 +29,7 @@ func (z zipper) Find(metric string) (pb.GlobResponse, error) {
 
 	u.RawQuery = url.Values{
 		"query":  []string{metric},
-		"format": []string{"protobuf"},
+		"format": []string{"protobuf3"},
 	}.Encode()
 
 	var pbresp pb.GlobResponse
@@ -83,7 +83,7 @@ func (z zipper) Render(metric string, from, until int32) (expr.MetricData, error
 
 	u.RawQuery = url.Values{
 		"target": []string{metric},
-		"format": []string{"protobuf"},
+		"format": []string{"protobuf3"},
 		"from":   []string{strconv.Itoa(int(from))},
 		"until":  []string{strconv.Itoa(int(until))},
 	}.Encode()
