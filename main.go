@@ -626,7 +626,7 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 	target := req.FormValue("target")
 
 	if target == "" {
-		http.Error(w, "empty target", http.StatusBadRequest)
+		http.Error(w, "info: empty target", http.StatusBadRequest)
 		return
 	}
 
