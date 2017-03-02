@@ -617,6 +617,7 @@ func main() {
 	cpus := flag.Int("cpus", 0, "number of CPUs to use")
 	tz := flag.String("tz", "", "timezone,offset to use for dates with no timezone")
 	graphiteHost := flag.String("graphite", "", "graphite destination host")
+	internalMetricPrefix := flag.String("prefix", "carbon.api", "prefix of internal metric names")
 	logdir := flag.String("logdir", "/var/log/carbonapi/", "logging directory")
 	logtostdout := flag.Bool("stdout", false, "log also to stdout")
 	interval := flag.Duration("i", 60*time.Second, "interval to report internal statistics to graphite")
@@ -730,24 +731,24 @@ func main() {
 		hostname, _ := os.Hostname()
 		hostname = strings.Replace(hostname, ".", "_", -1)
 
-		graphite.Register(fmt.Sprintf("carbon.api.%s.requests", hostname), Metrics.Requests)
-		graphite.Register(fmt.Sprintf("carbon.api.%s.request_cache_hits", hostname), Metrics.RequestCacheHits)
+		graphite.Register(fmt.Sprintf("%s.%s.requests", *internalMetricPrefix, hostname), Metrics.Requests)
+		graphite.Register(fmt.Sprintf("%s.%s.request_cache_hits", *internalMetricPrefix, hostname), Metrics.RequestCacheHits)
 
-		graphite.Register(fmt.Sprintf("carbon.api.%s.render_requests", hostname), Metrics.RenderRequests)
+		graphite.Register(fmt.Sprintf("%s.%s.render_requests", *internalMetricPrefix, hostname), Metrics.RenderRequests)
 
-		graphite.Register(fmt.Sprintf("carbon.api.%s.memcache_timeouts", hostname), Metrics.MemcacheTimeouts)
+		graphite.Register(fmt.Sprintf("%s.%s.memcache_timeouts", *internalMetricPrefix, hostname), Metrics.MemcacheTimeouts)
 
 		if Metrics.CacheSize != nil {
-			graphite.Register(fmt.Sprintf("carbon.api.%s.cache_size", hostname), Metrics.CacheSize)
-			graphite.Register(fmt.Sprintf("carbon.api.%s.cache_items", hostname), Metrics.CacheItems)
+			graphite.Register(fmt.Sprintf("%s.%s.cache_size", *internalMetricPrefix, hostname), Metrics.CacheSize)
+			graphite.Register(fmt.Sprintf("%s.%s.cache_items", *internalMetricPrefix, hostname), Metrics.CacheItems)
 		}
 
 		go mstats.Start(*interval)
 
-		graphite.Register(fmt.Sprintf("carbon.api.%s.alloc", hostname), &mstats.Alloc)
-		graphite.Register(fmt.Sprintf("carbon.api.%s.total_alloc", hostname), &mstats.TotalAlloc)
-		graphite.Register(fmt.Sprintf("carbon.api.%s.num_gc", hostname), &mstats.NumGC)
-		graphite.Register(fmt.Sprintf("carbon.api.%s.pause_ns", hostname), &mstats.PauseNS)
+		graphite.Register(fmt.Sprintf("%s.%s.alloc", *internalMetricPrefix, hostname), &mstats.Alloc)
+		graphite.Register(fmt.Sprintf("%s.%s.total_alloc", *internalMetricPrefix, hostname), &mstats.TotalAlloc)
+		graphite.Register(fmt.Sprintf("%s.%s.num_gc", *internalMetricPrefix, hostname), &mstats.NumGC)
+		graphite.Register(fmt.Sprintf("%s.%s.pause_ns", *internalMetricPrefix, hostname), &mstats.PauseNS)
 
 	}
 
