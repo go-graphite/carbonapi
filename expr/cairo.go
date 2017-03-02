@@ -15,11 +15,10 @@ import (
 	"strings"
 	"time"
 
-	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
+	pb "github.com/dgryski/carbonzipper/carbonzipperpb3"
 
 	"bitbucket.org/tebeka/strftime"
 	"github.com/evmar/gocairo/cairo"
-	"github.com/gogo/protobuf/proto"
 )
 
 const haveGraphSupport = true
@@ -732,7 +731,7 @@ func evalExprGraph(e *expr, from, until int32, values map[MetricRequest][]*Metri
 			return nil, fmt.Errorf("areaBetween needs exactly two arguments (%d given)", len(arg))
 		}
 
-		name := proto.String(fmt.Sprintf("%s(%s)", e.target, e.argString))
+		name := fmt.Sprintf("%s(%s)", e.target, e.argString)
 
 		lower := *arg[0]
 		lower.stacked = true
@@ -794,7 +793,7 @@ func evalExprGraph(e *expr, from, until int32, values map[MetricRequest][]*Metri
 
 		for _, a := range arg {
 			r := *a
-			r.Name = proto.String(fmt.Sprintf("%s(%s)", e.target, a.GetName()))
+			r.Name = fmt.Sprintf("%s(%s)", e.target, a.GetName())
 
 			switch e.target {
 			case "dashed":
@@ -840,10 +839,10 @@ func evalExprGraph(e *expr, from, until int32, values map[MetricRequest][]*Metri
 
 		p := MetricData{
 			FetchResponse: pb.FetchResponse{
-				Name:      proto.String(name),
-				StartTime: proto.Int32(from),
-				StopTime:  proto.Int32(until),
-				StepTime:  proto.Int32(until - from),
+				Name:      name,
+				StartTime: from,
+				StopTime:  until,
+				StepTime:  until - from,
 				Values:    []float64{value, value},
 				IsAbsent:  []bool{false, false},
 			},
@@ -2216,9 +2215,9 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 				newSeries := MetricData{
 					FetchResponse: pb.FetchResponse{
 						Name:      r.Name,
-						StopTime:  proto.Int32(r.GetStopTime()),
-						StartTime: proto.Int32(r.GetStartTime()),
-						StepTime:  proto.Int32(r.AggregatedTimeStep()),
+						StopTime:  r.GetStopTime(),
+						StartTime: r.GetStartTime(),
+						StepTime:  r.AggregatedTimeStep(),
 						Values:    make([]float64, len(r.AggregatedValues())),
 						IsAbsent:  make([]bool, len(r.AggregatedValues())),
 					},
@@ -2379,8 +2378,8 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 }
 
 type SeriesLegend struct {
-	name        *string
-	color       *string
+	name        string
+	color       string
 	secondYAxis bool
 }
 
@@ -2388,7 +2387,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 	const (
 		padding = 5
 	)
-	var longestName *string
+	var longestName string
 	var longestNameLen int
 	var uniqueNames map[string]bool
 	var numRight int
@@ -2413,7 +2412,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 			if _, ok := uniqueNames[res.GetName()]; !ok {
 				var tmp = SeriesLegend{
 					res.Name,
-					&res.color,
+					res.color,
 					res.secondYAxis,
 				}
 				uniqueNames[res.GetName()] = true
@@ -2422,7 +2421,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 		} else {
 			var tmp = SeriesLegend{
 				res.Name,
-				&res.color,
+				res.color,
 				res.secondYAxis,
 			}
 			legend = append(legend, tmp)
@@ -2430,7 +2429,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 	}
 
 	rightSideLabels := false
-	testSizeName := *longestName + " " + *longestName
+	testSizeName := longestName + " " + longestName
 	var textExtents cairo.TextExtents
 	cr.context.TextExtents(testSizeName, &textExtents)
 	testWidth := textExtents.Width + 2*(params.fontExtents.Height+padding)
@@ -2438,7 +2437,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 		rightSideLabels = true
 	}
 
-	cr.context.TextExtents(*longestName, &textExtents)
+	cr.context.TextExtents(longestName, &textExtents)
 	boxSize := params.fontExtents.Height - 1
 	lineHeight := params.fontExtents.Height + 1
 	labelWidth := textExtents.Width + 2*(boxSize+padding)
@@ -2457,7 +2456,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 		nRight := 0
 		n := 0
 		for _, item := range legend {
-			setColor(cr, string2RGBA(*item.color))
+			setColor(cr, string2RGBA(item.color))
 			if item.secondYAxis {
 				nRight++
 				drawRectangle(cr, params, xRight-padding, yRight, boxSize, boxSize, true)
@@ -2465,7 +2464,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 				setColor(cr, color)
 				drawRectangle(cr, params, xRight-padding, yRight, boxSize, boxSize, false)
 				setColor(cr, params.fgColor)
-				drawText(cr, params, *item.name, xRight-boxSize, yRight, HAlignRight, VAlignTop, 0.0)
+				drawText(cr, params, item.name, xRight-boxSize, yRight, HAlignRight, VAlignTop, 0.0)
 				xRight -= labelWidth
 				if nRight%int(columns) == 0 {
 					xRight = params.area.xmax - params.area.xmin
@@ -2478,7 +2477,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 				setColor(cr, color)
 				drawRectangle(cr, params, x, y, boxSize, boxSize, false)
 				setColor(cr, params.fgColor)
-				drawText(cr, params, *item.name, x+boxSize+padding, y, HAlignLeft, VAlignTop, 0.0)
+				drawText(cr, params, item.name, x+boxSize+padding, y, HAlignLeft, VAlignTop, 0.0)
 				x += labelWidth
 				if n%int(columns) == 0 {
 					x = params.area.xmin
@@ -2496,14 +2495,14 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 	y := params.area.ymax + (2 * padding)
 	cnt := 0
 	for _, item := range legend {
-		setColor(cr, string2RGBA(*item.color))
+		setColor(cr, string2RGBA(item.color))
 		if item.secondYAxis {
 			drawRectangle(cr, params, x+labelWidth+padding, y, boxSize, boxSize, true)
 			color := colors["darkgray"]
 			setColor(cr, color)
 			drawRectangle(cr, params, x+labelWidth+padding, y, boxSize, boxSize, false)
 			setColor(cr, params.fgColor)
-			drawText(cr, params, *item.name, x+labelWidth, y, HAlignRight, VAlignTop, 0.0)
+			drawText(cr, params, item.name, x+labelWidth, y, HAlignRight, VAlignTop, 0.0)
 			x += labelWidth
 		} else {
 			drawRectangle(cr, params, x, y, boxSize, boxSize, true)
@@ -2511,7 +2510,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 			setColor(cr, color)
 			drawRectangle(cr, params, x, y, boxSize, boxSize, false)
 			setColor(cr, params.fgColor)
-			drawText(cr, params, *item.name, x+boxSize+padding, y, HAlignLeft, VAlignTop, 0.0)
+			drawText(cr, params, item.name, x+boxSize+padding, y, HAlignLeft, VAlignTop, 0.0)
 			x += labelWidth
 		}
 		if (cnt+1)%int(columns) == 0 {

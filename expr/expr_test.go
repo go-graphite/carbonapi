@@ -6,10 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
-
 	"github.com/davecgh/go-spew/spew"
-	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
+	pb "github.com/dgryski/carbonzipper/carbonzipperpb3"
 )
 
 func deepClone(original map[MetricRequest][]*MetricData) map[MetricRequest][]*MetricData {
@@ -176,10 +174,10 @@ func TestEvalExpr(t *testing.T) {
 
 	data := MetricData{
 		FetchResponse: pb.FetchResponse{
-			Name:      &request.Metric,
-			StartTime: &request.From,
-			StopTime:  &request.Until,
-			StepTime:  &stepTime,
+			Name:      request.Metric,
+			StartTime: request.From,
+			StopTime:  request.Until,
+			StepTime:  stepTime,
 			Values:    []float64{343, 407, 385},
 			IsAbsent:  []bool{false, false, false},
 		},
@@ -486,11 +484,11 @@ func makeResponse(name string, values []float64, step, start int32) *MetricData 
 	stop := start + int32(len(values))*step
 
 	return &MetricData{FetchResponse: pb.FetchResponse{
-		Name:      proto.String(name),
+		Name:      name,
 		Values:    values,
-		StartTime: proto.Int32(start),
-		StepTime:  proto.Int32(step),
-		StopTime:  proto.Int32(stop),
+		StartTime: start,
+		StepTime:  step,
+		StopTime:  stop,
 		IsAbsent:  absent,
 	}}
 }
