@@ -19,7 +19,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	pb "github.com/dgryski/carbonzipper/carbonzipperpb"
+	pb2 "github.com/dgryski/carbonzipper/carbonzipperpb"
+	pb3 "github.com/dgryski/carbonzipper/carbonzipperpb3"
 	"github.com/dgryski/carbonzipper/mlog"
 	"github.com/dgryski/carbonzipper/mstats"
 	"github.com/dgryski/go-expirecache"
@@ -120,7 +121,7 @@ var probeQuit = make(chan struct{})
 var probeForce = make(chan int)
 
 func doProbe() {
-	query := "/metrics/find/?format=protobuf&query=%2A"
+	query := "/metrics/find/?format=protobuf3&query=%2A"
 
 	responses := multiGet(Config.Backends, query)
 
@@ -256,15 +257,15 @@ type nameleaf struct {
 	leaf bool
 }
 
-func findUnpackPB(req *http.Request, responses []serverResponse) ([]*pb.GlobMatch, map[string][]string) {
+func findUnpackPB(req *http.Request, responses []serverResponse) ([]*pb3.GlobMatch, map[string][]string) {
 
 	// metric -> [server1, ... ]
 	paths := make(map[string][]string)
 	seen := make(map[nameleaf]bool)
 
-	var metrics []*pb.GlobMatch
+	var metrics []*pb3.GlobMatch
 	for _, r := range responses {
-		var metric pb.GlobResponse
+		var metric pb3.GlobResponse
 		err := metric.Unmarshal(r.response)
 		if err != nil && req != nil {
 			logger.Logf("error decoding protobuf response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
@@ -274,7 +275,7 @@ func findUnpackPB(req *http.Request, responses []serverResponse) ([]*pb.GlobMatc
 		}
 
 		for _, match := range metric.Matches {
-			n := nameleaf{*match.Path, *match.IsLeaf}
+			n := nameleaf{match.Path, match.IsLeaf}
 			_, ok := seen[n]
 			if !ok {
 				// we haven't seen this name yet
@@ -283,9 +284,9 @@ func findUnpackPB(req *http.Request, responses []serverResponse) ([]*pb.GlobMatc
 				seen[n] = true
 			}
 			// add the server to the list of servers that know about this metric
-			p := paths[*match.Path]
+			p := paths[match.Path]
 			p = append(p, r.server)
-			paths[*match.Path] = p
+			paths[match.Path] = p
 		}
 	}
 
@@ -332,11 +333,11 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		m, _ := findUnpackPB(req, searchResponse)
 		queries = make([]string, 0, len(m))
 		for _, v := range m {
-			queries = append(queries, *v.Path)
+			queries = append(queries, v.Path)
 		}
 	}
 
-	var metrics []*pb.GlobMatch
+	var metrics []*pb3.GlobMatch
 	// TODO(nnuss): Rewrite the result queries to a series of brace expansions based on TLD?
 	// [a.b, a.c, a.dee.eee.eff, x.y] => [ "a.{b,c,dee.eee.eff}", "x.y" ]
 	// Be mindful that carbonserver's default MaxGlobs is 10
@@ -378,13 +379,27 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	encodeFindResponse(format, originalQuery, w, metrics)
 }
 
-func encodeFindResponse(format, query string, w http.ResponseWriter, metrics []*pb.GlobMatch) {
+func encodeFindResponse(format, query string, w http.ResponseWriter, metrics []*pb3.GlobMatch) {
 	switch format {
+	case "protobuf3":
+		w.Header().Set("Content-Type", contentTypeProtobuf)
+		var result pb3.GlobResponse
+		result.Name = query
+		result.Matches = metrics
+		b, _ := result.Marshal()
+		w.Write(b)
 	case "protobuf":
 		w.Header().Set("Content-Type", contentTypeProtobuf)
-		var result pb.GlobResponse
+		var result pb2.GlobResponse
+		var matches []*pb2.GlobMatch
+		for i := range metrics {
+			matches = append(matches, &pb2.GlobMatch{
+				Path: &metrics[i].Path,
+				IsLeaf: &metrics[i].IsLeaf,
+			})
+		}
 		result.Name = &query
-		result.Matches = metrics
+		result.Matches = matches
 		b, _ := result.Marshal()
 		w.Write(b)
 	case "json":
@@ -398,8 +413,8 @@ func encodeFindResponse(format, query string, w http.ResponseWriter, metrics []*
 
 		for _, metric := range metrics {
 			mm := map[string]interface{}{
-				"metric_path": *metric.Path,
-				"isLeaf":      *metric.IsLeaf,
+				"metric_path": metric.Path,
+				"isLeaf":      metric.IsLeaf,
 			}
 			result = append(result, mm)
 		}
@@ -456,9 +471,28 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	switch format {
-	case "protobuf":
+	case "protobuf3":
 		w.Header().Set("Content-Type", contentTypeProtobuf)
 		b, _ := metrics.Marshal()
+		w.Write(b)
+
+	case "protobuf":
+		w.Header().Set("Content-Type", contentTypeProtobuf)
+		var metricsPb2 pb2.MultiFetchResponse
+		for i := range metrics.Metrics {
+			metricsPb2.Metrics = append(metricsPb2.Metrics, &pb2.FetchResponse{
+				Name: &metrics.Metrics[i].Name,
+				StartTime: &metrics.Metrics[i].StartTime,
+				StopTime: &metrics.Metrics[i].StopTime,
+				StepTime: &metrics.Metrics[i].StepTime,
+				Values: metrics.Metrics[i].Values,
+				IsAbsent: metrics.Metrics[i].IsAbsent,
+			})
+		}
+		b, err := metricsPb2.Marshal()
+		if err != nil {
+			logger.Logln("Error:", err)
+		}
 		w.Write(b)
 
 	case "json":
@@ -475,7 +509,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func createRenderResponse(metrics *pb.MultiFetchResponse, missing interface{}) []map[string]interface{} {
+func createRenderResponse(metrics *pb3.MultiFetchResponse, missing interface{}) []map[string]interface{} {
 
 	var response []map[string]interface{}
 
@@ -504,12 +538,12 @@ func createRenderResponse(metrics *pb.MultiFetchResponse, missing interface{}) [
 	return response
 }
 
-func mergeResponses(req *http.Request, responses []serverResponse) *pb.MultiFetchResponse {
+func mergeResponses(req *http.Request, responses []serverResponse) *pb3.MultiFetchResponse {
 
-	metrics := make(map[string][]pb.FetchResponse)
+	metrics := make(map[string][]pb3.FetchResponse)
 
 	for _, r := range responses {
-		var d pb.MultiFetchResponse
+		var d pb3.MultiFetchResponse
 		err := d.Unmarshal(r.response)
 		if err != nil {
 			logger.Logf("error decoding protobuf response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
@@ -522,7 +556,7 @@ func mergeResponses(req *http.Request, responses []serverResponse) *pb.MultiFetc
 		}
 	}
 
-	var multi pb.MultiFetchResponse
+	var multi pb3.MultiFetchResponse
 
 	if len(metrics) == 0 {
 		return nil
@@ -557,7 +591,7 @@ func mergeResponses(req *http.Request, responses []serverResponse) *pb.MultiFetc
 	return &multi
 }
 
-func mergeValues(req *http.Request, metric *pb.FetchResponse, decoded []pb.FetchResponse) {
+func mergeValues(req *http.Request, metric *pb3.FetchResponse, decoded []pb3.FetchResponse) {
 
 	var responseLengthMismatch bool
 	for i := range metric.Values {
@@ -593,14 +627,14 @@ func mergeValues(req *http.Request, metric *pb.FetchResponse, decoded []pb.Fetch
 	}
 }
 
-func infoUnpackPB(req *http.Request, format string, responses []serverResponse) map[string]pb.InfoResponse {
+func infoUnpackPB(req *http.Request, format string, responses []serverResponse) map[string]pb3.InfoResponse {
 
-	decoded := make(map[string]pb.InfoResponse)
+	decoded := make(map[string]pb3.InfoResponse)
 	for _, r := range responses {
 		if r.response == nil {
 			continue
 		}
-		var d pb.InfoResponse
+		var d pb3.InfoResponse
 		err := d.Unmarshal(r.response)
 		if err != nil {
 			logger.Logf("error decoding protobuf response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
@@ -656,14 +690,42 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 	infos := infoUnpackPB(req, format, responses)
 
 	switch format {
+	case "protobuf3":
+		w.Header().Set("Content-Type", contentTypeProtobuf)
+		var result pb3.ZipperInfoResponse
+		result.Responses = make([]*pb3.ServerInfoResponse, len(infos))
+		for s, i := range infos {
+			var r pb3.ServerInfoResponse
+			r.Server = s
+			r.Info = &i
+			result.Responses = append(result.Responses, &r)
+		}
+		b, _ := result.Marshal()
+		w.Write(b)
 	case "protobuf":
 		w.Header().Set("Content-Type", contentTypeProtobuf)
-		var result pb.ZipperInfoResponse
-		result.Responses = make([]*pb.ServerInfoResponse, len(infos))
+		var result pb2.ZipperInfoResponse
+		result.Responses = make([]*pb2.ServerInfoResponse, len(infos))
 		for s, i := range infos {
-			var r pb.ServerInfoResponse
+
+			var r pb2.ServerInfoResponse
+
+			var retentions []*pb2.Retention
+			for idx := range i.Retentions {
+				retentions = append(retentions, &pb2.Retention{
+					SecondsPerPoint: &i.Retentions[idx].SecondsPerPoint,
+					NumberOfPoints: &i.Retentions[idx].NumberOfPoints,
+				})
+			}
+
 			r.Server = &s
-			r.Info = &i
+			r.Info = &pb2.InfoResponse{
+				Name: &i.Name,
+				AggregationMethod: &i.AggregationMethod,
+				MaxRetention: &i.MaxRetention,
+				XFilesFactor: &i.XFilesFactor,
+				Retentions: retentions,
+			}
 			result.Responses = append(result.Responses, &r)
 		}
 		b, _ := result.Marshal()

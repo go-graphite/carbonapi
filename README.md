@@ -15,6 +15,15 @@ Other pieces of the stack are:
    - [carbonmem](https://github.com/dgryski/carbonmem)
    - [carbonsearch](https://github.com/kanatohodets/carbonsearch)
 
+
+Changes
+-------
+**0.60 (WIP)**
+   - **BREAKING CHANGE** Carbonzipper backend protocol changed to protobuf3. Though output for /render, /info /find can be both (format=protobuf3 for protobuf3, format=protobuf for protobuf2)
+
+**0.50**
+   - See commit log.
+
 Acknowledgement
 ---------------
 This program was originally developed for Booking.com.  With approval
