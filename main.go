@@ -311,7 +311,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
 	v := rewrite.Query()
 	format := req.FormValue("format")
-	v.Set("format", "protobuf")
+	v.Set("format", "protobuf3")
 	rewrite.RawQuery = v.Encode()
 
 	if searchConfigured && strings.HasPrefix(queries[0], Config.SearchPrefix) {
@@ -394,7 +394,7 @@ func encodeFindResponse(format, query string, w http.ResponseWriter, metrics []*
 		var matches []*pb2.GlobMatch
 		for i := range metrics {
 			matches = append(matches, &pb2.GlobMatch{
-				Path: &metrics[i].Path,
+				Path:   &metrics[i].Path,
 				IsLeaf: &metrics[i].IsLeaf,
 			})
 		}
@@ -449,7 +449,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	format := req.FormValue("format")
 	rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
 	v := rewrite.Query()
-	v.Set("format", "protobuf")
+	v.Set("format", "protobuf3")
 	rewrite.RawQuery = v.Encode()
 
 	responses := multiGet(serverList, rewrite.RequestURI())
@@ -481,12 +481,12 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		var metricsPb2 pb2.MultiFetchResponse
 		for i := range metrics.Metrics {
 			metricsPb2.Metrics = append(metricsPb2.Metrics, &pb2.FetchResponse{
-				Name: &metrics.Metrics[i].Name,
+				Name:      &metrics.Metrics[i].Name,
 				StartTime: &metrics.Metrics[i].StartTime,
-				StopTime: &metrics.Metrics[i].StopTime,
-				StepTime: &metrics.Metrics[i].StepTime,
-				Values: metrics.Metrics[i].Values,
-				IsAbsent: metrics.Metrics[i].IsAbsent,
+				StopTime:  &metrics.Metrics[i].StopTime,
+				StepTime:  &metrics.Metrics[i].StepTime,
+				Values:    metrics.Metrics[i].Values,
+				IsAbsent:  metrics.Metrics[i].IsAbsent,
 			})
 		}
 		b, err := metricsPb2.Marshal()
@@ -675,7 +675,7 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 	format := req.FormValue("format")
 	rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
 	v := rewrite.Query()
-	v.Set("format", "protobuf")
+	v.Set("format", "protobuf3")
 	rewrite.RawQuery = v.Encode()
 
 	responses := multiGet(serverList, rewrite.RequestURI())
@@ -714,17 +714,17 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 			for idx := range i.Retentions {
 				retentions = append(retentions, &pb2.Retention{
 					SecondsPerPoint: &i.Retentions[idx].SecondsPerPoint,
-					NumberOfPoints: &i.Retentions[idx].NumberOfPoints,
+					NumberOfPoints:  &i.Retentions[idx].NumberOfPoints,
 				})
 			}
 
 			r.Server = &s
 			r.Info = &pb2.InfoResponse{
-				Name: &i.Name,
+				Name:              &i.Name,
 				AggregationMethod: &i.AggregationMethod,
-				MaxRetention: &i.MaxRetention,
-				XFilesFactor: &i.XFilesFactor,
-				Retentions: retentions,
+				MaxRetention:      &i.MaxRetention,
+				XFilesFactor:      &i.XFilesFactor,
+				Retentions:        retentions,
 			}
 			result.Responses = append(result.Responses, &r)
 		}
