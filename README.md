@@ -19,10 +19,28 @@ Other pieces of the stack are:
 Changes
 -------
 **0.60 (WIP)**
-   - **BREAKING CHANGE** Carbonzipper backend protocol changed to protobuf3. Though output for /render, /info /find can be both (format=protobuf3 for protobuf3, format=protobuf for protobuf2)
+   - **BREAKING CHANGE** Carbonzipper backend protocol changed to protobuf3. Though output for /render, /info /find can be both (format=protobuf3 for protobuf3, format=protobuf for protobuf2).
 
 **0.50**
    - See commit log.
+
+
+Upgrading to 0.60 from 0.50 or earlier
+--------------------------------------
+
+Starting from 0.60, carbonzipper will be able to talk **only** with storages compatible with **protobuf3**.
+
+At this moment (0.60) it's only go-carbon, starting from commit ee2bc24 (post 0.9.1)
+
+Carbonzipper can still return results in protobuf and compatibility won't be removed at least until Summer 2017.
+
+If you want to upgrade, the best option is to do follwing steps:
+
+1. Migrate to go-carbon post 0.9.1 release. (note: carbonserver isn't compatible with this version of zipper)
+2. Migrate to carbonsearch 0.16.0 (if you are using any)
+3. Upgrade carbonzipper to 0.60 or newer.
+4. Upgrade carbonapi to 0.6.0 (commit 119e346 or newer) (optional, but advised)
+
 
 Acknowledgement
 ---------------
