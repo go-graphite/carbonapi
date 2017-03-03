@@ -18,7 +18,11 @@ Other pieces of the stack are:
 
 Changes
 -------
-**0.60 (WIP)**
+**0.61**
+   - Fix rewrite for internal queries, because of an error some queries were sent as protobuf not as protobuf3
+   - gofmt the code!
+
+**0.60**
    - **BREAKING CHANGE** Carbonzipper backend protocol changed to protobuf3. Though output for /render, /info /find can be both (format=protobuf3 for protobuf3, format=protobuf for protobuf2).
 
 **0.50**
