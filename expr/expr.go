@@ -2049,7 +2049,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			return nil, err
 		}
 
-		var offset int = 0
+		var offset int
 
 		if scaleByStep {
 			windowSize /= int(arg[0].GetStepTime())
@@ -2699,11 +2699,11 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			return nil, errors.New("degree must be larger or equal to 1")
 		}
 
-		offs_str, err := getStringNamedOrPosArgDefault(e, "offset", 2, "0d")
+		offsStr, err := getStringNamedOrPosArgDefault(e, "offset", 2, "0d")
 		if err != nil {
 			return nil, err
 		}
-		offs, err := IntervalString(offs_str, 1)
+		offs, err := IntervalString(offsStr, 1)
 		if err != nil {
 			return nil, err
 		}
@@ -2726,13 +2726,13 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 			// Removing absent values from original dataset
 			nonNulls := make([]float64, 0)
-			for i, _ := range a.Values {
+			for i := range a.Values {
 				if !a.IsAbsent[i] {
 					nonNulls = append(nonNulls, a.Values[i])
 				}
 			}
 			if len(nonNulls) < 2 {
-				for i, _ := range r.IsAbsent {
+				for i := range r.IsAbsent {
 					r.IsAbsent[i] = true
 				}
 				results = append(results, &r)
@@ -2754,7 +2754,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			c.Product(&i, v.T(), mat64.NewDense(len(nonNulls), 1, nonNulls))
 			// END OF STEPS
 
-			for i, _ := range r.Values {
+			for i := range r.Values {
 				r.Values[i] = poly(float64(i), c.RawMatrix().Data...)
 			}
 			results = append(results, &r)
@@ -3344,7 +3344,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			series := arg.Values[windowPoints:]
 			absent := arg.IsAbsent[windowPoints:]
 
-			for i, _ := range series {
+			for i := range series {
 				if absent[i] {
 					aberration = append(aberration, 0)
 				} else if !math.IsNaN(upperBand[i]) && series[i] > upperBand[i] {
@@ -3943,7 +3943,7 @@ func varianceValue(f64s []float64, absent []bool) float64 {
 // Create a Vandermonde matrix
 func vandermonde(absent []bool, deg int) *mat64.Dense {
 	e := []float64{}
-	for i, _ := range absent {
+	for i := range absent {
 		if absent[i] {
 			continue
 		}

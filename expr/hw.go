@@ -124,7 +124,7 @@ func holtWintersConfidenceBands(series []float64, step int32, delta float64) ([]
 	predictionsOfInterest := predictions[windowPoints:]
 	deviationsOfInterest := deviations[windowPoints:]
 
-	for i, _ := range predictionsOfInterest {
+	for i := range predictionsOfInterest {
 		if math.IsNaN(predictionsOfInterest[i]) || math.IsNaN(deviationsOfInterest[i]) {
 			lowerBand = append(lowerBand, math.NaN())
 			upperBand = append(upperBand, math.NaN())
