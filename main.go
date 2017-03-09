@@ -299,6 +299,17 @@ const (
 	contentTypePickle   = "application/pickle"
 )
 
+func fetchCarbonsearchResponse(req *http.Request, rewrite *url.URL) []string {
+	// Send query to SearchBackend. The result is []queries for StorageBackends
+	searchResponse := multiGet([]string{Config.SearchBackend}, rewrite.RequestURI())
+	m, _ := findUnpackPB(req, searchResponse)
+	queries := make([]string, 0, len(m))
+	for _, v := range m {
+		queries = append(queries, v.Path)
+	}
+	return queries
+}
+
 func findHandler(w http.ResponseWriter, req *http.Request) {
 
 	logger.Debugln("request: ", req.URL.RequestURI())
@@ -327,14 +338,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 			encodeFindResponse(format, originalQuery, w, matches)
 			return
 		}
-
-		// Send query to SearchBackend. The result is []queries for StorageBackends
-		searchResponse := multiGet([]string{Config.SearchBackend}, rewrite.RequestURI())
-		m, _ := findUnpackPB(req, searchResponse)
-		queries = make([]string, 0, len(m))
-		for _, v := range m {
-			queries = append(queries, v.Path)
-		}
+		queries = fetchCarbonsearchResponse(req, rewrite)
 	}
 
 	var metrics []*pb3.GlobMatch
@@ -438,21 +442,46 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var serverList []string
-	var ok bool
-
-	// lookup the server list for this metric, or use all the servers if it's unknown
-	if serverList, ok = Config.pathCache.get(target); !ok || serverList == nil || len(serverList) == 0 {
-		serverList = Config.Backends
-	}
-
 	format := req.FormValue("format")
+
 	rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
 	v := rewrite.Query()
 	v.Set("format", "protobuf3")
-	rewrite.RawQuery = v.Encode()
 
-	responses := multiGet(serverList, rewrite.RequestURI())
+	var serverList []string
+	var ok bool
+	var responses []serverResponse
+	if searchConfigured && strings.HasPrefix(target, Config.SearchPrefix) {
+		Metrics.SearchRequests.Add(1)
+
+		findUrl := &url.URL{Path: "/metrics/find/"}
+		findValues := url.Values{}
+		findValues.Set("format", "protobuf3")
+		findValues.Set("query", target)
+		findUrl.RawQuery = findValues.Encode()
+		metrics := fetchCarbonsearchResponse(req, findUrl)
+
+		for _, target := range metrics {
+			v.Set("target", target)
+			rewrite.RawQuery = v.Encode()
+
+			// lookup the server list for this metric, or use all the servers if it's unknown
+			if serverList, ok = Config.pathCache.get(target); !ok || serverList == nil || len(serverList) == 0 {
+				serverList = Config.Backends
+			}
+
+			responses = append(responses, multiGet(serverList, rewrite.RequestURI())...)
+		}
+	} else {
+		rewrite.RawQuery = v.Encode()
+
+		// lookup the server list for this metric, or use all the servers if it's unknown
+		if serverList, ok = Config.pathCache.get(target); !ok || serverList == nil || len(serverList) == 0 {
+			serverList = Config.Backends
+		}
+
+		responses = multiGet(serverList, rewrite.RequestURI())
+	}
 
 	if len(responses) == 0 {
 		logger.Logln("render: error querying backends for:", req.URL.RequestURI(), "backends:", serverList)
