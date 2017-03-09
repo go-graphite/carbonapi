@@ -52,6 +52,7 @@ var Config = struct {
 	MaxIdleConnsPerHost int
 
 	ConcurrencyLimitPerServer int
+	ExpireDelaySec            int32
 }{
 	MaxProcs:    1,
 	IntervalSec: 60,
@@ -62,6 +63,8 @@ var Config = struct {
 	TimeoutMsAfterAllStarted: 2000,
 
 	MaxIdleConnsPerHost: 100,
+
+	ExpireDelaySec: 10 * 60, // 10 minutes
 
 	pathCache: pathCache{ec: expirecache.New(0)},
 }
@@ -81,8 +84,10 @@ var Metrics = struct {
 
 	Timeouts *expvar.Int
 
-	CacheSize  expvar.Func
-	CacheItems expvar.Func
+	CacheSize   expvar.Func
+	CacheItems  expvar.Func
+	CacheMisses *expvar.Int
+	CacheHits   *expvar.Int
 }{
 	FindRequests: expvar.NewInt("find_requests"),
 	FindErrors:   expvar.NewInt("find_errors"),
@@ -96,6 +101,9 @@ var Metrics = struct {
 	InfoErrors:   expvar.NewInt("info_errors"),
 
 	Timeouts: expvar.NewInt("timeouts"),
+
+	CacheHits:   expvar.NewInt("cache_hits"),
+	CacheMisses: expvar.NewInt("cache_misses"),
 }
 
 // BuildVersion is defined at build and reported at startup and as expvar
@@ -299,6 +307,17 @@ const (
 	contentTypePickle   = "application/pickle"
 )
 
+func fetchCarbonsearchResponse(req *http.Request, rewrite *url.URL) []string {
+	// Send query to SearchBackend. The result is []queries for StorageBackends
+	searchResponse := multiGet([]string{Config.SearchBackend}, rewrite.RequestURI())
+	m, _ := findUnpackPB(req, searchResponse)
+	queries := make([]string, 0, len(m))
+	for _, v := range m {
+		queries = append(queries, v.Path)
+	}
+	return queries
+}
+
 func findHandler(w http.ResponseWriter, req *http.Request) {
 
 	logger.Debugln("request: ", req.URL.RequestURI())
@@ -327,14 +346,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 			encodeFindResponse(format, originalQuery, w, matches)
 			return
 		}
-
-		// Send query to SearchBackend. The result is []queries for StorageBackends
-		searchResponse := multiGet([]string{Config.SearchBackend}, rewrite.RequestURI())
-		m, _ := findUnpackPB(req, searchResponse)
-		queries = make([]string, 0, len(m))
-		for _, v := range m {
-			queries = append(queries, v.Path)
-		}
+		queries = fetchCarbonsearchResponse(req, rewrite)
 	}
 
 	var metrics []*pb3.GlobMatch
@@ -356,7 +368,10 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		var backends []string
 		var ok bool
 		if backends, ok = Config.pathCache.get(tld); !ok || backends == nil || len(backends) == 0 {
+			Metrics.CacheMisses.Add(1)
 			backends = Config.Backends
+		} else {
+			Metrics.CacheHits.Add(1)
 		}
 
 		responses := multiGet(backends, rewrite.RequestURI())
@@ -371,9 +386,12 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		metrics = append(metrics, m...)
 
 		// update our cache of which servers have which metrics
+		allServers := make([]string, 0)
 		for k, v := range paths {
 			Config.pathCache.set(k, v)
+			allServers = append(allServers, v...)
 		}
+		Config.pathCache.set(originalQuery, allServers)
 	}
 
 	encodeFindResponse(format, originalQuery, w, metrics)
@@ -438,21 +456,52 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var serverList []string
-	var ok bool
-
-	// lookup the server list for this metric, or use all the servers if it's unknown
-	if serverList, ok = Config.pathCache.get(target); !ok || serverList == nil || len(serverList) == 0 {
-		serverList = Config.Backends
-	}
-
 	format := req.FormValue("format")
+
 	rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
 	v := rewrite.Query()
 	v.Set("format", "protobuf3")
-	rewrite.RawQuery = v.Encode()
 
-	responses := multiGet(serverList, rewrite.RequestURI())
+	var serverList []string
+	var ok bool
+	var responses []serverResponse
+	if searchConfigured && strings.HasPrefix(target, Config.SearchPrefix) {
+		Metrics.SearchRequests.Add(1)
+
+		findUrl := &url.URL{Path: "/metrics/find/"}
+		findValues := url.Values{}
+		findValues.Set("format", "protobuf3")
+		findValues.Set("query", target)
+		findUrl.RawQuery = findValues.Encode()
+		metrics := fetchCarbonsearchResponse(req, findUrl)
+
+		for _, target := range metrics {
+			v.Set("target", target)
+			rewrite.RawQuery = v.Encode()
+
+			// lookup the server list for this metric, or use all the servers if it's unknown
+			if serverList, ok = Config.pathCache.get(target); !ok || serverList == nil || len(serverList) == 0 {
+				Metrics.CacheMisses.Add(1)
+				serverList = Config.Backends
+			} else {
+				Metrics.CacheHits.Add(1)
+			}
+
+			responses = append(responses, multiGet(serverList, rewrite.RequestURI())...)
+		}
+	} else {
+		rewrite.RawQuery = v.Encode()
+
+		// lookup the server list for this metric, or use all the servers if it's unknown
+		if serverList, ok = Config.pathCache.get(target); !ok || serverList == nil || len(serverList) == 0 {
+			Metrics.CacheMisses.Add(1)
+			serverList = Config.Backends
+		} else {
+			Metrics.CacheHits.Add(1)
+		}
+
+		responses = multiGet(serverList, rewrite.RequestURI())
+	}
 
 	if len(responses) == 0 {
 		logger.Logln("render: error querying backends for:", req.URL.RequestURI(), "backends:", serverList)
@@ -461,7 +510,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	metrics := mergeResponses(req, responses)
+	servers, metrics := mergeResponses(req, responses)
 	if metrics == nil {
 		Metrics.RenderErrors.Add(1)
 		err := fmt.Sprintf("no decoded responses to merge for req: %s", req.URL.RequestURI())
@@ -469,6 +518,8 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "no decoded responses to merge", http.StatusInternalServerError)
 		return
 	}
+
+	Config.pathCache.set(target, servers)
 
 	switch format {
 	case "protobuf3":
@@ -538,8 +589,9 @@ func createRenderResponse(metrics *pb3.MultiFetchResponse, missing interface{}) 
 	return response
 }
 
-func mergeResponses(req *http.Request, responses []serverResponse) *pb3.MultiFetchResponse {
+func mergeResponses(req *http.Request, responses []serverResponse) ([]string, *pb3.MultiFetchResponse) {
 
+	servers := make([]string, 0, len(responses))
 	metrics := make(map[string][]pb3.FetchResponse)
 
 	for _, r := range responses {
@@ -554,12 +606,13 @@ func mergeResponses(req *http.Request, responses []serverResponse) *pb3.MultiFet
 		for _, m := range d.Metrics {
 			metrics[m.GetName()] = append(metrics[m.GetName()], *m)
 		}
+		servers = append(servers, r.server)
 	}
 
 	var multi pb3.MultiFetchResponse
 
 	if len(metrics) == 0 {
-		return nil
+		return servers, nil
 	}
 
 	for name, decoded := range metrics {
@@ -588,7 +641,7 @@ func mergeResponses(req *http.Request, responses []serverResponse) *pb3.MultiFet
 		multi.Metrics = append(multi.Metrics, &metric)
 	}
 
-	return &multi
+	return servers, &multi
 }
 
 func mergeValues(req *http.Request, metric *pb3.FetchResponse, decoded []pb3.FetchResponse) {
@@ -669,7 +722,10 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 
 	// lookup the server list for this metric, or use all the servers if it's unknown
 	if serverList, ok = Config.pathCache.get(target); !ok || serverList == nil || len(serverList) == 0 {
+		Metrics.CacheMisses.Add(1)
 		serverList = Config.Backends
+	} else {
+		Metrics.CacheHits.Add(1)
 	}
 
 	format := req.FormValue("format")
@@ -894,6 +950,8 @@ func main() {
 
 		graphite.Register(fmt.Sprintf("carbon.zipper.%s.cache_size", hostname), Metrics.CacheSize)
 		graphite.Register(fmt.Sprintf("carbon.zipper.%s.cache_items", hostname), Metrics.CacheItems)
+		graphite.Register(fmt.Sprintf("carbon.zipper.%s.cache_hits", hostname), Metrics.CacheHits)
+		graphite.Register(fmt.Sprintf("carbon.zipper.%s.cache_misses", hostname), Metrics.CacheMisses)
 
 		go mstats.Start(*interval)
 
@@ -993,14 +1051,13 @@ type pathCache struct {
 }
 
 func (p *pathCache) set(k string, v []string) {
-	// expire cache entries after 10 minutes
-	const expireDelay = 60 * 10
+	// expire cache entries after Config.ExpireCache minutes
 	var size uint64
 	for _, vv := range v {
 		size += uint64(len(vv))
 	}
 
-	p.ec.Set(k, v, size, expireDelay)
+	p.ec.Set(k, v, size, Config.ExpireDelaySec)
 }
 
 func (p *pathCache) get(k string) ([]string, bool) {
