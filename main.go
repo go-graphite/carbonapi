@@ -34,9 +34,6 @@ var Metrics = struct {
 	Requests         *expvar.Int
 	RequestCacheHits *expvar.Int
 
-	FindRequests  *expvar.Int
-	FindCacheHits *expvar.Int
-
 	RenderRequests *expvar.Int
 
 	MemcacheTimeouts *expvar.Int
@@ -47,9 +44,6 @@ var Metrics = struct {
 	Requests:         expvar.NewInt("requests"),
 	RequestCacheHits: expvar.NewInt("request_cache_hits"),
 
-	FindRequests:  expvar.NewInt("find_requests"),
-	FindCacheHits: expvar.NewInt("find_cache_hits"),
-
 	RenderRequests: expvar.NewInt("render_requests"),
 
 	MemcacheTimeouts: expvar.NewInt("memcache_timeouts"),
@@ -59,7 +53,6 @@ var Metrics = struct {
 var BuildVersion = "(development build)"
 
 var queryCache bytesCache
-var findCache bytesCache
 
 var defaultTimeZone = time.Local
 
@@ -348,61 +341,20 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 				continue
 			}
 
-			var glob pb.GlobResponse
-			var haveCacheData bool
-
-			if response, ok := findCache.get(m.Metric); useCache && ok {
-				Metrics.FindCacheHits.Add(1)
-				err := glob.Unmarshal(response)
-				haveCacheData = err == nil
-			}
-
-			if !haveCacheData {
-				var err error
-				Metrics.FindRequests.Add(1)
-				stats.zipperRequests++
-				glob, err = Zipper.Find(m.Metric)
-				if err != nil {
-					logger.Logf("Find: %v: %v", m.Metric, err)
-					continue
-				}
-				b, err := glob.Marshal()
-				if err == nil {
-					findCache.set(m.Metric, b, 5*60)
-				}
-			}
-
 			// For each metric returned in the Find response, query Render
-			// This is a conscious decision to *not* cache render data
-			rch := make(chan *expr.MetricData, len(glob.GetMatches()))
-			leaves := 0
-			for _, m := range glob.GetMatches() {
-				if !m.GetIsLeaf() {
-					continue
-				}
-				Metrics.RenderRequests.Add(1)
-				leaves++
-				Limiter.enter()
-				stats.zipperRequests++
-				go func(m *pb.GlobMatch, from, until int32) {
-					var rptr *expr.MetricData
-					r, err := Zipper.Render(m.GetPath(), from, until)
-					if err == nil {
-						rptr = &r
-					} else {
-						logger.Logf("Render: %v: %v", m.GetPath(), err)
-					}
-					rch <- rptr
-					Limiter.leave()
-				}(m, mfetch.From, mfetch.Until)
-			}
+			Metrics.RenderRequests.Add(1)
+			Limiter.enter()
+			stats.zipperRequests++
 
-			for i := 0; i < leaves; i++ {
-				r := <-rch
-				if r != nil {
-					metricMap[mfetch] = append(metricMap[mfetch], r)
-				}
+			r, err := Zipper.Render(m.Metric, mfetch.From, mfetch.Until)
+			if err != nil {
+				logger.Logf("Render: %v: %v", m.Metric, err)
+				Limiter.leave()
+				continue
+			} else {
+				metricMap[mfetch] = r
 			}
+			Limiter.leave()
 
 			expr.SortMetrics(metricMap[mfetch], mfetch)
 
@@ -708,15 +660,10 @@ func main() {
 		servers := strings.Split(*mc, ",")
 		logger.Logln("using memcache servers:", servers)
 		queryCache = &memcachedCache{client: memcache.New(servers...)}
-		findCache = &memcachedCache{client: memcache.New(servers...)}
-
 	case "mem":
 		qcache := &expireCache{ec: ecache.New(uint64(*memsize * 1024 * 1024))}
 		queryCache = qcache
 		go queryCache.(*expireCache).ec.ApproximateCleaner(10 * time.Second)
-
-		findCache = &expireCache{ec: ecache.New(0)}
-		go findCache.(*expireCache).ec.ApproximateCleaner(10 * time.Second)
 
 		Metrics.CacheSize = expvar.Func(func() interface{} {
 			return qcache.ec.Size()
@@ -730,7 +677,6 @@ func main() {
 
 	case "null":
 		queryCache = &nullCache{}
-		findCache = &nullCache{}
 	}
 
 	if *tz != "" {
@@ -779,9 +725,6 @@ func main() {
 
 		graphite.Register(fmt.Sprintf("carbon.api.%s.requests", hostname), Metrics.Requests)
 		graphite.Register(fmt.Sprintf("carbon.api.%s.request_cache_hits", hostname), Metrics.RequestCacheHits)
-
-		graphite.Register(fmt.Sprintf("carbon.api.%s.find_requests", hostname), Metrics.FindRequests)
-		graphite.Register(fmt.Sprintf("carbon.api.%s.find_cache_hits", hostname), Metrics.FindCacheHits)
 
 		graphite.Register(fmt.Sprintf("carbon.api.%s.render_requests", hostname), Metrics.RenderRequests)
 

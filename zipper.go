@@ -77,7 +77,8 @@ func (z zipper) Passthrough(metric string) ([]byte, error) {
 	return body, nil
 }
 
-func (z zipper) Render(metric string, from, until int32) (expr.MetricData, error) {
+func (z zipper) Render(metric string, from, until int32) ([]*expr.MetricData, error) {
+	var result []*expr.MetricData
 
 	u, _ := url.Parse(z.z + "/render/")
 
@@ -91,14 +92,16 @@ func (z zipper) Render(metric string, from, until int32) (expr.MetricData, error
 	var pbresp pb.MultiFetchResponse
 	err := z.get("Render", u, &pbresp)
 	if err != nil {
-		return expr.MetricData{}, err
+		return result, err
 	}
 
 	if m := pbresp.Metrics; len(m) == 0 {
-		return expr.MetricData{}, errNoMetrics
+		return result, errNoMetrics
 	}
 
-	mdata := expr.MetricData{FetchResponse: *pbresp.Metrics[0]}
+	for i := range pbresp.Metrics {
+		result = append(result, &expr.MetricData{FetchResponse: *pbresp.Metrics[i]})
+	}
 
-	return mdata, nil
+	return result, nil
 }
