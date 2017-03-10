@@ -714,7 +714,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		for _, a := range arg {
 			r := *a
 			summary := summarizeValues(method, a.GetValues())
-			r.Name = proto.String(fmt.Sprintf("%s (%s: %f)", a.GetName(), method, summary))
+			r.Name = fmt.Sprintf("%s (%s: %f)", a.GetName(), method, summary)
 			results = append(results, &r)
 		}
 		return results, nil
