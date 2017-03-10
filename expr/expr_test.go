@@ -998,6 +998,36 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "legendValue",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{valStr: "avg", etype: etString},
+				},
+			},
+			map[MetricRequest][]*MetricData{
+				{"metric1", 0, 1}: {makeResponse("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			},
+			[]*MetricData{makeResponse("metric1 (avg: 3.000000)",
+				[]float64{1, 2, 3, 4, 5}, 1, now32)},
+		},
+		{
+			&expr{
+				target: "legendValue",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{valStr: "sum", etype: etString},
+				},
+			},
+			map[MetricRequest][]*MetricData{
+				{"metric1", 0, 1}: {makeResponse("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			},
+			[]*MetricData{makeResponse("metric1 (sum: 15.000000)",
+				[]float64{1, 2, 3, 4, 5}, 1, now32)},
+		},
+		{
+			&expr{
 				target: "substr",
 				etype:  etFunc,
 				args: []*expr{

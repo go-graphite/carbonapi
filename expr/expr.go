@@ -699,6 +699,26 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		return results, nil
 
+	case "legendValue": // legendValue(seriesList, newName)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+		method, err := getStringArg(e, 1)
+		if err != nil {
+			return nil, err
+		}
+
+		var results []*MetricData
+
+		for _, a := range arg {
+			r := *a
+			summary := summarizeValues(method, a.GetValues())
+			r.Name = proto.String(fmt.Sprintf("%s (%s: %f)", a.GetName(), method, summary))
+			results = append(results, &r)
+		}
+		return results, nil
+
 	case "asPercent": // asPercent(seriesList, total=None)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
