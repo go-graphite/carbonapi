@@ -18,6 +18,11 @@ Other pieces of the stack are:
 
 Changes
 -------
+**0.62**
+   - Fix carbonsearch queries with recent carbonapi version
+   - Fix pathCache to handle render requests with globs.
+   - Add cache for carbonsearch results
+
 **0.61**
    - Fix rewrite for internal queries, because of an error some queries were sent as protobuf not as protobuf3
    - gofmt the code!
