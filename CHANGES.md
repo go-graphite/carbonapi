@@ -2,7 +2,7 @@ CHANGELOG
 ---------
 
 **0.7.0**
- - Render reuqests with globs now sent as-is.
+ - Render requests with globs now sent as-is.
  - Added ProxyHeaders handler to get real client's ip address from X-Real-IP or X-Forwarded-For headers.
  - Highest\* and Lowest\* now assumes '1' if no second argument was passed
  - Implement legendValue expression (see http://graphite.readthedocs.io/en/latest/functions.html#graphite.render.functions.legendValue for more information)
