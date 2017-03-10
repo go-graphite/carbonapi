@@ -353,7 +353,6 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 			queries = fetchCarbonsearchResponse(req, rewrite)
 			Config.searchCache.set(queries[0], queries)
 		}
-		queries = fetchCarbonsearchResponse(req, rewrite)
 	}
 
 	var metrics []*pb3.GlobMatch
