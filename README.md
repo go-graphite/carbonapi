@@ -1,7 +1,7 @@
 carbonapi: replacement graphite API server
 ------------------------------------------
 
-[![Build Status](https://drone.io/github.com/dgryski/carbonapi/status.png)](https://drone.io/github.com/dgryski/carbonapi/latest)
+[![Build Status](https://travis-ci.org/dgryski/carbonapi.svg?branch=master)](https://travis-ci.org/dgryski/carbonapi)
 [![GoDoc](https://godoc.org/github.com/dgryski/carbonapi?status.svg)](https://godoc.org/github.com/dgryski/carbonapi)
 
 
