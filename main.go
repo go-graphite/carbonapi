@@ -90,6 +90,10 @@ var Metrics = struct {
 	CacheItems  expvar.Func
 	CacheMisses *expvar.Int
 	CacheHits   *expvar.Int
+	SearchCacheSize   expvar.Func
+	SearchCacheItems  expvar.Func
+	SearchCacheMisses *expvar.Int
+	SearchCacheHits   *expvar.Int
 }{
 	FindRequests: expvar.NewInt("find_requests"),
 	FindErrors:   expvar.NewInt("find_errors"),
@@ -106,6 +110,8 @@ var Metrics = struct {
 
 	CacheHits:   expvar.NewInt("cache_hits"),
 	CacheMisses: expvar.NewInt("cache_misses"),
+	SearchCacheHits:   expvar.NewInt("search_cache_hits"),
+	SearchCacheMisses: expvar.NewInt("search_cache_misses"),
 }
 
 // BuildVersion is defined at build and reported at startup and as expvar
@@ -350,8 +356,11 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		}
 		var ok bool
 		if queries, ok = Config.searchCache.get(queries[0]); !ok || queries == nil || len(queries) == 0 {
+			Metrics.SearchCacheMisses.Add(1)
 			queries = fetchCarbonsearchResponse(req, rewrite)
 			Config.searchCache.set(queries[0], queries)
+		} else {
+			Metrics.SearchCacheHits.Add(1)
 		}
 	}
 
@@ -476,6 +485,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 
 		var metrics []string
 		if metrics, ok = Config.searchCache.get(target); !ok || metrics == nil || len(metrics) == 0 {
+			Metrics.SearchCacheMisses.Add(1)
 			findURL := &url.URL{Path: "/metrics/find/"}
 			findValues := url.Values{}
 			findValues.Set("format", "protobuf3")
@@ -484,6 +494,8 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 
 			metrics = fetchCarbonsearchResponse(req, findURL)
 			Config.searchCache.set(target, metrics)
+		} else {
+			Metrics.SearchCacheHits.Add(1)
 		}
 
 		for _, target := range metrics {
@@ -921,6 +933,12 @@ func main() {
 	Metrics.CacheItems = expvar.Func(func() interface{} { return Config.pathCache.ec.Items() })
 	expvar.Publish("cacheItems", Metrics.CacheItems)
 
+	Metrics.SearchCacheSize = expvar.Func(func() interface{} { return Config.searchCache.ec.Size() })
+	expvar.Publish("searchCacheSize", Metrics.SearchCacheSize)
+
+	Metrics.SearchCacheItems = expvar.Func(func() interface{} { return Config.searchCache.ec.Items() })
+	expvar.Publish("searchCacheItems", Metrics.SearchCacheItems)
+
 	http.HandleFunc("/metrics/find/", httputil.TrackConnections(httputil.TimeHandler(findHandler, bucketRequestTimes)))
 	http.HandleFunc("/render/", httputil.TrackConnections(httputil.TimeHandler(renderHandler, bucketRequestTimes)))
 	http.HandleFunc("/info/", httputil.TrackConnections(httputil.TimeHandler(infoHandler, bucketRequestTimes)))
@@ -963,6 +981,11 @@ func main() {
 		graphite.Register(fmt.Sprintf("carbon.zipper.%s.cache_items", hostname), Metrics.CacheItems)
 		graphite.Register(fmt.Sprintf("carbon.zipper.%s.cache_hits", hostname), Metrics.CacheHits)
 		graphite.Register(fmt.Sprintf("carbon.zipper.%s.cache_misses", hostname), Metrics.CacheMisses)
+
+		graphite.Register(fmt.Sprintf("carbon.zipper.%s.search_cache_size", hostname), Metrics.SearchCacheSize)
+		graphite.Register(fmt.Sprintf("carbon.zipper.%s.search_cache_items", hostname), Metrics.SearchCacheItems)
+		graphite.Register(fmt.Sprintf("carbon.zipper.%s.search_cache_hits", hostname), Metrics.SearchCacheHits)
+		graphite.Register(fmt.Sprintf("carbon.zipper.%s.search_cache_misses", hostname), Metrics.SearchCacheMisses)
 
 		go mstats.Start(*interval)
 
