@@ -783,6 +783,7 @@ func main() {
 	logger.Logln("listening on port", *port)
 	handler := handlers.CompressHandler(r)
 	handler = handlers.CORS()(handler)
+	handler = handlers.ProxyHeaders(handler)
 	handler = handlers.CombinedLoggingHandler(mlog.GetOutput(), handler)
 
 	err := gracehttp.Serve(&http.Server{
