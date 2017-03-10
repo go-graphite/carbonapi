@@ -48,6 +48,7 @@ var Config = struct {
 	GraphiteHost string
 
 	pathCache pathCache
+	searchCache pathCache
 
 	MaxIdleConnsPerHost int
 
@@ -67,6 +68,7 @@ var Config = struct {
 	ExpireDelaySec: 10 * 60, // 10 minutes
 
 	pathCache: pathCache{ec: expirecache.New(0)},
+	searchCache: pathCache{ec: expirecache.New(0)},
 }
 
 // Metrics contains grouped expvars for /debug/vars and graphite
@@ -346,6 +348,11 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 			encodeFindResponse(format, originalQuery, w, matches)
 			return
 		}
+		var ok bool
+		if queries, ok = Config.searchCache.get(queries[0]); !ok || queries == nil || len(queries) == 0 {
+			queries = fetchCarbonsearchResponse(req, rewrite)
+			Config.searchCache.set(queries[0], queries)
+		}
 		queries = fetchCarbonsearchResponse(req, rewrite)
 	}
 
@@ -468,12 +475,17 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	if searchConfigured && strings.HasPrefix(target, Config.SearchPrefix) {
 		Metrics.SearchRequests.Add(1)
 
-		findUrl := &url.URL{Path: "/metrics/find/"}
-		findValues := url.Values{}
-		findValues.Set("format", "protobuf3")
-		findValues.Set("query", target)
-		findUrl.RawQuery = findValues.Encode()
-		metrics := fetchCarbonsearchResponse(req, findUrl)
+		var metrics []string
+		if metrics, ok = Config.searchCache.get(target); !ok || metrics == nil || len(metrics) == 0 {
+			findURL := &url.URL{Path: "/metrics/find/"}
+			findValues := url.Values{}
+			findValues.Set("format", "protobuf3")
+			findValues.Set("query", target)
+			findURL.RawQuery = findValues.Encode()
+
+			metrics = fetchCarbonsearchResponse(req, findURL)
+			Config.searchCache.set(target, metrics)
+		}
 
 		for _, target := range metrics {
 			v.Set("target", target)
