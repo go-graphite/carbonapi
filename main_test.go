@@ -34,7 +34,7 @@ func TestDateParamToEpoch(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got := dateParamToEpoch(tt.input, 0)
+		got := dateParamToEpoch(tt.input, "Local", 0)
 		ts, err := time.ParseInLocation(shortForm, tt.output, defaultTimeZone)
 		if err != nil {
 			panic(fmt.Sprintf("error parsing time: %q: %v", tt.output, err))

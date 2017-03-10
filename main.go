@@ -166,7 +166,7 @@ func parseTime(s string) (hour, minute int, err error) {
 var timeFormats = []string{"20060102", "01/02/06"}
 
 // dateParamToEpoch turns a passed string parameter into a unix epoch
-func dateParamToEpoch(s string, d int64) int32 {
+func dateParamToEpoch(s string, qtz string, d int64) int32 {
 
 	if s == "" {
 		// return the default if nothing was passed
@@ -213,6 +213,13 @@ func dateParamToEpoch(s string, d int64) int32 {
 		return int32(d)
 	}
 
+	var tz = defaultTimeZone
+	if qtz != "" {
+		if z, err := time.LoadLocation(qtz); err != nil {
+			tz = z
+		}
+	}
+
 	var t time.Time
 dateStringSwitch:
 	switch ds {
@@ -225,7 +232,7 @@ dateStringSwitch:
 		t = timeNow().AddDate(0, 0, 1)
 	default:
 		for _, format := range timeFormats {
-			t, err = time.ParseInLocation(format, ds, defaultTimeZone)
+			t, err = time.ParseInLocation(format, ds, tz)
 			if err == nil {
 				break dateStringSwitch
 			}
@@ -308,9 +315,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request, stats *renderStats) {
 	}
 
 	// normalize from and until values
-	// BUG(dgryski): doesn't handle timezones the same as graphite-web
-	from32 := dateParamToEpoch(from, timeNow().Add(-24*time.Hour).Unix())
-	until32 := dateParamToEpoch(until, timeNow().Unix())
+	qtz := r.FormValue("tz")
+	from32 := dateParamToEpoch(from, qtz, timeNow().Add(-24*time.Hour).Unix())
+	until32 := dateParamToEpoch(until, qtz, timeNow().Unix())
 	if from32 == until32 {
 		http.Error(w, "Invalid empty time range", http.StatusBadRequest)
 		return
