@@ -3066,6 +3066,27 @@ func TestEvalMultipleReturns(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "highestCurrent",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric1"},
+				},
+				argString: "metric1,2",
+			},
+			map[MetricRequest][]*MetricData{
+				MetricRequest{"metric1", 0, 1}: {
+					makeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
+					makeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					makeResponse("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
+				},
+			},
+			"highestCurrent",
+			map[string][]*MetricData{
+				"metricC": {makeResponse("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32)},
+			},
+		},
+		{
+			&expr{
 				target: "lowestCurrent",
 				etype:  etFunc,
 				args: []*expr{
@@ -3086,6 +3107,27 @@ func TestEvalMultipleReturns(t *testing.T) {
 				"metricA": {makeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32)},
 				"metricB": {makeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32)},
 				"metricD": {makeResponse("metricD", []float64{1, 1, 3, 3, 4, 3}, 1, now32)},
+			},
+		},
+		{
+			&expr{
+				target: "lowestCurrent",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric1"},
+				},
+			},
+			map[MetricRequest][]*MetricData{
+				MetricRequest{"metric1", 0, 1}: {
+					makeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					makeResponse("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
+					makeResponse("metricD", []float64{1, 1, 3, 3, 4, 3}, 1, now32),
+					makeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
+				},
+			},
+			"lowestCurrent",
+			map[string][]*MetricData{
+				"metricB": {makeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32)},
 			},
 		},
 		{

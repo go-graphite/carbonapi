@@ -1439,9 +1439,13 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		if err != nil {
 			return nil, err
 		}
-		n, err := getIntArg(e, 1)
-		if err != nil {
-			return nil, err
+
+		n := 1
+		if len(e.args) > 1 {
+			n, err = getIntArg(e, 1)
+			if err != nil {
+				return nil, err
+			}
 		}
 		var results []*MetricData
 
@@ -1482,10 +1486,15 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		if err != nil {
 			return nil, err
 		}
-		n, err := getIntArg(e, 1)
-		if err != nil {
-			return nil, err
+
+		n := 1
+		if len(e.args) > 1 {
+			n, err = getIntArg(e, 1)
+			if err != nil {
+				return nil, err
+			}
 		}
+
 		var results []*MetricData
 
 		// we have fewer arguments than we want result series
