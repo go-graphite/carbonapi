@@ -45,9 +45,10 @@ var Config = struct {
 	SearchBackend string
 	SearchPrefix  string
 
-	GraphiteHost string
+	GraphiteHost         string
+	InternalMetricPrefix string
 
-	pathCache pathCache
+	pathCache   pathCache
 	searchCache pathCache
 
 	MaxIdleConnsPerHost int
@@ -67,7 +68,7 @@ var Config = struct {
 
 	ExpireDelaySec: 10 * 60, // 10 minutes
 
-	pathCache: pathCache{ec: expirecache.New(0)},
+	pathCache:   pathCache{ec: expirecache.New(0)},
 	searchCache: pathCache{ec: expirecache.New(0)},
 }
 
@@ -86,10 +87,10 @@ var Metrics = struct {
 
 	Timeouts *expvar.Int
 
-	CacheSize   expvar.Func
-	CacheItems  expvar.Func
-	CacheMisses *expvar.Int
-	CacheHits   *expvar.Int
+	CacheSize         expvar.Func
+	CacheItems        expvar.Func
+	CacheMisses       *expvar.Int
+	CacheHits         *expvar.Int
 	SearchCacheSize   expvar.Func
 	SearchCacheItems  expvar.Func
 	SearchCacheMisses *expvar.Int
@@ -108,8 +109,8 @@ var Metrics = struct {
 
 	Timeouts: expvar.NewInt("timeouts"),
 
-	CacheHits:   expvar.NewInt("cache_hits"),
-	CacheMisses: expvar.NewInt("cache_misses"),
+	CacheHits:         expvar.NewInt("cache_hits"),
+	CacheMisses:       expvar.NewInt("cache_misses"),
 	SearchCacheHits:   expvar.NewInt("search_cache_hits"),
 	SearchCacheMisses: expvar.NewInt("search_cache_misses"),
 }
@@ -951,6 +952,10 @@ func main() {
 		}
 	}
 
+	if Config.InternalMetricPrefix == "" {
+		Config.InternalMetricPrefix = "carbon.zipper"
+	}
+
 	// only register g2g if we have a graphite host
 	if Config.GraphiteHost != "" {
 
@@ -962,37 +967,39 @@ func main() {
 		hostname, _ := os.Hostname()
 		hostname = strings.Replace(hostname, ".", "_", -1)
 
-		graphite.Register(fmt.Sprintf("carbon.zipper.%s.find_requests", hostname), Metrics.FindRequests)
-		graphite.Register(fmt.Sprintf("carbon.zipper.%s.find_errors", hostname), Metrics.FindErrors)
+		prefix := Config.InternalMetricPrefix
 
-		graphite.Register(fmt.Sprintf("carbon.zipper.%s.render_requests", hostname), Metrics.RenderRequests)
-		graphite.Register(fmt.Sprintf("carbon.zipper.%s.render_errors", hostname), Metrics.RenderErrors)
+		graphite.Register(fmt.Sprintf("%s.%s.find_requests", prefix, hostname), Metrics.FindRequests)
+		graphite.Register(fmt.Sprintf("%s.%s.find_errors", prefix, hostname), Metrics.FindErrors)
 
-		graphite.Register(fmt.Sprintf("carbon.zipper.%s.info_requests", hostname), Metrics.InfoRequests)
-		graphite.Register(fmt.Sprintf("carbon.zipper.%s.info_errors", hostname), Metrics.InfoErrors)
+		graphite.Register(fmt.Sprintf("%s.%s.render_requests", prefix, hostname), Metrics.RenderRequests)
+		graphite.Register(fmt.Sprintf("%s.%s.render_errors", prefix, hostname), Metrics.RenderErrors)
 
-		graphite.Register(fmt.Sprintf("carbon.zipper.%s.timeouts", hostname), Metrics.Timeouts)
+		graphite.Register(fmt.Sprintf("%s.%s.info_requests", prefix, hostname), Metrics.InfoRequests)
+		graphite.Register(fmt.Sprintf("%s.%s.info_errors", prefix, hostname), Metrics.InfoErrors)
+
+		graphite.Register(fmt.Sprintf("%s.%s.timeouts", prefix, hostname), Metrics.Timeouts)
 
 		for i := 0; i <= Config.Buckets; i++ {
-			graphite.Register(fmt.Sprintf("carbon.zipper.%s.requests_in_%dms_to_%dms", hostname, i*100, (i+1)*100), bucketEntry(i))
+			graphite.Register(fmt.Sprintf("%s.%s.requests_in_%dms_to_%dms", prefix, hostname, i*100, (i+1)*100), bucketEntry(i))
 		}
 
-		graphite.Register(fmt.Sprintf("carbon.zipper.%s.cache_size", hostname), Metrics.CacheSize)
-		graphite.Register(fmt.Sprintf("carbon.zipper.%s.cache_items", hostname), Metrics.CacheItems)
-		graphite.Register(fmt.Sprintf("carbon.zipper.%s.cache_hits", hostname), Metrics.CacheHits)
-		graphite.Register(fmt.Sprintf("carbon.zipper.%s.cache_misses", hostname), Metrics.CacheMisses)
+		graphite.Register(fmt.Sprintf("%s.%s.cache_size", prefix, hostname), Metrics.CacheSize)
+		graphite.Register(fmt.Sprintf("%s.%s.cache_items", prefix, hostname), Metrics.CacheItems)
+		graphite.Register(fmt.Sprintf("%s.%s.cache_hits", prefix, hostname), Metrics.CacheHits)
+		graphite.Register(fmt.Sprintf("%s.%s.cache_misses", prefix, hostname), Metrics.CacheMisses)
 
-		graphite.Register(fmt.Sprintf("carbon.zipper.%s.search_cache_size", hostname), Metrics.SearchCacheSize)
-		graphite.Register(fmt.Sprintf("carbon.zipper.%s.search_cache_items", hostname), Metrics.SearchCacheItems)
-		graphite.Register(fmt.Sprintf("carbon.zipper.%s.search_cache_hits", hostname), Metrics.SearchCacheHits)
-		graphite.Register(fmt.Sprintf("carbon.zipper.%s.search_cache_misses", hostname), Metrics.SearchCacheMisses)
+		graphite.Register(fmt.Sprintf("%s.%s.search_cache_size", prefix, hostname), Metrics.SearchCacheSize)
+		graphite.Register(fmt.Sprintf("%s.%s.search_cache_items", prefix, hostname), Metrics.SearchCacheItems)
+		graphite.Register(fmt.Sprintf("%s.%s.search_cache_hits", prefix, hostname), Metrics.SearchCacheHits)
+		graphite.Register(fmt.Sprintf("%s.%s.search_cache_misses", prefix, hostname), Metrics.SearchCacheMisses)
 
 		go mstats.Start(*interval)
 
-		graphite.Register(fmt.Sprintf("carbon.zipper.%s.alloc", hostname), &mstats.Alloc)
-		graphite.Register(fmt.Sprintf("carbon.zipper.%s.total_alloc", hostname), &mstats.TotalAlloc)
-		graphite.Register(fmt.Sprintf("carbon.zipper.%s.num_gc", hostname), &mstats.NumGC)
-		graphite.Register(fmt.Sprintf("carbon.zipper.%s.pause_ns", hostname), &mstats.PauseNS)
+		graphite.Register(fmt.Sprintf("%s.%s.alloc", prefix, hostname), &mstats.Alloc)
+		graphite.Register(fmt.Sprintf("%s.%s.total_alloc", prefix, hostname), &mstats.TotalAlloc)
+		graphite.Register(fmt.Sprintf("%s.%s.num_gc", prefix, hostname), &mstats.NumGC)
+		graphite.Register(fmt.Sprintf("%s.%s.pause_ns", prefix, hostname), &mstats.PauseNS)
 	}
 
 	// configure the storage client
