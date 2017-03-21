@@ -21,7 +21,6 @@ import (
 
 	pb2 "github.com/dgryski/carbonzipper/carbonzipperpb"
 	pb3 "github.com/dgryski/carbonzipper/carbonzipperpb3"
-	"github.com/dgryski/carbonzipper/mlog"
 	"github.com/dgryski/carbonzipper/mstats"
 	"github.com/dgryski/go-expirecache"
 	"github.com/dgryski/httputil"
@@ -29,6 +28,9 @@ import (
 	"github.com/facebookgo/pidfile"
 	pickle "github.com/kisielk/og-rek"
 	"github.com/peterbourgon/g2g"
+
+	"github.com/lomik/zapwriter"
+	"go.uber.org/zap"
 )
 
 // Config contains configuration values
@@ -55,6 +57,7 @@ var Config = struct {
 
 	ConcurrencyLimitPerServer int
 	ExpireDelaySec            int32
+	Logger                    []zapwriter.Config
 }{
 	MaxProcs:    1,
 	IntervalSec: 60,
@@ -70,6 +73,14 @@ var Config = struct {
 
 	pathCache:   pathCache{ec: expirecache.New(0)},
 	searchCache: pathCache{ec: expirecache.New(0)},
+	Logger: []zapwriter.Config{{
+		Logger:           "",
+		File:             "stdout",
+		Level:            "info",
+		Encoding:         "console",
+		EncodingTime:     "iso8601",
+		EncodingDuration: "seconds",
+	}},
 }
 
 // Metrics contains grouped expvars for /debug/vars and graphite
@@ -121,8 +132,6 @@ var BuildVersion = "(development version)"
 // Limiter limits our concurrency to a particular server
 var Limiter serverLimiter
 
-var logger mlog.Level
-
 type serverResponse struct {
 	server   string
 	response []byte
@@ -138,9 +147,10 @@ var probeQuit = make(chan struct{})
 var probeForce = make(chan int)
 
 func doProbe() {
+	logger := zapwriter.Logger("probe")
 	query := "/metrics/find/?format=protobuf3&query=%2A"
 
-	responses := multiGet(Config.Backends, query)
+	responses := multiGet("probe", Config.Backends, query)
 
 	if len(responses) == 0 {
 		return
@@ -151,7 +161,10 @@ func doProbe() {
 	// update our cache of which servers have which metrics
 	for k, v := range paths {
 		Config.pathCache.set(k, v)
-		logger.Debugln("TLD probe:", k, "servers =", v)
+		logger.Debug("TLD Probe",
+			zap.String("path", k),
+			zap.Strings("servers", v),
+		)
 	}
 }
 
@@ -169,11 +182,15 @@ func probeTlds() {
 	}
 }
 
-func singleGet(uri, server string, ch chan<- serverResponse, started chan<- struct{}) {
+func singleGet(logName, uri, server string, ch chan<- serverResponse, started chan<- struct{}) {
+	logger := zapwriter.Logger(logName).With(zap.String("handler", logName))
 
 	u, err := url.Parse(server + uri)
 	if err != nil {
-		logger.Logln("error parsing uri: ", server+uri, ":", err)
+		logger.Error("error parsing uri",
+			zap.String("uri", server+uri),
+			zap.Error(err),
+		)
 		ch <- serverResponse{server, nil}
 		return
 	}
@@ -182,12 +199,15 @@ func singleGet(uri, server string, ch chan<- serverResponse, started chan<- stru
 		Header: make(http.Header),
 	}
 
+	logger = logger.With(zap.String("query", server+"/"+uri))
 	Limiter.enter(server)
 	started <- struct{}{}
 	defer Limiter.leave(server)
 	resp, err := storageClient.Do(&req)
 	if err != nil {
-		logger.Logln("singleGet: error querying ", server, "/", uri, ":", err)
+		logger.Error("query error",
+			zap.Error(err),
+		)
 		ch <- serverResponse{server, nil}
 		return
 	}
@@ -201,14 +221,18 @@ func singleGet(uri, server string, ch chan<- serverResponse, started chan<- stru
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		logger.Logln("bad response code ", server, "/", uri, ":", resp.StatusCode)
+		logger.Error("bad response code",
+			zap.Int("response_code", resp.StatusCode),
+		)
 		ch <- serverResponse{server, nil}
 		return
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		logger.Logln("error reading body: ", server, "/", uri, ":", err)
+		logger.Error("error reading body",
+			zap.Error(err),
+		)
 		ch <- serverResponse{server, nil}
 		return
 	}
@@ -216,16 +240,19 @@ func singleGet(uri, server string, ch chan<- serverResponse, started chan<- stru
 	ch <- serverResponse{server, body}
 }
 
-func multiGet(servers []string, uri string) []serverResponse {
-
-	logger.Debugln("querying servers=", servers, "uri=", uri)
+func multiGet(logName string, servers []string, uri string) []serverResponse {
+	logger := zapwriter.Logger(logName).With(zap.String("handler", logName))
+	logger.Debug("querying servers",
+		zap.Strings("servers", servers),
+		zap.String("uri", uri),
+	)
 
 	// buffered channel so the goroutines don't block on send
 	ch := make(chan serverResponse, len(servers))
 	startedch := make(chan struct{}, len(servers))
 
 	for _, server := range servers {
-		go singleGet(uri, server, ch, startedch)
+		go singleGet(logName, uri, server, ch, startedch)
 	}
 
 	var response []serverResponse
@@ -259,8 +286,26 @@ GATHER:
 			for _, r := range response {
 				servs = append(servs, r.server)
 			}
-			// TODO(dgryski): log which servers have/haven't started
-			logger.Logln("Timeout waiting for more responses.  uri=", uri, ", servers=", servers, ", answers_from_servers=", servs)
+
+			var timeoutedServs []string
+			for i := range servers {
+				found := false
+				for j := range servs {
+					if servers[i] == servs[j] {
+						found = true
+						break
+					}
+				}
+				if !found {
+					timeoutedServs = append(timeoutedServs, servers[i])
+				}
+			}
+
+			logger.Warn("timeout waiting for more responses",
+				zap.String("uri", uri),
+				zap.Strings("timeouted_servers", timeoutedServs),
+				zap.Strings("answers_from_servers", servs),
+			)
 			Metrics.Timeouts.Add(1)
 			break GATHER
 		}
@@ -275,6 +320,7 @@ type nameleaf struct {
 }
 
 func findUnpackPB(req *http.Request, responses []serverResponse) ([]*pb3.GlobMatch, map[string][]string) {
+	logger := zapwriter.Logger("find")
 
 	// metric -> [server1, ... ]
 	paths := make(map[string][]string)
@@ -285,8 +331,14 @@ func findUnpackPB(req *http.Request, responses []serverResponse) ([]*pb3.GlobMat
 		var metric pb3.GlobResponse
 		err := metric.Unmarshal(r.response)
 		if err != nil && req != nil {
-			logger.Logf("error decoding protobuf response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
-			logger.Traceln("\n" + hex.Dump(r.response))
+			logger.Error("error decoding protobuf response",
+				zap.String("server", r.server),
+				zap.String("request", req.URL.RequestURI()),
+				zap.Error(err),
+			)
+			logger.Debug("response hexdump",
+				zap.String("response", hex.Dump(r.response)),
+			)
 			Metrics.FindErrors.Add(1)
 			continue
 		}
@@ -318,7 +370,7 @@ const (
 
 func fetchCarbonsearchResponse(req *http.Request, rewrite *url.URL) []string {
 	// Send query to SearchBackend. The result is []queries for StorageBackends
-	searchResponse := multiGet([]string{Config.SearchBackend}, rewrite.RequestURI())
+	searchResponse := multiGet("find", []string{Config.SearchBackend}, rewrite.RequestURI())
 	m, _ := findUnpackPB(req, searchResponse)
 	queries := make([]string, 0, len(m))
 	for _, v := range m {
@@ -328,8 +380,11 @@ func fetchCarbonsearchResponse(req *http.Request, rewrite *url.URL) []string {
 }
 
 func findHandler(w http.ResponseWriter, req *http.Request) {
-
-	logger.Debugln("request: ", req.URL.RequestURI())
+	t0 := time.Now()
+	logger := zapwriter.Logger("find").With(zap.String("handler", "find"))
+	logger.Debug("got find request",
+		zap.String("request", req.URL.RequestURI()),
+	)
 
 	Metrics.FindRequests.Add(1)
 
@@ -339,6 +394,13 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
 	v := rewrite.Query()
 	format := req.FormValue("format")
+
+	accessLogger := zapwriter.Logger("access").With(
+		zap.String("handler", "render"),
+		zap.String("format", format),
+		zap.String("target", originalQuery),
+	)
+
 	v.Set("format", "protobuf3")
 	rewrite.RawQuery = v.Encode()
 
@@ -347,12 +409,15 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		// 'completer' requests are translated into standard Find requests with
 		// a trailing '*' by graphite-web
 		if strings.HasSuffix(queries[0], "*") {
-			searchCompleterResponse := multiGet([]string{Config.SearchBackend}, rewrite.RequestURI())
+			searchCompleterResponse := multiGet("find", []string{Config.SearchBackend}, rewrite.RequestURI())
 			matches, _ := findUnpackPB(nil, searchCompleterResponse)
 			// this is a completer request, and so we should return the set of
 			// virtual metrics returned by carbonsearch verbatim, rather than trying
 			// to find them on the stores
 			encodeFindResponse(format, originalQuery, w, matches)
+			accessLogger.Info("request served",
+				zap.Duration("runtime_seconds", time.Since(t0)),
+			)
 			return
 		}
 		var ok bool
@@ -390,10 +455,12 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 			Metrics.CacheHits.Add(1)
 		}
 
-		responses := multiGet(backends, rewrite.RequestURI())
+		responses := multiGet("find", backends, rewrite.RequestURI())
 
 		if len(responses) == 0 {
-			logger.Logln("find: error querying backends for: ", rewrite.RequestURI())
+			logger.Error("error quering backends",
+				zap.String("request", rewrite.RequestURI()),
+			)
 			http.Error(w, "find: error querying backends", http.StatusInternalServerError)
 			return
 		}
@@ -411,6 +478,9 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	encodeFindResponse(format, originalQuery, w, metrics)
+	accessLogger.Info("request served",
+		zap.Duration("runtime_seconds", time.Since(t0)),
+	)
 }
 
 func encodeFindResponse(format, query string, w http.ResponseWriter, metrics []*pb3.GlobMatch) {
@@ -459,8 +529,12 @@ func encodeFindResponse(format, query string, w http.ResponseWriter, metrics []*
 }
 
 func renderHandler(w http.ResponseWriter, req *http.Request) {
+	t0 := time.Now()
+	logger := zapwriter.Logger("render").With(zap.String("handler", "render"))
 
-	logger.Debugln("request: ", req.URL.RequestURI())
+	logger.Debug("got render request",
+		zap.String("request", req.URL.RequestURI()),
+	)
 
 	Metrics.RenderRequests.Add(1)
 
@@ -473,6 +547,12 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	format := req.FormValue("format")
+
+	accessLogger := zapwriter.Logger("access").With(
+		zap.String("handler", "render"),
+		zap.String("format", format),
+		zap.String("target", target),
+	)
 
 	rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
 	v := rewrite.Query()
@@ -511,7 +591,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 				Metrics.CacheHits.Add(1)
 			}
 
-			responses = append(responses, multiGet(serverList, rewrite.RequestURI())...)
+			responses = append(responses, multiGet("render", serverList, rewrite.RequestURI())...)
 		}
 	} else {
 		rewrite.RawQuery = v.Encode()
@@ -524,11 +604,14 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 			Metrics.CacheHits.Add(1)
 		}
 
-		responses = multiGet(serverList, rewrite.RequestURI())
+		responses = multiGet("render", serverList, rewrite.RequestURI())
 	}
 
 	if len(responses) == 0 {
-		logger.Logln("render: error querying backends for:", req.URL.RequestURI(), "backends:", serverList)
+		logger.Error("error querying backends",
+			zap.String("request", req.URL.RequestURI()),
+			zap.Strings("backends:", serverList),
+		)
 		http.Error(w, "render: error querying backends", http.StatusInternalServerError)
 		Metrics.RenderErrors.Add(1)
 		return
@@ -537,8 +620,13 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	servers, metrics := mergeResponses(req, responses)
 	if metrics == nil {
 		Metrics.RenderErrors.Add(1)
-		err := fmt.Sprintf("no decoded responses to merge for req: %s", req.URL.RequestURI())
-		logger.Logln(err)
+		logger.Error("no decoded responses to merge",
+			zap.String("request", req.URL.RequestURI()),
+			zap.Strings("backends:", serverList),
+		)
+		accessLogger.Info("request failed",
+			zap.Duration("runtime_seconds", time.Since(t0)),
+		)
 		http.Error(w, "no decoded responses to merge", http.StatusInternalServerError)
 		return
 	}
@@ -548,7 +636,12 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	switch format {
 	case "protobuf3":
 		w.Header().Set("Content-Type", contentTypeProtobuf)
-		b, _ := metrics.Marshal()
+		b, err := metrics.Marshal()
+		if err != nil {
+			logger.Error("error marshaling data",
+				zap.Error(err),
+			)
+		}
 		w.Write(b)
 
 	case "protobuf":
@@ -566,7 +659,9 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		}
 		b, err := metricsPb2.Marshal()
 		if err != nil {
-			logger.Logln("Error:", err)
+			logger.Error("error marshaling data",
+				zap.Error(err),
+			)
 		}
 		w.Write(b)
 
@@ -582,6 +677,9 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		e := pickle.NewEncoder(w)
 		e.Encode(presponse)
 	}
+	accessLogger.Info("request served",
+		zap.Duration("runtime_seconds", time.Since(t0)),
+	)
 }
 
 func createRenderResponse(metrics *pb3.MultiFetchResponse, missing interface{}) []map[string]interface{} {
@@ -614,6 +712,7 @@ func createRenderResponse(metrics *pb3.MultiFetchResponse, missing interface{}) 
 }
 
 func mergeResponses(req *http.Request, responses []serverResponse) ([]string, *pb3.MultiFetchResponse) {
+	logger := zapwriter.Logger("render")
 
 	servers := make([]string, 0, len(responses))
 	metrics := make(map[string][]pb3.FetchResponse)
@@ -622,8 +721,14 @@ func mergeResponses(req *http.Request, responses []serverResponse) ([]string, *p
 		var d pb3.MultiFetchResponse
 		err := d.Unmarshal(r.response)
 		if err != nil {
-			logger.Logf("error decoding protobuf response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
-			logger.Traceln("\n" + hex.Dump(r.response))
+			logger.Error("error decoding protobuf response",
+				zap.String("server", r.server),
+				zap.String("request", req.URL.RequestURI()),
+				zap.Error(err),
+			)
+			logger.Debug("response hexdump",
+				zap.String("response", hex.Dump(r.response)),
+			)
 			Metrics.RenderErrors.Add(1)
 			continue
 		}
@@ -640,11 +745,17 @@ func mergeResponses(req *http.Request, responses []serverResponse) ([]string, *p
 	}
 
 	for name, decoded := range metrics {
-
-		logger.Tracef("request: %s: %q %+v", req.URL.RequestURI(), name, decoded)
+		logger.Debug("decoded response",
+			zap.String("request", req.URL.RequestURI()),
+			zap.String("name", name),
+			zap.Any("decoded", decoded),
+		)
 
 		if len(decoded) == 1 {
-			logger.Debugf("only one decoded responses to merge for req: %q %s", name, req.URL.RequestURI())
+			logger.Debug("only one decoded response to merge",
+				zap.String("name", name),
+				zap.String("request", req.URL.RequestURI()),
+			)
 			m := decoded[0]
 			multi.Metrics = append(multi.Metrics, &m)
 			continue
@@ -669,6 +780,7 @@ func mergeResponses(req *http.Request, responses []serverResponse) ([]string, *p
 }
 
 func mergeValues(req *http.Request, metric *pb3.FetchResponse, decoded []pb3.FetchResponse) {
+	logger := zapwriter.Logger("render")
 
 	var responseLengthMismatch bool
 	for i := range metric.Values {
@@ -682,7 +794,11 @@ func mergeValues(req *http.Request, metric *pb3.FetchResponse, decoded []pb3.Fet
 			m := decoded[other]
 
 			if len(m.Values) != len(metric.Values) {
-				logger.Logf("request: %s: unable to merge ovalues: len(values)=%d but len(ovalues)=%d", req.URL.RequestURI(), len(metric.Values), len(m.Values))
+				logger.Error("unable to merge ovalues",
+					zap.String("request", req.URL.RequestURI()),
+					zap.Int("metric_values", len(metric.Values)),
+					zap.Int("response_values", len(m.Values)),
+				)
 				// TODO(dgryski): we should remove
 				// decoded[other] from the list of responses to
 				// consider but this assumes that decoded[0] is
@@ -705,6 +821,7 @@ func mergeValues(req *http.Request, metric *pb3.FetchResponse, decoded []pb3.Fet
 }
 
 func infoUnpackPB(req *http.Request, format string, responses []serverResponse) map[string]pb3.InfoResponse {
+	logger := zapwriter.Logger("info").With(zap.String("handler", "info"))
 
 	decoded := make(map[string]pb3.InfoResponse)
 	for _, r := range responses {
@@ -714,22 +831,35 @@ func infoUnpackPB(req *http.Request, format string, responses []serverResponse) 
 		var d pb3.InfoResponse
 		err := d.Unmarshal(r.response)
 		if err != nil {
-			logger.Logf("error decoding protobuf response from server:%s: req:%s: err=%s", r.server, req.URL.RequestURI(), err)
-			logger.Traceln("\n" + hex.Dump(r.response))
+			logger.Error("error decoding protobuf response",
+				zap.String("server", r.server),
+				zap.String("request", req.URL.RequestURI()),
+				zap.Error(err),
+			)
+			logger.Debug("response hexdump",
+				zap.String("response", hex.Dump(r.response)),
+			)
 			Metrics.InfoErrors.Add(1)
 			continue
 		}
 		decoded[r.server] = d
 	}
 
-	logger.Tracef("request: %s: %v", req.URL.RequestURI(), decoded)
+	logger.Debug("info request",
+		zap.String("request", req.URL.RequestURI()),
+		zap.Any("decoded_response", decoded),
+	)
 
 	return decoded
 }
 
 func infoHandler(w http.ResponseWriter, req *http.Request) {
+	t0 := time.Now()
+	logger := zapwriter.Logger("info").With(zap.String("handler", "info"))
 
-	logger.Debugln("request: ", req.URL.RequestURI())
+	logger.Debug("request",
+		zap.String("request", req.URL.RequestURI()),
+	)
 
 	Metrics.InfoRequests.Add(1)
 
@@ -740,6 +870,11 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "info: empty target", http.StatusBadRequest)
 		return
 	}
+
+	accessLogger := zapwriter.Logger("access").With(
+		zap.String("handler", "info"),
+		zap.String("target", target),
+	)
 
 	var serverList []string
 	var ok bool
@@ -758,10 +893,17 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 	v.Set("format", "protobuf3")
 	rewrite.RawQuery = v.Encode()
 
-	responses := multiGet(serverList, rewrite.RequestURI())
+	responses := multiGet("info", serverList, rewrite.RequestURI())
 
 	if len(responses) == 0 {
-		logger.Logln("info: error querying backends for:", req.URL.RequestURI(), "backends:", serverList)
+		logger.Error("error querying backends",
+			zap.String("request", req.URL.RequestURI()),
+			zap.Strings("backends:", serverList),
+		)
+		accessLogger.Info("request failed",
+			zap.String("reason", "error querying backends"),
+			zap.Duration("runtime_seconds", time.Since(t0)),
+		)
 		http.Error(w, "info: error querying backends", http.StatusInternalServerError)
 		Metrics.InfoErrors.Add(1)
 		return
@@ -815,13 +957,23 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 		jEnc := json.NewEncoder(w)
 		jEnc.Encode(infos)
 	}
+	accessLogger.Info("request served",
+		zap.Duration("runtime_seconds", time.Since(t0)),
+	)
 }
 
 func lbCheckHandler(w http.ResponseWriter, req *http.Request) {
-
-	logger.Traceln("loadbalancer: ", req.URL.RequestURI())
+	t0 := time.Now()
+	logger := zapwriter.Logger("loadbalancer").With(zap.String("handler", "loadbalancer"))
+	accessLogger := zapwriter.Logger("access").With(zap.String("handler", "loadbalancer"))
+	logger.Debug("loadbalacner",
+		zap.String("request", req.URL.RequestURI()),
+	)
 
 	fmt.Fprintf(w, "Ok\n")
+	accessLogger.Info("request served",
+		zap.Duration("runtime_seconds", time.Since(t0)),
+	)
 }
 
 func stripCommentHeader(cfg []byte) []byte {
@@ -846,9 +998,6 @@ func main() {
 	configFile := flag.String("c", "", "config file (json)")
 	port := flag.Int("p", 0, "port to listen on")
 	maxprocs := flag.Int("maxprocs", 0, "GOMAXPROCS")
-	debugLevel := flag.Int("d", 0, "enable debug logging")
-	logtostdout := flag.Bool("stdout", false, "write logging output also to stdout")
-	logdir := flag.String("logdir", "/var/log/carbonzipper/", "logging directory")
 	interval := flag.Duration("i", 0, "interval to report internal statistics to graphite")
 	pidFile := flag.String("pid", "", "pidfile (default: empty, don't create pidfile)")
 
@@ -856,28 +1005,47 @@ func main() {
 
 	expvar.NewString("BuildVersion").Set(BuildVersion)
 
+	logger, err := zap.NewProduction()
+	if err != nil {
+		log.Fatal("Failed to initialize logging")
+	}
+
 	if *configFile == "" {
-		log.Fatal("missing config file")
+		logger.Fatal("missing config file option")
 	}
 
 	cfgjs, err := ioutil.ReadFile(*configFile)
 	if err != nil {
-		log.Fatal("unable to load config file:", err)
+		logger.Fatal("unable to load config file:",
+			zap.Error(err),
+		)
 	}
 
 	cfgjs = stripCommentHeader(cfgjs)
 
 	if cfgjs == nil {
-		log.Fatal("error removing header comment from ", *configFile)
+		logger.Fatal("error removing header comment from ",
+			zap.String("config_file", *configFile),
+		)
 	}
 
 	err = json.Unmarshal(cfgjs, &Config)
 	if err != nil {
-		log.Fatal("error parsing config file: ", err)
+		logger.Fatal("error parsing config file: ",
+			zap.Error(err),
+		)
 	}
 
 	if len(Config.Backends) == 0 {
-		log.Fatal("no Backends loaded -- exiting")
+		logger.Fatal("no Backends loaded -- exiting")
+	}
+
+	err = zapwriter.ApplyConfig(Config.Logger)
+	if err != nil {
+		logger.Fatal("Failed to apply config",
+			zap.Any("config", Config.Logger),
+			zap.Error(err),
+		)
 	}
 
 	// command line overrides config file
@@ -894,24 +1062,23 @@ func main() {
 		*interval = time.Duration(Config.IntervalSec) * time.Second
 	}
 
-	if *logdir == "" {
-		mlog.SetRawStream(os.Stdout)
-	} else {
-		mlog.SetOutput(*logdir, "carbonzipper", *logtostdout)
-	}
-
 	searchConfigured = len(Config.SearchPrefix) > 0 && len(Config.SearchBackend) > 0
 
-	logger = mlog.Level(*debugLevel)
-	logger.Logln("starting carbonzipper", BuildVersion)
+	portStr := fmt.Sprintf(":%d", Config.Port)
 
-	logger.Logln("setting GOMAXPROCS=", Config.MaxProcs)
+	logger = zapwriter.Logger("main")
+	logger.Info("starting carbonzipper",
+		zap.String("build_version", BuildVersion),
+		zap.Int("GOMAXPROCS", Config.MaxProcs),
+		zap.Duration("stats interval", *interval),
+		zap.Int("concurency_limit_per_server", Config.ConcurrencyLimitPerServer),
+		zap.String("graphite_host", Config.GraphiteHost),
+		zap.String("listen_port", portStr),
+	)
+
 	runtime.GOMAXPROCS(Config.MaxProcs)
 
-	logger.Logln("setting stats interval to", *interval)
-
 	if Config.ConcurrencyLimitPerServer != 0 {
-		logger.Logln("Setting concurrencyLimit", Config.ConcurrencyLimitPerServer)
 		limiterServers := Config.Backends
 		if searchConfigured {
 			limiterServers = append(limiterServers, Config.SearchBackend)
@@ -958,9 +1125,6 @@ func main() {
 
 	// only register g2g if we have a graphite host
 	if Config.GraphiteHost != "" {
-
-		logger.Logln("Using graphite host", Config.GraphiteHost)
-
 		// register our metrics with graphite
 		graphite := g2g.NewGraphite(Config.GraphiteHost, *interval, 10*time.Second)
 
@@ -1021,16 +1185,15 @@ func main() {
 		}
 	}
 
-	portStr := fmt.Sprintf(":%d", Config.Port)
-	logger.Logln("listening on", portStr)
-
 	err = gracehttp.Serve(&http.Server{
 		Addr:    portStr,
 		Handler: nil,
 	})
 
 	if err != nil {
-		log.Fatalln("error during gracehttp.Serve():", err)
+		log.Fatal("error during gracehttp.Serve()",
+			zap.Error(err),
+		)
 	}
 }
 
@@ -1047,6 +1210,7 @@ func renderTimeBuckets() interface{} {
 }
 
 func bucketRequestTimes(req *http.Request, t time.Duration) {
+	logger := zapwriter.Logger("slow")
 
 	ms := t.Nanoseconds() / int64(time.Millisecond)
 
@@ -1057,7 +1221,10 @@ func bucketRequestTimes(req *http.Request, t time.Duration) {
 	} else {
 		// Too big? Increment overflow bucket and log
 		atomic.AddInt64(&timeBuckets[Config.Buckets], 1)
-		logger.Logf("Slow Request: %s: %s", t.String(), req.URL.String())
+		logger.Warn("Slow Request",
+			zap.Duration("time", t),
+			zap.String("url", req.URL.String()),
+		)
 	}
 }
 
