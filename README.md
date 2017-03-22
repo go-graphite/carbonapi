@@ -18,6 +18,9 @@ Other pieces of the stack are:
 
 Changes
 -------
+**0.63**
+   - [Fix] carbonsearch query cache was never cleared
+
 **0.62**
    - Fix carbonsearch queries with recent carbonapi version
    - Fix pathCache to handle render requests with globs.
