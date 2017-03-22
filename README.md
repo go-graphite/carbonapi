@@ -16,8 +16,17 @@ Other pieces of the stack are:
    - [carbonsearch](https://github.com/kanatohodets/carbonsearch)
 
 
-Changes
--------
+Changes and versioning
+----------------------
+
+Version policy - all the versions we run in production is taged.
+
+In case change will require simultanious upgrade of different components, it will be stated in Upgrading notes below.
+
+Also we will try to maintain backward compatibility from down to up.
+
+For example with protobuf2 -> protobuf3 migration - carbonzipper can still send results to older versions of carbonapi, but can't get results from older versions of carbonserver/go-carbon.
+
 See [CHANGES.md](https://github.com/dgryski/carbonzipper/blob/master/CHANGES.md)
 
 Upgrading to 0.60 from 0.50 or earlier
@@ -47,3 +56,12 @@ License
 -------
 
 This code is licensed under the MIT license.
+
+
+Contact
+-------
+
+If you have questions or problems there are two ways to contact us:
+
+1. Open issue on a github page
+2. #zipperstack on [gophers slack](https://invite.slack.golangbridge.org/)
