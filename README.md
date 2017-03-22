@@ -18,24 +18,7 @@ Other pieces of the stack are:
 
 Changes
 -------
-**0.63**
-   - [Fix] carbonsearch query cache was never cleared
-
-**0.62**
-   - Fix carbonsearch queries with recent carbonapi version
-   - Fix pathCache to handle render requests with globs.
-   - Add cache for carbonsearch results
-
-**0.61**
-   - Fix rewrite for internal queries, because of an error some queries were sent as protobuf not as protobuf3
-   - gofmt the code!
-
-**0.60**
-   - **BREAKING CHANGE** Carbonzipper backend protocol changed to protobuf3. Though output for /render, /info /find can be both (format=protobuf3 for protobuf3, format=protobuf for protobuf2).
-
-**0.50**
-   - See commit log.
-
+See [Changes.md](https://github.com/dgryski/carbonzipper/blob/master/README.md)
 
 Upgrading to 0.60 from 0.50 or earlier
 --------------------------------------
