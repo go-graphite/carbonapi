@@ -18,7 +18,7 @@ Other pieces of the stack are:
 
 Changes
 -------
-See [Changes.md](https://github.com/dgryski/carbonzipper/blob/master/README.md)
+See [CHANGES.md](https://github.com/dgryski/carbonzipper/blob/master/CHANGES.md)
 
 Upgrading to 0.60 from 0.50 or earlier
 --------------------------------------
