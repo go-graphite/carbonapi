@@ -1012,6 +1012,7 @@ func main() {
 	probeForce <- 1
 
 	go Config.pathCache.ec.ApproximateCleaner(10 * time.Second)
+	go Config.searchCache.ec.ApproximateCleaner(10 * time.Second)
 
 	if *pidFile != "" {
 		pidfile.SetPidfilePath(*pidFile)
