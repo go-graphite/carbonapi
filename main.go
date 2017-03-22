@@ -33,6 +33,15 @@ import (
 	"go.uber.org/zap"
 )
 
+var DefaultLoggerConfig = zapwriter.Config{
+		Logger:           "",
+		File:             "stdout",
+		Level:            "info",
+		Encoding:         "console",
+		EncodingTime:     "iso8601",
+		EncodingDuration: "seconds",
+}
+
 // Config contains configuration values
 var Config = struct {
 	Backends    []string
@@ -73,14 +82,7 @@ var Config = struct {
 
 	pathCache:   pathCache{ec: expirecache.New(0)},
 	searchCache: pathCache{ec: expirecache.New(0)},
-	Logger: []zapwriter.Config{{
-		Logger:           "",
-		File:             "stdout",
-		Level:            "info",
-		Encoding:         "console",
-		EncodingTime:     "iso8601",
-		EncodingDuration: "seconds",
-	}},
+	Logger: []zapwriter.Config{DefaultLoggerConfig},
 }
 
 // Metrics contains grouped expvars for /debug/vars and graphite
@@ -183,7 +185,7 @@ func probeTlds() {
 }
 
 func singleGet(logName, uri, server string, ch chan<- serverResponse, started chan<- struct{}) {
-	logger := zapwriter.Logger(logName).With(zap.String("handler", logName))
+	logger := zapwriter.Logger(logName).With(zap.String("handler", "singleGet"))
 
 	u, err := url.Parse(server + uri)
 	if err != nil {
@@ -241,7 +243,7 @@ func singleGet(logName, uri, server string, ch chan<- serverResponse, started ch
 }
 
 func multiGet(logName string, servers []string, uri string) []serverResponse {
-	logger := zapwriter.Logger(logName).With(zap.String("handler", logName))
+	logger := zapwriter.Logger(logName).With(zap.String("handler", "multiGet"))
 	logger.Debug("querying servers",
 		zap.Strings("servers", servers),
 		zap.String("uri", uri),
@@ -320,7 +322,7 @@ type nameleaf struct {
 }
 
 func findUnpackPB(req *http.Request, responses []serverResponse) ([]*pb3.GlobMatch, map[string][]string) {
-	logger := zapwriter.Logger("find")
+	logger := zapwriter.Logger("find").With(zap.String("handler", "findUnpackPB"))
 
 	// metric -> [server1, ... ]
 	paths := make(map[string][]string)
@@ -416,6 +418,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 			// to find them on the stores
 			encodeFindResponse(format, originalQuery, w, matches)
 			accessLogger.Info("request served",
+				zap.Int("http_code", http.StatusOK),
 				zap.Duration("runtime_seconds", time.Since(t0)),
 			)
 			return
@@ -461,6 +464,11 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 			logger.Error("error quering backends",
 				zap.String("request", rewrite.RequestURI()),
 			)
+			accessLogger.Error("request failed",
+				zap.String("reason", "no responses to query"),
+				zap.Int("http_code", http.StatusInternalServerError),
+				zap.Duration("runtime_seconds", time.Since(t0)),
+			)
 			http.Error(w, "find: error querying backends", http.StatusInternalServerError)
 			return
 		}
@@ -479,6 +487,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 
 	encodeFindResponse(format, originalQuery, w, metrics)
 	accessLogger.Info("request served",
+		zap.Int("http_code", http.StatusOK),
 		zap.Duration("runtime_seconds", time.Since(t0)),
 	)
 }
@@ -540,12 +549,6 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 
 	req.ParseForm()
 	target := req.FormValue("target")
-
-	if target == "" {
-		http.Error(w, "empty target", http.StatusBadRequest)
-		return
-	}
-
 	format := req.FormValue("format")
 
 	accessLogger := zapwriter.Logger("access").With(
@@ -553,6 +556,16 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		zap.String("format", format),
 		zap.String("target", target),
 	)
+
+	if target == "" {
+		http.Error(w, "empty target", http.StatusBadRequest)
+		accessLogger.Error("request failed",
+			zap.String("reason", "empty target"),
+			zap.Int("http_code", http.StatusBadRequest),
+			zap.Duration("runtime_seconds", time.Since(t0)),
+		)
+		return
+	}
 
 	rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
 	v := rewrite.Query()
@@ -608,8 +621,10 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if len(responses) == 0 {
-		logger.Error("error querying backends",
+		accessLogger.Error("request failed",
+			zap.String("reason", "no results from backends"),
 			zap.String("request", req.URL.RequestURI()),
+			zap.Int("http_code", http.StatusInternalServerError),
 			zap.Strings("backends:", serverList),
 		)
 		http.Error(w, "render: error querying backends", http.StatusInternalServerError)
@@ -620,11 +635,10 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	servers, metrics := mergeResponses(req, responses)
 	if metrics == nil {
 		Metrics.RenderErrors.Add(1)
-		logger.Error("no decoded responses to merge",
+		accessLogger.Error("request failed",
+			zap.String("reason", "no decoded response to merge"),
 			zap.String("request", req.URL.RequestURI()),
-			zap.Strings("backends:", serverList),
-		)
-		accessLogger.Info("request failed",
+			zap.Int("http_code", http.StatusInternalServerError),
 			zap.Duration("runtime_seconds", time.Since(t0)),
 		)
 		http.Error(w, "no decoded responses to merge", http.StatusInternalServerError)
@@ -678,6 +692,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		e.Encode(presponse)
 	}
 	accessLogger.Info("request served",
+		zap.Int("http_code", http.StatusOK),
 		zap.Duration("runtime_seconds", time.Since(t0)),
 	)
 }
@@ -994,6 +1009,12 @@ func stripCommentHeader(cfg []byte) []byte {
 }
 
 func main() {
+	err := zapwriter.ApplyConfig([]zapwriter.Config{DefaultLoggerConfig})
+	if err != nil {
+		log.Fatal("Failed to initialize logger with default configuration")
+
+	}
+	logger := zapwriter.Logger("main")
 
 	configFile := flag.String("c", "", "config file (json)")
 	port := flag.Int("p", 0, "port to listen on")
@@ -1004,11 +1025,6 @@ func main() {
 	flag.Parse()
 
 	expvar.NewString("BuildVersion").Set(BuildVersion)
-
-	logger, err := zap.NewProduction()
-	if err != nil {
-		log.Fatal("Failed to initialize logging")
-	}
 
 	if *configFile == "" {
 		logger.Fatal("missing config file option")
