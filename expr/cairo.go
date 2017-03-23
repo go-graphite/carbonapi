@@ -297,7 +297,7 @@ var xAxisConfigs = []xAxisStruct{
 		maxInterval:   14 * Day,
 	},
 	{
-		seconds:       1200,
+		seconds:       1000,
 		minorGridUnit: Hour,
 		minorGridStep: 12,
 		majorGridUnit: Day,
