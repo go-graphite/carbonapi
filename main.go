@@ -610,6 +610,7 @@ func main() {
 
 	z := flag.String("z", "", "zipper")
 	port := flag.Int("p", 8080, "port")
+	addr := flag.String("addr", "0.0.0.0", "address")
 	l := flag.Int("l", 20, "concurrency limit")
 	cacheType := flag.String("cache", "mem", "cache type to use")
 	mc := flag.String("mc", "", "comma separated memcached server list")
@@ -781,14 +782,21 @@ func main() {
 	r.HandleFunc("/lb_check", lbcheckHandler)
 	r.HandleFunc("/", usageHandler)
 
-	logger.Logln("listening on port", *port)
 	handler := handlers.CompressHandler(r)
 	handler = handlers.CORS()(handler)
 	handler = handlers.ProxyHeaders(handler)
 	handler = handlers.CombinedLoggingHandler(mlog.GetOutput(), handler)
 
+	if p := os.Getenv("PORT"); p != "" {
+		*port, _ = strconv.Atoi(p)
+	}
+
+	listen := *addr + ":" + strconv.Itoa(*port)
+
+	logger.Logln("Listening on", listen)
+
 	err := gracehttp.Serve(&http.Server{
-		Addr:    ":" + strconv.Itoa(*port),
+		Addr:    listen,
 		Handler: handler,
 	})
 
