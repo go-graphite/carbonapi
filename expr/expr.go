@@ -259,6 +259,7 @@ func isNameChar(r byte) bool {
 		'0' <= r && r <= '9' ||
 		r == '.' || r == '_' || r == '-' || r == '*' || r == '?' || r == ':' ||
 		r == '[' || r == ']' ||
+		r == '^' || r == '$' ||
 		r == '<' || r == '>'
 }
 
@@ -704,17 +705,21 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		if err != nil {
 			return nil, err
 		}
-		method, err := getStringArg(e, 1)
-		if err != nil {
-			return nil, err
-		}
 
 		var results []*MetricData
 
 		for _, a := range arg {
 			r := *a
-			summary := summarizeValues(method, a.GetValues())
-			r.Name = fmt.Sprintf("%s (%s: %f)", a.GetName(), method, summary)
+			var legend string
+			for i := 1; i < len(e.args); i++ {
+				method, err := getStringArg(e, i)
+				if err != nil {
+					return nil, err
+				}
+				summary := summarizeValues(method, a.GetValues())
+				legend = fmt.Sprintf("%s (%s: %f)", legend, method, summary)
+			}
+			r.Name = fmt.Sprintf("%s%s", a.GetName(), legend)
 			results = append(results, &r)
 		}
 		return results, nil
@@ -3707,9 +3712,8 @@ func summarizeValues(f string, values []float64) float64 {
 	if len(values) == 0 {
 		return math.NaN()
 	}
-
 	switch f {
-	case "sum":
+	case "sum", "total":
 		for _, av := range values {
 			rv += av
 		}
