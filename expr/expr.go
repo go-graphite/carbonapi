@@ -705,17 +705,26 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		if err != nil {
 			return nil, err
 		}
-		method, err := getStringArg(e, 1)
-		if err != nil {
-			return nil, err
+
+		methods := make([]string, len(e.args)-1)
+		for i := 1; i < len(e.args); i++ {
+			method, err := getStringArg(e, i)
+			if err != nil {
+				return nil, err
+			}
+
+			methods[i-1] = method
 		}
 
 		var results []*MetricData
 
 		for _, a := range arg {
 			r := *a
-			summary := summarizeValues(method, a.GetValues())
-			r.Name = fmt.Sprintf("%s (%s: %f)", a.GetName(), method, summary)
+			for _, method := range methods {
+				summary := summarizeValues(method, a.GetValues())
+				r.Name = fmt.Sprintf("%s (%s: %f)", r.Name, method, summary)
+			}
+
 			results = append(results, &r)
 		}
 		return results, nil
