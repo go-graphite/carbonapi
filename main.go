@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"expvar"
@@ -32,6 +33,7 @@ import (
 	"github.com/peterbourgon/g2g"
 
 	"github.com/lomik/zapwriter"
+	"github.com/satori/go.uuid"
 	"go.uber.org/zap"
 )
 
@@ -249,12 +251,23 @@ dateStringSwitch:
 
 func renderHandler(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
-	logger := zapwriter.Logger("render")
+	uuid := uuid.NewV4()
+	logger := zapwriter.Logger("render").With(zap.String("uuid", uuid.String()))
+	// TODO: Migrate to context.WithTimeout
+	// ctx, _ := context.WithTimeout(context.TODO(), Config.ZipperTimeout)
+	ctx := context.WithValue(context.Background(), "carbonapi_uuid", uuid.String())
+	ctx = context.WithValue(ctx, "carbonapi_handler", "render")
+	ctx = context.WithValue(ctx, "carbonapi_request_url", r.URL.RequestURI())
+	ctx = context.WithValue(ctx, "carbonapi_referer", r.Referer())
+	username, _, _ := r.BasicAuth()
+	ctx = context.WithValue(ctx, "carbonapi_username", username)
+
 	zipperRequests := 0
 
 	Metrics.Requests.Add(1)
 	accessLogger := zapwriter.Logger("access").With(
 		zap.String("url", r.URL.RequestURI()),
+		zap.String("carbonapi_uuid", uuid.String()),
 	)
 
 	err := r.ParseForm()
@@ -388,7 +401,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			Config.Limiter.enter()
 			zipperRequests++
 
-			r, err := Config.zipper.Render(m.Metric, mfetch.From, mfetch.Until)
+			r, err := Config.zipper.Render(ctx, m.Metric, mfetch.From, mfetch.Until)
 			if err != nil {
 				logger.Error("render error",
 					zap.String("metric", m.Metric),
@@ -483,7 +496,15 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 func findHandler(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
-	logger := zapwriter.Logger("find")
+	uuid := uuid.NewV4()
+	logger := zapwriter.Logger("find").With(zap.String("uuid", uuid.String()))
+	// TODO: Migrate to context.WithTimeout
+	// ctx, _ := context.WithTimeout(context.TODO(), Config.ZipperTimeout)
+	ctx := context.WithValue(r.Context(), "carbonapi_uuid", uuid.String())
+	ctx = context.WithValue(ctx, "carbonapi_request_url", r.URL.RequestURI())
+	ctx = context.WithValue(ctx, "carbonapi_referer", r.Referer())
+	username, _, _ := r.BasicAuth()
+	ctx = context.WithValue(ctx, "carbonapi_username", username)
 
 	format := r.FormValue("format")
 	jsonp := r.FormValue("jsonp")
@@ -494,6 +515,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing parameter `query`", http.StatusBadRequest)
 		logger.Info("request failed",
 			zap.String("uri", r.RequestURI),
+			zap.String("uuid", uuid.String()),
 			zap.Int("http_code", http.StatusBadRequest),
 			zap.String("reason", "missing parameter `query`"),
 			zap.Duration("runtime", time.Since(t0)),
@@ -505,7 +527,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		format = "treejson"
 	}
 
-	globs, err := Config.zipper.Find(query)
+	globs, err := Config.zipper.Find(ctx, query)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		logger.Info("request failed",
@@ -665,11 +687,20 @@ func findTreejson(globs pb.GlobResponse) ([]byte, error) {
 
 func passthroughHandler(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
-	logger := zapwriter.Logger("passthrough")
+	uuid := uuid.NewV4()
+	logger := zapwriter.Logger("passthrough").With(zap.String("uuid", uuid.String()))
+	// TODO: Migrate to context.WithTimeout
+	// ctx, _ := context.WithTimeout(context.TODO(), Config.ZipperTimeout)
+	ctx := context.WithValue(r.Context(), "carbonapi_uuid", uuid.String())
+	ctx = context.WithValue(ctx, "carbonapi_handler", "passthrough")
+	ctx = context.WithValue(ctx, "carbonapi_request_url", r.URL.RequestURI())
+	ctx = context.WithValue(ctx, "carbonapi_referer", r.Referer())
+	username, _, _ := r.BasicAuth()
+	ctx = context.WithValue(ctx, "carbonapi_username", username)
 	var data []byte
 	var err error
 
-	if data, err = Config.zipper.Passthrough(r.URL.RequestURI()); err != nil {
+	if data, err = Config.zipper.Passthrough(ctx, r.URL.RequestURI()); err != nil {
 		logger.Info("request failed",
 			zap.String("uri", r.RequestURI),
 			zap.Duration("runtime", time.Since(t0)),
