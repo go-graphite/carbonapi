@@ -3719,7 +3719,7 @@ func summarizeValues(f string, values []float64) float64 {
 	}
 
 	switch f {
-	case "sum":
+	case "sum", "total":
 		for _, av := range values {
 			rv += av
 		}
