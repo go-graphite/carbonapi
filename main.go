@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"expvar"
@@ -18,32 +19,31 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
-	"context"
 
+	cu "github.com/dgryski/carbonapi/util"
 	pb2 "github.com/dgryski/carbonzipper/carbonzipperpb"
 	pb3 "github.com/dgryski/carbonzipper/carbonzipperpb3"
 	"github.com/dgryski/carbonzipper/mstats"
+	"github.com/dgryski/carbonzipper/util"
 	"github.com/dgryski/go-expirecache"
 	"github.com/dgryski/httputil"
-	cu "github.com/dgryski/carbonapi/util"
-	"github.com/dgryski/carbonzipper/util"
 	"github.com/facebookgo/grace/gracehttp"
 	"github.com/facebookgo/pidfile"
 	pickle "github.com/kisielk/og-rek"
 	"github.com/peterbourgon/g2g"
 
 	"github.com/lomik/zapwriter"
-	"go.uber.org/zap"
 	"github.com/satori/go.uuid"
+	"go.uber.org/zap"
 )
 
 var DefaultLoggerConfig = zapwriter.Config{
-		Logger:           "",
-		File:             "stdout",
-		Level:            "info",
-		Encoding:         "console",
-		EncodingTime:     "iso8601",
-		EncodingDuration: "seconds",
+	Logger:           "",
+	File:             "stdout",
+	Level:            "info",
+	Encoding:         "console",
+	EncodingTime:     "iso8601",
+	EncodingDuration: "seconds",
 }
 
 // Config contains configuration values
@@ -86,7 +86,7 @@ var Config = struct {
 
 	pathCache:   pathCache{ec: expirecache.New(0)},
 	searchCache: pathCache{ec: expirecache.New(0)},
-	Logger: []zapwriter.Config{DefaultLoggerConfig},
+	Logger:      []zapwriter.Config{DefaultLoggerConfig},
 }
 
 // Metrics contains grouped expvars for /debug/vars and graphite
@@ -393,15 +393,11 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	t0 := time.Now()
 	uuid := uuid.NewV4()
 	ctx := req.Context()
-	ctx = context.WithValue(ctx, "carbonzipper_uuid", uuid.String())
+	ctx = util.SetUUID(ctx, uuid.String())
 	logger := zapwriter.Logger("find").With(
 		zap.String("handler", "find"),
 		zap.String("carbonzipper_uuid", uuid.String()),
-		zap.String("carbonapi_uuid", cu.GetCtxString(ctx, "carbonapi_uuid")),
-		zap.String("carbonapi_handler", cu.GetCtxString(ctx, "carbonapi_handler")),
-		zap.String("carbonapi_request_url", cu.GetCtxString(ctx, "carbonapi_request_url")),
-		zap.String("carbonapi_referer", cu.GetCtxString(ctx, "carbonapi_referer")),
-		zap.String("carbonapi_username", cu.GetCtxString(ctx, "carbonapi_username")),
+		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
 	)
 	logger.Debug("got find request",
 		zap.String("request", req.URL.RequestURI()),
@@ -421,11 +417,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		zap.String("format", format),
 		zap.String("target", originalQuery),
 		zap.String("carbonzipper_uuid", uuid.String()),
-		zap.String("carbonapi_uuid", cu.GetCtxString(ctx, "carbonapi_uuid")),
-		zap.String("carbonapi_handler", cu.GetCtxString(ctx, "carbonapi_handler")),
-		zap.String("carbonapi_request_url", cu.GetCtxString(ctx, "carbonapi_request_url")),
-		zap.String("carbonapi_referer", cu.GetCtxString(ctx, "carbonapi_referer")),
-		zap.String("carbonapi_username", cu.GetCtxString(ctx, "carbonapi_username")),
+		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
 	)
 
 	v.Set("format", "protobuf3")
@@ -567,15 +559,11 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	uuid := uuid.NewV4()
 	ctx := req.Context()
 
-	ctx = context.WithValue(ctx, "carbonzipper_uuid", uuid.String())
+	ctx = util.SetUUID(ctx, uuid.String())
 	logger := zapwriter.Logger("render").With(
 		zap.String("handler", "render"),
 		zap.String("carbonzipper_uuid", uuid.String()),
-		zap.String("carbonapi_uuid", cu.GetCtxString(ctx, "carbonapi_uuid")),
-		zap.String("carbonapi_handler", cu.GetCtxString(ctx, "carbonapi_handler")),
-		zap.String("carbonapi_request_url", cu.GetCtxString(ctx, "carbonapi_request_url")),
-		zap.String("carbonapi_referer", cu.GetCtxString(ctx, "carbonapi_referer")),
-		zap.String("carbonapi_username", cu.GetCtxString(ctx, "carbonapi_username")),
+		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
 	)
 
 	logger.Debug("got render request",
@@ -593,11 +581,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		zap.String("format", format),
 		zap.String("target", target),
 		zap.String("carbonzipper_uuid", uuid.String()),
-		zap.String("carbonapi_uuid", cu.GetCtxString(ctx, "carbonapi_uuid")),
-		zap.String("carbonapi_handler", cu.GetCtxString(ctx, "carbonapi_handler")),
-		zap.String("carbonapi_request_url", cu.GetCtxString(ctx, "carbonapi_request_url")),
-		zap.String("carbonapi_referer", cu.GetCtxString(ctx, "carbonapi_referer")),
-		zap.String("carbonapi_username", cu.GetCtxString(ctx, "carbonapi_username")),
+		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
 	)
 
 	if target == "" {
@@ -915,15 +899,11 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 	t0 := time.Now()
 	uuid := uuid.NewV4()
 	ctx := req.Context()
-	ctx = context.WithValue(ctx, "carbonzipper_uuid", uuid.String())
+	ctx = util.SetUUID(ctx, uuid.String())
 	logger := zapwriter.Logger("info").With(
 		zap.String("handler", "info"),
 		zap.String("carbonzipper_uuid", uuid.String()),
-		zap.String("carbonapi_uuid", cu.GetCtxString(ctx, "carbonapi_uuid")),
-		zap.String("carbonapi_handler", cu.GetCtxString(ctx, "carbonapi_handler")),
-		zap.String("carbonapi_request_url", cu.GetCtxString(ctx, "carbonapi_request_url")),
-		zap.String("carbonapi_referer", cu.GetCtxString(ctx, "carbonapi_referer")),
-		zap.String("carbonapi_username", cu.GetCtxString(ctx, "carbonapi_username")),
+		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
 	)
 
 	logger.Debug("request",
@@ -944,11 +924,7 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 		zap.String("handler", "info"),
 		zap.String("target", target),
 		zap.String("carbonzipper_uuid", uuid.String()),
-		zap.String("carbonapi_uuid", cu.GetCtxString(ctx, "carbonapi_uuid")),
-		zap.String("carbonapi_handler", cu.GetCtxString(ctx, "carbonapi_handler")),
-		zap.String("carbonapi_request_url", cu.GetCtxString(ctx, "carbonapi_request_url")),
-		zap.String("carbonapi_referer", cu.GetCtxString(ctx, "carbonapi_referer")),
-		zap.String("carbonapi_username", cu.GetCtxString(ctx, "carbonapi_username")),
+		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
 	)
 
 	var serverList []string

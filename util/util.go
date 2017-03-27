@@ -1,12 +1,16 @@
 package util
 
 import (
-	"net/http"
 	"context"
+	"net/http"
 )
 
+type key int
+
 const (
-	ctx_header_prefix = "X-CTX-CarbonZipper-"
+	ctxHeaderUUID = "X-CTX-CarbonZipper-UUID"
+
+	uuidKey key = 0
 )
 
 func ifaceToString(v interface{}) string {
@@ -16,22 +20,31 @@ func ifaceToString(v interface{}) string {
 	return ""
 }
 
-func GetCtxString(ctx context.Context, key string) string {
-	return ifaceToString(ctx.Value(key))
+func getCtxString(ctx context.Context, k key) string {
+	return ifaceToString(ctx.Value(k))
+}
+
+func GetUUID(ctx context.Context) string {
+	return getCtxString(ctx, uuidKey)
+}
+
+func SetUUID(ctx context.Context, v string) context.Context {
+	return context.WithValue(ctx, uuidKey, v)
 }
 
 func ParseCtx(h http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		uuid := req.Header.Get(ctx_header_prefix + "UUID")
+		uuid := req.Header.Get(ctxHeaderUUID)
+
 		ctx := req.Context()
-		ctx = context.WithValue(ctx, "carbonzipper_uuid", uuid)
+		ctx = SetUUID(ctx, uuid)
 
 		h.ServeHTTP(rw, req.WithContext(ctx))
 	})
 }
 
 func MarshalCtx(ctx context.Context, response *http.Request) *http.Request {
-	response.Header.Add(ctx_header_prefix+"UUID", ifaceToString(ctx.Value("carbonzipper_uuid")))
+	response.Header.Add(ctxHeaderUUID, GetUUID(ctx))
 
 	return response
 }
