@@ -16,6 +16,7 @@ Changes
 -------
 **Master**
    - **[Breaking]** Logging migrated to zap (structured logging). Log format changed significantly. Old command line options removed. Please consult example.conf for a new config options and explanations
+   - **[Improvement]** Add context support. Also log context from carbonapi
 
 **0.63**
    - [Fix] carbonsearch query cache was never cleared
