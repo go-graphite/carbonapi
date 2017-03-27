@@ -22,6 +22,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/dgryski/carbonapi/expr"
+	"github.com/dgryski/carbonapi/util"
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb3"
 	"github.com/dgryski/carbonzipper/mstats"
 
@@ -252,23 +253,25 @@ dateStringSwitch:
 func renderHandler(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
 	uuid := uuid.NewV4()
-	logger := zapwriter.Logger("render").With(zap.String("uuid", uuid.String()))
 	// TODO: Migrate to context.WithTimeout
 	// ctx, _ := context.WithTimeout(context.TODO(), Config.ZipperTimeout)
-	ctx := context.WithValue(context.Background(), "carbonapi_uuid", uuid.String())
-	ctx = context.WithValue(ctx, "carbonapi_handler", "render")
-	ctx = context.WithValue(ctx, "carbonapi_request_url", r.URL.RequestURI())
-	ctx = context.WithValue(ctx, "carbonapi_referer", r.Referer())
+	ctx := util.SetUUID(context.Background(), uuid.String())
 	username, _, _ := r.BasicAuth()
-	ctx = context.WithValue(ctx, "carbonapi_username", username)
+	logger := zapwriter.Logger("render").With(
+		zap.String("carbonapi_uuid", uuid.String()),
+		zap.String("username", username),
+	)
+
+	accessLogger := zapwriter.Logger("access").With(
+		zap.String("handler", "render"),
+		zap.String("carbonapi_uuid", uuid.String()),
+		zap.String("username", username),
+		zap.String("url", r.URL.RequestURI()),
+	)
 
 	zipperRequests := 0
 
 	Metrics.Requests.Add(1)
-	accessLogger := zapwriter.Logger("access").With(
-		zap.String("url", r.URL.RequestURI()),
-		zap.String("carbonapi_uuid", uuid.String()),
-	)
 
 	err := r.ParseForm()
 	if err != nil {
@@ -367,8 +370,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var results []*expr.MetricData
-	var errors []string
+	errors := make(map[string]string)
 	metricMap := make(map[expr.MetricRequest][]*expr.MetricData)
+	fatalError := false
 
 	for _, target := range targets {
 
@@ -403,10 +407,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 			r, err := Config.zipper.Render(ctx, m.Metric, mfetch.From, mfetch.Until)
 			if err != nil {
-				logger.Error("render error",
-					zap.String("metric", m.Metric),
-					zap.Error(err),
-				)
+				errors[target] = err.Error()
 				Config.Limiter.leave()
 				continue
 			} else {
@@ -429,19 +430,24 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			}()
 			exprs, err := expr.EvalExpr(exp, from32, until32, metricMap)
 			if err != nil && err != expr.ErrSeriesDoesNotExist {
-				errors = append(errors, target+": "+err.Error())
+				errors[target] = err.Error()
+				fatalError = true
 				return
 			}
 			results = append(results, exprs...)
 		}()
 	}
 
-	if len(errors) > 0 {
-		errors = append([]string{"Encountered the following errors:"}, errors...)
-		http.Error(w, strings.Join(errors, "\n"), http.StatusBadRequest)
+	if len(errors) > 0 && fatalError {
+		httpErrors := make([]string, 0, len(errors))
+		httpErrors = append(httpErrors, "Following errors have occured:")
+		for _, e := range errors {
+			httpErrors = append(httpErrors, e)
+		}
+		http.Error(w, strings.Join(httpErrors, "\n"), http.StatusBadRequest)
 		accessLogger.Error("request failed",
 			zap.String("reason", "encoundered multiple errors"),
-			zap.Strings("errors", errors),
+			zap.Any("errors", errors),
 			zap.Duration("runtime", time.Since(t0)),
 			zap.Int("http_code", http.StatusBadRequest),
 		)
@@ -486,10 +492,17 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		Config.queryCache.set(cacheKey, body, cacheTimeout)
 	}
 
+	gotErrors := false
+	if len(errors) > 0 {
+		gotErrors = true
+	}
+
 	accessLogger.Info("request served",
 		zap.String("uri", r.RequestURI),
 		zap.Duration("runtime", time.Since(t0)),
 		zap.Int("http_code", http.StatusOK),
+		zap.Bool("have_non_fatal_errors", gotErrors),
+		zap.Any("errors", errors),
 		zap.Int("zipper_requests", zipperRequests),
 	)
 }
@@ -497,25 +510,25 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 func findHandler(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
 	uuid := uuid.NewV4()
-	logger := zapwriter.Logger("find").With(zap.String("uuid", uuid.String()))
 	// TODO: Migrate to context.WithTimeout
 	// ctx, _ := context.WithTimeout(context.TODO(), Config.ZipperTimeout)
-	ctx := context.WithValue(r.Context(), "carbonapi_uuid", uuid.String())
-	ctx = context.WithValue(ctx, "carbonapi_request_url", r.URL.RequestURI())
-	ctx = context.WithValue(ctx, "carbonapi_referer", r.Referer())
+	ctx := util.SetUUID(context.Background(), uuid.String())
 	username, _, _ := r.BasicAuth()
-	ctx = context.WithValue(ctx, "carbonapi_username", username)
 
 	format := r.FormValue("format")
 	jsonp := r.FormValue("jsonp")
 
 	query := r.FormValue("query")
+	accessLogger := zapwriter.Logger("access").With(
+		zap.String("handler", "find"),
+		zap.String("carbonapi_uuid", uuid.String()),
+		zap.String("username", username),
+		zap.String("url", r.URL.RequestURI()),
+	)
 
 	if query == "" {
 		http.Error(w, "missing parameter `query`", http.StatusBadRequest)
-		logger.Info("request failed",
-			zap.String("uri", r.RequestURI),
-			zap.String("uuid", uuid.String()),
+		accessLogger.Info("request failed",
 			zap.Int("http_code", http.StatusBadRequest),
 			zap.String("reason", "missing parameter `query`"),
 			zap.Duration("runtime", time.Since(t0)),
@@ -530,7 +543,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	globs, err := Config.zipper.Find(ctx, query)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		logger.Info("request failed",
+		accessLogger.Info("request failed",
 			zap.String("uri", r.RequestURI),
 			zap.Int("http_code", http.StatusInternalServerError),
 			zap.String("reason", err.Error()),
@@ -554,7 +567,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		logger.Info("request failed",
+		accessLogger.Info("request failed",
 			zap.String("uri", r.RequestURI),
 			zap.Int("http_code", http.StatusInternalServerError),
 			zap.String("reason", err.Error()),
@@ -565,7 +578,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 
 	writeResponse(w, b, format, jsonp)
 
-	logger.Info("request served",
+	accessLogger.Info("request served",
 		zap.String("uri", r.RequestURI),
 		zap.Int("http_code", http.StatusOK),
 		zap.Duration("runtime", time.Since(t0)),
@@ -688,20 +701,20 @@ func findTreejson(globs pb.GlobResponse) ([]byte, error) {
 func passthroughHandler(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
 	uuid := uuid.NewV4()
-	logger := zapwriter.Logger("passthrough").With(zap.String("uuid", uuid.String()))
 	// TODO: Migrate to context.WithTimeout
 	// ctx, _ := context.WithTimeout(context.TODO(), Config.ZipperTimeout)
-	ctx := context.WithValue(r.Context(), "carbonapi_uuid", uuid.String())
-	ctx = context.WithValue(ctx, "carbonapi_handler", "passthrough")
-	ctx = context.WithValue(ctx, "carbonapi_request_url", r.URL.RequestURI())
-	ctx = context.WithValue(ctx, "carbonapi_referer", r.Referer())
+	ctx := util.SetUUID(context.Background(), uuid.String())
 	username, _, _ := r.BasicAuth()
-	ctx = context.WithValue(ctx, "carbonapi_username", username)
+	accessLogger := zapwriter.Logger("access").With(
+		zap.String("username", username),
+		zap.String("handler", "passtrhough"),
+		zap.String("carbonapi_uuid", uuid.String()),
+	)
 	var data []byte
 	var err error
 
 	if data, err = Config.zipper.Passthrough(ctx, r.URL.RequestURI()); err != nil {
-		logger.Info("request failed",
+		accessLogger.Info("request failed",
 			zap.String("uri", r.RequestURI),
 			zap.Duration("runtime", time.Since(t0)),
 			zap.Int("http_code", http.StatusBadRequest),
@@ -710,7 +723,7 @@ func passthroughHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(data)
-	logger.Info("request served",
+	accessLogger.Info("request served",
 		zap.String("uri", r.RequestURI),
 		zap.Duration("runtime", time.Since(t0)),
 		zap.Int("http_code", http.StatusOK),
@@ -719,11 +732,12 @@ func passthroughHandler(w http.ResponseWriter, r *http.Request) {
 
 func lbcheckHandler(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
-	logger := zapwriter.Logger("lbcheck")
+	accessLogger := zapwriter.Logger("access")
 
 	w.Write([]byte("Ok\n"))
 
-	logger.Info("request served",
+	accessLogger.Info("request served",
+		zap.String("handler", "lbcheck"),
 		zap.String("uri", r.RequestURI),
 		zap.Duration("runtime", time.Since(t0)),
 		zap.Int("http_code", http.StatusOK),
