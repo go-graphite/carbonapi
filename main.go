@@ -116,10 +116,6 @@ const (
 	contentTypeSVG        = "image/svg+xml"
 )
 
-type renderStats struct {
-	zipperRequests int
-}
-
 func buildParseErrorString(target, e string, err error) string {
 	msg := fmt.Sprintf("%s\n\n%-20s: %s\n", http.StatusText(http.StatusBadRequest), "Target", target)
 	if err != nil {
