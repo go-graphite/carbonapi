@@ -269,8 +269,10 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		zap.String("carbonapi_uuid", uuid.String()),
 		zap.String("username", username),
 		zap.String("url", r.URL.RequestURI()),
+		zap.String("peer", r.RemoteAddr),
 	)
 
+	size := 0
 	zipperRequests := 0
 
 	Metrics.Requests.Add(1)
@@ -355,8 +357,10 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		writeResponse(w, response, format, jsonp)
 		accessLogger.Info("request served",
 			zap.Bool("from_cache", true),
-			zap.Int("http_code", http.StatusOK),
 			zap.Duration("runtime", time.Since(t0)),
+			zap.Int("http_code", http.StatusOK),
+			zap.Int("carbonzipper_response_size_bytes", 0),
+			zap.Int("carbonapi_response_size_bytes", len(response)),
 		)
 		return
 	}
@@ -446,6 +450,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 						r, err := Config.zipper.Render(ctx, m.GetPath(), from, until)
 						if err == nil {
 							rptr = r[0]
+							size += rptr.Size()
 						} else {
 							logger.Error("render error",
 								zap.String("target", m.GetPath()),
@@ -479,6 +484,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 					metricMap[mfetch] = r
 				}
 				Config.Limiter.leave()
+				for i := range r {
+					size += r[i].Size()
+				}
 			}
 
 			expr.SortMetrics(metricMap[mfetch], mfetch)
@@ -569,6 +577,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		zap.Bool("have_non_fatal_errors", gotErrors),
 		zap.Any("errors", errors),
 		zap.Int("zipper_requests", zipperRequests),
+		zap.Int("zipper_response_size_bytes", size),
+		zap.Int("carbonapi_response_size_bytes", len(body)),
 	)
 }
 
@@ -589,6 +599,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		zap.String("carbonapi_uuid", uuid.String()),
 		zap.String("username", username),
 		zap.String("url", r.URL.RequestURI()),
+		zap.String("peer", r.RemoteAddr),
 	)
 
 	if query == "" {
@@ -774,6 +785,7 @@ func passthroughHandler(w http.ResponseWriter, r *http.Request) {
 		zap.String("username", username),
 		zap.String("handler", "passtrhough"),
 		zap.String("carbonapi_uuid", uuid.String()),
+		zap.String("peer", r.RemoteAddr),
 	)
 	var data []byte
 	var err error
@@ -804,6 +816,7 @@ func lbcheckHandler(w http.ResponseWriter, r *http.Request) {
 	accessLogger.Info("request served",
 		zap.String("handler", "lbcheck"),
 		zap.String("uri", r.RequestURI),
+		zap.String("peer", r.RemoteAddr),
 		zap.Duration("runtime", time.Since(t0)),
 		zap.Int("http_code", http.StatusOK),
 	)
@@ -830,7 +843,7 @@ var DefaultLoggerConfig = zapwriter.Config{
 }
 
 type cacheConfig struct {
-	Type             string
+	Type             string   `yaml:"type"`
 	Size             int      `yaml:"size_mb"`
 	MemcachedServers []string `yaml:"memcachedServers"`
 }
@@ -842,17 +855,17 @@ type graphiteConfig struct {
 }
 
 var Config = struct {
-	Logger          []zapwriter.Config
+	Logger          []zapwriter.Config `yaml:"logger"`
 	ZipperUrl       string `yaml:"zipper"`
-	Listen          string
-	Concurency      int
-	Cache           cacheConfig
-	Cpus            int
+	Listen          string `yaml:"listen"`
+	Concurency      int `yaml:"concurency"`
+	Cache           cacheConfig `yaml:"cache"`
+	Cpus            int `yaml:"cpus"`
 	TimezoneString  string `yaml:"tz"`
-	Graphite        graphiteConfig
-	IdleConnections int
-	PidFile         string
-	SendGlobsAsIs   bool
+	Graphite        graphiteConfig `yaml:"graphite"`
+	IdleConnections int `yaml:"idleConnections"`
+	PidFile         string `yaml:"pidFile"`
+	SendGlobsAsIs   bool `yaml:"sendGlobsAsIs"`
 
 	queryCache bytesCache
 	findCache  bytesCache
@@ -1032,12 +1045,7 @@ func main() {
 
 	logger.Info("starting carbonapi",
 		zap.String("build_version", BuildVersion),
-		zap.String("listen_address", Config.Listen),
-		zap.Any("zipper", Config.ZipperUrl),
-		zap.Bool("send_globs_as_is", Config.SendGlobsAsIs),
-		zap.Int("GOMAXPROCS", Config.Cpus),
-		zap.Any("graphite_configuration", Config.Graphite),
-		zap.Any("cache", Config.Cache),
+		zap.Any("config", Config),
 	)
 
 	if host != "" {
