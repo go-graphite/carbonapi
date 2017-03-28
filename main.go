@@ -207,7 +207,7 @@ func singleGet(ctx context.Context, logger *zap.Logger, uri, server string, ch c
 			zap.Error(err),
 		)
 	}
-	req = util.MarshalCtx(ctx, req)
+	req = cu.MarshalCtx(ctx, util.MarshalCtx(ctx, req))
 
 	logger = logger.With(zap.String("query", server+"/"+uri))
 	Limiter.enter(server)
