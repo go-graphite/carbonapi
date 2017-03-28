@@ -270,6 +270,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		zap.String("username", username),
 		zap.String("url", r.URL.RequestURI()),
 		zap.String("peer", r.RemoteAddr),
+		zap.String("referer", r.Referer()),
 	)
 
 	size := 0
@@ -600,6 +601,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		zap.String("username", username),
 		zap.String("url", r.URL.RequestURI()),
 		zap.String("peer", r.RemoteAddr),
+		zap.String("referer", r.Referer()),
 	)
 
 	if query == "" {
@@ -786,6 +788,7 @@ func passthroughHandler(w http.ResponseWriter, r *http.Request) {
 		zap.String("handler", "passtrhough"),
 		zap.String("carbonapi_uuid", uuid.String()),
 		zap.String("peer", r.RemoteAddr),
+		zap.String("referer", r.Referer()),
 	)
 	var data []byte
 	var err error
@@ -819,6 +822,7 @@ func lbcheckHandler(w http.ResponseWriter, r *http.Request) {
 		zap.String("peer", r.RemoteAddr),
 		zap.Duration("runtime", time.Since(t0)),
 		zap.Int("http_code", http.StatusOK),
+		zap.String("referer", r.Referer()),
 	)
 }
 
