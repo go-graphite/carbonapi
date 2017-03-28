@@ -149,7 +149,7 @@ invert(seriesList)                                                        |  0.9
 isNonNull(seriesList)                                                     |  0.9.11 | Supported (also isNotNull alias)
 keepLastValue(seriesList, limit=inf)                                      |  0.9.14 | Supported
 kolmogorovSmirnovTest2(series, series, windowSize) alias ksTest2()        |  not in graphite | Experimental
-legendValue(seriesList, *valueTypes)                                      |  0.9.10 |
+legendValue(seriesList, *valueTypes)                                      |  0.9.10 | Supported
 limit(seriesList, n)                                                      |  0.9.9  | Supported
 lineWidth(seriesList, width)                                              |  0.9.9  |
 linearRegression(seriesList, startSourceAt=None, endSourceAt=None)        |  latest |
@@ -182,7 +182,7 @@ pow(seriesList, factor)                                                   |  0.9
 randomWalkFunction(name, step=60), Short Alias: randomWalk()              |  0.9.9  | Supported
 rangeOfSeries(*seriesLists)                                               |  0.9.10 | Supported
 reduceSeries(seriesLists, reduceFunction, reduceNode, *reduceMatchers)    |  0.9.14 |
-+ reduce() Short form of reduceSeries()                                   |  - - -  |
+reduce()                                                                  |  - - -  | Short form of reduceSeries()
 removeAbovePercentile(seriesList, n)                                      |  0.9.10 | Supported
 removeAboveValue(seriesList, n)                                           |  0.9.10 | Supported
 removeBelowPercentile(seriesList, n)                                      |  0.9.10 | Supported
