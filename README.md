@@ -10,13 +10,15 @@ In our testing it has shown to be 5x-10x faster than requesting data from graphi
 
 To use this, you must have a [carbonzipper](https://github.com/dgryski/carbonzipper)
 install, which in turn requires that your
-carbon stores are running [carbonserver](https://github.com/grobian/carbonserver)
+carbon stores are running [go-carbon](https://github.com/lomik/go-carbon) (Note: you need to enable carbonserver in go-carbon)
 
-The only required parameter is the address of the zipper to connect to.
+It's possible to talk directly with `go-carbon`'s carbonserver module, but custom `/info` handler won't work.
 
-$ ./carbonapi -z=http://zipper:8080
+The only required parameter is the path to a config file. For an example see `carbonapi.example.yaml`
 
-Request metrics will be dumped to graphite if the -graphite flag is provided,
+$ ./carbonapi -config /etc/carbonapi.yaml
+
+Request metrics will be dumped to graphite if coresponding config options are set,
 or if the GRAPHITEHOST/GRAPHITEPORT environment variables are found.
 
 Request data will be stored in memory (default) or in memcache.
@@ -33,7 +35,7 @@ $ brew install cairo --with-x11
 
 Set `PKG_CONFIG_PATH` and `-tags cairo` when building:
 
-$ PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig go build -v -tags cairo
+`$ PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig go build -v -tags cairo`
 
 Acknowledgement
 ---------------
