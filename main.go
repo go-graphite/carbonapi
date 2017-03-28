@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"expvar"
@@ -19,9 +20,11 @@ import (
 	"sync/atomic"
 	"time"
 
+	cu "github.com/dgryski/carbonapi/util"
 	pb2 "github.com/dgryski/carbonzipper/carbonzipperpb"
 	pb3 "github.com/dgryski/carbonzipper/carbonzipperpb3"
 	"github.com/dgryski/carbonzipper/mstats"
+	"github.com/dgryski/carbonzipper/util"
 	"github.com/dgryski/go-expirecache"
 	"github.com/dgryski/httputil"
 	"github.com/facebookgo/grace/gracehttp"
@@ -30,16 +33,17 @@ import (
 	"github.com/peterbourgon/g2g"
 
 	"github.com/lomik/zapwriter"
+	"github.com/satori/go.uuid"
 	"go.uber.org/zap"
 )
 
 var DefaultLoggerConfig = zapwriter.Config{
-		Logger:           "",
-		File:             "stdout",
-		Level:            "info",
-		Encoding:         "console",
-		EncodingTime:     "iso8601",
-		EncodingDuration: "seconds",
+	Logger:           "",
+	File:             "stdout",
+	Level:            "info",
+	Encoding:         "console",
+	EncodingTime:     "iso8601",
+	EncodingDuration: "seconds",
 }
 
 // Config contains configuration values
@@ -82,7 +86,7 @@ var Config = struct {
 
 	pathCache:   pathCache{ec: expirecache.New(0)},
 	searchCache: pathCache{ec: expirecache.New(0)},
-	Logger: []zapwriter.Config{DefaultLoggerConfig},
+	Logger:      []zapwriter.Config{DefaultLoggerConfig},
 }
 
 // Metrics contains grouped expvars for /debug/vars and graphite
@@ -150,9 +154,10 @@ var probeForce = make(chan int)
 
 func doProbe() {
 	logger := zapwriter.Logger("probe")
+	ctx := context.WithValue(context.TODO(), "carbonzipper_handler", "probe")
 	query := "/metrics/find/?format=protobuf3&query=%2A"
 
-	responses := multiGet("probe", Config.Backends, query)
+	responses := multiGet(ctx, logger, Config.Backends, query)
 
 	if len(responses) == 0 {
 		return
@@ -184,8 +189,8 @@ func probeTlds() {
 	}
 }
 
-func singleGet(logName, uri, server string, ch chan<- serverResponse, started chan<- struct{}) {
-	logger := zapwriter.Logger(logName).With(zap.String("handler", "singleGet"))
+func singleGet(ctx context.Context, logger *zap.Logger, uri, server string, ch chan<- serverResponse, started chan<- struct{}) {
+	logger = logger.With(zap.String("handler", "singleGet"))
 
 	u, err := url.Parse(server + uri)
 	if err != nil {
@@ -196,16 +201,19 @@ func singleGet(logName, uri, server string, ch chan<- serverResponse, started ch
 		ch <- serverResponse{server, nil}
 		return
 	}
-	req := http.Request{
-		URL:    u,
-		Header: make(http.Header),
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		logger.Error("failed to create new request",
+			zap.Error(err),
+		)
 	}
+	req = util.MarshalCtx(ctx, req)
 
 	logger = logger.With(zap.String("query", server+"/"+uri))
 	Limiter.enter(server)
 	started <- struct{}{}
 	defer Limiter.leave(server)
-	resp, err := storageClient.Do(&req)
+	resp, err := storageClient.Do(req.WithContext(ctx))
 	if err != nil {
 		logger.Error("query error",
 			zap.Error(err),
@@ -242,8 +250,8 @@ func singleGet(logName, uri, server string, ch chan<- serverResponse, started ch
 	ch <- serverResponse{server, body}
 }
 
-func multiGet(logName string, servers []string, uri string) []serverResponse {
-	logger := zapwriter.Logger(logName).With(zap.String("handler", "multiGet"))
+func multiGet(ctx context.Context, logger *zap.Logger, servers []string, uri string) []serverResponse {
+	logger = logger.With(zap.String("handler", "multiGet"))
 	logger.Debug("querying servers",
 		zap.Strings("servers", servers),
 		zap.String("uri", uri),
@@ -254,7 +262,7 @@ func multiGet(logName string, servers []string, uri string) []serverResponse {
 	startedch := make(chan struct{}, len(servers))
 
 	for _, server := range servers {
-		go singleGet(logName, uri, server, ch, startedch)
+		go singleGet(ctx, logger, uri, server, ch, startedch)
 	}
 
 	var response []serverResponse
@@ -370,9 +378,9 @@ const (
 	contentTypePickle   = "application/pickle"
 )
 
-func fetchCarbonsearchResponse(req *http.Request, rewrite *url.URL) []string {
+func fetchCarbonsearchResponse(ctx context.Context, logger *zap.Logger, req *http.Request, rewrite *url.URL) []string {
 	// Send query to SearchBackend. The result is []queries for StorageBackends
-	searchResponse := multiGet("find", []string{Config.SearchBackend}, rewrite.RequestURI())
+	searchResponse := multiGet(ctx, logger, []string{Config.SearchBackend}, rewrite.RequestURI())
 	m, _ := findUnpackPB(req, searchResponse)
 	queries := make([]string, 0, len(m))
 	for _, v := range m {
@@ -383,7 +391,14 @@ func fetchCarbonsearchResponse(req *http.Request, rewrite *url.URL) []string {
 
 func findHandler(w http.ResponseWriter, req *http.Request) {
 	t0 := time.Now()
-	logger := zapwriter.Logger("find").With(zap.String("handler", "find"))
+	uuid := uuid.NewV4()
+	ctx := req.Context()
+	ctx = util.SetUUID(ctx, uuid.String())
+	logger := zapwriter.Logger("find").With(
+		zap.String("handler", "find"),
+		zap.String("carbonzipper_uuid", uuid.String()),
+		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
+	)
 	logger.Debug("got find request",
 		zap.String("request", req.URL.RequestURI()),
 	)
@@ -401,6 +416,8 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		zap.String("handler", "render"),
 		zap.String("format", format),
 		zap.String("target", originalQuery),
+		zap.String("carbonzipper_uuid", uuid.String()),
+		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
 	)
 
 	v.Set("format", "protobuf3")
@@ -411,7 +428,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		// 'completer' requests are translated into standard Find requests with
 		// a trailing '*' by graphite-web
 		if strings.HasSuffix(queries[0], "*") {
-			searchCompleterResponse := multiGet("find", []string{Config.SearchBackend}, rewrite.RequestURI())
+			searchCompleterResponse := multiGet(ctx, logger, []string{Config.SearchBackend}, rewrite.RequestURI())
 			matches, _ := findUnpackPB(nil, searchCompleterResponse)
 			// this is a completer request, and so we should return the set of
 			// virtual metrics returned by carbonsearch verbatim, rather than trying
@@ -426,7 +443,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		var ok bool
 		if queries, ok = Config.searchCache.get(queries[0]); !ok || queries == nil || len(queries) == 0 {
 			Metrics.SearchCacheMisses.Add(1)
-			queries = fetchCarbonsearchResponse(req, rewrite)
+			queries = fetchCarbonsearchResponse(ctx, logger, req, rewrite)
 			Config.searchCache.set(queries[0], queries)
 		} else {
 			Metrics.SearchCacheHits.Add(1)
@@ -458,7 +475,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 			Metrics.CacheHits.Add(1)
 		}
 
-		responses := multiGet("find", backends, rewrite.RequestURI())
+		responses := multiGet(ctx, logger, backends, rewrite.RequestURI())
 
 		if len(responses) == 0 {
 			logger.Error("error quering backends",
@@ -539,7 +556,15 @@ func encodeFindResponse(format, query string, w http.ResponseWriter, metrics []*
 
 func renderHandler(w http.ResponseWriter, req *http.Request) {
 	t0 := time.Now()
-	logger := zapwriter.Logger("render").With(zap.String("handler", "render"))
+	uuid := uuid.NewV4()
+	ctx := req.Context()
+
+	ctx = util.SetUUID(ctx, uuid.String())
+	logger := zapwriter.Logger("render").With(
+		zap.String("handler", "render"),
+		zap.String("carbonzipper_uuid", uuid.String()),
+		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
+	)
 
 	logger.Debug("got render request",
 		zap.String("request", req.URL.RequestURI()),
@@ -555,6 +580,8 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		zap.String("handler", "render"),
 		zap.String("format", format),
 		zap.String("target", target),
+		zap.String("carbonzipper_uuid", uuid.String()),
+		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
 	)
 
 	if target == "" {
@@ -586,7 +613,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 			findValues.Set("query", target)
 			findURL.RawQuery = findValues.Encode()
 
-			metrics = fetchCarbonsearchResponse(req, findURL)
+			metrics = fetchCarbonsearchResponse(ctx, logger, req, findURL)
 			Config.searchCache.set(target, metrics)
 		} else {
 			Metrics.SearchCacheHits.Add(1)
@@ -604,7 +631,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 				Metrics.CacheHits.Add(1)
 			}
 
-			responses = append(responses, multiGet("render", serverList, rewrite.RequestURI())...)
+			responses = append(responses, multiGet(ctx, logger, serverList, rewrite.RequestURI())...)
 		}
 	} else {
 		rewrite.RawQuery = v.Encode()
@@ -617,7 +644,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 			Metrics.CacheHits.Add(1)
 		}
 
-		responses = multiGet("render", serverList, rewrite.RequestURI())
+		responses = multiGet(ctx, logger, serverList, rewrite.RequestURI())
 	}
 
 	if len(responses) == 0 {
@@ -870,7 +897,14 @@ func infoUnpackPB(req *http.Request, format string, responses []serverResponse) 
 
 func infoHandler(w http.ResponseWriter, req *http.Request) {
 	t0 := time.Now()
-	logger := zapwriter.Logger("info").With(zap.String("handler", "info"))
+	uuid := uuid.NewV4()
+	ctx := req.Context()
+	ctx = util.SetUUID(ctx, uuid.String())
+	logger := zapwriter.Logger("info").With(
+		zap.String("handler", "info"),
+		zap.String("carbonzipper_uuid", uuid.String()),
+		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
+	)
 
 	logger.Debug("request",
 		zap.String("request", req.URL.RequestURI()),
@@ -889,6 +923,8 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 	accessLogger := zapwriter.Logger("access").With(
 		zap.String("handler", "info"),
 		zap.String("target", target),
+		zap.String("carbonzipper_uuid", uuid.String()),
+		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
 	)
 
 	var serverList []string
@@ -908,7 +944,7 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 	v.Set("format", "protobuf3")
 	rewrite.RawQuery = v.Encode()
 
-	responses := multiGet("info", serverList, rewrite.RequestURI())
+	responses := multiGet(ctx, logger, serverList, rewrite.RequestURI())
 
 	if len(responses) == 0 {
 		logger.Error("error querying backends",
@@ -1123,9 +1159,9 @@ func main() {
 	Metrics.SearchCacheItems = expvar.Func(func() interface{} { return Config.searchCache.ec.Items() })
 	expvar.Publish("searchCacheItems", Metrics.SearchCacheItems)
 
-	http.HandleFunc("/metrics/find/", httputil.TrackConnections(httputil.TimeHandler(findHandler, bucketRequestTimes)))
-	http.HandleFunc("/render/", httputil.TrackConnections(httputil.TimeHandler(renderHandler, bucketRequestTimes)))
-	http.HandleFunc("/info/", httputil.TrackConnections(httputil.TimeHandler(infoHandler, bucketRequestTimes)))
+	http.HandleFunc("/metrics/find/", httputil.TrackConnections(httputil.TimeHandler(cu.ParseCtx(findHandler), bucketRequestTimes)))
+	http.HandleFunc("/render/", httputil.TrackConnections(httputil.TimeHandler(cu.ParseCtx(renderHandler), bucketRequestTimes)))
+	http.HandleFunc("/info/", httputil.TrackConnections(httputil.TimeHandler(cu.ParseCtx(infoHandler), bucketRequestTimes)))
 	http.HandleFunc("/lb_check", lbCheckHandler)
 
 	// nothing in the config? check the environment
