@@ -17,6 +17,11 @@ cache:
 cpus: 0
 # Timezone, default - local
 tz: ""
+# If 'true', carbonapi will send requests as is, with globs and braces
+# Otherwise for each request it will generate /metrics/find and then /render
+# individual metrics.
+# true - faster, but will cause carbonzipper to consume much more RAM.
+sendGlobsAsIs: false
 graphite:
     # Host:port where to send internal metrics
     # Empty = disabled

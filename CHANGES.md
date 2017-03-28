@@ -21,6 +21,7 @@ CHANGELOG
  - [Improvement] Allow '^' and '$' as name characters. Required for carbonsearch text-match pattern anchoring.
  - [Improvement] Allow to bind to arbitrary IP:Port. (thx to @zdykstra, #194), Fixes #176.
  - [Improvement] Extend legendValues to append multiple values.
+ - [Improvement] Add a switch to turn off propagating globbed requests to carbonzipper (was introduced in 0.7.0)
  - [Feature] Make prefix configurable (thx to @StephenPCG, #189)
  - [Fix] Fi issue with missing labels on graphs > 14d
  - [Fix] Allow expressions to use 'total' instead of 'sum'. Required for graphite compatibility.
