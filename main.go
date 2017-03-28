@@ -1045,7 +1045,13 @@ func main() {
 
 	logger.Info("starting carbonapi",
 		zap.String("build_version", BuildVersion),
-		zap.Any("config", Config),
+		zap.String("listen_address", Config.Listen),
+		zap.Int("concurency", Config.Concurency),
+		zap.Int("idle_connections", Config.IdleConnections),
+		zap.Any("zipper", Config.ZipperUrl),
+		zap.Bool("send_globs_as_is", Config.SendGlobsAsIs),
+		zap.Int("GOMAXPROCS", Config.Cpus),
+		zap.Any("graphite_configuration", Config.Graphite),
 	)
 
 	if host != "" {
