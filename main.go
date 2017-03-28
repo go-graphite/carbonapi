@@ -154,16 +154,32 @@ var probeForce = make(chan int)
 
 func doProbe() {
 	logger := zapwriter.Logger("probe")
-	ctx := context.WithValue(context.TODO(), "carbonzipper_handler", "probe")
+	// Generate unique ID on every restart
+	uuid := uuid.NewV4()
+	ctx := util.SetUUID(context.Background(), uuid.String())
 	query := "/metrics/find/?format=protobuf3&query=%2A"
 
 	responses := multiGet(ctx, logger, Config.Backends, query)
 
 	if len(responses) == 0 {
+		logger.Info("TLD Probe returned empty set")
 		return
 	}
 
 	_, paths := findUnpackPB(nil, responses)
+
+	incompleteResponse := false
+	if len(responses) != len(Config.Backends) {
+		incompleteResponse = true
+	}
+
+	logger.Info("TLD Probe run results",
+		zap.String("carbonzipper_uuid", uuid.String()),
+		zap.Int("paths_count", len(paths)),
+		zap.Int("responses_received", len(responses)),
+		zap.Int("backends", len(Config.Backends)),
+		zap.Bool("incomplete_response", incompleteResponse),
+	)
 
 	// update our cache of which servers have which metrics
 	for k, v := range paths {
@@ -171,6 +187,7 @@ func doProbe() {
 		logger.Debug("TLD Probe",
 			zap.String("path", k),
 			zap.Strings("servers", v),
+			zap.String("carbonzipper_uuid", uuid.String()),
 		)
 	}
 }
