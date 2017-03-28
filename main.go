@@ -188,7 +188,7 @@ func dateParamToEpoch(s string, qtz string, d int64) int32 {
 	case "midnight", "noon", "teatime":
 		yy, mm, dd := timeNow().Date()
 		hh, min, _ := parseTime(s) // error ignored, we know it's valid
-		dt := time.Date(yy, mm, dd, hh, min, 0, 0, Config.DefaultTimeZone)
+		dt := time.Date(yy, mm, dd, hh, min, 0, 0, Config.defaultTimeZone)
 		return int32(dt.Unix())
 	}
 
@@ -212,7 +212,7 @@ func dateParamToEpoch(s string, qtz string, d int64) int32 {
 		return int32(d)
 	}
 
-	var tz = Config.DefaultTimeZone
+	var tz = Config.defaultTimeZone
 	if qtz != "" {
 		if z, err := time.LoadLocation(qtz); err != nil {
 			tz = z
@@ -247,7 +247,7 @@ dateStringSwitch:
 	}
 
 	yy, mm, dd := t.Date()
-	t = time.Date(yy, mm, dd, hour, minute, 0, 0, Config.DefaultTimeZone)
+	t = time.Date(yy, mm, dd, hour, minute, 0, 0, Config.defaultTimeZone)
 
 	return int32(t.Unix())
 }
@@ -443,7 +443,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 					}
 					Metrics.RenderRequests.Add(1)
 					leaves++
-					Config.Limiter.enter()
+					Config.limiter.enter()
 					zipperRequests++
 					go func(m *pb.GlobMatch, from, until int32) {
 						var rptr *expr.MetricData
@@ -458,7 +458,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 							)
 						}
 						rch <- rptr
-						Config.Limiter.leave()
+						Config.limiter.leave()
 					}(m, mfetch.From, mfetch.Until)
 				}
 
@@ -472,18 +472,18 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 				// For each metric returned in the Find response, query Render
 				Metrics.RenderRequests.Add(1)
-				Config.Limiter.enter()
+				Config.limiter.enter()
 				zipperRequests++
 
 				r, err := Config.zipper.Render(ctx, m.Metric, mfetch.From, mfetch.Until)
 				if err != nil {
 					errors[target] = err.Error()
-					Config.Limiter.leave()
+					Config.limiter.leave()
 					continue
 				} else {
 					metricMap[mfetch] = r
 				}
-				Config.Limiter.leave()
+				Config.limiter.leave()
 				for i := range r {
 					size += r[i].Size()
 				}
@@ -870,13 +870,13 @@ var Config = struct {
 	queryCache bytesCache
 	findCache  bytesCache
 
-	DefaultTimeZone *time.Location
+	defaultTimeZone *time.Location
 
 	// Zipper is API entry to carbonzipper
 	zipper zipper
 
 	// Limiter limits concurrent zipper requests
-	Limiter limiter
+	limiter limiter
 }{
 	ZipperUrl:     "http://localhost:8080",
 	Listen:        "[::]:8081",
@@ -895,7 +895,7 @@ var Config = struct {
 	IdleConnections: 10,
 	PidFile:         "",
 
-	DefaultTimeZone: time.Local,
+	defaultTimeZone: time.Local,
 	Logger:          []zapwriter.Config{DefaultLoggerConfig},
 }
 
@@ -942,8 +942,9 @@ func main() {
 	logger = zapwriter.Logger("main")
 
 	expvar.NewString("BuildVersion").Set(BuildVersion)
+	expvar.Publish("Config", expvar.Func(func() interface{} { return Config }))
 
-	Config.Limiter = newLimiter(Config.Concurency)
+	Config.limiter = newLimiter(Config.Concurency)
 
 	if _, err := url.Parse(Config.ZipperUrl); err != nil {
 		logger.Fatal("unable to parze zipper", zap.Error(err))
@@ -1020,9 +1021,9 @@ func main() {
 			)
 		}
 
-		Config.DefaultTimeZone = time.FixedZone(fields[0], offs)
+		Config.defaultTimeZone = time.FixedZone(fields[0], offs)
 		logger.Info("using fixed timezone",
-			zap.String("timezone", Config.DefaultTimeZone.String()),
+			zap.String("timezone", Config.defaultTimeZone.String()),
 			zap.Int("offset", offs),
 		)
 	}
@@ -1045,13 +1046,7 @@ func main() {
 
 	logger.Info("starting carbonapi",
 		zap.String("build_version", BuildVersion),
-		zap.String("listen_address", Config.Listen),
-		zap.Int("concurency", Config.Concurency),
-		zap.Int("idle_connections", Config.IdleConnections),
-		zap.Any("zipper", Config.ZipperUrl),
-		zap.Bool("send_globs_as_is", Config.SendGlobsAsIs),
-		zap.Int("GOMAXPROCS", Config.Cpus),
-		zap.Any("graphite_configuration", Config.Graphite),
+		zap.Any("config", Config),
 	)
 
 	if host != "" {
