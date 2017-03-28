@@ -22,9 +22,14 @@ CHANGELOG
  - [Improvement] Allow to bind to arbitrary IP:Port. (thx to @zdykstra, #194), Fixes #176.
  - [Improvement] Extend legendValues to append multiple values.
  - [Improvement] Add a switch to turn off propagating globbed requests to carbonzipper (was introduced in 0.7.0)
+ - [Feature] Publish current configuration as an expvar (GET /debug/vars)
  - [Feature] Make prefix configurable (thx to @StephenPCG, #189)
  - [Fix] Fi issue with missing labels on graphs > 14d
  - [Fix] Allow expressions to use 'total' instead of 'sum'. Required for graphite compatibility.
+
+Notes on upgrading:
+
+Even though there are several changes that's marked as breaking, it only breaks local config parsing. There is no need in extra upgrade procedures at this moment
 
 **0.7.0**
  - [Improvement] Render requests with globs now sent as-is.
@@ -32,11 +37,16 @@ CHANGELOG
  - [Improvement] Highest\* and Lowest\* now assumes '1' if no second argument was passed
  - [Feature] Implement legendValue expression (see http://graphite.readthedocs.io/en/latest/functions.html#graphite.render.functions.legendValue for more information)
 
-Notes on migration:
+Notes on upgrading to 0.7.0:
+
 It's highly recommended, if you use carbonzipper to also upgrade it to version 0.62
 
 **0.6.0**
  - **[Breaking]** Migrate to protobuf3
+
+Notes on upgrading to 0.6.0:
+
+You need to upgrade carbonzipper or go-carbon to the version that supports protobuf3
 
 **<=0.5.0**
 There is no dedicated changelog for older versions of carbonapi. Please see commit log for more information about what changed for each commit.
