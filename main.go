@@ -930,6 +930,7 @@ func main() {
 		)
 
 	}
+	logger = zapwriter.Logger("main")
 
 	expvar.NewString("BuildVersion").Set(BuildVersion)
 
@@ -1037,6 +1038,7 @@ func main() {
 		zap.String("build_version", BuildVersion),
 		zap.String("listen_address", Config.Listen),
 		zap.Any("zipper", Config.ZipperUrl),
+		zap.Bool("send_globs_as_is", Config.SendGlobsAsIs),
 		zap.Int("GOMAXPROCS", Config.Cpus),
 		zap.Any("graphite_configuration", Config.Graphite),
 		zap.Any("cache", Config.Cache),
