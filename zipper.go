@@ -47,7 +47,6 @@ func (z zipper) get(ctx context.Context, who string, u *url.URL, msg unmarshaler
 	}
 
 	request = util.MarshalCtx(ctx, request)
-	fmt.Printf("Context: %+v\n", ctx)
 
 	resp, err := z.client.Do(request.WithContext(ctx))
 	if err != nil {
