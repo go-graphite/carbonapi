@@ -70,6 +70,18 @@ var BuildVersion = "(development build)"
 // for testing
 var timeNow = time.Now
 
+func splitRemoteAddr(addr string) (string, string) {
+	tmp := strings.Split(addr, ":")
+	if len(tmp) < 1 {
+		return "unknown", "unknown"
+	}
+	if len(tmp) == 1 {
+		return tmp[0], ""
+	}
+
+	return tmp[0], tmp[1]
+}
+
 func writeResponse(w http.ResponseWriter, b []byte, format string, jsonp string) {
 
 	switch format {
@@ -264,12 +276,15 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		zap.String("username", username),
 	)
 
+	srcIp, srcPort := splitRemoteAddr(r.RemoteAddr)
 	accessLogger := zapwriter.Logger("access").With(
 		zap.String("handler", "render"),
 		zap.String("carbonapi_uuid", uuid.String()),
 		zap.String("username", username),
 		zap.String("url", r.URL.RequestURI()),
-		zap.String("peer", r.RemoteAddr),
+		zap.String("peer_ip", srcIp),
+		zap.String("peer_port", srcPort),
+		zap.String("host", r.Host),
 		zap.String("referer", r.Referer()),
 	)
 
@@ -381,6 +396,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	metricMap := make(map[expr.MetricRequest][]*expr.MetricData)
 	fatalError := false
 
+	var metrics []string
 	for _, target := range targets {
 
 		exp, e, err := expr.ParseExpr(target)
@@ -397,7 +413,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		for _, m := range exp.Metrics() {
-
+			metrics = append(metrics, m.Metric)
 			mfetch := m
 			mfetch.From += from32
 			mfetch.Until += until32
@@ -512,6 +528,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		}()
 	}
 
+	accessLogger = accessLogger.With(zap.Strings("metrics", metrics))
+
 	if len(errors) > 0 && fatalError {
 		httpErrors := make([]string, 0, len(errors))
 		httpErrors = append(httpErrors, "Following errors have occured:")
@@ -595,12 +613,15 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	jsonp := r.FormValue("jsonp")
 
 	query := r.FormValue("query")
+	srcIp, srcPort := splitRemoteAddr(r.RemoteAddr)
 	accessLogger := zapwriter.Logger("access").With(
 		zap.String("handler", "find"),
 		zap.String("carbonapi_uuid", uuid.String()),
 		zap.String("username", username),
 		zap.String("url", r.URL.RequestURI()),
-		zap.String("peer", r.RemoteAddr),
+		zap.String("peer_ip", srcIp),
+		zap.String("peer_port", srcPort),
+		zap.String("host", r.Host),
 		zap.String("referer", r.Referer()),
 	)
 
@@ -783,11 +804,14 @@ func passthroughHandler(w http.ResponseWriter, r *http.Request) {
 	// ctx, _ := context.WithTimeout(context.TODO(), Config.ZipperTimeout)
 	ctx := util.SetUUID(context.Background(), uuid.String())
 	username, _, _ := r.BasicAuth()
+	srcIp, srcPort := splitRemoteAddr(r.RemoteAddr)
 	accessLogger := zapwriter.Logger("access").With(
 		zap.String("username", username),
 		zap.String("handler", "passtrhough"),
 		zap.String("carbonapi_uuid", uuid.String()),
-		zap.String("peer", r.RemoteAddr),
+		zap.String("peer_ip", srcIp),
+		zap.String("peer_port", srcPort),
+		zap.String("host", r.Host),
 		zap.String("referer", r.Referer()),
 	)
 	var data []byte
@@ -816,10 +840,13 @@ func lbcheckHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Write([]byte("Ok\n"))
 
+	srcIp, srcPort := splitRemoteAddr(r.RemoteAddr)
 	accessLogger.Info("request served",
 		zap.String("handler", "lbcheck"),
 		zap.String("uri", r.RequestURI),
-		zap.String("peer", r.RemoteAddr),
+		zap.String("peer_ip", srcIp),
+		zap.String("peer_port", srcPort),
+		zap.String("host", r.Host),
 		zap.Duration("runtime", time.Since(t0)),
 		zap.Int("http_code", http.StatusOK),
 		zap.String("referer", r.Referer()),
