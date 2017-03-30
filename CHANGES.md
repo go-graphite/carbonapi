@@ -22,6 +22,7 @@ CHANGELOG
  - [Improvement] Allow to bind to arbitrary IP:Port. (thx to @zdykstra, #194), Fixes #176.
  - [Improvement] Extend legendValues to append multiple values.
  - [Improvement] Add a switch to turn off propagating globbed requests to carbonzipper (was introduced in 0.7.0)
+ - [Improvement] Add `{find,render}_cache_overhead_ns` metrics that shows cache query overhead in nanoseconds
  - [Feature] Publish current configuration as an expvar (GET /debug/vars)
  - [Feature] Make prefix configurable (thx to @StephenPCG, #189)
  - [Fix] Fi issue with missing labels on graphs > 14d
