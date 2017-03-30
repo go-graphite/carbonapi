@@ -430,7 +430,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	format := req.FormValue("format")
 
 	accessLogger := zapwriter.Logger("access").With(
-		zap.String("handler", "render"),
+		zap.String("handler", "find"),
 		zap.String("format", format),
 		zap.String("target", originalQuery),
 		zap.String("carbonzipper_uuid", uuid.String()),
