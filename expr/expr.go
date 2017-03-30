@@ -2211,7 +2211,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 				if diff >= 0 {
 					r.Values[i] = diff / float64(a.GetStepTime())
 				} else if !math.IsNaN(maxValue) && maxValue >= v {
-					r.Values[i] = ((maxValue - prev) + v + 1/float64(a.GetStepTime()))
+					r.Values[i] = (maxValue - prev + v + 1) / float64(a.GetStepTime())
 				} else {
 					r.Values[i] = 0
 					r.IsAbsent[i] = true
