@@ -41,12 +41,15 @@ import (
 // Metrics contains exported counters and values for graphite
 var Metrics = struct {
 	Requests         *expvar.Int
-	RequestCacheHits *expvar.Int
-
 	RenderRequests *expvar.Int
+	RequestCacheHits *expvar.Int
+	RequestCacheMisses *expvar.Int
+	RenderCacheOverheadNS *expvar.Int
 
 	FindRequests  *expvar.Int
 	FindCacheHits *expvar.Int
+	FindCacheMisses *expvar.Int
+	FindCacheOverheadNS *expvar.Int
 
 	MemcacheTimeouts *expvar.Int
 
@@ -54,12 +57,16 @@ var Metrics = struct {
 	CacheItems expvar.Func
 }{
 	Requests:         expvar.NewInt("requests"),
+	// TODO: request_cache -> render_cache
+	RenderRequests: expvar.NewInt("render_requests"),
 	RequestCacheHits: expvar.NewInt("request_cache_hits"),
+	RequestCacheMisses: expvar.NewInt("request_cache_misses"),
+	RenderCacheOverheadNS: expvar.NewInt("render_cache_overhead_ns"),
 
 	FindRequests:  expvar.NewInt("find_requests"),
 	FindCacheHits: expvar.NewInt("find_cache_hits"),
-
-	RenderRequests: expvar.NewInt("render_requests"),
+	FindCacheMisses: expvar.NewInt("find_cache_misses"),
+	FindCacheOverheadNS: expvar.NewInt("find_cache_overhead_ns"),
 
 	MemcacheTimeouts: expvar.NewInt("memcache_timeouts"),
 }
@@ -368,18 +375,26 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		zap.Int32("cache_timeout", cacheTimeout),
 	)
 
+	tc := time.Now()
 	if response, ok := Config.queryCache.get(cacheKey); useCache && ok {
+		td := time.Since(tc).Nanoseconds()
+		Metrics.RenderCacheOverheadNS.Add(td)
 		Metrics.RequestCacheHits.Add(1)
 		writeResponse(w, response, format, jsonp)
 		accessLogger.Info("request served",
 			zap.Bool("from_cache", true),
 			zap.Duration("runtime", time.Since(t0)),
+			zap.Int64("render_cache_overhead_ns", td),
 			zap.Int("http_code", http.StatusOK),
 			zap.Int("carbonzipper_response_size_bytes", 0),
 			zap.Int("carbonapi_response_size_bytes", len(response)),
 		)
 		return
 	}
+	td := time.Since(tc).Nanoseconds()
+	Metrics.RenderCacheOverheadNS.Add(td)
+	accessLogger = accessLogger.With(zap.Int64("render_cache_overhead_ns", td))
+	Metrics.RequestCacheMisses.Add(1)
 
 	if from32 == until32 {
 		http.Error(w, "Invalid empty time range", http.StatusBadRequest)
@@ -426,13 +441,22 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			var glob pb.GlobResponse
 			var haveCacheData bool
 			if !Config.SendGlobsAsIs {
+				tc := time.Now()
 				if response, ok := Config.findCache.get(m.Metric); useCache && ok {
+					Metrics.FindCacheOverheadNS.Add(td)
 					Metrics.FindCacheHits.Add(1)
 					err := glob.Unmarshal(response)
 					haveCacheData = err == nil
+
 				}
+				td := time.Since(tc).Nanoseconds()
+				Metrics.FindCacheOverheadNS.Add(td)
+				accessLogger = accessLogger.With(
+					zap.Int64("find_cache_overhead_ns", td),
+				)
 
 				if !haveCacheData {
+					Metrics.FindCacheMisses.Add(1)
 					var err error
 					Metrics.FindRequests.Add(1)
 					zipperRequests++
@@ -1094,9 +1118,13 @@ func main() {
 
 		graphite.Register(fmt.Sprintf("%s.%s.requests", Config.Graphite.Prefix, hostname), Metrics.Requests)
 		graphite.Register(fmt.Sprintf("%s.%s.request_cache_hits", Config.Graphite.Prefix, hostname), Metrics.RequestCacheHits)
+		graphite.Register(fmt.Sprintf("%s.%s.request_cache_misses", Config.Graphite.Prefix, hostname), Metrics.RequestCacheMisses)
+		graphite.Register(fmt.Sprintf("%s.%s.request_cache_overhead_ns", Config.Graphite.Prefix, hostname), Metrics.RenderCacheOverheadNS)
 
 		graphite.Register(fmt.Sprintf("%s.%s.find_requests", Config.Graphite.Prefix, hostname), Metrics.FindRequests)
 		graphite.Register(fmt.Sprintf("%s.%s.find_cache_hits", Config.Graphite.Prefix, hostname), Metrics.FindCacheHits)
+		graphite.Register(fmt.Sprintf("%s.%s.find_cache_misses", Config.Graphite.Prefix, hostname), Metrics.FindCacheMisses)
+		graphite.Register(fmt.Sprintf("%s.%s.find_cache_overhead_ns", Config.Graphite.Prefix, hostname), Metrics.FindCacheOverheadNS)
 
 		graphite.Register(fmt.Sprintf("%s.%s.render_requests", Config.Graphite.Prefix, hostname), Metrics.RenderRequests)
 
