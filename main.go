@@ -1032,6 +1032,11 @@ func main() {
 	case "null":
 		Config.queryCache = &nullCache{}
 		Config.findCache = &nullCache{}
+	default:
+		logger.Error("Unknown cache type",
+			zap.String("cache_type", Config.Cache.Type),
+			zap.Strings("known_cache_types", []string{"null", "mem", "memcache"}),
+		)
 	}
 
 	if Config.TimezoneString != "" {
