@@ -573,11 +573,13 @@ func encodeFindResponse(format, query string, w http.ResponseWriter, metrics []*
 
 func renderHandler(w http.ResponseWriter, req *http.Request) {
 	t0 := time.Now()
+	memoryUsage := 0
 	uuid := uuid.NewV4()
 	ctx := req.Context()
 
 	ctx = util.SetUUID(ctx, uuid.String())
 	logger := zapwriter.Logger("render").With(
+		zap.Int("memory_usage_bytes", memoryUsage),
 		zap.String("handler", "render"),
 		zap.String("carbonzipper_uuid", uuid.String()),
 		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
@@ -604,6 +606,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	if target == "" {
 		http.Error(w, "empty target", http.StatusBadRequest)
 		accessLogger.Error("request failed",
+			zap.Int("memory_usage_bytes", memoryUsage),
 			zap.String("reason", "empty target"),
 			zap.Int("http_code", http.StatusBadRequest),
 			zap.Duration("runtime_seconds", time.Since(t0)),
@@ -664,8 +667,13 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		responses = multiGet(ctx, logger, serverList, rewrite.RequestURI())
 	}
 
+	for i := range responses {
+		memoryUsage += len(responses[i].response)
+	}
+
 	if len(responses) == 0 {
 		accessLogger.Error("request failed",
+			zap.Int("memory_usage_bytes", memoryUsage),
 			zap.String("reason", "no results from backends"),
 			zap.String("request", req.URL.RequestURI()),
 			zap.Int("http_code", http.StatusInternalServerError),
@@ -676,10 +684,11 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	servers, metrics := mergeResponses(req, responses)
+	servers, size, metrics := mergeResponses(req, responses)
 	if metrics == nil {
 		Metrics.RenderErrors.Add(1)
 		accessLogger.Error("request failed",
+			zap.Int("memory_usage_bytes", memoryUsage),
 			zap.String("reason", "no decoded response to merge"),
 			zap.String("request", req.URL.RequestURI()),
 			zap.Int("http_code", http.StatusInternalServerError),
@@ -688,6 +697,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "no decoded responses to merge", http.StatusInternalServerError)
 		return
 	}
+	memoryUsage += size + metrics.Size()
 
 	Config.pathCache.set(target, servers)
 
@@ -697,9 +707,11 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		b, err := metrics.Marshal()
 		if err != nil {
 			logger.Error("error marshaling data",
+				zap.Int("memory_usage_bytes", memoryUsage),
 				zap.Error(err),
 			)
 		}
+		memoryUsage += len(b)
 		w.Write(b)
 
 	case "protobuf":
@@ -721,6 +733,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 				zap.Error(err),
 			)
 		}
+		memoryUsage += len(b)
 		w.Write(b)
 
 	case "json":
@@ -736,6 +749,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		e.Encode(presponse)
 	}
 	accessLogger.Info("request served",
+		zap.Int("memory_usage_bytes", memoryUsage),
 		zap.Int("http_code", http.StatusOK),
 		zap.Duration("runtime_seconds", time.Since(t0)),
 	)
@@ -770,8 +784,9 @@ func createRenderResponse(metrics *pb3.MultiFetchResponse, missing interface{}) 
 	return response
 }
 
-func mergeResponses(req *http.Request, responses []serverResponse) ([]string, *pb3.MultiFetchResponse) {
+func mergeResponses(req *http.Request, responses []serverResponse) ([]string, int, *pb3.MultiFetchResponse) {
 	logger := zapwriter.Logger("render")
+	size := 0
 
 	servers := make([]string, 0, len(responses))
 	metrics := make(map[string][]pb3.FetchResponse)
@@ -791,6 +806,7 @@ func mergeResponses(req *http.Request, responses []serverResponse) ([]string, *p
 			Metrics.RenderErrors.Add(1)
 			continue
 		}
+		size += d.Size()
 		for _, m := range d.Metrics {
 			metrics[m.GetName()] = append(metrics[m.GetName()], *m)
 		}
@@ -800,7 +816,7 @@ func mergeResponses(req *http.Request, responses []serverResponse) ([]string, *p
 	var multi pb3.MultiFetchResponse
 
 	if len(metrics) == 0 {
-		return servers, nil
+		return servers, size, nil
 	}
 
 	for name, decoded := range metrics {
@@ -835,7 +851,7 @@ func mergeResponses(req *http.Request, responses []serverResponse) ([]string, *p
 		multi.Metrics = append(multi.Metrics, &metric)
 	}
 
-	return servers, &multi
+	return servers, size, &multi
 }
 
 func mergeValues(req *http.Request, metric *pb3.FetchResponse, decoded []pb3.FetchResponse) {
