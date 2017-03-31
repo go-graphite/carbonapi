@@ -104,8 +104,8 @@ aliasByMetric(seriesList)                                                 |  0.9
 aliasByNode(seriesList, *nodes)                                           |  0.9.14 | Supported
 aliasSub(seriesList, search, replace)                                     |  0.9.10 | Supported
 alpha(seriesList, alpha)                                                  |  0.9.10 | Supported
-applyByNode(seriesList, nodeNum, templateFunction, newName=None)          |  latest |
-areaBetween(seriesList)                                                   |  0.9.14 |
+applyByNode(seriesList, nodeNum, templateFunction, newName=None)          |  latest | Supported
+areaBetween(seriesList)                                                   |  0.9.14 | Supported
 asPercent(seriesList, total=None)                                         |  0.9.10 | Supported
 averageAbove(seriesList, n)                                               |  0.9.9  | Supported
 averageBelow(seriesList, n)                                               |  0.9.9  | Supported
@@ -151,7 +151,7 @@ keepLastValue(seriesList, limit=inf)                                      |  0.9
 kolmogorovSmirnovTest2(series, series, windowSize) alias ksTest2()        |  not in graphite | Experimental
 legendValue(seriesList, *valueTypes)                                      |  0.9.10 | Supported
 limit(seriesList, n)                                                      |  0.9.9  | Supported
-lineWidth(seriesList, width)                                              |  0.9.9  |
+lineWidth(seriesList, width)                                              |  0.9.9  | Supported
 linearRegression(seriesList, startSourceAt=None, endSourceAt=None)        |  latest |
 linearRegressionAnalysis(series)                                          |  latest |
 logarithm(seriesList, base=10), alias log()                               |  0.9.10 | Supported
