@@ -130,7 +130,7 @@ drawAsInfinite(seriesList)                                                |  0.9
 events(*tags)                                                             |  0.9.9  |
 exclude(seriesList, pattern)                                              |  0.9.9  | Supported
 fallbackSeries( seriesList, fallback )                                    |  0.9.14 |
-fft(absSeriesList, phaseSeriesList)                                       |  not in graphite | Experimental
+[fft](https://en.wikipedia.org/wiki/Fast_Fourier_transform)(absSeriesList, phaseSeriesList)                                       |  not in graphite | Experimental
 grep(seriesList, pattern)                                                 |  0.9.14 | Supported
 group(*seriesLists)                                                       |  0.9.10 | Supported
 groupByNode(seriesList, nodeNum, callback)                                |  0.9.9  | Supported
@@ -144,7 +144,7 @@ holtWintersConfidenceArea(seriesList, delta=3)                            |  0.9
 holtWintersConfidenceBands(seriesList, delta=3)                           |  0.9.10 | Supported
 holtWintersForecast(seriesList)                                           |  0.9.10 | Supported
 identity(name)                                                            |  0.9.14 |
-ifft(absSeriesList, phaseSeriesList)                                      |  not in graphite | Experimental
+[ifft](https://en.wikipedia.org/wiki/Fast_Fourier_transform)(absSeriesList, phaseSeriesList)                                      |  not in graphite | Experimental
 integral(seriesList)                                                      |  0.9.9  | Supported
 integralByInterval(seriesList, intervalUnit)                              |  latest |
 invert(seriesList)                                                        |  0.9.14 | Supported
@@ -159,7 +159,7 @@ linearRegressionAnalysis(series)                                          |  lat
 logarithm(seriesList, base=10), alias log()                               |  0.9.10 | Supported
 lowestAverage(seriesList, n)                                              |  0.9.9  | Supported
 lowestCurrent(seriesList, n)                                              |  0.9.9  | Supported
-lowPass(seriesList, cutPercent)                                           |  not in graphite | Experimental
+[lowPass](https://en.wikipedia.org/wiki/Low-pass_filter)(seriesList, cutPercent)                                           |  not in graphite | Experimental
 mapSeries(seriesList, mapNode), Short form: map()                         |  0.9.14 |
 maxSeries(*seriesLists)                                                   |  0.9.9  | Supported
 maximumAbove(seriesList, n)                                               |  0.9.9  | Supported
