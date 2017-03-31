@@ -384,7 +384,6 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		accessLogger.Info("request served",
 			zap.Bool("from_cache", true),
 			zap.Duration("runtime", time.Since(t0)),
-			zap.Int64("render_cache_overhead_ns", td),
 			zap.Int("http_code", http.StatusOK),
 			zap.Int("carbonzipper_response_size_bytes", 0),
 			zap.Int("carbonapi_response_size_bytes", len(response)),
@@ -393,7 +392,6 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	td := time.Since(tc).Nanoseconds()
 	Metrics.RenderCacheOverheadNS.Add(td)
-	accessLogger = accessLogger.With(zap.Int64("render_cache_overhead_ns", td))
 	Metrics.RequestCacheMisses.Add(1)
 
 	if from32 == until32 {
@@ -451,9 +449,6 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 				}
 				td := time.Since(tc).Nanoseconds()
 				Metrics.FindCacheOverheadNS.Add(td)
-				accessLogger = accessLogger.With(
-					zap.Int64("find_cache_overhead_ns", td),
-				)
 
 				if !haveCacheData {
 					Metrics.FindCacheMisses.Add(1)
@@ -470,7 +465,10 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 					}
 					b, err := glob.Marshal()
 					if err == nil {
+						tc := time.Now()
 						Config.findCache.set(m.Metric, b, 5*60)
+						td := time.Since(tc).Nanoseconds()
+						Metrics.FindCacheOverheadNS.Add(td)
 					}
 				}
 
@@ -605,7 +603,10 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	writeResponse(w, body, format, jsonp)
 
 	if len(results) != 0 {
+		tc := time.Now()
 		Config.queryCache.set(cacheKey, body, cacheTimeout)
+		td := time.Since(tc).Nanoseconds()
+		Metrics.RenderCacheOverheadNS.Add(td)
 	}
 
 	gotErrors := false
