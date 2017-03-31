@@ -150,7 +150,7 @@ integralByInterval(seriesList, intervalUnit)                              |  lat
 invert(seriesList)                                                        |  0.9.14 | Supported
 isNonNull(seriesList)                                                     |  0.9.11 | Supported (also isNotNull alias)
 keepLastValue(seriesList, limit=inf)                                      |  0.9.14 | Supported
-kolmogorovSmirnovTest2(series, series, windowSize) alias ksTest2()        |  not in graphite | Experimental
+[kolmogorovSmirnovTest2](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test)(series, series, windowSize) alias ksTest2()        |  not in graphite | Experimental
 legendValue(seriesList, *valueTypes)                                      |  0.9.10 | Supported
 limit(seriesList, n)                                                      |  0.9.9  | Supported
 lineWidth(seriesList, width)                                              |  0.9.9  | Supported
@@ -176,11 +176,11 @@ nPercentile(seriesList, n)                                                |  0.9
 nonNegativeDerivative(seriesList, maxValue=None)                          |  0.9.9  | Supported
 offset(seriesList, factor)                                                |  0.9.9  | Supported
 offsetToZero(seriesList)                                                  |  0.9.11 | Supported
-pearson(series, series, n)                                                |  not in graphite | Experimental
+[pearson](https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient)(series, series, n)                                                |  not in graphite | Experimental
 pearsonClosest(series, seriesList, windowSize, direction="abs")           |  not in graphite | Experimental
 perSecond(seriesList, maxValue=None)                                      |  0.9.14 | Supported
 percentileOfSeries(seriesList, n, interpolate=False)                      |  0.9.10 | Supported
-polyfit(seriesList, degree=1, offset='0d')                                |  not in graphite | Experimental
+[polyfit](https://en.wikipedia.org/wiki/Polynomial_regression)(seriesList, degree=1, offset='0d')                                |  not in graphite | Experimental
 pow(seriesList, factor)                                                   |  0.9.14 | Supported
 randomWalkFunction(name, step=60), Short Alias: randomWalk()              |  0.9.9  | Supported
 rangeOfSeries(*seriesLists)                                               |  0.9.10 | Supported
@@ -215,8 +215,8 @@ timeFunction(name, step=60), Short Alias: time()                          |  0.9
 timeShift(seriesList, timeShift, resetEnd=True)                           |  0.9.11 | Supported
 timeSlice(seriesList, startSliceAt, endSliceAt='now')                     |  0.9.14 |
 timeStack(seriesList, timeShiftUnit, timeShiftStart, timeShiftEnd)        |  0.9.14 | Supported
-tukeyAbove(seriesList, basis, n, interval=0)                              |  not in graphite | Experimental
-tukeyBelow(seriesList, basis, n, interval=0)                              |  not in graphite | Experimental
+[tukeyAbove](https://en.wikipedia.org/wiki/Tukey%27s_range_test)(seriesList, basis, n, interval=0)                              |  not in graphite | Experimental
+[tukeyBelow](https://en.wikipedia.org/wiki/Tukey%27s_range_test)(seriesList, basis, n, interval=0)                              |  not in graphite | Experimental
 transformNull(seriesList, default=0)                                      |  0.9.10 | Supported
 useSeriesAbove(seriesList, value, search, replace)                        |  0.9.10 |
 weightedAverage(seriesListAvg, seriesListWeight, node)                    |  0.9.14 |
