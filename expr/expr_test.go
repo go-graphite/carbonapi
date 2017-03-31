@@ -2375,6 +2375,25 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "linearRegression",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric1"},
+				},
+			},
+			map[MetricRequest][]*MetricData{
+				{"metric1", 0, 1}: {
+					makeResponse("metric1",
+						[]float64{1, 2, 4, 3, 5, 6}, 1, now32),
+				},
+			},
+			[]*MetricData{
+				makeResponse("linearRegression(metric1)",
+					[]float64{1, 2, 3, 4, 5, 6}, 1, now32),
+			},
+		},
+		{
+			&expr{
 				target: "polyfit",
 				etype:  etFunc,
 				args: []*expr{
