@@ -15,6 +15,9 @@ Other pieces of the stack are:
    - [carbonmem](https://github.com/dgryski/carbonmem)
    - [carbonsearch](https://github.com/kanatohodets/carbonsearch)
 
+For an overview of the stack and how the pieces fit together, watch
+[Graphite@Scale or How to store millions metrics per second](https://fosdem.org/2017/schedule/event/graphite_at_scale/)
+from FOSDEM '17.
 
 Changes and versioning
 ----------------------
