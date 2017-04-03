@@ -40,15 +40,15 @@ import (
 
 // Metrics contains exported counters and values for graphite
 var Metrics = struct {
-	Requests         *expvar.Int
-	RenderRequests *expvar.Int
-	RequestCacheHits *expvar.Int
-	RequestCacheMisses *expvar.Int
+	Requests              *expvar.Int
+	RenderRequests        *expvar.Int
+	RequestCacheHits      *expvar.Int
+	RequestCacheMisses    *expvar.Int
 	RenderCacheOverheadNS *expvar.Int
 
-	FindRequests  *expvar.Int
-	FindCacheHits *expvar.Int
-	FindCacheMisses *expvar.Int
+	FindRequests        *expvar.Int
+	FindCacheHits       *expvar.Int
+	FindCacheMisses     *expvar.Int
 	FindCacheOverheadNS *expvar.Int
 
 	MemcacheTimeouts *expvar.Int
@@ -56,16 +56,16 @@ var Metrics = struct {
 	CacheSize  expvar.Func
 	CacheItems expvar.Func
 }{
-	Requests:         expvar.NewInt("requests"),
+	Requests: expvar.NewInt("requests"),
 	// TODO: request_cache -> render_cache
-	RenderRequests: expvar.NewInt("render_requests"),
-	RequestCacheHits: expvar.NewInt("request_cache_hits"),
-	RequestCacheMisses: expvar.NewInt("request_cache_misses"),
+	RenderRequests:        expvar.NewInt("render_requests"),
+	RequestCacheHits:      expvar.NewInt("request_cache_hits"),
+	RequestCacheMisses:    expvar.NewInt("request_cache_misses"),
 	RenderCacheOverheadNS: expvar.NewInt("render_cache_overhead_ns"),
 
-	FindRequests:  expvar.NewInt("find_requests"),
-	FindCacheHits: expvar.NewInt("find_cache_hits"),
-	FindCacheMisses: expvar.NewInt("find_cache_misses"),
+	FindRequests:        expvar.NewInt("find_requests"),
+	FindCacheHits:       expvar.NewInt("find_cache_hits"),
+	FindCacheMisses:     expvar.NewInt("find_cache_misses"),
 	FindCacheOverheadNS: expvar.NewInt("find_cache_overhead_ns"),
 
 	MemcacheTimeouts: expvar.NewInt("memcache_timeouts"),
@@ -912,16 +912,16 @@ type graphiteConfig struct {
 
 var Config = struct {
 	Logger          []zapwriter.Config `yaml:"logger"`
-	ZipperUrl       string `yaml:"zipper"`
-	Listen          string `yaml:"listen"`
-	Concurency      int `yaml:"concurency"`
-	Cache           cacheConfig `yaml:"cache"`
-	Cpus            int `yaml:"cpus"`
-	TimezoneString  string `yaml:"tz"`
-	Graphite        graphiteConfig `yaml:"graphite"`
-	IdleConnections int `yaml:"idleConnections"`
-	PidFile         string `yaml:"pidFile"`
-	SendGlobsAsIs   bool `yaml:"sendGlobsAsIs"`
+	ZipperUrl       string             `yaml:"zipper"`
+	Listen          string             `yaml:"listen"`
+	Concurency      int                `yaml:"concurency"`
+	Cache           cacheConfig        `yaml:"cache"`
+	Cpus            int                `yaml:"cpus"`
+	TimezoneString  string             `yaml:"tz"`
+	Graphite        graphiteConfig     `yaml:"graphite"`
+	IdleConnections int                `yaml:"idleConnections"`
+	PidFile         string             `yaml:"pidFile"`
+	SendGlobsAsIs   bool               `yaml:"sendGlobsAsIs"`
 
 	queryCache bytesCache
 	findCache  bytesCache
