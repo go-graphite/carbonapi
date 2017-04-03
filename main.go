@@ -1029,7 +1029,8 @@ func main() {
 		if Config.SendGlobsAsIs {
 			Config.findCache = &nullCache{}
 		} else {
-			Config.findCache = &memcachedCache{client: memcache.New(Config.Cache.MemcachedServers...)}
+			Config.findCache = &expireCache{ec: ecache.New(0)}
+			go Config.findCache.(*expireCache).ec.ApproximateCleaner(10 * time.Second)
 		}
 	case "mem":
 		qcache := &expireCache{ec: ecache.New(uint64(Config.Cache.Size * 1024 * 1024))}
