@@ -4,11 +4,12 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"errors"
+	"sync/atomic"
 	"time"
 
 	"github.com/bradfitz/gomemcache/memcache"
 
-	ecache "github.com/dgryski/go-expirecache"
+	"github.com/dgryski/go-expirecache"
 )
 
 var (
@@ -26,8 +27,14 @@ type NullCache struct{}
 func (NullCache) Get(string) ([]byte, error) { return nil, ErrNotFound }
 func (NullCache) Set(string, []byte, int32)  {}
 
+func NewExpireCache(maxsize uint64) BytesCache {
+	ec := expirecache.New(maxsize)
+	go ec.ApproximateCleaner(10 * time.Second)
+	return &ExpireCache{ec: ec}
+}
+
 type ExpireCache struct {
-	ec *ecache.Cache
+	ec *expirecache.Cache
 }
 
 func (ec ExpireCache) Get(k string) ([]byte, error) {
@@ -44,8 +51,17 @@ func (ec ExpireCache) Set(k string, v []byte, expire int32) {
 	ec.ec.Set(k, v, uint64(len(v)), expire)
 }
 
+func (ec ExpireCache) Items() int { return ec.ec.Items() }
+
+func (ec ExpireCache) Size() uint64 { return ec.ec.Size() }
+
+func NewMemcached(servers ...string) BytesCache {
+	return &MemcachedCache{client: memcache.New(servers...)}
+}
+
 type MemcachedCache struct {
-	client *memcache.Client
+	client   *memcache.Client
+	timeouts uint64
 }
 
 func (m *MemcachedCache) Get(k string) ([]byte, error) {
@@ -65,6 +81,7 @@ func (m *MemcachedCache) Get(k string) ([]byte, error) {
 
 	select {
 	case <-timeout:
+		atomic.AddUint64(&m.timeouts, 1)
 		return nil, ErrTimeout
 	case <-done:
 	}
@@ -84,4 +101,8 @@ func (m *MemcachedCache) Set(k string, v []byte, expire int32) {
 	key := sha1.Sum([]byte(k))
 	hk := hex.EncodeToString(key[:])
 	go m.client.Set(&memcache.Item{Key: hk, Value: v, Expiration: expire})
+}
+
+func (m *MemcachedCache) Timeouts() uint64 {
+	return atomic.LoadUint64(&m.timeouts)
 }
