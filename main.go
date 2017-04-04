@@ -23,11 +23,10 @@ import (
 
 	"github.com/dgryski/carbonapi/expr"
 	"github.com/dgryski/carbonapi/util"
+	"github.com/dgryski/carbonzipper/cache"
 	pb "github.com/dgryski/carbonzipper/carbonzipperpb3"
 	"github.com/dgryski/carbonzipper/mstats"
 
-	"github.com/bradfitz/gomemcache/memcache"
-	ecache "github.com/dgryski/go-expirecache"
 	"github.com/facebookgo/grace/gracehttp"
 	"github.com/facebookgo/pidfile"
 	"github.com/gorilla/handlers"
@@ -51,7 +50,7 @@ var Metrics = struct {
 	FindCacheMisses     *expvar.Int
 	FindCacheOverheadNS *expvar.Int
 
-	MemcacheTimeouts *expvar.Int
+	MemcacheTimeouts expvar.Func
 
 	CacheSize  expvar.Func
 	CacheItems expvar.Func
@@ -67,8 +66,6 @@ var Metrics = struct {
 	FindCacheHits:       expvar.NewInt("find_cache_hits"),
 	FindCacheMisses:     expvar.NewInt("find_cache_misses"),
 	FindCacheOverheadNS: expvar.NewInt("find_cache_overhead_ns"),
-
-	MemcacheTimeouts: expvar.NewInt("memcache_timeouts"),
 }
 
 // BuildVersion is provided to be overridden at build time. Eg. go build -ldflags -X 'main.BuildVersion=...'
@@ -376,7 +373,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	)
 
 	tc := time.Now()
-	if response, ok := Config.queryCache.get(cacheKey); useCache && ok {
+	if response, err := Config.queryCache.Get(cacheKey); useCache && err != nil {
 		td := time.Since(tc).Nanoseconds()
 		Metrics.RenderCacheOverheadNS.Add(td)
 		Metrics.RequestCacheHits.Add(1)
@@ -440,7 +437,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			var haveCacheData bool
 			if !Config.SendGlobsAsIs {
 				tc := time.Now()
-				if response, ok := Config.findCache.get(m.Metric); useCache && ok {
+				if response, err := Config.findCache.Get(m.Metric); useCache && err != nil {
 					Metrics.FindCacheOverheadNS.Add(td)
 					Metrics.FindCacheHits.Add(1)
 					err := glob.Unmarshal(response)
@@ -466,7 +463,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 					b, err := glob.Marshal()
 					if err == nil {
 						tc := time.Now()
-						Config.findCache.set(m.Metric, b, 5*60)
+						Config.findCache.Set(m.Metric, b, 5*60)
 						td := time.Since(tc).Nanoseconds()
 						Metrics.FindCacheOverheadNS.Add(td)
 					}
@@ -604,7 +601,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	if len(results) != 0 {
 		tc := time.Now()
-		Config.queryCache.set(cacheKey, body, cacheTimeout)
+		Config.queryCache.Set(cacheKey, body, cacheTimeout)
 		td := time.Since(tc).Nanoseconds()
 		Metrics.RenderCacheOverheadNS.Add(td)
 	}
@@ -923,8 +920,8 @@ var Config = struct {
 	PidFile         string             `yaml:"pidFile"`
 	SendGlobsAsIs   bool               `yaml:"sendGlobsAsIs"`
 
-	queryCache bytesCache
-	findCache  bytesCache
+	queryCache cache.BytesCache
+	findCache  cache.BytesCache
 
 	defaultTimeZone *time.Location
 
@@ -950,6 +947,9 @@ var Config = struct {
 	Cpus:            0,
 	IdleConnections: 10,
 	PidFile:         "",
+
+	queryCache: cache.NullCache{},
+	findCache:  cache.NullCache{},
 
 	defaultTimeZone: time.Local,
 	Logger:          []zapwriter.Config{DefaultLoggerConfig},
@@ -1024,40 +1024,43 @@ func main() {
 		logger.Info("memcached configured",
 			zap.Strings("servers", Config.Cache.MemcachedServers),
 		)
-		Config.queryCache = &memcachedCache{client: memcache.New(Config.Cache.MemcachedServers...)}
+		Config.queryCache = cache.NewMemcached(Config.Cache.MemcachedServers...)
 		// find cache is only used if SendGlobsAsIs is false.
-		if Config.SendGlobsAsIs {
-			Config.findCache = &nullCache{}
-		} else {
-			Config.findCache = &expireCache{ec: ecache.New(0)}
-			go Config.findCache.(*expireCache).ec.ApproximateCleaner(10 * time.Second)
+		if !Config.SendGlobsAsIs {
+			Config.findCache = cache.NewExpireCache(0)
 		}
+
+		mcache := Config.queryCache.(*cache.MemcachedCache)
+
+		Metrics.MemcacheTimeouts = expvar.Func(func() interface{} {
+			return mcache.Timeouts()
+		})
+		expvar.Publish("memcache_timeouts", Metrics.MemcacheTimeouts)
+
 	case "mem":
-		qcache := &expireCache{ec: ecache.New(uint64(Config.Cache.Size * 1024 * 1024))}
-		Config.queryCache = qcache
-		go Config.queryCache.(*expireCache).ec.ApproximateCleaner(10 * time.Second)
+		Config.queryCache = cache.NewExpireCache(uint64(Config.Cache.Size * 1024 * 1024))
 
 		// find cache is only used if SendGlobsAsIs is false.
-		if Config.SendGlobsAsIs {
-			Config.findCache = &nullCache{}
-		} else {
-			Config.findCache = &expireCache{ec: ecache.New(0)}
-			go Config.findCache.(*expireCache).ec.ApproximateCleaner(10 * time.Second)
+		if !Config.SendGlobsAsIs {
+			Config.findCache = cache.NewExpireCache(0)
 		}
+
+		qcache := Config.queryCache.(*cache.ExpireCache)
 
 		Metrics.CacheSize = expvar.Func(func() interface{} {
-			return qcache.ec.Size()
+			return qcache.Size()
 		})
 		expvar.Publish("cache_size", Metrics.CacheSize)
 
 		Metrics.CacheItems = expvar.Func(func() interface{} {
-			return qcache.ec.Items()
+			return qcache.Items()
 		})
 		expvar.Publish("cache_items", Metrics.CacheItems)
 
 	case "null":
-		Config.queryCache = &nullCache{}
-		Config.findCache = &nullCache{}
+		// defaults
+		Config.queryCache = cache.NullCache{}
+		Config.findCache = cache.NullCache{}
 	default:
 		logger.Error("Unknown cache type",
 			zap.String("cache_type", Config.Cache.Type),
@@ -1130,7 +1133,9 @@ func main() {
 
 		graphite.Register(fmt.Sprintf("%s.%s.render_requests", Config.Graphite.Prefix, hostname), Metrics.RenderRequests)
 
-		graphite.Register(fmt.Sprintf("%s.%s.memcache_timeouts", Config.Graphite.Prefix, hostname), Metrics.MemcacheTimeouts)
+		if Metrics.MemcacheTimeouts != nil {
+			graphite.Register(fmt.Sprintf("%s.%s.memcache_timeouts", Config.Graphite.Prefix, hostname), Metrics.MemcacheTimeouts)
+		}
 
 		if Metrics.CacheSize != nil {
 			graphite.Register(fmt.Sprintf("%s.%s.cache_size", Config.Graphite.Prefix, hostname), Metrics.CacheSize)
