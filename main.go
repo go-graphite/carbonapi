@@ -1024,7 +1024,7 @@ func main() {
 		logger.Info("memcached configured",
 			zap.Strings("servers", Config.Cache.MemcachedServers),
 		)
-		Config.queryCache = cache.NewMemcached(Config.Cache.MemcachedServers...)
+		Config.queryCache = cache.NewMemcached("capi", Config.Cache.MemcachedServers...)
 		// find cache is only used if SendGlobsAsIs is false.
 		if !Config.SendGlobsAsIs {
 			Config.findCache = cache.NewExpireCache(0)
