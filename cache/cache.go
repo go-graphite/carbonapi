@@ -55,11 +55,12 @@ func (ec ExpireCache) Items() int { return ec.ec.Items() }
 
 func (ec ExpireCache) Size() uint64 { return ec.ec.Size() }
 
-func NewMemcached(servers ...string) BytesCache {
-	return &MemcachedCache{client: memcache.New(servers...)}
+func NewMemcached(prefix string, servers ...string) BytesCache {
+	return &MemcachedCache{prefix: prefix, client: memcache.New(servers...)}
 }
 
 type MemcachedCache struct {
+	prefix   string
 	client   *memcache.Client
 	timeouts uint64
 }
@@ -73,7 +74,7 @@ func (m *MemcachedCache) Get(k string) ([]byte, error) {
 	var item *memcache.Item
 
 	go func() {
-		item, err = m.client.Get(hk)
+		item, err = m.client.Get(m.prefix + hk)
 		done <- true
 	}()
 
@@ -100,7 +101,7 @@ func (m *MemcachedCache) Get(k string) ([]byte, error) {
 func (m *MemcachedCache) Set(k string, v []byte, expire int32) {
 	key := sha1.Sum([]byte(k))
 	hk := hex.EncodeToString(key[:])
-	go m.client.Set(&memcache.Item{Key: hk, Value: v, Expiration: expire})
+	go m.client.Set(&memcache.Item{Key: m.prefix + hk, Value: v, Expiration: expire})
 }
 
 func (m *MemcachedCache) Timeouts() uint64 {

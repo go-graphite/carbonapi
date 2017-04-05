@@ -1191,8 +1191,8 @@ func main() {
 			zap.Strings("servers", Config.MemcachedServers),
 		)
 
-		pcache := cache.NewMemcached(Config.MemcachedServers...)
-		scache := cache.NewMemcached(Config.MemcachedServers...)
+		pcache := cache.NewMemcached("czip", Config.MemcachedServers...)
+		scache := cache.NewMemcached("czip", Config.MemcachedServers...)
 
 		Config.pathCache = &pathCacheBytes{bc: pcache}
 		Config.searchCache = &pathCacheBytes{bc: scache}
