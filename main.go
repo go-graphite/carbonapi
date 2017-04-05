@@ -21,8 +21,10 @@ import (
 	"time"
 
 	cu "github.com/dgryski/carbonapi/util"
+	"github.com/dgryski/carbonzipper/cache"
 	pb2 "github.com/dgryski/carbonzipper/carbonzipperpb"
 	pb3 "github.com/dgryski/carbonzipper/carbonzipperpb3"
+	"github.com/dgryski/carbonzipper/internal/ipb3"
 	"github.com/dgryski/carbonzipper/mstats"
 	"github.com/dgryski/carbonzipper/util"
 	"github.com/dgryski/go-expirecache"
@@ -63,6 +65,8 @@ var Config = struct {
 	GraphiteHost         string
 	InternalMetricPrefix string
 
+	MemcachedServers []string
+
 	pathCache   pathCache
 	searchCache pathCache
 
@@ -84,9 +88,7 @@ var Config = struct {
 
 	ExpireDelaySec: 10 * 60, // 10 minutes
 
-	pathCache:   pathCache{ec: expirecache.New(0)},
-	searchCache: pathCache{ec: expirecache.New(0)},
-	Logger:      []zapwriter.Config{DefaultLoggerConfig},
+	Logger: []zapwriter.Config{DefaultLoggerConfig},
 }
 
 // Metrics contains grouped expvars for /debug/vars and graphite
@@ -103,6 +105,8 @@ var Metrics = struct {
 	InfoErrors   *expvar.Int
 
 	Timeouts *expvar.Int
+
+	MemcacheTimeouts expvar.Func
 
 	CacheSize         expvar.Func
 	CacheItems        expvar.Func
@@ -1180,17 +1184,50 @@ func main() {
 	// export config via expvars
 	expvar.Publish("Config", expvar.Func(func() interface{} { return Config }))
 
-	Metrics.CacheSize = expvar.Func(func() interface{} { return Config.pathCache.ec.Size() })
-	expvar.Publish("cacheSize", Metrics.CacheSize)
+	// set up caches
 
-	Metrics.CacheItems = expvar.Func(func() interface{} { return Config.pathCache.ec.Items() })
-	expvar.Publish("cacheItems", Metrics.CacheItems)
+	if len(Config.MemcachedServers) > 0 {
+		logger.Info("memcached configured",
+			zap.Strings("servers", Config.MemcachedServers),
+		)
 
-	Metrics.SearchCacheSize = expvar.Func(func() interface{} { return Config.searchCache.ec.Size() })
-	expvar.Publish("searchCacheSize", Metrics.SearchCacheSize)
+		pcache := cache.NewMemcached(Config.MemcachedServers...)
+		scache := cache.NewMemcached(Config.MemcachedServers...)
 
-	Metrics.SearchCacheItems = expvar.Func(func() interface{} { return Config.searchCache.ec.Items() })
-	expvar.Publish("searchCacheItems", Metrics.SearchCacheItems)
+		Config.pathCache = &pathCacheBytes{bc: pcache}
+		Config.searchCache = &pathCacheBytes{bc: scache}
+
+		mpcache := pcache.(*cache.MemcachedCache)
+		mscache := scache.(*cache.MemcachedCache)
+
+		Metrics.MemcacheTimeouts = expvar.Func(func() interface{} {
+			return mpcache.Timeouts() + mscache.Timeouts()
+		})
+		expvar.Publish("memcacheTimeouts", Metrics.MemcacheTimeouts)
+
+	} else {
+
+		pcache := expirecache.New(0)
+		scache := expirecache.New(0)
+
+		go pcache.ApproximateCleaner(10 * time.Second)
+		go scache.ApproximateCleaner(10 * time.Second)
+
+		Config.pathCache = &pathCacheMem{ec: pcache}
+		Config.searchCache = &pathCacheMem{ec: scache}
+
+		Metrics.CacheSize = expvar.Func(func() interface{} { return pcache.Size() })
+		expvar.Publish("cacheSize", Metrics.CacheSize)
+
+		Metrics.CacheItems = expvar.Func(func() interface{} { return pcache.Items() })
+		expvar.Publish("cacheItems", Metrics.CacheItems)
+
+		Metrics.SearchCacheSize = expvar.Func(func() interface{} { return scache.Size() })
+		expvar.Publish("searchCacheSize", Metrics.SearchCacheSize)
+
+		Metrics.SearchCacheItems = expvar.Func(func() interface{} { return scache.Items() })
+		expvar.Publish("searchCacheItems", Metrics.SearchCacheItems)
+	}
 
 	http.HandleFunc("/metrics/find/", httputil.TrackConnections(httputil.TimeHandler(cu.ParseCtx(findHandler), bucketRequestTimes)))
 	http.HandleFunc("/render/", httputil.TrackConnections(httputil.TimeHandler(cu.ParseCtx(renderHandler), bucketRequestTimes)))
@@ -1233,13 +1270,21 @@ func main() {
 			graphite.Register(fmt.Sprintf("%s.%s.requests_in_%dms_to_%dms", prefix, hostname, i*100, (i+1)*100), bucketEntry(i))
 		}
 
-		graphite.Register(fmt.Sprintf("%s.%s.cache_size", prefix, hostname), Metrics.CacheSize)
-		graphite.Register(fmt.Sprintf("%s.%s.cache_items", prefix, hostname), Metrics.CacheItems)
+		if Metrics.CacheSize != nil {
+			graphite.Register(fmt.Sprintf("%s.%s.cache_size", prefix, hostname), Metrics.CacheSize)
+			graphite.Register(fmt.Sprintf("%s.%s.cache_items", prefix, hostname), Metrics.CacheItems)
+
+			graphite.Register(fmt.Sprintf("%s.%s.search_cache_size", prefix, hostname), Metrics.SearchCacheSize)
+			graphite.Register(fmt.Sprintf("%s.%s.search_cache_items", prefix, hostname), Metrics.SearchCacheItems)
+		}
+
+		if Metrics.MemcacheTimeouts != nil {
+			graphite.Register(fmt.Sprintf("%s.%s.memcache_timeouts", prefix, hostname), Metrics.MemcacheTimeouts)
+		}
+
 		graphite.Register(fmt.Sprintf("%s.%s.cache_hits", prefix, hostname), Metrics.CacheHits)
 		graphite.Register(fmt.Sprintf("%s.%s.cache_misses", prefix, hostname), Metrics.CacheMisses)
 
-		graphite.Register(fmt.Sprintf("%s.%s.search_cache_size", prefix, hostname), Metrics.SearchCacheSize)
-		graphite.Register(fmt.Sprintf("%s.%s.search_cache_items", prefix, hostname), Metrics.SearchCacheItems)
 		graphite.Register(fmt.Sprintf("%s.%s.search_cache_hits", prefix, hostname), Metrics.SearchCacheHits)
 		graphite.Register(fmt.Sprintf("%s.%s.search_cache_misses", prefix, hostname), Metrics.SearchCacheMisses)
 
@@ -1259,9 +1304,6 @@ func main() {
 	go probeTlds()
 	// force run now
 	probeForce <- 1
-
-	go Config.pathCache.ec.ApproximateCleaner(10 * time.Second)
-	go Config.searchCache.ec.ApproximateCleaner(10 * time.Second)
 
 	if *pidFile != "" {
 		pidfile.SetPidfilePath(*pidFile)
@@ -1340,11 +1382,16 @@ func (sl serverLimiter) leave(s string) {
 	<-sl[s]
 }
 
-type pathCache struct {
+type pathCache interface {
+	set(k string, v []string)
+	get(k string) ([]string, bool)
+}
+
+type pathCacheMem struct {
 	ec *expirecache.Cache
 }
 
-func (p *pathCache) set(k string, v []string) {
+func (p *pathCacheMem) set(k string, v []string) {
 	// expire cache entries after Config.ExpireCache minutes
 	var size uint64
 	for _, vv := range v {
@@ -1354,11 +1401,38 @@ func (p *pathCache) set(k string, v []string) {
 	p.ec.Set(k, v, size, Config.ExpireDelaySec)
 }
 
-func (p *pathCache) get(k string) ([]string, bool) {
+func (p *pathCacheMem) get(k string) ([]string, bool) {
 	v, ok := p.ec.Get(k)
 	if !ok {
 		return nil, false
 	}
 
 	return v.([]string), true
+}
+
+type pathCacheBytes struct {
+	bc cache.BytesCache
+}
+
+func (p *pathCacheBytes) set(k string, v []string) {
+	var b, _ = (&ipb3.PathCacheEntry{Hosts: v}).Marshal()
+
+	p.bc.Set(k, b, Config.ExpireDelaySec)
+}
+
+func (p *pathCacheBytes) get(k string) ([]string, bool) {
+	b, err := p.bc.Get(k)
+	if err != nil {
+		return nil, false
+	}
+
+	var v ipb3.PathCacheEntry
+
+	err = v.Unmarshal(b)
+
+	if err != nil {
+		return nil, false
+	}
+
+	return v.Hosts, true
 }
