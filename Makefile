@@ -14,11 +14,11 @@ nocairo: dep
 	$(GO) build -ldflags '-X main.BuildVersion=$(VERSION)'
 
 test: dep
-	@which dep 2>/dev/null || $(GO) get github.com/golang/dep/cmd/dep
 	$(GO) test -race
 	$(GO) vet
 
 dep:
+	@which dep 2>/dev/null || $(GO) get github.com/golang/dep/cmd/dep
 	dep ensure
 
 clean:
