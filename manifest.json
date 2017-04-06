@@ -1,0 +1,43 @@
+{
+    "dependencies": {
+        "github.com/bradfitz/gomemcache": {
+            "branch": "master"
+        },
+        "github.com/dgryski/carbonapi": {
+            "branch": "master"
+        },
+        "github.com/dgryski/go-expirecache": {
+            "branch": "get_or_set"
+        },
+        "github.com/dgryski/httputil": {
+            "branch": "master"
+        },
+        "github.com/facebookgo/grace": {
+            "branch": "master"
+        },
+        "github.com/facebookgo/pidfile": {
+            "branch": "master"
+        },
+        "github.com/gogo/protobuf": {
+            "branch": "master"
+        },
+        "github.com/kisielk/og-rek": {
+            "branch": "master"
+        },
+        "github.com/lestrrat/go-file-rotatelogs": {
+            "branch": "master"
+        },
+        "github.com/lestrrat/go-strftime": {
+            "branch": "master"
+        },
+        "github.com/lomik/zapwriter": {
+            "branch": "master"
+        },
+        "github.com/satori/go.uuid": {
+            "branch": "master"
+        },
+        "go.uber.org/zap": {
+            "branch": "master"
+        }
+    }
+}

@@ -1,0 +1,172 @@
+{
+    "memo": "4d3db07ca77f196c2a7025187317662b197e7b964c717d87d480be5bde7c1111",
+    "projects": [
+        {
+            "name": "github.com/bradfitz/gomemcache",
+            "branch": "master",
+            "revision": "fb1f79c6b65acda83063cbc69f6bba1522558bfc",
+            "packages": [
+                "memcache"
+            ]
+        },
+        {
+            "name": "github.com/dgryski/carbonapi",
+            "branch": "master",
+            "revision": "16227240c313e5252dca61d3b9df6d98c498d271",
+            "packages": [
+                "util"
+            ]
+        },
+        {
+            "name": "github.com/dgryski/go-expirecache",
+            "branch": "get_or_set",
+            "revision": "4686b58cd5f00bb06aeb2d052f62432041d823e3",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/dgryski/httputil",
+            "branch": "master",
+            "revision": "189c2918cd08517364b3ede5417684ca7a7341fe",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/facebookgo/atomicfile",
+            "branch": "master",
+            "revision": "2de1f203e7d5e386a6833233882782932729f27e",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/facebookgo/clock",
+            "branch": "master",
+            "revision": "600d898af40aa09a7a93ecb9265d87b0504b6f03",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/facebookgo/grace",
+            "branch": "master",
+            "revision": "4afe952a37a495ae4ac0c1d4ce5f66e91058d149",
+            "packages": [
+                "gracehttp",
+                "gracenet"
+            ]
+        },
+        {
+            "name": "github.com/facebookgo/httpdown",
+            "branch": "master",
+            "revision": "a3b1354551a26449fbe05f5d855937f6e7acbd71",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/facebookgo/pidfile",
+            "branch": "master",
+            "revision": "f242e2999868dcd267a2b86e49ce1f9cf9e15b16",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/facebookgo/stats",
+            "branch": "master",
+            "revision": "1b76add642e42c6ffba7211ad7b3939ce654526e",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/gogo/protobuf",
+            "branch": "master",
+            "revision": "9c5b7bafbfccf2b40d274e0496f3a09418a87af4",
+            "packages": [
+                "proto"
+            ]
+        },
+        {
+            "name": "github.com/kisielk/og-rek",
+            "branch": "master",
+            "revision": "28bae785206e71d70d9c770903d06abb87547734",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/lestrrat/go-file-rotatelogs",
+            "branch": "master",
+            "revision": "505c036604b3326a96097ca91865df30043093a5",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/lestrrat/go-strftime",
+            "branch": "master",
+            "revision": "04ef93e285313c8978cbc7cad26d2aa7a9927451",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/lomik/zapwriter",
+            "branch": "master",
+            "revision": "d4499a33b5929c4a2e7e169165f594f35b39638c",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/peterbourgon/g2g",
+            "branch": "master",
+            "revision": "0c2bab2b173d2cd9385ea6da5cec7b14b5019f11",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/pkg/errors",
+            "branch": "master",
+            "revision": "248dadf4e9068a0b3e79f02ed0a610d935de5302",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/satori/go.uuid",
+            "branch": "master",
+            "revision": "5bf94b69c6b68ee1b541973bb8e1144db23a194b",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "go.uber.org/atomic",
+            "branch": "master",
+            "revision": "3b8db5e93c4c02efbc313e17b2e796b0914a01fb",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "go.uber.org/zap",
+            "branch": "master",
+            "revision": "4257c7cf05477d92ec25c31cfd3d60e89575f18a",
+            "packages": [
+                ".",
+                "buffer",
+                "internal/bufferpool",
+                "internal/color",
+                "internal/exit",
+                "internal/multierror",
+                "zapcore"
+            ]
+        }
+    ]
+}
