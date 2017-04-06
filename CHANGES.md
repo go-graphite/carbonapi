@@ -16,7 +16,10 @@ Changes
 -------
 **Master**
    - **[Breaking]** Logging migrated to zap (structured logging). Log format changed significantly. Old command line options removed. Please consult example.conf for a new config options and explanations
-   - **[Improvement]** Add context support. Also log context from carbonapi
+   - [Improvement] Add context support. Also log context from carbonapi
+   - [Improvement] Add memcache support for zipper caches
+   - [Improvement] Use dep as a vendoring tool
+   - [Improvement] Add a Makefile that will hide some magic from user.
 
 **0.63**
    - [Fix] carbonsearch query cache was never cleared
