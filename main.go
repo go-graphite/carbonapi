@@ -1185,48 +1185,30 @@ func main() {
 	expvar.Publish("Config", expvar.Func(func() interface{} { return Config }))
 
 	// set up caches
+	Config.pathCache = newPathCache(Config.MemcachedServers)
+	Config.searchCache = newPathCache(Config.MemcachedServers)
+
+	Metrics.CacheSize = expvar.Func(func() interface{} { return Config.pathCache.ec.Size() })
+	expvar.Publish("cacheSize", Metrics.CacheSize)
+
+	Metrics.CacheItems = expvar.Func(func() interface{} { return Config.pathCache.ec.Items() })
+	expvar.Publish("cacheItems", Metrics.CacheItems)
+
+	Metrics.SearchCacheSize = expvar.Func(func() interface{} { return Config.searchCache.ec.Size() })
+	expvar.Publish("searchCacheSize", Metrics.SearchCacheSize)
+
+	Metrics.SearchCacheItems = expvar.Func(func() interface{} { return Config.searchCache.ec.Items() })
+	expvar.Publish("searchCacheItems", Metrics.SearchCacheItems)
 
 	if len(Config.MemcachedServers) > 0 {
 		logger.Info("memcached configured",
 			zap.Strings("servers", Config.MemcachedServers),
 		)
 
-		pcache := cache.NewMemcached("czip", Config.MemcachedServers...)
-		scache := cache.NewMemcached("czip", Config.MemcachedServers...)
-
-		Config.pathCache = &pathCacheBytes{bc: pcache}
-		Config.searchCache = &pathCacheBytes{bc: scache}
-
-		mpcache := pcache.(*cache.MemcachedCache)
-		mscache := scache.(*cache.MemcachedCache)
-
 		Metrics.MemcacheTimeouts = expvar.Func(func() interface{} {
-			return mpcache.Timeouts() + mscache.Timeouts()
+			return Config.pathCache.mc.Timeouts() + Config.searchCache.mc.Timeouts()
 		})
 		expvar.Publish("memcacheTimeouts", Metrics.MemcacheTimeouts)
-
-	} else {
-
-		pcache := expirecache.New(0)
-		scache := expirecache.New(0)
-
-		go pcache.ApproximateCleaner(10 * time.Second)
-		go scache.ApproximateCleaner(10 * time.Second)
-
-		Config.pathCache = &pathCacheMem{ec: pcache}
-		Config.searchCache = &pathCacheMem{ec: scache}
-
-		Metrics.CacheSize = expvar.Func(func() interface{} { return pcache.Size() })
-		expvar.Publish("cacheSize", Metrics.CacheSize)
-
-		Metrics.CacheItems = expvar.Func(func() interface{} { return pcache.Items() })
-		expvar.Publish("cacheItems", Metrics.CacheItems)
-
-		Metrics.SearchCacheSize = expvar.Func(func() interface{} { return scache.Size() })
-		expvar.Publish("searchCacheSize", Metrics.SearchCacheSize)
-
-		Metrics.SearchCacheItems = expvar.Func(func() interface{} { return scache.Items() })
-		expvar.Publish("searchCacheItems", Metrics.SearchCacheItems)
 	}
 
 	http.HandleFunc("/metrics/find/", httputil.TrackConnections(httputil.TimeHandler(cu.ParseCtx(findHandler), bucketRequestTimes)))
@@ -1382,46 +1364,66 @@ func (sl serverLimiter) leave(s string) {
 	<-sl[s]
 }
 
-type pathCache interface {
-	set(k string, v []string)
-	get(k string) ([]string, bool)
-}
-
-type pathCacheMem struct {
+type pathCache struct {
 	ec *expirecache.Cache
+	mc *cache.MemcachedCache
+	q  chan pathKV
 }
 
-func (p *pathCacheMem) set(k string, v []string) {
-	// expire cache entries after Config.ExpireCache minutes
+type pathKV struct {
+	k string
+	v []string
+}
+
+func newPathCache(servers []string) pathCache {
+
+	p := pathCache{
+		ec: expirecache.New(0),
+	}
+
+	go p.ec.ApproximateCleaner(10 * time.Second)
+
+	if len(servers) > 0 {
+		p.q = make(chan pathKV, 1000)
+		p.mc = cache.NewMemcached("czip", servers...).(*cache.MemcachedCache)
+
+		go func() {
+			for kv := range p.q {
+				var b, _ = (&ipb3.PathCacheEntry{Hosts: kv.v}).Marshal()
+				p.mc.SyncSet(kv.k, b, Config.ExpireDelaySec)
+			}
+		}()
+	}
+
+	return p
+}
+
+func (p *pathCache) set(k string, v []string) {
+
 	var size uint64
 	for _, vv := range v {
 		size += uint64(len(vv))
 	}
 
 	p.ec.Set(k, v, size, Config.ExpireDelaySec)
+
+	select {
+	case p.q <- pathKV{k: k, v: v}:
+	default:
+	}
 }
 
-func (p *pathCacheMem) get(k string) ([]string, bool) {
-	v, ok := p.ec.Get(k)
-	if !ok {
+func (p *pathCache) get(k string) ([]string, bool) {
+	if v, ok := p.ec.Get(k); ok {
+		return v.([]string), true
+	}
+
+	if p.mc == nil {
 		return nil, false
 	}
 
-	return v.([]string), true
-}
-
-type pathCacheBytes struct {
-	bc cache.BytesCache
-}
-
-func (p *pathCacheBytes) set(k string, v []string) {
-	var b, _ = (&ipb3.PathCacheEntry{Hosts: v}).Marshal()
-
-	p.bc.Set(k, b, Config.ExpireDelaySec)
-}
-
-func (p *pathCacheBytes) get(k string) ([]string, bool) {
-	b, err := p.bc.Get(k)
+	// check second-level bytes cache
+	b, err := p.mc.Get(k)
 	if err != nil {
 		return nil, false
 	}
