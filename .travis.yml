@@ -1,5 +1,9 @@
 language: go
 
+before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install libcairo2-dev -y
+
 go:
   - 1.x
   - 1.7.x
