@@ -1,0 +1,278 @@
+{
+    "memo": "41ab4b525824290bb810e935aa4272e104069bf430386d0f1a75e8f388f7c069",
+    "projects": [
+        {
+            "name": "bitbucket.org/tebeka/strftime",
+            "version": "0.1.2",
+            "revision": "af5e0ef38369dfb5819b56d27d593142841e4600",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/JaderDias/movingmedian",
+            "branch": "master",
+            "revision": "95dc1d1e9d582ba8548e8460a7ae21193be75483",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/aclements/go-moremath",
+            "branch": "master",
+            "revision": "24ddaf78b55ce5e10369ca057d233b7e96a7389e",
+            "packages": [
+                "mathx"
+            ]
+        },
+        {
+            "name": "github.com/bradfitz/gomemcache",
+            "branch": "master",
+            "revision": "fb1f79c6b65acda83063cbc69f6bba1522558bfc",
+            "packages": [
+                "memcache"
+            ]
+        },
+        {
+            "name": "github.com/davecgh/go-spew",
+            "version": "v1.1.0",
+            "revision": "346938d642f2ec3594ed81d874461961cd0faa76",
+            "packages": [
+                "spew"
+            ]
+        },
+        {
+            "name": "github.com/dgryski/carbonzipper",
+            "branch": "master",
+            "revision": "9a6e1a106604ef37a5c06ad666b1294ec674a27f",
+            "packages": [
+                "cache",
+                "carbonzipperpb3",
+                "mstats"
+            ]
+        },
+        {
+            "name": "github.com/dgryski/go-expirecache",
+            "branch": "get_or_set",
+            "revision": "4686b58cd5f00bb06aeb2d052f62432041d823e3",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/dgryski/go-onlinestats",
+            "branch": "master",
+            "revision": "5ff69410145cd15bd908cc2ea44c25d061ff4ad8",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/dustin/go-humanize",
+            "branch": "master",
+            "revision": "bd88f87ad3a420f7bcf05e90566fd1ceb351fa7f",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/evmar/gocairo",
+            "branch": "master",
+            "revision": "ddd30f837497f6fcfe5e3c3665b97d7c17d381fe",
+            "packages": [
+                "cairo"
+            ]
+        },
+        {
+            "name": "github.com/facebookgo/atomicfile",
+            "branch": "master",
+            "revision": "2de1f203e7d5e386a6833233882782932729f27e",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/facebookgo/clock",
+            "branch": "master",
+            "revision": "600d898af40aa09a7a93ecb9265d87b0504b6f03",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/facebookgo/grace",
+            "branch": "master",
+            "revision": "4afe952a37a495ae4ac0c1d4ce5f66e91058d149",
+            "packages": [
+                "gracehttp",
+                "gracenet"
+            ]
+        },
+        {
+            "name": "github.com/facebookgo/httpdown",
+            "branch": "master",
+            "revision": "a3b1354551a26449fbe05f5d855937f6e7acbd71",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/facebookgo/pidfile",
+            "branch": "master",
+            "revision": "f242e2999868dcd267a2b86e49ce1f9cf9e15b16",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/facebookgo/stats",
+            "branch": "master",
+            "revision": "1b76add642e42c6ffba7211ad7b3939ce654526e",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/gogo/protobuf",
+            "branch": "master",
+            "revision": "9c5b7bafbfccf2b40d274e0496f3a09418a87af4",
+            "packages": [
+                "proto"
+            ]
+        },
+        {
+            "name": "github.com/gonum/blas",
+            "branch": "master",
+            "revision": "f6d28c18e71668e63984d0eec21fe11804c6fa30",
+            "packages": [
+                ".",
+                "blas64",
+                "native",
+                "native/internal/math32"
+            ]
+        },
+        {
+            "name": "github.com/gonum/floats",
+            "branch": "master",
+            "revision": "a2cbc5c70616cd18491ef2843231f6ce28b2cb02",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/gonum/internal",
+            "branch": "master",
+            "revision": "aa14b654e75da6e47f3c563fbda889112fe5ac94",
+            "packages": [
+                "asm/f32",
+                "asm/f64"
+            ]
+        },
+        {
+            "name": "github.com/gonum/lapack",
+            "branch": "master",
+            "revision": "eb5191820e3fef2174b4d0658a6dd42413bd61ba",
+            "packages": [
+                ".",
+                "lapack64",
+                "native"
+            ]
+        },
+        {
+            "name": "github.com/gonum/matrix",
+            "branch": "master",
+            "revision": "96a2f64ca6c006823bbfe5f92981534fd0a991b9",
+            "packages": [
+                ".",
+                "mat64"
+            ]
+        },
+        {
+            "name": "github.com/gorilla/handlers",
+            "branch": "master",
+            "revision": "a5775781a543af3c6b9f5baf10995e4d14168950",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/kisielk/og-rek",
+            "branch": "master",
+            "revision": "28bae785206e71d70d9c770903d06abb87547734",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/lomik/zapwriter",
+            "branch": "master",
+            "revision": "d4499a33b5929c4a2e7e169165f594f35b39638c",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/mjibson/go-dsp",
+            "branch": "master",
+            "revision": "49dba83727078f13a0e99553e0f8140990115ac9",
+            "packages": [
+                "dsputils",
+                "fft"
+            ]
+        },
+        {
+            "name": "github.com/peterbourgon/g2g",
+            "branch": "master",
+            "revision": "0c2bab2b173d2cd9385ea6da5cec7b14b5019f11",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/satori/go.uuid",
+            "branch": "master",
+            "revision": "5bf94b69c6b68ee1b541973bb8e1144db23a194b",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "github.com/wangjohn/quickselect",
+            "branch": "master",
+            "revision": "115d21d1a831a53413af863ce9c185d4ed67a8af",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "go.uber.org/atomic",
+            "branch": "master",
+            "revision": "3b8db5e93c4c02efbc313e17b2e796b0914a01fb",
+            "packages": [
+                "."
+            ]
+        },
+        {
+            "name": "go.uber.org/zap",
+            "branch": "master",
+            "revision": "4257c7cf05477d92ec25c31cfd3d60e89575f18a",
+            "packages": [
+                ".",
+                "buffer",
+                "internal/bufferpool",
+                "internal/color",
+                "internal/exit",
+                "internal/multierror",
+                "zapcore"
+            ]
+        },
+        {
+            "name": "gopkg.in/yaml.v2",
+            "branch": "v2",
+            "revision": "a3f3340b5840cee44f372bddb5880fcbc419b46a",
+            "packages": [
+                "."
+            ]
+        }
+    ]
+}

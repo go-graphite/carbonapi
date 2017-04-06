@@ -1,0 +1,49 @@
+{
+    "dependencies": {
+        "github.com/JaderDias/movingmedian": {
+            "branch": "master"
+        },
+        "github.com/dgryski/carbonzipper": {
+            "branch": "master"
+        },
+        "github.com/dgryski/go-onlinestats": {
+            "branch": "master"
+        },
+        "github.com/dustin/go-humanize": {
+            "branch": "master"
+        },
+        "github.com/evmar/gocairo": {
+            "branch": "master"
+        },
+        "github.com/facebookgo/grace": {
+            "branch": "master"
+        },
+        "github.com/facebookgo/pidfile": {
+            "branch": "master"
+        },
+        "github.com/gonum/matrix": {
+            "branch": "master"
+        },
+        "github.com/gorilla/handlers": {
+            "branch": "master"
+        },
+        "github.com/kisielk/og-rek": {
+            "branch": "master"
+        },
+        "github.com/lomik/zapwriter": {
+            "branch": "master"
+        },
+        "github.com/mjibson/go-dsp": {
+            "branch": "master"
+        },
+        "github.com/satori/go.uuid": {
+            "branch": "master"
+        },
+        "github.com/wangjohn/quickselect": {
+            "branch": "master"
+        },
+        "go.uber.org/zap": {
+            "branch": "master"
+        }
+    }
+}

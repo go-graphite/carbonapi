@@ -16,7 +16,7 @@ It's possible to talk directly with `go-carbon`'s carbonserver module, but custo
 
 The only required parameter is the path to a config file. For an example see `carbonapi.example.yaml`
 
-$ ./carbonapi -config /etc/carbonapi.yaml
+`$ ./carbonapi -config /etc/carbonapi.yaml`
 
 Request metrics will be dumped to graphite if coresponding config options are set,
 or if the GRAPHITEHOST/GRAPHITEPORT environment variables are found.
@@ -29,13 +29,11 @@ Some additional steps may be needed to build carbonapi with cairo rendering on M
 
 Install cairo:
 
+```
 $ brew install Caskroom/cask/xquartz
 
 $ brew install cairo --with-x11
-
-Set `PKG_CONFIG_PATH` and `-tags cairo` when building:
-
-`$ PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig go build -v -tags cairo`
+```
 
 Acknowledgement
 ---------------
