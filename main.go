@@ -435,40 +435,43 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 			var glob pb.GlobResponse
 			var haveCacheData bool
-			if !Config.SendGlobsAsIs {
-				tc := time.Now()
-				if response, err := Config.findCache.Get(m.Metric); useCache && err != nil {
-					Metrics.FindCacheOverheadNS.Add(td)
-					Metrics.FindCacheHits.Add(1)
-					err := glob.Unmarshal(response)
-					haveCacheData = err == nil
 
-				}
-				td := time.Since(tc).Nanoseconds()
+			tc := time.Now()
+			if response, err := Config.findCache.Get(m.Metric); useCache && err != nil {
 				Metrics.FindCacheOverheadNS.Add(td)
+				Metrics.FindCacheHits.Add(1)
+				err := glob.Unmarshal(response)
+				haveCacheData = err == nil
 
-				if !haveCacheData {
-					Metrics.FindCacheMisses.Add(1)
-					var err error
-					Metrics.FindRequests.Add(1)
-					zipperRequests++
-					glob, err = Config.zipper.Find(ctx, m.Metric)
-					if err != nil {
-						logger.Error("find error",
-							zap.String("metric", m.Metric),
-							zap.Error(err),
-						)
-						continue
-					}
-					b, err := glob.Marshal()
-					if err == nil {
-						tc := time.Now()
-						Config.findCache.Set(m.Metric, b, 5*60)
-						td := time.Since(tc).Nanoseconds()
-						Metrics.FindCacheOverheadNS.Add(td)
-					}
+			}
+			td := time.Since(tc).Nanoseconds()
+			Metrics.FindCacheOverheadNS.Add(td)
+
+			if !haveCacheData {
+				Metrics.FindCacheMisses.Add(1)
+				var err error
+				Metrics.FindRequests.Add(1)
+				zipperRequests++
+				glob, err = Config.zipper.Find(ctx, m.Metric)
+				if err != nil {
+					logger.Error("find error",
+						zap.String("metric", m.Metric),
+						zap.Error(err),
+					)
+					continue
 				}
+				b, err := glob.Marshal()
+				if err == nil {
+					tc := time.Now()
+					Config.findCache.Set(m.Metric, b, 5*60)
+					td := time.Since(tc).Nanoseconds()
+					Metrics.FindCacheOverheadNS.Add(td)
+				}
+			}
 
+			var sendGlobs = Config.SendGlobsAsIs && len(glob.GetMatches()) < 100
+
+			if sendGlobs {
 				// For each metric returned in the Find response, query Render
 				// This is a conscious decision to *not* cache render data
 				rch := make(chan *expr.MetricData, len(glob.GetMatches()))
