@@ -7,7 +7,7 @@
             "branch": "master"
         },
         "github.com/dgryski/go-expirecache": {
-            "branch": "get_or_set"
+            "branch": "master"
         },
         "github.com/dgryski/httputil": {
             "branch": "master"

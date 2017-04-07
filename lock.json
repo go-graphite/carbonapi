@@ -19,8 +19,8 @@
         },
         {
             "name": "github.com/dgryski/go-expirecache",
-            "branch": "get_or_set",
-            "revision": "4686b58cd5f00bb06aeb2d052f62432041d823e3",
+            "branch": "master",
+            "revision": "743ef98b2adb7d72da5dff5df7d7a82f1a66c63e",
             "packages": [
                 "."
             ]
