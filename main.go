@@ -22,7 +22,6 @@ import (
 
 	cu "github.com/go-graphite/carbonapi/util"
 	"github.com/go-graphite/carbonzipper/cache"
-	pb2 "github.com/go-graphite/carbonzipper/carbonzipperpb"
 	pb3 "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 	"github.com/go-graphite/carbonzipper/internal/ipb3"
 	"github.com/go-graphite/carbonzipper/mstats"
@@ -161,7 +160,7 @@ func doProbe() {
 	// Generate unique ID on every restart
 	uuid := uuid.NewV4()
 	ctx := util.SetUUID(context.Background(), uuid.String())
-	query := "/metrics/find/?format=protobuf3&query=%2A"
+	query := "/metrics/find/?format=protobuf&query=%2A"
 
 	responses := multiGet(ctx, logger, Config.Backends, query)
 
@@ -441,7 +440,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
 	)
 
-	v.Set("format", "protobuf3")
+	v.Set("format", "protobuf")
 	rewrite.RawQuery = v.Encode()
 
 	if searchConfigured && strings.HasPrefix(queries[0], Config.SearchPrefix) {
@@ -541,16 +540,9 @@ func encodeFindResponse(format, query string, w http.ResponseWriter, metrics []*
 		w.Write(b)
 	case "protobuf":
 		w.Header().Set("Content-Type", contentTypeProtobuf)
-		var result pb2.GlobResponse
-		var matches []*pb2.GlobMatch
-		for i := range metrics {
-			matches = append(matches, &pb2.GlobMatch{
-				Path:   &metrics[i].Path,
-				IsLeaf: &metrics[i].IsLeaf,
-			})
-		}
-		result.Name = &query
-		result.Matches = matches
+		var result pb3.GlobResponse
+		result.Name = query
+		result.Matches = metrics
 		b, _ := result.Marshal()
 		w.Write(b)
 	case "json":
@@ -620,7 +612,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 
 	rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
 	v := rewrite.Query()
-	v.Set("format", "protobuf3")
+	v.Set("format", "protobuf")
 
 	var serverList []string
 	var ok bool
@@ -633,7 +625,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 			Metrics.SearchCacheMisses.Add(1)
 			findURL := &url.URL{Path: "/metrics/find/"}
 			findValues := url.Values{}
-			findValues.Set("format", "protobuf3")
+			findValues.Set("format", "protobuf")
 			findValues.Set("query", target)
 			findURL.RawQuery = findValues.Encode()
 
@@ -720,26 +712,15 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 
 	case "protobuf":
 		w.Header().Set("Content-Type", contentTypeProtobuf)
-		var metricsPb2 pb2.MultiFetchResponse
-		for i := range metrics.Metrics {
-			metricsPb2.Metrics = append(metricsPb2.Metrics, &pb2.FetchResponse{
-				Name:      &metrics.Metrics[i].Name,
-				StartTime: &metrics.Metrics[i].StartTime,
-				StopTime:  &metrics.Metrics[i].StopTime,
-				StepTime:  &metrics.Metrics[i].StepTime,
-				Values:    metrics.Metrics[i].Values,
-				IsAbsent:  metrics.Metrics[i].IsAbsent,
-			})
-		}
-		b, err := metricsPb2.Marshal()
+		b, err := metrics.Marshal()
 		if err != nil {
 			logger.Error("error marshaling data",
+				zap.Int("memory_usage_bytes", memoryUsage),
 				zap.Error(err),
 			)
 		}
 		memoryUsage += len(b)
 		w.Write(b)
-
 	case "json":
 		presponse := createRenderResponse(metrics, nil)
 		w.Header().Set("Content-Type", contentTypeJSON)
@@ -978,7 +959,7 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 	format := req.FormValue("format")
 	rewrite, _ := url.ParseRequestURI(req.URL.RequestURI())
 	v := rewrite.Query()
-	v.Set("format", "protobuf3")
+	v.Set("format", "protobuf")
 	rewrite.RawQuery = v.Encode()
 
 	responses := multiGet(ctx, logger, serverList, rewrite.RequestURI())
@@ -1014,28 +995,12 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 		w.Write(b)
 	case "protobuf":
 		w.Header().Set("Content-Type", contentTypeProtobuf)
-		var result pb2.ZipperInfoResponse
-		result.Responses = make([]*pb2.ServerInfoResponse, len(infos))
+		var result pb3.ZipperInfoResponse
+		result.Responses = make([]*pb3.ServerInfoResponse, len(infos))
 		for s, i := range infos {
-
-			var r pb2.ServerInfoResponse
-
-			var retentions []*pb2.Retention
-			for idx := range i.Retentions {
-				retentions = append(retentions, &pb2.Retention{
-					SecondsPerPoint: &i.Retentions[idx].SecondsPerPoint,
-					NumberOfPoints:  &i.Retentions[idx].NumberOfPoints,
-				})
-			}
-
-			r.Server = &s
-			r.Info = &pb2.InfoResponse{
-				Name:              &i.Name,
-				AggregationMethod: &i.AggregationMethod,
-				MaxRetention:      &i.MaxRetention,
-				XFilesFactor:      &i.XFilesFactor,
-				Retentions:        retentions,
-			}
+			var r pb3.ServerInfoResponse
+			r.Server = s
+			r.Info = &i
 			result.Responses = append(result.Responses, &r)
 		}
 		b, _ := result.Marshal()

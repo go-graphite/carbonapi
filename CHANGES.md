@@ -19,7 +19,8 @@ Changes
    - [Improvement] Add context support. Also log context from carbonapi
    - [Improvement] Add memcache support for zipper caches
    - [Improvement] Use dep as a vendoring tool
-   - [Improvement] Add a Makefile that will hide some magic from user.
+   - [Improvement] Add a Makefile that will hide some magic from user
+   - [Fix] Fix incompatibility between carbonzipper and older versions of carbonserver/go-carbon (protobuf2-only)
 
 **0.63**
    - [Fix] carbonsearch query cache was never cleared

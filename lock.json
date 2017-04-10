@@ -1,20 +1,12 @@
 {
-    "memo": "4d3db07ca77f196c2a7025187317662b197e7b964c717d87d480be5bde7c1111",
+    "memo": "ceabda05f20898eaa9735c412e4f7ff1704fc5b8f4abd4193a0abfc606085568",
     "projects": [
         {
             "name": "github.com/bradfitz/gomemcache",
             "branch": "master",
-            "revision": "fb1f79c6b65acda83063cbc69f6bba1522558bfc",
+            "revision": "1952afaa557dc08e8e0d89eafab110fb501c1a2b",
             "packages": [
                 "memcache"
-            ]
-        },
-        {
-            "name": "github.com/dgryski/carbonapi",
-            "branch": "master",
-            "revision": "16227240c313e5252dca61d3b9df6d98c498d271",
-            "packages": [
-                "util"
             ]
         },
         {
@@ -83,9 +75,17 @@
             ]
         },
         {
+            "name": "github.com/go-graphite/carbonapi",
+            "branch": "master",
+            "revision": "ded57b93a75e3b33ae73892f52f90673c06e9cca",
+            "packages": [
+                "util"
+            ]
+        },
+        {
             "name": "github.com/gogo/protobuf",
             "branch": "master",
-            "revision": "9c5b7bafbfccf2b40d274e0496f3a09418a87af4",
+            "revision": "6fe4aed35b712b681d5d372e06da5344c22ed61f",
             "packages": [
                 "proto"
             ]
@@ -93,7 +93,7 @@
         {
             "name": "github.com/kisielk/og-rek",
             "branch": "master",
-            "revision": "28bae785206e71d70d9c770903d06abb87547734",
+            "revision": "ec792bc6e6aa06a6c490e8d292e15cca173c8bd3",
             "packages": [
                 "."
             ]
@@ -132,8 +132,8 @@
         },
         {
             "name": "github.com/pkg/errors",
-            "branch": "master",
-            "revision": "248dadf4e9068a0b3e79f02ed0a610d935de5302",
+            "version": "v0.8.0",
+            "revision": "645ef00459ed84a119197bfb8d8205042c6df63d",
             "packages": [
                 "."
             ]
@@ -148,7 +148,7 @@
         },
         {
             "name": "go.uber.org/atomic",
-            "branch": "master",
+            "version": "v1.1.0",
             "revision": "3b8db5e93c4c02efbc313e17b2e796b0914a01fb",
             "packages": [
                 "."
@@ -156,8 +156,8 @@
         },
         {
             "name": "go.uber.org/zap",
-            "branch": "master",
-            "revision": "4257c7cf05477d92ec25c31cfd3d60e89575f18a",
+            "version": "v1.1.0",
+            "revision": "a2773be06b9ac7c318a3a105b5c310af5730c6b4",
             "packages": [
                 ".",
                 "buffer",
