@@ -11,8 +11,8 @@ Configuration is done via a JSON file loaded at startup.  The only required
 field is the list of carbonserver backends to connect to.
 
 Other pieces of the stack are:
-   - [carbonapi](https://github.com/dgryski/carbonapi)
-   - [carbonmem](https://github.com/dgryski/carbonmem)
+   - [carbonapi](https://github.com/go-graphite/carbonapi)
+   - [carbonmem](https://github.com/go-graphite/carbonmem)
    - [carbonsearch](https://github.com/kanatohodets/carbonsearch)
 
 For an overview of the stack and how the pieces fit together, watch
@@ -30,7 +30,7 @@ Also we will try to maintain backward compatibility from down to up.
 
 For example with protobuf2 -> protobuf3 migration - carbonzipper can still send results to older versions of carbonapi, but can't get results from older versions of carbonserver/go-carbon.
 
-See [CHANGES.md](https://github.com/dgryski/carbonzipper/blob/master/CHANGES.md)
+See [CHANGES.md](https://github.com/go-graphite/carbonzipper/blob/master/CHANGES.md)
 
 Upgrading to 0.60 from 0.50 or earlier
 --------------------------------------
