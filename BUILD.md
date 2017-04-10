@@ -7,7 +7,15 @@ Before you start
 
 carbonapi uses dep as a vendoring tool. Makefile will automatically `go get` it for you if it's not installed.
 
-PNG support is optional (but enabled by default if you are using Makefile) and requires cairo library and it's development packages (libcairo2-dev on Debian-based, cairo-devel on RHEL-compatible)
+PNG/SVG support is optional (but enabled by default if you are using Makefile) and requires cairo library and it's development packages (libcairo2-dev on Debian-based, cairo-devel on RHEL-compatible)
+
+
+Requirements
+------------
+
+ - golang 1.7 or newer.
+ - For PNG/SVG support only: cairo 1.12.0 or newer.
+ - dep (https://github.com/golang/dep) for dependancy management
 
 
 OSX Build Notes
