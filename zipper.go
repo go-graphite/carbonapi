@@ -30,7 +30,7 @@ func (z zipper) Find(ctx context.Context, metric string) (pb.GlobResponse, error
 
 	u.RawQuery = url.Values{
 		"query":  []string{metric},
-		"format": []string{"protobuf3"},
+		"format": []string{"protobuf"},
 	}.Encode()
 
 	var pbresp pb.GlobResponse
@@ -98,7 +98,7 @@ func (z zipper) Render(ctx context.Context, metric string, from, until int32) ([
 
 	u.RawQuery = url.Values{
 		"target": []string{metric},
-		"format": []string{"protobuf3"},
+		"format": []string{"protobuf"},
 		"from":   []string{strconv.Itoa(int(from))},
 		"until":  []string{strconv.Itoa(int(until))},
 	}.Encode()

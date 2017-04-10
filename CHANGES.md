@@ -15,12 +15,12 @@ CHANGELOG
 ---------
 
 **WIP**
- - **[Breaking]** Most of the configuration options moved to a config file.
+ - **[Breaking]** Most of the configuration options moved to a config file
  - **[Breaking]** Logging migrated to zap (structured logging). Log format changed significantly. Old command line options removed. Please consult carbonapi.example.yaml for a new config options and explanations
- - [Improvement] CarbonAPI now passes extra headers to keep track of requests.
- - [Improvement] Allow '^' and '$' as name characters. Required for carbonsearch text-match pattern anchoring.
- - [Improvement] Allow to bind to arbitrary IP:Port. (thx to @zdykstra, #194), Fixes #176.
- - [Improvement] Extend legendValues to append multiple values.
+ - [Improvement] CarbonAPI now passes extra headers to keep track of requests
+ - [Improvement] Allow '^' and '$' as name characters. Required for carbonsearch text-match pattern anchoring
+ - [Improvement] Allow to bind to arbitrary IP:Port. (thx to @zdykstra, #194), Fixes #176
+ - [Improvement] Extend legendValues to append multiple values
  - [Improvement] Add a switch to turn off propagating globbed requests to carbonzipper (was introduced in 0.7.0)
  - [Improvement] Add `{find,render}_cache_overhead_ns` metrics that shows cache query overhead in nanoseconds
  - [Improvement] Use dep as a vendoring tool
@@ -29,8 +29,9 @@ CHANGELOG
  - [Feature] Add fft, ifft, LowPass functions. See COMPATIBILITY.md for more information
  - [Feature] Publish current configuration as an expvar (GET /debug/vars)
  - [Feature] Make prefix configurable (thx to @StephenPCG, #189)
- - [Fix] Fi issue with missing labels on graphs > 14d
- - [Fix] Allow expressions to use 'total' instead of 'sum'. Required for graphite compatibility.
+ - [Fix] Fix issue with missing labels on graphs > 14d
+ - [Fix] Allow expressions to use 'total' instead of 'sum'. Required for graphite compatibility
+ - [Fix] Fix incompatibility between carbonapi and older versions of carbonzipper/carbonserver/go-carbon (protobuf2-only)
 
 Notes on upgrading:
 
