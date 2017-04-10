@@ -1024,14 +1024,16 @@ func main() {
 		logger.Info("memcached configured",
 			zap.Strings("servers", Config.Cache.MemcachedServers),
 		)
-		Config.queryCache = cache.NewMemcached("capiq", Config.Cache.MemcachedServers...)
-		Config.findCache = cache.NewMemcached("capif", Config.Cache.MemcachedServers...)
+		Config.queryCache = cache.NewMemcached("capi", Config.Cache.MemcachedServers...)
+		// find cache is only used if SendGlobsAsIs is false.
+		if !Config.SendGlobsAsIs {
+			Config.findCache = cache.NewExpireCache(0)
+		}
 
 		mcache := Config.queryCache.(*cache.MemcachedCache)
-		fcache := Config.findCache.(*cache.MemcachedCache)
 
 		Metrics.MemcacheTimeouts = expvar.Func(func() interface{} {
-			return mcache.Timeouts() + fcache.Timeouts()
+			return mcache.Timeouts()
 		})
 		expvar.Publish("memcache_timeouts", Metrics.MemcacheTimeouts)
 
