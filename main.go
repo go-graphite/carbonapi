@@ -21,11 +21,11 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/dgryski/carbonapi/expr"
-	"github.com/dgryski/carbonapi/util"
-	"github.com/dgryski/carbonzipper/cache"
-	pb "github.com/dgryski/carbonzipper/carbonzipperpb3"
-	"github.com/dgryski/carbonzipper/mstats"
+	"github.com/go-graphite/carbonapi/expr"
+	"github.com/go-graphite/carbonapi/util"
+	"github.com/go-graphite/carbonzipper/cache"
+	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
+	"github.com/go-graphite/carbonzipper/mstats"
 
 	"github.com/facebookgo/grace/gracehttp"
 	"github.com/facebookgo/pidfile"

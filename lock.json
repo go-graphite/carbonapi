@@ -1,5 +1,5 @@
 {
-    "memo": "41ab4b525824290bb810e935aa4272e104069bf430386d0f1a75e8f388f7c069",
+    "memo": "b08384c36a000433dfde63a9b4a27255fdac0431eaacdf859fa77bcf90cad641",
     "projects": [
         {
             "name": "bitbucket.org/tebeka/strftime",
@@ -12,7 +12,7 @@
         {
             "name": "github.com/JaderDias/movingmedian",
             "branch": "master",
-            "revision": "95dc1d1e9d582ba8548e8460a7ae21193be75483",
+            "revision": "12339a7f3e62ee09ab07cd1b26cd35b36f5efa56",
             "packages": [
                 "."
             ]
@@ -20,7 +20,7 @@
         {
             "name": "github.com/aclements/go-moremath",
             "branch": "master",
-            "revision": "24ddaf78b55ce5e10369ca057d233b7e96a7389e",
+            "revision": "033754ab1fee508c9f98f2785eec2365964e0b05",
             "packages": [
                 "mathx"
             ]
@@ -28,7 +28,7 @@
         {
             "name": "github.com/bradfitz/gomemcache",
             "branch": "master",
-            "revision": "fb1f79c6b65acda83063cbc69f6bba1522558bfc",
+            "revision": "1952afaa557dc08e8e0d89eafab110fb501c1a2b",
             "packages": [
                 "memcache"
             ]
@@ -42,19 +42,9 @@
             ]
         },
         {
-            "name": "github.com/dgryski/carbonzipper",
-            "branch": "master",
-            "revision": "9a6e1a106604ef37a5c06ad666b1294ec674a27f",
-            "packages": [
-                "cache",
-                "carbonzipperpb3",
-                "mstats"
-            ]
-        },
-        {
             "name": "github.com/dgryski/go-expirecache",
-            "branch": "get_or_set",
-            "revision": "4686b58cd5f00bb06aeb2d052f62432041d823e3",
+            "branch": "master",
+            "revision": "743ef98b2adb7d72da5dff5df7d7a82f1a66c63e",
             "packages": [
                 "."
             ]
@@ -62,7 +52,7 @@
         {
             "name": "github.com/dgryski/go-onlinestats",
             "branch": "master",
-            "revision": "5ff69410145cd15bd908cc2ea44c25d061ff4ad8",
+            "revision": "91a8fc22ba247b57c243ab90b49049fb734c47c3",
             "packages": [
                 "."
             ]
@@ -70,7 +60,7 @@
         {
             "name": "github.com/dustin/go-humanize",
             "branch": "master",
-            "revision": "bd88f87ad3a420f7bcf05e90566fd1ceb351fa7f",
+            "revision": "259d2a102b871d17f30e3cd9881a642961a1e486",
             "packages": [
                 "."
             ]
@@ -133,9 +123,19 @@
             ]
         },
         {
+            "name": "github.com/go-graphite/carbonzipper",
+            "branch": "master",
+            "revision": "1c15f0c9e9c3582d23ed2d038ba40571ea557f0f",
+            "packages": [
+                "cache",
+                "carbonzipperpb3",
+                "mstats"
+            ]
+        },
+        {
             "name": "github.com/gogo/protobuf",
             "branch": "master",
-            "revision": "9c5b7bafbfccf2b40d274e0496f3a09418a87af4",
+            "revision": "6fe4aed35b712b681d5d372e06da5344c22ed61f",
             "packages": [
                 "proto"
             ]
@@ -143,7 +143,7 @@
         {
             "name": "github.com/gonum/blas",
             "branch": "master",
-            "revision": "f6d28c18e71668e63984d0eec21fe11804c6fa30",
+            "revision": "430a98d0f42f5d7b9a9535580771233386034848",
             "packages": [
                 ".",
                 "blas64",
@@ -171,7 +171,7 @@
         {
             "name": "github.com/gonum/lapack",
             "branch": "master",
-            "revision": "eb5191820e3fef2174b4d0658a6dd42413bd61ba",
+            "revision": "cbbc7c6464179082632adea15fd7b7ac5fb5220d",
             "packages": [
                 ".",
                 "lapack64",
@@ -181,7 +181,7 @@
         {
             "name": "github.com/gonum/matrix",
             "branch": "master",
-            "revision": "96a2f64ca6c006823bbfe5f92981534fd0a991b9",
+            "revision": "7f732c54d49e291d30b59aa907efb80add8d794d",
             "packages": [
                 ".",
                 "mat64"
@@ -190,7 +190,7 @@
         {
             "name": "github.com/gorilla/handlers",
             "branch": "master",
-            "revision": "a5775781a543af3c6b9f5baf10995e4d14168950",
+            "revision": "13d73096a474cac93275c679c7b8a2dc17ddba82",
             "packages": [
                 "."
             ]
@@ -198,7 +198,7 @@
         {
             "name": "github.com/kisielk/og-rek",
             "branch": "master",
-            "revision": "28bae785206e71d70d9c770903d06abb87547734",
+            "revision": "ec792bc6e6aa06a6c490e8d292e15cca173c8bd3",
             "packages": [
                 "."
             ]
@@ -239,14 +239,14 @@
         {
             "name": "github.com/wangjohn/quickselect",
             "branch": "master",
-            "revision": "115d21d1a831a53413af863ce9c185d4ed67a8af",
+            "revision": "ed8402a42d5f52ff8d3369f179e12243906f298a",
             "packages": [
                 "."
             ]
         },
         {
             "name": "go.uber.org/atomic",
-            "branch": "master",
+            "version": "v1.1.0",
             "revision": "3b8db5e93c4c02efbc313e17b2e796b0914a01fb",
             "packages": [
                 "."
@@ -254,8 +254,8 @@
         },
         {
             "name": "go.uber.org/zap",
-            "branch": "master",
-            "revision": "4257c7cf05477d92ec25c31cfd3d60e89575f18a",
+            "version": "v1.1.0",
+            "revision": "a2773be06b9ac7c318a3a105b5c310af5730c6b4",
             "packages": [
                 ".",
                 "buffer",
@@ -269,7 +269,7 @@
         {
             "name": "gopkg.in/yaml.v2",
             "branch": "v2",
-            "revision": "a3f3340b5840cee44f372bddb5880fcbc419b46a",
+            "revision": "cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b",
             "packages": [
                 "."
             ]

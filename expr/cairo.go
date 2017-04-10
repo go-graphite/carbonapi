@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	pb "github.com/dgryski/carbonzipper/carbonzipperpb3"
+	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 
 	"bitbucket.org/tebeka/strftime"
 	"github.com/evmar/gocairo/cairo"

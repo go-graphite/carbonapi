@@ -31,7 +31,7 @@ graphite:
 # Maximium idle connections to carbonzipper
 idleConnections: 10
 pidFile: ""
-# See https://github.com/dgryski/carbonzipper/blob/master/example.conf#L70-L108 for format explanation
+# See https://github.com/go-graphite/carbonzipper/blob/master/example.conf#L70-L108 for format explanation
 logger:
     - logger: ""
       file: "stderr"

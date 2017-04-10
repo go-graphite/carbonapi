@@ -1,14 +1,14 @@
 carbonapi: replacement graphite API server
 ------------------------------------------
 
-[![Build Status](https://travis-ci.org/dgryski/carbonapi.svg?branch=master)](https://travis-ci.org/dgryski/carbonapi)
-[![GoDoc](https://godoc.org/github.com/dgryski/carbonapi?status.svg)](https://godoc.org/github.com/dgryski/carbonapi)
+[![Build Status](https://travis-ci.org/go-graphite/carbonapi.svg?branch=master)](https://travis-ci.org/go-graphite/carbonapi)
+[![GoDoc](https://godoc.org/github.com/go-graphite/carbonapi?status.svg)](https://godoc.org/github.com/go-graphite/carbonapi)
 
 
 CarbonAPI supports a significant subset of graphite functions [see [COMPATIBILITY](COMPATIBILITY.md)].
 In our testing it has shown to be 5x-10x faster than requesting data from graphite-web.
 
-To use this, you must have a [carbonzipper](https://github.com/dgryski/carbonzipper)
+To use this, you must have a [carbonzipper](https://github.com/go-graphite/carbonzipper)
 install, which in turn requires that your
 carbon stores are running [go-carbon](https://github.com/lomik/go-carbon) (Note: you need to enable carbonserver in go-carbon)
 

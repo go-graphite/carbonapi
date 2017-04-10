@@ -140,7 +140,7 @@ highestCurrent(seriesList, n)                                             |  0.9
 highestMax(seriesList, n)                                                 |  0.9.9  | Supported
 hitcount(seriesList, intervalString, alignToInterval=False)               |  0.9.10 | Supported
 holtWintersAberration(seriesList, delta=3)                                |  0.9.10 | Supported
-holtWintersConfidenceArea(seriesList, delta=3)                            |  0.9.10 | [#66](https://github.com/dgryski/carbonapi/issues/66)
+holtWintersConfidenceArea(seriesList, delta=3)                            |  0.9.10 | [#66](https://github.com/go-graphite/carbonapi/issues/66)
 holtWintersConfidenceBands(seriesList, delta=3)                           |  0.9.10 | Supported
 holtWintersForecast(seriesList)                                           |  0.9.10 | Supported
 identity(name)                                                            |  0.9.14 |
@@ -203,7 +203,7 @@ sortByMinima(seriesList)                                                  |  0.9
 sortByName(seriesList)                                                    |  0.9.15 | Supported
 sortByTotal(seriesList)                                                   |  0.9.11 | Supported
 squareRoot(seriesList)                                                    |  0.9.14 | Supported
-stacked(seriesLists, stackName='__DEFAULT__')                             |  0.9.10 | [#74](https://github.com/dgryski/carbonapi/issues/74)
+stacked(seriesLists, stackName='__DEFAULT__')                             |  0.9.10 | [#74](https://github.com/go-graphite/carbonapi/issues/74)
 stddevSeries(*seriesLists)                                                |  0.9.14 |
 stdev(seriesList, points, windowTolerance=0.1)                            |  0.9.10 | Supported + alias stddev()
 substr(seriesList, start=0, stop=0)                                       |  0.9.9  | Supported

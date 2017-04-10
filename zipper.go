@@ -9,9 +9,9 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/dgryski/carbonapi/expr"
-	pb "github.com/dgryski/carbonzipper/carbonzipperpb3"
-	"github.com/dgryski/carbonapi/util"
+	"github.com/go-graphite/carbonapi/expr"
+	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
+	"github.com/go-graphite/carbonapi/util"
 )
 
 var errNoMetrics = errors.New("no metrics")

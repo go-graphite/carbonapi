@@ -3,7 +3,7 @@
         "github.com/JaderDias/movingmedian": {
             "branch": "master"
         },
-        "github.com/dgryski/carbonzipper": {
+        "github.com/go-graphite/carbonzipper": {
             "branch": "master"
         },
         "github.com/dgryski/go-onlinestats": {

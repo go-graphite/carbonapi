@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	pb "github.com/dgryski/carbonzipper/carbonzipperpb3"
+	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 )
 
 func deepClone(original map[MetricRequest][]*MetricData) map[MetricRequest][]*MetricData {

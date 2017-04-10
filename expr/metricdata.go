@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	pb "github.com/dgryski/carbonzipper/carbonzipperpb3"
+	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 	pickle "github.com/kisielk/og-rek"
 )
 

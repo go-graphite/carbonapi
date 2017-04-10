@@ -2,7 +2,7 @@ language: go
 
 before_install:
   - sudo apt-get -qq update
-  - sudo apt-get install libcairo2-dev -y
+  - sudo apt-get install libcairo2-dev mercurial pkg-config -y
 
 go:
   - 1.x
