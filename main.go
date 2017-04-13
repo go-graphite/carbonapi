@@ -472,44 +472,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			var sendGlobs = Config.SendGlobsAsIs && len(glob.GetMatches()) < 100
 
 			if sendGlobs {
-				// For each metric returned in the Find response, query Render
-				// This is a conscious decision to *not* cache render data
-				rch := make(chan *expr.MetricData, len(glob.GetMatches()))
-				leaves := 0
-				for _, m := range glob.GetMatches() {
-					if !m.GetIsLeaf() {
-						continue
-					}
-					Metrics.RenderRequests.Add(1)
-					leaves++
-					Config.limiter.enter()
-					zipperRequests++
-					go func(m *pb.GlobMatch, from, until int32) {
-						var rptr *expr.MetricData
-						r, err := Config.zipper.Render(ctx, m.GetPath(), from, until)
-						if err == nil {
-							rptr = r[0]
-							size += rptr.Size()
-						} else {
-							logger.Error("render error",
-								zap.String("target", m.GetPath()),
-								zap.Error(err),
-							)
-						}
-						rch <- rptr
-						Config.limiter.leave()
-					}(m, mfetch.From, mfetch.Until)
-				}
+				// Request is "small enough" -- send the entire thing as a render request
 
-				for i := 0; i < leaves; i++ {
-					r := <-rch
-					if r != nil {
-						metricMap[mfetch] = append(metricMap[mfetch], r)
-					}
-				}
-			} else {
-
-				// For each metric returned in the Find response, query Render
 				Metrics.RenderRequests.Add(1)
 				Config.limiter.enter()
 				zipperRequests++
@@ -519,12 +483,49 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 					errors[target] = err.Error()
 					Config.limiter.leave()
 					continue
-				} else {
-					metricMap[mfetch] = r
 				}
 				Config.limiter.leave()
+				metricMap[mfetch] = r
 				for i := range r {
 					size += r[i].Size()
+				}
+
+			} else {
+				// Request is "too large"; send render requests individually
+				rch := make(chan *expr.MetricData, len(glob.GetMatches()))
+				var leaves int
+				for _, m := range glob.GetMatches() {
+					if !m.GetIsLeaf() {
+						continue
+					}
+					leaves++
+
+					Metrics.RenderRequests.Add(1)
+					Config.limiter.enter()
+					zipperRequests++
+
+					go func(path string, from, until int32) {
+						var rptr *expr.MetricData
+						r, err := Config.zipper.Render(ctx, path, from, until)
+						if err == nil {
+							rptr = r[0]
+						} else {
+							logger.Error("render error",
+								zap.String("target", path),
+								zap.Error(err),
+							)
+						}
+						rch <- rptr
+						Config.limiter.leave()
+					}(m.GetPath(), mfetch.From, mfetch.Until)
+				}
+
+				for i := 0; i < leaves; i++ {
+					r := <-rch
+					if r != nil {
+						size += r.Size()
+						metricMap[mfetch] = append(metricMap[mfetch], r)
+					}
 				}
 			}
 
