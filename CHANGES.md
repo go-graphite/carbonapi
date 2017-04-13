@@ -20,6 +20,7 @@ Changes
    - [Improvement] Add memcache support for zipper caches
    - [Improvement] Use dep as a vendoring tool
    - [Improvement] Add a Makefile that will hide some magic from user
+   - [Improvement] Split carbonzipper into several packages
    - [Fix] Fix incompatibility between carbonzipper and older versions of carbonserver/go-carbon (protobuf2-only)
 
 **0.63**
