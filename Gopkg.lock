@@ -1,0 +1,192 @@
+memo = "b328b595c7b97d83c8315f3939b20cd5f23d79f5572f119c09556858b0771de1"
+
+[[projects]]
+  name = "bitbucket.org/tebeka/strftime"
+  packages = ["."]
+  revision = "af5e0ef38369dfb5819b56d27d593142841e4600"
+  version = "0.1.2"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/JaderDias/movingmedian"
+  packages = ["."]
+  revision = "95dc1d1e9d582ba8548e8460a7ae21193be75483"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/aclements/go-moremath"
+  packages = ["mathx"]
+  revision = "24ddaf78b55ce5e10369ca057d233b7e96a7389e"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/bradfitz/gomemcache"
+  packages = ["memcache"]
+  revision = "fb1f79c6b65acda83063cbc69f6bba1522558bfc"
+
+[[projects]]
+  name = "github.com/davecgh/go-spew"
+  packages = ["spew"]
+  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
+  version = "v1.1.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/dgryski/go-expirecache"
+  packages = ["."]
+  revision = "743ef98b2adb7d72da5dff5df7d7a82f1a66c63e"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/dgryski/go-onlinestats"
+  packages = ["."]
+  revision = "5ff69410145cd15bd908cc2ea44c25d061ff4ad8"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/dustin/go-humanize"
+  packages = ["."]
+  revision = "bd88f87ad3a420f7bcf05e90566fd1ceb351fa7f"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/evmar/gocairo"
+  packages = ["cairo"]
+  revision = "ddd30f837497f6fcfe5e3c3665b97d7c17d381fe"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/facebookgo/atomicfile"
+  packages = ["."]
+  revision = "2de1f203e7d5e386a6833233882782932729f27e"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/facebookgo/clock"
+  packages = ["."]
+  revision = "600d898af40aa09a7a93ecb9265d87b0504b6f03"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/facebookgo/grace"
+  packages = ["gracehttp","gracenet"]
+  revision = "4afe952a37a495ae4ac0c1d4ce5f66e91058d149"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/facebookgo/httpdown"
+  packages = ["."]
+  revision = "a3b1354551a26449fbe05f5d855937f6e7acbd71"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/facebookgo/pidfile"
+  packages = ["."]
+  revision = "f242e2999868dcd267a2b86e49ce1f9cf9e15b16"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/facebookgo/stats"
+  packages = ["."]
+  revision = "1b76add642e42c6ffba7211ad7b3939ce654526e"
+
+[[projects]]
+  branch = "refactor"
+  name = "github.com/go-graphite/carbonzipper"
+  packages = ["cache","carbonzipperpb3","mstats"]
+  revision = "cf93cd1393ca51ded7821e440bc3571e500fa42f"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/gogo/protobuf"
+  packages = ["proto"]
+  revision = "9c5b7bafbfccf2b40d274e0496f3a09418a87af4"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/gonum/blas"
+  packages = [".","blas64","native","native/internal/math32"]
+  revision = "f6d28c18e71668e63984d0eec21fe11804c6fa30"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/gonum/floats"
+  packages = ["."]
+  revision = "a2cbc5c70616cd18491ef2843231f6ce28b2cb02"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/gonum/internal"
+  packages = ["asm/f32","asm/f64"]
+  revision = "aa14b654e75da6e47f3c563fbda889112fe5ac94"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/gonum/lapack"
+  packages = [".","lapack64","native"]
+  revision = "eb5191820e3fef2174b4d0658a6dd42413bd61ba"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/gonum/matrix"
+  packages = [".","mat64"]
+  revision = "96a2f64ca6c006823bbfe5f92981534fd0a991b9"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/gorilla/handlers"
+  packages = ["."]
+  revision = "a5775781a543af3c6b9f5baf10995e4d14168950"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/kisielk/og-rek"
+  packages = ["."]
+  revision = "28bae785206e71d70d9c770903d06abb87547734"
+
+[[projects]]
+  name = "github.com/lomik/zapwriter"
+  packages = ["."]
+  revision = "d4499a33b5929c4a2e7e169165f594f35b39638c"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/mjibson/go-dsp"
+  packages = ["dsputils","fft"]
+  revision = "49dba83727078f13a0e99553e0f8140990115ac9"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/peterbourgon/g2g"
+  packages = ["."]
+  revision = "0c2bab2b173d2cd9385ea6da5cec7b14b5019f11"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/satori/go.uuid"
+  packages = ["."]
+  revision = "5bf94b69c6b68ee1b541973bb8e1144db23a194b"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/wangjohn/quickselect"
+  packages = ["."]
+  revision = "115d21d1a831a53413af863ce9c185d4ed67a8af"
+
+[[projects]]
+  branch = "master"
+  name = "go.uber.org/atomic"
+  packages = ["."]
+  revision = "3b8db5e93c4c02efbc313e17b2e796b0914a01fb"
+
+[[projects]]
+  branch = "master"
+  name = "go.uber.org/zap"
+  packages = [".","buffer","internal/bufferpool","internal/color","internal/exit","internal/multierror","zapcore"]
+  revision = "4257c7cf05477d92ec25c31cfd3d60e89575f18a"
+
+[[projects]]
+  branch = "v2"
+  name = "gopkg.in/yaml.v2"
+  packages = ["."]
+  revision = "cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b"
