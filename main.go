@@ -175,7 +175,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	)
 
 	metrics, stats, err := Config.zipper.Find(ctx, logger, originalQuery)
-	Config.zipper.SendStats(stats)
+	sendStats(stats)
 	if err != nil {
 		accessLogger.Error("find failed",
 			zap.Int("http_code", http.StatusInternalServerError),
@@ -265,10 +265,10 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 
 	from, err := strconv.Atoi(req.FormValue("from"))
 	if err != nil {
-		http.Error(w, "empty target", http.StatusBadRequest)
+		http.Error(w, "from is not a integer", http.StatusBadRequest)
 		accessLogger.Error("request failed",
 			zap.Int("memory_usage_bytes", memoryUsage),
-			zap.String("reason", "invalid from"),
+			zap.String("reason", "from is not a integer"),
 			zap.Int("http_code", http.StatusBadRequest),
 			zap.Duration("runtime_seconds", time.Since(t0)),
 		)
@@ -276,10 +276,10 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	until, err := strconv.Atoi(req.FormValue("until"))
 	if err != nil {
-		http.Error(w, "empty target", http.StatusBadRequest)
+		http.Error(w, "until is not a integer", http.StatusBadRequest)
 		accessLogger.Error("request failed",
 			zap.Int("memory_usage_bytes", memoryUsage),
-			zap.String("reason", "invalid from"),
+			zap.String("reason", "until is not a integer"),
 			zap.Int("http_code", http.StatusBadRequest),
 			zap.Duration("runtime_seconds", time.Since(t0)),
 		)
@@ -298,13 +298,13 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	metrics, stats, err := Config.zipper.Render(ctx, logger, target, int32(from), int32(until))
-	Config.zipper.SendStats(stats)
+	sendStats(stats)
 	if err != nil {
-		http.Error(w, "error fetching the data", http.StatusBadRequest)
+		http.Error(w, "error fetching the data", http.StatusInternalServerError)
 		accessLogger.Error("request failed",
 			zap.Int("memory_usage_bytes", memoryUsage),
 			zap.String("reason", err.Error()),
-			zap.Int("http_code", http.StatusBadRequest),
+			zap.Int("http_code", http.StatusInternalServerError),
 			zap.Duration("runtime_seconds", time.Since(t0)),
 		)
 		return
@@ -315,10 +315,15 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", contentTypeProtobuf)
 		b, err := metrics.Marshal()
 		if err != nil {
-			logger.Error("error marshaling data",
+			http.Error(w, "error marshaling data", http.StatusInternalServerError)
+			accessLogger.Error("error fetching the data",
+				zap.Int("http_code", http.StatusInternalServerError),
+				zap.String("reason", "error marshaling data"),
+				zap.Duration("runtime_seconds", time.Since(t0)),
 				zap.Int("memory_usage_bytes", memoryUsage),
 				zap.Error(err),
 			)
+			return
 		}
 		memoryUsage += len(b)
 		w.Write(b)
@@ -327,7 +332,11 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", contentTypeProtobuf)
 		b, err := metrics.Marshal()
 		if err != nil {
-			logger.Error("error marshaling data",
+			http.Error(w, "error marshaling data", http.StatusInternalServerError)
+			accessLogger.Error("error fetching the data",
+				zap.Int("http_code", http.StatusInternalServerError),
+				zap.String("reason", "error marshaling data"),
+				zap.Duration("runtime_seconds", time.Since(t0)),
 				zap.Int("memory_usage_bytes", memoryUsage),
 				zap.Error(err),
 			)
@@ -338,7 +347,17 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		presponse := createRenderResponse(metrics, nil)
 		w.Header().Set("Content-Type", contentTypeJSON)
 		e := json.NewEncoder(w)
-		e.Encode(presponse)
+		err = e.Encode(presponse)
+		if err != nil {
+			http.Error(w, "error marshaling data", http.StatusInternalServerError)
+			accessLogger.Error("error fetching the data",
+				zap.Int("http_code", http.StatusInternalServerError),
+				zap.String("reason", "error marshaling data"),
+				zap.Duration("runtime_seconds", time.Since(t0)),
+				zap.Int("memory_usage_bytes", memoryUsage),
+				zap.Error(err),
+			)
+		}
 
 	case "", "pickle":
 		presponse := createRenderResponse(metrics, pickle.None{})
@@ -346,6 +365,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		e := pickle.NewEncoder(w)
 		e.Encode(presponse)
 	}
+
 	accessLogger.Info("request served",
 		zap.Int("memory_usage_bytes", memoryUsage),
 		zap.Int("http_code", http.StatusOK),
@@ -421,7 +441,7 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	infos, stats, err := Config.zipper.Info(ctx, logger, target)
-	Config.zipper.SendStats(stats)
+	sendStats(stats)
 	if err != nil {
 		accessLogger.Error("info failed",
 			zap.Int("http_code", http.StatusInternalServerError),
@@ -556,8 +576,16 @@ func main() {
 		)
 	}
 
-	// command line overrides config file
+	// Should print nicer stack traces in case of unexpected panic.
+	defer func(){
+		if r := recover(); r != nil {
+			logger.Fatal("Recovered from unhandled panic",
+				zap.Stack("stacktrace"),
+			)
+		}
+	}()
 
+	// command line overrides config file
 	if *port != 0 {
 		Config.Port = *port
 	}

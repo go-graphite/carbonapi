@@ -60,7 +60,7 @@ type Zipper struct {
 	concurrencyLimitPerServer int
 	maxIdleConnsPerHost       int
 
-	SendStats func(*Stats)
+	sendStats func(*Stats)
 }
 
 type Stats struct {
@@ -90,7 +90,7 @@ func NewZipper(sender func(*Stats), config *Config) *Zipper {
 		ProbeQuit:   make(chan struct{}),
 		ProbeForce:  make(chan int),
 
-		SendStats: sender,
+		sendStats: sender,
 
 		pathCache:   config.PathCache,
 		searchCache: config.SearchCache,
@@ -133,6 +133,190 @@ type ServerResponse struct {
 	response []byte
 }
 
+var errNoResponses = fmt.Errorf("No responses fetched from upstream")
+var errNoMetricsFetched = fmt.Errorf("No metrics in the response")
+
+func mergeResponses(responses []ServerResponse, stats *Stats) ([]string, *pb3.MultiFetchResponse) {
+	logger := zapwriter.Logger("zipper_render")
+
+	servers := make([]string, 0, len(responses))
+	metrics := make(map[string][]pb3.FetchResponse)
+
+	for _, r := range responses {
+		var d pb3.MultiFetchResponse
+		err := d.Unmarshal(r.response)
+		if err != nil {
+			logger.Error("error decoding protobuf response",
+				zap.String("server", r.server),
+				zap.Error(err),
+			)
+			logger.Debug("response hexdump",
+				zap.String("response", hex.Dump(r.response)),
+			)
+			stats.RenderErrors++
+			continue
+		}
+		stats.MemoryUsage += int64(d.Size())
+		for _, m := range d.Metrics {
+			metrics[m.GetName()] = append(metrics[m.GetName()], *m)
+		}
+		servers = append(servers, r.server)
+	}
+
+	var multi pb3.MultiFetchResponse
+
+	if len(metrics) == 0 {
+		return servers, nil
+	}
+
+	for name, decoded := range metrics {
+		logger.Debug("decoded response",
+			zap.String("name", name),
+			zap.Any("decoded", decoded),
+		)
+
+		if len(decoded) == 1 {
+			logger.Debug("only one decoded response to merge",
+				zap.String("name", name),
+			)
+			m := decoded[0]
+			multi.Metrics = append(multi.Metrics, &m)
+			continue
+		}
+
+		// Use the metric with the highest resolution as our base
+		var highest int
+		for i, d := range decoded {
+			if d.GetStepTime() < decoded[highest].GetStepTime() {
+				highest = i
+			}
+		}
+		decoded[0], decoded[highest] = decoded[highest], decoded[0]
+
+		metric := decoded[0]
+
+		mergeValues(&metric, decoded, stats)
+		multi.Metrics = append(multi.Metrics, &metric)
+	}
+
+	stats.MemoryUsage += int64(multi.Size())
+
+	return servers, &multi
+}
+
+func mergeValues(metric *pb3.FetchResponse, decoded []pb3.FetchResponse, stats *Stats) {
+	logger := zapwriter.Logger("zipper_render")
+
+	var responseLengthMismatch bool
+	for i := range metric.Values {
+		if !metric.IsAbsent[i] || responseLengthMismatch {
+			continue
+		}
+
+		// found a missing value, find a replacement
+		for other := 1; other < len(decoded); other++ {
+
+			m := decoded[other]
+
+			if len(m.Values) != len(metric.Values) {
+				logger.Error("unable to merge ovalues",
+					zap.Int("metric_values", len(metric.Values)),
+					zap.Int("response_values", len(m.Values)),
+				)
+				// TODO(dgryski): we should remove
+				// decoded[other] from the list of responses to
+				// consider but this assumes that decoded[0] is
+				// the 'highest resolution' response and thus
+				// the one we want to keep, instead of the one
+				// we want to discard
+
+				stats.RenderErrors++
+				responseLengthMismatch = true
+				break
+			}
+
+			// found one
+			if !m.IsAbsent[i] {
+				metric.IsAbsent[i] = false
+				metric.Values[i] = m.Values[i]
+			}
+		}
+	}
+}
+
+func infoUnpackPB(responses []ServerResponse, stats *Stats) map[string]pb3.InfoResponse {
+	logger := zapwriter.Logger("zipper_info").With(zap.String("handler", "info"))
+
+	decoded := make(map[string]pb3.InfoResponse)
+	for _, r := range responses {
+		if r.response == nil {
+			continue
+		}
+		var d pb3.InfoResponse
+		err := d.Unmarshal(r.response)
+		if err != nil {
+			logger.Error("error decoding protobuf response",
+				zap.String("server", r.server),
+				zap.Error(err),
+			)
+			logger.Debug("response hexdump",
+				zap.String("response", hex.Dump(r.response)),
+			)
+			stats.InfoErrors++
+			continue
+		}
+		decoded[r.server] = d
+	}
+
+	logger.Debug("info request",
+		zap.Any("decoded_response", decoded),
+	)
+
+	return decoded
+}
+
+func findUnpackPB(responses []ServerResponse, stats *Stats) ([]*pb3.GlobMatch, map[string][]string) {
+	logger := zapwriter.Logger("zipper_find").With(zap.String("handler", "findUnpackPB"))
+
+	// metric -> [server1, ... ]
+	paths := make(map[string][]string)
+	seen := make(map[nameLeaf]bool)
+
+	var metrics []*pb3.GlobMatch
+	for _, r := range responses {
+		var metric pb3.GlobResponse
+		err := metric.Unmarshal(r.response)
+		if err != nil {
+			logger.Error("error decoding protobuf response",
+				zap.String("server", r.server),
+				zap.Error(err),
+			)
+			logger.Debug("response hexdump",
+				zap.String("response", hex.Dump(r.response)),
+			)
+			stats.FindErrors += 1
+			continue
+		}
+
+		for _, match := range metric.Matches {
+			n := nameLeaf{match.Path, match.IsLeaf}
+			_, ok := seen[n]
+			if !ok {
+				// we haven't seen this name yet
+				// add the metric to the list of metrics to return
+				metrics = append(metrics, match)
+				seen[n] = true
+			}
+			// add the server to the list of servers that know about this metric
+			p := paths[match.Path]
+			p = append(p, r.server)
+			paths[match.Path] = p
+		}
+	}
+
+	return metrics, paths
+}
+
 func (z *Zipper) doProbe() {
 	stats := &Stats{}
 	logger := zapwriter.Logger("probe")
@@ -148,9 +332,9 @@ func (z *Zipper) doProbe() {
 		return
 	}
 
-	_, paths := z.findUnpackPB(responses, stats)
+	_, paths := findUnpackPB(responses, stats)
 
-	z.SendStats(stats)
+	z.sendStats(stats)
 
 	incompleteResponse := false
 	if len(responses) != len(z.backends) {
@@ -325,52 +509,10 @@ GATHER:
 	return response
 }
 
-func (z *Zipper) findUnpackPB(responses []ServerResponse, stats *Stats) ([]*pb3.GlobMatch, map[string][]string) {
-	logger := zapwriter.Logger("zipper_find").With(zap.String("handler", "findUnpackPB"))
-
-	// metric -> [server1, ... ]
-	paths := make(map[string][]string)
-	seen := make(map[nameLeaf]bool)
-
-	var metrics []*pb3.GlobMatch
-	for _, r := range responses {
-		var metric pb3.GlobResponse
-		err := metric.Unmarshal(r.response)
-		if err != nil {
-			logger.Error("error decoding protobuf response",
-				zap.String("server", r.server),
-				zap.Error(err),
-			)
-			logger.Debug("response hexdump",
-				zap.String("response", hex.Dump(r.response)),
-			)
-			stats.FindErrors += 1
-			continue
-		}
-
-		for _, match := range metric.Matches {
-			n := nameLeaf{match.Path, match.IsLeaf}
-			_, ok := seen[n]
-			if !ok {
-				// we haven't seen this name yet
-				// add the metric to the list of metrics to return
-				metrics = append(metrics, match)
-				seen[n] = true
-			}
-			// add the server to the list of servers that know about this metric
-			p := paths[match.Path]
-			p = append(p, r.server)
-			paths[match.Path] = p
-		}
-	}
-
-	return metrics, paths
-}
-
 func (z *Zipper) fetchCarbonsearchResponse(ctx context.Context, logger *zap.Logger, url string, stats *Stats) []string {
 	// Send query to SearchBackend. The result is []queries for StorageBackends
 	searchResponse := z.multiGet(ctx, logger, []string{z.searchBackend}, url, stats)
-	m, _ := z.findUnpackPB(searchResponse, stats)
+	m, _ := findUnpackPB(searchResponse, stats)
 
 	queries := make([]string, 0, len(m))
 	for _, v := range m {
@@ -378,148 +520,6 @@ func (z *Zipper) fetchCarbonsearchResponse(ctx context.Context, logger *zap.Logg
 	}
 	return queries
 }
-
-func (z *Zipper) mergeResponses(responses []ServerResponse, stats *Stats) ([]string, *pb3.MultiFetchResponse) {
-	logger := zapwriter.Logger("zipper_render")
-
-	servers := make([]string, 0, len(responses))
-	metrics := make(map[string][]pb3.FetchResponse)
-
-	for _, r := range responses {
-		var d pb3.MultiFetchResponse
-		err := d.Unmarshal(r.response)
-		if err != nil {
-			logger.Error("error decoding protobuf response",
-				zap.String("server", r.server),
-				zap.Error(err),
-			)
-			logger.Debug("response hexdump",
-				zap.String("response", hex.Dump(r.response)),
-			)
-			stats.RenderErrors++
-			continue
-		}
-		stats.MemoryUsage += int64(d.Size())
-		for _, m := range d.Metrics {
-			metrics[m.GetName()] = append(metrics[m.GetName()], *m)
-		}
-		servers = append(servers, r.server)
-	}
-
-	var multi pb3.MultiFetchResponse
-
-	if len(metrics) == 0 {
-		return servers, nil
-	}
-
-	for name, decoded := range metrics {
-		logger.Debug("decoded response",
-			zap.String("name", name),
-			zap.Any("decoded", decoded),
-		)
-
-		if len(decoded) == 1 {
-			logger.Debug("only one decoded response to merge",
-				zap.String("name", name),
-			)
-			m := decoded[0]
-			multi.Metrics = append(multi.Metrics, &m)
-			continue
-		}
-
-		// Use the metric with the highest resolution as our base
-		var highest int
-		for i, d := range decoded {
-			if d.GetStepTime() < decoded[highest].GetStepTime() {
-				highest = i
-			}
-		}
-		decoded[0], decoded[highest] = decoded[highest], decoded[0]
-
-		metric := decoded[0]
-
-		z.mergeValues(&metric, decoded, stats)
-		multi.Metrics = append(multi.Metrics, &metric)
-	}
-
-	stats.MemoryUsage += int64(multi.Size())
-
-	return servers, &multi
-}
-
-func (z *Zipper) mergeValues(metric *pb3.FetchResponse, decoded []pb3.FetchResponse, stats *Stats) {
-	logger := zapwriter.Logger("zipper_render")
-
-	var responseLengthMismatch bool
-	for i := range metric.Values {
-		if !metric.IsAbsent[i] || responseLengthMismatch {
-			continue
-		}
-
-		// found a missing value, find a replacement
-		for other := 1; other < len(decoded); other++ {
-
-			m := decoded[other]
-
-			if len(m.Values) != len(metric.Values) {
-				logger.Error("unable to merge ovalues",
-					zap.Int("metric_values", len(metric.Values)),
-					zap.Int("response_values", len(m.Values)),
-				)
-				// TODO(dgryski): we should remove
-				// decoded[other] from the list of responses to
-				// consider but this assumes that decoded[0] is
-				// the 'highest resolution' response and thus
-				// the one we want to keep, instead of the one
-				// we want to discard
-
-				stats.RenderErrors++
-				responseLengthMismatch = true
-				break
-			}
-
-			// found one
-			if !m.IsAbsent[i] {
-				metric.IsAbsent[i] = false
-				metric.Values[i] = m.Values[i]
-			}
-		}
-	}
-}
-
-func (z *Zipper) infoUnpackPB(responses []ServerResponse, stats *Stats) map[string]pb3.InfoResponse {
-	logger := zapwriter.Logger("zipper_info").With(zap.String("handler", "info"))
-
-	decoded := make(map[string]pb3.InfoResponse)
-	for _, r := range responses {
-		if r.response == nil {
-			continue
-		}
-		var d pb3.InfoResponse
-		err := d.Unmarshal(r.response)
-		if err != nil {
-			logger.Error("error decoding protobuf response",
-				zap.String("server", r.server),
-				zap.Error(err),
-			)
-			logger.Debug("response hexdump",
-				zap.String("response", hex.Dump(r.response)),
-			)
-			stats.InfoErrors++
-			continue
-		}
-		decoded[r.server] = d
-	}
-
-	logger.Debug("info request",
-		zap.Any("decoded_response", decoded),
-	)
-
-	return decoded
-}
-
-var errNoResponses = fmt.Errorf("No responses fetched from upstream")
-var errNoMetricsFetched = fmt.Errorf("No metrics in the response")
 
 func (z *Zipper) Render(ctx context.Context, logger *zap.Logger, target string, from, until int32) (*pb3.MultiFetchResponse, *Stats, error) {
 	stats := &Stats{}
@@ -592,7 +592,7 @@ func (z *Zipper) Render(ctx context.Context, logger *zap.Logger, target string, 
 		return nil, stats, errNoResponses
 	}
 
-	servers, metrics := z.mergeResponses(responses, stats)
+	servers, metrics := mergeResponses(responses, stats)
 
 	if metrics == nil {
 		return nil, stats, errNoMetricsFetched
@@ -631,7 +631,7 @@ func (z *Zipper) Info(ctx context.Context, logger *zap.Logger, target string) (m
 		return nil, stats, errNoResponses
 	}
 
-	infos := z.infoUnpackPB(responses, stats)
+	infos := infoUnpackPB(responses, stats)
 	return infos, stats, nil
 }
 
@@ -653,7 +653,7 @@ func (z *Zipper) Find(ctx context.Context, logger *zap.Logger, query string) ([]
 		// a trailing '*' by graphite-web
 		if strings.HasSuffix(queries[0], "*") {
 			searchCompleterResponse := z.multiGet(ctx, logger, []string{z.searchBackend}, rewrite.RequestURI(), stats)
-			matches, _ := z.findUnpackPB(searchCompleterResponse, stats)
+			matches, _ := findUnpackPB(searchCompleterResponse, stats)
 			// this is a completer request, and so we should return the set of
 			// virtual metrics returned by carbonsearch verbatim, rather than trying
 			// to find them on the stores
@@ -700,7 +700,7 @@ func (z *Zipper) Find(ctx context.Context, logger *zap.Logger, query string) ([]
 			return nil, stats, errNoResponses
 		}
 
-		m, paths := z.findUnpackPB(responses, stats)
+		m, paths := findUnpackPB(responses, stats)
 		metrics = append(metrics, m...)
 
 		// update our cache of which servers have which metrics
