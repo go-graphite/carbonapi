@@ -1,9 +1,9 @@
 package pathcache
 
 import (
+	"github.com/dgryski/go-expirecache"
 	"github.com/go-graphite/carbonzipper/cache"
 	"github.com/go-graphite/carbonzipper/internal/ipb3"
-	"github.com/dgryski/go-expirecache"
 
 	"time"
 )
@@ -24,7 +24,7 @@ type PathCache struct {
 func NewPathCache(servers []string, ExpireDelaySec int32) PathCache {
 
 	p := PathCache{
-		ec: expirecache.New(0),
+		ec:             expirecache.New(0),
 		expireDelaySec: ExpireDelaySec,
 	}
 
@@ -56,7 +56,6 @@ func (p *PathCache) ECSize() uint64 {
 func (p *PathCache) MCTimeouts() uint64 {
 	return p.mc.Timeouts()
 }
-
 
 func (p *PathCache) Set(k string, v []string) {
 

@@ -3,78 +3,79 @@ package zipper
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	_ "net/http/pprof"
 	"net/url"
-	"time"
-	"fmt"
 	"strconv"
+	"time"
 
-	"github.com/go-graphite/carbonzipper/pathcache"
-	"github.com/go-graphite/carbonzipper/limiter"
-	"github.com/go-graphite/carbonzipper/util"
 	cu "github.com/go-graphite/carbonapi/util"
 	pb3 "github.com/go-graphite/carbonzipper/carbonzipperpb3"
+	"github.com/go-graphite/carbonzipper/limiter"
+	"github.com/go-graphite/carbonzipper/pathcache"
+	"github.com/go-graphite/carbonzipper/util"
+
+	"strings"
 
 	"github.com/lomik/zapwriter"
 	"github.com/satori/go.uuid"
 	"go.uber.org/zap"
-	"strings"
 )
 
 type Config struct {
 	ConcurrencyLimitPerServer int
-	MaxIdleConnsPerHost int
-	Backends    []string
+	MaxIdleConnsPerHost       int
+	Backends                  []string
 
 	SearchBackend string
 	SearchPrefix  string
 
-	PathCache pathcache.PathCache
-	SearchCache pathcache.PathCache
+	PathCache              pathcache.PathCache
+	SearchCache            pathcache.PathCache
 	TimeoutAfterAllStarted time.Duration
-	Timeout time.Duration
+	Timeout                time.Duration
 }
 
 type Zipper struct {
 	storageClient *http.Client
 	// Limiter limits our concurrency to a particular server
-	limiter limiter.ServerLimiter
+	limiter     limiter.ServerLimiter
 	probeTicker *time.Ticker
-	ProbeQuit chan struct{}
-	ProbeForce chan int
+	ProbeQuit   chan struct{}
+	ProbeForce  chan int
 
 	timeoutAfterAllStarted time.Duration
-	timeout time.Duration
+	timeout                time.Duration
 
-	searchBackend string
+	searchBackend    string
 	searchConfigured bool
-	searchPrefix  string
+	searchPrefix     string
 
-	pathCache pathcache.PathCache
+	pathCache   pathcache.PathCache
 	searchCache pathcache.PathCache
 
-	backends []string
+	backends                  []string
 	concurrencyLimitPerServer int
-	maxIdleConnsPerHost int
+	maxIdleConnsPerHost       int
 
 	SendStats func(*Stats)
 }
 
 type Stats struct {
-	Timeouts int64
-	FindErrors int64
-	RenderErrors int64
-	InfoErrors int64
-	SearchRequests int64
-	SearchCacheHits int64
+	Timeouts          int64
+	FindErrors        int64
+	RenderErrors      int64
+	InfoErrors        int64
+	SearchRequests    int64
+	SearchCacheHits   int64
 	SearchCacheMisses int64
 
 	MemoryUsage int64
 
 	CacheMisses int64
-	CacheHits int64
+	CacheHits   int64
 }
 
 type nameLeaf struct {
@@ -86,22 +87,22 @@ func NewZipper(sender func(*Stats), config *Config) *Zipper {
 	logger := zapwriter.Logger("new_zipper")
 	z := &Zipper{
 		probeTicker: time.NewTicker(10 * time.Minute),
-		ProbeQuit: make(chan struct{}),
-		ProbeForce: make(chan int),
+		ProbeQuit:   make(chan struct{}),
+		ProbeForce:  make(chan int),
 
 		SendStats: sender,
 
-		pathCache: config.PathCache,
+		pathCache:   config.PathCache,
 		searchCache: config.SearchCache,
 
-		storageClient: &http.Client{},
-		backends: config.Backends,
-		searchBackend: config.SearchBackend,
-		searchPrefix: config.SearchPrefix,
+		storageClient:             &http.Client{},
+		backends:                  config.Backends,
+		searchBackend:             config.SearchBackend,
+		searchPrefix:              config.SearchPrefix,
 		concurrencyLimitPerServer: config.ConcurrencyLimitPerServer,
-		maxIdleConnsPerHost: config.MaxIdleConnsPerHost,
-		timeoutAfterAllStarted: config.TimeoutAfterAllStarted,
-		timeout: config.Timeout,
+		maxIdleConnsPerHost:       config.MaxIdleConnsPerHost,
+		timeoutAfterAllStarted:    config.TimeoutAfterAllStarted,
+		timeout:                   config.Timeout,
 	}
 
 	logger.Info("zipper config",
@@ -250,7 +251,7 @@ func (z *Zipper) singleGet(ctx context.Context, logger *zap.Logger, uri, server 
 	ch <- ServerResponse{server, body}
 }
 
-func (z *Zipper) multiGet(ctx context.Context, logger *zap.Logger, servers []string, uri string, stats *Stats) ([]ServerResponse) {
+func (z *Zipper) multiGet(ctx context.Context, logger *zap.Logger, servers []string, uri string, stats *Stats) []ServerResponse {
 	logger = logger.With(zap.String("handler", "multiGet"))
 	logger.Debug("querying servers",
 		zap.Strings("servers", servers),
@@ -366,7 +367,7 @@ func (z *Zipper) findUnpackPB(responses []ServerResponse, stats *Stats) ([]*pb3.
 	return metrics, paths
 }
 
-func (z *Zipper) fetchCarbonsearchResponse(ctx context.Context, logger *zap.Logger, url string, stats *Stats) ([]string) {
+func (z *Zipper) fetchCarbonsearchResponse(ctx context.Context, logger *zap.Logger, url string, stats *Stats) []string {
 	// Send query to SearchBackend. The result is []queries for StorageBackends
 	searchResponse := z.multiGet(ctx, logger, []string{z.searchBackend}, url, stats)
 	m, _ := z.findUnpackPB(searchResponse, stats)
@@ -486,7 +487,7 @@ func (z *Zipper) mergeValues(metric *pb3.FetchResponse, decoded []pb3.FetchRespo
 	}
 }
 
-func (z *Zipper) infoUnpackPB(responses []ServerResponse, stats *Stats) (map[string]pb3.InfoResponse) {
+func (z *Zipper) infoUnpackPB(responses []ServerResponse, stats *Stats) map[string]pb3.InfoResponse {
 	logger := zapwriter.Logger("zipper_info").With(zap.String("handler", "info"))
 
 	decoded := make(map[string]pb3.InfoResponse)
@@ -641,7 +642,7 @@ func (z *Zipper) Find(ctx context.Context, logger *zap.Logger, query string) ([]
 	rewrite, _ := url.Parse("http://127.0.0.1/metrics/find/")
 
 	v := url.Values{
-		"query": []string{query},
+		"query":  []string{query},
 		"format": []string{"protobuf"},
 	}
 	rewrite.RawQuery = v.Encode()
