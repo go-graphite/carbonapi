@@ -17,15 +17,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	cu "github.com/go-graphite/carbonapi/util"
-	"github.com/go-graphite/carbonzipper/zipper"
-	pb3 "github.com/go-graphite/carbonzipper/carbonzipperpb3"
-	"github.com/go-graphite/carbonzipper/pathcache"
-	"github.com/go-graphite/carbonzipper/mstats"
-	"github.com/go-graphite/carbonzipper/util"
 	"github.com/dgryski/httputil"
 	"github.com/facebookgo/grace/gracehttp"
 	"github.com/facebookgo/pidfile"
+	cu "github.com/go-graphite/carbonapi/util"
+	pb3 "github.com/go-graphite/carbonzipper/carbonzipperpb3"
+	"github.com/go-graphite/carbonzipper/mstats"
+	"github.com/go-graphite/carbonzipper/pathcache"
+	"github.com/go-graphite/carbonzipper/util"
+	"github.com/go-graphite/carbonzipper/zipper"
 	pickle "github.com/kisielk/og-rek"
 	"github.com/peterbourgon/g2g"
 
@@ -173,7 +173,6 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		zap.String("carbonzipper_uuid", uuid.String()),
 		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
 	)
-
 
 	metrics, stats, err := Config.zipper.Find(ctx, logger, originalQuery)
 	Config.zipper.SendStats(stats)
@@ -599,17 +598,17 @@ func main() {
 	/* Configure zipper */
 	// set up caches
 	zipperConfig := &zipper.Config{
-		PathCache: pathcache.NewPathCache(Config.MemcachedServers, Config.ExpireDelaySec),
+		PathCache:   pathcache.NewPathCache(Config.MemcachedServers, Config.ExpireDelaySec),
 		SearchCache: pathcache.NewPathCache(Config.MemcachedServers, Config.ExpireDelaySec),
 
 		ConcurrencyLimitPerServer: Config.ConcurrencyLimitPerServer,
-		MaxIdleConnsPerHost: Config.MaxIdleConnsPerHost,
-		Backends:    Config.Backends,
+		MaxIdleConnsPerHost:       Config.MaxIdleConnsPerHost,
+		Backends:                  Config.Backends,
 
-		SearchBackend: Config.SearchBackend,
-		SearchPrefix:  Config.SearchPrefix,
+		SearchBackend:          Config.SearchBackend,
+		SearchPrefix:           Config.SearchPrefix,
 		TimeoutAfterAllStarted: time.Duration(Config.TimeoutMsAfterAllStarted) * time.Millisecond,
-		Timeout: time.Duration(Config.TimeoutMs) * time.Millisecond,
+		Timeout:                time.Duration(Config.TimeoutMs) * time.Millisecond,
 	}
 
 	Metrics.CacheSize = expvar.Func(func() interface{} { return zipperConfig.PathCache.ECSize() })
@@ -766,4 +765,3 @@ func sendStats(stats *zipper.Stats) {
 	Metrics.CacheMisses.Add(stats.CacheMisses)
 	Metrics.CacheHits.Add(stats.CacheHits)
 }
-
