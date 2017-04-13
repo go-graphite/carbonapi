@@ -1,4 +1,4 @@
-memo = "b328b595c7b97d83c8315f3939b20cd5f23d79f5572f119c09556858b0771de1"
+memo = "55a6718da282ecaa8f73332c53d551fdfed0d438537ab389bce165667ef34cbd"
 
 [[projects]]
   name = "bitbucket.org/tebeka/strftime"
@@ -40,7 +40,7 @@ memo = "b328b595c7b97d83c8315f3939b20cd5f23d79f5572f119c09556858b0771de1"
   branch = "master"
   name = "github.com/dgryski/go-onlinestats"
   packages = ["."]
-  revision = "5ff69410145cd15bd908cc2ea44c25d061ff4ad8"
+  revision = "82a3631402277d8795cb2411be63b0fd1ffd5f39"
 
 [[projects]]
   branch = "master"
