@@ -469,7 +469,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			var sendGlobs = Config.SendGlobsAsIs && len(glob.GetMatches()) < 100
+			const maxBatchSize = 100
+
+			var sendGlobs = Config.SendGlobsAsIs && len(glob.GetMatches()) < maxBatchSize
 
 			if sendGlobs {
 				// Request is "small enough" -- send the entire thing as a render request
@@ -492,10 +494,11 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 			} else {
 				// Request is "too large"; send render requests individually
+				// TODO(dgryski): group the render requests into batches
 				rch := make(chan *expr.MetricData, len(glob.GetMatches()))
 				var leaves int
 				for _, m := range glob.GetMatches() {
-					if !m.GetIsLeaf() {
+					if !m.IsLeaf {
 						continue
 					}
 					leaves++
@@ -505,24 +508,21 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 					zipperRequests++
 
 					go func(path string, from, until int32) {
-						var rptr *expr.MetricData
-						r, err := Config.zipper.Render(ctx, path, from, until)
-						if err == nil {
-							rptr = r[0]
+						if r, err := Config.zipper.Render(ctx, path, from, until); err == nil {
+							rch <- r[0]
 						} else {
 							logger.Error("render error",
 								zap.String("target", path),
 								zap.Error(err),
 							)
+							rch <- nil
 						}
-						rch <- rptr
 						Config.limiter.leave()
-					}(m.GetPath(), mfetch.From, mfetch.Until)
+					}(m.Path, mfetch.From, mfetch.Until)
 				}
 
 				for i := 0; i < leaves; i++ {
-					r := <-rch
-					if r != nil {
+					if r := <-rch; r != nil {
 						size += r.Size()
 						metricMap[mfetch] = append(metricMap[mfetch], r)
 					}
