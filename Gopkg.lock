@@ -98,12 +98,6 @@ memo = "55a6718da282ecaa8f73332c53d551fdfed0d438537ab389bce165667ef34cbd"
 
 [[projects]]
   branch = "master"
-  name = "github.com/gogo/protobuf"
-  packages = ["proto"]
-  revision = "9c5b7bafbfccf2b40d274e0496f3a09418a87af4"
-
-[[projects]]
-  branch = "master"
   name = "github.com/gonum/blas"
   packages = [".","blas64","native","native/internal/math32"]
   revision = "f6d28c18e71668e63984d0eec21fe11804c6fa30"
