@@ -793,7 +793,7 @@ func evalExprGraph(e *expr, from, until int32, values map[MetricRequest][]*Metri
 
 		for _, a := range arg {
 			r := *a
-			r.Name = fmt.Sprintf("%s(%s)", e.target, a.GetName())
+			r.Name = fmt.Sprintf("%s(%s)", e.target, a.Name)
 
 			switch e.target {
 			case "dashed":
@@ -1008,11 +1008,11 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 	minNumberOfPoints = -1
 	maxNumberOfPoints = -1
 	for _, res := range results {
-		tmp := res.GetStartTime()
+		tmp := res.StartTime
 		if params.startTime == -1 || params.startTime > tmp {
 			params.startTime = tmp
 		}
-		tmp = res.GetStopTime()
+		tmp = res.StopTime
 		if params.endTime == -1 || params.endTime > tmp {
 			params.endTime = tmp
 		}
@@ -1126,7 +1126,7 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 	if !(params.lineMode == LineModeStaircase || ((minNumberOfPoints == maxNumberOfPoints) && (minNumberOfPoints == 2))) {
 		params.endTime = 0
 		for _, res := range results {
-			tmp := res.GetStopTime() - res.GetStepTime()
+			tmp := res.StopTime - res.StepTime
 			if params.endTime < tmp {
 				params.endTime = tmp
 			}
@@ -1236,10 +1236,10 @@ func consolidateDataPoints(params *Params, results []*MetricData) {
 	params.graphWidth = int(numberOfPixels)
 
 	for _, series := range results {
-		numberOfDataPoints := math.Floor(float64(params.timeRange / series.GetStepTime()))
+		numberOfDataPoints := math.Floor(float64(params.timeRange / series.StepTime))
 		// minXStep := params.minXStep
 		minXStep := 1.0
-		divisor := float64(params.timeRange) / float64(series.GetStepTime())
+		divisor := float64(params.timeRange) / float64(series.StepTime)
 		bestXStep := numberOfPixels / divisor
 		if bestXStep < minXStep {
 			drawableDataPoints := int(numberOfPixels / minXStep)
@@ -2215,8 +2215,8 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 				newSeries := MetricData{
 					FetchResponse: pb.FetchResponse{
 						Name:      r.Name,
-						StopTime:  r.GetStopTime(),
-						StartTime: r.GetStartTime(),
+						StopTime:  r.StopTime,
+						StartTime: r.StartTime,
 						StepTime:  r.AggregatedTimeStep(),
 						Values:    make([]float64, len(r.AggregatedValues())),
 						IsAbsent:  make([]bool, len(r.AggregatedValues())),
@@ -2266,7 +2266,7 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 			setColor(cr, string2RGBA(series.color))
 		}
 
-		missingPoints := float64(series.GetStartTime()-params.startTime) / float64(series.GetStepTime())
+		missingPoints := float64(series.StartTime-params.startTime) / float64(series.StepTime)
 		startShift := series.xStep * (missingPoints / float64(series.valuesPerPoint))
 		x := float64(params.area.xmin) + startShift + (params.lineWidth / 2.0)
 		y := float64(params.area.ymin)
@@ -2397,7 +2397,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 	}
 
 	for _, res := range results {
-		nameLen := len(res.GetName())
+		nameLen := len(res.Name)
 		if nameLen == 0 {
 			continue
 		}
@@ -2409,13 +2409,13 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 			numRight++
 		}
 		if params.uniqueLegend {
-			if _, ok := uniqueNames[res.GetName()]; !ok {
+			if _, ok := uniqueNames[res.Name]; !ok {
 				var tmp = SeriesLegend{
 					res.Name,
 					res.color,
 					res.secondYAxis,
 				}
-				uniqueNames[res.GetName()] = true
+				uniqueNames[res.Name] = true
 				legend = append(legend, tmp)
 			}
 		} else {

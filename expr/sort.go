@@ -28,7 +28,7 @@ func (b byPartBase) Swap(i, j int) {
 }
 
 func getPart(metric *MetricData, part int) string {
-	parts := strings.Split(metric.GetName(), ".")
+	parts := strings.Split(metric.Name, ".")
 	return parts[part]
 }
 

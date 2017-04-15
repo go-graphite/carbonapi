@@ -2485,14 +2485,14 @@ func testEvalExpr(t *testing.T, tt *evalTestItem) {
 			t.Errorf("returned no value %v", tt.e.argString)
 			return
 		}
-		if actual.GetStepTime() == 0 {
+		if actual.StepTime == 0 {
 			t.Errorf("missing step for %+v", g)
 		}
-		if actual.GetName() != want.GetName() {
-			t.Errorf("bad name for %s metric %d: got %s, want %s", testName, i, actual.GetName(), want.GetName())
+		if actual.Name != want.Name {
+			t.Errorf("bad name for %s metric %d: got %s, want %s", testName, i, actual.Name, want.Name)
 		}
 		if !nearlyEqualMetrics(actual, want) {
-			t.Errorf("different values for %s metric %s: got %v, want %v", testName, actual.GetName(), actual.Values, want.Values)
+			t.Errorf("different values for %s metric %s: got %v, want %v", testName, actual.Name, actual.Values, want.Values)
 			return
 		}
 	}
@@ -2924,22 +2924,22 @@ func TestEvalSummarize(t *testing.T) {
 			t.Errorf("failed to eval %v: %s", tt.name, err)
 			continue
 		}
-		deepEqual(t, g[0].GetName(), originalMetrics, tt.m)
-		if g[0].GetStepTime() != tt.step {
-			t.Errorf("bad step for %s:\ngot  %d\nwant %d", g[0].GetName(), g[0].GetStepTime(), tt.step)
+		deepEqual(t, g[0].Name, originalMetrics, tt.m)
+		if g[0].StepTime != tt.step {
+			t.Errorf("bad step for %s:\ngot  %d\nwant %d", g[0].Name, g[0].StepTime, tt.step)
 		}
-		if g[0].GetStartTime() != tt.start {
-			t.Errorf("bad start for %s: got %s want %s", g[0].GetName(), time.Unix(int64(g[0].GetStartTime()), 0).Format(time.StampNano), time.Unix(int64(tt.start), 0).Format(time.StampNano))
+		if g[0].StartTime != tt.start {
+			t.Errorf("bad start for %s: got %s want %s", g[0].Name, time.Unix(int64(g[0].StartTime), 0).Format(time.StampNano), time.Unix(int64(tt.start), 0).Format(time.StampNano))
 		}
-		if g[0].GetStopTime() != tt.stop {
-			t.Errorf("bad stop for %s: got %s want %s", g[0].GetName(), time.Unix(int64(g[0].GetStopTime()), 0).Format(time.StampNano), time.Unix(int64(tt.stop), 0).Format(time.StampNano))
+		if g[0].StopTime != tt.stop {
+			t.Errorf("bad stop for %s: got %s want %s", g[0].Name, time.Unix(int64(g[0].StopTime), 0).Format(time.StampNano), time.Unix(int64(tt.stop), 0).Format(time.StampNano))
 		}
 
 		if !nearlyEqual(g[0].Values, g[0].IsAbsent, tt.w) {
-			t.Errorf("failed: %s:\ngot  %+v,\nwant %+v", g[0].GetName(), g[0].Values, tt.w)
+			t.Errorf("failed: %s:\ngot  %+v,\nwant %+v", g[0].Name, g[0].Values, tt.w)
 		}
-		if g[0].GetName() != tt.name {
-			t.Errorf("bad name for %+v: got %v, want %v", g, g[0].GetName(), tt.name)
+		if g[0].Name != tt.name {
+			t.Errorf("bad name for %+v: got %v, want %v", g, g[0].Name, tt.name)
 		}
 	}
 }
@@ -3580,25 +3580,25 @@ func TestEvalMultipleReturns(t *testing.T) {
 			t.Errorf("returned no value %v", tt.name)
 			continue
 		}
-		if g[0].GetStepTime() == 0 {
+		if g[0].StepTime == 0 {
 			t.Errorf("missing step for %+v", g)
 		}
 		if len(g) != len(tt.results) {
 			t.Errorf("unexpected results len: got %d, want %d", len(g), len(tt.results))
 		}
 		for _, gg := range g {
-			r, ok := tt.results[gg.GetName()]
+			r, ok := tt.results[gg.Name]
 			if !ok {
-				t.Errorf("missing result name: %v", gg.GetName())
+				t.Errorf("missing result name: %v", gg.Name)
 				continue
 			}
-			if r[0].GetName() != gg.GetName() {
-				t.Errorf("result name mismatch, got\n%#v,\nwant\n%#v", gg.GetName(), r[0].GetName())
+			if r[0].Name != gg.Name {
+				t.Errorf("result name mismatch, got\n%#v,\nwant\n%#v", gg.Name, r[0].Name)
 			}
 			if !reflect.DeepEqual(r[0].Values, gg.Values) || !reflect.DeepEqual(r[0].IsAbsent, gg.IsAbsent) ||
-				r[0].GetStartTime() != gg.GetStartTime() ||
-				r[0].GetStopTime() != gg.GetStopTime() ||
-				r[0].GetStepTime() != gg.GetStepTime() {
+				r[0].StartTime != gg.StartTime ||
+				r[0].StopTime != gg.StopTime ||
+				r[0].StepTime != gg.StepTime {
 				t.Errorf("result mismatch, got\n%#v,\nwant\n%#v", gg, r)
 			}
 		}
@@ -3693,14 +3693,14 @@ func TestEvalCustomFromUntil(t *testing.T) {
 
 		deepEqual(t, tt.e.target, originalMetrics, tt.m)
 
-		if g[0].GetStepTime() == 0 {
+		if g[0].StepTime == 0 {
 			t.Errorf("missing step for %+v", g)
 		}
 		if !nearlyEqual(g[0].Values, g[0].IsAbsent, tt.w) {
-			t.Errorf("failed: %s: got %+v, want %+v", g[0].GetName(), g[0].Values, tt.w)
+			t.Errorf("failed: %s: got %+v, want %+v", g[0].Name, g[0].Values, tt.w)
 		}
-		if g[0].GetName() != tt.name {
-			t.Errorf("bad name for %+v: got %v, want %v", g, g[0].GetName(), tt.name)
+		if g[0].Name != tt.name {
+			t.Errorf("bad name for %+v: got %v, want %v", g, g[0].Name, tt.name)
 		}
 	}
 }

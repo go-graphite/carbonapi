@@ -27,11 +27,11 @@ func MarshalCSV(results []*MetricData) []byte {
 
 	for _, r := range results {
 
-		step := r.GetStepTime()
-		t := r.GetStartTime()
+		step := r.StepTime
+		t := r.StartTime
 		for i, v := range r.Values {
 			b = append(b, '"')
-			b = append(b, r.GetName()...)
+			b = append(b, r.Name...)
 			b = append(b, '"')
 			b = append(b, ',')
 			b = append(b, time.Unix(int64(t), 0).Format("2006-01-02 15:04:05")...)
@@ -51,11 +51,11 @@ func ConsolidateJSON(maxDataPoints int, results []*MetricData) {
 	var endTime int32 = -1
 
 	for _, r := range results {
-		t := r.GetStartTime()
+		t := r.StartTime
 		if startTime == -1 || startTime > t {
 			startTime = t
 		}
-		t = r.GetStopTime()
+		t = r.StopTime
 		if endTime == -1 || endTime < t {
 			endTime = t
 		}
@@ -68,7 +68,7 @@ func ConsolidateJSON(maxDataPoints int, results []*MetricData) {
 	}
 
 	for _, r := range results {
-		numberOfDataPoints := math.Floor(float64(timeRange / r.GetStepTime()))
+		numberOfDataPoints := math.Floor(float64(timeRange / r.StepTime))
 		if numberOfDataPoints > float64(maxDataPoints) {
 			valuesPerPoint := math.Ceil(numberOfDataPoints / float64(maxDataPoints))
 			r.setValuesPerPoint(int(valuesPerPoint))
@@ -92,11 +92,11 @@ func MarshalJSON(results []*MetricData) []byte {
 		topComma = true
 
 		b = append(b, `{"target":`...)
-		b = strconv.AppendQuoteToASCII(b, r.GetName())
+		b = strconv.AppendQuoteToASCII(b, r.Name)
 		b = append(b, `,"datapoints":[`...)
 
 		var innerComma bool
-		t := r.GetStartTime()
+		t := r.StartTime
 		absent := r.AggregatedAbsent()
 		for i, v := range r.AggregatedValues() {
 			if innerComma {
@@ -144,10 +144,10 @@ func MarshalPickle(results []*MetricData) []byte {
 
 		}
 		p = append(p, map[string]interface{}{
-			"name":   r.GetName(),
-			"start":  r.GetStartTime(),
-			"end":    r.GetStopTime(),
-			"step":   r.GetStepTime(),
+			"name":   r.Name,
+			"start":  r.StartTime,
+			"end":    r.StopTime,
+			"step":   r.StepTime,
 			"values": values,
 		})
 	}
@@ -179,14 +179,14 @@ func MarshalRaw(results []*MetricData) []byte {
 
 	for _, r := range results {
 
-		b = append(b, r.GetName()...)
+		b = append(b, r.Name...)
 
 		b = append(b, ',')
-		b = strconv.AppendInt(b, int64(r.GetStartTime()), 10)
+		b = strconv.AppendInt(b, int64(r.StartTime), 10)
 		b = append(b, ',')
-		b = strconv.AppendInt(b, int64(r.GetStopTime()), 10)
+		b = strconv.AppendInt(b, int64(r.StopTime), 10)
 		b = append(b, ',')
-		b = strconv.AppendInt(b, int64(r.GetStepTime()), 10)
+		b = strconv.AppendInt(b, int64(r.StepTime), 10)
 		b = append(b, '|')
 
 		var comma bool
@@ -215,10 +215,10 @@ func (r *MetricData) setValuesPerPoint(v int) {
 
 func (r *MetricData) AggregatedTimeStep() int32 {
 	if r.valuesPerPoint == 1 || r.valuesPerPoint == 0 {
-		return r.GetStepTime()
+		return r.StepTime
 	}
 
-	return r.GetStepTime() * int32(r.valuesPerPoint)
+	return r.StepTime * int32(r.valuesPerPoint)
 }
 
 func (r *MetricData) AggregatedValues() []float64 {

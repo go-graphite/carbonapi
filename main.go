@@ -723,7 +723,7 @@ func findCompleter(globs pb.GlobResponse) ([]byte, error) {
 
 	for _, g := range globs.GetMatches() {
 		c := completer{
-			Path: g.GetPath(),
+			Path: g.Path,
 		}
 
 		if g.GetIsLeaf() {
@@ -756,11 +756,11 @@ func findList(globs pb.GlobResponse) ([]byte, error) {
 
 		var dot string
 		// make sure non-leaves end in one dot
-		if !g.GetIsLeaf() && !strings.HasSuffix(g.GetPath(), ".") {
+		if !g.GetIsLeaf() && !strings.HasSuffix(g.Path, ".") {
 			dot = "."
 		}
 
-		fmt.Fprintln(&b, g.GetPath()+dot)
+		fmt.Fprintln(&b, g.Path+dot)
 	}
 
 	return b.Bytes(), nil
@@ -784,7 +784,7 @@ func findTreejson(globs pb.GlobResponse) ([]byte, error) {
 
 	seen := make(map[string]struct{})
 
-	basepath := globs.GetName()
+	basepath := globs.Name
 
 	if i := strings.LastIndex(basepath, "."); i != -1 {
 		basepath = basepath[:i+1]
@@ -792,7 +792,7 @@ func findTreejson(globs pb.GlobResponse) ([]byte, error) {
 
 	for _, g := range globs.GetMatches() {
 
-		name := g.GetPath()
+		name := g.Path
 
 		if i := strings.LastIndex(name, "."); i != -1 {
 			name = name[i+1:]
