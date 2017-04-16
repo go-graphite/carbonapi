@@ -1534,15 +1534,15 @@ func TestEvalExpression(t *testing.T) {
 				etype:  etFunc,
 				args: []*expr{
 					{target: "metric1"},
-					{val: 0.1, etype: etConst},
+					{val: 0.9, etype: etConst},
 				},
-				argString: "metric1,0.1",
+				argString: "metric1,0.9",
 			},
 			map[MetricRequest][]*MetricData{
 				{"metric1", 0, 1}: {makeResponse("metric1", []float64{0, 1, 1, 1, math.NaN(), 1, 1}, 1, now32)},
 			},
 			[]*MetricData{
-				makeResponse("ewma(metric1,0.1)", []float64{0, 0.9, 0.99, 0.999, math.NaN(), 0.9999, 0.99999}, 1, now32),
+				makeResponse("ewma(metric1,0.9)", []float64{0, 0.9, 0.99, 0.999, math.NaN(), 0.9999, 0.99999}, 1, now32),
 			},
 		},
 		{
@@ -1551,15 +1551,15 @@ func TestEvalExpression(t *testing.T) {
 				etype:  etFunc,
 				args: []*expr{
 					{target: "metric1"},
-					{val: 0.1, etype: etConst},
+					{val: 0.9, etype: etConst},
 				},
-				argString: "metric1,0.1",
+				argString: "metric1,0.9",
 			},
 			map[MetricRequest][]*MetricData{
 				{"metric1", 0, 1}: {makeResponse("metric1", []float64{0, 1, 1, 1, math.NaN(), 1, 1}, 1, now32)},
 			},
 			[]*MetricData{
-				makeResponse("ewma(metric1,0.1)", []float64{0, 0.9, 0.99, 0.999, math.NaN(), 0.9999, 0.99999}, 1, now32),
+				makeResponse("ewma(metric1,0.9)", []float64{0, 0.9, 0.99, 0.999, math.NaN(), 0.9999, 0.99999}, 1, now32),
 			},
 		},
 		{
