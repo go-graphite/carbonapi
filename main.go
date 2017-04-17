@@ -471,7 +471,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 			const maxBatchSize = 100
 
-			var sendGlobs = Config.SendGlobsAsIs && len(glob.GetMatches()) < maxBatchSize
+			var sendGlobs = Config.SendGlobsAsIs && len(glob.Matches) < maxBatchSize
 
 			if sendGlobs {
 				// Request is "small enough" -- send the entire thing as a render request
@@ -495,9 +495,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			} else {
 				// Request is "too large"; send render requests individually
 				// TODO(dgryski): group the render requests into batches
-				rch := make(chan *expr.MetricData, len(glob.GetMatches()))
+				rch := make(chan *expr.MetricData, len(glob.Matches))
 				var leaves int
-				for _, m := range glob.GetMatches() {
+				for _, m := range glob.Matches {
 					if !m.IsLeaf {
 						continue
 					}
@@ -721,12 +721,12 @@ func findCompleter(globs pb.GlobResponse) ([]byte, error) {
 
 	var complete = make([]completer, 0)
 
-	for _, g := range globs.GetMatches() {
+	for _, g := range globs.Matches {
 		c := completer{
 			Path: g.Path,
 		}
 
-		if g.GetIsLeaf() {
+		if g.IsLeaf {
 			c.IsLeaf = "1"
 		} else {
 			c.IsLeaf = "0"
@@ -752,11 +752,11 @@ func findCompleter(globs pb.GlobResponse) ([]byte, error) {
 func findList(globs pb.GlobResponse) ([]byte, error) {
 	var b bytes.Buffer
 
-	for _, g := range globs.GetMatches() {
+	for _, g := range globs.Matches {
 
 		var dot string
 		// make sure non-leaves end in one dot
-		if !g.GetIsLeaf() && !strings.HasSuffix(g.Path, ".") {
+		if !g.IsLeaf && !strings.HasSuffix(g.Path, ".") {
 			dot = "."
 		}
 
@@ -790,7 +790,7 @@ func findTreejson(globs pb.GlobResponse) ([]byte, error) {
 		basepath = basepath[:i+1]
 	}
 
-	for _, g := range globs.GetMatches() {
+	for _, g := range globs.Matches {
 
 		name := g.Path
 
@@ -809,7 +809,7 @@ func findTreejson(globs pb.GlobResponse) ([]byte, error) {
 			Text:    name,
 		}
 
-		if g.GetIsLeaf() {
+		if g.IsLeaf {
 			t.Leaf = 1
 		} else {
 			t.AllowChildren = 1
