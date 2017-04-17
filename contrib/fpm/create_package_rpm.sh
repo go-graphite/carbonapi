@@ -18,14 +18,14 @@ make || die 1 "Can't build package"
 make DESTDIR="${TMPDIR}" install || die 1 "Can't install package"
 mkdir -p "${TMPDIR}"/etc/systemd/system/
 mkdir -p "${TMPDIR}"/etc/sysconfig/
-cp contrib/rhel/carbonapi.service "${TMPDIR}"/etc/systemd/system/
-cp contrib/rhel/carbonapi "${TMPDIR}"/etc/sysconfig/
+cp ./contrib/rhel/carbonapi.service "${TMPDIR}"/etc/systemd/system/
+cp ./contrib/common/carbonapi.env "${TMPDIR}"/etc/sysconfig/carbonapi
 
 fpm -s dir -t rpm -n carbonapi -v ${VERSION} -C ${TMPDIR} \
     --iteration ${RELEASE} \
     -p carbonapi_VERSION-ITERATION_ARCH.rpm \
     -d "cairo > 1.11" \
     --after-install contrib/fpm/systemd-reload.sh \
-    usr/bin usr/share || die "Can't create package!"
+    etc usr/bin usr/share || die "Can't create package!"
 
 die 0 "Success"

@@ -1,2 +1,2 @@
-#!/bin/sh
-/bin/systemctl daemon-reload
+#!/usr/bin/env bash
+[[ -e /bin/systemctl ]] && /bin/systemctl daemon-reload ||:
