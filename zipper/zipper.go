@@ -530,7 +530,7 @@ func (z *Zipper) Render(ctx context.Context, logger *zap.Logger, target string, 
 		"target": []string{""},
 		"format": []string{"protobuf"},
 		"from":   []string{strconv.Itoa(int(from))},
-		"until":  []string{strconv.Itoa(int(from))},
+		"until":  []string{strconv.Itoa(int(until))},
 	}
 	rewrite.RawQuery = v.Encode()
 
