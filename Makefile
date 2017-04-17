@@ -31,3 +31,5 @@ install:
 clean:
 	rm -rf vendor
 	rm -f carbonapi
+	rm -f *.deb
+	rm -f *.rpm
