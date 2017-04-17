@@ -23,7 +23,7 @@ cp contrib/rhel/carbonapi "${TMPDIR}"/etc/sysconfig/
 
 fpm -s dir -t rpm -n carbonapi -v ${VERSION} -C ${TMPDIR} \
     --iteration ${RELEASE} \
-    -p carbonapi_VERSION-ITERATION_ARCH.deb \
+    -p carbonapi_VERSION-ITERATION_ARCH.rpm \
     -d "cairo > 1.11" \
     --after-install contrib/fpm/systemd-reload.sh \
     usr/bin usr/share || die "Can't create package!"
