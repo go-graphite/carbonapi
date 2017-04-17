@@ -21,6 +21,15 @@ dep:
 	@which dep 2>/dev/null || $(GO) get github.com/golang/dep/cmd/dep
 	dep ensure
 
+install:
+	mkdir -p $(DESTDIR)/usr/bin/
+	mkdir -p $(DESTDIR)/usr/share/carbonapi/
+	cp ./carbonapi $(DESTDIR)/usr/bin/
+	cp ./carbonapi.example.yaml $(DESTDIR)/usr/share/carbonapi/
+
+
 clean:
 	rm -rf vendor
 	rm -f carbonapi
+	rm -f *.deb
+	rm -f *.rpm
