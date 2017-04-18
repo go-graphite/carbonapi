@@ -129,11 +129,6 @@ var Metrics = struct {
 // BuildVersion is defined at build and reported at startup and as expvar
 var BuildVersion = "(development version)"
 
-type serverResponse struct {
-	server   string
-	response []byte
-}
-
 // set during startup, read-only after that
 var searchConfigured = false
 
