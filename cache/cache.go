@@ -99,13 +99,9 @@ func (m *MemcachedCache) Get(k string) ([]byte, error) {
 }
 
 func (m *MemcachedCache) Set(k string, v []byte, expire int32) {
-	go m.SyncSet(k, v, expire)
-}
-
-func (m *MemcachedCache) SyncSet(k string, v []byte, expire int32) {
 	key := sha1.Sum([]byte(k))
 	hk := hex.EncodeToString(key[:])
-	m.client.Set(&memcache.Item{Key: m.prefix + hk, Value: v, Expiration: expire})
+	go m.client.Set(&memcache.Item{Key: m.prefix + hk, Value: v, Expiration: expire})
 }
 
 func (m *MemcachedCache) Timeouts() uint64 {

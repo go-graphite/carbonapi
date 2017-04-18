@@ -60,8 +60,6 @@ var Config = struct {
 	GraphiteHost         string
 	InternalMetricPrefix string
 
-	MemcachedServers []string
-
 	MaxIdleConnsPerHost int
 
 	ConcurrencyLimitPerServer int
@@ -99,8 +97,6 @@ var Metrics = struct {
 	InfoErrors   *expvar.Int
 
 	Timeouts *expvar.Int
-
-	MemcacheTimeouts expvar.Func
 
 	CacheSize         expvar.Func
 	CacheItems        expvar.Func
@@ -626,8 +622,8 @@ func main() {
 	/* Configure zipper */
 	// set up caches
 	zipperConfig := &zipper.Config{
-		PathCache:   pathcache.NewPathCache(Config.MemcachedServers, Config.ExpireDelaySec),
-		SearchCache: pathcache.NewPathCache(Config.MemcachedServers, Config.ExpireDelaySec),
+		PathCache:   pathcache.NewPathCache(Config.ExpireDelaySec),
+		SearchCache: pathcache.NewPathCache(Config.ExpireDelaySec),
 
 		ConcurrencyLimitPerServer: Config.ConcurrencyLimitPerServer,
 		MaxIdleConnsPerHost:       Config.MaxIdleConnsPerHost,
@@ -652,17 +648,6 @@ func main() {
 	expvar.Publish("searchCacheItems", Metrics.SearchCacheItems)
 
 	Config.zipper = zipper.NewZipper(sendStats, zipperConfig)
-
-	if len(Config.MemcachedServers) > 0 {
-		logger.Info("memcached configured",
-			zap.Strings("servers", Config.MemcachedServers),
-		)
-
-		Metrics.MemcacheTimeouts = expvar.Func(func() interface{} {
-			return zipperConfig.PathCache.MCTimeouts() + zipperConfig.SearchCache.MCTimeouts()
-		})
-		expvar.Publish("memcacheTimeouts", Metrics.MemcacheTimeouts)
-	}
 
 	http.HandleFunc("/metrics/find/", httputil.TrackConnections(httputil.TimeHandler(cu.ParseCtx(findHandler), bucketRequestTimes)))
 	http.HandleFunc("/render/", httputil.TrackConnections(httputil.TimeHandler(cu.ParseCtx(renderHandler), bucketRequestTimes)))
@@ -705,17 +690,11 @@ func main() {
 			graphite.Register(fmt.Sprintf("%s.%s.requests_in_%dms_to_%dms", prefix, hostname, i*100, (i+1)*100), bucketEntry(i))
 		}
 
-		if Metrics.CacheSize != nil {
-			graphite.Register(fmt.Sprintf("%s.%s.cache_size", prefix, hostname), Metrics.CacheSize)
-			graphite.Register(fmt.Sprintf("%s.%s.cache_items", prefix, hostname), Metrics.CacheItems)
+		graphite.Register(fmt.Sprintf("%s.%s.cache_size", prefix, hostname), Metrics.CacheSize)
+		graphite.Register(fmt.Sprintf("%s.%s.cache_items", prefix, hostname), Metrics.CacheItems)
 
-			graphite.Register(fmt.Sprintf("%s.%s.search_cache_size", prefix, hostname), Metrics.SearchCacheSize)
-			graphite.Register(fmt.Sprintf("%s.%s.search_cache_items", prefix, hostname), Metrics.SearchCacheItems)
-		}
-
-		if Metrics.MemcacheTimeouts != nil {
-			graphite.Register(fmt.Sprintf("%s.%s.memcache_timeouts", prefix, hostname), Metrics.MemcacheTimeouts)
-		}
+		graphite.Register(fmt.Sprintf("%s.%s.search_cache_size", prefix, hostname), Metrics.SearchCacheSize)
+		graphite.Register(fmt.Sprintf("%s.%s.search_cache_items", prefix, hostname), Metrics.SearchCacheItems)
 
 		graphite.Register(fmt.Sprintf("%s.%s.cache_hits", prefix, hostname), Metrics.CacheHits)
 		graphite.Register(fmt.Sprintf("%s.%s.cache_misses", prefix, hostname), Metrics.CacheMisses)
