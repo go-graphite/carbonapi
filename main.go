@@ -573,7 +573,7 @@ func main() {
 	}
 
 	// Should print nicer stack traces in case of unexpected panic.
-	defer func(){
+	defer func() {
 		if r := recover(); r != nil {
 			logger.Fatal("Recovered from unhandled panic",
 				zap.Stack("stacktrace"),
