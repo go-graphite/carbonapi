@@ -43,7 +43,7 @@ fpm -s dir -t deb -n carbonapi -v ${VERSION} -C ${TMPDIR} \
     --description "carbonapi: replacement graphite API server" \
     --license MIT \
     --url "https://github.com/go-graphite/" \
-    ${@} \
+    "${@}" \
     etc usr/bin usr/share || die 1 "Can't create package!"
 
 die 0 "Success"
