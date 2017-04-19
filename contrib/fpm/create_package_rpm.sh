@@ -26,6 +26,10 @@ fpm -s dir -t rpm -n carbonapi -v ${VERSION} -C ${TMPDIR} \
     -p carbonapi_VERSION-ITERATION_ARCH.rpm \
     -d "cairo > 1.11" \
     --after-install contrib/fpm/systemd-reload.sh \
+    --description "carbonapi: replacement graphite API server" \
+    --license MIT \
+    --url "https://github.com/go-graphite/" \
+    ${@} \
     etc usr/bin usr/share || die "Can't create package!"
 
 die 0 "Success"
