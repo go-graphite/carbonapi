@@ -6,11 +6,6 @@ import (
 	"time"
 )
 
-type pathKV struct {
-	k string
-	v []string
-}
-
 type PathCache struct {
 	ec *expirecache.Cache
 
