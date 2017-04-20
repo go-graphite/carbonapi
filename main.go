@@ -372,24 +372,26 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		zap.Int32("cache_timeout", cacheTimeout),
 	)
 
-	tc := time.Now()
-	if response, err := Config.queryCache.Get(cacheKey); useCache && err != nil {
+	if useCache {
+		tc := time.Now()
+		response, err := Config.queryCache.Get(cacheKey)
 		td := time.Since(tc).Nanoseconds()
 		Metrics.RenderCacheOverheadNS.Add(td)
-		Metrics.RequestCacheHits.Add(1)
-		writeResponse(w, response, format, jsonp)
-		accessLogger.Info("request served",
-			zap.Bool("from_cache", true),
-			zap.Duration("runtime", time.Since(t0)),
-			zap.Int("http_code", http.StatusOK),
-			zap.Int("carbonzipper_response_size_bytes", 0),
-			zap.Int("carbonapi_response_size_bytes", len(response)),
-		)
-		return
+
+		if err == nil {
+			Metrics.RequestCacheHits.Add(1)
+			writeResponse(w, response, format, jsonp)
+			accessLogger.Info("request served",
+				zap.Bool("from_cache", true),
+				zap.Duration("runtime", time.Since(t0)),
+				zap.Int("http_code", http.StatusOK),
+				zap.Int("carbonzipper_response_size_bytes", 0),
+				zap.Int("carbonapi_response_size_bytes", len(response)),
+			)
+			return
+		}
+		Metrics.RequestCacheMisses.Add(1)
 	}
-	td := time.Since(tc).Nanoseconds()
-	Metrics.RenderCacheOverheadNS.Add(td)
-	Metrics.RequestCacheMisses.Add(1)
 
 	if from32 == until32 {
 		http.Error(w, "Invalid empty time range", http.StatusBadRequest)
@@ -436,18 +438,21 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			var glob pb.GlobResponse
 			var haveCacheData bool
 
-			tc := time.Now()
-			if response, err := Config.findCache.Get(m.Metric); useCache && err != nil {
+			if useCache {
+				tc := time.Now()
+				response, err := Config.findCache.Get(m.Metric)
+				td := time.Since(tc).Nanoseconds()
 				Metrics.FindCacheOverheadNS.Add(td)
-				Metrics.FindCacheHits.Add(1)
-				err := glob.Unmarshal(response)
-				haveCacheData = err == nil
 
+				if err == nil {
+					err := glob.Unmarshal(response)
+					haveCacheData = err == nil
+				}
 			}
-			td := time.Since(tc).Nanoseconds()
-			Metrics.FindCacheOverheadNS.Add(td)
 
-			if !haveCacheData {
+			if haveCacheData {
+				Metrics.FindCacheHits.Add(1)
+			} else {
 				Metrics.FindCacheMisses.Add(1)
 				var err error
 				Metrics.FindRequests.Add(1)
