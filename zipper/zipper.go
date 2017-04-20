@@ -527,7 +527,7 @@ func (z *Zipper) Render(ctx context.Context, logger *zap.Logger, target string, 
 	rewrite, _ := url.Parse("http://127.0.0.1/render/")
 
 	v := url.Values{
-		"target": []string{""},
+		"target": []string{target},
 		"format": []string{"protobuf"},
 		"from":   []string{strconv.Itoa(int(from))},
 		"until":  []string{strconv.Itoa(int(from))},
