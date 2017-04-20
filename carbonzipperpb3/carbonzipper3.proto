@@ -60,4 +60,6 @@ message MetricDetails {
 
 message MetricDetailsResponse {
 	repeated MetricDetails responses = 1;
+	uint64 FreeSpace = 2;
+	uint64 TotalSpace = 3;
 }
