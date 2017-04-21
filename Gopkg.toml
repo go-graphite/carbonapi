@@ -29,15 +29,15 @@
 
 [[dependencies]]
   branch = "master"
-  name = "github.com/kisielk/og-rek"
-
-[[dependencies]]
-  branch = "master"
   name = "github.com/lestrrat/go-file-rotatelogs"
 
 [[dependencies]]
   branch = "master"
   name = "github.com/lestrrat/go-strftime"
+
+[[dependencies]]
+  branch = "master"
+  name = "github.com/lomik/og-rek"
 
 [[dependencies]]
   name = "github.com/lomik/zapwriter"
