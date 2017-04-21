@@ -474,6 +474,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
+			// TODO: Move that variable to the config
 			const maxBatchSize = 100
 
 			var sendGlobs = Config.SendGlobsAsIs && len(glob.Matches) < maxBatchSize

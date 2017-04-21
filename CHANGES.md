@@ -25,6 +25,7 @@ CHANGELOG
  - [Improvement] Add `{find,render}_cache_overhead_ns` metrics that shows cache query overhead in nanoseconds
  - [Improvement] Use dep as a vendoring tool
  - [Improvement] Add a Makefile that will hide some magic from user.
+ - [Improvement] Send glob heruistic -- if request with globs is relatively small (<100 metrics) carbonapi will send it as is.
  - [Feature] Implement following functions from graphite-web: linewidth, areaBetween, applyByNode
  - [Feature] Add fft, ifft, LowPass functions. See COMPATIBILITY.md for more information
  - [Feature] Publish current configuration as an expvar (GET /debug/vars)
