@@ -22,11 +22,11 @@ import (
 	"github.com/facebookgo/pidfile"
 	cu "github.com/go-graphite/carbonapi/util"
 	pb3 "github.com/go-graphite/carbonzipper/carbonzipperpb3"
+	"github.com/go-graphite/carbonzipper/intervalset"
 	"github.com/go-graphite/carbonzipper/mstats"
 	"github.com/go-graphite/carbonzipper/pathcache"
 	"github.com/go-graphite/carbonzipper/util"
 	"github.com/go-graphite/carbonzipper/zipper"
-	"github.com/go-graphite/carbonzipper/intervalset"
 	pickle "github.com/lomik/og-rek"
 	"github.com/peterbourgon/g2g"
 
@@ -63,10 +63,10 @@ var Config = struct {
 
 	MaxIdleConnsPerHost int
 
-	ConcurrencyLimitPerServer int
-	ExpireDelaySec            int32
-	Logger                    []zapwriter.Config
-	GraphiteWeb10Compatibility bool
+	ConcurrencyLimitPerServer  int
+	ExpireDelaySec             int32
+	Logger                     []zapwriter.Config
+	GraphiteWeb09Compatibility bool
 
 	zipper *zipper.Zipper
 }{
@@ -83,7 +83,6 @@ var Config = struct {
 	ExpireDelaySec: 10 * 60, // 10 minutes
 
 	Logger: []zapwriter.Config{DefaultLoggerConfig},
-	GraphiteWeb10Compatibility: false,
 }
 
 // Metrics contains grouped expvars for /debug/vars and graphite
@@ -216,20 +215,20 @@ func encodeFindResponse(format, query string, w http.ResponseWriter, metrics []*
 		for _, metric := range metrics {
 			// Tell graphite-web that we have everything
 			var mm map[string]interface{}
-			if Config.GraphiteWeb10Compatibility {
+			if Config.GraphiteWeb09Compatibility {
+				// graphite-web 0.9.x
+				mm = map[string]interface{}{
+					// graphite-web 0.9.x
+					"metric_path": metric.Path,
+					"isLeaf":      metric.IsLeaf,
+				}
+			} else {
 				// graphite-web 1.0
 				interval := &intervalset.IntervalSet{Start: 0, End: now}
 				mm = map[string]interface{}{
 					"is_leaf":   metric.IsLeaf,
 					"path":      metric.Path,
 					"intervals": interval,
-				}
-			} else {
-				// graphite-web 0.9.x
-				mm = map[string]interface{}{
-					// graphite-web 0.9.x
-					"metric_path": metric.Path,
-					"isLeaf":      metric.IsLeaf,
 				}
 			}
 			result = append(result, mm)
