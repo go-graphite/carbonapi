@@ -26,7 +26,8 @@ import (
 	"github.com/go-graphite/carbonzipper/pathcache"
 	"github.com/go-graphite/carbonzipper/util"
 	"github.com/go-graphite/carbonzipper/zipper"
-	pickle "github.com/kisielk/og-rek"
+	"github.com/go-graphite/carbonzipper/intervalset"
+	pickle "github.com/lomik/og-rek"
 	"github.com/peterbourgon/g2g"
 
 	"github.com/lomik/zapwriter"
@@ -209,10 +210,19 @@ func encodeFindResponse(format, query string, w http.ResponseWriter, metrics []*
 
 		var result []map[string]interface{}
 
+		now := int32(time.Now().Unix() + 60)
 		for _, metric := range metrics {
+			// Tell graphite-web that we have everything
+			interval := &intervalset.IntervalSet{Start: 0, End: now}
 			mm := map[string]interface{}{
+				// graphite-web 0.9.x
 				"metric_path": metric.Path,
 				"isLeaf":      metric.IsLeaf,
+
+				// graphite-web 1.0
+				"is_leaf":     metric.IsLeaf,
+				"path":        metric.Path,
+				"intervals":   interval,
 			}
 			result = append(result, mm)
 		}

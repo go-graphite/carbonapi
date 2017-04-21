@@ -1,4 +1,4 @@
-memo = "461a0bacca1df6cb0d329ca352973bcc59369258d7fddb948e9f52496ef37f67"
+memo = "ada979fc2a716872a286900b97181b8b1265fec0006386a62e773f67ab892312"
 
 [[projects]]
   branch = "master"
@@ -68,12 +68,6 @@ memo = "461a0bacca1df6cb0d329ca352973bcc59369258d7fddb948e9f52496ef37f67"
 
 [[projects]]
   branch = "master"
-  name = "github.com/kisielk/og-rek"
-  packages = ["."]
-  revision = "28bae785206e71d70d9c770903d06abb87547734"
-
-[[projects]]
-  branch = "master"
   name = "github.com/lestrrat/go-file-rotatelogs"
   packages = ["."]
   revision = "505c036604b3326a96097ca91865df30043093a5"
@@ -83,6 +77,12 @@ memo = "461a0bacca1df6cb0d329ca352973bcc59369258d7fddb948e9f52496ef37f67"
   name = "github.com/lestrrat/go-strftime"
   packages = ["."]
   revision = "04ef93e285313c8978cbc7cad26d2aa7a9927451"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/lomik/og-rek"
+  packages = ["."]
+  revision = "628eefeb8d8065e3c4300d3556181a255d1ab4ff"
 
 [[projects]]
   name = "github.com/lomik/zapwriter"
