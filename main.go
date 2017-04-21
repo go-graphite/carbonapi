@@ -66,6 +66,7 @@ var Config = struct {
 	ConcurrencyLimitPerServer int
 	ExpireDelaySec            int32
 	Logger                    []zapwriter.Config
+	GraphiteWeb10Compatibility bool
 
 	zipper *zipper.Zipper
 }{
@@ -82,6 +83,7 @@ var Config = struct {
 	ExpireDelaySec: 10 * 60, // 10 minutes
 
 	Logger: []zapwriter.Config{DefaultLoggerConfig},
+	GraphiteWeb10Compatibility: false,
 }
 
 // Metrics contains grouped expvars for /debug/vars and graphite
@@ -213,16 +215,22 @@ func encodeFindResponse(format, query string, w http.ResponseWriter, metrics []*
 		now := int32(time.Now().Unix() + 60)
 		for _, metric := range metrics {
 			// Tell graphite-web that we have everything
-			interval := &intervalset.IntervalSet{Start: 0, End: now}
-			mm := map[string]interface{}{
-				// graphite-web 0.9.x
-				"metric_path": metric.Path,
-				"isLeaf":      metric.IsLeaf,
-
+			var mm map[string]interface{}
+			if Config.GraphiteWeb10Compatibility {
 				// graphite-web 1.0
-				"is_leaf":     metric.IsLeaf,
-				"path":        metric.Path,
-				"intervals":   interval,
+				interval := &intervalset.IntervalSet{Start: 0, End: now}
+				mm = map[string]interface{}{
+					"is_leaf":   metric.IsLeaf,
+					"path":      metric.Path,
+					"intervals": interval,
+				}
+			} else {
+				// graphite-web 0.9.x
+				mm = map[string]interface{}{
+					// graphite-web 0.9.x
+					"metric_path": metric.Path,
+					"isLeaf":      metric.IsLeaf,
+				}
 			}
 			result = append(result, mm)
 		}
