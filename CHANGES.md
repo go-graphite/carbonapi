@@ -21,6 +21,7 @@ Changes
    - [Improvement] Use dep as a vendoring tool
    - [Improvement] Add a Makefile that will hide some magic from user
    - [Improvement] Split carbonzipper into several packages
+   - [Improvement] graphite-web 1.0 support
    - [Fix] Fix incompatibility between carbonzipper and older versions of carbonserver/go-carbon (protobuf2-only)
 
 **0.63**
