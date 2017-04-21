@@ -1073,13 +1073,12 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			return nil, ErrMissingTimeseries
 		}
 
-		var results []*MetricData
 		firstArg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
 
-		var useMetricNames = false
+		var useMetricNames bool
 
 		var numerators []*MetricData
 		var denominator *MetricData
@@ -1104,10 +1103,11 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		for _, numerator := range numerators {
 			if numerator.StepTime != denominator.StepTime || len(numerator.Values) != len(denominator.Values) {
-				return nil, errors.New("series must have the same length")
+				return nil, errors.New(fmt.Sprintf("series %s must have the same length as %s", numerator.Name, denominator.Name))
 			}
 		}
 
+		var results []*MetricData
 		for _, numerator := range numerators {
 			r := *numerator
 			if useMetricNames {
