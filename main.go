@@ -477,6 +477,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			const maxBatchSize = 100
 
 			var sendGlobs = Config.SendGlobsAsIs && len(glob.Matches) < maxBatchSize
+			accessLogger = accessLogger.With(zap.Bool("send_globs", sendGlobs))
 
 			if sendGlobs {
 				// Request is "small enough" -- send the entire thing as a render request
