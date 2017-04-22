@@ -1073,14 +1073,18 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			return nil, ErrMissingTimeseries
 		}
 
-		numerators, err := getSeriesArg(e.args[0], from, until, values)
+		firstArg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
 
-		var numerator, denominator *MetricData
-		if len(numerators) == 1 && len(e.args) == 2 {
-			numerator = numerators[0]
+		var useMetricNames bool
+
+		var numerators []*MetricData
+		var denominator *MetricData
+		if len(e.args) == 2 {
+			useMetricNames = true
+			numerators = firstArg
 			denominators, err := getSeriesArg(e.args[1], from, until, values)
 			if err != nil {
 				return nil, err
@@ -1090,32 +1094,43 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			}
 
 			denominator = denominators[0]
-		} else if len(numerators) == 2 && len(e.args) == 1 {
-			numerator = numerators[0]
-			denominator = numerators[1]
+		} else if len(firstArg) == 2 && len(e.args) == 1 {
+			numerators = append(numerators, firstArg[0])
+			denominator = firstArg[1]
 		} else {
 			return nil, errors.New("must be called with 2 series or a wildcard that matches exactly 2 series")
 		}
 
-		if numerator.StepTime != denominator.StepTime || len(numerator.Values) != len(denominator.Values) {
-			return nil, errors.New("series must have the same length")
-		}
-
-		r := *numerator
-		r.Name = fmt.Sprintf("divideSeries(%s)", e.argString)
-		r.Values = make([]float64, len(numerator.Values))
-		r.IsAbsent = make([]bool, len(numerator.Values))
-
-		for i, v := range numerator.Values {
-
-			if numerator.IsAbsent[i] || denominator.IsAbsent[i] || denominator.Values[i] == 0 {
-				r.IsAbsent[i] = true
-				continue
+		for _, numerator := range numerators {
+			if numerator.StepTime != denominator.StepTime || len(numerator.Values) != len(denominator.Values) {
+				return nil, errors.New(fmt.Sprintf("series %s must have the same length as %s", numerator.Name, denominator.Name))
 			}
-
-			r.Values[i] = v / denominator.Values[i]
 		}
-		return []*MetricData{&r}, nil
+
+		var results []*MetricData
+		for _, numerator := range numerators {
+			r := *numerator
+			if useMetricNames {
+				r.Name = fmt.Sprintf("divideSeries(%s,%s)", numerator.Name, denominator.Name)
+			} else {
+				r.Name = fmt.Sprintf("divideSeries(%s)", e.argString)
+			}
+			r.Values = make([]float64, len(numerator.Values))
+			r.IsAbsent = make([]bool, len(numerator.Values))
+
+			for i, v := range numerator.Values {
+
+				if numerator.IsAbsent[i] || denominator.IsAbsent[i] || denominator.Values[i] == 0 {
+					r.IsAbsent[i] = true
+					continue
+				}
+
+				r.Values[i] = v / denominator.Values[i]
+			}
+			results = append(results, &r)
+		}
+
+		return results, nil
 
 	case "multiplySeries": // multiplySeries(factorsSeriesList)
 		r := MetricData{
