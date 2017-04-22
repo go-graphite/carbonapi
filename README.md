@@ -3,6 +3,8 @@ carbonzipper: carbonserver proxy for graphite-web
 
 [![Build Status](https://travis-ci.org/go-graphite/carbonzipper.svg?branch=master)](https://travis-ci.org/go-graphite/carbonzipper)
 
+<a href="https://packagecloud.io/"><img alt="Private Maven, RPM, DEB, PyPi and RubyGem Repository | packagecloud" height="46" src="https://packagecloud.io/images/packagecloud-badge.png" width="158" /></a>
+
 CarbonZipper is the central part of a replacement graphite storage stack.  It
 proxies requests from graphite-web to a cluster of carbon storage backends.
 Previous versions (available in the git history) were able to talk to python
