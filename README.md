@@ -4,6 +4,8 @@ carbonapi: replacement graphite API server
 [![Build Status](https://travis-ci.org/go-graphite/carbonapi.svg?branch=master)](https://travis-ci.org/go-graphite/carbonapi)
 [![GoDoc](https://godoc.org/github.com/go-graphite/carbonapi?status.svg)](https://godoc.org/github.com/go-graphite/carbonapi)
 
+[![Private Maven, RPM, DEB, PyPi and RubyGem Repository | packagecloud](https://packagecloud.io/images/packagecloud-badge.png)](https://packagecloud.io)
+
 
 CarbonAPI supports a significant subset of graphite functions [see [COMPATIBILITY](COMPATIBILITY.md)].
 In our testing it has shown to be 5x-10x faster than requesting data from graphite-web.
