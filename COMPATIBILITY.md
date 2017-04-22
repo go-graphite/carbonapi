@@ -171,10 +171,10 @@ minimumAbove(seriesList, n)                                               |  0.9
 minimumBelow(seriesList, n)                                               |  0.9.14 | Supported
 mostDeviant(seriesList, n)                                                |  0.9.9  | Supported
 movingAverage(seriesList, windowSize)                                     |  0.9.14 | Supported
-movingMax(seriesList, windowSize)                                         |  1.0.0  |
+movingMax(seriesList, windowSize)                                         |  1.0.0  | Supported
 movingMedian(seriesList, windowSize)                                      |  0.9.14 | Supported
-movingMin(seriesList, windowSize)                                         |  1.0.0  |
-movingSum(seriesList, windowSize)                                         |  1.0.0  |
+movingMin(seriesList, windowSize)                                         |  1.0.0  | Supported
+movingSum(seriesList, windowSize)                                         |  1.0.0  | Supported
 multiplySeries(*seriesLists)                                              |  0.9.10 | Supported
 multiplySeriesWithWildcards(seriesList, *position)                        |  1.0.0  |
 nPercentile(seriesList, n)                                                |  0.9.9  | Supported

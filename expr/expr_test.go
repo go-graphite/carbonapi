@@ -735,6 +735,51 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "movingSum",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{val: 2, etype: etConst},
+				},
+				argString: "metric1,2",
+			},
+			map[MetricRequest][]*MetricData{
+				{"metric1", 0, 1}: {makeResponse("metric1", []float64{1, 2, 3, 4, 5, 6}, 1, now32)},
+			},
+			[]*MetricData{makeResponse("movingSum(metric1,2)", []float64{math.NaN(), math.NaN(), 3, 5, 7, 9}, 1, now32)},
+		},
+		{
+			&expr{
+				target: "movingMin",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{val: 2, etype: etConst},
+				},
+				argString: "metric1,2",
+			},
+			map[MetricRequest][]*MetricData{
+				{"metric1", 0, 1}: {makeResponse("metric1", []float64{1, 2, 3, 2, 1, 0}, 1, now32)},
+			},
+			[]*MetricData{makeResponse("movingMin(metric1,2)", []float64{math.NaN(), math.NaN(), 1, 2, 2, 1}, 1, now32)},
+		},
+		{
+			&expr{
+				target: "movingMax",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{val: 2, etype: etConst},
+				},
+				argString: "metric1,2",
+			},
+			map[MetricRequest][]*MetricData{
+				{"metric1", 0, 1}: {makeResponse("metric1", []float64{1, 2, 3, 2, 1, 0}, 1, now32)},
+			},
+			[]*MetricData{makeResponse("movingMax(metric1,2)", []float64{math.NaN(), math.NaN(), 2, 3, 3, 2}, 1, now32)},
+		},
+		{
+			&expr{
 				target: "movingMedian",
 				etype:  etFunc,
 				args: []*expr{
