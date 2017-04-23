@@ -104,7 +104,7 @@ func (e *expr) Metrics() []MetricRequest {
 			for i := range r {
 				r[i].From -= 7 * 86400 // starts -7 days from where the original starts
 			}
-		case "movingAverage", "movingMedian":
+		case "movingAverage", "movingMedian", "movingMin", "movingMax", "movingSum":
 			switch e.args[1].etype {
 			case etString:
 				offs, err := getIntervalArg(e, 1, 1)
@@ -1991,7 +1991,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		return results, err
 
-	case "movingAverage": // movingAverage(seriesList, windowSize)
+	case "movingAverage", "movingMin", "movingMax", "movingSum": // movingXyz(seriesList, windowSize)
 		var n int
 		var err error
 
@@ -2041,7 +2041,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			w := &windowed{data: make([]float64, windowSize)}
 
 			r := *a
-			r.Name = fmt.Sprintf("movingAverage(%s,%s)", a.Name, argstr)
+			r.Name = fmt.Sprintf("%s(%s,%s)", e.target, a.Name, argstr)
 			r.Values = make([]float64, len(a.Values)-offset)
 			r.IsAbsent = make([]bool, len(a.Values)-offset)
 			r.StartTime = from
@@ -2054,7 +2054,18 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 				}
 
 				if ridx := i - offset; ridx >= 0 {
-					r.Values[ridx] = w.Mean()
+					switch e.target {
+					case "movingAverage":
+						r.Values[ridx] = w.Mean()
+					case "movingSum":
+						r.Values[ridx] = w.sum
+					//TODO(cldellow): consider a linear time min/max-heap for these,
+					// e.g. http://stackoverflow.com/questions/8905525/computing-a-moving-maximum/8905575#8905575
+					case "movingMin":
+						r.Values[ridx] = w.Min()
+					case "movingMax":
+						r.Values[ridx] = w.Max()
+					}
 					if i < windowSize || math.IsNaN(r.Values[ridx]) {
 						r.Values[ridx] = 0
 						r.IsAbsent[ridx] = true
@@ -3897,7 +3908,25 @@ func (w *windowed) Stdev() float64 {
 }
 
 func (w *windowed) Mean() float64 { return w.sum / float64(w.Len()) }
+func (w *windowed) Max() float64 {
+	var rv float64 = math.NaN()
+	for _, f := range w.data {
+		if math.IsNaN(rv) || f > rv {
+			rv = f
+		}
+	}
+	return rv
+}
 
+func (w *windowed) Min() float64 {
+	var rv float64 = math.NaN()
+	for _, f := range w.data {
+		if math.IsNaN(rv) || f < rv {
+			rv = f
+		}
+	}
+	return rv
+}
 func percentile(data []float64, percent float64, interpolate bool) float64 {
 	if len(data) == 0 || percent < 0 || percent > 100 {
 		return math.NaN()
