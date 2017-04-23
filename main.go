@@ -409,7 +409,10 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	fatalError := false
 
 	var metrics []string
-	for _, target := range targets {
+	var targetIdx = 0
+	for targetIdx < len(targets) {
+		var target = targets[targetIdx]
+		targetIdx++
 
 		exp, e, err := expr.ParseExpr(target)
 
@@ -539,23 +542,34 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			expr.SortMetrics(metricMap[mfetch], mfetch)
 		}
 
-		func() {
-			defer func() {
-				if r := recover(); r != nil {
-					logger.Error("panic during eval:",
-						zap.String("cache_key", cacheKey),
-						zap.Stack("stack"),
-					)
+		var rewritten bool
+		var newTargets []string
+		rewritten, newTargets, err = expr.RewriteExpr(exp, from32, until32, metricMap)
+		if err != nil && err != expr.ErrSeriesDoesNotExist {
+			errors[target] = err.Error()
+			fatalError = true
+			return
+		} else if rewritten {
+			targets = append(targets, newTargets...)
+		} else {
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						logger.Error("panic during eval:",
+							zap.String("cache_key", cacheKey),
+							zap.Stack("stack"),
+						)
+					}
+				}()
+				exprs, err := expr.EvalExpr(exp, from32, until32, metricMap)
+				if err != nil && err != expr.ErrSeriesDoesNotExist {
+					errors[target] = err.Error()
+					fatalError = true
+					return
 				}
+				results = append(results, exprs...)
 			}()
-			exprs, err := expr.EvalExpr(exp, from32, until32, metricMap)
-			if err != nil && err != expr.ErrSeriesDoesNotExist {
-				errors[target] = err.Error()
-				fatalError = true
-				return
-			}
-			results = append(results, exprs...)
-		}()
+		}
 	}
 
 	accessLogger = accessLogger.With(zap.Strings("metrics", metrics))

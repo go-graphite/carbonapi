@@ -1387,7 +1387,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		return args, nil
 
-	case "groupByNode", "applyByNode": // groupByNode(seriesList, nodeNum, callback), applyByNode(seriesList, nodeNum, templateFunction)
+	case "groupByNode": // groupByNode(seriesList, nodeNum, callback)
 		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
@@ -1413,9 +1413,6 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			metric := extractMetric(a.Name)
 			nodes := strings.Split(metric, ".")
 			node := nodes[field]
-			if e.target == "applyByNode" {
-				node = strings.Join(nodes[0:field+1], ".")
-			}
 
 			if len(groups[node]) == 0 {
 				nodeList = append(nodeList, node)
@@ -1430,9 +1427,6 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 			// Ensure that names won't be parsed as consts, appending stub to them
 			expr := fmt.Sprintf("%s(stub_%s)", callback, k)
-			if e.target == "applyByNode" {
-				expr = strings.Replace(callback, "%", k, -1)
-			}
 
 			// create a stub context to evaluate the callback in
 			nexpr, _, err := ParseExpr(expr)
@@ -3640,6 +3634,53 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 	}
 
 	return nil, errUnknownFunction(e.target)
+}
+
+// RewriteExpr expands targets that use applyByNode into a new list of targets.
+// eg:
+// applyByNode(foo*, 1, "%") -> (true, ["foo1", "foo2"], nil)
+// sumSeries(foo) -> (false, nil, nil)
+// Assumes that applyByNode only appears as the outermost function.
+func RewriteExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData) (bool, []string, error) {
+	if e.etype == etFunc && e.target == "applyByNode" {
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return false, nil, err
+		}
+
+		field, err := getIntArg(e, 1)
+		if err != nil {
+			return false, nil, err
+		}
+
+		callback, err := getStringArg(e, 2)
+		if err != nil {
+			return false, nil, err
+		}
+
+		var newName string
+		if len(e.args) == 4 {
+			newName, err = getStringArg(e, 3)
+			if err != nil {
+				return false, nil, err
+			}
+		}
+
+		var rv []string
+		for _, a := range args {
+			metric := extractMetric(a.Name)
+			nodes := strings.Split(metric, ".")
+			node := strings.Join(nodes[0:field], ".")
+			newTarget := strings.Replace(callback, "%", node, -1)
+
+			if newName != "" {
+				newTarget = fmt.Sprintf("alias(%s,\"%s\")", newTarget, strings.Replace(newName, "%", node, -1))
+			}
+			rv = append(rv, newTarget)
+		}
+		return true, rv, nil
+	}
+	return false, nil, nil
 }
 
 type errUnknownFunction string

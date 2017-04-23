@@ -2989,6 +2989,138 @@ func TestEvalSummarize(t *testing.T) {
 	}
 }
 
+func TestRewriteExpr(t *testing.T) {
+	now32 := int32(time.Now().Unix())
+
+	tests := []struct {
+		name string
+		e *expr
+		m map[MetricRequest][]*MetricData
+		rewritten bool
+		newTargets []string
+	}{
+		{
+			"ignore non-applyByNode",
+			&expr{
+				target: "sumSeries",
+				etype: etFunc,
+				args: []*expr{
+					{target: "metric*"},
+				},
+			},
+			map[MetricRequest][]*MetricData{
+				{"metric*", 0, 1}: {
+					makeResponse("metric1", []float64{1, 2, 3}, 1, now32),
+				},
+				{"metric1", 0, 1}: {
+					makeResponse("metric1", []float64{1, 2, 3}, 1, now32),
+				},
+			},
+			false,
+			[]string{},
+		},
+		{
+			"applyByNode",
+			&expr{
+				target: "applyByNode",
+				etype: etFunc,
+				args: []*expr{
+					{target: "metric*"},
+					{val: 1, etype: etConst},
+					{valStr: "%.count", etype: etString},
+				},
+			},
+			map[MetricRequest][]*MetricData{
+				{"metric*", 0, 1}: {
+					makeResponse("metric1", []float64{1, 2, 3}, 1, now32),
+				},
+				{"metric1", 0, 1}: {
+					makeResponse("metric1", []float64{1, 2, 3}, 1, now32),
+				},
+			},
+			true,
+			[]string{"metric1.count"},
+		},
+		{
+			"applyByNode",
+			&expr{
+				target: "applyByNode",
+				etype: etFunc,
+				args: []*expr{
+					{target: "metric*"},
+					{val: 1, etype: etConst},
+					{valStr: "%.count", etype: etString},
+					{valStr: "% count", etype: etString},
+				},
+			},
+			map[MetricRequest][]*MetricData{
+				{"metric*", 0, 1}: {
+					makeResponse("metric1", []float64{1, 2, 3}, 1, now32),
+				},
+				{"metric1", 0, 1}: {
+					makeResponse("metric1", []float64{1, 2, 3}, 1, now32),
+				},
+			},
+			true,
+			[]string{"alias(metric1.count,\"metric1 count\")"},
+		},
+		{
+			"applyByNode",
+			&expr{
+				target: "applyByNode",
+				etype: etFunc,
+				args: []*expr{
+					{target: "foo.metric*"},
+					{val: 2, etype: etConst},
+					{valStr: "%.count", etype: etString},
+				},
+			},
+			map[MetricRequest][]*MetricData{
+				{"foo.metric*", 0, 1}: {
+					makeResponse("foo.metric1", []float64{1, 2, 3}, 1, now32),
+					makeResponse("foo.metric2", []float64{1, 2, 3}, 1, now32),
+				},
+				{"foo.metric1", 0, 1}: {
+					makeResponse("foo.metric1", []float64{1, 2, 3}, 1, now32),
+				},
+				{"foo.metric2", 0, 1}: {
+					makeResponse("foo.metric2", []float64{1, 2, 3}, 1, now32),
+				},
+			},
+			true,
+			[]string{"foo.metric1.count", "foo.metric2.count"},
+		},
+	}
+
+	for _, tt := range tests {
+		rewritten, newTargets, err := RewriteExpr(tt.e, 0, 1, tt.m)
+
+		if err != nil {
+			t.Errorf("failed to rewrite %v: %s", tt.name, err)
+			continue
+		}
+
+		if rewritten != tt.rewritten {
+			t.Errorf("failed to rewrite %v: expected rewritten=%v but was %v", tt.name, tt.rewritten, rewritten)
+			continue
+		}
+
+		var targetsMatch = true
+		if len(tt.newTargets) != len(newTargets) {
+			targetsMatch = false
+		} else {
+			for i := range(tt.newTargets) {
+				targetsMatch = targetsMatch && tt.newTargets[i] == newTargets[i]
+			}
+		}
+
+		if !targetsMatch {
+			t.Errorf("failed to rewrite %v: expected newTargets=%v but was %v", tt.name, tt.newTargets, newTargets)
+			continue
+		}
+	}
+}
+
 func TestEvalMultipleReturns(t *testing.T) {
 
 	now32 := int32(time.Now().Unix())
@@ -3097,34 +3229,6 @@ func TestEvalMultipleReturns(t *testing.T) {
 			map[string][]*MetricData{
 				"divideSeries(metric1,metric2)": {makeResponse("divideSeries(metric1,metric2)", []float64{0.5, 0.5, 0.5, 0.5, 0.5}, 1, now32)},
 				"divideSeries(metric2,metric2)": {makeResponse("divideSeries(metric2,metric2)", []float64{1, 1, 1, 1, 1}, 1, now32)},
-			},
-		},
-		{
-			&expr{
-				target: "applyByNode",
-				etype:  etFunc,
-				args: []*expr{
-					{target: "metric1.foo.*.*"},
-					{val: 2, etype: etConst},
-					{valStr: "sumSeries(%.baz)", etype: etString},
-				},
-			},
-			map[MetricRequest][]*MetricData{
-				{"metric1.foo.*.*", 0, 1}: {
-					makeResponse("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
-					makeResponse("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
-				},
-				{"metric1.foo.bar1.baz", 0, 1}: {
-					makeResponse("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
-				},
-				{"metric1.foo.bar2.baz", 0, 1}: {
-					makeResponse("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
-				},
-			},
-			"applyByNode",
-			map[string][]*MetricData{
-				"metric1.foo.bar1": {makeResponse("metric1.foo.bar1", []float64{1, 2, 3, 4, 5}, 1, now32)},
-				"metric1.foo.bar2": {makeResponse("metric1.foo.bar2", []float64{11, 12, 13, 14, 15}, 1, now32)},
 			},
 		},
 		{
