@@ -2059,6 +2059,8 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 						r.Values[ridx] = w.Mean()
 					case "movingSum":
 						r.Values[ridx] = w.sum
+					//TODO(cldellow): consider a linear time min/max-heap for these,
+					// e.g. http://stackoverflow.com/questions/8905525/computing-a-moving-maximum/8905575#8905575
 					case "movingMin":
 						r.Values[ridx] = w.Min()
 					case "movingMax":
