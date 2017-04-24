@@ -474,10 +474,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			// TODO: Move that variable to the config
-			const maxBatchSize = 100
-
-			var sendGlobs = Config.SendGlobsAsIs && len(glob.Matches) < maxBatchSize
+			var sendGlobs = Config.SendGlobsAsIs && len(glob.Matches) < Config.MaxBatchSize
 			accessLogger = accessLogger.With(zap.Bool("send_globs", sendGlobs))
 
 			if sendGlobs {
@@ -930,6 +927,7 @@ var Config = struct {
 	IdleConnections int                `yaml:"idleConnections"`
 	PidFile         string             `yaml:"pidFile"`
 	SendGlobsAsIs   bool               `yaml:"sendGlobsAsIs"`
+	MaxBatchSize    int                `yaml:"maxBatchSize"`
 
 	queryCache cache.BytesCache
 	findCache  cache.BytesCache
@@ -946,6 +944,7 @@ var Config = struct {
 	Listen:        "[::]:8081",
 	Concurency:    20,
 	SendGlobsAsIs: false,
+	MaxBatchSize:  100,
 	Cache: cacheConfig{
 		Type: "mem",
 	},
