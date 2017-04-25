@@ -17,6 +17,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"gopkg.in/yaml.v2"
+
 	"github.com/dgryski/httputil"
 	"github.com/facebookgo/grace/gracehttp"
 	"github.com/facebookgo/pidfile"
@@ -45,38 +47,44 @@ var DefaultLoggerConfig = zapwriter.Config{
 }
 
 // Config contains configuration values
+type GraphiteConfig struct {
+	Host     string
+	Interval time.Duration
+	Prefix   string
+}
+
 var Config = struct {
-	Backends    []string
-	MaxProcs    int
-	IntervalSec int
-	Port        int
-	Buckets     int
+	Backends    []string `yaml:"backends"`
+	MaxProcs    int `yaml:"maxProcs"`
+	Graphite        GraphiteConfig     `yaml:"graphite"`
+	Listen          string             `yaml:"listen"`
+	Buckets     int `yaml:"buckets"`
 
-	TimeoutMs                int
-	TimeoutMsAfterAllStarted int
+	Timeouts zipper.Timeouts `yaml:"timeouts"`
 
-	SearchBackend string
-	SearchPrefix  string
+	CarbonSearch zipper.CarbonSearch `yaml:"carbonsearch"`
 
-	GraphiteHost         string
-	InternalMetricPrefix string
+	MaxIdleConnsPerHost int `yaml:"maxIdleConnsPerHost"`
 
-	MaxIdleConnsPerHost int
-
-	ConcurrencyLimitPerServer  int
-	ExpireDelaySec             int32
-	Logger                     []zapwriter.Config
-	GraphiteWeb09Compatibility bool
+	ConcurrencyLimitPerServer  int `yaml:"concurrencyLimit"`
+	ExpireDelaySec             int32 `yaml:"expireDelaySec"`
+	Logger                     []zapwriter.Config `yaml:"logger"`
+	GraphiteWeb09Compatibility bool `yaml:"graphite09compat"`
 
 	zipper *zipper.Zipper
 }{
 	MaxProcs:    1,
-	IntervalSec: 60,
-	Port:        8080,
+	Graphite: GraphiteConfig{
+		Interval: 60 * time.Second,
+		Prefix: "carbon.zipper",
+	},
+	Listen:        ":8080",
 	Buckets:     10,
 
-	TimeoutMs:                10000,
-	TimeoutMsAfterAllStarted: 2000,
+	Timeouts: zipper.Timeouts{
+		Global:10000 * time.Second,
+		AfterStarted: 2 * time.Second,
+	},
 
 	MaxIdleConnsPerHost: 100,
 
@@ -536,10 +544,7 @@ func main() {
 	}
 	logger := zapwriter.Logger("main")
 
-	configFile := flag.String("c", "", "config file (json)")
-	port := flag.Int("p", 0, "port to listen on")
-	maxprocs := flag.Int("maxprocs", 0, "GOMAXPROCS")
-	interval := flag.Duration("i", 0, "interval to report internal statistics to graphite")
+	configFile := flag.String("config", "", "config file (yaml)")
 	pidFile := flag.String("pid", "", "pidfile (default: empty, don't create pidfile)")
 
 	flag.Parse()
@@ -550,24 +555,17 @@ func main() {
 		logger.Fatal("missing config file option")
 	}
 
-	cfgjs, err := ioutil.ReadFile(*configFile)
+	cfg, err := ioutil.ReadFile(*configFile)
 	if err != nil {
 		logger.Fatal("unable to load config file:",
 			zap.Error(err),
 		)
 	}
 
-	cfgjs = stripCommentHeader(cfgjs)
-
-	if cfgjs == nil {
-		logger.Fatal("error removing header comment from ",
-			zap.String("config_file", *configFile),
-		)
-	}
-
-	err = json.Unmarshal(cfgjs, &Config)
+	err = yaml.Unmarshal(cfg, &Config)
 	if err != nil {
-		logger.Fatal("error parsing config file: ",
+		logger.Fatal("failed to parse config",
+			zap.String("config_path", *configFile),
 			zap.Error(err),
 		)
 	}
@@ -593,31 +591,13 @@ func main() {
 		}
 	}()
 
-	// command line overrides config file
-	if *port != 0 {
-		Config.Port = *port
-	}
-
-	if *maxprocs != 0 {
-		Config.MaxProcs = *maxprocs
-	}
-
-	if *interval == 0 {
-		*interval = time.Duration(Config.IntervalSec) * time.Second
-	}
-
-	searchConfigured = len(Config.SearchPrefix) > 0 && len(Config.SearchBackend) > 0
-
-	portStr := fmt.Sprintf(":%d", Config.Port)
+	searchConfigured = len(Config.CarbonSearch.Prefix) > 0 && len(Config.CarbonSearch.Backend) > 0
 
 	logger = zapwriter.Logger("main")
 	logger.Info("starting carbonzipper",
 		zap.String("build_version", BuildVersion),
-		zap.Int("GOMAXPROCS", Config.MaxProcs),
-		zap.Duration("stats interval", *interval),
-		zap.Int("concurency_limit_per_server", Config.ConcurrencyLimitPerServer),
-		zap.String("graphite_host", Config.GraphiteHost),
-		zap.String("listen_port", portStr),
+		zap.Bool("carbonsearch_configured", searchConfigured),
+		zap.Any("config", Config),
 	)
 
 	runtime.GOMAXPROCS(Config.MaxProcs)
@@ -641,10 +621,8 @@ func main() {
 		MaxIdleConnsPerHost:       Config.MaxIdleConnsPerHost,
 		Backends:                  Config.Backends,
 
-		SearchBackend:          Config.SearchBackend,
-		SearchPrefix:           Config.SearchPrefix,
-		TimeoutAfterAllStarted: time.Duration(Config.TimeoutMsAfterAllStarted) * time.Millisecond,
-		Timeout:                time.Duration(Config.TimeoutMs) * time.Millisecond,
+		CarbonSearch: Config.CarbonSearch,
+		Timeouts: Config.Timeouts,
 	}
 
 	Metrics.CacheSize = expvar.Func(func() interface{} { return zipperConfig.PathCache.ECSize() })
@@ -667,25 +645,25 @@ func main() {
 	http.HandleFunc("/lb_check", lbCheckHandler)
 
 	// nothing in the config? check the environment
-	if Config.GraphiteHost == "" {
+	if Config.Graphite.Host == "" {
 		if host := os.Getenv("GRAPHITEHOST") + ":" + os.Getenv("GRAPHITEPORT"); host != ":" {
-			Config.GraphiteHost = host
+			Config.Graphite.Host = host
 		}
 	}
 
-	if Config.InternalMetricPrefix == "" {
-		Config.InternalMetricPrefix = "carbon.zipper"
+	if Config.Graphite.Prefix == "" {
+		Config.Graphite.Prefix = "carbon.zipper"
 	}
 
 	// only register g2g if we have a graphite host
-	if Config.GraphiteHost != "" {
+	if Config.Graphite.Host != "" {
 		// register our metrics with graphite
-		graphite := g2g.NewGraphite(Config.GraphiteHost, *interval, 10*time.Second)
+		graphite := g2g.NewGraphite(Config.Graphite.Host, Config.Graphite.Interval, 10*time.Second)
 
 		hostname, _ := os.Hostname()
 		hostname = strings.Replace(hostname, ".", "_", -1)
 
-		prefix := Config.InternalMetricPrefix
+		prefix := Config.Graphite.Prefix
 
 		graphite.Register(fmt.Sprintf("%s.%s.find_requests", prefix, hostname), Metrics.FindRequests)
 		graphite.Register(fmt.Sprintf("%s.%s.find_errors", prefix, hostname), Metrics.FindErrors)
@@ -714,7 +692,7 @@ func main() {
 		graphite.Register(fmt.Sprintf("%s.%s.search_cache_hits", prefix, hostname), Metrics.SearchCacheHits)
 		graphite.Register(fmt.Sprintf("%s.%s.search_cache_misses", prefix, hostname), Metrics.SearchCacheMisses)
 
-		go mstats.Start(*interval)
+		go mstats.Start(Config.Graphite.Interval)
 
 		graphite.Register(fmt.Sprintf("%s.%s.alloc", prefix, hostname), &mstats.Alloc)
 		graphite.Register(fmt.Sprintf("%s.%s.total_alloc", prefix, hostname), &mstats.TotalAlloc)
@@ -731,7 +709,7 @@ func main() {
 	}
 
 	err = gracehttp.Serve(&http.Server{
-		Addr:    portStr,
+		Addr:    Config.Listen,
 		Handler: nil,
 	})
 

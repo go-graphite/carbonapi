@@ -24,18 +24,27 @@ import (
 	"go.uber.org/zap"
 )
 
+type Timeouts struct {
+	Global time.Duration `yaml:"global"`
+	AfterStarted time.Duration `yaml:"afterStarted"`
+}
+
+type CarbonSearch struct {
+	Backend string `yaml:"backend"`
+	Prefix  string `yaml:"prefix"`
+}
+
+
 type Config struct {
 	ConcurrencyLimitPerServer int
 	MaxIdleConnsPerHost       int
 	Backends                  []string
 
-	SearchBackend string
-	SearchPrefix  string
+	CarbonSearch CarbonSearch
 
 	PathCache              pathcache.PathCache
 	SearchCache            pathcache.PathCache
-	TimeoutAfterAllStarted time.Duration
-	Timeout                time.Duration
+	Timeouts Timeouts
 }
 
 type Zipper struct {
@@ -97,12 +106,12 @@ func NewZipper(sender func(*Stats), config *Config) *Zipper {
 
 		storageClient:             &http.Client{},
 		backends:                  config.Backends,
-		searchBackend:             config.SearchBackend,
-		searchPrefix:              config.SearchPrefix,
+		searchBackend:             config.CarbonSearch.Backend,
+		searchPrefix:              config.CarbonSearch.Prefix,
 		concurrencyLimitPerServer: config.ConcurrencyLimitPerServer,
 		maxIdleConnsPerHost:       config.MaxIdleConnsPerHost,
-		timeoutAfterAllStarted:    config.TimeoutAfterAllStarted,
-		timeout:                   config.Timeout,
+		timeoutAfterAllStarted:    config.Timeouts.AfterStarted,
+		timeout:                   config.Timeouts.Global,
 	}
 
 	logger.Info("zipper config",
