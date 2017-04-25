@@ -26,17 +26,21 @@ CHANGELOG
  - [Improvement] Use dep as a vendoring tool
  - [Improvement] Add a Makefile that will hide some magic from user.
  - [Improvement] Send glob heruistic -- if request with globs is relatively small (<100 metrics) carbonapi will send it as is.
+ - [Improvement] divideSeries support seriesList in dividents (#203, thx @cldellow)
+ - [Improvement] added movingMin/movingMax/movingSum (#206, thx @cldellow)
  - [Feature] Implement following functions from graphite-web: linewidth, areaBetween, applyByNode
  - [Feature] Add fft, ifft, LowPass functions. See COMPATIBILITY.md for more information
  - [Feature] Publish current configuration as an expvar (GET /debug/vars)
  - [Feature] Make prefix configurable (thx to @StephenPCG, #189)
  - [Fix] Fix issue with missing labels on graphs > 14d
  - [Fix] Allow expressions to use 'total' instead of 'sum'. Required for graphite compatibility
- - [Fix] Fix incompatibility between carbonapi and older versions of carbonzipper/carbonserver/go-carbon (protobuf2-only)
+ - **[Fix]** Fix incompatibility between carbonapi and older versions of carbonzipper/carbonserver/go-carbon (protobuf2-only)
 
 Notes on upgrading:
 
-Even though there are several changes that's marked as breaking, it only breaks local config parsing. There is no need in extra upgrade procedures at this moment
+Even though there are several changes that's marked as breaking, it only breaks local config parsing and changes logging format.
+
+**This release fixes the incompatibility introduced in 0.6.0 and can work with both new and old versions of carbonserver, carbonzipper, go-carbon**
 
 **0.7.0**
  - [Improvement] Render requests with globs now sent as-is.
