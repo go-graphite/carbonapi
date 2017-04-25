@@ -14,7 +14,7 @@ Changes
 
 Changes
 -------
-**Master**
+**0.70**
    - **[Breaking]** Logging migrated to zap (structured logging). Log format changed significantly. Old command line options removed. Please consult example.conf for a new config options and explanations
    - **[Breaking]** Change config format from json to yaml. Also we've changed config structure and command line options. Please refer to example.conf for decent example of new format
    - [Improvement] Add context support. Also log context from carbonapi
