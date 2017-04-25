@@ -18,12 +18,11 @@ Changes
    - **[Breaking]** Logging migrated to zap (structured logging). Log format changed significantly. Old command line options removed. Please consult example.conf for a new config options and explanations
    - **[Breaking]** Change config format from json to yaml. Also we've changed config structure and command line options. Please refer to example.conf for decent example of new format
    - [Improvement] Add context support. Also log context from carbonapi
-   - [Improvement] Add memcache support for zipper caches
    - [Improvement] Use dep as a vendoring tool
    - [Improvement] Add a Makefile that will hide some magic from user
-   - [Improvement] Split carbonzipper into several packages
    - [Improvement] graphite-web 1.0 support
    - [Fix] Fix incompatibility between carbonzipper and older versions of carbonserver/go-carbon (protobuf2-only)
+   - [Code] Split carbonzipper into several packages
 
 **0.63**
    - [Fix] carbonsearch query cache was never cleared
