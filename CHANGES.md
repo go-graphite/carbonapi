@@ -24,6 +24,10 @@ Changes
    - [Fix] Fix incompatibility between carbonzipper and older versions of carbonserver/go-carbon (protobuf2-only)
    - [Code] Split carbonzipper into several packages
 
+Notes on upgrading:
+
+Even though there are several changes that's marked as breaking, it only breaks local config parsing and changes logging format. Please note that on high-load environments access log can be huge.
+
 **0.63**
    - [Fix] carbonsearch query cache was never cleared
 
