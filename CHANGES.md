@@ -14,7 +14,7 @@ Changes
 CHANGELOG
 ---------
 
-**WIP**
+**0.8.0**
  - **[Breaking]** Most of the configuration options moved to a config file
  - **[Breaking]** Logging migrated to zap (structured logging). Log format changed significantly. Old command line options removed. Please consult carbonapi.example.yaml for a new config options and explanations
  - [Improvement] CarbonAPI now passes extra headers to keep track of requests
