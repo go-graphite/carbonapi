@@ -25,7 +25,7 @@ import (
 )
 
 type Timeouts struct {
-	Global time.Duration `yaml:"global"`
+	Global       time.Duration `yaml:"global"`
 	AfterStarted time.Duration `yaml:"afterStarted"`
 }
 
@@ -34,7 +34,6 @@ type CarbonSearch struct {
 	Prefix  string `yaml:"prefix"`
 }
 
-
 type Config struct {
 	ConcurrencyLimitPerServer int
 	MaxIdleConnsPerHost       int
@@ -42,9 +41,9 @@ type Config struct {
 
 	CarbonSearch CarbonSearch
 
-	PathCache              pathcache.PathCache
-	SearchCache            pathcache.PathCache
-	Timeouts Timeouts
+	PathCache   pathcache.PathCache
+	SearchCache pathcache.PathCache
+	Timeouts    Timeouts
 }
 
 type Zipper struct {

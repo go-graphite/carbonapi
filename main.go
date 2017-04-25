@@ -54,11 +54,11 @@ type GraphiteConfig struct {
 }
 
 var Config = struct {
-	Backends    []string `yaml:"backends"`
-	MaxProcs    int `yaml:"maxProcs"`
-	Graphite        GraphiteConfig     `yaml:"graphite"`
-	Listen          string             `yaml:"listen"`
-	Buckets     int `yaml:"buckets"`
+	Backends []string       `yaml:"backends"`
+	MaxProcs int            `yaml:"maxProcs"`
+	Graphite GraphiteConfig `yaml:"graphite"`
+	Listen   string         `yaml:"listen"`
+	Buckets  int            `yaml:"buckets"`
 
 	Timeouts zipper.Timeouts `yaml:"timeouts"`
 
@@ -66,23 +66,23 @@ var Config = struct {
 
 	MaxIdleConnsPerHost int `yaml:"maxIdleConnsPerHost"`
 
-	ConcurrencyLimitPerServer  int `yaml:"concurrencyLimit"`
-	ExpireDelaySec             int32 `yaml:"expireDelaySec"`
+	ConcurrencyLimitPerServer  int                `yaml:"concurrencyLimit"`
+	ExpireDelaySec             int32              `yaml:"expireDelaySec"`
 	Logger                     []zapwriter.Config `yaml:"logger"`
-	GraphiteWeb09Compatibility bool `yaml:"graphite09compat"`
+	GraphiteWeb09Compatibility bool               `yaml:"graphite09compat"`
 
 	zipper *zipper.Zipper
 }{
-	MaxProcs:    1,
+	MaxProcs: 1,
 	Graphite: GraphiteConfig{
 		Interval: 60 * time.Second,
-		Prefix: "carbon.zipper",
+		Prefix:   "carbon.zipper",
 	},
-	Listen:        ":8080",
-	Buckets:     10,
+	Listen:  ":8080",
+	Buckets: 10,
 
 	Timeouts: zipper.Timeouts{
-		Global:10000 * time.Second,
+		Global:       10000 * time.Second,
 		AfterStarted: 2 * time.Second,
 	},
 
@@ -622,7 +622,7 @@ func main() {
 		Backends:                  Config.Backends,
 
 		CarbonSearch: Config.CarbonSearch,
-		Timeouts: Config.Timeouts,
+		Timeouts:     Config.Timeouts,
 	}
 
 	Metrics.CacheSize = expvar.Func(func() interface{} { return zipperConfig.PathCache.ECSize() })
