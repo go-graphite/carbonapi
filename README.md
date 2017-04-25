@@ -23,6 +23,17 @@ For an overview of the stack and how the pieces fit together, watch
 [Graphite@Scale or How to store millions metrics per second](https://fosdem.org/2017/schedule/event/graphite_at_scale/)
 from FOSDEM '17.
 
+Requirements
+------------
+
+CarbonZipper uses protobuf-based protocol to talk with underlying storages. For current version the compatibility list is:
+
+1. [carbonzipper](https://github.com/go-graphite/carbonzipper) >= 0.50
+2. [go-carbon](https://github.com/lomik/go-carbon) >= 0.9.0 (Note: you need to enable carbonserver in go-carbon).
+3. [carbonserver](https://github.com/grobian/carbonserver)@master (Note: you should probably switch to go-carbon in that case).
+4. [graphite-clickhouse](https://github.com/lomik/graphite-clickhouse) any. That's alternative storage that doesn't use Whisper. Limitations: /info handler won't work properly.
+5. [carbonapi](https://github.com/go-graphite/carbonapi) >= 0.5. Note: we are not sure if there is any point in running carbonzipper over carbonapi at this moment.
+
 Changes and versioning
 ----------------------
 
