@@ -24,16 +24,19 @@ import (
 	"go.uber.org/zap"
 )
 
+// Timeouts is a global structure that contains configuration for zipper Timeouts
 type Timeouts struct {
 	Global       time.Duration `yaml:"global"`
 	AfterStarted time.Duration `yaml:"afterStarted"`
 }
 
+// CarbonSearch is a global structure that contains carbonsearch related configuration bits
 type CarbonSearch struct {
 	Backend string `yaml:"backend"`
 	Prefix  string `yaml:"prefix"`
 }
 
+// Config is a structure that contains zipper-related configuration bits
 type Config struct {
 	ConcurrencyLimitPerServer int
 	MaxIdleConnsPerHost       int
@@ -46,6 +49,7 @@ type Config struct {
 	Timeouts    Timeouts
 }
 
+// Zipper provides interface to Zipper-related functions
 type Zipper struct {
 	storageClient *http.Client
 	// Limiter limits our concurrency to a particular server
@@ -71,6 +75,7 @@ type Zipper struct {
 	sendStats func(*Stats)
 }
 
+// Stats provides zipper-related statistics
 type Stats struct {
 	Timeouts          int64
 	FindErrors        int64
@@ -91,6 +96,7 @@ type nameLeaf struct {
 	leaf bool
 }
 
+// NewZipper allows to create new Zipper
 func NewZipper(sender func(*Stats), config *Config) *Zipper {
 	logger := zapwriter.Logger("new_zipper")
 	z := &Zipper{
@@ -136,6 +142,7 @@ func NewZipper(sender func(*Stats), config *Config) *Zipper {
 	return z
 }
 
+// ServerResponse contains response from the zipper
 type ServerResponse struct {
 	server   string
 	response []byte
