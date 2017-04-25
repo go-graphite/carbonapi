@@ -9,11 +9,7 @@ carbonapi: replacement graphite API server
 CarbonAPI supports a significant subset of graphite functions [see [COMPATIBILITY](COMPATIBILITY.md)].
 In our testing it has shown to be 5x-10x faster than requesting data from graphite-web.
 
-To use this, you must have a [carbonzipper](https://github.com/go-graphite/carbonzipper)
-install, which in turn requires that your
-carbon stores are running [go-carbon](https://github.com/lomik/go-carbon) (Note: you need to enable carbonserver in go-carbon)
-
-It's possible to talk directly with `go-carbon`'s carbonserver module, but custom `/info` handler won't work.
+For requirements see **Requirements** secion below.
 
 The only required parameter is the path to a config file. For an example see `carbonapi.example.yaml`
 
@@ -23,6 +19,18 @@ Request metrics will be dumped to graphite if coresponding config options are se
 or if the GRAPHITEHOST/GRAPHITEPORT environment variables are found.
 
 Request data will be stored in memory (default) or in memcache.
+
+
+Requirements
+------------
+
+CarbonAPI uses protobuf-based protocol to talk with underlying storages. For current version the compatibility list is:
+
+1. [carbonzipper](https://github.com/go-graphite/carbonzipper) >= 0.50
+2. [go-carbon](https://github.com/lomik/go-carbon) >= 0.9.0 (Note: you need to enable carbonserver in go-carbon). Limitations: /info handler won't work properly
+3. [carbonserver](https://github.com/grobian/carbonserver)@master (Note: you should probably switch to go-carbon in that case). Limitations: /info handler won't work properly
+4. [graphite-clickhouse](https://github.com/lomik/graphite-clickhouse) any. That's alternative storage that doesn't use Whisper. Limitations: /info handler won't work properly.
+5. [carbonapi](https://github.com/go-graphite/carbonapi) >= 0.5. Note: we are not sure if there is any point in running carbonapi over carbonapi at this moment.
 
 OSX Build Notes
 ---------------
