@@ -328,7 +328,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		format = "png"
 	}
 
-	cacheTimeout := int32(60)
+	cacheTimeout := Config.Cache.DefaultTimeoutSec
 
 	if tstr := r.FormValue("cacheTimeout"); tstr != "" {
 		t, err := strconv.Atoi(tstr)
@@ -907,6 +907,7 @@ type cacheConfig struct {
 	Type             string   `yaml:"type"`
 	Size             int      `yaml:"size_mb"`
 	MemcachedServers []string `yaml:"memcachedServers"`
+	DefaultTimeoutSec int32   `yaml:"defaultTimeoutSec"`
 }
 
 type graphiteConfig struct {
@@ -947,6 +948,7 @@ var Config = struct {
 	MaxBatchSize:  100,
 	Cache: cacheConfig{
 		Type: "mem",
+		DefaultTimeoutSec: 60,
 	},
 	TimezoneString: "",
 	Graphite: graphiteConfig{

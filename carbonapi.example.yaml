@@ -8,7 +8,9 @@ cache:
    # Type of caching. Valid: "mem", "memcache", "none"
    type: "mem"
    # Cache limit in megabytes
-   size_mb: 0 
+   size_mb: 0
+   # Default cache timeout value. Identical to DEFAULT_CACHE_DURATION in graphite-web.
+   defaultTimeoutSec: 60
    # Only used by memcache type of cache. List of memcache servers.
    memcachedServers:
        - "127.0.0.1:1234"

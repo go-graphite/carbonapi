@@ -13,6 +13,8 @@ Changes
 
 CHANGELOG
 ---------
+**Master**
+ - [Improvement] Make default cache timeout configurable.
 
 **0.8.0**
  - **[Breaking]** Most of the configuration options moved to a config file
