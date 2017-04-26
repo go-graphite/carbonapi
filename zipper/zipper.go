@@ -113,6 +113,7 @@ func NewZipper(sender func(*Stats), config *Config) *Zipper {
 		backends:                  config.Backends,
 		searchBackend:             config.CarbonSearch.Backend,
 		searchPrefix:              config.CarbonSearch.Prefix,
+		searchConfigured:          len(config.CarbonSearch.Prefix) > 0 && len(config.CarbonSearch.Backend) > 0,
 		concurrencyLimitPerServer: config.ConcurrencyLimitPerServer,
 		maxIdleConnsPerHost:       config.MaxIdleConnsPerHost,
 		timeoutAfterAllStarted:    config.Timeouts.AfterStarted,

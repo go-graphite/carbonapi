@@ -14,6 +14,9 @@ Changes
 
 Changes
 -------
+**0.71**
+   - [Fix] carbonsearch was not properly configured (bug introduced after splitting zipper into several packages)
+
 **0.70**
    - **[Breaking]** Logging migrated to zap (structured logging). Log format changed significantly. Old command line options removed. Please consult example.conf for a new config options and explanations
    - **[Breaking]** Change config format from json to yaml. Also we've changed config structure and command line options. Please refer to example.conf for decent example of new format
