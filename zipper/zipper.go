@@ -632,7 +632,7 @@ func (z *Zipper) Info(ctx context.Context, logger *zap.Logger, target string) (m
 		stats.CacheHits++
 	}
 
-	rewrite, _ := url.Parse("http://127.0.0.1/metrics/info/")
+	rewrite, _ := url.Parse("http://127.0.0.1/info/")
 
 	v := url.Values{
 		"target": []string{target},

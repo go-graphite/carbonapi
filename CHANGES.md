@@ -14,6 +14,9 @@ Changes
 
 Changes
 -------
+**0.72**
+   - [Fix] Fix /info handler (bug was introduced after splitting zipper into several packages)
+
 **0.71**
    - [Fix] carbonsearch was not properly configured (bug introduced after splitting zipper into several packages)
 
