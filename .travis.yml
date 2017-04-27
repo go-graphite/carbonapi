@@ -13,29 +13,30 @@ before_install:
     docker pull civilus/gographite-build-centos:7 &
     docker pull civilus/gographite-build-ubuntu:14.04 &
     docker pull civilus/gographite-build-ubuntu:16.04 &
-    wait
-    gem install package_cloud
+  - wait
+  - gem install package_cloud
   - echo "${TRAVIS_BRANCH}"
     echo "${FORCE_BUILD}"
     if [ "$TRAVIS_BRANCH" == "master" ] || [ "${FORCE_BUILD}" == "true" ]; then
-        mkdir -p pkg
+        mkdir -p pkg;
         for i in centos:6 centos:7 ubuntu:14.04 ubuntu:16.04; do
-                docker cp .packagecloud civilus/gographite-build-${i}:/root/.packagecloud
-                docker cp go civilus/gographite-build-${i}:/root/go
-                docker run -d -p 127.0.0.1:80:4567 civilus/gographite-build-${i} /bin/bash '/root/pack.sh'
-                docker cp civilus/gographite-build-${i}:~/pkg/* ./pkg/
-        done
-        cd pkg
+            docker cp .packagecloud civilus/gographite-build-${i}:/root/.packagecloud;
+            docker cp go civilus/gographite-build-${i}:/root/go;
+            docker run -d -p 127.0.0.1:80:4567 civilus/gographite-build-${i} /bin/bash '/root/pack.sh';
+            docker cp civilus/gographite-build-${i}:~/pkg/* ./pkg/;
+        done;
+        cd pkg;
         for d in $(ls); do
-                pushd ${d}
-                for v in $(ls); do
-                        pushd ${v}
-                                for r in $(ls); do
-                                        package_cloud push go-graphite/${r}/${d}/${v} ./${r}/*
-                                done
-                        popd;
-                done
-                popd
+            pushd ${d}
+            for v in $(ls); do
+                pushd ${v}
+                for r in $(ls); do
+                    package_cloud push go-graphite/${r}/${d}/${v} ./${r}/*;
+                done;
+                popd;
+            done;
+            popd;
+        done;
     fi
 
 go:
