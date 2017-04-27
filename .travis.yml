@@ -1,12 +1,33 @@
 language: go
 dist: trusty
 
+sudo: required
+
+services:
+  - docker
+
 before_install:
   - sudo apt-get -qq update
   - sudo apt-get install libcairo2-dev mercurial pkg-config -y
+  - docker pull civilus/gographite-build-centos:6 &
+    docker pull civilus/gographite-build-centos:7 &
+    docker pull civilus/gographite-build-ubuntu:14.04 &
+    docker pull civilus/gographite-build-ubuntu:16.04 &
+    wait
 
 go:
   - 1.x
   - 1.7.x
   - 1.8.x
   - master
+
+after_install:
+  - if [ "$TRAVIS_BRANCH" == "master" ] || [ "${FORCE_BUILD}" == "true" ]; then
+        echo '{"url":"https://packagecloud.io","token":"'"${PACKAGECLOUD_TOKEN}"'"}' > .packagecloud
+        for i in centos:6 centos:7 ubuntu:14.04 ubuntu:16.04; do
+                docker cp .packagecloud civilus/gographite-build-${i}:/root/.packagecloud
+                docker cp go civilus/gographite-build-${i}:/root/go
+                docker run -d -p 127.0.0.1:80:4567 civilus/gographite-build-${i} /bin/bash '/root/pack.sh' &
+        done
+        wait
+    fi
