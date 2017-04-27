@@ -15,17 +15,16 @@ before_install:
     docker pull civilus/gographite-build-ubuntu:16.04 &
   - wait
   - gem install package_cloud
-  - echo "${TRAVIS_BRANCH}";
-    echo "${FORCE_BUILD}";
-    if [ "$TRAVIS_BRANCH" == "master" ] || [ "${FORCE_BUILD}" == "true" ]; then
+  - if [ "$TRAVIS_BRANCH" == "master" ] || [ "${FORCE_BUILD}" == "true" ]; then
         mkdir -p pkg;
         for i in centos:6 centos:7 ubuntu:14.04 ubuntu:16.04; do
-            docker cp .packagecloud civilus/gographite-build-${i}:/root/.packagecloud;
-            docker cp go civilus/gographite-build-${i}:/root/go;
-            docker run -d -p 127.0.0.1:80:4567 civilus/gographite-build-${i} /bin/bash '/root/pack.sh';
+            docker start civilus/gographite-build-${i}
+            docker cp /home/travis/gopath civilus/gographite-build-${i}:/root/go;
+            docker run civilus/gographite-build-${i} /bin/bash '/root/pack.sh' || exit 1;
             docker cp civilus/gographite-build-${i}:~/pkg/* ./pkg/;
+            docker stop civilus/gographite-build-${i}
         done;
-        cd pkg;
+        pushd pkg;
         for d in $(ls); do
             pushd ${d};
             for v in $(ls); do
@@ -37,6 +36,7 @@ before_install:
             done;
             popd;
         done;
+        popd;
     fi
 
 go:
