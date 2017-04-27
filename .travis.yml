@@ -31,7 +31,7 @@ before_install:
                 for v in $(ls); do
                         pushd ${v}
                                 for r in $(ls); do
-                                        package_cloud push go-graphite/${r}/${d}/${v} ./${r}/* ||:
+                                        package_cloud push go-graphite/${r}/${d}/${v} ./${r}/*
                                 done
                         popd;
                 done
