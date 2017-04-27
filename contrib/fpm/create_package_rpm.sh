@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
 VERSION_GIT=$(git describe --abbrev=4 --always --tags | rev | sed 's/-/./' | rev) 
-VERSION=$(echo ${VERSION_GIT} | cut -d'-' -f 1)
-RELEASE=$(echo ${VERSION_GIT} | cut -d'-' -f 2)
+VERSION=$(cut -d'-' -f 1 <<< ${VERSION_GIT})
+RELEASE=$(cut -d'-' -f 2 <<< ${VERSION_GIT})
+if [[ "${VERSION}" == "${RELEASE}" ]]; then
+       RELEASE="1"
+else
+       REL_VERSION=$(cut -d'.' -f 1 <<< ${RELEASE})
+       REL_COMMIT=$(cut -d'.' -f 2 <<< ${RELEASE})
+       RELEASE="$((REL_VERSION+1)).${REL_COMMIT}"
+fi
 TMPDIR=$(mktemp -d)
 
 die() {
