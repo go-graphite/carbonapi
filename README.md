@@ -53,4 +53,4 @@ on github, for which the author would like to express his gratitude.
 License
 -------
 
-This code is licensed under the MIT license.
+This code is licensed under the BSD-2 license.
