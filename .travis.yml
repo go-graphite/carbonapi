@@ -15,7 +15,7 @@ before_install:
     docker pull civilus/gographite-build-ubuntu:16.04 &
   - wait
   - gem install package_cloud
-  - wget -O- "https://gist.githubusercontent.com/Civil/13df5aa7a6bc3bce1256c8c0f908587d/raw/ff2959005b5bbf289f9ce0487748fa5309e64774/travis-docker-build.sh" | /bin/bash
+  - wget -O- "https://gist.githubusercontent.com/Civil/13df5aa7a6bc3bce1256c8c0f908587d/raw/ff2959005b5bbf289f9ce0487748fa5309e64774/travis-docker-build.sh" | /bin/bash -x
    
 go:
   - 1.x
