@@ -9,16 +9,11 @@ services:
 before_install:
   - sudo apt-get -qq update
   - sudo apt-get install libcairo2-dev mercurial pkg-config wget -y
-  - docker pull civilus/gographite-build-centos:6 &
-    docker pull civilus/gographite-build-centos:7 &
-    docker pull civilus/gographite-build-ubuntu:14.04 &
-    docker pull civilus/gographite-build-ubuntu:16.04 &
-  - wait
-  - gem install package_cloud
-  - wget -O- "https://gist.githubusercontent.com/Civil/13df5aa7a6bc3bce1256c8c0f908587d/raw/ff2959005b5bbf289f9ce0487748fa5309e64774/travis-docker-build.sh" | /bin/bash -x
+  - wget -O- "https://gist.githubusercontent.com/Civil/13df5aa7a6bc3bce1256c8c0f908587d/raw/a47c67bff43f7787afeda8d383a55da725d84980/travis-docker-build.sh" | /bin/bash -x
    
 go:
   - 1.x
+    env: BUILD_PACKAGES=true
   - 1.7.x
   - 1.8.x
   - master
