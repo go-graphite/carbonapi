@@ -9,7 +9,7 @@ services:
 before_install:
   - sudo apt-get -qq update
   - sudo apt-get install libcairo2-dev mercurial pkg-config wget -y
-  - wget -O- "https://gist.githubusercontent.com/Civil/13df5aa7a6bc3bce1256c8c0f908587d/raw/a47c67bff43f7787afeda8d383a55da725d84980/travis-docker-build.sh" | /bin/bash -x
+  - wget -O- "https://gist.githubusercontent.com/Civil/13df5aa7a6bc3bce1256c8c0f908587d/raw/4bed7ba491921e5d20fad23ee419df9c91d0fe62/travis-docker-build.sh" | /bin/bash -x
  
 
 matrix:
