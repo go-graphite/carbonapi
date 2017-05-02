@@ -9,7 +9,7 @@ carbonapi: replacement graphite API server
 CarbonAPI supports a significant subset of graphite functions [see [COMPATIBILITY](COMPATIBILITY.md)].
 In our testing it has shown to be 5x-10x faster than requesting data from graphite-web.
 
-For requirements see **Requirements** secion below.
+For requirements see **Requirements** section below.
 
 The only required parameter is the path to a config file. For an example see `carbonapi.example.yaml`
 
