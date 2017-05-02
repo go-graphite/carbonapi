@@ -22,12 +22,20 @@ die() {
     exit $1
 }
 
+MAJOR_DISTRO_VERSION=$(lsb_release -s -r | cut -c 1)
+
 make || die 1 "Can't build package"
 make DESTDIR="${TMPDIR}" install || die 1 "Can't install package"
-mkdir -p "${TMPDIR}"/etc/systemd/system/
 mkdir -p "${TMPDIR}"/etc/sysconfig/
-cp ./contrib/rhel/${NAME}.service "${TMPDIR}"/etc/systemd/system/
 cp ./contrib/common/${NAME}.env "${TMPDIR}"/etc/sysconfig/${NAME}
+if [[ "${MAJOR_DISTRO_VERSION}" -le 6 ]]; then
+	mkdir -p "${TMPDIR}"/init.d
+	cp ./contrib/rhel/${NAME}.init "${TMPDIR}"/etc/init.d/${NAME}
+else
+	mkdir -p "${TMPDIR}"/etc/systemd/system/
+	cp ./contrib/rhel/${NAME}.service "${TMPDIR}"/etc/systemd/system/
+fi
+
 
 fpm -s dir -t rpm -n ${NAME} -v ${VERSION} -C ${TMPDIR} \
     --iteration ${RELEASE} \
