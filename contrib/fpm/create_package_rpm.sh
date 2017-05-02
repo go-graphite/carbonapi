@@ -32,7 +32,6 @@ cp ./contrib/common/${NAME}.env "${TMPDIR}"/etc/sysconfig/${NAME}
 fpm -s dir -t rpm -n ${NAME} -v ${VERSION} -C ${TMPDIR} \
     --iteration ${RELEASE} \
     -p ${NAME}_VERSION-ITERATION_ARCH.rpm \
-    -d "cairo > 1.11" \
     --after-install contrib/fpm/systemd-reload.sh \
     --description "carbonserver proxy for graphite-web and carbonapi" \
     --license MIT \
