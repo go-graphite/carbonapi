@@ -15,9 +15,9 @@ carbon stores, but the current version requires the use of
 Installation
 ------------
 
-Stable versions: [Stable repo](https://packagecloud.io/go-graphite/stable)
+Stable versions: [Stable repo](https://packagecloud.io/go-graphite/stable/install)
 
-Autobuilds (master, might be unstable): [Autobuild repo](https://packagecloud.io/go-graphite/autobuilds)
+Autobuilds (master, might be unstable): [Autobuild repo](https://packagecloud.io/go-graphite/autobuilds/install)
 
 General information
 -------------------
