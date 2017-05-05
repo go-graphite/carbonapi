@@ -3,7 +3,7 @@ carbonzipper: carbonserver proxy for graphite-web
 
 [![Build Status](https://travis-ci.org/go-graphite/carbonzipper.svg?branch=master)](https://travis-ci.org/go-graphite/carbonzipper)
 
-<a href="https://packagecloud.io/"><img alt="Private Maven, RPM, DEB, PyPi and RubyGem Repository | packagecloud" height="46" src="https://packagecloud.io/images/packagecloud-badge.png" width="158" /></a>
+We are using <a href="https://packagecloud.io/"><img alt="Private Maven, RPM, DEB, PyPi and RubyGem Repository | packagecloud" height="46" src="https://packagecloud.io/images/packagecloud-badge.png" width="158" /></a> to host our packages!
 
 CarbonZipper is the central part of a replacement graphite storage stack.  It
 proxies requests from graphite-web to a cluster of carbon storage backends.
@@ -11,7 +11,17 @@ Previous versions (available in the git history) were able to talk to python
 carbon stores, but the current version requires the use of
 [go-carbon](https://github.com/lomik/go-carbon) or [graphite-clickhouse](https://github.com/lomik/graphite-clickhouse).
 
-Configuration is done via a JSON file loaded at startup.  The only required
+
+Installation
+------------
+
+Stable versions: [Stable repo](https://packagecloud.io/go-graphite/stable)
+
+Autobuilds (master, might be unstable): [Autobuild repo](https://packagecloud.io/go-graphite/autobuilds)
+
+General information
+-------------------
+Configuration is done via a YAML file loaded at startup.  The only required
 field is the list of carbonserver backends to connect to.
 
 Other pieces of the stack are:
