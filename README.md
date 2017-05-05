@@ -14,9 +14,11 @@ For requirements see **Requirements** section below.
 Installation
 ------------
 
-Stable versions: [Stable repo](https://packagecloud.io/go-graphite/stable)
+At this moment we are building packages for CentOS 6, CentOS 7, Ubuntu 14.04 and Ubuntu 16.04. Installation guides are available on packagecloud (see the links below).
 
-Autobuilds (master, might be unstable): [Autobuild repo](https://packagecloud.io/go-graphite/autobuilds)
+Stable versions: [Stable repo](https://packagecloud.io/go-graphite/stable/install)
+
+Autobuilds (master, might be unstable): [Autobuild repo](https://packagecloud.io/go-graphite/autobuilds/install)
 
 
 General information
