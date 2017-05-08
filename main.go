@@ -280,13 +280,13 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		zap.String("username", username),
 	)
 
-	srcIp, srcPort := splitRemoteAddr(r.RemoteAddr)
+	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
 	accessLogger := zapwriter.Logger("access").With(
 		zap.String("handler", "render"),
 		zap.String("carbonapi_uuid", uuid.String()),
 		zap.String("username", username),
 		zap.String("url", r.URL.RequestURI()),
-		zap.String("peer_ip", srcIp),
+		zap.String("peer_ip", srcIP),
 		zap.String("peer_port", srcPort),
 		zap.String("host", r.Host),
 		zap.String("referer", r.Referer()),
