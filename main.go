@@ -643,13 +643,13 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	jsonp := r.FormValue("jsonp")
 
 	query := r.FormValue("query")
-	srcIp, srcPort := splitRemoteAddr(r.RemoteAddr)
+	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
 	accessLogger := zapwriter.Logger("access").With(
 		zap.String("handler", "find"),
 		zap.String("carbonapi_uuid", uuid.String()),
 		zap.String("username", username),
 		zap.String("url", r.URL.RequestURI()),
-		zap.String("peer_ip", srcIp),
+		zap.String("peer_ip", srcIP),
 		zap.String("peer_port", srcPort),
 		zap.String("host", r.Host),
 		zap.String("referer", r.Referer()),
@@ -834,12 +834,12 @@ func passthroughHandler(w http.ResponseWriter, r *http.Request) {
 	// ctx, _ := context.WithTimeout(context.TODO(), Config.ZipperTimeout)
 	ctx := util.SetUUID(context.Background(), uuid.String())
 	username, _, _ := r.BasicAuth()
-	srcIp, srcPort := splitRemoteAddr(r.RemoteAddr)
+	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
 	accessLogger := zapwriter.Logger("access").With(
 		zap.String("username", username),
 		zap.String("handler", "passtrhough"),
 		zap.String("carbonapi_uuid", uuid.String()),
-		zap.String("peer_ip", srcIp),
+		zap.String("peer_ip", srcIP),
 		zap.String("peer_port", srcPort),
 		zap.String("host", r.Host),
 		zap.String("referer", r.Referer()),
@@ -870,11 +870,11 @@ func lbcheckHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Write([]byte("Ok\n"))
 
-	srcIp, srcPort := splitRemoteAddr(r.RemoteAddr)
+	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
 	accessLogger.Info("request served",
 		zap.String("handler", "lbcheck"),
 		zap.String("uri", r.RequestURI),
-		zap.String("peer_ip", srcIp),
+		zap.String("peer_ip", srcIP),
 		zap.String("peer_port", srcPort),
 		zap.String("host", r.Host),
 		zap.Duration("runtime", time.Since(t0)),
