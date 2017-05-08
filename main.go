@@ -904,10 +904,10 @@ var DefaultLoggerConfig = zapwriter.Config{
 }
 
 type cacheConfig struct {
-	Type             string   `yaml:"type"`
-	Size             int      `yaml:"size_mb"`
-	MemcachedServers []string `yaml:"memcachedServers"`
-	DefaultTimeoutSec int32   `yaml:"defaultTimeoutSec"`
+	Type              string   `yaml:"type"`
+	Size              int      `yaml:"size_mb"`
+	MemcachedServers  []string `yaml:"memcachedServers"`
+	DefaultTimeoutSec int32    `yaml:"defaultTimeoutSec"`
 }
 
 type graphiteConfig struct {
@@ -947,7 +947,7 @@ var Config = struct {
 	SendGlobsAsIs: false,
 	MaxBatchSize:  100,
 	Cache: cacheConfig{
-		Type: "mem",
+		Type:              "mem",
 		DefaultTimeoutSec: 60,
 	},
 	TimezoneString: "",
