@@ -22,8 +22,21 @@ tz: ""
 # If 'true', carbonapi will send requests as is, with globs and braces
 # Otherwise for each request it will generate /metrics/find and then /render
 # individual metrics.
-# true - faster, but will cause carbonzipper to consume much more RAM.
+# true --- faster, but will cause carbonzipper to consume much more RAM.
+#
+# For some backends (e.x. graphite-clickhouse) this *MUST* be set to true in order
+# to get reasonable performance
+#
+# For go-carbon --- it depends on how you use it.
 sendGlobsAsIs: false
+# If sendGlobsAsIs is set and resulting response will be larger than maxBatchSize
+# carbonapi will revert to old behavir. This allows you to use benifits of passing
+# globs as is but keep memory usage in sane limits.
+#
+# For go-carbon you might want it to keep in some reasonable limits, 100 is good "safe" defaults
+#
+# For some backends (e.x. graphite-clickhouse) you might want to set it to some insanly high value, like 100000
+maxBatchSize: 100
 graphite:
     # Host:port where to send internal metrics
     # Empty = disabled
