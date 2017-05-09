@@ -1,4 +1,12 @@
 # Need to be URL, http or https
+# This url specifies the backend or a loadbalancer
+#
+# Is you are using carbonzipper you should set it to
+# zipper's url
+#
+# If you are using plain go-carbon or graphite-clickhouse
+# you should set it to URL of go-carbon's carbonserver module
+# or graphite-clickhouse's http url.
 zipper: "http://localhost:8080"
 # Listen address, should always include hostname or ip address and a port.
 listen: "localhost:8081"
