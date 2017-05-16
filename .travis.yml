@@ -14,7 +14,7 @@ before_install:
 matrix:
   include:
     - go: 1.x
-      env: BUILD_PACKAGES=true
+      env: BUILD_PACKAGES=false
     - go: 1.7.x
     - go: 1.8.x
     - go: master
