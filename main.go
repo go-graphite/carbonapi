@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"expvar"
@@ -273,7 +272,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	uuid := uuid.NewV4()
 	// TODO: Migrate to context.WithTimeout
 	// ctx, _ := context.WithTimeout(context.TODO(), Config.ZipperTimeout)
-	ctx := util.SetUUID(context.Background(), uuid.String())
+	ctx := util.SetUUID(r.Context(), uuid.String())
 	username, _, _ := r.BasicAuth()
 	logger := zapwriter.Logger("render").With(
 		zap.String("carbonapi_uuid", uuid.String()),
@@ -636,7 +635,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	uuid := uuid.NewV4()
 	// TODO: Migrate to context.WithTimeout
 	// ctx, _ := context.WithTimeout(context.TODO(), Config.ZipperTimeout)
-	ctx := util.SetUUID(context.Background(), uuid.String())
+	ctx := util.SetUUID(r.Context(), uuid.String())
 	username, _, _ := r.BasicAuth()
 
 	format := r.FormValue("format")
@@ -832,7 +831,7 @@ func passthroughHandler(w http.ResponseWriter, r *http.Request) {
 	uuid := uuid.NewV4()
 	// TODO: Migrate to context.WithTimeout
 	// ctx, _ := context.WithTimeout(context.TODO(), Config.ZipperTimeout)
-	ctx := util.SetUUID(context.Background(), uuid.String())
+	ctx := util.SetUUID(r.Context(), uuid.String())
 	username, _, _ := r.BasicAuth()
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
 	accessLogger := zapwriter.Logger("access").With(
