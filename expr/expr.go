@@ -738,7 +738,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		var getTotal func(i int) float64
 		var formatName func(a, b string) string
 		var totalString string
-		multipleSeries := false
+		var multipleSeries bool
 
 		if len(e.args) == 1 {
 			getTotal = func(i int) float64 {
@@ -812,25 +812,30 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		var results []*MetricData
 
 		if multipleSeries {
-			for i := range e.args {
-				if i >= len(e.args)/2 {
-					break
-				}
-				arg1, err := getSeriesArg(e.args[i], from, until, values)
+			/* We should have two equal length lists of arguments
+			   First one will be numerators
+			   Second one - denominators
+
+			   For each of them we will compute numerator/denominator
+			 */
+			numerators := e.args[:len(e.args)/2]
+			denominators := e.args[len(e.args)/2:]
+			for i := range numerators {
+				numerator, err := getSeriesArg(numerators[i], from, until, values)
 				if err != nil {
 					return nil, err
 				}
-				arg2, err := getSeriesArg(e.args[len(e.args)/2+i], from, until, values)
+				denominator, err := getSeriesArg(denominators[i], from, until, values)
 				if err != nil {
 					return nil, err
 				}
 
-				if len(arg1) != len(arg2) {
+				if len(numerator) != len(denominator) {
 					return nil, errors.New("Length mismatch, globs must return same amount of data")
 				}
-				for j := range arg1 {
-					a := arg1[j]
-					b := arg2[j]
+				for j := range numerator {
+					a := numerator[j]
+					b := denominator[j]
 
 					r := *a
 					r.Name = formatName(a.Name, b.Name)
