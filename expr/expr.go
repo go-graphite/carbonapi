@@ -14,9 +14,9 @@ import (
 	"time"
 
 	"github.com/JaderDias/movingmedian"
-	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 	"github.com/dgryski/go-onlinestats"
 	"github.com/dustin/go-humanize"
+	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 	"github.com/gonum/matrix/mat64"
 	"github.com/mjibson/go-dsp/fft"
 	"github.com/wangjohn/quickselect"
@@ -736,7 +736,9 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		}
 
 		var getTotal func(i int) float64
-		var formatName func(a *MetricData) string
+		var formatName func(a, b string) string
+		var totalString string
+		var multipleSeries bool
 
 		if len(e.args) == 1 {
 			getTotal = func(i int) float64 {
@@ -755,8 +757,8 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 				return t
 			}
-			formatName = func(a *MetricData) string {
-				return fmt.Sprintf("asPercent(%s)", a.Name)
+			formatName = func(a, b string) string {
+				return fmt.Sprintf("asPercent(%s)", a)
 			}
 		} else if len(e.args) == 2 && e.args[1].etype == etConst {
 			total, err := getFloatArg(e, 1)
@@ -764,8 +766,9 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 				return nil, err
 			}
 			getTotal = func(i int) float64 { return total }
-			formatName = func(a *MetricData) string {
-				return fmt.Sprintf("asPercent(%s,%g)", a.Name, total)
+			totalString = fmt.Sprintf("%g", total)
+			formatName = func(a, b string) string {
+				return fmt.Sprintf("asPercent(%s,%s)", a, b)
 			}
 		} else if len(e.args) == 2 && (e.args[1].etype == etName || e.args[1].etype == etFunc) {
 			total, err := getSeriesArg(e.args[1], from, until, values)
@@ -781,44 +784,99 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 				}
 				return total[0].Values[i]
 			}
-			var totalString string
 			if e.args[1].etype == etName {
 				totalString = e.args[1].target
 			} else {
 				totalString = fmt.Sprintf("%s(%s)", e.args[1].target, e.args[1].argString)
 			}
-			formatName = func(a *MetricData) string {
-				return fmt.Sprintf("asPercent(%s,%s)", a.Name, totalString)
+			formatName = func(a, b string) string {
+				return fmt.Sprintf("asPercent(%s,%s)", a, b)
+			}
+		} else if len(e.args)%2 == 0 && (e.args[1].etype == etName || e.args[1].etype == etFunc) {
+			total, err := getSeriesArg(e.args[1], from, until, values)
+			if err != nil {
+				return nil, err
+			}
+			if len(total) != len(arg) {
+				return nil, ErrWildcardNotAllowed
+			}
+			multipleSeries = true
+			formatName = func(a, b string) string {
+				return fmt.Sprintf("asPercent(%s,%s)", a, b)
 			}
 		} else {
+			fmt.Printf("%v %v\n", len(e.args), len(arg))
 			return nil, errors.New("total must be either a constant or a series")
 		}
 
 		var results []*MetricData
 
-		for _, a := range arg {
-			r := *a
-			r.Name = formatName(a)
-			r.Values = make([]float64, len(a.Values))
-			r.IsAbsent = make([]bool, len(a.Values))
-			results = append(results, &r)
-		}
+		if multipleSeries {
+			/* We should have two equal length lists of arguments
+			   First one will be numerators
+			   Second one - denominators
 
-		for i := range results[0].Values {
-
-			total := getTotal(i)
-
-			for j := range results {
-				r := results[j]
-				a := arg[j]
-
-				if a.IsAbsent[i] || math.IsNaN(total) || total == 0 {
-					r.Values[i] = 0
-					r.IsAbsent[i] = true
-					continue
+			   For each of them we will compute numerator/denominator
+			 */
+			numerators := e.args[:len(e.args)/2]
+			denominators := e.args[len(e.args)/2:]
+			for i := range numerators {
+				numerator, err := getSeriesArg(numerators[i], from, until, values)
+				if err != nil {
+					return nil, err
+				}
+				denominator, err := getSeriesArg(denominators[i], from, until, values)
+				if err != nil {
+					return nil, err
 				}
 
-				r.Values[i] = (a.Values[i] / total) * 100
+				if len(numerator) != len(denominator) {
+					return nil, errors.New("Length mismatch, globs must return same amount of data")
+				}
+				for j := range numerator {
+					a := numerator[j]
+					b := denominator[j]
+
+					r := *a
+					r.Name = formatName(a.Name, b.Name)
+					r.Values = make([]float64, len(a.Values))
+					r.IsAbsent = make([]bool, len(a.Values))
+					for k := range a.Values {
+						if a.IsAbsent[k] || b.IsAbsent[k] {
+							r.Values[k] = 0
+							r.IsAbsent[k] = true
+							continue
+						}
+						r.Values[k] = (a.Values[k] / b.Values[k]) * 100
+					}
+					results = append(results, &r)
+				}
+			}
+		} else {
+			for _, a := range arg {
+				r := *a
+				r.Name = formatName(a.Name, totalString)
+				r.Values = make([]float64, len(a.Values))
+				r.IsAbsent = make([]bool, len(a.Values))
+				results = append(results, &r)
+			}
+
+			for i := range results[0].Values {
+
+				total := getTotal(i)
+
+				for j := range results {
+					r := results[j]
+					a := arg[j]
+
+					if a.IsAbsent[i] || math.IsNaN(total) || total == 0 {
+						r.Values[i] = 0
+						r.IsAbsent[i] = true
+						continue
+					}
+
+					r.Values[i] = (a.Values[i] / total) * 100
+				}
 			}
 		}
 		return results, nil
