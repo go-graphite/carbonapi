@@ -11,7 +11,7 @@ import (
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 )
 
-var parser = exprParser{defaultTimeZone: time.Local}
+var parser = exprParser{defaultTimeZone: time.UTC}
 
 func deepClone(original map[MetricRequest][]*MetricData) map[MetricRequest][]*MetricData {
 	clone := map[MetricRequest][]*MetricData{}
@@ -2262,6 +2262,23 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "removeTimeInterval",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{valStr: "1496152320", etype: etString},
+					{valStr: "13:55 20170530", etype: etString},
+				},
+				argString: "metric1",
+			},
+			map[MetricRequest][]*MetricData{
+				{"metric1", 0, 1}: {makeResponse("metric1", []float64{1, 2, -1, math.NaN(), 8, 20, 30, math.NaN()}, 60, 1496152200)},
+			},
+			[]*MetricData{makeResponse("removeTimeInterval(metric1, 1496152320, 1496152500)",
+				[]float64{1, 2, math.NaN(), math.NaN(), math.NaN(), 20, 30, math.NaN()}, 1, now32)},
+		},
+		{
+			&expr{
 				target: "cactiStyle",
 				etype:  etFunc,
 				args: []*expr{
@@ -3996,6 +4013,7 @@ func TestDateParamToEpoch(t *testing.T) {
 		{"17:04 19940812", "17:04 1994-Aug-12"},
 		{"-1day", "15:30 1994-Aug-15"},
 		{"19940812", "00:00 1994-Aug-12"},
+		{"1496152260", "13:51 2017-May-30"},
 	}
 
 	for _, tt := range tests {

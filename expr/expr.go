@@ -3619,6 +3619,51 @@ func (p exprParser) EvalExpr(e *expr, from, until int32, values map[MetricReques
 
 		return results, nil
 
+	case "removeTimeInterval": // removeTimeInterval(seriesList, removeFrom, removeUntil)
+		args, err := p.getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		removeFrom, err := getStringArg(e, 1)
+		if err != nil {
+			return nil, err
+		}
+
+		removeUntil, err := getStringArg(e, 2)
+		if err != nil {
+			return nil, err
+		}
+
+		removeFromEpoch := p.dateParamToEpoch(removeFrom, "", 0)
+		removeUntilEpoch := p.dateParamToEpoch(removeUntil, "", 0)
+
+		var results []*MetricData
+
+		for _, a := range args {
+			r := *a
+			r.Name = fmt.Sprintf("%s(%s, %d, %d)", e.target, a.Name, removeFromEpoch, removeUntilEpoch)
+			r.IsAbsent = make([]bool, len(a.Values))
+			r.Values = make([]float64, len(a.Values))
+
+			epoch := a.StartTime
+			for i, v := range a.Values {
+
+				if a.IsAbsent[i] || (epoch >= removeFromEpoch && epoch < removeUntilEpoch) {
+					r.Values[i] = math.NaN()
+					r.IsAbsent[i] = true
+				} else {
+					r.Values[i] = v
+				}
+
+				epoch += a.StepTime
+			}
+
+			results = append(results, &r)
+		}
+
+		return results, nil
+
 	case "cactiStyle": // cactiStyle(seriesList, system=None, units=None)
 		// Get the series data
 		original, err := p.getSeriesArg(e.args[0], from, until, values)
