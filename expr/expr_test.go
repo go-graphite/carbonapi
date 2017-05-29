@@ -2259,6 +2259,23 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "removeBetweenEpochs",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{val: 12, etype: etConst},
+					{val: 15, etype: etConst},
+				},
+				argString: "metric1",
+			},
+			map[MetricRequest][]*MetricData{
+				{"metric1", 0, 1}: {makeResponse("metric1", []float64{1, 2, -1, math.NaN(), 8, 20, 30, math.NaN()}, 1, 10)},
+			},
+			[]*MetricData{makeResponse("removeBetweenEpochs(metric1, 12, 15)",
+				[]float64{1, 2, math.NaN(), math.NaN(), math.NaN(), 20, 30, math.NaN()}, 1, now32)},
+		},
+		{
+			&expr{
 				target: "cactiStyle",
 				etype:  etFunc,
 				args: []*expr{
