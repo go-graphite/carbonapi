@@ -1050,39 +1050,43 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return []*MetricData{&r}, nil
 
 	case "diffSeries": // diffSeries(*seriesLists)
-		minuend, err := getSeriesArg(e.args[0], from, until, values)
+		minuends, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
 
 		subtrahends, err := getSeriesArgs(e.args[1:], from, until, values)
 		if err != nil {
-			if len(minuend) < 2 {
+			if len(minuends) < 2 {
 				return nil, err
 			}
-			subtrahends = minuend[1:]
+			subtrahends = minuends[1:]
 			err = nil
 		}
 
+		minuend := minuends[0]
+
 		// FIXME: need more error checking on minuend, subtrahends here
-		r := *minuend[0]
+		r := *minuend
 		r.Name = fmt.Sprintf("diffSeries(%s)", e.argString)
-		r.Values = make([]float64, len(minuend[0].Values))
-		r.IsAbsent = make([]bool, len(minuend[0].Values))
+		r.Values = make([]float64, len(minuend.Values))
+		r.IsAbsent = make([]bool, len(minuend.Values))
 
-		for i, v := range minuend[0].Values {
+		for i, v := range minuend.Values {
 
-			if minuend[0].IsAbsent[i] {
+			if minuend.IsAbsent[i] {
 				r.IsAbsent[i] = true
 				continue
 			}
 
 			var sub float64
 			for _, s := range subtrahends {
-				if s.IsAbsent[i] {
+				iSubtrahend := (int32(i) * minuend.StepTime) / s.StepTime
+
+				if s.IsAbsent[iSubtrahend] {
 					continue
 				}
-				sub += s.Values[i]
+				sub += s.Values[iSubtrahend]
 			}
 
 			r.Values[i] = v - sub
