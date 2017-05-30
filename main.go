@@ -542,6 +542,7 @@ func main() {
 
 	flag.Parse()
 
+	expvar.NewString("GoVersion").Set(runtime.Version())
 	expvar.NewString("BuildVersion").Set(BuildVersion)
 
 	if *configFile == "" {
