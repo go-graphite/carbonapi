@@ -10,6 +10,8 @@ import (
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 )
 
+var parser = exprParser{defaultTimeZone: time.Local}
+
 func deepClone(original map[MetricRequest][]*MetricData) map[MetricRequest][]*MetricData {
 	clone := map[MetricRequest][]*MetricData{}
 	for key, originalMetrics := range original {
@@ -187,7 +189,7 @@ func TestEvalExpr(t *testing.T) {
 		&data,
 	}
 
-	EvalExpr(exp, int32(request.From), int32(request.Until), metricMap)
+	parser.EvalExpr(exp, int32(request.From), int32(request.Until), metricMap)
 }
 
 func TestParseExpr(t *testing.T) {
@@ -2553,7 +2555,7 @@ func TestEvalExpression(t *testing.T) {
 func testEvalExpr(t *testing.T, tt *evalTestItem) {
 	originalMetrics := deepClone(tt.m)
 	testName := tt.e.target + "(" + tt.e.argString + ")"
-	g, err := EvalExpr(tt.e, 0, 1, tt.m)
+	g, err := parser.EvalExpr(tt.e, 0, 1, tt.m)
 	if err != nil {
 		t.Errorf("failed to eval %s: %s", testName, err)
 		return
@@ -3005,7 +3007,7 @@ func TestEvalSummarize(t *testing.T) {
 
 	for _, tt := range tests {
 		originalMetrics := deepClone(tt.m)
-		g, err := EvalExpr(tt.e, 0, 1, tt.m)
+		g, err := parser.EvalExpr(tt.e, 0, 1, tt.m)
 		if err != nil {
 			t.Errorf("failed to eval %v: %s", tt.name, err)
 			continue
@@ -3034,17 +3036,17 @@ func TestRewriteExpr(t *testing.T) {
 	now32 := int32(time.Now().Unix())
 
 	tests := []struct {
-		name string
-		e *expr
-		m map[MetricRequest][]*MetricData
-		rewritten bool
+		name       string
+		e          *expr
+		m          map[MetricRequest][]*MetricData
+		rewritten  bool
 		newTargets []string
 	}{
 		{
 			"ignore non-applyByNode",
 			&expr{
 				target: "sumSeries",
-				etype: etFunc,
+				etype:  etFunc,
 				args: []*expr{
 					{target: "metric*"},
 				},
@@ -3064,7 +3066,7 @@ func TestRewriteExpr(t *testing.T) {
 			"applyByNode",
 			&expr{
 				target: "applyByNode",
-				etype: etFunc,
+				etype:  etFunc,
 				args: []*expr{
 					{target: "metric*"},
 					{val: 1, etype: etConst},
@@ -3086,7 +3088,7 @@ func TestRewriteExpr(t *testing.T) {
 			"applyByNode",
 			&expr{
 				target: "applyByNode",
-				etype: etFunc,
+				etype:  etFunc,
 				args: []*expr{
 					{target: "metric*"},
 					{val: 1, etype: etConst},
@@ -3109,7 +3111,7 @@ func TestRewriteExpr(t *testing.T) {
 			"applyByNode",
 			&expr{
 				target: "applyByNode",
-				etype: etFunc,
+				etype:  etFunc,
 				args: []*expr{
 					{target: "foo.metric*"},
 					{val: 2, etype: etConst},
@@ -3134,7 +3136,7 @@ func TestRewriteExpr(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		rewritten, newTargets, err := RewriteExpr(tt.e, 0, 1, tt.m)
+		rewritten, newTargets, err := parser.RewriteExpr(tt.e, 0, 1, tt.m)
 
 		if err != nil {
 			t.Errorf("failed to rewrite %v: %s", tt.name, err)
@@ -3150,7 +3152,7 @@ func TestRewriteExpr(t *testing.T) {
 		if len(tt.newTargets) != len(newTargets) {
 			targetsMatch = false
 		} else {
-			for i := range(tt.newTargets) {
+			for i := range tt.newTargets {
 				targetsMatch = targetsMatch && tt.newTargets[i] == newTargets[i]
 			}
 		}
@@ -3784,7 +3786,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 
 	for _, tt := range tests {
 		originalMetrics := deepClone(tt.m)
-		g, err := EvalExpr(tt.e, 0, 1, tt.m)
+		g, err := parser.EvalExpr(tt.e, 0, 1, tt.m)
 		if err != nil {
 			t.Errorf("failed to eval %v: %s", tt.name, err)
 			continue
@@ -3899,7 +3901,7 @@ func TestEvalCustomFromUntil(t *testing.T) {
 
 	for _, tt := range tests {
 		originalMetrics := deepClone(tt.m)
-		g, err := EvalExpr(tt.e, tt.from, tt.until, tt.m)
+		g, err := parser.EvalExpr(tt.e, tt.from, tt.until, tt.m)
 		if err != nil {
 			t.Errorf("failed to eval %v: %s", tt.name, err)
 			continue

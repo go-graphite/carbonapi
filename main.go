@@ -540,7 +540,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 		var rewritten bool
 		var newTargets []string
-		rewritten, newTargets, err = expr.RewriteExpr(exp, from32, until32, metricMap)
+		rewritten, newTargets, err = exprParser.RewriteExpr(exp, from32, until32, metricMap)
 		if err != nil && err != expr.ErrSeriesDoesNotExist {
 			errors[target] = err.Error()
 			fatalError = true
@@ -557,7 +557,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 						)
 					}
 				}()
-				exprs, err := expr.EvalExpr(exp, from32, until32, metricMap)
+				exprs, err := exprParser.EvalExpr(exp, from32, until32, metricMap)
 				if err != nil && err != expr.ErrSeriesDoesNotExist {
 					errors[target] = err.Error()
 					fatalError = true
@@ -980,6 +980,8 @@ var Config = struct {
 	Logger:          []zapwriter.Config{DefaultLoggerConfig},
 }
 
+var exprParser expr.exprParser
+
 func main() {
 	err := zapwriter.ApplyConfig([]zapwriter.Config{DefaultLoggerConfig})
 	if err != nil {
@@ -1118,6 +1120,7 @@ func main() {
 		)
 	}
 
+	parser = expr.exprParser{defaultTimeZone: Config.defaultTimeZone}
 	if Config.Cpus != 0 {
 		runtime.GOMAXPROCS(Config.Cpus)
 	}

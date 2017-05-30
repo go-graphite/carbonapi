@@ -23,6 +23,9 @@ import (
 )
 
 // expression parser
+type exprParser struct {
+	defaultTimeZone *time.Location
+}
 
 type exprType int
 
@@ -519,12 +522,12 @@ func doGetBoolArg(e *expr) (bool, error) {
 	return false, ErrBadType
 }
 
-func getSeriesArg(arg *expr, from, until int32, values map[MetricRequest][]*MetricData) ([]*MetricData, error) {
+func (p exprParser) getSeriesArg(arg *expr, from, until int32, values map[MetricRequest][]*MetricData) ([]*MetricData, error) {
 	if arg.etype != etName && arg.etype != etFunc {
 		return nil, ErrMissingTimeseries
 	}
 
-	a, _ := EvalExpr(arg, from, until, values)
+	a, _ := p.EvalExpr(arg, from, until, values)
 
 	if len(a) == 0 {
 		return nil, ErrSeriesDoesNotExist
@@ -533,12 +536,12 @@ func getSeriesArg(arg *expr, from, until int32, values map[MetricRequest][]*Metr
 	return a, nil
 }
 
-func getSeriesArgs(e []*expr, from, until int32, values map[MetricRequest][]*MetricData) ([]*MetricData, error) {
+func (p exprParser) getSeriesArgs(e []*expr, from, until int32, values map[MetricRequest][]*MetricData) ([]*MetricData, error) {
 
 	var args []*MetricData
 
 	for _, arg := range e {
-		a, err := getSeriesArg(arg, from, until, values)
+		a, err := p.getSeriesArg(arg, from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -569,7 +572,7 @@ var (
 
 var backref = regexp.MustCompile(`\\(\d+)`)
 
-func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData) ([]*MetricData, error) {
+func (p exprParser) EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData) ([]*MetricData, error) {
 
 	switch e.etype {
 	case etName:
@@ -588,7 +591,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 	switch e.target {
 	case "absolute": // absolute(seriesList)
-		return forEachSeriesDo(e, from, until, values, func(a *MetricData, r *MetricData) *MetricData {
+		return p.forEachSeriesDo(e, from, until, values, func(a *MetricData, r *MetricData) *MetricData {
 			for i, v := range a.Values {
 				if a.IsAbsent[i] {
 					r.Values[i] = 0
@@ -601,7 +604,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		})
 
 	case "alias": // alias(seriesList, newName)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -620,7 +623,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "aliasByMetric": // aliasByMetric(seriesList)
-		return forEachSeriesDo(e, from, until, values, func(a *MetricData, r *MetricData) *MetricData {
+		return p.forEachSeriesDo(e, from, until, values, func(a *MetricData, r *MetricData) *MetricData {
 			metric := extractMetric(a.Name)
 			part := strings.Split(metric, ".")
 			r.Name = part[len(part)-1]
@@ -630,7 +633,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		})
 
 	case "aliasByNode": // aliasByNode(seriesList, *nodes)
-		args, err := getSeriesArg(e.args[0], from, until, values)
+		args, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -666,7 +669,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "aliasSub": // aliasSub(seriesList, search, replace)
-		args, err := getSeriesArg(e.args[0], from, until, values)
+		args, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -701,7 +704,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "legendValue": // legendValue(seriesList, newName)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -730,7 +733,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "asPercent": // asPercent(seriesList, total=None)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -771,7 +774,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 				return fmt.Sprintf("asPercent(%s,%s)", a, b)
 			}
 		} else if len(e.args) == 2 && (e.args[1].etype == etName || e.args[1].etype == etFunc) {
-			total, err := getSeriesArg(e.args[1], from, until, values)
+			total, err := p.getSeriesArg(e.args[1], from, until, values)
 			if err != nil {
 				return nil, err
 			}
@@ -793,7 +796,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 				return fmt.Sprintf("asPercent(%s,%s)", a, b)
 			}
 		} else if len(e.args)%2 == 0 && (e.args[1].etype == etName || e.args[1].etype == etFunc) {
-			total, err := getSeriesArg(e.args[1], from, until, values)
+			total, err := p.getSeriesArg(e.args[1], from, until, values)
 			if err != nil {
 				return nil, err
 			}
@@ -817,15 +820,15 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			   Second one - denominators
 
 			   For each of them we will compute numerator/denominator
-			 */
+			*/
 			numerators := e.args[:len(e.args)/2]
 			denominators := e.args[len(e.args)/2:]
 			for i := range numerators {
-				numerator, err := getSeriesArg(numerators[i], from, until, values)
+				numerator, err := p.getSeriesArg(numerators[i], from, until, values)
 				if err != nil {
 					return nil, err
 				}
-				denominator, err := getSeriesArg(denominators[i], from, until, values)
+				denominator, err := p.getSeriesArg(denominators[i], from, until, values)
 				if err != nil {
 					return nil, err
 				}
@@ -882,7 +885,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "avg", "averageSeries": // averageSeries(*seriesLists)
-		args, err := getSeriesArgs(e.args, from, until, values)
+		args, err := p.getSeriesArgs(e.args, from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -899,7 +902,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 	case "averageSeriesWithWildcards": // averageSeriesWithWildcards(seriesLIst, *position)
 		/* TODO(dgryski): make sure the arrays are all the same 'size'
 		   (duplicated from sumSeriesWithWildcards because of similar logic but aggregation) */
-		args, err := getSeriesArg(e.args[0], from, until, values)
+		args, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -969,7 +972,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "averageAbove", "averageBelow", "currentAbove", "currentBelow", "maximumAbove", "maximumBelow", "minimumAbove", "minimumBelow": // averageAbove(seriesList, n), averageBelow(seriesList, n), currentAbove(seriesList, n), currentBelow(seriesList, n), maximumAbove(seriesList, n), maximumBelow(seriesList, n), minimumAbove(seriesList, n), minimumBelow
-		args, err := getSeriesArg(e.args[0], from, until, values)
+		args, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -1017,7 +1020,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, err
 
 	case "derivative": // derivative(seriesList)
-		return forEachSeriesDo(e, from, until, values, func(a *MetricData, r *MetricData) *MetricData {
+		return p.forEachSeriesDo(e, from, until, values, func(a *MetricData, r *MetricData) *MetricData {
 			prev := a.Values[0]
 			for i, v := range a.Values {
 				if i == 0 || a.IsAbsent[i] {
@@ -1032,7 +1035,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		})
 	case "countSeries": // countSeries(seriesList)
 		// TODO(civil): Check that series have equal length
-		args, err := getSeriesArgs(e.args, from, until, values)
+		args, err := p.getSeriesArgs(e.args, from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -1050,12 +1053,12 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return []*MetricData{&r}, nil
 
 	case "diffSeries": // diffSeries(*seriesLists)
-		minuends, err := getSeriesArg(e.args[0], from, until, values)
+		minuends, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
 
-		subtrahends, err := getSeriesArgs(e.args[1:], from, until, values)
+		subtrahends, err := p.getSeriesArgs(e.args[1:], from, until, values)
 		if err != nil {
 			if len(minuends) < 2 {
 				return nil, err
@@ -1093,7 +1096,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		}
 		return []*MetricData{&r}, err
 	case "rangeOfSeries": // rangeOfSeries(*seriesLists)
-		series, err := getSeriesArg(e.args[0], from, until, values)
+		series, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -1135,7 +1138,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			return nil, ErrMissingTimeseries
 		}
 
-		firstArg, err := getSeriesArg(e.args[0], from, until, values)
+		firstArg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -1147,7 +1150,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		if len(e.args) == 2 {
 			useMetricNames = true
 			numerators = firstArg
-			denominators, err := getSeriesArg(e.args[1], from, until, values)
+			denominators, err := p.getSeriesArg(e.args[1], from, until, values)
 			if err != nil {
 				return nil, err
 			}
@@ -1203,7 +1206,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			},
 		}
 		for _, arg := range e.args {
-			series, err := getSeriesArg(arg, from, until, values)
+			series, err := p.getSeriesArg(arg, from, until, values)
 			if err != nil {
 				return nil, err
 			}
@@ -1233,7 +1236,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return []*MetricData{&r}, nil
 
 	case "ewma", "exponentialWeightedMovingAverage": // ewma(seriesList, alpha)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -1271,7 +1274,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "exclude": // exclude(seriesList, pattern)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -1297,7 +1300,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "fft": // fft(seriesList, mode)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -1335,7 +1338,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "lowPass": // lowPass(seriesList, cutPercent)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -1367,14 +1370,14 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "ifft": // ifft(absSeriesList, phaseSeriesList)
-		absSeriesList, err := getSeriesArg(e.args[0], from, until, values)
+		absSeriesList, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
 
 		var phaseSeriesList []*MetricData
 		if len(e.args) > 1 {
-			phaseSeriesList, err = getSeriesArg(e.args[1], from, until, values)
+			phaseSeriesList, err = p.getSeriesArg(e.args[1], from, until, values)
 			if err != nil {
 				return nil, err
 			}
@@ -1416,7 +1419,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "grep": // grep(seriesList, pattern)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -1442,7 +1445,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "group": // group(*seriesLists)
-		args, err := getSeriesArgs(e.args, from, until, values)
+		args, err := p.getSeriesArgs(e.args, from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -1450,7 +1453,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return args, nil
 
 	case "groupByNode": // groupByNode(seriesList, nodeNum, callback)
-		args, err := getSeriesArg(e.args[0], from, until, values)
+		args, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -1508,7 +1511,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 				}
 			}
 
-			r, _ := EvalExpr(nexpr, from, until, nvalues)
+			r, _ := p.EvalExpr(nexpr, from, until, nvalues)
 			if r != nil {
 				r[0].Name = k
 				results = append(results, r...)
@@ -1521,7 +1524,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		e.target = "isNonNull"
 
-		return forEachSeriesDo(e, from, until, values, func(a *MetricData, r *MetricData) *MetricData {
+		return p.forEachSeriesDo(e, from, until, values, func(a *MetricData, r *MetricData) *MetricData {
 			for i := range a.Values {
 				r.IsAbsent[i] = false
 				if a.IsAbsent[i] {
@@ -1536,7 +1539,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 	case "lowestAverage", "lowestCurrent": // lowestAverage(seriesList, n) , lowestCurrent(seriesList, n)
 
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -1583,7 +1586,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 	case "highestAverage", "highestCurrent", "highestMax": // highestAverage(seriesList, n) , highestCurrent(seriesList, n), highestMax(seriesList, n)
 
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -1646,7 +1649,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 	case "hitcount": // hitcount(seriesList, intervalString, alignToInterval=False)
 		// TODO(dgryski): make sure the arrays are all the same 'size'
-		args, err := getSeriesArg(e.args[0], from, until, values)
+		args, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -1740,7 +1743,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		}
 		return results, nil
 	case "integral": // integral(seriesList)
-		return forEachSeriesDo(e, from, until, values, func(a *MetricData, r *MetricData) *MetricData {
+		return p.forEachSeriesDo(e, from, until, values, func(a *MetricData, r *MetricData) *MetricData {
 			current := 0.0
 			for i, v := range a.Values {
 				if a.IsAbsent[i] {
@@ -1755,7 +1758,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		})
 
 	case "invert": // invert(seriesList)
-		return forEachSeriesDo(e, from, until, values, func(a *MetricData, r *MetricData) *MetricData {
+		return p.forEachSeriesDo(e, from, until, values, func(a *MetricData, r *MetricData) *MetricData {
 			for i, v := range a.Values {
 				if a.IsAbsent[i] || v == 0 {
 					r.Values[i] = 0
@@ -1768,7 +1771,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		})
 
 	case "keepLastValue": // keepLastValue(seriesList, limit=inf)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -1821,7 +1824,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, err
 
 	case "changed": // changed(SeriesList)
-		args, err := getSeriesArg(e.args[0], from, until, values)
+		args, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -1850,12 +1853,12 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return result, nil
 
 	case "kolmogorovSmirnovTest2", "ksTest2": // ksTest2(series, series, points|"interval")
-		arg1, err := getSeriesArg(e.args[0], from, until, values)
+		arg1, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
 
-		arg2, err := getSeriesArg(e.args[1], from, until, values)
+		arg2, err := p.getSeriesArg(e.args[1], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -1908,7 +1911,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return []*MetricData{&r}, nil
 
 	case "limit": // limit(seriesList, n)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -1925,7 +1928,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return arg[:limit], nil
 
 	case "logarithm", "log": // logarithm(seriesList, base=10)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -1969,7 +1972,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "maxSeries": // maxSeries(*seriesLists)
-		args, err := getSeriesArgs(e.args, from, until, values)
+		args, err := p.getSeriesArgs(e.args, from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -1985,7 +1988,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		})
 
 	case "minSeries": // minSeries(*seriesLists)
-		args, err := getSeriesArgs(e.args, from, until, values)
+		args, err := p.getSeriesArgs(e.args, from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -2013,7 +2016,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			return nil, err
 		}
 
-		args, err := getSeriesArg(e.args[seriesArg], from, until, values)
+		args, err := p.getSeriesArg(e.args[seriesArg], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -2079,7 +2082,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			start -= int32(n)
 		}
 
-		arg, err := getSeriesArg(e.args[0], start, until, values)
+		arg, err := p.getSeriesArg(e.args[0], start, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -2165,7 +2168,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			start -= int32(n)
 		}
 
-		arg, err := getSeriesArg(e.args[0], start, until, values)
+		arg, err := p.getSeriesArg(e.args[0], start, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -2210,7 +2213,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return result, nil
 
 	case "nonNegativeDerivative": // nonNegativeDerivative(seriesList, maxValue=None)
-		args, err := getSeriesArg(e.args[0], from, until, values)
+		args, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -2261,7 +2264,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return result, nil
 
 	case "perSecond": // perSecond(seriesList, maxValue=None)
-		args, err := getSeriesArg(e.args[0], from, until, values)
+		args, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -2305,7 +2308,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return result, nil
 
 	case "nPercentile": // nPercentile(seriesList, n)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -2338,12 +2341,12 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "pearson": // pearson(series, series, windowSize)
-		arg1, err := getSeriesArg(e.args[0], from, until, values)
+		arg1, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
 
-		arg2, err := getSeriesArg(e.args[1], from, until, values)
+		arg2, err := p.getSeriesArg(e.args[1], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -2394,7 +2397,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			return nil, ErrTooManyArguments
 		}
 
-		ref, err := getSeriesArg(e.args[0], from, until, values)
+		ref, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -2403,7 +2406,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			return nil, ErrWildcardNotAllowed
 		}
 
-		compare, err := getSeriesArg(e.args[1], from, until, values)
+		compare, err := p.getSeriesArg(e.args[1], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -2474,7 +2477,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "offset": // offset(seriesList,factor)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -2503,7 +2506,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "offsetToZero": // offsetToZero(seriesList)
-		return forEachSeriesDo(e, from, until, values, func(a *MetricData, r *MetricData) *MetricData {
+		return p.forEachSeriesDo(e, from, until, values, func(a *MetricData, r *MetricData) *MetricData {
 			minimum := math.Inf(1)
 			for i, v := range a.Values {
 				if !a.IsAbsent[i] && v < minimum {
@@ -2522,7 +2525,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		})
 
 	case "scale": // scale(seriesList, factor)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -2551,7 +2554,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "scaleToSeconds": // scaleToSeconds(seriesList, seconds)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -2583,7 +2586,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "pow": // pow(seriesList,factor)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -2612,7 +2615,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "sortByMaxima", "sortByMinima", "sortByTotal": // sortByMaxima(seriesList), sortByMinima(seriesList), sortByTotal(seriesList)
-		original, err := getSeriesArg(e.args[0], from, until, values)
+		original, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -2637,7 +2640,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return arg, nil
 
 	case "sortByName": // sortByName(seriesList, natural=false)
-		original, err := getSeriesArg(e.args[0], from, until, values)
+		original, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -2658,7 +2661,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return arg, nil
 
 	case "stdev", "stddev": // stdev(seriesList, points, missingThreshold=0.1)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -2703,7 +2706,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 	case "sum", "sumSeries": // sumSeries(*seriesLists)
 		// TODO(dgryski): make sure the arrays are all the same 'size'
-		args, err := getSeriesArgs(e.args, from, until, values)
+		args, err := p.getSeriesArgs(e.args, from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -2719,7 +2722,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 	case "sumSeriesWithWildcards": // sumSeriesWithWildcards(seriesList, *position)
 		// TODO(dgryski): make sure the arrays are all the same 'size'
-		args, err := getSeriesArg(e.args[0], from, until, values)
+		args, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -2786,7 +2789,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 	case "percentileOfSeries": // percentileOfSeries(seriesList, n, interpolate=False)
 		// TODO(dgryski): make sure the arrays are all the same 'size'
-		args, err := getSeriesArg(e.args[0], from, until, values)
+		args, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -2808,7 +2811,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 	case "polyfit": // polyfit(seriesList, degree=1, offset="0d")
 		// Fitting Nth degree polynom to the dataset
 		// https://en.wikipedia.org/wiki/Polynomial_regression#Matrix_form_and_calculation_of_estimates
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -2884,7 +2887,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 	case "substr": // aliasSub(seriesList, start, stop)
 		// BUG: affected by the same positional arg issue as 'threshold'.
-		args, err := getSeriesArg(e.args[0], from, until, values)
+		args, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -2926,7 +2929,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 	case "summarize": // summarize(seriesList, intervalString, func='sum', alignToFrom=False)
 		// TODO(dgryski): make sure the arrays are all the same 'size'
-		args, err := getSeriesArg(e.args[0], from, until, values)
+		args, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -3046,7 +3049,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			return nil, err
 		}
 
-		arg, err := getSeriesArg(e.args[0], from+offs, until+offs, values)
+		arg, err := p.getSeriesArg(e.args[0], from+offs, until+offs, values)
 		if err != nil {
 			return nil, err
 		}
@@ -3081,7 +3084,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		var results []*MetricData
 		for i := int32(start); i < int32(end); i++ {
 			offs := i * unit
-			arg, err := getSeriesArg(e.args[0], from+offs, until+offs, values)
+			arg, err := p.getSeriesArg(e.args[0], from+offs, until+offs, values)
 			if err != nil {
 				return nil, err
 			}
@@ -3098,7 +3101,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "transformNull": // transformNull(seriesList, default=0)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -3142,7 +3145,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 	case "tukeyAbove", "tukeyBelow": // tukeyAbove(seriesList,basis,n,interval=0) , tukeyBelow(seriesList,basis,n,interval=0)
 
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -3286,7 +3289,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return []*MetricData{&p}, nil
 
 	case "consolidateBy":
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -3362,7 +3365,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 	case "holtWintersForecast":
 		var results []*MetricData
-		args, err := getSeriesArgs(e.args, from-7*86400, until, values)
+		args, err := p.getSeriesArgs(e.args, from-7*86400, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -3390,7 +3393,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 	case "holtWintersConfidenceBands":
 		var results []*MetricData
-		args, err := getSeriesArg(e.args[0], from-7*86400, until, values)
+		args, err := p.getSeriesArg(e.args[0], from-7*86400, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -3444,7 +3447,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 	case "holtWintersAberration":
 		var results []*MetricData
-		args, err := getSeriesArg(e.args[0], from-7*86400, until, values)
+		args, err := p.getSeriesArg(e.args[0], from-7*86400, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -3491,7 +3494,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "squareRoot": // squareRoot(seriesList)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -3538,7 +3541,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return []*MetricData{&r}, nil
 
 	case "removeEmptySeries", "removeZeroSeries": // removeEmptySeries(seriesLists, n), removeZeroSeries(seriesLists, n)
-		args, err := getSeriesArg(e.args[0], from, until, values)
+		args, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -3558,7 +3561,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "removeBelowValue", "removeAboveValue", "removeBelowPercentile", "removeAbovePercentile": // removeBelowValue(seriesLists, n), removeAboveValue(seriesLists, n), removeBelowPercentile(seriesLists, percent), removeAbovePercentile(seriesLists, percent)
-		args, err := getSeriesArg(e.args[0], from, until, values)
+		args, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -3615,7 +3618,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 	case "cactiStyle": // cactiStyle(seriesList, system=None, units=None)
 		// Get the series data
-		original, err := getSeriesArg(e.args[0], from, until, values)
+		original, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -3703,9 +3706,9 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 // applyByNode(foo*, 1, "%") -> (true, ["foo1", "foo2"], nil)
 // sumSeries(foo) -> (false, nil, nil)
 // Assumes that applyByNode only appears as the outermost function.
-func RewriteExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData) (bool, []string, error) {
+func (p exprParser) RewriteExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData) (bool, []string, error) {
 	if e.etype == etFunc && e.target == "applyByNode" {
-		args, err := getSeriesArg(e.args[0], from, until, values)
+		args, err := p.getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return false, nil, err
 		}
@@ -3795,8 +3798,8 @@ func (s ByNameNatural) Less(i, j int) bool { return s.pad(s[i].Name) < s.pad(s[j
 
 type seriesFunc func(*MetricData, *MetricData) *MetricData
 
-func forEachSeriesDo(e *expr, from, until int32, values map[MetricRequest][]*MetricData, function seriesFunc) ([]*MetricData, error) {
-	arg, err := getSeriesArg(e.args[0], from, until, values)
+func (p exprParser) forEachSeriesDo(e *expr, from, until int32, values map[MetricRequest][]*MetricData, function seriesFunc) ([]*MetricData, error) {
+	arg, err := p.getSeriesArg(e.args[0], from, until, values)
 	if err != nil {
 		return nil, ErrMissingTimeseries
 	}
