@@ -1022,6 +1022,7 @@ func main() {
 	}
 	logger = zapwriter.Logger("main")
 
+	expvar.NewString("GoVersion").Set(runtime.Version())
 	expvar.NewString("BuildVersion").Set(BuildVersion)
 	expvar.Publish("Config", expvar.Func(func() interface{} { return Config }))
 
