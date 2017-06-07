@@ -2981,6 +2981,19 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			}
 			name += ")"
 
+			if arg.StepTime > bucketSize {
+				// We don't have enough data to do math
+				results = append(results, &MetricData{FetchResponse: pb.FetchResponse{
+					Name:      name,
+					Values:    arg.Values,
+					IsAbsent:  arg.IsAbsent,
+					StepTime:  arg.StepTime,
+					StartTime: arg.StartTime,
+					StopTime:  arg.StopTime,
+				}})
+				continue
+			}
+
 			r := MetricData{FetchResponse: pb.FetchResponse{
 				Name:      name,
 				Values:    make([]float64, buckets, buckets),
