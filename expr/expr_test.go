@@ -2653,6 +2653,27 @@ func TestEvalSummarize(t *testing.T) {
 					{target: "metric1"},
 					{valStr: "5s", etype: etString},
 				},
+				argString: "metric1,'5s'",
+			},
+			map[MetricRequest][]*MetricData{
+				{"metric1", 0, 1}: {makeResponse("metric1", []float64{
+					1, 2, 3, 4, 5,
+				}, 10, now32)},
+			},
+			[]float64{1, 2, 3, 4, 5},
+			"summarize(metric1,'5s')",
+			10,
+			now32,
+			now32 + 50,
+		},
+		{
+			&expr{
+				target: "summarize",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{valStr: "5s", etype: etString},
+				},
 				namedArgs: map[string]*expr{
 					"func": {valStr: "avg", etype: etString},
 				},
