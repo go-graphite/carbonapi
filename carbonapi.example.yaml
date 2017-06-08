@@ -13,7 +13,7 @@ listen: "localhost:8081"
 # Max concurrent requests to CarbonZipper
 concurency: 20
 cache:
-   # Type of caching. Valid: "mem", "memcache", "none"
+   # Type of caching. Valid: "mem", "memcache", "null"
    type: "mem"
    # Cache limit in megabytes
    size_mb: 0
