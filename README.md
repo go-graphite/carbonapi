@@ -3,8 +3,8 @@ carbonapi: replacement graphite API server
 
 [![Build Status](https://travis-ci.org/go-graphite/carbonapi.svg?branch=master)](https://travis-ci.org/go-graphite/carbonapi)
 [![GoDoc](https://godoc.org/github.com/go-graphite/carbonapi?status.svg)](https://godoc.org/github.com/go-graphite/carbonapi)
-[![PR Stats](http://issuestats.com/github/go-graphite/carbonapi/badge/pr)](http://issuestats.com/github/go-graphite/carbonapi)
-[![Issues Stats](http://issuestats.com/github/go-graphite/carbonapi/badge/issue)](http://issuestats.com/github/go-graphite/carbonapi)
+[![PR Stats](http://issuestats.com/github/go-graphite/carbonapi/badge/pr?style=flat)](http://issuestats.com/github/go-graphite/carbonapi)
+[![Issues Stats](http://issuestats.com/github/go-graphite/carbonapi/badge/issue?style=flat)](http://issuestats.com/github/go-graphite/carbonapi)
 
 We are using <a href="https://packagecloud.io/"><img alt="Private Maven, RPM, DEB, PyPi and RubyGem Repository | packagecloud" height="46" src="https://packagecloud.io/images/packagecloud-badge.png" width="158" /></a> to host our packages!
 
