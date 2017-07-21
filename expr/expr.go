@@ -3333,6 +3333,20 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		return results, nil
 
+	case "cumulative": // cumulative(seriesList)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+		var results []*MetricData
+
+		for _, a := range arg {
+			r := *a
+			r.aggregateFunction = aggSum
+			results = append(results, &r)
+		}
+		return results, nil
+
 	case "timeFunction", "time":
 		name, err := getStringArg(e, 0)
 		if err != nil {
