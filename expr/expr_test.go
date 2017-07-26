@@ -2470,7 +2470,7 @@ func TestEvalExpression(t *testing.T) {
 			map[MetricRequest][]*MetricData{
 				{"metric1", 0, 1}: {
 					makeResponse("metric1",
-						[]float64{1, 2, 4, 3, 5, 6}, 1, now32),
+						[]float64{1, 2, math.NaN(), math.NaN(), 5, 6}, 1, now32),
 				},
 			},
 			[]*MetricData{
