@@ -1,6 +1,7 @@
 package expr
 
 import (
+	"fmt"
 	"math"
 	"reflect"
 	"testing"
@@ -9,6 +10,8 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 )
+
+var parser = exprParser{defaultTimeZone: time.UTC}
 
 func deepClone(original map[MetricRequest][]*MetricData) map[MetricRequest][]*MetricData {
 	clone := map[MetricRequest][]*MetricData{}
@@ -187,7 +190,7 @@ func TestEvalExpr(t *testing.T) {
 		&data,
 	}
 
-	EvalExpr(exp, int32(request.From), int32(request.Until), metricMap)
+	parser.EvalExpr(exp, int32(request.From), int32(request.Until), metricMap)
 }
 
 func TestParseExpr(t *testing.T) {
@@ -2259,6 +2262,23 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "removeTimeInterval",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{valStr: "1496152320", etype: etString},
+					{valStr: "13:55 20170530", etype: etString},
+				},
+				argString: "metric1",
+			},
+			map[MetricRequest][]*MetricData{
+				{"metric1", 0, 1}: {makeResponse("metric1", []float64{1, 2, -1, math.NaN(), 8, 20, 30, math.NaN()}, 60, 1496152200)},
+			},
+			[]*MetricData{makeResponse("removeTimeInterval(metric1, 1496152320, 1496152500)",
+				[]float64{1, 2, math.NaN(), math.NaN(), math.NaN(), 20, 30, math.NaN()}, 1, now32)},
+		},
+		{
+			&expr{
 				target: "cactiStyle",
 				etype:  etFunc,
 				args: []*expr{
@@ -2572,7 +2592,7 @@ func TestEvalExpression(t *testing.T) {
 func testEvalExpr(t *testing.T, tt *evalTestItem) {
 	originalMetrics := deepClone(tt.m)
 	testName := tt.e.target + "(" + tt.e.argString + ")"
-	g, err := EvalExpr(tt.e, 0, 1, tt.m)
+	g, err := parser.EvalExpr(tt.e, 0, 1, tt.m)
 	if err != nil {
 		t.Errorf("failed to eval %s: %s", testName, err)
 		return
@@ -3045,7 +3065,7 @@ func TestEvalSummarize(t *testing.T) {
 
 	for _, tt := range tests {
 		originalMetrics := deepClone(tt.m)
-		g, err := EvalExpr(tt.e, 0, 1, tt.m)
+		g, err := parser.EvalExpr(tt.e, 0, 1, tt.m)
 		if err != nil {
 			t.Errorf("failed to eval %v: %s", tt.name, err)
 			continue
@@ -3074,17 +3094,17 @@ func TestRewriteExpr(t *testing.T) {
 	now32 := int32(time.Now().Unix())
 
 	tests := []struct {
-		name string
-		e *expr
-		m map[MetricRequest][]*MetricData
-		rewritten bool
+		name       string
+		e          *expr
+		m          map[MetricRequest][]*MetricData
+		rewritten  bool
 		newTargets []string
 	}{
 		{
 			"ignore non-applyByNode",
 			&expr{
 				target: "sumSeries",
-				etype: etFunc,
+				etype:  etFunc,
 				args: []*expr{
 					{target: "metric*"},
 				},
@@ -3104,7 +3124,7 @@ func TestRewriteExpr(t *testing.T) {
 			"applyByNode",
 			&expr{
 				target: "applyByNode",
-				etype: etFunc,
+				etype:  etFunc,
 				args: []*expr{
 					{target: "metric*"},
 					{val: 1, etype: etConst},
@@ -3126,7 +3146,7 @@ func TestRewriteExpr(t *testing.T) {
 			"applyByNode",
 			&expr{
 				target: "applyByNode",
-				etype: etFunc,
+				etype:  etFunc,
 				args: []*expr{
 					{target: "metric*"},
 					{val: 1, etype: etConst},
@@ -3149,7 +3169,7 @@ func TestRewriteExpr(t *testing.T) {
 			"applyByNode",
 			&expr{
 				target: "applyByNode",
-				etype: etFunc,
+				etype:  etFunc,
 				args: []*expr{
 					{target: "foo.metric*"},
 					{val: 2, etype: etConst},
@@ -3174,7 +3194,7 @@ func TestRewriteExpr(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		rewritten, newTargets, err := RewriteExpr(tt.e, 0, 1, tt.m)
+		rewritten, newTargets, err := parser.RewriteExpr(tt.e, 0, 1, tt.m)
 
 		if err != nil {
 			t.Errorf("failed to rewrite %v: %s", tt.name, err)
@@ -3190,7 +3210,7 @@ func TestRewriteExpr(t *testing.T) {
 		if len(tt.newTargets) != len(newTargets) {
 			targetsMatch = false
 		} else {
-			for i := range(tt.newTargets) {
+			for i := range tt.newTargets {
 				targetsMatch = targetsMatch && tt.newTargets[i] == newTargets[i]
 			}
 		}
@@ -3824,7 +3844,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 
 	for _, tt := range tests {
 		originalMetrics := deepClone(tt.m)
-		g, err := EvalExpr(tt.e, 0, 1, tt.m)
+		g, err := parser.EvalExpr(tt.e, 0, 1, tt.m)
 		if err != nil {
 			t.Errorf("failed to eval %v: %s", tt.name, err)
 			continue
@@ -3939,7 +3959,7 @@ func TestEvalCustomFromUntil(t *testing.T) {
 
 	for _, tt := range tests {
 		originalMetrics := deepClone(tt.m)
-		g, err := EvalExpr(tt.e, tt.from, tt.until, tt.m)
+		g, err := parser.EvalExpr(tt.e, tt.from, tt.until, tt.m)
 		if err != nil {
 			t.Errorf("failed to eval %v: %s", tt.name, err)
 			continue
@@ -4006,4 +4026,46 @@ func nearlyEqualMetrics(a, b *MetricData) bool {
 	}
 
 	return true
+}
+
+func TestDateParamToEpoch(t *testing.T) {
+
+	timeNow = func() time.Time {
+		//16 Aug 1994 15:30
+		return time.Date(1994, time.August, 16, 15, 30, 0, 100, parser.defaultTimeZone)
+	}
+
+	const shortForm = "15:04 2006-Jan-02"
+
+	var tests = []struct {
+		input  string
+		output string
+	}{
+		{"midnight", "00:00 1994-Aug-16"},
+		{"noon", "12:00 1994-Aug-16"},
+		{"teatime", "16:00 1994-Aug-16"},
+		{"tomorrow", "00:00 1994-Aug-17"},
+
+		{"noon 08/12/94", "12:00 1994-Aug-12"},
+		{"midnight 20060812", "00:00 2006-Aug-12"},
+		{"noon tomorrow", "12:00 1994-Aug-17"},
+
+		{"17:04 19940812", "17:04 1994-Aug-12"},
+		{"-1day", "15:30 1994-Aug-15"},
+		{"19940812", "00:00 1994-Aug-12"},
+		{"1496152260", "13:51 2017-May-30"},
+	}
+
+	for _, tt := range tests {
+		got := parser.dateParamToEpoch(tt.input, "Local", 0)
+		ts, err := time.ParseInLocation(shortForm, tt.output, parser.defaultTimeZone)
+		if err != nil {
+			panic(fmt.Sprintf("error parsing time: %q: %v", tt.output, err))
+		}
+
+		want := int32(ts.Unix())
+		if got != want {
+			t.Errorf("dateParamToEpoch(%q, 0)=%v, want %v", tt.input, got, want)
+		}
+	}
 }

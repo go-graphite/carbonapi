@@ -198,6 +198,7 @@ removeBelowPercentile(seriesList, n)                                      |  0.9
 removeBelowValue(seriesList, n)                                           |  0.9.10 | Supported
 removeBetweenPercentile(seriesList, n)                                    |  1.0.0  |
 removeEmptySeries(seriesList)                                             |  1.0.0  | Supported
+removeTimeInterval(seriesList, removeFrom, removeUntil)                   | not in graphite | Experimental
 removeZeroSeries(seriesList)                                              |  0.9.14 | Supported
 scale(seriesList, factor)                                                 |  0.9.9  | Supported
 scaleToSeconds(seriesList, seconds)                                       |  0.9.10 | Supported
