@@ -156,8 +156,8 @@ keepLastValue(seriesList, limit=inf)                                      |  0.9
 legendValue(seriesList, *valueTypes)                                      |  0.9.10 | Supported
 limit(seriesList, n)                                                      |  0.9.9  | Supported
 lineWidth(seriesList, width)                                              |  0.9.9  | Supported
-linearRegression(seriesList, startSourceAt=None, endSourceAt=None)        |  1.0.0  |
-linearRegressionAnalysis(series)                                          |  1.0.0  |
+linearRegression(seriesList, startSourceAt=None, endSourceAt=None)        |  1.0.0 | Supported (based on polyfit)
+linearRegressionAnalysis(series)                                          |  1.0.0 |
 logarithm(seriesList, base=10), alias log()                               |  0.9.10 | Supported
 lowestAverage(seriesList, n)                                              |  0.9.9  | Supported
 lowestCurrent(seriesList, n)                                              |  0.9.9  | Supported
