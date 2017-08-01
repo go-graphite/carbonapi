@@ -1449,20 +1449,36 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		return args, nil
 
-	case "groupByNode": // groupByNode(seriesList, nodeNum, callback)
+	case "groupByNode", // groupByNode(seriesList, nodeNum, callback)
+		"groupByNodes": // groupByNodes(seriesList, callback, *nodes)
 		args, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
+		var callback string
+		var fields []int
 
-		field, err := getIntArg(e, 1)
-		if err != nil {
-			return nil, err
-		}
+		if e.target == "groupByNode" {
+			field, err := getIntArg(e, 1)
+			if err != nil {
+				return nil, err
+			}
 
-		callback, err := getStringArg(e, 2)
-		if err != nil {
-			return nil, err
+			callback, err = getStringArg(e, 2)
+			if err != nil {
+				return nil, err
+			}
+			fields = []int{field}
+		} else {
+			callback, err = getStringArg(e, 1)
+			if err != nil {
+				return nil, err
+			}
+
+			fields, err = getIntArgs(e, 2)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		var results []*MetricData
@@ -1474,8 +1490,11 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 			metric := extractMetric(a.Name)
 			nodes := strings.Split(metric, ".")
-			node := nodes[field]
-
+			nodeKey := make([]string, 0, len(fields))
+			for _, f := range fields {
+				nodeKey = append(nodeKey, nodes[f])
+			}
+			node := strings.Join(nodeKey, ".")
 			if len(groups[node]) == 0 {
 				nodeList = append(nodeList, node)
 			}
@@ -1502,7 +1521,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			}
 
 			nvalues := values
-			if e.target == "groupByNode" {
+			if e.target == "groupByNode" || e.target == "groupByNodes" {
 				nvalues = map[MetricRequest][]*MetricData{
 					MetricRequest{k, from, until}: v,
 				}
