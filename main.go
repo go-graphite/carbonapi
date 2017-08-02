@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"expvar"
 	"flag"
 	"fmt"
@@ -20,6 +19,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 
+	"github.com/go-graphite/carbonapi/date"
 	"github.com/go-graphite/carbonapi/expr"
 	"github.com/go-graphite/carbonapi/util"
 	"github.com/go-graphite/carbonzipper/cache"
@@ -144,129 +144,6 @@ func buildParseErrorString(target, e string, err error) string {
 	return msg
 }
 
-var errBadTime = errors.New("bad time")
-
-// parseTime parses a time and returns hours and minutes
-func parseTime(s string) (hour, minute int, err error) {
-
-	switch s {
-	case "midnight":
-		return 0, 0, nil
-	case "noon":
-		return 12, 0, nil
-	case "teatime":
-		return 16, 0, nil
-	}
-
-	parts := strings.Split(s, ":")
-
-	if len(parts) != 2 {
-		return 0, 0, errBadTime
-	}
-
-	hour, err = strconv.Atoi(parts[0])
-	if err != nil {
-		return 0, 0, errBadTime
-	}
-
-	minute, err = strconv.Atoi(parts[1])
-	if err != nil {
-		return 0, 0, errBadTime
-	}
-
-	return hour, minute, nil
-}
-
-var timeFormats = []string{"20060102", "01/02/06"}
-
-// dateParamToEpoch turns a passed string parameter into a unix epoch
-func dateParamToEpoch(s string, qtz string, d int64) int32 {
-
-	if s == "" {
-		// return the default if nothing was passed
-		return int32(d)
-	}
-
-	// relative timestamp
-	if s[0] == '-' {
-		offset, err := expr.IntervalString(s, -1)
-		if err != nil {
-			return int32(d)
-		}
-
-		return int32(timeNow().Add(time.Duration(offset) * time.Second).Unix())
-	}
-
-	switch s {
-	case "now":
-		return int32(timeNow().Unix())
-	case "midnight", "noon", "teatime":
-		yy, mm, dd := timeNow().Date()
-		hh, min, _ := parseTime(s) // error ignored, we know it's valid
-		dt := time.Date(yy, mm, dd, hh, min, 0, 0, Config.defaultTimeZone)
-		return int32(dt.Unix())
-	}
-
-	sint, err := strconv.Atoi(s)
-	// need to check that len(s) > 8 to avoid turning 20060102 into seconds
-	if err == nil && len(s) > 8 {
-		return int32(sint) // We got a timestamp so returning it
-	}
-
-	s = strings.Replace(s, "_", " ", 1) // Go can't parse _ in date strings
-
-	var ts, ds string
-	split := strings.Fields(s)
-
-	switch {
-	case len(split) == 1:
-		ds = s
-	case len(split) == 2:
-		ts, ds = split[0], split[1]
-	case len(split) > 2:
-		return int32(d)
-	}
-
-	var tz = Config.defaultTimeZone
-	if qtz != "" {
-		if z, err := time.LoadLocation(qtz); err != nil {
-			tz = z
-		}
-	}
-
-	var t time.Time
-dateStringSwitch:
-	switch ds {
-	case "today":
-		t = timeNow()
-		// nothing
-	case "yesterday":
-		t = timeNow().AddDate(0, 0, -1)
-	case "tomorrow":
-		t = timeNow().AddDate(0, 0, 1)
-	default:
-		for _, format := range timeFormats {
-			t, err = time.ParseInLocation(format, ds, tz)
-			if err == nil {
-				break dateStringSwitch
-			}
-		}
-
-		return int32(d)
-	}
-
-	var hour, minute int
-	if ts != "" {
-		hour, minute, _ = parseTime(ts)
-		// defaults to hour=0, minute=0 on error, which is midnight, which is fine for now
-	}
-
-	yy, mm, dd := t.Date()
-	t = time.Date(yy, mm, dd, hour, minute, 0, 0, Config.defaultTimeZone)
-
-	return int32(t.Unix())
-}
-
 func renderHandler(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
 	uuid := uuid.NewV4()
@@ -356,8 +233,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	// normalize from and until values
 	qtz := r.FormValue("tz")
-	from32 := dateParamToEpoch(from, qtz, timeNow().Add(-24*time.Hour).Unix())
-	until32 := dateParamToEpoch(until, qtz, timeNow().Unix())
+	from32 := date.DateParamToEpoch(from, qtz, timeNow().Add(-24*time.Hour).Unix(), Config.defaultTimeZone)
+	until32 := date.DateParamToEpoch(until, qtz, timeNow().Unix(), Config.defaultTimeZone)
 
 	accessLogger = accessLogger.With(
 		zap.String("format", format),
