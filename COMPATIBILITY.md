@@ -135,7 +135,7 @@ fallbackSeries( seriesList, fallback )                                    |  1.0
 grep(seriesList, pattern)                                                 |  1.0.0  | Supported
 group(*seriesLists)                                                       |  0.9.10 | Supported
 groupByNode(seriesList, nodeNum, callback)                                |  0.9.9  | Supported
-groupByNodes(seriesList, callback, *nodes)                                |  1.0.0  |
+groupByNodes(seriesList, callback, *nodes)                                |  1.0.0  | Supported
 highestAverage(seriesList, n)                                             |  0.9.9  | Supported
 highestCurrent(seriesList, n)                                             |  0.9.9  | Supported
 highestMax(seriesList, n)                                                 |  0.9.9  | Supported
