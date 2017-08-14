@@ -1194,6 +1194,41 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		return results, nil
 
+	case "divideSeriesLists": // divideSeriesLists(dividendSeriesList, divisorSeriesList)
+		numerators, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+		denominators, err := getSeriesArg(e.args[1], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(numerators) != len(denominators) {
+			return nil, fmt.Errorf("dividendSeriesList and divisorSeriesList argument must have equal length")
+		}
+
+		var results []*MetricData
+		for i, numerator := range numerators {
+			denominator := denominators[i]
+			if numerator.StepTime != denominator.StepTime || len(numerator.Values) != len(denominator.Values) {
+				return nil, fmt.Errorf("series %s must have the same length as %s", numerator.Name, denominator.Name)
+			}
+			r := *numerator
+			r.Name = fmt.Sprintf("divideSeries(%s,%s)", numerator.Name, denominator.Name)
+			r.Values = make([]float64, len(numerator.Values))
+			r.IsAbsent = make([]bool, len(numerator.Values))
+			for i, v := range numerator.Values {
+				if numerator.IsAbsent[i] || denominator.IsAbsent[i] || denominator.Values[i] == 0 {
+					r.IsAbsent[i] = true
+					continue
+				}
+				r.Values[i] = v / denominator.Values[i]
+			}
+			results = append(results, &r)
+		}
+		return results, nil
+
 	case "multiplySeries": // multiplySeries(factorsSeriesList)
 		r := MetricData{
 			FetchResponse: pb.FetchResponse{

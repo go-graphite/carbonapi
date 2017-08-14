@@ -126,6 +126,7 @@ delay(seriesList, steps)                                                  |  1.0
 derivative(seriesList)                                                    |  0.9.9  | Supported
 diffSeries(*seriesLists)                                                  |  0.9.9  | Supported
 divideSeries(dividendSeriesList, divisorSeries)                           |  0.9.14 | Supported
+divideSeriesLists(dividendSeriesList, divisorSeriesList)                  |  1.0.2  | Supported
 drawAsInfinite(seriesList)                                                |  0.9.9  | Supported
 events(*tags)                                                             |  0.9.9  |
 exclude(seriesList, pattern)                                              |  0.9.9  | Supported
