@@ -817,7 +817,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			   Second one - denominators
 
 			   For each of them we will compute numerator/denominator
-			 */
+			*/
 			numerators := e.args[:len(e.args)/2]
 			denominators := e.args[len(e.args)/2:]
 			for i := range numerators {
@@ -1194,7 +1194,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		return results, nil
 
-	case "divideSeriesLists": // divideSeriesLists(dividendSeriesList, divisorSeriesList)
+	case "divideSeriesLists", "diffSeriesLists", "multiplySeriesLists": // divideSeriesLists(dividendSeriesList, divisorSeriesList)
 		numerators, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
@@ -1205,25 +1205,48 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		}
 
 		if len(numerators) != len(denominators) {
-			return nil, fmt.Errorf("dividendSeriesList and divisorSeriesList argument must have equal length")
+			return nil, fmt.Errorf("Both %s arguments must have equal length", e.target)
 		}
 
 		var results []*MetricData
+		functionName := e.target[:len(e.target)-len("Lists")]
+
+		var compute func(l, r float64) float64
+
+		switch e.target {
+		case "divideSeriesLists":
+			compute = func(l, r float64) float64 { return l / r }
+		case "multiplySeriesLists":
+			compute = func(l, r float64) float64 { return l * r }
+		case "diffSeriesLists":
+			compute = func(l, r float64) float64 { return l - r }
+
+		}
 		for i, numerator := range numerators {
 			denominator := denominators[i]
 			if numerator.StepTime != denominator.StepTime || len(numerator.Values) != len(denominator.Values) {
 				return nil, fmt.Errorf("series %s must have the same length as %s", numerator.Name, denominator.Name)
 			}
 			r := *numerator
-			r.Name = fmt.Sprintf("divideSeries(%s,%s)", numerator.Name, denominator.Name)
+			r.Name = fmt.Sprintf("%s(%s,%s)", functionName, numerator.Name, denominator.Name)
 			r.Values = make([]float64, len(numerator.Values))
 			r.IsAbsent = make([]bool, len(numerator.Values))
 			for i, v := range numerator.Values {
-				if numerator.IsAbsent[i] || denominator.IsAbsent[i] || denominator.Values[i] == 0 {
+				if numerator.IsAbsent[i] || denominator.IsAbsent[i] {
 					r.IsAbsent[i] = true
 					continue
 				}
-				r.Values[i] = v / denominator.Values[i]
+
+				switch e.target {
+				case "divideSeriesLists":
+					if denominator.Values[i] == 0 {
+						r.IsAbsent[i] = true
+						continue
+					}
+					r.Values[i] = compute(v, denominator.Values[i])
+				default:
+					r.Values[i] = compute(v, denominator.Values[i])
+				}
 			}
 			results = append(results, &r)
 		}
