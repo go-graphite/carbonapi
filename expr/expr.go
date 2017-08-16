@@ -533,13 +533,22 @@ func getSeriesArg(arg *expr, from, until int32, values map[MetricRequest][]*Metr
 	return a, nil
 }
 
+func removeEmptySeriesFromName(args []*MetricData) string {
+	var argNames []string
+	for _, arg := range args {
+		argNames = append(argNames, arg.Name)
+	}
+
+	return strings.Join(argNames, ",")
+}
+
 func getSeriesArgs(e []*expr, from, until int32, values map[MetricRequest][]*MetricData) ([]*MetricData, error) {
 
 	var args []*MetricData
 
 	for _, arg := range e {
 		a, err := getSeriesArg(arg, from, until, values)
-		if err != nil {
+		if err != nil && err != ErrSeriesDoesNotExist {
 			return nil, err
 		}
 		args = append(args, a...)
@@ -887,6 +896,11 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			return nil, err
 		}
 
+		// We need to rewrite name if there are some missing metrics
+		if len(args) < len(e.args) {
+			e.argString = removeEmptySeriesFromName(args)
+		}
+
 		e.target = "averageSeries"
 		return aggregateSeries(e, args, func(values []float64) float64 {
 			sum := 0.0
@@ -1037,6 +1051,11 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			return nil, err
 		}
 
+		// We need to rewrite name if there are some missing metrics
+		if len(args) < len(e.args) {
+			e.argString = removeEmptySeriesFromName(args)
+		}
+
 		r := *args[0]
 		r.Name = fmt.Sprintf("countSeries(%s)", e.argString)
 		r.Values = make([]float64, len(args[0].Values))
@@ -1062,6 +1081,15 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			}
 			subtrahends = minuends[1:]
 			err = nil
+		}
+
+		// We need to rewrite name if there are some missing metrics
+		if len(subtrahends)+len(minuends) < len(e.args) {
+			args := []string{
+				removeEmptySeriesFromName(minuends),
+				removeEmptySeriesFromName(subtrahends),
+			}
+			e.argString = strings.Join(args, ",")
 		}
 
 		minuend := minuends[0]
@@ -1503,6 +1531,11 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		args, err := getSeriesArgs(e.args, from, until, values)
 		if err != nil {
 			return nil, err
+		}
+
+		// We need to rewrite name if there are some missing metrics
+		if len(args) < len(e.args) {
+			e.argString = removeEmptySeriesFromName(args)
 		}
 
 		return args, nil
@@ -2051,6 +2084,11 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			return nil, err
 		}
 
+		// We need to rewrite name if there are some missing metrics
+		if len(args) < len(e.args) {
+			e.argString = removeEmptySeriesFromName(args)
+		}
+
 		return aggregateSeries(e, args, func(values []float64) float64 {
 			max := math.Inf(-1)
 			for _, value := range values {
@@ -2065,6 +2103,11 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		args, err := getSeriesArgs(e.args, from, until, values)
 		if err != nil {
 			return nil, err
+		}
+
+		// We need to rewrite name if there are some missing metrics
+		if len(args) < len(e.args) {
+			e.argString = removeEmptySeriesFromName(args)
 		}
 
 		return aggregateSeries(e, args, func(values []float64) float64 {
@@ -2783,6 +2826,11 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		args, err := getSeriesArgs(e.args, from, until, values)
 		if err != nil {
 			return nil, err
+		}
+
+		// We need to rewrite name if there are some missing metrics
+		if len(args) < len(e.args) {
+			e.argString = removeEmptySeriesFromName(args)
 		}
 
 		e.target = "sumSeries"
@@ -3532,6 +3580,11 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			return nil, err
 		}
 
+		// We need to rewrite name if there are some missing metrics
+		if len(args) < len(e.args) {
+			e.argString = removeEmptySeriesFromName(args)
+		}
+
 		for _, arg := range args {
 			stepTime := arg.StepTime
 
@@ -3981,6 +4034,7 @@ type aggregateFunc func([]float64) float64
 
 func aggregateSeries(e *expr, args []*MetricData, function aggregateFunc) ([]*MetricData, error) {
 	length := len(args[0].Values)
+
 	r := *args[0]
 	r.Name = fmt.Sprintf("%s(%s)", e.target, e.argString)
 	r.Values = make([]float64, length)
