@@ -543,7 +543,6 @@ func removeEmptySeriesFromName(args []*MetricData) string {
 }
 
 func getSeriesArgs(e []*expr, from, until int32, values map[MetricRequest][]*MetricData) ([]*MetricData, error) {
-
 	var args []*MetricData
 
 	for _, arg := range e {
@@ -556,6 +555,22 @@ func getSeriesArgs(e []*expr, from, until int32, values map[MetricRequest][]*Met
 
 	if len(args) == 0 {
 		return nil, ErrSeriesDoesNotExist
+	}
+
+	return args, nil
+}
+
+// getSeriesArgsAndRemoveNonExisting will fetch all required arguments, but will also filter out non existing series
+// This is needed to be graphite-web compatible in cases when you pass non-existing series to, for example, sumSeries
+func getSeriesArgsAndRemoveNonExisting(e *expr, from, until int32, values map[MetricRequest][]*MetricData) ([]*MetricData, error) {
+	args, err := getSeriesArgs(e.args, from, until, values)
+	if err != nil {
+		return nil, err
+	}
+
+	// We need to rewrite name if there are some missing metrics
+	if len(args) < len(e.args) {
+		e.argString = removeEmptySeriesFromName(args)
 	}
 
 	return args, nil
@@ -891,14 +906,9 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "avg", "averageSeries": // averageSeries(*seriesLists)
-		args, err := getSeriesArgs(e.args, from, until, values)
+		args, err := getSeriesArgsAndRemoveNonExisting(e, from, until, values)
 		if err != nil {
 			return nil, err
-		}
-
-		// We need to rewrite name if there are some missing metrics
-		if len(args) < len(e.args) {
-			e.argString = removeEmptySeriesFromName(args)
 		}
 
 		e.target = "averageSeries"
@@ -1046,14 +1056,9 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		})
 	case "countSeries": // countSeries(seriesList)
 		// TODO(civil): Check that series have equal length
-		args, err := getSeriesArgs(e.args, from, until, values)
+		args, err := getSeriesArgsAndRemoveNonExisting(e, from, until, values)
 		if err != nil {
 			return nil, err
-		}
-
-		// We need to rewrite name if there are some missing metrics
-		if len(args) < len(e.args) {
-			e.argString = removeEmptySeriesFromName(args)
 		}
 
 		r := *args[0]
@@ -1069,6 +1074,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return []*MetricData{&r}, nil
 
 	case "diffSeries": // diffSeries(*seriesLists)
+		// Because we treat 0 arg differently, we can't use getSeriesArgsAndRemoveNonExisting here.
 		minuends, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
@@ -1528,14 +1534,9 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "group": // group(*seriesLists)
-		args, err := getSeriesArgs(e.args, from, until, values)
+		args, err := getSeriesArgsAndRemoveNonExisting(e, from, until, values)
 		if err != nil {
 			return nil, err
-		}
-
-		// We need to rewrite name if there are some missing metrics
-		if len(args) < len(e.args) {
-			e.argString = removeEmptySeriesFromName(args)
 		}
 
 		return args, nil
@@ -2079,14 +2080,9 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		return results, nil
 
 	case "maxSeries": // maxSeries(*seriesLists)
-		args, err := getSeriesArgs(e.args, from, until, values)
+		args, err := getSeriesArgsAndRemoveNonExisting(e, from, until, values)
 		if err != nil {
 			return nil, err
-		}
-
-		// We need to rewrite name if there are some missing metrics
-		if len(args) < len(e.args) {
-			e.argString = removeEmptySeriesFromName(args)
 		}
 
 		return aggregateSeries(e, args, func(values []float64) float64 {
@@ -2100,14 +2096,9 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		})
 
 	case "minSeries": // minSeries(*seriesLists)
-		args, err := getSeriesArgs(e.args, from, until, values)
+		args, err := getSeriesArgsAndRemoveNonExisting(e, from, until, values)
 		if err != nil {
 			return nil, err
-		}
-
-		// We need to rewrite name if there are some missing metrics
-		if len(args) < len(e.args) {
-			e.argString = removeEmptySeriesFromName(args)
 		}
 
 		return aggregateSeries(e, args, func(values []float64) float64 {
@@ -2823,14 +2814,9 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 	case "sum", "sumSeries": // sumSeries(*seriesLists)
 		// TODO(dgryski): make sure the arrays are all the same 'size'
-		args, err := getSeriesArgs(e.args, from, until, values)
+		args, err := getSeriesArgsAndRemoveNonExisting(e, from, until, values)
 		if err != nil {
 			return nil, err
-		}
-
-		// We need to rewrite name if there are some missing metrics
-		if len(args) < len(e.args) {
-			e.argString = removeEmptySeriesFromName(args)
 		}
 
 		e.target = "sumSeries"
@@ -3575,14 +3561,9 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 	case "holtWintersForecast":
 		var results []*MetricData
-		args, err := getSeriesArgs(e.args, from-7*86400, until, values)
+		args, err := getSeriesArgsAndRemoveNonExisting(e, from-7*86400, until, values)
 		if err != nil {
 			return nil, err
-		}
-
-		// We need to rewrite name if there are some missing metrics
-		if len(args) < len(e.args) {
-			e.argString = removeEmptySeriesFromName(args)
 		}
 
 		for _, arg := range args {
