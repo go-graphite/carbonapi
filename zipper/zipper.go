@@ -679,7 +679,9 @@ func (z *Zipper) Find(ctx context.Context, logger *zap.Logger, query string) ([]
 		if queries, ok = z.searchCache.Get(queries[0]); !ok || queries == nil || len(queries) == 0 {
 			stats.SearchCacheMisses++
 			queries = z.fetchCarbonsearchResponse(ctx, logger, rewrite.RequestURI(), stats)
-			z.searchCache.Set(queries[0], queries)
+			if len(queries) != 0 {
+				z.searchCache.Set(queries[0], queries)
+			}
 		} else {
 			stats.SearchCacheHits++
 		}
