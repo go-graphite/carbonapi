@@ -658,16 +658,16 @@ func (z *Zipper) Find(ctx context.Context, logger *zap.Logger, query string) ([]
 	rewrite, _ := url.Parse("http://127.0.0.1/metrics/find/")
 
 	v := url.Values{
-		"query":  []string{query},
+		"query":  queries,
 		"format": []string{"protobuf"},
 	}
 	rewrite.RawQuery = v.Encode()
 
-	if z.searchConfigured && strings.HasPrefix(queries[0], z.searchPrefix) {
+	if z.searchConfigured && strings.HasPrefix(query, z.searchPrefix) {
 		stats.SearchRequests++
 		// 'completer' requests are translated into standard Find requests with
 		// a trailing '*' by graphite-web
-		if strings.HasSuffix(queries[0], "*") {
+		if strings.HasSuffix(query, "*") {
 			searchCompleterResponse := z.multiGet(ctx, logger, []string{z.searchBackend}, rewrite.RequestURI(), stats)
 			matches, _ := findUnpackPB(searchCompleterResponse, stats)
 			// this is a completer request, and so we should return the set of
@@ -676,12 +676,10 @@ func (z *Zipper) Find(ctx context.Context, logger *zap.Logger, query string) ([]
 			return matches, stats, nil
 		}
 		var ok bool
-		if queries, ok = z.searchCache.Get(queries[0]); !ok || queries == nil || len(queries) == 0 {
+		if queries, ok = z.searchCache.Get(query); !ok || queries == nil || len(queries) == 0 {
 			stats.SearchCacheMisses++
 			queries = z.fetchCarbonsearchResponse(ctx, logger, rewrite.RequestURI(), stats)
-			if len(queries) != 0 {
-				z.searchCache.Set(queries[0], queries)
-			}
+			z.searchCache.Set(query, queries)
 		} else {
 			stats.SearchCacheHits++
 		}
