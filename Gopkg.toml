@@ -1,60 +1,60 @@
 
-[[dependencies]]
+[[constraint]]
   branch = "master"
   name = "github.com/JaderDias/movingmedian"
 
-[[dependencies]]
+[[constraint]]
   branch = "master"
   name = "github.com/dgryski/go-onlinestats"
 
-[[dependencies]]
+[[constraint]]
   branch = "master"
   name = "github.com/dustin/go-humanize"
 
-[[dependencies]]
+[[constraint]]
   branch = "master"
   name = "github.com/evmar/gocairo"
 
-[[dependencies]]
+[[constraint]]
   branch = "master"
   name = "github.com/facebookgo/grace"
 
-[[dependencies]]
+[[constraint]]
   branch = "master"
   name = "github.com/facebookgo/pidfile"
 
-[[dependencies]]
+[[constraint]]
   branch = "refactor"
   name = "github.com/go-graphite/carbonzipper"
 
-[[dependencies]]
+[[constraint]]
   branch = "master"
   name = "github.com/gonum/matrix"
 
-[[dependencies]]
+[[constraint]]
   branch = "master"
   name = "github.com/gorilla/handlers"
 
-[[dependencies]]
+[[constraint]]
   branch = "master"
   name = "github.com/kisielk/og-rek"
 
-[[dependencies]]
+[[constraint]]
   name = "github.com/lomik/zapwriter"
   revision = "d4499a33b5929c4a2e7e169165f594f35b39638c"
 
-[[dependencies]]
+[[constraint]]
   branch = "master"
   name = "github.com/mjibson/go-dsp"
 
-[[dependencies]]
+[[constraint]]
   branch = "master"
   name = "github.com/satori/go.uuid"
 
-[[dependencies]]
+[[constraint]]
   branch = "master"
   name = "github.com/wangjohn/quickselect"
 
-[[dependencies]]
+[[constraint]]
   branch = "master"
   name = "go.uber.org/zap"
