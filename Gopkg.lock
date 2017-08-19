@@ -1,5 +1,3 @@
-memo = "55a6718da282ecaa8f73332c53d551fdfed0d438537ab389bce165667ef34cbd"
-
 [[projects]]
   name = "bitbucket.org/tebeka/strftime"
   packages = ["."]
@@ -190,3 +188,10 @@ memo = "55a6718da282ecaa8f73332c53d551fdfed0d438537ab389bce165667ef34cbd"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   revision = "cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b"
+
+[solve-meta]
+  analyzer-name = "dep"
+  analyzer-version = 1
+  inputs-digest = "55a6718da282ecaa8f73332c53d551fdfed0d438537ab389bce165667ef34cbd"
+  solver-name = "gps-cdcl"
+  solver-version = 1
