@@ -133,6 +133,8 @@ drawAsInfinite(seriesList)                                                |  0.9
 events(*tags)                                                             |  0.9.9  |
 exclude(seriesList, pattern)                                              |  0.9.9  | Supported
 exponentialMovingAverage(seriesList, windowSize)                          |  1.0.0  |
+exponentialWeightedMovingAverage(seriesList, alpha)                       | not in graphite | Experimental
+ewma(seriesList, alpha)                                                   | - - -   | Short form of exponentialWeightedMovingAverage
 fallbackSeries( seriesList, fallback )                                    |  1.0.0  |
 [fft](https://en.wikipedia.org/wiki/Fast_Fourier_transform)(absSeriesList, phaseSeriesList)                                       |  not in graphite | Experimental
 grep(seriesList, pattern)                                                 |  1.0.0  | Supported
