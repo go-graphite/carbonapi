@@ -204,7 +204,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	)
 }
 
-func encodeFindResponse(format, query string, w http.ResponseWriter, metrics []*pb3.GlobMatch) error {
+func encodeFindResponse(format, query string, w http.ResponseWriter, metrics []pb3.GlobMatch) error {
 	var err error
 	var b []byte
 	switch format {
@@ -297,8 +297,6 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		zap.String("format", format),
 		zap.String("target", target),
 	)
-
-
 
 	from, err := strconv.Atoi(req.FormValue("from"))
 	if err != nil {
@@ -482,12 +480,12 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 	case "protobuf", "protobuf3":
 		w.Header().Set("Content-Type", contentTypeProtobuf)
 		var result pb3.ZipperInfoResponse
-		result.Responses = make([]*pb3.ServerInfoResponse, len(infos))
+		result.Responses = make([]pb3.ServerInfoResponse, len(infos))
 		for s, i := range infos {
 			var r pb3.ServerInfoResponse
 			r.Server = s
 			r.Info = &i
-			result.Responses = append(result.Responses, &r)
+			result.Responses = append(result.Responses, r)
 		}
 		b, err = result.Marshal()
 		/* #nosec */

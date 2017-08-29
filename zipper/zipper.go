@@ -174,7 +174,7 @@ func mergeResponses(responses []ServerResponse, stats *Stats) ([]string, *pb3.Mu
 		}
 		stats.MemoryUsage += int64(d.Size())
 		for _, m := range d.Metrics {
-			metrics[m.GetName()] = append(metrics[m.GetName()], *m)
+			metrics[m.GetName()] = append(metrics[m.GetName()], m)
 		}
 		servers = append(servers, r.server)
 	}
@@ -196,7 +196,7 @@ func mergeResponses(responses []ServerResponse, stats *Stats) ([]string, *pb3.Mu
 				zap.String("name", name),
 			)
 			m := decoded[0]
-			multi.Metrics = append(multi.Metrics, &m)
+			multi.Metrics = append(multi.Metrics, m)
 			continue
 		}
 
@@ -212,7 +212,7 @@ func mergeResponses(responses []ServerResponse, stats *Stats) ([]string, *pb3.Mu
 		metric := decoded[0]
 
 		mergeValues(&metric, decoded, stats)
-		multi.Metrics = append(multi.Metrics, &metric)
+		multi.Metrics = append(multi.Metrics, metric)
 	}
 
 	stats.MemoryUsage += int64(multi.Size())
@@ -291,14 +291,14 @@ func infoUnpackPB(responses []ServerResponse, stats *Stats) map[string]pb3.InfoR
 	return decoded
 }
 
-func findUnpackPB(responses []ServerResponse, stats *Stats) ([]*pb3.GlobMatch, map[string][]string) {
+func findUnpackPB(responses []ServerResponse, stats *Stats) ([]pb3.GlobMatch, map[string][]string) {
 	logger := zapwriter.Logger("zipper_find").With(zap.String("handler", "findUnpackPB"))
 
 	// metric -> [server1, ... ]
 	paths := make(map[string][]string)
 	seen := make(map[nameLeaf]bool)
 
-	var metrics []*pb3.GlobMatch
+	var metrics []pb3.GlobMatch
 	for _, r := range responses {
 		var metric pb3.GlobResponse
 		err := metric.Unmarshal(r.response)
@@ -651,7 +651,7 @@ func (z *Zipper) Info(ctx context.Context, logger *zap.Logger, target string) (m
 	return infos, stats, nil
 }
 
-func (z *Zipper) Find(ctx context.Context, logger *zap.Logger, query string) ([]*pb3.GlobMatch, *Stats, error) {
+func (z *Zipper) Find(ctx context.Context, logger *zap.Logger, query string) ([]pb3.GlobMatch, *Stats, error) {
 	stats := &Stats{}
 	queries := []string{query}
 
@@ -685,7 +685,7 @@ func (z *Zipper) Find(ctx context.Context, logger *zap.Logger, query string) ([]
 		}
 	}
 
-	var metrics []*pb3.GlobMatch
+	var metrics []pb3.GlobMatch
 	// TODO(nnuss): Rewrite the result queries to a series of brace expansions based on TLD?
 	// [a.b, a.c, a.dee.eee.eff, x.y] => [ "a.{b,c,dee.eee.eff}", "x.y" ]
 	// Be mindful that carbonserver's default MaxGlobs is 10
