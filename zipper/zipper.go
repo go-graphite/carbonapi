@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"net/url"
@@ -28,6 +29,7 @@ import (
 type Timeouts struct {
 	Global       time.Duration `yaml:"global"`
 	AfterStarted time.Duration `yaml:"afterStarted"`
+	Connect      time.Duration `yaml:"connect"`
 }
 
 // CarbonSearch is a global structure that contains carbonsearch related configuration bits
@@ -44,9 +46,10 @@ type Config struct {
 
 	CarbonSearch CarbonSearch
 
-	PathCache   pathcache.PathCache
-	SearchCache pathcache.PathCache
-	Timeouts    Timeouts
+	PathCache         pathcache.PathCache
+	SearchCache       pathcache.PathCache
+	Timeouts          Timeouts
+	KeepAliveInterval time.Duration `yaml:"keepAliveInterval"`
 }
 
 // Zipper provides interface to Zipper-related functions
@@ -60,6 +63,9 @@ type Zipper struct {
 
 	timeoutAfterAllStarted time.Duration
 	timeout                time.Duration
+	timeoutConnect         time.Duration
+	timeoutKeepAlive       time.Duration
+	keepAliveInterval      time.Duration
 
 	searchBackend    string
 	searchConfigured bool
@@ -116,8 +122,10 @@ func NewZipper(sender func(*Stats), config *Config) *Zipper {
 		searchConfigured:          len(config.CarbonSearch.Prefix) > 0 && len(config.CarbonSearch.Backend) > 0,
 		concurrencyLimitPerServer: config.ConcurrencyLimitPerServer,
 		maxIdleConnsPerHost:       config.MaxIdleConnsPerHost,
+		keepAliveInterval:         config.KeepAliveInterval,
 		timeoutAfterAllStarted:    config.Timeouts.AfterStarted,
 		timeout:                   config.Timeouts.Global,
+		timeoutConnect:            config.Timeouts.Connect,
 	}
 
 	logger.Info("zipper config",
@@ -135,6 +143,11 @@ func NewZipper(sender func(*Stats), config *Config) *Zipper {
 	// configure the storage client
 	z.storageClient.Transport = &http.Transport{
 		MaxIdleConnsPerHost: z.maxIdleConnsPerHost,
+		DialContext: (&net.Dialer{
+			Timeout:   z.timeoutConnect,
+			KeepAlive: z.keepAliveInterval,
+			DualStack: true,
+		}).DialContext,
 	}
 
 	go z.probeTlds()

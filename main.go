@@ -60,7 +60,8 @@ var config = struct {
 	Listen   string         `yaml:"listen"`
 	Buckets  int            `yaml:"buckets"`
 
-	Timeouts zipper.Timeouts `yaml:"timeouts"`
+	Timeouts          zipper.Timeouts `yaml:"timeouts"`
+	KeepAliveInterval time.Duration   `yaml:"keepAliveInterval"`
 
 	CarbonSearch zipper.CarbonSearch `yaml:"carbonsearch"`
 
@@ -84,7 +85,9 @@ var config = struct {
 	Timeouts: zipper.Timeouts{
 		Global:       10000 * time.Second,
 		AfterStarted: 2 * time.Second,
+		Connect:      200 * time.Millisecond,
 	},
+	KeepAliveInterval: 30 * time.Second,
 
 	MaxIdleConnsPerHost: 100,
 
@@ -613,8 +616,9 @@ func main() {
 		MaxIdleConnsPerHost:       config.MaxIdleConnsPerHost,
 		Backends:                  config.Backends,
 
-		CarbonSearch: config.CarbonSearch,
-		Timeouts:     config.Timeouts,
+		CarbonSearch:      config.CarbonSearch,
+		Timeouts:          config.Timeouts,
+		KeepAliveInterval: config.KeepAliveInterval,
 	}
 
 	Metrics.CacheSize = expvar.Func(func() interface{} { return zipperConfig.PathCache.ECSize() })
