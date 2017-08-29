@@ -14,6 +14,9 @@ Changes
 
 Changes
 -------
+**MASTER**
+   - **[Breaking]** Protobuf now declares some structures as non-nullable. This changes API of carbonzipperpb and pb3, now they contain less pointers. That should reduce GC pressure a little bit. Sholdn't affect people who use it over the network.
+
 **0.72**
    - [Fix] Fix /info handler (bug was introduced after splitting zipper into several packages)
 
