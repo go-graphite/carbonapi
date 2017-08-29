@@ -31,10 +31,12 @@ Other pieces of the stack are:
 
 For an overview of the stack and how the pieces fit together, watch
 [Graphite@Scale or How to store millions metrics per second](https://fosdem.org/2017/schedule/event/graphite_at_scale/)
-from FOSDEM '17.
+from FOSDEM '17 or [Graphite@Scale or How to Store Millions of metrics per Second](https://www.usenix.org/conference/srecon17asia/program/presentation/smirnov) from SRECon17 Asia.
 
 Requirements
 ------------
+
+carbonzipper requires Go 1.8+ to build. It's recommended to always use latest stable.
 
 CarbonZipper uses protobuf-based protocol to talk with underlying storages. For current version the compatibility list is:
 
