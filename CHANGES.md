@@ -14,6 +14,9 @@ Changes
 
 Changes
 -------
+**0.73.2**
+   - [Code] Remove carbonapi cross-dependency by moving context handling code to util
+
 **0.73**
    - **[Breaking]** [protobuf go-api] Protobuf protocol itself haven't changed, this only affects people who import carbonzipperpb package directly from this repo. Library now declares most of its structures as non-nullable. This changes API of carbonzipperpb and pb3, now they contain less pointers. That should reduce GC pressure a little bit. Sholdn't affect people who use it over the network.
    - [Improvement] Make connect timeout configurable.

@@ -56,12 +56,6 @@
   revision = "1b76add642e42c6ffba7211ad7b3939ce654526e"
 
 [[projects]]
-  name = "github.com/go-graphite/carbonapi"
-  packages = ["util"]
-  revision = "c97ef18022696e8498a637f4e882fbff6a5da363"
-  version = "0.8.0"
-
-[[projects]]
   name = "github.com/gogo/protobuf"
   packages = ["gogoproto","proto","protoc-gen-gogo/descriptor"]
   revision = "100ba4e885062801d56799d78530b73b178a78f3"
@@ -136,6 +130,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "28909eb8b37e7d2f796805876f013b379f6da0c44cfd43c1470b3df96d5ddfb4"
+  inputs-digest = "3205edcd7eba91dfe002f50735e34a94f620b07f64bd185e39dea077c378cbc2"
   solver-name = "gps-cdcl"
   solver-version = 1

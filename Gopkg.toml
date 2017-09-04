@@ -42,10 +42,6 @@
   name = "github.com/facebookgo/pidfile"
 
 [[constraint]]
-  name = "github.com/go-graphite/carbonapi"
-  version = "^0.8"
-
-[[constraint]]
   name = "github.com/gogo/protobuf"
   version = "0.4.0"
 
