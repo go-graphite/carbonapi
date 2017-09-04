@@ -7,7 +7,6 @@
 # If you are using plain go-carbon or graphite-clickhouse
 # you should set it to URL of go-carbon's carbonserver module
 # or graphite-clickhouse's http url.
-zipper: "http://localhost:8080"
 # Listen address, should always include hostname or ip address and a port.
 listen: "localhost:8081"
 # Max concurrent requests to CarbonZipper
@@ -56,12 +55,6 @@ idleConnections: 10
 pidFile: ""
 # See https://github.com/go-graphite/carbonzipper/blob/master/example.conf#L70-L108 for format explanation
 zipper:
-    listen: ":8080"
-    maxProcs: 0
-    graphite:
-        #  host: "localhost"
-        interval: "60s"
-        # prefix: "carbon.zipper"
     # Number of 100ms buckets to track request distribution in. Used to build
     # 'carbon.zipper.hostname.requests_in_0ms_to_100ms' metric and friends.
     # Requests beyond the last bucket are logged as slow
