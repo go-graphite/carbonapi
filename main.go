@@ -888,7 +888,8 @@ var Config = struct {
 	PidFile         string             `yaml:"pidFile"`
 	SendGlobsAsIs   bool               `yaml:"sendGlobsAsIs"`
 	MaxBatchSize    int                `yaml:"maxBatchSize"`
-	Zipper          realZipper.Config  `yaml:"zipper"`
+	Zipper          string             `yaml:"zipper"`
+	Upstreams       realZipper.Config  `yaml:"upstreams"`
 	ExpireDelaySec  int32              `yaml:"expireDelaySec"`
 
 	queryCache cache.BytesCache
@@ -926,7 +927,7 @@ var Config = struct {
 	defaultTimeZone: time.Local,
 	Logger:          []zapwriter.Config{DefaultLoggerConfig},
 
-	Zipper: realZipper.Config{
+	Upstreams: realZipper.Config{
 		Timeouts: realZipper.Timeouts{
 			Global:       10000 * time.Second,
 			AfterStarted: 2 * time.Second,
@@ -999,10 +1000,20 @@ func main() {
 
 	Config.limiter = newLimiter(Config.Concurency)
 
-	Config.Zipper.PathCache = pathcache.NewPathCache(Config.ExpireDelaySec)
-	Config.Zipper.SearchCache = pathcache.NewPathCache(Config.ExpireDelaySec)
+	if Config.Zipper != "" {
+		logger.Warn("found legacy 'zipper' option, will use it instead of any 'upstreams' specified. This will be removed in future versions!")
 
-	Config.zipper = NewZipper(zipperStats, &Config.Zipper, logger.With(zap.String("handler", "zipper")))
+		Config.Upstreams.Backends = []string{Config.Zipper}
+	}
+
+	if len(Config.Upstreams.Backends) == 0 {
+		logger.Fatal("no backends specified for upstreams!")
+	}
+
+	Config.Upstreams.PathCache = pathcache.NewPathCache(Config.ExpireDelaySec)
+	Config.Upstreams.SearchCache = pathcache.NewPathCache(Config.ExpireDelaySec)
+
+	Config.zipper = NewZipper(zipperStats, &Config.Upstreams, logger.With(zap.String("handler", "zipper")))
 
 	switch Config.Cache.Type {
 	case "memcache":

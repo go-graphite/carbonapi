@@ -14,7 +14,7 @@ Changes
 CHANGELOG
 ---------
 **Master**
- - **[Breaking]** Merge carbonzipper into carbonapi. This **will break** config files. Please see updated example.
+ - [Improvement] Merge carbonzipper into carbonapi. Please migrate to new 'upstreams' in the config file.
  - [Improvement] Make default cache timeout configurable.
  - [Improvement] Add divideSeriesLists (thx. to Oleg Matrokhin)
  - [Improvement] Add groupByNodes (thx to @errx)

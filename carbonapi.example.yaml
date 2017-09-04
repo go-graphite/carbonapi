@@ -54,7 +54,7 @@ graphite:
 idleConnections: 10
 pidFile: ""
 # See https://github.com/go-graphite/carbonzipper/blob/master/example.conf#L70-L108 for format explanation
-zipper:
+upstreams:
     # Number of 100ms buckets to track request distribution in. Used to build
     # 'carbon.zipper.hostname.requests_in_0ms_to_100ms' metric and friends.
     # Requests beyond the last bucket are logged as slow
