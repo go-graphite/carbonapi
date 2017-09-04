@@ -24,7 +24,7 @@ type zipper struct {
 	statsSender func(*realZipper.Stats)
 }
 
-func NewZipper(sender func(*realZipper.Stats), config *realZipper.Config, logger *zap.Logger) *zipper {
+func newZipper(sender func(*realZipper.Stats), config *realZipper.Config, logger *zap.Logger) *zipper {
 	z := &zipper{
 		z:           realZipper.NewZipper(sender, config),
 		logger:      logger,
