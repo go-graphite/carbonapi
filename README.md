@@ -44,10 +44,10 @@ You need to have Go >= 1.8 to build carbonapi from sources. Building with Go 1.7
 CarbonAPI uses protobuf-based protocol to talk with underlying storages. For current version the compatibility list is:
 
 1. [carbonzipper](https://github.com/go-graphite/carbonzipper) >= 0.50
-2. [go-carbon](https://github.com/lomik/go-carbon) >= 0.9.0 (Note: you need to enable carbonserver in go-carbon). Limitations: /info handler won't work properly
-3. [carbonserver](https://github.com/grobian/carbonserver)@master (Note: you should probably switch to go-carbon in that case). Limitations: /info handler won't work properly
-4. [graphite-clickhouse](https://github.com/lomik/graphite-clickhouse) any. That's alternative storage that doesn't use Whisper. Limitations: /info handler won't work properly.
-5. [carbonapi](https://github.com/go-graphite/carbonapi) >= 0.5. Note: we are not sure if there is any point in running carbonapi over carbonapi at this moment.
+2. [go-carbon](https://github.com/lomik/go-carbon) >= 0.9.0 (Note: you need to enable carbonserver in go-carbon).
+3. [carbonserver](https://github.com/grobian/carbonserver)@master (Note: you should probably switch to go-carbon in that case).
+4. [graphite-clickhouse](https://github.com/lomik/graphite-clickhouse) any. That's alternative storage that doesn't use Whisper.
+5. [carbonapi](https://github.com/go-graphite/carbonapi) >= 0.5. Note: starting from carbonapi 3596e9647611e1f833a911d663747271623ec003 (post 0.8) carbonapi can be used as a zipper's replacement
 
 OSX Build Notes
 ---------------
