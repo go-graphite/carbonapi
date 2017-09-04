@@ -43,7 +43,7 @@
 
 [[constraint]]
   name = "github.com/go-graphite/carbonapi"
-  version = "0.8.0"
+  version = "^0.8"
 
 [[constraint]]
   name = "github.com/gogo/protobuf"
