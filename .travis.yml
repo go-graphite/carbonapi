@@ -15,6 +15,6 @@ matrix:
   include:
     - go: 1.x
       env: BUILD_PACKAGES=true
-    - go: 1.7.x
     - go: 1.8.x
+    - go: 1.9
     - go: master

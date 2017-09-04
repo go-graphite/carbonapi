@@ -39,6 +39,8 @@ Request data will be stored in memory (default) or in memcache.
 Requirements
 ------------
 
+You need to have Go >= 1.8 to build carbonapi from sources. Building with Go 1.7 is not supported for versions >0.8.0
+
 CarbonAPI uses protobuf-based protocol to talk with underlying storages. For current version the compatibility list is:
 
 1. [carbonzipper](https://github.com/go-graphite/carbonzipper) >= 0.50

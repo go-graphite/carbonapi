@@ -14,7 +14,20 @@ Changes
 CHANGELOG
 ---------
 **Master**
+ - **[Breaking]** Merge carbonzipper into carbonapi. This **will break** config files. Please see updated example.
  - [Improvement] Make default cache timeout configurable.
+ - [Improvement] Add divideSeriesLists (thx. to Oleg Matrokhin)
+ - [Improvement] Add groupByNodes (thx to @errx)
+ - [Improvement] Add cumulative(thx to Oleg Matrokhin)
+ - [Improvement] Add diffSeriesLists and multiplySeriesLists functions (works the same way as divideSeriesLists vs divideSeries)
+ - [Improvement] Allow applyByNode to generate new targets
+ - [Improvement] Allow diffSeries to substract series with different Steps
+ - [Imprvoement] Make cache timeouts configurable
+ - [Improvement] Make batch size configurable for sendGlobAsIs
+ - [Fix] Make asPercent graphite-compatible #213
+ - [Fix] Fix summarize for cases when bucketSize < stepTime
+ - [Fix] Fixed #90 - carbonapi shouldn't fail if one of the series doesn't exist
+ -
 
 **0.8.0**
  - **[Breaking]** Most of the configuration options moved to a config file

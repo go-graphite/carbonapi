@@ -10,7 +10,6 @@ import (
 	"log"
 	"net/http"
 	_ "net/http/pprof"
-	"net/url"
 	"os"
 	"runtime"
 	"strconv"
@@ -25,12 +24,14 @@ import (
 	"github.com/go-graphite/carbonzipper/cache"
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 	"github.com/go-graphite/carbonzipper/mstats"
+	"github.com/go-graphite/carbonzipper/pathcache"
 
 	"github.com/facebookgo/grace/gracehttp"
 	"github.com/facebookgo/pidfile"
 	"github.com/gorilla/handlers"
 	"github.com/peterbourgon/g2g"
 
+	realZipper "github.com/go-graphite/carbonzipper/zipper"
 	"github.com/lomik/zapwriter"
 	"github.com/satori/go.uuid"
 	"go.uber.org/zap"
@@ -61,10 +62,53 @@ var Metrics = struct {
 	RequestCacheMisses:    expvar.NewInt("request_cache_misses"),
 	RenderCacheOverheadNS: expvar.NewInt("render_cache_overhead_ns"),
 
-	FindRequests:        expvar.NewInt("find_requests"),
+	FindRequests: expvar.NewInt("find_requests"),
+
 	FindCacheHits:       expvar.NewInt("find_cache_hits"),
 	FindCacheMisses:     expvar.NewInt("find_cache_misses"),
 	FindCacheOverheadNS: expvar.NewInt("find_cache_overhead_ns"),
+}
+
+var ZipperMetrics = struct {
+	FindRequests *expvar.Int
+	FindErrors   *expvar.Int
+
+	SearchRequests *expvar.Int
+
+	RenderRequests *expvar.Int
+	RenderErrors   *expvar.Int
+
+	InfoRequests *expvar.Int
+	InfoErrors   *expvar.Int
+
+	Timeouts *expvar.Int
+
+	CacheSize         expvar.Func
+	CacheItems        expvar.Func
+	CacheMisses       *expvar.Int
+	CacheHits         *expvar.Int
+	SearchCacheSize   expvar.Func
+	SearchCacheItems  expvar.Func
+	SearchCacheMisses *expvar.Int
+	SearchCacheHits   *expvar.Int
+}{
+	FindRequests: expvar.NewInt("zipper_find_requests"),
+	FindErrors:   expvar.NewInt("zipper_find_errors"),
+
+	SearchRequests: expvar.NewInt("zipper_search_requests"),
+
+	RenderRequests: expvar.NewInt("zipper_render_requests"),
+	RenderErrors:   expvar.NewInt("zipper_render_errors"),
+
+	InfoRequests: expvar.NewInt("zipper_info_requests"),
+	InfoErrors:   expvar.NewInt("zipper_info_errors"),
+
+	Timeouts: expvar.NewInt("zipper_timeouts"),
+
+	CacheHits:         expvar.NewInt("zipper_cache_hits"),
+	CacheMisses:       expvar.NewInt("zipper_cache_misses"),
+	SearchCacheHits:   expvar.NewInt("zipper_search_cache_hits"),
+	SearchCacheMisses: expvar.NewInt("zipper_search_cache_misses"),
 }
 
 // BuildVersion is provided to be overridden at build time. Eg. go build -ldflags -X 'main.BuildVersion=...'
@@ -717,7 +761,7 @@ func findTreejson(globs pb.GlobResponse) ([]byte, error) {
 	return b.Bytes(), err
 }
 
-func passthroughHandler(w http.ResponseWriter, r *http.Request) {
+func infoHandler(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
 	uuid := uuid.NewV4()
 	// TODO: Migrate to context.WithTimeout
@@ -727,26 +771,52 @@ func passthroughHandler(w http.ResponseWriter, r *http.Request) {
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
 	accessLogger := zapwriter.Logger("access").With(
 		zap.String("username", username),
-		zap.String("handler", "passtrhough"),
+		zap.String("handler", "info"),
 		zap.String("carbonapi_uuid", uuid.String()),
 		zap.String("peer_ip", srcIP),
 		zap.String("peer_port", srcPort),
 		zap.String("host", r.Host),
 		zap.String("referer", r.Referer()),
 	)
-	var data []byte
+	var data map[string]pb.InfoResponse
 	var err error
 
-	if data, err = Config.zipper.Passthrough(ctx, r.URL.RequestURI()); err != nil {
+	query := r.FormValue("target")
+	if query == "" {
 		accessLogger.Info("request failed",
 			zap.String("uri", r.RequestURI),
 			zap.Duration("runtime", time.Since(t0)),
 			zap.Int("http_code", http.StatusBadRequest),
+			zap.String("reason", "no target specified"),
 		)
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
-	w.Write(data)
+
+	if data, err = Config.zipper.Info(ctx, query); err != nil {
+		accessLogger.Info("request failed",
+			zap.String("uri", r.RequestURI),
+			zap.Duration("runtime", time.Since(t0)),
+			zap.String("reason", err.Error()),
+			zap.Int("http_code", http.StatusInternalServerError),
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	j, err := json.Marshal(data)
+	if err != nil {
+		accessLogger.Info("request failed",
+			zap.String("uri", r.RequestURI),
+			zap.Duration("runtime", time.Since(t0)),
+			zap.String("reason", err.Error()),
+			zap.Int("http_code", http.StatusInternalServerError),
+		)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(j)
 	accessLogger.Info("request served",
 		zap.String("uri", r.RequestURI),
 		zap.Duration("runtime", time.Since(t0)),
@@ -808,7 +878,6 @@ type graphiteConfig struct {
 
 var Config = struct {
 	Logger          []zapwriter.Config `yaml:"logger"`
-	ZipperUrl       string             `yaml:"zipper"`
 	Listen          string             `yaml:"listen"`
 	Concurency      int                `yaml:"concurency"`
 	Cache           cacheConfig        `yaml:"cache"`
@@ -819,6 +888,8 @@ var Config = struct {
 	PidFile         string             `yaml:"pidFile"`
 	SendGlobsAsIs   bool               `yaml:"sendGlobsAsIs"`
 	MaxBatchSize    int                `yaml:"maxBatchSize"`
+	Zipper          realZipper.Config  `yaml:"zipper"`
+	ExpireDelaySec  int32              `yaml:"expireDelaySec"`
 
 	queryCache cache.BytesCache
 	findCache  cache.BytesCache
@@ -826,12 +897,11 @@ var Config = struct {
 	defaultTimeZone *time.Location
 
 	// Zipper is API entry to carbonzipper
-	zipper zipper
+	zipper *zipper
 
 	// Limiter limits concurrent zipper requests
 	limiter limiter
 }{
-	ZipperUrl:     "http://localhost:8080",
 	Listen:        "[::]:8081",
 	Concurency:    20,
 	SendGlobsAsIs: false,
@@ -855,6 +925,30 @@ var Config = struct {
 
 	defaultTimeZone: time.Local,
 	Logger:          []zapwriter.Config{DefaultLoggerConfig},
+
+	Zipper: realZipper.Config{
+		Timeouts: realZipper.Timeouts{
+			Global:       10000 * time.Second,
+			AfterStarted: 2 * time.Second,
+			Connect:      200 * time.Millisecond,
+		},
+		KeepAliveInterval: 30 * time.Second,
+
+		MaxIdleConnsPerHost: 100,
+	},
+	ExpireDelaySec: 10 * 60,
+}
+
+func zipperStats(stats *realZipper.Stats) {
+	ZipperMetrics.Timeouts.Add(stats.Timeouts)
+	ZipperMetrics.FindErrors.Add(stats.FindErrors)
+	ZipperMetrics.RenderErrors.Add(stats.RenderErrors)
+	ZipperMetrics.InfoErrors.Add(stats.InfoErrors)
+	ZipperMetrics.SearchRequests.Add(stats.SearchRequests)
+	ZipperMetrics.SearchCacheHits.Add(stats.SearchCacheHits)
+	ZipperMetrics.SearchCacheMisses.Add(stats.SearchCacheMisses)
+	ZipperMetrics.CacheMisses.Add(stats.CacheMisses)
+	ZipperMetrics.CacheHits.Add(stats.CacheHits)
 }
 
 func main() {
@@ -905,18 +999,10 @@ func main() {
 
 	Config.limiter = newLimiter(Config.Concurency)
 
-	if _, err := url.Parse(Config.ZipperUrl); err != nil {
-		logger.Fatal("unable to parze zipper", zap.Error(err))
-	}
+	Config.Zipper.PathCache = pathcache.NewPathCache(Config.ExpireDelaySec)
+	Config.Zipper.SearchCache = pathcache.NewPathCache(Config.ExpireDelaySec)
 
-	Config.zipper = zipper{
-		z: Config.ZipperUrl,
-		client: &http.Client{
-			Transport: &http.Transport{
-				MaxIdleConnsPerHost: Config.IdleConnections,
-			},
-		},
-	}
+	Config.zipper = NewZipper(zipperStats, &Config.Zipper, logger.With(zap.String("handler", "zipper")))
 
 	switch Config.Cache.Type {
 	case "memcache":
@@ -1045,6 +1131,29 @@ func main() {
 			graphite.Register(fmt.Sprintf("%s.%s.cache_items", Config.Graphite.Prefix, hostname), Metrics.CacheItems)
 		}
 
+		graphite.Register(fmt.Sprintf("%s.%s.zipper.find_requests", Config.Graphite.Prefix, hostname), ZipperMetrics.FindRequests)
+		graphite.Register(fmt.Sprintf("%s.%s.zipper.find_errors", Config.Graphite.Prefix, hostname), ZipperMetrics.FindErrors)
+
+		graphite.Register(fmt.Sprintf("%s.%s.zipper.render_requests", Config.Graphite.Prefix, hostname), ZipperMetrics.RenderRequests)
+		graphite.Register(fmt.Sprintf("%s.%s.zipper.render_errors", Config.Graphite.Prefix, hostname), ZipperMetrics.RenderErrors)
+
+		graphite.Register(fmt.Sprintf("%s.%s.zipper.info_requests", Config.Graphite.Prefix, hostname), ZipperMetrics.InfoRequests)
+		graphite.Register(fmt.Sprintf("%s.%s.zipper.info_errors", Config.Graphite.Prefix, hostname), ZipperMetrics.InfoErrors)
+
+		graphite.Register(fmt.Sprintf("%s.%s.zipper.timeouts", Config.Graphite.Prefix, hostname), ZipperMetrics.Timeouts)
+
+		graphite.Register(fmt.Sprintf("%s.%s.zipper.cache_size", Config.Graphite.Prefix, hostname), ZipperMetrics.CacheSize)
+		graphite.Register(fmt.Sprintf("%s.%s.zipper.cache_items", Config.Graphite.Prefix, hostname), ZipperMetrics.CacheItems)
+
+		graphite.Register(fmt.Sprintf("%s.%s.zipper.search_cache_size", Config.Graphite.Prefix, hostname), ZipperMetrics.SearchCacheSize)
+		graphite.Register(fmt.Sprintf("%s.%s.zipper.search_cache_items", Config.Graphite.Prefix, hostname), ZipperMetrics.SearchCacheItems)
+
+		graphite.Register(fmt.Sprintf("%s.%s.zipper.cache_hits", Config.Graphite.Prefix, hostname), ZipperMetrics.CacheHits)
+		graphite.Register(fmt.Sprintf("%s.%s.zipper.cache_misses", Config.Graphite.Prefix, hostname), ZipperMetrics.CacheMisses)
+
+		graphite.Register(fmt.Sprintf("%s.%s.zipper.search_cache_hits", Config.Graphite.Prefix, hostname), ZipperMetrics.SearchCacheHits)
+		graphite.Register(fmt.Sprintf("%s.%s.zipper.search_cache_misses", Config.Graphite.Prefix, hostname), ZipperMetrics.SearchCacheMisses)
+
 		go mstats.Start(Config.Graphite.Interval)
 
 		graphite.Register(fmt.Sprintf("%s.%s.alloc", Config.Graphite.Prefix, hostname), &mstats.Alloc)
@@ -1071,8 +1180,8 @@ func main() {
 	r.HandleFunc("/metrics/find/", findHandler)
 	r.HandleFunc("/metrics/find", findHandler)
 
-	r.HandleFunc("/info/", passthroughHandler)
-	r.HandleFunc("/info", passthroughHandler)
+	r.HandleFunc("/info/", infoHandler)
+	r.HandleFunc("/info", infoHandler)
 
 	r.HandleFunc("/lb_check", lbcheckHandler)
 	r.HandleFunc("/", usageHandler)
