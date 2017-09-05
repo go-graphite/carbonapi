@@ -18,21 +18,21 @@ import (
 
 	"gopkg.in/yaml.v2"
 
+	"github.com/facebookgo/grace/gracehttp"
+	"github.com/facebookgo/pidfile"
 	"github.com/go-graphite/carbonapi/date"
 	"github.com/go-graphite/carbonapi/expr"
 	"github.com/go-graphite/carbonapi/util"
 	"github.com/go-graphite/carbonzipper/cache"
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
+	"github.com/go-graphite/carbonzipper/intervalset"
 	"github.com/go-graphite/carbonzipper/mstats"
 	"github.com/go-graphite/carbonzipper/pathcache"
-
-	"github.com/facebookgo/grace/gracehttp"
-	"github.com/facebookgo/pidfile"
-	"github.com/gorilla/handlers"
-	"github.com/peterbourgon/g2g"
-
 	realZipper "github.com/go-graphite/carbonzipper/zipper"
+	"github.com/gorilla/handlers"
+	pickle "github.com/lomik/og-rek"
 	"github.com/lomik/zapwriter"
+	"github.com/peterbourgon/g2g"
 	"github.com/satori/go.uuid"
 	"go.uber.org/zap"
 )
@@ -641,6 +641,35 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	case protobufFormat, protobuf3Format:
 		b, err = globs.Marshal()
 		format = protobufFormat
+	case "", pickleFormat:
+		var result []map[string]interface{}
+
+		now := int32(time.Now().Unix() + 60)
+		for _, metric := range globs.Matches {
+			// Tell graphite-web that we have everything
+			var mm map[string]interface{}
+			if config.GraphiteWeb09Compatibility {
+				// graphite-web 0.9.x
+				mm = map[string]interface{}{
+					// graphite-web 0.9.x
+					"metric_path": metric.Path,
+					"isLeaf":      metric.IsLeaf,
+				}
+			} else {
+				// graphite-web 1.0
+				interval := &intervalset.IntervalSet{Start: 0, End: now}
+				mm = map[string]interface{}{
+					"is_leaf":   metric.IsLeaf,
+					"path":      metric.Path,
+					"intervals": interval,
+				}
+			}
+			result = append(result, mm)
+		}
+
+		p := bytes.NewBuffer(b)
+		pEnc := pickle.NewEncoder(p)
+		err = pEnc.Encode(result)
 	}
 
 	if err != nil {
@@ -826,7 +855,6 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	switch format {
 	case jsonFormat:
 		b, err = json.Marshal(data)
-		format = jsonFormat
 	case protobufFormat, protobuf3Format:
 		err = fmt.Errorf("Not implemented yet")
 	}
@@ -903,20 +931,21 @@ type graphiteConfig struct {
 }
 
 var config = struct {
-	Logger          []zapwriter.Config `yaml:"logger"`
-	Listen          string             `yaml:"listen"`
-	Concurency      int                `yaml:"concurency"`
-	Cache           cacheConfig        `yaml:"cache"`
-	Cpus            int                `yaml:"cpus"`
-	TimezoneString  string             `yaml:"tz"`
-	Graphite        graphiteConfig     `yaml:"graphite"`
-	IdleConnections int                `yaml:"idleConnections"`
-	PidFile         string             `yaml:"pidFile"`
-	SendGlobsAsIs   bool               `yaml:"sendGlobsAsIs"`
-	MaxBatchSize    int                `yaml:"maxBatchSize"`
-	Zipper          string             `yaml:"zipper"`
-	Upstreams       realZipper.Config  `yaml:"upstreams"`
-	ExpireDelaySec  int32              `yaml:"expireDelaySec"`
+	Logger                     []zapwriter.Config `yaml:"logger"`
+	Listen                     string             `yaml:"listen"`
+	Concurency                 int                `yaml:"concurency"`
+	Cache                      cacheConfig        `yaml:"cache"`
+	Cpus                       int                `yaml:"cpus"`
+	TimezoneString             string             `yaml:"tz"`
+	Graphite                   graphiteConfig     `yaml:"graphite"`
+	IdleConnections            int                `yaml:"idleConnections"`
+	PidFile                    string             `yaml:"pidFile"`
+	SendGlobsAsIs              bool               `yaml:"sendGlobsAsIs"`
+	MaxBatchSize               int                `yaml:"maxBatchSize"`
+	Zipper                     string             `yaml:"zipper"`
+	Upstreams                  realZipper.Config  `yaml:"upstreams"`
+	ExpireDelaySec             int32              `yaml:"expireDelaySec"`
+	GraphiteWeb09Compatibility bool               `yaml:"graphite09compat"`
 
 	queryCache cache.BytesCache
 	findCache  cache.BytesCache
@@ -963,7 +992,8 @@ var config = struct {
 
 		MaxIdleConnsPerHost: 100,
 	},
-	ExpireDelaySec: 10 * 60,
+	ExpireDelaySec:             10 * 60,
+	GraphiteWeb09Compatibility: false,
 }
 
 func zipperStats(stats *realZipper.Stats) {
