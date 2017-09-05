@@ -95,12 +95,13 @@ var zipperMetrics = struct {
 
 	Timeouts *expvar.Int
 
-	CacheSize         expvar.Func
-	CacheItems        expvar.Func
+	CacheSize        expvar.Func
+	CacheItems       expvar.Func
+	SearchCacheSize  expvar.Func
+	SearchCacheItems expvar.Func
+
 	CacheMisses       *expvar.Int
 	CacheHits         *expvar.Int
-	SearchCacheSize   expvar.Func
-	SearchCacheItems  expvar.Func
 	SearchCacheMisses *expvar.Int
 	SearchCacheHits   *expvar.Int
 }{
@@ -1112,6 +1113,18 @@ func main() {
 			return qcache.Items()
 		})
 		expvar.Publish("cache_items", apiMetrics.CacheItems)
+
+		zipperMetrics.CacheSize = expvar.Func(func() interface{} { return config.Upstreams.PathCache.ECSize() })
+		expvar.Publish("cacheSize", zipperMetrics.CacheSize)
+
+		zipperMetrics.CacheItems = expvar.Func(func() interface{} { return config.Upstreams.PathCache.ECItems() })
+		expvar.Publish("cacheItems", zipperMetrics.CacheItems)
+
+		zipperMetrics.SearchCacheSize = expvar.Func(func() interface{} { return config.Upstreams.SearchCache.ECSize() })
+		expvar.Publish("searchCacheSize", zipperMetrics.SearchCacheSize)
+
+		zipperMetrics.SearchCacheItems = expvar.Func(func() interface{} { return config.Upstreams.SearchCache.ECItems() })
+		expvar.Publish("searchCacheItems", zipperMetrics.SearchCacheItems)
 
 	case "null":
 		// defaults
