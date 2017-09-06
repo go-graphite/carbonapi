@@ -26,7 +26,7 @@ Autobuilds (master, might be unstable): [Autobuild repo](https://packagecloud.io
 General information
 -------------------
 
-The only required parameter is the path to a config file. For an example see `carbonapi.example.yaml`
+Carbonzipper can be configured by environment variables or by config file. For an example see `carbonapi.example.yaml`
 
 `$ ./carbonapi -config /etc/carbonapi.yaml`
 
@@ -34,6 +34,63 @@ Request metrics will be dumped to graphite if coresponding config options are se
 or if the GRAPHITEHOST/GRAPHITEPORT environment variables are found.
 
 Request data will be stored in memory (default) or in memcache.
+
+## Configuration by environment variables
+
+Every parameter in config file are mapped to environment variable. I.E.
+
+```yaml
+concurency: 20
+cache:
+   # Type of caching. Valid: "mem", "memcache", "null"
+   type: "mem"
+upstreams:
+    backends:
+        - "http://10.0.0.1:8080"
+        - "http://10.0.0.2:8080"
+```
+That config can be replaced by
+
+```bash
+CONCURENCY=20
+CACHE_TYPE=mem
+UPSTREAMS_BACKENDS="http://10.0.0.1:8080 http://10.0.0.2:8080"
+```
+
+You should be only aware of logging: because carbonapi support a list of logger, env variables will replace
+only first logger. 
+
+If you apply variable `LOGGER_FILE=stdout` to config:
+
+```yaml
+logger:
+    - logger: ""
+      file: "stderr"
+      level: "debug"
+      encoding: "console"
+      encodingTime: "iso8601"
+      encodingDuration: "seconds"
+    - logger: ""
+      file: "carbonapi.log"
+      level: "info"
+      encoding: "json"
+```
+
+it will be equal to config:
+
+```yaml
+logger:
+    - logger: ""
+      file: "stdout" # Changed only here
+      level: "debug"
+      encoding: "console"
+      encodingTime: "iso8601"
+      encodingDuration: "seconds"
+    - logger: ""
+      file: "carbonapi.log" # Not changed
+      level: "info"
+      encoding: "json"
+```
 
 
 Requirements

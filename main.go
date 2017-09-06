@@ -6,7 +6,6 @@ import (
 	"expvar"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -16,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/yaml.v2"
+	"io/ioutil"
 
 	"github.com/facebookgo/grace/gracehttp"
 	"github.com/facebookgo/pidfile"
@@ -34,6 +33,7 @@ import (
 	"github.com/lomik/zapwriter"
 	"github.com/peterbourgon/g2g"
 	"github.com/satori/go.uuid"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
@@ -1019,29 +1019,83 @@ func main() {
 	}
 	logger := zapwriter.Logger("main")
 
-	configPath := flag.String("config", "carbonapi.yaml", "Path to the `config file`.")
+	configPath := flag.String("config", "", "Path to the `config file`.")
 
 	flag.Parse()
 
-	if *configPath == "" {
-		logger.Fatal("Can't run without a config file")
+	viper.SetConfigType("YAML")
+
+	if *configPath != "" {
+		b, err := ioutil.ReadFile(*configPath)
+		if err != nil {
+			logger.Fatal("error reading config file",
+				zap.String("config_path", *configPath),
+				zap.Error(err),
+			)
+		}
+
+		viper.ReadConfig(bytes.NewBuffer(b))
+		if err != nil {
+			logger.Fatal("failed to parse config",
+				zap.String("config_path", *configPath),
+				zap.Error(err),
+			)
+		}
 	}
 
-	bytes, err := ioutil.ReadFile(*configPath)
-	if err != nil {
-		logger.Fatal("error reading config file",
-			zap.String("config_path", *configPath),
-			zap.Error(err),
-		)
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.SetDefault("listen", "localhost:8081")
+	viper.SetDefault("concurency", 20)
+	viper.SetDefault("cache.type", "mem")
+	viper.SetDefault("cache.size_mb", 0)
+	viper.SetDefault("cache.defaultTimeoutSec", 60)
+	viper.SetDefault("cache.memcachedServers", []string{})
+	viper.SetDefault("cpus", 0)
+	viper.SetDefault("tz", "")
+	viper.SetDefault("sendGlobsAsIs", false)
+	viper.SetDefault("maxBatchSize", 100)
+	viper.SetDefault("graphite.host", "")
+	viper.SetDefault("graphite.interval", "60s")
+	viper.SetDefault("graphite.prefix", "carbon.api")
+	viper.SetDefault("graphite.pattern", "{prefix}.{fqdn}")
+	viper.SetDefault("idleConnections", 10)
+	viper.SetDefault("pidFile", "")
+	viper.SetDefault("upstreams.buckets", 10)
+	viper.SetDefault("upstreams.timeouts.global", "10s")
+	viper.SetDefault("upstreams.timeouts.afterStarted", "2s")
+	viper.SetDefault("upstreams.timeouts.connect", "200ms")
+	viper.SetDefault("upstreams.concurrencyLimit", 0)
+	viper.SetDefault("upstreams.keepAliveInterval", "30s")
+	viper.SetDefault("upstreams.maxIdleConnsPerHost", 100)
+	viper.SetDefault("upstreams.backends", []string{"http://127.0.0.1:8080"})
+	viper.SetDefault("upstreams.carbonsearch.backend", "")
+	viper.SetDefault("upstreams.carbonsearch.prefix", "virt.v1.*")
+	viper.SetDefault("upstreams.graphite09compat", false)
+	viper.SetDefault("expireDelaySec", 10)
+	viper.SetDefault("logger", map[string]string{})
+	viper.AutomaticEnv()
+	viper.Unmarshal(&config)
+	config.Cache.MemcachedServers = viper.GetStringSlice("cache.memcachedServers")
+	if n := viper.GetString("logger.logger"); n != "" {
+		config.Logger[0].Logger = n
+	}
+	if n := viper.GetString("logger.file"); n != "" {
+		config.Logger[0].File = n
+	}
+	if n := viper.GetString("logger.level"); n != "" {
+		config.Logger[0].Level = n
+	}
+	if n := viper.GetString("logger.encoding"); n != "" {
+		config.Logger[0].Encoding = n
+	}
+	if n := viper.GetString("logger.encodingtime"); n != "" {
+		config.Logger[0].EncodingTime = n
+	}
+	if n := viper.GetString("logger.encodingduration"); n != "" {
+		config.Logger[0].EncodingDuration = n
 	}
 
-	err = yaml.Unmarshal(bytes, &config)
-	if err != nil {
-		logger.Fatal("failed to parse config",
-			zap.String("config_path", *configPath),
-			zap.Error(err),
-		)
-	}
+	logger.Fatal("config", zap.Any("configuration", config))
 
 	err = zapwriter.ApplyConfig(config.Logger)
 	if err != nil {
