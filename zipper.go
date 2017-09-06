@@ -13,10 +13,6 @@ import (
 
 var errNoMetrics = errors.New("no metrics")
 
-type unmarshaler interface {
-	Unmarshal([]byte) error
-}
-
 type zipper struct {
 	z *realZipper.Zipper
 
