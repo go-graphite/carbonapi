@@ -1095,8 +1095,6 @@ func main() {
 		config.Logger[0].EncodingDuration = n
 	}
 
-	logger.Fatal("config", zap.Any("configuration", config))
-
 	err = zapwriter.ApplyConfig(config.Logger)
 	if err != nil {
 		logger.Fatal("failed to initialize logger with requested configuration",
