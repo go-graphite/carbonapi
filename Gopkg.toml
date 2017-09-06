@@ -55,7 +55,7 @@
 
 [[constraint]]
   name = "github.com/go-graphite/carbonzipper"
-  version = "^0.73"
+  version = "0.73.2"
 
 [[constraint]]
   branch = "master"
@@ -67,7 +67,7 @@
 
 [[constraint]]
   branch = "master"
-  name = "github.com/kisielk/og-rek"
+  name = "github.com/lomik/og-rek"
 
 [[constraint]]
   branch = "master"

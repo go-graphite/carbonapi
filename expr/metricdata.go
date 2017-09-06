@@ -7,7 +7,7 @@ import (
 	"time"
 
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
-	pickle "github.com/kisielk/og-rek"
+	pickle "github.com/lomik/og-rek"
 )
 
 type MetricData struct {
