@@ -50,6 +50,10 @@ graphite:
     host: ""
     interval: "60s"
     prefix: "carbon.api"
+    # rules on how to construct metric name. For now only {prefix} and {fqdn} is supported.
+    # {prefix} will be replaced with the content of {prefix}
+    # {fqdn} will be repalced with fqdn
+    pattern: "{prefix}.{fqdn}"
 # Maximium idle connections to carbonzipper
 idleConnections: 10
 pidFile: ""

@@ -926,6 +926,7 @@ type cacheConfig struct {
 }
 
 type graphiteConfig struct {
+	Pattern  string
 	Host     string
 	Interval time.Duration
 	Prefix   string
@@ -969,6 +970,7 @@ var config = struct {
 	},
 	TimezoneString: "",
 	Graphite: graphiteConfig{
+		Pattern:  "{prefix}.{fqdn}",
 		Host:     "",
 		Interval: 60 * time.Second,
 		Prefix:   "carbon.api",
@@ -1190,56 +1192,62 @@ func main() {
 		hostname, _ := os.Hostname()
 		hostname = strings.Replace(hostname, ".", "_", -1)
 
-		graphite.Register(fmt.Sprintf("%s.%s.requests", config.Graphite.Prefix, hostname), apiMetrics.Requests)
-		graphite.Register(fmt.Sprintf("%s.%s.request_cache_hits", config.Graphite.Prefix, hostname), apiMetrics.RequestCacheHits)
-		graphite.Register(fmt.Sprintf("%s.%s.request_cache_misses", config.Graphite.Prefix, hostname), apiMetrics.RequestCacheMisses)
-		graphite.Register(fmt.Sprintf("%s.%s.request_cache_overhead_ns", config.Graphite.Prefix, hostname), apiMetrics.RenderCacheOverheadNS)
+		prefix := config.Graphite.Prefix
 
-		graphite.Register(fmt.Sprintf("%s.%s.find_requests", config.Graphite.Prefix, hostname), apiMetrics.FindRequests)
-		graphite.Register(fmt.Sprintf("%s.%s.find_cache_hits", config.Graphite.Prefix, hostname), apiMetrics.FindCacheHits)
-		graphite.Register(fmt.Sprintf("%s.%s.find_cache_misses", config.Graphite.Prefix, hostname), apiMetrics.FindCacheMisses)
-		graphite.Register(fmt.Sprintf("%s.%s.find_cache_overhead_ns", config.Graphite.Prefix, hostname), apiMetrics.FindCacheOverheadNS)
+		pattern := config.Graphite.Pattern
+		pattern = strings.Replace(pattern, "{prefix}", prefix, -1)
+		pattern = strings.Replace(pattern, "{fqdn}", hostname, -1)
 
-		graphite.Register(fmt.Sprintf("%s.%s.render_requests", config.Graphite.Prefix, hostname), apiMetrics.RenderRequests)
+		graphite.Register(fmt.Sprintf("%s.requests", pattern), apiMetrics.Requests)
+		graphite.Register(fmt.Sprintf("%s.request_cache_hits", pattern), apiMetrics.RequestCacheHits)
+		graphite.Register(fmt.Sprintf("%s.request_cache_misses", pattern), apiMetrics.RequestCacheMisses)
+		graphite.Register(fmt.Sprintf("%s.request_cache_overhead_ns", pattern), apiMetrics.RenderCacheOverheadNS)
+
+		graphite.Register(fmt.Sprintf("%s.find_requests", pattern), apiMetrics.FindRequests)
+		graphite.Register(fmt.Sprintf("%s.find_cache_hits", pattern), apiMetrics.FindCacheHits)
+		graphite.Register(fmt.Sprintf("%s.find_cache_misses", pattern), apiMetrics.FindCacheMisses)
+		graphite.Register(fmt.Sprintf("%s.find_cache_overhead_ns", pattern), apiMetrics.FindCacheOverheadNS)
+
+		graphite.Register(fmt.Sprintf("%s.render_requests", pattern), apiMetrics.RenderRequests)
 
 		if apiMetrics.MemcacheTimeouts != nil {
-			graphite.Register(fmt.Sprintf("%s.%s.memcache_timeouts", config.Graphite.Prefix, hostname), apiMetrics.MemcacheTimeouts)
+			graphite.Register(fmt.Sprintf("%s.memcache_timeouts", pattern), apiMetrics.MemcacheTimeouts)
 		}
 
 		if apiMetrics.CacheSize != nil {
-			graphite.Register(fmt.Sprintf("%s.%s.cache_size", config.Graphite.Prefix, hostname), apiMetrics.CacheSize)
-			graphite.Register(fmt.Sprintf("%s.%s.cache_items", config.Graphite.Prefix, hostname), apiMetrics.CacheItems)
+			graphite.Register(fmt.Sprintf("%s.cache_size", pattern), apiMetrics.CacheSize)
+			graphite.Register(fmt.Sprintf("%s.cache_items", pattern), apiMetrics.CacheItems)
 		}
 
-		graphite.Register(fmt.Sprintf("%s.%s.zipper.find_requests", config.Graphite.Prefix, hostname), zipperMetrics.FindRequests)
-		graphite.Register(fmt.Sprintf("%s.%s.zipper.find_errors", config.Graphite.Prefix, hostname), zipperMetrics.FindErrors)
+		graphite.Register(fmt.Sprintf("%s.zipper.find_requests", pattern), zipperMetrics.FindRequests)
+		graphite.Register(fmt.Sprintf("%s.zipper.find_errors", pattern), zipperMetrics.FindErrors)
 
-		graphite.Register(fmt.Sprintf("%s.%s.zipper.render_requests", config.Graphite.Prefix, hostname), zipperMetrics.RenderRequests)
-		graphite.Register(fmt.Sprintf("%s.%s.zipper.render_errors", config.Graphite.Prefix, hostname), zipperMetrics.RenderErrors)
+		graphite.Register(fmt.Sprintf("%s.zipper.render_requests", pattern), zipperMetrics.RenderRequests)
+		graphite.Register(fmt.Sprintf("%s.zipper.render_errors", pattern), zipperMetrics.RenderErrors)
 
-		graphite.Register(fmt.Sprintf("%s.%s.zipper.info_requests", config.Graphite.Prefix, hostname), zipperMetrics.InfoRequests)
-		graphite.Register(fmt.Sprintf("%s.%s.zipper.info_errors", config.Graphite.Prefix, hostname), zipperMetrics.InfoErrors)
+		graphite.Register(fmt.Sprintf("%s.zipper.info_requests", pattern), zipperMetrics.InfoRequests)
+		graphite.Register(fmt.Sprintf("%s.zipper.info_errors", pattern), zipperMetrics.InfoErrors)
 
-		graphite.Register(fmt.Sprintf("%s.%s.zipper.timeouts", config.Graphite.Prefix, hostname), zipperMetrics.Timeouts)
+		graphite.Register(fmt.Sprintf("%s.zipper.timeouts", pattern), zipperMetrics.Timeouts)
 
-		graphite.Register(fmt.Sprintf("%s.%s.zipper.cache_size", config.Graphite.Prefix, hostname), zipperMetrics.CacheSize)
-		graphite.Register(fmt.Sprintf("%s.%s.zipper.cache_items", config.Graphite.Prefix, hostname), zipperMetrics.CacheItems)
+		graphite.Register(fmt.Sprintf("%s.zipper.cache_size", pattern), zipperMetrics.CacheSize)
+		graphite.Register(fmt.Sprintf("%s.zipper.cache_items", pattern), zipperMetrics.CacheItems)
 
-		graphite.Register(fmt.Sprintf("%s.%s.zipper.search_cache_size", config.Graphite.Prefix, hostname), zipperMetrics.SearchCacheSize)
-		graphite.Register(fmt.Sprintf("%s.%s.zipper.search_cache_items", config.Graphite.Prefix, hostname), zipperMetrics.SearchCacheItems)
+		graphite.Register(fmt.Sprintf("%s.zipper.search_cache_size", pattern), zipperMetrics.SearchCacheSize)
+		graphite.Register(fmt.Sprintf("%s.zipper.search_cache_items", pattern), zipperMetrics.SearchCacheItems)
 
-		graphite.Register(fmt.Sprintf("%s.%s.zipper.cache_hits", config.Graphite.Prefix, hostname), zipperMetrics.CacheHits)
-		graphite.Register(fmt.Sprintf("%s.%s.zipper.cache_misses", config.Graphite.Prefix, hostname), zipperMetrics.CacheMisses)
+		graphite.Register(fmt.Sprintf("%s.zipper.cache_hits", pattern), zipperMetrics.CacheHits)
+		graphite.Register(fmt.Sprintf("%s.zipper.cache_misses", pattern), zipperMetrics.CacheMisses)
 
-		graphite.Register(fmt.Sprintf("%s.%s.zipper.search_cache_hits", config.Graphite.Prefix, hostname), zipperMetrics.SearchCacheHits)
-		graphite.Register(fmt.Sprintf("%s.%s.zipper.search_cache_misses", config.Graphite.Prefix, hostname), zipperMetrics.SearchCacheMisses)
+		graphite.Register(fmt.Sprintf("%s.zipper.search_cache_hits", pattern), zipperMetrics.SearchCacheHits)
+		graphite.Register(fmt.Sprintf("%s.zipper.search_cache_misses", pattern), zipperMetrics.SearchCacheMisses)
 
 		go mstats.Start(config.Graphite.Interval)
 
-		graphite.Register(fmt.Sprintf("%s.%s.alloc", config.Graphite.Prefix, hostname), &mstats.Alloc)
-		graphite.Register(fmt.Sprintf("%s.%s.total_alloc", config.Graphite.Prefix, hostname), &mstats.TotalAlloc)
-		graphite.Register(fmt.Sprintf("%s.%s.num_gc", config.Graphite.Prefix, hostname), &mstats.NumGC)
-		graphite.Register(fmt.Sprintf("%s.%s.pause_ns", config.Graphite.Prefix, hostname), &mstats.PauseNS)
+		graphite.Register(fmt.Sprintf("%s.alloc", pattern), &mstats.Alloc)
+		graphite.Register(fmt.Sprintf("%s.total_alloc", pattern), &mstats.TotalAlloc)
+		graphite.Register(fmt.Sprintf("%s.num_gc", pattern), &mstats.NumGC)
+		graphite.Register(fmt.Sprintf("%s.pause_ns", pattern), &mstats.PauseNS)
 
 	}
 

@@ -524,7 +524,10 @@ func getSeriesArg(arg *expr, from, until int32, values map[MetricRequest][]*Metr
 		return nil, ErrMissingTimeseries
 	}
 
-	a, _ := EvalExpr(arg, from, until, values)
+	a, err := EvalExpr(arg, from, until, values)
+	if err != nil {
+		return nil, err
+	}
 
 	if len(a) == 0 {
 		return nil, ErrSeriesDoesNotExist
