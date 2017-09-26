@@ -898,6 +898,30 @@ func lbcheckHandler(w http.ResponseWriter, r *http.Request) {
 	)
 }
 
+func versionHandler(w http.ResponseWriter, r *http.Request) {
+	t0 := time.Now()
+	accessLogger := zapwriter.Logger("access")
+
+	if config.GraphiteWeb09Compatibility {
+		w.Write([]byte("0.9.15\n"))
+	} else {
+		w.Write([]byte("1.0.0\n"))
+	}
+
+	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
+	accessLogger.Info("request served",
+		zap.String("handler", "lbcheck"),
+		zap.String("uri", r.RequestURI),
+		zap.String("peer_ip", srcIP),
+		zap.String("peer_port", srcPort),
+		zap.String("host", r.Host),
+		zap.Duration("runtime", time.Since(t0)),
+		zap.Int("http_code", http.StatusOK),
+		zap.String("referer", r.Referer()),
+	)
+}
+
+
 var usageMsg = []byte(`
 supported requests:
 	/render/?target=
@@ -1324,6 +1348,10 @@ func main() {
 	r.HandleFunc("/info", infoHandler)
 
 	r.HandleFunc("/lb_check", lbcheckHandler)
+
+	r.HandleFunc("/version", versionHandler)
+	r.HandleFunc("/version/", versionHandler)
+
 	r.HandleFunc("/", usageHandler)
 
 	handler := handlers.CompressHandler(r)
