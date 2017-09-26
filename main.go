@@ -910,7 +910,7 @@ func versionHandler(w http.ResponseWriter, r *http.Request) {
 
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
 	accessLogger.Info("request served",
-		zap.String("handler", "lbcheck"),
+		zap.String("handler", "version"),
 		zap.String("uri", r.RequestURI),
 		zap.String("peer_ip", srcIP),
 		zap.String("peer_port", srcPort),
