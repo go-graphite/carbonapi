@@ -1058,7 +1058,7 @@ func main() {
 			)
 		}
 
-		viper.ReadConfig(bytes.NewBuffer(b))
+		err = viper.ReadConfig(bytes.NewBuffer(b))
 		if err != nil {
 			logger.Fatal("failed to parse config",
 				zap.String("config_path", *configPath),
@@ -1098,7 +1098,14 @@ func main() {
 	viper.SetDefault("expireDelaySec", 10)
 	viper.SetDefault("logger", map[string]string{})
 	viper.AutomaticEnv()
-	viper.Unmarshal(&config)
+
+	err = viper.Unmarshal(&config)
+	if err != nil {
+		logger.Fatal("failed to parse config",
+			zap.Error(err),
+		)
+	}
+
 	config.Cache.MemcachedServers = viper.GetStringSlice("cache.memcachedServers")
 	if n := viper.GetString("logger.logger"); n != "" {
 		config.Logger[0].Logger = n
