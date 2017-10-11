@@ -1,0 +1,56 @@
+# You can use either 'yaml' or 'toml' as a config format
+# Please note, that only 'yaml' example config guaranteed to be up to date
+# And only 'carbonapi.example.yaml' have comments about all available parameters
+# This file is autoconverted from 'yaml'.
+concurency = 20
+cpus = 0
+expireDelaySec = 10
+idleConnections = 10
+listen = "localhost:8081"
+maxBatchSize = 100
+pidFile = ""
+sendGlobsAsIs = false
+tz = ""
+
+[cache]
+defaultTimeoutSec = 60
+memcachedServers = ["127.0.0.1:1234", "127.0.0.2:1235"]
+size_mb = 0
+type = "mem"
+
+[graphite]
+host = ""
+interval = "60s"
+pattern = "{prefix}.{fqdn}"
+prefix = "carbon.api"
+
+[[logger]]
+encoding = "console"
+encodingDuration = "seconds"
+encodingTime = "iso8601"
+file = "stderr"
+level = "debug"
+logger = ""
+
+[[logger]]
+encoding = "json"
+file = "carbonapi.log"
+level = "info"
+logger = ""
+
+[upstreams]
+backends = ["http://10.0.0.1:8080", "http://10.0.0.2:8080", "http://192.168.0.100:8080", "http://192.168.0.200:8080", "http://192.168.1.212:8080"]
+buckets = 10
+concurrencyLimit = 0
+graphite09compat = false
+keepAliveInterval = "30s"
+maxIdleConnsPerHost = 100
+
+[upstreams.carbonsearch]
+backend = "http://127.0.0.1:8070"
+prefix = "virt.v1.*"
+
+[upstreams.timeouts]
+afterStarted = "2s"
+connect = "200ms"
+global = "10s"
