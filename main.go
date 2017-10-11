@@ -1047,8 +1047,6 @@ func main() {
 
 	flag.Parse()
 
-	viper.SetConfigType("YAML")
-
 	if *configPath != "" {
 		b, err := ioutil.ReadFile(*configPath)
 		if err != nil {
@@ -1058,6 +1056,17 @@ func main() {
 			)
 		}
 
+		if strings.HasSuffix(*configPath, ".toml") {
+			logger.Info("will parse config as toml",
+				zap.String("config_file", *configPath),
+			)
+			viper.SetConfigType("TOML")
+		} else {
+			logger.Info("will parse config as yaml",
+				zap.String("config_file", *configPath),
+			)
+			viper.SetConfigType("YAML")
+		}
 		err = viper.ReadConfig(bytes.NewBuffer(b))
 		if err != nil {
 			logger.Fatal("failed to parse config",
