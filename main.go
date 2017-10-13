@@ -719,6 +719,8 @@ func findCompleter(globs pb.GlobResponse) ([]byte, error) {
 
 		if i != -1 {
 			c.Name = c.Path[i+1:]
+		} else {
+			c.Name = g.Path
 		}
 
 		complete = append(complete, c)
