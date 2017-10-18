@@ -1150,6 +1150,12 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 			r.stacked = true
 			r.stackName = "stack"
 		}
+	} else if params.areaMode == AreaModeFirst {
+		results[0].stacked = true
+	} else if params.areaMode == AreaModeAll {
+		for _, r := range results {
+			r.stacked = true
+		}
 	}
 
 	if params.hasStack {
@@ -2204,8 +2210,6 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 	cr.context.SetLineCap(str2linecap(linecap))
 	cr.context.SetLineJoin(str2linejoin(linejoin))
 
-	// TODO(dgryski): areaMode all, first
-
 	if !math.IsNaN(params.areaAlpha) {
 		alpha := params.areaAlpha
 		var strokeSeries []*MetricData
@@ -2656,7 +2660,11 @@ func fillAreaAndClip(cr *cairoSurfaceContext, params *Params, x, y, startX, area
 	cr.context.LineTo(x, areaYFrom)      // bottom endX
 	cr.context.LineTo(startX, areaYFrom) // bottom startX
 	cr.context.ClosePath()
-	cr.context.Fill()
+	if params.areaMode == AreaModeAll {
+		cr.context.FillPreserve()
+	} else {
+		cr.context.Fill()
+	}
 
 	// clip above y axis
 	cr.context.AppendPath(pattern)
