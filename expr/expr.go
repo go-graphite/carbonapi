@@ -1365,6 +1365,22 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		}
 		return results, nil
 
+	case "fallbackSeries": // fallbackSeries( seriesList, fallback )
+		/*
+			Takes a wildcard seriesList, and a second fallback metric.
+			If the wildcard does not match any series, draws the fallback metric.
+		*/
+		seriesList, err := getSeriesArg(e.args[0], from, until, values)
+		fallback, errFallback := getSeriesArg(e.args[1], from, until, values)
+		if errFallback != nil && err != nil {
+			return nil, errFallback
+		}
+
+		if seriesList != nil && len(seriesList) > 0 {
+			return seriesList, nil
+		}
+		return  fallback, nil
+
 	case "exclude": // exclude(seriesList, pattern)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
