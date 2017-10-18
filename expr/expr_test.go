@@ -1762,6 +1762,42 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "fallbackSeries",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "absentmetric"},
+					{target: "fallbackmetric"},
+				},
+				argString: "absentmetric,fallbackmetric",
+			},
+			map[MetricRequest][]*MetricData{
+				{"metric1", 0, 1}: {makeResponse("metric1", []float64{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, 1, now32)},
+				{"fallbackmetric", 0, 1}: {makeResponse("fallbackmetric", []float64{0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7}, 1, now32)},
+
+			},
+			[]*MetricData{
+				makeResponse("fallbackmetric", []float64{0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7}, 1, now32),
+			},
+		},
+		{
+			&expr{
+				target: "fallbackSeries",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{target: "metric2"},
+				},
+				argString: "metric1,metric2",
+			},
+			map[MetricRequest][]*MetricData{
+				{"metric1", 0, 1}: {makeResponse("metric1", []float64{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, 1, now32)},
+			},
+			[]*MetricData{
+				makeResponse("metric1", []float64{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, 1, now32),
+			},
+		},
+		{
+			&expr{
 				target: "exponentialWeightedMovingAverage",
 				etype:  etFunc,
 				args: []*expr{
