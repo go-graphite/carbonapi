@@ -529,10 +529,6 @@ func getSeriesArg(arg *expr, from, until int32, values map[MetricRequest][]*Metr
 		return nil, err
 	}
 
-	if len(a) == 0 {
-		return nil, ErrSeriesDoesNotExist
-	}
-
 	return a, nil
 }
 
