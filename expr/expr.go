@@ -3117,6 +3117,9 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		if err != nil {
 			return nil, err
 		}
+		if(len(args) == 0) {
+			return nil, nil
+		}
 
 		bucketSize, err := getIntervalArg(e, 1, 1)
 		if err != nil {
