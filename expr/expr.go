@@ -3830,6 +3830,48 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		return results, nil
 
+	case "removeBetweenEpochs": // removeBetweenEpochs(seriesLists, fromEpoch, untilEpoch)
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		fromEpoch, err := getIntArg(e, 1)
+		if err != nil {
+			return nil, err
+		}
+
+		untilEpoch, err := getIntArg(e, 2)
+		if err != nil {
+			return nil, err
+		}
+
+		var results []*MetricData
+
+		for _, a := range args {
+			r := *a
+			r.Name = fmt.Sprintf("%s(%s, %d, %d)", e.target, a.Name, fromEpoch, untilEpoch)
+			r.IsAbsent = make([]bool, len(a.Values))
+			r.Values = make([]float64, len(a.Values))
+
+			epoch := int(a.StartTime)
+			for i, v := range a.Values {
+
+				if a.IsAbsent[i] || (epoch >= fromEpoch && epoch < untilEpoch) {
+					r.Values[i] = math.NaN()
+					r.IsAbsent[i] = true
+				} else {
+					r.Values[i] = v
+				}
+
+				epoch += int(a.StepTime)
+			}
+
+			results = append(results, &r)
+		}
+
+		return results, nil
+
 	case "cactiStyle": // cactiStyle(seriesList, system=None, units=None)
 		// Get the series data
 		original, err := getSeriesArg(e.args[0], from, until, values)

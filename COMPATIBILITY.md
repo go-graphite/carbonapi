@@ -201,6 +201,7 @@ removeAbovePercentile(seriesList, n)                                      |  0.9
 removeAboveValue(seriesList, n)                                           |  0.9.10 | Supported
 removeBelowPercentile(seriesList, n)                                      |  0.9.10 | Supported
 removeBelowValue(seriesList, n)                                           |  0.9.10 | Supported
+removeBetweenEpochs(seriesList, fromEpoch, untilEpoch)                    | not in graphite | Experimental
 removeBetweenPercentile(seriesList, n)                                    |  1.0.0  |
 removeEmptySeries(seriesList)                                             |  1.0.0  | Supported
 removeZeroSeries(seriesList)                                              |  0.9.14 | Supported
