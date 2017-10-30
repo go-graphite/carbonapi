@@ -1275,18 +1275,20 @@ func TestEvalExpression(t *testing.T) {
 				target: "asPercent",
 				etype:  etFunc,
 				args: []*expr{
-					{target: "metricA1"},
-					{target: "metricA2"},
-					{target: "metricB1"},
-					{target: "metricB2"},
+					{target: "metricA*"},
+					{target: "metricB*"},
 				},
 				argString: "metricA*,metricB*",
 			},
 			map[MetricRequest][]*MetricData{
-				{"metricA1", 0, 1}: {makeResponse("metricA1", []float64{1, 20, 10}, 1, now32)},
-				{"metricB1", 0, 1}: {makeResponse("metricB1", []float64{4, 4, 8}, 1, now32)},
-				{"metricA2", 0, 1}: {makeResponse("metricA2", []float64{1, 10, 20}, 1, now32)},
-				{"metricB2", 0, 1}: {makeResponse("metricB2", []float64{4, 16, 2}, 1, now32)},
+				{"metricA*", 0, 1}: {
+					makeResponse("metricA1", []float64{1, 20, 10}, 1, now32),
+					makeResponse("metricA2", []float64{1, 10, 20}, 1, now32),
+				},
+				{"metricB*", 0, 1}: {
+					makeResponse("metricB1", []float64{4, 4, 8}, 1, now32),
+					makeResponse("metricB2", []float64{4, 16, 2}, 1, now32),
+				},
 			},
 			[]*MetricData{makeResponse("asPercent(metricA1,metricB1)",
 				[]float64{25, 500, 125}, 1, now32),

@@ -762,6 +762,8 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		var formatName func(a, b string) string
 		var totalString string
 		var multipleSeries bool
+		var numerators []*MetricData
+		var denominators []*MetricData
 
 		if len(e.args) == 1 {
 			getTotal = func(i int) float64 {
@@ -798,32 +800,29 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			if err != nil {
 				return nil, err
 			}
-			if len(total) != 1 {
+			if len(total) != 1 && len(total) != len(arg) {
 				return nil, ErrWildcardNotAllowed
 			}
-			getTotal = func(i int) float64 {
-				if total[0].IsAbsent[i] {
-					return math.NaN()
+			if len(total) == 1 {
+				getTotal = func(i int) float64 {
+					if total[0].IsAbsent[i] {
+						return math.NaN()
+					}
+					return total[0].Values[i]
 				}
-				return total[0].Values[i]
-			}
-			if e.args[1].etype == etName {
-				totalString = e.args[1].target
+				if e.args[1].etype == etName {
+					totalString = e.args[1].target
+				} else {
+					totalString = fmt.Sprintf("%s(%s)", e.args[1].target, e.args[1].argString)
+				}
 			} else {
-				totalString = fmt.Sprintf("%s(%s)", e.args[1].target, e.args[1].argString)
+				multipleSeries = true
+				numerators = arg
+				denominators = total
+				// Sort lists by name so that they match up.
+				sort.Sort(ByName(numerators))
+				sort.Sort(ByName(denominators))
 			}
-			formatName = func(a, b string) string {
-				return fmt.Sprintf("asPercent(%s,%s)", a, b)
-			}
-		} else if len(e.args)%2 == 0 && (e.args[1].etype == etName || e.args[1].etype == etFunc) {
-			total, err := getSeriesArg(e.args[1], from, until, values)
-			if err != nil {
-				return nil, err
-			}
-			if len(total) != len(arg) {
-				return nil, ErrWildcardNotAllowed
-			}
-			multipleSeries = true
 			formatName = func(a, b string) string {
 				return fmt.Sprintf("asPercent(%s,%s)", a, b)
 			}
@@ -841,39 +840,23 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 			   For each of them we will compute numerator/denominator
 			*/
-			numerators := e.args[:len(e.args)/2]
-			denominators := e.args[len(e.args)/2:]
 			for i := range numerators {
-				numerator, err := getSeriesArg(numerators[i], from, until, values)
-				if err != nil {
-					return nil, err
-				}
-				denominator, err := getSeriesArg(denominators[i], from, until, values)
-				if err != nil {
-					return nil, err
-				}
+				a := numerators[i]
+				b := denominators[i]
 
-				if len(numerator) != len(denominator) {
-					return nil, errors.New("Length mismatch, globs must return same amount of data")
-				}
-				for j := range numerator {
-					a := numerator[j]
-					b := denominator[j]
-
-					r := *a
-					r.Name = formatName(a.Name, b.Name)
-					r.Values = make([]float64, len(a.Values))
-					r.IsAbsent = make([]bool, len(a.Values))
-					for k := range a.Values {
-						if a.IsAbsent[k] || b.IsAbsent[k] {
-							r.Values[k] = 0
-							r.IsAbsent[k] = true
-							continue
-						}
-						r.Values[k] = (a.Values[k] / b.Values[k]) * 100
+				r := *a
+				r.Name = formatName(a.Name, b.Name)
+				r.Values = make([]float64, len(a.Values))
+				r.IsAbsent = make([]bool, len(a.Values))
+				for k := range a.Values {
+					if a.IsAbsent[k] || b.IsAbsent[k] {
+						r.Values[k] = 0
+						r.IsAbsent[k] = true
+						continue
 					}
-					results = append(results, &r)
+					r.Values[k] = (a.Values[k] / b.Values[k]) * 100
 				}
+				results = append(results, &r)
 			}
 		} else {
 			for _, a := range arg {
