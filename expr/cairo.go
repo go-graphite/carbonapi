@@ -35,6 +35,7 @@ type graphOptions struct {
 	secondYAxis    bool
 	dashed         float64
 	hasAlpha       bool
+	hasLineWidth   bool
 	stacked        bool
 	stackName      string
 }
@@ -812,6 +813,28 @@ func evalExprGraph(e *expr, from, until int32, values map[MetricRequest][]*Metri
 		}
 		return results, nil
 
+	case "lineWidth": // lineWidth(seriesList, width)
+		arg, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		width , err := getFloatArg(e, 1)
+		if err != nil {
+			return nil, err
+		}
+
+		var results []*MetricData
+
+		for _, a := range arg {
+			r := *a
+			r.lineWidth = width
+			r.hasLineWidth = true
+			results = append(results, &r)
+		}
+
+		return results, nil
+
 	case "threshold": // threshold(value, label=None, color=None)
 		// XXX does not match graphite's signature
 		// BUG(nnuss): the signature *does* match but there is an edge case because of named argument handling if you use it *just* wrong:
@@ -1073,12 +1096,14 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 		}
 		if params.secondYAxis && res.secondYAxis {
 			res.lineWidth = params.rightWidth
+			res.hasLineWidth = true
 			if params.rightDashed && res.dashed == 0 {
 				res.dashed = 2.5
 			}
 			res.color = params.rightColor
 		} else if params.secondYAxis {
 			res.lineWidth = params.leftWidth
+			res.hasLineWidth = true
 			if params.leftDashed && res.dashed == 0 {
 				res.dashed = 2.5
 			}
@@ -2258,7 +2283,9 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 			clipRestored = true
 		}
 
-		cr.context.SetLineWidth(params.lineWidth)
+		if series.hasLineWidth {
+			cr.context.SetLineWidth(series.lineWidth)
+		}
 
 		if series.dashed != 0 {
 			cr.context.SetDash([]float64{series.dashed}, 1)
