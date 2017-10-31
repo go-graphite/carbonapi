@@ -41,7 +41,7 @@ func IntervalString(s string, defaultSign int) (int32, error) {
 		switch unitStr {
 		case "s", "sec", "secs", "second", "seconds":
 			units = 1
-		case "min", "mins", "minute", "minutes":
+		case "m", "min", "mins", "minute", "minutes":
 			units = 60
 		case "h", "hour", "hours":
 			units = 60 * 60
