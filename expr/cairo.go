@@ -1710,7 +1710,7 @@ func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 	if params.logBase != 0 {
 		if yMinValue > 0 {
 			params.yBottom = math.Pow(params.logBase, math.Floor(math.Log(yMinValue)/math.Log(params.logBase)))
-			params.yTop = math.Pow(params.logBase, math.Ceil(math.Log(yMaxValue/math.Log(params.logBase))))
+			params.yTop = math.Pow(params.logBase, math.Ceil(math.Log(yMaxValue)/math.Log(params.logBase)))
 		} else {
 			panic("logscale with minvalue <= 0")
 			// raise GraphError('Logarithmic scale specified with a dataset with a minimum value less than or equal to zero')
