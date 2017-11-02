@@ -10,7 +10,6 @@ die() {
     exit $1
 }
 
-CURRENT_COMMIT=$(git rev-parse HEAD)
 VERSION=$(git describe --abbrev=6 --always --tags)
 echo "version: ${VERSION}"
 grep '^[0-9]\+\.[0-9]\.' <<< ${VERSION} || {
