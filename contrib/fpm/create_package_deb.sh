@@ -16,6 +16,7 @@ TMPDIR=$(mktemp -d)
 DISTRO=$(lsb_release -i -s)
 RELEASE=$(lsb_release -r -s)
 
+echo "version: ${VERSION}"
 
 make || die 1 "Can't build package"
 make DESTDIR="${TMPDIR}" install || die 1 "Can't install package"
