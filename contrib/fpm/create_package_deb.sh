@@ -1,10 +1,4 @@
-#!/usr/bin/env bash
-VERSION=$(git describe --abbrev=4 --always --tags)
-TMPDIR=$(mktemp -d)
-
-DISTRO=$(lsb_release -i -s)
-RELEASE=$(lsb_release -r -s)
-
+#!/bin/bash -x
 die() {
     if [[ $1 -eq 0 ]]; then
         rm -rf "${TMPDIR}"
@@ -14,6 +8,14 @@ die() {
     echo "$2"
     exit $1
 }
+
+pwd
+VERSION=$(git describe --abbrev=6 --always --tags)
+TMPDIR=$(mktemp -d)
+
+DISTRO=$(lsb_release -i -s)
+RELEASE=$(lsb_release -r -s)
+
 
 make || die 1 "Can't build package"
 make DESTDIR="${TMPDIR}" install || die 1 "Can't install package"
