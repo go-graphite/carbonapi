@@ -1,4 +1,5 @@
 #!/bin/bash -x
+
 die() {
     if [[ $1 -eq 0 ]]; then
         rm -rf "${TMPDIR}"
@@ -9,10 +10,7 @@ die() {
     exit $1
 }
 
-pwd
 CURRENT_COMMIT=$(git rev-parse HEAD)
-git fetch --tags
-git checkout ${CURRENT_COMMIT}
 VERSION=$(git describe --abbrev=6 --always --tags)
 echo "version: ${VERSION}"
 grep '^[0-9]\+\.[0-9]\.' <<< ${VERSION} || {

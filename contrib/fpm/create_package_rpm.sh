@@ -20,6 +20,15 @@ else
        REL_COMMIT=$(cut -d'.' -f 2 <<< ${RELEASE})
        RELEASE="$((REL_VERSION+1)).${REL_COMMIT}"
 fi
+grep '^[0-9]\+\.[0-9]\.' <<< ${VERSION} || {
+	echo "Revision: $(git rev-parse HEAD)";
+	echo "Version: $(git describe --abbrev=6 --always --tags)";
+	echo "Known tags: $(git tag)";
+	echo;
+	echo;
+	die "Can't get latest version from git";
+}
+
 TMPDIR=$(mktemp -d)
 
 make || die 1 "Can't build package"
