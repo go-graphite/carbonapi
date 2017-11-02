@@ -10,6 +10,7 @@ die() {
 }
 
 pwd
+git fetch --tags
 VERSION=$(git describe --abbrev=6 --always --tags)
 TMPDIR=$(mktemp -d)
 
