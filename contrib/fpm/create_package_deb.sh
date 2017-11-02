@@ -10,14 +10,25 @@ die() {
 }
 
 pwd
+CURRENT_COMMIT=$(git rev-parse HEAD)
 git fetch --tags
+git checkout ${CURRENT_COMMIT}
 VERSION=$(git describe --abbrev=6 --always --tags)
+echo "version: ${VERSION}"
+grep '^[0-9]\+\.[0-9]\.' <<< ${VERSION} || {
+	echo "Revision: $(git rev-parse HEAD)";
+	echo "Version: $(git describe --abbrev=6 --always --tags)";
+	echo "Known tags: $(git tag)";
+	echo;
+	echo;
+	die "Can't get latest version from git";
+}
+
 TMPDIR=$(mktemp -d)
 
 DISTRO=$(lsb_release -i -s)
 RELEASE=$(lsb_release -r -s)
 
-echo "version: ${VERSION}"
 
 make || die 1 "Can't build package"
 make DESTDIR="${TMPDIR}" install || die 1 "Can't install package"
