@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"io/ioutil"
 
@@ -923,7 +924,6 @@ func versionHandler(w http.ResponseWriter, r *http.Request) {
 	)
 }
 
-
 var usageMsg = []byte(`
 supported requests:
 	/render/?target=
@@ -965,6 +965,7 @@ var config = struct {
 	Cache                      cacheConfig        `yaml:"cache"`
 	Cpus                       int                `yaml:"cpus"`
 	TimezoneString             string             `yaml:"tz"`
+	UnicodeRangeTables         []string           `yaml:"unicodeRangeTables"`
 	Graphite                   graphiteConfig     `yaml:"graphite"`
 	IdleConnections            int                `yaml:"idleConnections"`
 	PidFile                    string             `yaml:"pidFile"`
@@ -1036,6 +1037,9 @@ func zipperStats(stats *realZipper.Stats) {
 	zipperMetrics.CacheMisses.Add(stats.CacheMisses)
 	zipperMetrics.CacheHits.Add(stats.CacheHits)
 }
+
+// RangeTables is an array of *unicode.RangeTable
+// var RangeTables []*unicode.RangeTable
 
 func main() {
 	err := zapwriter.ApplyConfig([]zapwriter.Config{defaultLoggerConfig})
@@ -1256,6 +1260,14 @@ func main() {
 			zap.String("timezone", config.defaultTimeZone.String()),
 			zap.Int("offset", offs),
 		)
+	}
+
+	if len(config.UnicodeRangeTables) != 0 {
+		for _, stringRange := range config.UnicodeRangeTables {
+			expr.RangeTables = append(expr.RangeTables, unicode.Scripts[stringRange])
+		}
+	} else {
+		expr.RangeTables = append(expr.RangeTables, unicode.Latin)
 	}
 
 	if config.Cpus != 0 {

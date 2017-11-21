@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/JaderDias/movingmedian"
 	"github.com/dgryski/go-onlinestats"
@@ -284,13 +286,20 @@ func parseConst(s string) (float64, string, error) {
 	return v, s[i:], err
 }
 
+// RangeTables is an array of *unicode.RangeTable
+var RangeTables []*unicode.RangeTable
+
 func parseName(s string) (string, string) {
 
-	var i int
+	var (
+		braces, i, w int
+		r            rune
+	)
 
 FOR:
-	for braces := 0; i < len(s); i++ {
+	for braces, i, w = 0, 0, 0; i < len(s); i += w {
 
+		w = 1
 		if isNameChar(s[i]) {
 			continue
 		}
@@ -301,7 +310,6 @@ FOR:
 		case '}':
 			if braces == 0 {
 				break FOR
-
 			}
 			braces--
 		case ',':
@@ -309,6 +317,10 @@ FOR:
 				break FOR
 			}
 		default:
+			r, w = utf8.DecodeRuneInString(s[i:])
+			if unicode.In(r, RangeTables...) {
+				continue
+			}
 			break FOR
 		}
 
@@ -1358,7 +1370,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		if seriesList != nil && len(seriesList) > 0 {
 			return seriesList, nil
 		}
-		return  fallback, nil
+		return fallback, nil
 
 	case "exclude": // exclude(seriesList, pattern)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
@@ -3100,7 +3112,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		if err != nil {
 			return nil, err
 		}
-		if(len(args) == 0) {
+		if len(args) == 0 {
 			return nil, nil
 		}
 
