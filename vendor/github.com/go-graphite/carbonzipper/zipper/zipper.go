@@ -149,7 +149,6 @@ func NewZipper(sender func(*Stats), config *Config) *Zipper {
 			DualStack: true,
 		}).DialContext,
 	}
-
 	go z.probeTlds()
 
 	z.ProbeForce <- 1
@@ -353,7 +352,6 @@ func (z *Zipper) doProbe() {
 	uuid := uuid.NewV4()
 	ctx := util.SetUUID(context.Background(), uuid.String())
 	query := "/metrics/find/?format=protobuf&query=%2A"
-
 	responses := z.multiGet(ctx, logger, z.backends, query, stats)
 
 	if len(responses) == 0 {
@@ -405,7 +403,6 @@ func (z *Zipper) probeTlds() {
 
 func (z *Zipper) singleGet(ctx context.Context, logger *zap.Logger, uri, server string, ch chan<- ServerResponse, started chan<- struct{}) {
 	logger = logger.With(zap.String("handler", "singleGet"))
-
 	u, err := url.Parse(server + uri)
 	if err != nil {
 		logger.Error("error parsing uri",
