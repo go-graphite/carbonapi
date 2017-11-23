@@ -1358,7 +1358,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		if seriesList != nil && len(seriesList) > 0 {
 			return seriesList, nil
 		}
-		return  fallback, nil
+		return fallback, nil
 
 	case "exclude": // exclude(seriesList, pattern)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
@@ -3100,7 +3100,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		if err != nil {
 			return nil, err
 		}
-		if(len(args) == 0) {
+		if len(args) == 0 {
 			return nil, nil
 		}
 
