@@ -20,6 +20,12 @@ type zipper struct {
 	statsSender func(*realZipper.Stats)
 }
 
+type CarbonZipper interface {
+	Find(ctx context.Context, metric string) (pb.GlobResponse, error)
+	Info(ctx context.Context, metric string) (map[string]pb.InfoResponse, error)
+	Render(ctx context.Context, metric string, from, until int32) ([]*expr.MetricData, error)
+}
+
 func newZipper(sender func(*realZipper.Stats), config *realZipper.Config, logger *zap.Logger) *zipper {
 	z := &zipper{
 		z:           realZipper.NewZipper(sender, config),
