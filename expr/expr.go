@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/JaderDias/movingmedian"
 	"github.com/dgryski/go-onlinestats"
@@ -284,13 +286,20 @@ func parseConst(s string) (float64, string, error) {
 	return v, s[i:], err
 }
 
+// RangeTables is an array of *unicode.RangeTable
+var RangeTables []*unicode.RangeTable
+
 func parseName(s string) (string, string) {
 
-	var i int
+	var (
+		braces, i, w int
+		r            rune
+	)
 
 FOR:
-	for braces := 0; i < len(s); i++ {
+	for braces, i, w = 0, 0, 0; i < len(s); i += w {
 
+		w = 1
 		if isNameChar(s[i]) {
 			continue
 		}
@@ -301,7 +310,6 @@ FOR:
 		case '}':
 			if braces == 0 {
 				break FOR
-
 			}
 			braces--
 		case ',':
@@ -309,6 +317,10 @@ FOR:
 				break FOR
 			}
 		default:
+			r, w = utf8.DecodeRuneInString(s[i:])
+			if unicode.In(r, RangeTables...) {
+				continue
+			}
 			break FOR
 		}
 
@@ -1358,7 +1370,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		if seriesList != nil && len(seriesList) > 0 {
 			return seriesList, nil
 		}
-		return  fallback, nil
+		return fallback, nil
 
 	case "exclude": // exclude(seriesList, pattern)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
@@ -3100,7 +3112,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		if err != nil {
 			return nil, err
 		}
-		if(len(args) == 0) {
+		if len(args) == 0 {
 			return nil, nil
 		}
 
@@ -4116,29 +4128,50 @@ func alignToBucketSize(start, stop, bucketSize int32) (int32, int32) {
 	return start, newStop
 }
 
-func extractMetric(m string) string {
+func extractMetric(s string) string {
 
-	// search for a metric name in `m'
-	// metric name is defined to be a series of name characters terminated by a comma
+	// search for a metric name in 's'
+	// metric name is defined to be a series of name characters terminated by a ',' or ')'
+	// work sample: bla(bla{bl,a}b[la,b]la) => bla{bl,a}b[la
 
-	start := 0
-	end := 0
-	curlyBraces := 0
-	for end < len(m) {
-		if m[end] == '{' {
-			curlyBraces++
-		} else if m[end] == '}' {
-			curlyBraces--
-		} else if m[end] == ')' || (m[end] == ',' && curlyBraces == 0) {
-			return m[start:end]
-		} else if !(isNameChar(m[end]) || m[end] == ',') {
-			start = end + 1
+	var (
+		start, braces, i, w int
+		r                   rune
+	)
+
+FOR:
+	for braces, i, w = 0, 0, 0; i < len(s); i += w {
+
+		w = 1
+		if isNameChar(s[i]) {
+			continue
 		}
 
-		end++
+		switch s[i] {
+		case '{':
+			braces++
+		case '}':
+			if braces == 0 {
+				break FOR
+			}
+			braces--
+		case ',':
+			if braces == 0 {
+				break FOR
+			}
+		case ')':
+			break FOR
+		default:
+			r, w = utf8.DecodeRuneInString(s[i:])
+			if unicode.In(r, RangeTables...) {
+				continue
+			}
+			start = i + 1
+		}
+
 	}
 
-	return m[start:end]
+	return s[start:i]
 }
 
 func contains(a []int, i int) bool {
