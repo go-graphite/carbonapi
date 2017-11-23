@@ -4128,29 +4128,49 @@ func alignToBucketSize(start, stop, bucketSize int32) (int32, int32) {
 	return start, newStop
 }
 
-func extractMetric(m string) string {
+func extractMetric(s string) string {
 
 	// search for a metric name in `m'
 	// metric name is defined to be a series of name characters terminated by a comma
 
-	start := 0
-	end := 0
-	curlyBraces := 0
-	for end < len(m) {
-		if m[end] == '{' {
-			curlyBraces++
-		} else if m[end] == '}' {
-			curlyBraces--
-		} else if m[end] == ')' || (m[end] == ',' && curlyBraces == 0) {
-			return m[start:end]
-		} else if !(isNameChar(m[end]) || m[end] == ',') {
-			start = end + 1
+	var (
+		start, braces, i, w int
+		r                   rune
+	)
+
+FOR:
+	for braces, i, w = 0, 0, 0; i < len(s); i += w {
+
+		w = 1
+		if isNameChar(s[i]) {
+			continue
 		}
 
-		end++
+		switch s[i] {
+		case '{':
+			braces++
+		case '}':
+			if braces == 0 {
+				break FOR
+			}
+			braces--
+		case ',':
+			if braces == 0 {
+				break FOR
+			}
+		case ')':
+			break FOR
+		default:
+			r, w = utf8.DecodeRuneInString(s[i:])
+			if unicode.Is(unicode.Cyrillic, r) {
+				continue
+			}
+			start = i + 1
+		}
+
 	}
 
-	return m[start:end]
+	return s[start:i]
 }
 
 func contains(a []int, i int) bool {
