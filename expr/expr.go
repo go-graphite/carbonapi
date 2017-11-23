@@ -4130,8 +4130,9 @@ func alignToBucketSize(start, stop, bucketSize int32) (int32, int32) {
 
 func extractMetric(s string) string {
 
-	// search for a metric name in `m'
-	// metric name is defined to be a series of name characters terminated by a comma
+	// search for a metric name in 's'
+	// metric name is defined to be a series of name characters terminated by a ',' or ')'
+	// work sample: bla(bla{bl,a}b[la,b]la) => bla{bl,a}b[la
 
 	var (
 		start, braces, i, w int
@@ -4162,7 +4163,7 @@ FOR:
 			break FOR
 		default:
 			r, w = utf8.DecodeRuneInString(s[i:])
-			if unicode.Is(unicode.Cyrillic, r) {
+			if unicode.In(r, RangeTables...) {
 				continue
 			}
 			start = i + 1
