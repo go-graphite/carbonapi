@@ -1038,9 +1038,6 @@ func zipperStats(stats *realZipper.Stats) {
 	zipperMetrics.CacheHits.Add(stats.CacheHits)
 }
 
-// RangeTables is an array of *unicode.RangeTable
-// var RangeTables []*unicode.RangeTable
-
 func main() {
 	err := zapwriter.ApplyConfig([]zapwriter.Config{defaultLoggerConfig})
 	if err != nil {
