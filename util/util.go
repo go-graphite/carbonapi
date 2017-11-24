@@ -3,6 +3,9 @@ package util
 import (
 	"context"
 	"net/http"
+	"go.uber.org/zap"
+	"time"
+	"github.com/go-graphite/carbonapi/helper/carbonapipb"
 )
 
 type key int
@@ -30,6 +33,16 @@ func GetUUID(ctx context.Context) string {
 
 func SetUUID(ctx context.Context, v string) context.Context {
 	return context.WithValue(ctx, uuidKey, v)
+}
+
+func SetupDeferredAccessLogging(accessLogger *zap.Logger, accessLogDetails *carbonapipb.AccessLogDetails, t time.Time, logAsError bool)  {
+	accessLogDetails.Runtime = time.Since(t).String()
+	if logAsError {
+		accessLogger.Error("Request failed", zap.Any("data", *accessLogDetails))
+	} else {
+		accessLogDetails.HttpCode = http.StatusOK
+		accessLogger.Info("Request served", zap.Any("data", *accessLogDetails))
+	}
 }
 
 func ParseCtx(h http.HandlerFunc) http.HandlerFunc {

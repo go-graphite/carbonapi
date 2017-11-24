@@ -1,0 +1,33 @@
+syntax = "proto3";
+package carbonapipb;
+
+
+message AccessLogDetails {
+string handler = 1;
+string carbonapi_uuid = 2;
+string username = 3;
+string url = 4;
+string peer_ip = 5;
+string peer_port = 6;
+string host = 7;
+string referer = 8;
+string format = 9;
+bool use_cache = 10;
+repeated string targets = 11;
+int32 cache_timeout = 12;
+repeated string metrics = 13;
+bool have_non_fatal_errors = 14;
+string runtime = 15;
+int32 http_code = 16;
+int64 carbonzipper_response_size_bytes = 17;
+int64 carbonapi_response_size_bytes = 18;
+string reason = 19;
+bool send_globs = 20;
+int32 from = 21;
+int32 until = 22;
+string tz = 23;
+string from_raw = 24;
+string until_raw = 25;
+string uri = 26;
+bool from_cache = 27;
+}

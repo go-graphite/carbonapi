@@ -25,6 +25,7 @@ import (
 	"github.com/go-graphite/carbonapi/util"
 	"github.com/go-graphite/carbonzipper/cache"
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
+	"github.com/go-graphite/carbonapi/helper/carbonapipb"
 	"github.com/go-graphite/carbonzipper/intervalset"
 	"github.com/go-graphite/carbonzipper/mstats"
 	"github.com/go-graphite/carbonzipper/pathcache"
@@ -209,22 +210,31 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	// ctx, _ := context.WithTimeout(context.TODO(), config.ZipperTimeout)
 	ctx := util.SetUUID(r.Context(), uuid.String())
 	username, _, _ := r.BasicAuth()
+
 	logger := zapwriter.Logger("render").With(
 		zap.String("carbonapi_uuid", uuid.String()),
 		zap.String("username", username),
 	)
 
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
-	accessLogger := zapwriter.Logger("access").With(
-		zap.String("handler", "render"),
-		zap.String("carbonapi_uuid", uuid.String()),
-		zap.String("username", username),
-		zap.String("url", r.URL.RequestURI()),
-		zap.String("peer_ip", srcIP),
-		zap.String("peer_port", srcPort),
-		zap.String("host", r.Host),
-		zap.String("referer", r.Referer()),
-	)
+
+	accessLogger := zapwriter.Logger("access")
+	var accessLogDetails = carbonapipb.AccessLogDetails{
+		Handler:		"render",
+		Username:		username,
+		CarbonapiUuid:	uuid.String(),
+		Url:			r.URL.RequestURI(),
+		PeerIp:			srcIP,
+		PeerPort:		srcPort,
+		Host:			r.Host,
+		Referer:		r.Referer(),
+		Uri:			r.RequestURI,
+	}
+
+	logAsError := false
+	defer func(){
+		util.SetupDeferredAccessLogging(accessLogger, &accessLogDetails, t0, logAsError)
+	}()
 
 	size := 0
 	zipperRequests := 0
@@ -234,10 +244,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest)+": "+err.Error(), http.StatusBadRequest)
-		accessLogger.Error("request failed",
-			zap.Duration("runtime", time.Since(t0)),
-			zap.Int("http_code", http.StatusBadRequest),
-		)
+		accessLogDetails.HttpCode = http.StatusBadRequest
+		accessLogDetails.Reason = err.Error()
+		logAsError = true
 		return
 	}
 
@@ -267,7 +276,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	if tstr := r.FormValue("cacheTimeout"); tstr != "" {
 		t, err := strconv.Atoi(tstr)
 		if err != nil {
-			logger.Error("failed to parse cacheTimeout",
+			logger.Error("Failed to parse cacheTimeout",
 				zap.String("cache_string", tstr),
 				zap.Error(err),
 			)
@@ -294,34 +303,28 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	from32 := date.DateParamToEpoch(from, qtz, timeNow().Add(-24*time.Hour).Unix(), config.defaultTimeZone)
 	until32 := date.DateParamToEpoch(until, qtz, timeNow().Unix(), config.defaultTimeZone)
 
-	accessLogger = accessLogger.With(
-		zap.String("format", format),
-		zap.Bool("use_cache", useCache),
-		zap.Strings("targets", targets),
-		zap.String("from_raw", from),
-		zap.String("until_raw", until),
-		zap.Int32("from", from32),
-		zap.Int32("until", until32),
-		zap.String("tz", qtz),
-		zap.Int32("cache_timeout", cacheTimeout),
-	)
-
+	accessLogDetails.UseCache = useCache
+	accessLogDetails.FromRaw = from
+	accessLogDetails.From = from32
+	accessLogDetails.UntilRaw = until
+	accessLogDetails.Until = until32
+	accessLogDetails.Tz = qtz
+	accessLogDetails.CacheTimeout = cacheTimeout
+	accessLogDetails.Format = format
+	accessLogDetails.Targets = targets
 	if useCache {
 		tc := time.Now()
 		response, err := config.queryCache.Get(cacheKey)
 		td := time.Since(tc).Nanoseconds()
 		apiMetrics.RenderCacheOverheadNS.Add(td)
 
+		accessLogDetails.CarbonzipperResponseSizeBytes = 0
+		accessLogDetails.CarbonapiResponseSizeBytes = int64(len(response))
+
 		if err == nil {
 			apiMetrics.RequestCacheHits.Add(1)
 			writeResponse(w, response, format, jsonp)
-			accessLogger.Info("request served",
-				zap.Bool("from_cache", true),
-				zap.Duration("runtime", time.Since(t0)),
-				zap.Int("http_code", http.StatusOK),
-				zap.Int("carbonzipper_response_size_bytes", 0),
-				zap.Int("carbonapi_response_size_bytes", len(response)),
-			)
+			accessLogDetails.FromCache = true
 			return
 		}
 		apiMetrics.RequestCacheMisses.Add(1)
@@ -329,18 +332,15 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	if from32 == until32 {
 		http.Error(w, "Invalid empty time range", http.StatusBadRequest)
-		accessLogger.Error("request failed",
-			zap.String("reason", "Invalid empty time range"),
-			zap.Duration("runtime", time.Since(t0)),
-			zap.Int("http_code", http.StatusBadRequest),
-		)
+		accessLogDetails.HttpCode = http.StatusBadRequest
+		accessLogDetails.Reason = "Invalid empty time range"
+		logAsError = true
 		return
 	}
 
 	var results []*expr.MetricData
 	errors := make(map[string]string)
 	metricMap := make(map[expr.MetricRequest][]*expr.MetricData)
-	fatalError := false
 
 	var metrics []string
 	var targetIdx = 0
@@ -353,11 +353,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil || e != "" {
 			msg := buildParseErrorString(target, e, err)
 			http.Error(w, msg, http.StatusBadRequest)
-			accessLogger.Error("request failed",
-				zap.String("reason", msg),
-				zap.Duration("runtime", time.Since(t0)),
-				zap.Int("http_code", http.StatusBadRequest),
-			)
+			accessLogDetails.Reason = msg
+			accessLogDetails.HttpCode = http.StatusBadRequest
+			logAsError = true
 			return
 		}
 
@@ -412,7 +410,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			var sendGlobs = config.SendGlobsAsIs && len(glob.Matches) < config.MaxBatchSize
-			accessLogger = accessLogger.With(zap.Bool("send_globs", sendGlobs))
+			accessLogDetails.SendGlobs = sendGlobs
 
 			if sendGlobs {
 				// Request is "small enough" -- send the entire thing as a render request
@@ -472,13 +470,15 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 			expr.SortMetrics(metricMap[mfetch], mfetch)
 		}
+		accessLogDetails.Metrics = metrics
 
 		var rewritten bool
 		var newTargets []string
 		rewritten, newTargets, err = expr.RewriteExpr(exp, from32, until32, metricMap)
 		if err != nil && err != expr.ErrSeriesDoesNotExist {
 			errors[target] = err.Error()
-			fatalError = true
+			accessLogDetails.Reason = err.Error()
+			logAsError = true
 			return
 		} else if rewritten {
 			targets = append(targets, newTargets...)
@@ -495,30 +495,13 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 				exprs, err := expr.EvalExpr(exp, from32, until32, metricMap)
 				if err != nil && err != expr.ErrSeriesDoesNotExist {
 					errors[target] = err.Error()
-					fatalError = true
+					accessLogDetails.Reason = err.Error()
+					logAsError = true
 					return
 				}
 				results = append(results, exprs...)
 			}()
 		}
-	}
-
-	accessLogger = accessLogger.With(zap.Strings("metrics", metrics))
-
-	if len(errors) > 0 && fatalError {
-		httpErrors := make([]string, 0, len(errors))
-		httpErrors = append(httpErrors, "Following errors have occured:")
-		for _, e := range errors {
-			httpErrors = append(httpErrors, e)
-		}
-		http.Error(w, strings.Join(httpErrors, "\n"), http.StatusBadRequest)
-		accessLogger.Error("request failed",
-			zap.String("reason", "encoundered multiple errors"),
-			zap.Any("errors", errors),
-			zap.Duration("runtime", time.Since(t0)),
-			zap.Int("http_code", http.StatusBadRequest),
-		)
-		return
 	}
 
 	var body []byte
@@ -566,17 +549,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	if len(errors) > 0 {
 		gotErrors = true
 	}
-
-	accessLogger.Info("request served",
-		zap.String("uri", r.RequestURI),
-		zap.Duration("runtime", time.Since(t0)),
-		zap.Int("http_code", http.StatusOK),
-		zap.Bool("have_non_fatal_errors", gotErrors),
-		zap.Any("errors", errors),
-		zap.Int("zipper_requests", zipperRequests),
-		zap.Int("zipper_response_size_bytes", size),
-		zap.Int("carbonapi_response_size_bytes", len(body)),
-	)
+	accessLogDetails.HaveNonFatalErrors = gotErrors
 }
 
 func findHandler(w http.ResponseWriter, r *http.Request) {
@@ -592,24 +565,30 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 
 	query := r.FormValue("query")
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
-	accessLogger := zapwriter.Logger("access").With(
-		zap.String("handler", "find"),
-		zap.String("carbonapi_uuid", uuid.String()),
-		zap.String("username", username),
-		zap.String("url", r.URL.RequestURI()),
-		zap.String("peer_ip", srcIP),
-		zap.String("peer_port", srcPort),
-		zap.String("host", r.Host),
-		zap.String("referer", r.Referer()),
-	)
+
+	accessLogger := zapwriter.Logger("access")
+	var accessLogDetails = carbonapipb.AccessLogDetails{
+		Handler:		"find",
+		Username:		username,
+		CarbonapiUuid:	uuid.String(),
+		Url:			r.URL.RequestURI(),
+		PeerIp:			srcIP,
+		PeerPort:		srcPort,
+		Host:			r.Host,
+		Referer:		r.Referer(),
+		Uri:			r.RequestURI,
+	}
+
+	logAsError := false
+	defer func(){
+		util.SetupDeferredAccessLogging(accessLogger, &accessLogDetails, t0, logAsError)
+	}()
 
 	if query == "" {
 		http.Error(w, "missing parameter `query`", http.StatusBadRequest)
-		accessLogger.Info("request failed",
-			zap.Int("http_code", http.StatusBadRequest),
-			zap.String("reason", "missing parameter `query`"),
-			zap.Duration("runtime", time.Since(t0)),
-		)
+		accessLogDetails.HttpCode = http.StatusBadRequest
+		accessLogDetails.Reason = "Missing parameter `query`"
+		logAsError = true
 		return
 	}
 
@@ -620,12 +599,9 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	globs, err := config.zipper.Find(ctx, query)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		accessLogger.Info("request failed",
-			zap.String("uri", r.RequestURI),
-			zap.Int("http_code", http.StatusInternalServerError),
-			zap.String("reason", err.Error()),
-			zap.Duration("runtime", time.Since(t0)),
-		)
+		accessLogDetails.HttpCode = http.StatusInternalServerError
+		accessLogDetails.Reason = err.Error()
+		logAsError = true
 		return
 	}
 
@@ -676,22 +652,13 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		accessLogger.Info("request failed",
-			zap.String("uri", r.RequestURI),
-			zap.Int("http_code", http.StatusInternalServerError),
-			zap.String("reason", err.Error()),
-			zap.Duration("runtime", time.Since(t0)),
-		)
+		accessLogDetails.HttpCode = http.StatusInternalServerError
+		accessLogDetails.Reason = err.Error()
+		logAsError = true
 		return
 	}
 
 	writeResponse(w, b, format, jsonp)
-
-	accessLogger.Info("request served",
-		zap.String("uri", r.RequestURI),
-		zap.Int("http_code", http.StatusOK),
-		zap.Duration("runtime", time.Since(t0)),
-	)
 }
 
 type completer struct {
@@ -819,39 +786,42 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
 	format := r.FormValue("format")
 
-	accessLogger := zapwriter.Logger("access").With(
-		zap.String("username", username),
-		zap.String("handler", "info"),
-		zap.String("carbonapi_uuid", uuid.String()),
-		zap.String("peer_ip", srcIP),
-		zap.String("peer_port", srcPort),
-		zap.String("host", r.Host),
-		zap.String("format", format),
-		zap.String("referer", r.Referer()),
-	)
+	accessLogger := zapwriter.Logger("access")
+	var accessLogDetails = carbonapipb.AccessLogDetails{
+		Handler:		"info",
+		Username:		username,
+		CarbonapiUuid:	uuid.String(),
+		Url:			r.URL.RequestURI(),
+		PeerIp:			srcIP,
+		PeerPort:		srcPort,
+		Host:			r.Host,
+		Referer:		r.Referer(),
+		Format:			format,
+		Uri:			r.RequestURI,
+	}
+
+	logAsError := false
+	defer func(){
+		util.SetupDeferredAccessLogging(accessLogger, &accessLogDetails, t0, logAsError)
+	}()
+
 	var data map[string]pb.InfoResponse
 	var err error
 
 	query := r.FormValue("target")
 	if query == "" {
-		accessLogger.Info("request failed",
-			zap.String("uri", r.RequestURI),
-			zap.Duration("runtime", time.Since(t0)),
-			zap.Int("http_code", http.StatusBadRequest),
-			zap.String("reason", "no target specified"),
-		)
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		accessLogDetails.HttpCode = http.StatusBadRequest
+		accessLogDetails.Reason = "No target specified"
+		logAsError = true
 		return
 	}
 
 	if data, err = config.zipper.Info(ctx, query); err != nil {
-		accessLogger.Info("request failed",
-			zap.String("uri", r.RequestURI),
-			zap.Duration("runtime", time.Since(t0)),
-			zap.String("reason", err.Error()),
-			zap.Int("http_code", http.StatusInternalServerError),
-		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		accessLogDetails.HttpCode = http.StatusInternalServerError
+		accessLogDetails.Reason = err.Error()
+		logAsError = true
 		return
 	}
 
@@ -864,22 +834,16 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		accessLogger.Info("request failed",
-			zap.String("uri", r.RequestURI),
-			zap.Duration("runtime", time.Since(t0)),
-			zap.String("reason", err.Error()),
-			zap.Int("http_code", http.StatusInternalServerError),
-		)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		accessLogDetails.HttpCode = http.StatusInternalServerError
+		accessLogDetails.Reason = err.Error()
+		logAsError = true
 		return
 	}
 
 	w.Write(b)
-	accessLogger.Info("request served",
-		zap.String("uri", r.RequestURI),
-		zap.Duration("runtime", time.Since(t0)),
-		zap.Int("http_code", http.StatusOK),
-	)
+	accessLogDetails.Runtime = time.Since(t0).String()
+	accessLogDetails.HttpCode = http.StatusOK
 }
 
 func lbcheckHandler(w http.ResponseWriter, r *http.Request) {
@@ -889,16 +853,19 @@ func lbcheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Ok\n"))
 
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
-	accessLogger.Info("request served",
-		zap.String("handler", "lbcheck"),
-		zap.String("uri", r.RequestURI),
-		zap.String("peer_ip", srcIP),
-		zap.String("peer_port", srcPort),
-		zap.String("host", r.Host),
-		zap.Duration("runtime", time.Since(t0)),
-		zap.Int("http_code", http.StatusOK),
-		zap.String("referer", r.Referer()),
-	)
+
+	var accessLogDetails = carbonapipb.AccessLogDetails{
+		Handler:		"lbcheck",
+		Url:			r.URL.RequestURI(),
+		PeerIp:			srcIP,
+		PeerPort:		srcPort,
+		Host:			r.Host,
+		Referer:		r.Referer(),
+		Runtime:		time.Since(t0).String(),
+		HttpCode:		http.StatusOK,
+		Uri:			r.RequestURI,
+	}
+	accessLogger.Info("Request served", zap.Any("data", accessLogDetails))
 }
 
 func versionHandler(w http.ResponseWriter, r *http.Request) {
@@ -912,16 +879,18 @@ func versionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
-	accessLogger.Info("request served",
-		zap.String("handler", "version"),
-		zap.String("uri", r.RequestURI),
-		zap.String("peer_ip", srcIP),
-		zap.String("peer_port", srcPort),
-		zap.String("host", r.Host),
-		zap.Duration("runtime", time.Since(t0)),
-		zap.Int("http_code", http.StatusOK),
-		zap.String("referer", r.Referer()),
-	)
+	var accessLogDetails = carbonapipb.AccessLogDetails{
+		Handler:		"version",
+		Url:			r.URL.RequestURI(),
+		PeerIp:			srcIP,
+		PeerPort:		srcPort,
+		Host:			r.Host,
+		Referer:		r.Referer(),
+		Runtime:		time.Since(t0).String(),
+		HttpCode:		http.StatusOK,
+		Uri:			r.RequestURI,
+	}
+	accessLogger.Info("Request served", zap.Any("data", accessLogDetails))
 }
 
 var usageMsg = []byte(`
