@@ -20,6 +20,7 @@ func TestInterval(t *testing.T) {
 		{"2d2d", 4 * 60 * 60 * 24, 1},
 
 		{"1s", -1, -1},
+		{"10m10s", 610, 1},
 		{"+2d", 2 * 60 * 60 * 24, -1},
 		{"-10hours", -60 * 60 * 10, -1},
 		{"-360h2min", -360*60*60 - 2*60, -1},
@@ -37,7 +38,7 @@ func TestInterval(t *testing.T) {
 		err     string
 		sign    int
 	}{
-		{"10m10s", 0, "unknown time units", 1},
+		{"10x10s", 0, "unknown time units", 1},
 		{"10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000y", 0, "value out of range", 1},
 	}
 	for _, tt := range exceptTests {
