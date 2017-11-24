@@ -20,12 +20,12 @@ import (
 
 	"github.com/facebookgo/grace/gracehttp"
 	"github.com/facebookgo/pidfile"
+	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/date"
 	"github.com/go-graphite/carbonapi/expr"
 	"github.com/go-graphite/carbonapi/util"
 	"github.com/go-graphite/carbonzipper/cache"
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
-	"github.com/go-graphite/carbonapi/helper/carbonapipb"
 	"github.com/go-graphite/carbonzipper/intervalset"
 	"github.com/go-graphite/carbonzipper/mstats"
 	"github.com/go-graphite/carbonzipper/pathcache"
@@ -51,11 +51,7 @@ const (
 	pickleFormat    = "pickle"
 )
 
-type Writer interface {
-	writeResponse(w http.ResponseWriter, b []byte, format string, jsonp string)
-}
-
-func InitHandlers() *http.ServeMux {
+func initHandlers() *http.ServeMux {
 	r := http.DefaultServeMux
 	r.HandleFunc("/render/", renderHandler)
 	r.HandleFunc("/render", renderHandler)
@@ -226,13 +222,13 @@ func buildParseErrorString(target, e string, err error) string {
 	return msg
 }
 
-func SetupDeferredAccessLogging(accessLogger *zap.Logger, accessLogDetails *carbonapipb.AccessLogDetails, t time.Time, logAsError bool)  {
-	accessLogDetails.Runtime = time.Since(t).String()
+func deferredAccessLogging(accessLogger *zap.Logger, accessLogDetails *carbonapipb.AccessLogDetails, t time.Time, logAsError bool) {
+	accessLogDetails.Runtime = time.Since(t).Seconds()
 	if logAsError {
-		accessLogger.Error("Request failed", zap.Any("data", *accessLogDetails))
+		accessLogger.Error("request failed", zap.Any("data", *accessLogDetails))
 	} else {
 		accessLogDetails.HttpCode = http.StatusOK
-		accessLogger.Info("Request served", zap.Any("data", *accessLogDetails))
+		accessLogger.Info("request served", zap.Any("data", *accessLogDetails))
 	}
 }
 
@@ -253,22 +249,22 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
 
-	accessLogger := logger
+	accessLogger := zapwriter.Logger("access")
 	var accessLogDetails = carbonapipb.AccessLogDetails{
-		Handler:		"render",
-		Username:		username,
-		CarbonapiUuid:	uuid.String(),
-		Url:			r.URL.RequestURI(),
-		PeerIp:			srcIP,
-		PeerPort:		srcPort,
-		Host:			r.Host,
-		Referer:		r.Referer(),
-		Uri:			r.RequestURI,
+		Handler:       "render",
+		Username:      username,
+		CarbonapiUuid: uuid.String(),
+		Url:           r.URL.RequestURI(),
+		PeerIp:        srcIP,
+		PeerPort:      srcPort,
+		Host:          r.Host,
+		Referer:       r.Referer(),
+		Uri:           r.RequestURI,
 	}
 
 	logAsError := false
-	defer func(){
-		util.SetupDeferredAccessLogging(accessLogger, &accessLogDetails, t0, logAsError)
+	defer func() {
+		deferredAccessLogging(accessLogger, &accessLogDetails, t0, logAsError)
 	}()
 
 	size := 0
@@ -310,7 +306,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	if tstr := r.FormValue("cacheTimeout"); tstr != "" {
 		t, err := strconv.Atoi(tstr)
 		if err != nil {
-			logger.Error("Failed to parse cacheTimeout",
+			logger.Error("failed to parse cacheTimeout",
 				zap.String("cache_string", tstr),
 				zap.Error(err),
 			)
@@ -367,7 +363,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	if from32 == until32 {
 		http.Error(w, "Invalid empty time range", http.StatusBadRequest)
 		accessLogDetails.HttpCode = http.StatusBadRequest
-		accessLogDetails.Reason = "Invalid empty time range"
+		accessLogDetails.Reason = "invalid empty time range"
 		logAsError = true
 		return
 	}
@@ -603,26 +599,26 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 
 	accessLogger := zapwriter.Logger("access")
 	var accessLogDetails = carbonapipb.AccessLogDetails{
-		Handler:		"find",
-		Username:		username,
-		CarbonapiUuid:	uuid.String(),
-		Url:			r.URL.RequestURI(),
-		PeerIp:			srcIP,
-		PeerPort:		srcPort,
-		Host:			r.Host,
-		Referer:		r.Referer(),
-		Uri:			r.RequestURI,
+		Handler:       "find",
+		Username:      username,
+		CarbonapiUuid: uuid.String(),
+		Url:           r.URL.RequestURI(),
+		PeerIp:        srcIP,
+		PeerPort:      srcPort,
+		Host:          r.Host,
+		Referer:       r.Referer(),
+		Uri:           r.RequestURI,
 	}
 
 	logAsError := false
-	defer func(){
-		SetupDeferredAccessLogging(accessLogger, &accessLogDetails, t0, logAsError)
+	defer func() {
+		deferredAccessLogging(accessLogger, &accessLogDetails, t0, logAsError)
 	}()
 
 	if query == "" {
 		http.Error(w, "missing parameter `query`", http.StatusBadRequest)
 		accessLogDetails.HttpCode = http.StatusBadRequest
-		accessLogDetails.Reason = "Missing parameter `query`"
+		accessLogDetails.Reason = "missing parameter `query`"
 		logAsError = true
 		return
 	}
@@ -823,21 +819,21 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 
 	accessLogger := zapwriter.Logger("access")
 	var accessLogDetails = carbonapipb.AccessLogDetails{
-		Handler:		"info",
-		Username:		username,
-		CarbonapiUuid:	uuid.String(),
-		Url:			r.URL.RequestURI(),
-		PeerIp:			srcIP,
-		PeerPort:		srcPort,
-		Host:			r.Host,
-		Referer:		r.Referer(),
-		Format:			format,
-		Uri:			r.RequestURI,
+		Handler:       "info",
+		Username:      username,
+		CarbonapiUuid: uuid.String(),
+		Url:           r.URL.RequestURI(),
+		PeerIp:        srcIP,
+		PeerPort:      srcPort,
+		Host:          r.Host,
+		Referer:       r.Referer(),
+		Format:        format,
+		Uri:           r.RequestURI,
 	}
 
 	logAsError := false
-	defer func(){
-		SetupDeferredAccessLogging(accessLogger, &accessLogDetails, t0, logAsError)
+	defer func() {
+		deferredAccessLogging(accessLogger, &accessLogDetails, t0, logAsError)
 	}()
 
 	var data map[string]pb.InfoResponse
@@ -847,7 +843,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	if query == "" {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		accessLogDetails.HttpCode = http.StatusBadRequest
-		accessLogDetails.Reason = "No target specified"
+		accessLogDetails.Reason = "no target specified"
 		logAsError = true
 		return
 	}
@@ -877,7 +873,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(b)
-	accessLogDetails.Runtime = time.Since(t0).String()
+	accessLogDetails.Runtime = time.Since(t0).Seconds()
 	accessLogDetails.HttpCode = http.StatusOK
 }
 
@@ -890,17 +886,17 @@ func lbcheckHandler(w http.ResponseWriter, r *http.Request) {
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
 
 	var accessLogDetails = carbonapipb.AccessLogDetails{
-		Handler:		"lbcheck",
-		Url:			r.URL.RequestURI(),
-		PeerIp:			srcIP,
-		PeerPort:		srcPort,
-		Host:			r.Host,
-		Referer:		r.Referer(),
-		Runtime:		time.Since(t0).String(),
-		HttpCode:		http.StatusOK,
-		Uri:			r.RequestURI,
+		Handler:  "lbcheck",
+		Url:      r.URL.RequestURI(),
+		PeerIp:   srcIP,
+		PeerPort: srcPort,
+		Host:     r.Host,
+		Referer:  r.Referer(),
+		Runtime:  time.Since(t0).Seconds(),
+		HttpCode: http.StatusOK,
+		Uri:      r.RequestURI,
 	}
-	accessLogger.Info("Request served", zap.Any("data", accessLogDetails))
+	accessLogger.Info("request served", zap.Any("data", accessLogDetails))
 }
 
 func versionHandler(w http.ResponseWriter, r *http.Request) {
@@ -915,17 +911,17 @@ func versionHandler(w http.ResponseWriter, r *http.Request) {
 
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
 	var accessLogDetails = carbonapipb.AccessLogDetails{
-		Handler:		"version",
-		Url:			r.URL.RequestURI(),
-		PeerIp:			srcIP,
-		PeerPort:		srcPort,
-		Host:			r.Host,
-		Referer:		r.Referer(),
-		Runtime:		time.Since(t0).String(),
-		HttpCode:		http.StatusOK,
-		Uri:			r.RequestURI,
+		Handler:  "version",
+		Url:      r.URL.RequestURI(),
+		PeerIp:   srcIP,
+		PeerPort: srcPort,
+		Host:     r.Host,
+		Referer:  r.Referer(),
+		Runtime:  time.Since(t0).Seconds(),
+		HttpCode: http.StatusOK,
+		Uri:      r.RequestURI,
 	}
-	accessLogger.Info("Request served", zap.Any("data", accessLogDetails))
+	accessLogger.Info("request served", zap.Any("data", accessLogDetails))
 }
 
 var usageMsg = []byte(`
@@ -1042,7 +1038,7 @@ func zipperStats(stats *realZipper.Stats) {
 	zipperMetrics.CacheHits.Add(stats.CacheHits)
 }
 
-func SetUpConfig(logger *zap.Logger, zipper CarbonZipper) {
+func setUpConfig(logger *zap.Logger, zipper CarbonZipper) {
 	config.Cache.MemcachedServers = viper.GetStringSlice("cache.memcachedServers")
 	if n := viper.GetString("logger.logger"); n != "" {
 		config.Logger[0].Logger = n
@@ -1136,7 +1132,7 @@ func SetUpConfig(logger *zap.Logger, zipper CarbonZipper) {
 		config.queryCache = cache.NullCache{}
 		config.findCache = cache.NullCache{}
 	default:
-		logger.Error("Unknown cache type",
+		logger.Error("unknown cache type",
 			zap.String("cache_type", config.Cache.Type),
 			zap.Strings("known_cache_types", []string{"null", "mem", "memcache"}),
 		)
@@ -1273,7 +1269,7 @@ func SetUpConfig(logger *zap.Logger, zipper CarbonZipper) {
 	}
 }
 
-func SetUpViper(logger *zap.Logger) {
+func setUpViper(logger *zap.Logger) {
 	configPath := flag.String("config", "", "Path to the `config file`.")
 	flag.Parse()
 	if *configPath != "" {
@@ -1335,6 +1331,7 @@ func SetUpViper(logger *zap.Logger) {
 	viper.SetDefault("expireDelaySec", 10)
 	viper.SetDefault("logger", map[string]string{})
 	viper.AutomaticEnv()
+
 	err := viper.Unmarshal(&config)
 	if err != nil {
 		logger.Fatal("failed to parse config",
@@ -1343,7 +1340,7 @@ func SetUpViper(logger *zap.Logger) {
 	}
 }
 
-func SetUpConfigUpstreams(logger *zap.Logger) {
+func setUpConfigUpstreams(logger *zap.Logger) {
 	config.Upstreams.PathCache = pathcache.NewPathCache(config.ExpireDelaySec)
 	config.Upstreams.SearchCache = pathcache.NewPathCache(config.ExpireDelaySec)
 	if config.Zipper != "" {
@@ -1363,12 +1360,12 @@ func main() {
 	}
 	logger := zapwriter.Logger("main")
 
-	SetUpViper(logger)
-	SetUpConfigUpstreams(logger)
+	setUpViper(logger)
+	setUpConfigUpstreams(logger)
 	zipper := newZipper(zipperStats, &config.Upstreams, logger.With(zap.String("handler", "zipper")))
-	SetUpConfig(logger, zipper)
+	setUpConfig(logger, zipper)
 
-	r := InitHandlers()
+	r := initHandlers()
 	handler := handlers.CompressHandler(r)
 	handler = handlers.CORS()(handler)
 	handler = handlers.ProxyHeaders(handler)
