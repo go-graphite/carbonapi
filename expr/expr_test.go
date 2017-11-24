@@ -1201,6 +1201,20 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "derivative",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric1"},
+				},
+			},
+			map[MetricRequest][]*MetricData{
+				{"metric1", 0, 1}: {makeResponse("metric1", []float64{math.NaN(), 4, 6, 1, 4, math.NaN(), 8}, 1, now32)},
+			},
+			[]*MetricData{makeResponse("derivative(metric1)",
+				[]float64{math.NaN(), math.NaN(), 2, -5, 3, math.NaN(), 4}, 1, now32)},
+		},
+		{
+			&expr{
 				target: "avg",
 				etype:  etFunc,
 				args: []*expr{
