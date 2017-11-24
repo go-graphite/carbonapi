@@ -1036,18 +1036,14 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 	case "derivative": // derivative(seriesList)
 		return forEachSeriesDo(e, from, until, values, func(a *MetricData, r *MetricData) *MetricData {
-			prev := a.Values[0]
-			start := 0
+			prev := math.NaN()
 			for i, v := range a.Values {
-				if !a.IsAbsent[i] {
-					prev = v
-					start = i
-					break
-				}
-			}
-			for i, v := range a.Values {
-				if i <= start || a.IsAbsent[i] {
+				if a.IsAbsent[i] {
 					r.IsAbsent[i] = true
+					continue
+				} else if math.IsNaN(prev) {
+					r.IsAbsent[i] = true
+					prev = v
 					continue
 				}
 
