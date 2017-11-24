@@ -20,6 +20,8 @@ type zipper struct {
 	statsSender func(*realZipper.Stats)
 }
 
+// The CarbonZipper interface exposes access to realZipper
+// Exposes the functionality to find, get info or render metrics.
 type CarbonZipper interface {
 	Find(ctx context.Context, metric string) (pb.GlobResponse, error)
 	Info(ctx context.Context, metric string) (map[string]pb.InfoResponse, error)
