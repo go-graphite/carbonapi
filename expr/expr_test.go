@@ -3611,6 +3611,51 @@ func TestEvalMultipleReturns(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "multiplySeriesWithWildcards",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric1.foo.*.*"},
+					{val: 1, etype: etConst},
+					{val: 2, etype: etConst},
+				},
+			},
+			map[MetricRequest][]*MetricData{
+				{"metric1.foo.*.*", 0, 1}: {
+					makeResponse("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
+					makeResponse("metric1.foo.bar1.qux", []float64{6, 0, 8, 9, 10}, 1, now32),
+					makeResponse("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
+					makeResponse("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11}, 1, now32),
+					makeResponse("metric1.foo.bar3.baz", []float64{2, 2, 2, 2, 2}, 1, now32),
+				},
+			},
+			"multiplySeriesWithWildcards",
+			map[string][]*MetricData{
+				"multiplySeriesWithWildcards(metric1.baz)": {makeResponse("multiplySeriesWithWildcards(metric1.baz)", []float64{22, 48, 78, 112, 150}, 1, now32)},
+				"multiplySeriesWithWildcards(metric1.qux)": {makeResponse("multiplySeriesWithWildcards(metric1.qux)", []float64{42, 0, 72, 90, 110}, 1, now32)},
+			},
+		},
+		{
+			&expr{
+				target: "stddevSeries",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{target: "metric2"},
+					{target: "metric3"}},
+				argString: "metric1,metric2,metric3",
+			},
+			map[MetricRequest][]*MetricData{
+				{"metric1", 0, 1}: {makeResponse("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{"metric2", 0, 1}: {makeResponse("metric2", []float64{2, 4, 6, 8, 10}, 1, now32)},
+				{"metric3", 0, 1}: {makeResponse("metric3", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			},
+			"stddevSeries",
+			map[string][]*MetricData{
+				"stddevSeries(metric1,metric2,metric3)": {makeResponse("stddevSeries(metric1,metric2,metric3)", []float64{0.4714045207910317, 0.9428090415820634, 1.4142135623730951, 1.8856180831641267, 2.357022603955158}, 1, now32)},
+			},
+		},
+		{
+			&expr{
 				target: "averageSeriesWithWildcards",
 				etype:  etFunc,
 				args: []*expr{
