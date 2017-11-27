@@ -1322,6 +1322,100 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 
 		return []*MetricData{&r}, nil
 
+	case "multiplySeriesWithWildcards": // multiplySeriesWithWildcards(seriesList, *position)
+		/* TODO(dgryski): make sure the arrays are all the same 'size'
+		   (duplicated from sumSeriesWithWildcards because of similar logic but multiplication) */
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		fields, err := getIntArgs(e, 1)
+		if err != nil {
+			return nil, err
+		}
+
+		var results []*MetricData
+
+		nodeList := []string{}
+		groups := make(map[string][]*MetricData)
+
+		for _, a := range args {
+			metric := extractMetric(a.Name)
+			nodes := strings.Split(metric, ".")
+			var s []string
+			// Yes, this is O(n^2), but len(nodes) < 10 and len(fields) < 3
+			// Iterating an int slice is faster than a map for n ~ 30
+			// http://www.antoine.im/posts/someone_is_wrong_on_the_internet
+			for i, n := range nodes {
+				if !contains(fields, i) {
+					s = append(s, n)
+				}
+			}
+
+			node := strings.Join(s, ".")
+
+			if len(groups[node]) == 0 {
+				nodeList = append(nodeList, node)
+			}
+
+			groups[node] = append(groups[node], a)
+		}
+
+		for _, series := range nodeList {
+			args := groups[series]
+			r := *args[0]
+			r.Name = fmt.Sprintf("multiplySeriesWithWildcards(%s)", series)
+			r.Values = make([]float64, len(args[0].Values))
+			r.IsAbsent = make([]bool, len(args[0].Values))
+
+			atLeastOne := make([]bool, len(args[0].Values))
+			hasVal := make([]bool, len(args[0].Values))
+
+			for _, arg := range args {
+				for i, v := range arg.Values {
+					if arg.IsAbsent[i] {
+						continue
+					}
+
+					atLeastOne[i] = true
+					if hasVal[i] == false {
+						r.Values[i] = v
+						hasVal[i] = true
+					} else {r.Values[i] *= v}
+				}
+			}
+
+			for i, v := range atLeastOne {
+				if !v {
+					r.IsAbsent[i] = true
+				}
+			}
+
+			results = append(results, &r)
+		}
+		return results, nil
+
+	case "stddevSeries": // stddevSeries(*seriesLists)
+		args, err := getSeriesArgsAndRemoveNonExisting(e, from, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		e.target = "stddevSeries"
+		return aggregateSeries(e, args, func(values []float64) float64 {
+			sum := 0.0
+			diffSqr := 0.0
+			for _, value := range values {
+				sum += value
+			}
+			average := sum / float64(len(values))
+			for _, value := range values {
+				diffSqr += (value - average) * (value - average)
+			}
+			return math.Sqrt(diffSqr / float64(len(values)))
+		})
+
 	case "ewma", "exponentialWeightedMovingAverage": // ewma(seriesList, alpha)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {

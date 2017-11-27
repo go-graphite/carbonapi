@@ -181,7 +181,7 @@ movingMedian(seriesList, windowSize)                                      |  0.9
 movingMin(seriesList, windowSize)                                         |  1.0.0  | Supported
 movingSum(seriesList, windowSize)                                         |  1.0.0  | Supported
 multiplySeries(*seriesLists)                                              |  0.9.10 | Supported
-multiplySeriesWithWildcards(seriesList, *position)                        |  1.0.0  |
+multiplySeriesWithWildcards(seriesList, *position)                        |  1.0.0  | Supported
 nPercentile(seriesList, n)                                                |  0.9.9  | Supported
 nonNegativeDerivative(seriesList, maxValue=None)                          |  0.9.9  | Supported
 offset(seriesList, factor)                                                |  0.9.9  | Supported
@@ -215,7 +215,7 @@ sortByName(seriesList)                                                    |  0.9
 sortByTotal(seriesList)                                                   |  0.9.11 | Supported
 squareRoot(seriesList)                                                    |  1.0.0  | Supported
 stacked(seriesLists, stackName='__DEFAULT__')                             |  0.9.10 | [#74](https://github.com/go-graphite/carbonapi/issues/74)
-stddevSeries(*seriesLists)                                                |  0.9.14 |
+stddevSeries(*seriesLists)                                                |  0.9.14 | Supported
 stdev(seriesList, points, windowTolerance=0.1)                            |  0.9.10 | Supported + alias stddev()
 substr(seriesList, start=0, stop=0)                                       |  0.9.9  | Supported
 sumSeries(*seriesLists), Short form: sum()                                |  0.9.9  | Supported
@@ -234,4 +234,3 @@ verticalLine(ts, label=None, color=None)                                  |  1.0
 weightedAverage(seriesListAvg, seriesListWeight, node)                    |  1.0.0  |
 
 -----
-
