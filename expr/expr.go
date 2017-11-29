@@ -1384,7 +1384,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 						hasVal[i] = true
 					} else {
 						r.Values[i] *= v
-						}
+					}
 				}
 			}
 
