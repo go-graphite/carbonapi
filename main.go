@@ -1115,18 +1115,6 @@ func setUpConfig(logger *zap.Logger, zipper CarbonZipper) {
 		})
 		expvar.Publish("cache_items", apiMetrics.CacheItems)
 
-		zipperMetrics.CacheSize = expvar.Func(func() interface{} { return config.Upstreams.PathCache.ECSize() })
-		expvar.Publish("cacheSize", zipperMetrics.CacheSize)
-
-		zipperMetrics.CacheItems = expvar.Func(func() interface{} { return config.Upstreams.PathCache.ECItems() })
-		expvar.Publish("cacheItems", zipperMetrics.CacheItems)
-
-		zipperMetrics.SearchCacheSize = expvar.Func(func() interface{} { return config.Upstreams.SearchCache.ECSize() })
-		expvar.Publish("searchCacheSize", zipperMetrics.SearchCacheSize)
-
-		zipperMetrics.SearchCacheItems = expvar.Func(func() interface{} { return config.Upstreams.SearchCache.ECItems() })
-		expvar.Publish("searchCacheItems", zipperMetrics.SearchCacheItems)
-
 	case "null":
 		// defaults
 		config.queryCache = cache.NullCache{}
@@ -1341,8 +1329,6 @@ func setUpViper(logger *zap.Logger) {
 }
 
 func setUpConfigUpstreams(logger *zap.Logger) {
-	config.Upstreams.PathCache = pathcache.NewPathCache(config.ExpireDelaySec)
-	config.Upstreams.SearchCache = pathcache.NewPathCache(config.ExpireDelaySec)
 	if config.Zipper != "" {
 		logger.Warn("found legacy 'zipper' option, will use it instead of any 'upstreams' specified. This will be removed in future versions!")
 
@@ -1351,6 +1337,22 @@ func setUpConfigUpstreams(logger *zap.Logger) {
 	if len(config.Upstreams.Backends) == 0 {
 		logger.Fatal("no backends specified for upstreams!")
 	}
+
+	// Setup in-memory path cache for carbonzipper requests
+	config.Upstreams.PathCache = pathcache.NewPathCache(config.ExpireDelaySec)
+	config.Upstreams.SearchCache = pathcache.NewPathCache(config.ExpireDelaySec)
+
+	zipperMetrics.CacheSize = expvar.Func(func() interface{} { return config.Upstreams.PathCache.ECSize() })
+	expvar.Publish("cacheSize", zipperMetrics.CacheSize)
+
+	zipperMetrics.CacheItems = expvar.Func(func() interface{} { return config.Upstreams.PathCache.ECItems() })
+	expvar.Publish("cacheItems", zipperMetrics.CacheItems)
+
+	zipperMetrics.SearchCacheSize = expvar.Func(func() interface{} { return config.Upstreams.SearchCache.ECSize() })
+	expvar.Publish("searchCacheSize", zipperMetrics.SearchCacheSize)
+
+	zipperMetrics.SearchCacheItems = expvar.Func(func() interface{} { return config.Upstreams.SearchCache.ECItems() })
+	expvar.Publish("searchCacheItems", zipperMetrics.SearchCacheItems)
 }
 
 func main() {
