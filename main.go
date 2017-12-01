@@ -772,6 +772,8 @@ func findTreejson(globs pb.GlobResponse) ([]byte, error) {
 
 	if i := strings.LastIndex(basepath, "."); i != -1 {
 		basepath = basepath[:i+1]
+	} else {
+		basepath = ""
 	}
 
 	for _, g := range globs.Matches {
