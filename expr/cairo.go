@@ -805,7 +805,6 @@ func marshalCairo(p PictureParams, results []*MetricData, backend cairoBackend) 
 	params.area.xmax = params.width - margin
 	params.area.ymin = margin
 	params.area.ymax = params.height - margin
-	params.hideLegend = getBool(r.FormValue("hideLegend"), len(results) > 10)
 
 	var cr cairoSurfaceContext
 	var surface *cairo.Surface
