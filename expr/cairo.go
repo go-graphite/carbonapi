@@ -553,50 +553,50 @@ type Area struct {
 }
 
 type Params struct {
-	width      float64
-	height     float64
-	margin     int
-	logBase    float64
-	fgColor    color.RGBA
-	bgColor    color.RGBA
-	majorLine  color.RGBA
-	minorLine  color.RGBA
-	fontName   string
-	fontSize   float64
-	fontBold   cairo.FontWeight
-	fontItalic cairo.FontSlant
+	Width      float64
+	Height     float64
+	Margin     int
+	LogBase    float64
+	FgColor    color.RGBA
+	BgColor    color.RGBA
+	MajorLine  color.RGBA
+	MinorLine  color.RGBA
+	FontName   string
+	FontSize   float64
+	FontBold   cairo.FontWeight
+	FontItalic cairo.FontSlant
 
-	graphOnly   bool
-	hideLegend  bool
-	hideGrid    bool
-	hideAxes    bool
-	hideYAxis   bool
-	hideXAxis   bool
-	yAxisSide   YAxisSide
-	title       string
-	vtitle      string
-	vtitleRight string
-	tz          *time.Location
-	timeRange   int32
-	startTime   int32
-	endTime     int32
+	GraphOnly   bool
+	HideLegend  bool
+	HideGrid    bool
+	HideAxes    bool
+	HideYAxis   bool
+	HideXAxis   bool
+	YAxisSide   YAxisSide
+	Title       string
+	Vtitle      string
+	VtitleRight string
+	Tz          *time.Location
+	TimeRange   int32
+	StartTime   int32
+	EndTime     int32
 
-	lineMode       LineMode
-	areaMode       AreaMode
-	areaAlpha      float64
-	pieMode        PieMode
-	colorList      []string
-	lineWidth      float64
-	connectedLimit int
-	hasStack       bool
+	LineMode       LineMode
+	AreaMode       AreaMode
+	AreaAlpha      float64
+	PieMode        PieMode
+	ColorList      []string
+	LineWidth      float64
+	ConnectedLimit int
+	HasStack       bool
 
-	yMin   float64
-	yMax   float64
-	xMin   float64
-	xMax   float64
-	yStep  float64
-	xStep  float64
-	minorY int
+	YMin   float64
+	YMax   float64
+	XMin   float64
+	XMax   float64
+	YStep  float64
+	XStep  float64
+	MinorY int
 
 	yTop           float64
 	yBottom        float64
@@ -604,19 +604,19 @@ type Params struct {
 	graphHeight    float64
 	graphWidth     float64
 	yScaleFactor   float64
-	yUnitSystem    string
-	yDivisors      []float64
+	YUnitSystem    string
+	YDivisors      []float64
 	yLabelValues   []float64
 	yLabels        []string
 	yLabelWidth    float64
 	xScaleFactor   float64
-	xFormat        string
+	XFormat        string
 	xLabelStep     int32
 	xMinorGridStep int32
 	xMajorGridStep int32
 
-	minorGridLineColor string
-	majorGridLineColor string
+	MinorGridLineColor string
+	MajorGridLineColor string
 
 	yTopL         float64
 	yBottomL      float64
@@ -628,38 +628,38 @@ type Params struct {
 	yLabelValuesR []float64
 	yLabelsR      []string
 	yLabelWidthR  float64
-	yStepL        float64
-	yStepR        float64
+	YStepL        float64
+	YStepR        float64
 	ySpanL        float64
 	ySpanR        float64
 	yScaleFactorL float64
 	yScaleFactorR float64
 
-	yMaxLeft    float64
-	yLimitLeft  float64
-	yMaxRight   float64
-	yLimitRight float64
-	yMinLeft    float64
-	yMinRight   float64
+	YMaxLeft    float64
+	YLimitLeft  float64
+	YMaxRight   float64
+	YLimitRight float64
+	YMinLeft    float64
+	YMinRight   float64
 
 	dataLeft  []*MetricData
 	dataRight []*MetricData
 
-	rightWidth  float64
-	rightDashed bool
-	rightColor  string
-	leftWidth   float64
-	leftDashed  bool
-	leftColor   string
+	RightWidth  float64
+	RightDashed bool
+	RightColor  string
+	LeftWidth   float64
+	LeftDashed  bool
+	LeftColor   string
 
 	area        Area
 	isPng       bool // TODO: png and svg use the same code
 	fontExtents cairo.FontExtents
 
-	uniqueLegend   bool
+	UniqueLegend   bool
 	secondYAxis    bool
-	drawNullAsZero bool
-	drawAsInfinite bool
+	DrawNullAsZero bool
+	DrawAsInfinite bool
 
 	xConf xAxisStruct
 }
@@ -889,82 +889,82 @@ func MarshalPNG(r *http.Request, results []*MetricData) []byte {
 
 func marshalCairo(r *http.Request, results []*MetricData, backend cairoBackend) []byte {
 	var params = Params{
-		width:          getFloat64(r.FormValue("width"), 330),
-		height:         getFloat64(r.FormValue("height"), 250),
-		margin:         getInt(r.FormValue("margin"), 10),
-		logBase:        getLogBase(r.FormValue("logBase")),
-		fgColor:        string2RGBA(getString(r.FormValue("fgcolor"), "white")),
-		bgColor:        string2RGBA(getString(r.FormValue("bgcolor"), "black")),
-		majorLine:      string2RGBA(getString(r.FormValue("majorLine"), "rose")),
-		minorLine:      string2RGBA(getString(r.FormValue("minorLine"), "grey")),
-		fontName:       getString(r.FormValue("fontName"), "Sans"),
-		fontSize:       getFloat64(r.FormValue("fontSize"), 10.0),
-		fontBold:       getFontWeight(r.FormValue("fontBold")),
-		fontItalic:     getFontItalic(r.FormValue("fontItalic")),
-		graphOnly:      getBool(r.FormValue("graphOnly"), false),
-		hideLegend:     getBool(r.FormValue("hideLegend"), false),
-		hideGrid:       getBool(r.FormValue("hideGrid"), false),
-		hideAxes:       getBool(r.FormValue("hideAxes"), false),
-		hideYAxis:      getBool(r.FormValue("hideYAxis"), false),
-		hideXAxis:      getBool(r.FormValue("hideXAxis"), false),
-		yAxisSide:      getAxisSide(r.FormValue("yAxisSide"), YAxisSideLeft),
-		connectedLimit: getInt(r.FormValue("connectedLimit"), math.MaxUint32),
-		lineMode:       getLineMode(r.FormValue("lineMode"), LineModeSlope),
-		areaMode:       getAreaMode(r.FormValue("areaMode"), AreaModeNone),
-		areaAlpha:      getFloat64(r.FormValue("areaAlpha"), math.NaN()),
-		pieMode:        getPieMode(r.FormValue("pieMode"), PieModeAverage),
-		lineWidth:      getFloat64(r.FormValue("lineWidth"), 1.2),
+		Width:      getFloat64(r.FormValue("width"), 330),
+		Height:     getFloat64(r.FormValue("height"), 250),
+		Margin:     getInt(r.FormValue("margin"), 10),
+		LogBase:        getLogBase(r.FormValue("logBase")),
+		FgColor:        string2RGBA(getString(r.FormValue("fgcolor"), "white")),
+		BgColor:        string2RGBA(getString(r.FormValue("bgcolor"), "black")),
+		MajorLine:      string2RGBA(getString(r.FormValue("majorLine"), "rose")),
+		MinorLine:      string2RGBA(getString(r.FormValue("minorLine"), "grey")),
+		FontName:       getString(r.FormValue("fontName"), "Sans"),
+		FontSize:       getFloat64(r.FormValue("fontSize"), 10.0),
+		FontBold:       getFontWeight(r.FormValue("fontBold")),
+		FontItalic:     getFontItalic(r.FormValue("fontItalic")),
+		GraphOnly:      getBool(r.FormValue("graphOnly"), false),
+		HideLegend:     getBool(r.FormValue("hideLegend"), false),
+		HideGrid:       getBool(r.FormValue("hideGrid"), false),
+		HideAxes:       getBool(r.FormValue("hideAxes"), false),
+		HideYAxis:      getBool(r.FormValue("hideYAxis"), false),
+		HideXAxis:      getBool(r.FormValue("hideXAxis"), false),
+		YAxisSide:      getAxisSide(r.FormValue("yAxisSide"), YAxisSideLeft),
+		ConnectedLimit: getInt(r.FormValue("connectedLimit"), math.MaxUint32),
+		LineMode:       getLineMode(r.FormValue("lineMode"), LineModeSlope),
+		AreaMode:       getAreaMode(r.FormValue("areaMode"), AreaModeNone),
+		AreaAlpha:      getFloat64(r.FormValue("areaAlpha"), math.NaN()),
+		PieMode:        getPieMode(r.FormValue("pieMode"), PieModeAverage),
+		LineWidth:      getFloat64(r.FormValue("lineWidth"), 1.2),
 
-		rightWidth:  getFloat64(r.FormValue("rightWidth"), 1.2),
-		rightDashed: getBool(r.FormValue("rightDashed"), false),
-		rightColor:  getString(r.FormValue("rightColor"), ""),
+		RightWidth:  getFloat64(r.FormValue("rightWidth"), 1.2),
+		RightDashed: getBool(r.FormValue("rightDashed"), false),
+		RightColor:  getString(r.FormValue("rightColor"), ""),
 
-		leftWidth:  getFloat64(r.FormValue("leftWidth"), 1.2),
-		leftDashed: getBool(r.FormValue("leftDashed"), false),
-		leftColor:  getString(r.FormValue("leftColor"), ""),
+		LeftWidth:  getFloat64(r.FormValue("leftWidth"), 1.2),
+		LeftDashed: getBool(r.FormValue("leftDashed"), false),
+		LeftColor:  getString(r.FormValue("leftColor"), ""),
 
-		title:       getString(r.FormValue("title"), ""),
-		vtitle:      getString(r.FormValue("vtitle"), ""),
-		vtitleRight: getString(r.FormValue("vtitleRight"), ""),
-		tz:          getTimeZone(r.FormValue("tz"), time.Local),
+		Title:       getString(r.FormValue("title"), ""),
+		Vtitle:      getString(r.FormValue("vtitle"), ""),
+		VtitleRight: getString(r.FormValue("vtitleRight"), ""),
+		Tz:          getTimeZone(r.FormValue("tz"), time.Local),
 
-		colorList: getStringArray(r.FormValue("colorList"), defaultColorList),
+		ColorList: getStringArray(r.FormValue("colorList"), defaultColorList),
 		isPng:     true,
 
-		majorGridLineColor: getString(r.FormValue("majorGridLineColor"), "white"),
-		minorGridLineColor: getString(r.FormValue("minorGridLineColor"), "grey"),
+		MajorGridLineColor: getString(r.FormValue("majorGridLineColor"), "white"),
+		MinorGridLineColor: getString(r.FormValue("minorGridLineColor"), "grey"),
 
-		uniqueLegend:   getBool(r.FormValue("uniqueLegend"), false),
-		drawNullAsZero: getBool(r.FormValue("drawNullAsZero"), false),
-		drawAsInfinite: getBool(r.FormValue("drawAsInfinite"), false),
-		yMin:           getFloat64(r.FormValue("yMin"), math.NaN()),
-		yMax:           getFloat64(r.FormValue("yMax"), math.NaN()),
-		yStep:          getFloat64(r.FormValue("yStep"), math.NaN()),
-		xMin:           getFloat64(r.FormValue("xMin"), math.NaN()),
-		xMax:           getFloat64(r.FormValue("xMax"), math.NaN()),
-		xStep:          getFloat64(r.FormValue("xStep"), math.NaN()),
-		xFormat:        getString(r.FormValue("xFormat"), ""),
-		minorY:         getInt(r.FormValue("minorY"), 1),
+		UniqueLegend:   getBool(r.FormValue("uniqueLegend"), false),
+		DrawNullAsZero: getBool(r.FormValue("drawNullAsZero"), false),
+		DrawAsInfinite: getBool(r.FormValue("drawAsInfinite"), false),
+		YMin:           getFloat64(r.FormValue("yMin"), math.NaN()),
+		YMax:           getFloat64(r.FormValue("yMax"), math.NaN()),
+		YStep:          getFloat64(r.FormValue("yStep"), math.NaN()),
+		XMin:           getFloat64(r.FormValue("xMin"), math.NaN()),
+		XMax:           getFloat64(r.FormValue("xMax"), math.NaN()),
+		XStep:          getFloat64(r.FormValue("xStep"), math.NaN()),
+		XFormat:        getString(r.FormValue("xFormat"), ""),
+		MinorY:         getInt(r.FormValue("minorY"), 1),
 
-		yMinLeft:    getFloat64(r.FormValue("yMinLeft"), math.NaN()),
-		yMinRight:   getFloat64(r.FormValue("yMinRight"), math.NaN()),
-		yMaxLeft:    getFloat64(r.FormValue("yMaxLeft"), math.NaN()),
-		yMaxRight:   getFloat64(r.FormValue("yMaxRight"), math.NaN()),
-		yStepL:      getFloat64(r.FormValue("yStepLeft"), math.NaN()),
-		yStepR:      getFloat64(r.FormValue("yStepRight"), math.NaN()),
-		yLimitLeft:  getFloat64(r.FormValue("yLimitLeft"), math.NaN()),
-		yLimitRight: getFloat64(r.FormValue("yLimitRight"), math.NaN()),
+		YMinLeft:    getFloat64(r.FormValue("yMinLeft"), math.NaN()),
+		YMinRight:   getFloat64(r.FormValue("yMinRight"), math.NaN()),
+		YMaxLeft:    getFloat64(r.FormValue("yMaxLeft"), math.NaN()),
+		YMaxRight:   getFloat64(r.FormValue("yMaxRight"), math.NaN()),
+		YStepL:      getFloat64(r.FormValue("yStepLeft"), math.NaN()),
+		YStepR:      getFloat64(r.FormValue("yStepRight"), math.NaN()),
+		YLimitLeft:  getFloat64(r.FormValue("yLimitLeft"), math.NaN()),
+		YLimitRight: getFloat64(r.FormValue("yLimitRight"), math.NaN()),
 
-		yUnitSystem: getString(r.FormValue("yUnitSystem"), "si"),
-		yDivisors:   getFloatArray(r.FormValue("yDivisors"), []float64{4, 5, 6}),
+		YUnitSystem: getString(r.FormValue("yUnitSystem"), "si"),
+		YDivisors:   getFloatArray(r.FormValue("yDivisors"), []float64{4, 5, 6}),
 	}
 
-	margin := float64(params.margin)
+	margin := float64(params.Margin)
 	params.area.xmin = margin + 10
-	params.area.xmax = params.width - margin
+	params.area.xmax = params.Width - margin
 	params.area.ymin = margin
-	params.area.ymax = params.height - margin
-	params.hideLegend = getBool(r.FormValue("hideLegend"), len(results) > 10)
+	params.area.ymax = params.Height - margin
+	params.HideLegend = getBool(r.FormValue("hideLegend"), len(results) > 10)
 
 	var cr cairoSurfaceContext
 	var surface *cairo.Surface
@@ -977,10 +977,10 @@ func marshalCairo(r *http.Request, results []*MetricData, backend cairoBackend) 
 			return nil
 		}
 		defer os.Remove(tmpfile.Name())
-		s := cairo.SVGSurfaceCreate(tmpfile.Name(), params.width, params.height)
+		s := cairo.SVGSurfaceCreate(tmpfile.Name(), params.Width, params.Height)
 		surface = s.Surface
 	case cairoPNG:
-		s := cairo.ImageSurfaceCreate(cairo.FormatARGB32, int(params.width), int(params.height))
+		s := cairo.ImageSurfaceCreate(cairo.FormatARGB32, int(params.Width), int(params.Height))
 		surface = s.Surface
 	}
 	cr.context = cairo.Create(surface)
@@ -991,8 +991,8 @@ func marshalCairo(r *http.Request, results []*MetricData, backend cairoBackend) 
 	fontOpts.SetAntialias(cairo.AntialiasNone)
 	cr.context.SetFontOptions(fontOpts)
 
-	setColor(&cr, params.bgColor)
-	drawRectangle(&cr, &params, 0, 0, params.width, params.height, true)
+	setColor(&cr, params.BgColor)
+	drawRectangle(&cr, &params, 0, 0, params.Width, params.Height, true)
 
 	drawGraph(&cr, &params, results)
 
@@ -1024,18 +1024,18 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 	var minNumberOfPoints, maxNumberOfPoints int32
 	params.secondYAxis = false
 
-	params.startTime = -1
-	params.endTime = -1
+	params.StartTime = -1
+	params.EndTime = -1
 	minNumberOfPoints = -1
 	maxNumberOfPoints = -1
 	for _, res := range results {
 		tmp := res.StartTime
-		if params.startTime == -1 || params.startTime > tmp {
-			params.startTime = tmp
+		if params.StartTime == -1 || params.StartTime > tmp {
+			params.StartTime = tmp
 		}
 		tmp = res.StopTime
-		if params.endTime == -1 || params.endTime > tmp {
-			params.endTime = tmp
+		if params.EndTime == -1 || params.EndTime > tmp {
+			params.EndTime = tmp
 		}
 
 		tmp = int32(len(res.Values))
@@ -1047,13 +1047,13 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 		}
 
 	}
-	params.timeRange = params.endTime - params.startTime
+	params.TimeRange = params.EndTime - params.StartTime
 
-	if params.timeRange <= 0 {
-		x := params.width / 2.0
-		y := params.height / 2.0
+	if params.TimeRange <= 0 {
+		x := params.Width / 2.0
+		y := params.Height / 2.0
 		setColor(cr, string2RGBA("red"))
-		fontSize := math.Log(params.width * params.height)
+		fontSize := math.Log(params.Width * params.Height)
 		setFont(cr, params, fontSize)
 		drawText(cr, params, "No Data", x, y, HAlignCenter, VAlignTop, 0)
 
@@ -1070,22 +1070,22 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 
 	if len(params.dataRight) > 0 {
 		params.secondYAxis = true
-		params.yAxisSide = YAxisSideLeft
+		params.YAxisSide = YAxisSideLeft
 	}
 
-	if params.graphOnly {
-		params.hideLegend = true
-		params.hideGrid = true
-		params.hideAxes = true
-		params.hideYAxis = true
+	if params.GraphOnly {
+		params.HideLegend = true
+		params.HideGrid = true
+		params.HideAxes = true
+		params.HideYAxis = true
 	}
 
-	if params.yAxisSide == YAxisSideRight {
-		params.margin = int(params.width)
+	if params.YAxisSide == YAxisSideRight {
+		params.Margin = int(params.Width)
 	}
 
-	if params.lineMode == LineModeSlope && minNumberOfPoints == 1 {
-		params.lineMode = LineModeStaircase
+	if params.LineMode == LineModeSlope && minNumberOfPoints == 1 {
+		params.LineMode = LineModeStaircase
 	}
 
 	var colorsCur int
@@ -1095,67 +1095,67 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 			continue
 		}
 		if params.secondYAxis && res.secondYAxis {
-			res.lineWidth = params.rightWidth
+			res.lineWidth = params.RightWidth
 			res.hasLineWidth = true
-			if params.rightDashed && res.dashed == 0 {
+			if params.RightDashed && res.dashed == 0 {
 				res.dashed = 2.5
 			}
-			res.color = params.rightColor
+			res.color = params.RightColor
 		} else if params.secondYAxis {
-			res.lineWidth = params.leftWidth
+			res.lineWidth = params.LeftWidth
 			res.hasLineWidth = true
-			if params.leftDashed && res.dashed == 0 {
+			if params.LeftDashed && res.dashed == 0 {
 				res.dashed = 2.5
 			}
-			res.color = params.leftColor
+			res.color = params.LeftColor
 		}
 		if res.color == "" {
-			res.color = params.colorList[colorsCur]
+			res.color = params.ColorList[colorsCur]
 			colorsCur++
-			if colorsCur >= len(params.colorList) {
+			if colorsCur >= len(params.ColorList) {
 				colorsCur = 0
 			}
 		}
 	}
 
-	if params.title != "" || params.vtitle != "" || params.vtitleRight != "" {
-		titleSize := params.fontSize + math.Floor(math.Log(params.fontSize))
+	if params.Title != "" || params.Vtitle != "" || params.VtitleRight != "" {
+		titleSize := params.FontSize + math.Floor(math.Log(params.FontSize))
 
-		setColor(cr, params.fgColor)
+		setColor(cr, params.FgColor)
 		setFont(cr, params, titleSize)
 	}
 
-	if params.title != "" {
+	if params.Title != "" {
 		drawTitle(cr, params)
 	}
-	if params.vtitle != "" {
-		drawVTitle(cr, params, params.vtitle, false)
+	if params.Vtitle != "" {
+		drawVTitle(cr, params, params.Vtitle, false)
 	}
-	if params.secondYAxis && params.vtitleRight != "" {
-		drawVTitle(cr, params, params.vtitleRight, true)
+	if params.secondYAxis && params.VtitleRight != "" {
+		drawVTitle(cr, params, params.VtitleRight, true)
 	}
 
-	setFont(cr, params, params.fontSize)
-	if !params.hideLegend {
+	setFont(cr, params, params.FontSize)
+	if !params.HideLegend {
 		drawLegend(cr, params, results)
 	}
 
 	// Setup axes, labels and grid
 	// First we adjust the drawing area size to fit X-axis labels
-	if !params.hideAxes {
+	if !params.HideAxes {
 		params.area.ymax -= params.fontExtents.Ascent * 2
 	}
 
-	if !(params.lineMode == LineModeStaircase || ((minNumberOfPoints == maxNumberOfPoints) && (minNumberOfPoints == 2))) {
-		params.endTime = 0
+	if !(params.LineMode == LineModeStaircase || ((minNumberOfPoints == maxNumberOfPoints) && (minNumberOfPoints == 2))) {
+		params.EndTime = 0
 		for _, res := range results {
 			tmp := res.StopTime - res.StepTime
-			if params.endTime < tmp {
-				params.endTime = tmp
+			if params.EndTime < tmp {
+				params.EndTime = tmp
 			}
 		}
-		params.timeRange = params.endTime - params.startTime
-		if params.timeRange < 0 {
+		params.TimeRange = params.EndTime - params.StartTime
+		if params.TimeRange < 0 {
 			panic("startTime > endTime!!!")
 		}
 	}
@@ -1163,27 +1163,27 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 	// look for at least one stacked value
 	for _, r := range results {
 		if r.stacked {
-			params.hasStack = true
+			params.HasStack = true
 			break
 		}
 	}
 
 	// check if we need to stack all the things
-	if params.areaMode == AreaModeStacked {
-		params.hasStack = true
+	if params.AreaMode == AreaModeStacked {
+		params.HasStack = true
 		for _, r := range results {
 			r.stacked = true
 			r.stackName = "stack"
 		}
-	} else if params.areaMode == AreaModeFirst {
+	} else if params.AreaMode == AreaModeFirst {
 		results[0].stacked = true
-	} else if params.areaMode == AreaModeAll {
+	} else if params.AreaMode == AreaModeAll {
 		for _, r := range results {
 			r.stacked = true
 		}
 	}
 
-	if params.hasStack {
+	if params.HasStack {
 		sort.Stable(ByStacked(results))
 		// perform all aggregations / summations up so the rest of the graph drawing code doesn't need to care
 
@@ -1249,10 +1249,10 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 
 	setupXAxis(cr, params, results)
 
-	if !params.hideAxes {
-		setColor(cr, params.fgColor)
+	if !params.HideAxes {
+		setColor(cr, params.FgColor)
 		drawLabels(cr, params, results)
-		if !params.hideGrid {
+		if !params.HideGrid {
 			drawGridLines(cr, params, results)
 		}
 	}
@@ -1261,14 +1261,14 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 }
 
 func consolidateDataPoints(params *Params, results []*MetricData) {
-	numberOfPixels := params.area.xmax - params.area.xmin - (params.lineWidth + 1)
+	numberOfPixels := params.area.xmax - params.area.xmin - (params.LineWidth + 1)
 	params.graphWidth = numberOfPixels
 
 	for _, series := range results {
-		numberOfDataPoints := math.Floor(float64(params.timeRange / series.StepTime))
+		numberOfDataPoints := math.Floor(float64(params.TimeRange / series.StepTime))
 		// minXStep := params.minXStep
 		minXStep := 1.0
-		divisor := float64(params.timeRange) / float64(series.StepTime)
+		divisor := float64(params.TimeRange) / float64(series.StepTime)
 		bestXStep := numberOfPixels / divisor
 		if bestXStep < minXStep {
 			drawableDataPoints := int(numberOfPixels / minXStep)
@@ -1314,7 +1314,7 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*MetricDat
 	}
 
 	yMinValueL := math.Inf(1)
-	if params.drawNullAsZero && len(seriesWithMissingValuesL) > 0 {
+	if params.DrawNullAsZero && len(seriesWithMissingValuesL) > 0 {
 		yMinValueL = 0
 	} else {
 		for _, s := range Ldata {
@@ -1334,7 +1334,7 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*MetricDat
 	}
 
 	yMinValueR := math.Inf(1)
-	if params.drawNullAsZero && len(seriesWithMissingValuesR) > 0 {
+	if params.DrawNullAsZero && len(seriesWithMissingValuesR) > 0 {
 		yMinValueR = 0
 	} else {
 		for _, s := range Rdata {
@@ -1397,25 +1397,25 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*MetricDat
 		yMaxValueR = 0
 	}
 
-	if !math.IsNaN(params.yMaxLeft) {
-		yMaxValueL = params.yMaxLeft
+	if !math.IsNaN(params.YMaxLeft) {
+		yMaxValueL = params.YMaxLeft
 	}
-	if !math.IsNaN(params.yMaxRight) {
-		yMaxValueR = params.yMaxRight
-	}
-
-	if !math.IsNaN(params.yLimitLeft) && params.yLimitLeft < yMaxValueL {
-		yMaxValueL = params.yLimitLeft
-	}
-	if !math.IsNaN(params.yLimitRight) && params.yLimitRight < yMaxValueR {
-		yMaxValueR = params.yLimitRight
+	if !math.IsNaN(params.YMaxRight) {
+		yMaxValueR = params.YMaxRight
 	}
 
-	if !math.IsNaN(params.yMinLeft) {
-		yMinValueL = params.yMinLeft
+	if !math.IsNaN(params.YLimitLeft) && params.YLimitLeft < yMaxValueL {
+		yMaxValueL = params.YLimitLeft
 	}
-	if !math.IsNaN(params.yMinRight) {
-		yMinValueR = params.yMinRight
+	if !math.IsNaN(params.YLimitRight) && params.YLimitRight < yMaxValueR {
+		yMaxValueR = params.YLimitRight
+	}
+
+	if !math.IsNaN(params.YMinLeft) {
+		yMinValueL = params.YMinLeft
+	}
+	if !math.IsNaN(params.YMinRight) {
+		yMinValueR = params.YMinRight
 	}
 
 	if yMaxValueL <= yMinValueL {
@@ -1430,7 +1430,7 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*MetricDat
 
 	var orderL float64
 	var orderFactorL float64
-	if params.yUnitSystem == "binary" {
+	if params.YUnitSystem == "binary" {
 		orderL = math.Log2(yVarianceL)
 		orderFactorL = math.Pow(2, math.Floor(orderL))
 	} else {
@@ -1440,7 +1440,7 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*MetricDat
 
 	var orderR float64
 	var orderFactorR float64
-	if params.yUnitSystem == "binary" {
+	if params.YUnitSystem == "binary" {
 		orderR = math.Log2(yVarianceR)
 		orderFactorR = math.Pow(2, math.Floor(orderR))
 	} else {
@@ -1451,7 +1451,7 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*MetricDat
 	vL := yVarianceL / orderFactorL // we work with a scaled down yVariance for simplicity
 	vR := yVarianceR / orderFactorR
 
-	yDivisors := params.yDivisors
+	yDivisors := params.YDivisors
 
 	prettyValues := []float64{0.1, 0.2, 0.25, 0.5, 1.0, 1.2, 1.25, 1.5, 2.0, 2.25, 2.5}
 
@@ -1476,44 +1476,44 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*MetricDat
 	prettyValueR := divinfoR[0].p
 	yStepR := prettyValueR * orderFactorR
 
-	if !math.IsNaN(params.yStepL) {
-		yStepL = params.yStepL
+	if !math.IsNaN(params.YStepL) {
+		yStepL = params.YStepL
 	}
-	if !math.IsNaN(params.yStepR) {
-		yStepR = params.yStepR
+	if !math.IsNaN(params.YStepR) {
+		yStepR = params.YStepR
 	}
 
-	params.yStepL = yStepL
-	params.yStepR = yStepR
+	params.YStepL = yStepL
+	params.YStepR = yStepR
 
-	params.yBottomL = params.yStepL * math.Floor(yMinValueL/params.yStepL)
-	params.yTopL = params.yStepL * math.Ceil(yMaxValueL/params.yStepL)
+	params.yBottomL = params.YStepL * math.Floor(yMinValueL/params.YStepL)
+	params.yTopL = params.YStepL * math.Ceil(yMaxValueL/params.YStepL)
 
-	params.yBottomR = params.yStepR * math.Floor(yMinValueR/params.yStepR)
-	params.yTopR = params.yStepR * math.Ceil(yMaxValueR/params.yStepR)
+	params.yBottomR = params.YStepR * math.Floor(yMinValueR/params.YStepR)
+	params.yTopR = params.YStepR * math.Ceil(yMaxValueR/params.YStepR)
 
-	if params.logBase != 0 {
+	if params.LogBase != 0 {
 		if yMinValueL > 0 && yMinValueR > 0 {
-			params.yBottomL = math.Pow(params.logBase, math.Floor(math.Log(yMinValueL)/math.Log(params.logBase)))
-			params.yTopL = math.Pow(params.logBase, math.Ceil(math.Log(yMaxValueL/math.Log(params.logBase))))
-			params.yBottomR = math.Pow(params.logBase, math.Floor(math.Log(yMinValueR)/math.Log(params.logBase)))
-			params.yTopR = math.Pow(params.logBase, math.Ceil(math.Log(yMaxValueR/math.Log(params.logBase))))
+			params.yBottomL = math.Pow(params.LogBase, math.Floor(math.Log(yMinValueL)/math.Log(params.LogBase)))
+			params.yTopL = math.Pow(params.LogBase, math.Ceil(math.Log(yMaxValueL/math.Log(params.LogBase))))
+			params.yBottomR = math.Pow(params.LogBase, math.Floor(math.Log(yMinValueR)/math.Log(params.LogBase)))
+			params.yTopR = math.Pow(params.LogBase, math.Ceil(math.Log(yMaxValueR/math.Log(params.LogBase))))
 		} else {
 			panic("logscale with minvalue <= 0")
 		}
 	}
 
-	if !math.IsNaN(params.yMaxLeft) {
-		params.yTopL = params.yMaxLeft
+	if !math.IsNaN(params.YMaxLeft) {
+		params.yTopL = params.YMaxLeft
 	}
-	if !math.IsNaN(params.yMaxRight) {
-		params.yTopR = params.yMaxRight
+	if !math.IsNaN(params.YMaxRight) {
+		params.yTopR = params.YMaxRight
 	}
-	if !math.IsNaN(params.yMinLeft) {
-		params.yBottomL = params.yMinLeft
+	if !math.IsNaN(params.YMinLeft) {
+		params.yBottomL = params.YMinLeft
 	}
-	if !math.IsNaN(params.yMinRight) {
-		params.yBottomR = params.yMinRight
+	if !math.IsNaN(params.YMinRight) {
+		params.yBottomR = params.YMinRight
 	}
 
 	params.ySpanL = params.yTopL - params.yBottomL
@@ -1532,17 +1532,17 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*MetricDat
 	params.yScaleFactorL = params.graphHeight / params.ySpanL
 	params.yScaleFactorR = params.graphHeight / params.ySpanR
 
-	params.yLabelValuesL = getYLabelValues(params, params.yBottomL, params.yTopL, params.yStepL)
-	params.yLabelValuesR = getYLabelValues(params, params.yBottomR, params.yTopR, params.yStepR)
+	params.yLabelValuesL = getYLabelValues(params, params.yBottomL, params.yTopL, params.YStepL)
+	params.yLabelValuesR = getYLabelValues(params, params.yBottomR, params.yTopR, params.YStepR)
 
 	params.yLabelsL = make([]string, len(params.yLabelValuesL))
 	for i, v := range params.yLabelValuesL {
-		params.yLabelsL[i] = makeLabel(v, params.yStepL, params.ySpanL, params.yUnitSystem)
+		params.yLabelsL[i] = makeLabel(v, params.YStepL, params.ySpanL, params.YUnitSystem)
 	}
 
 	params.yLabelsR = make([]string, len(params.yLabelValuesR))
 	for i, v := range params.yLabelValuesR {
-		params.yLabelsR[i] = makeLabel(v, params.yStepR, params.ySpanR, params.yUnitSystem)
+		params.yLabelsR[i] = makeLabel(v, params.YStepR, params.ySpanR, params.YUnitSystem)
 	}
 
 	params.yLabelWidthL = 0
@@ -1561,12 +1561,12 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*MetricDat
 		}
 	}
 
-	xMin := float64(params.margin) + (params.yLabelWidthL * 1.02)
+	xMin := float64(params.Margin) + (params.yLabelWidthL * 1.02)
 	if params.area.xmin < xMin {
 		params.area.xmin = xMin
 	}
 
-	xMax := params.width - (params.yLabelWidthR * 1.02)
+	xMax := params.Width - (params.yLabelWidthR * 1.02)
 	if params.area.xmax > xMax {
 		params.area.xmax = xMax
 	}
@@ -1640,11 +1640,11 @@ func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 		}
 	}
 
-	if yMinValue > 0 && params.drawNullAsZero && len(seriesWithMissingValues) > 0 {
+	if yMinValue > 0 && params.DrawNullAsZero && len(seriesWithMissingValues) > 0 {
 		yMinValue = 0
 	}
 
-	if yMaxValue < 0 && params.drawNullAsZero && len(seriesWithMissingValues) > 0 {
+	if yMaxValue < 0 && params.DrawNullAsZero && len(seriesWithMissingValues) > 0 {
 		yMaxValue = 0
 	}
 
@@ -1656,11 +1656,11 @@ func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 		yMaxValue = 1
 	}
 
-	if !math.IsNaN(params.yMax) {
-		yMaxValue = params.yMax
+	if !math.IsNaN(params.YMax) {
+		yMaxValue = params.YMax
 	}
-	if !math.IsNaN(params.yMin) {
-		yMinValue = params.yMin
+	if !math.IsNaN(params.YMin) {
+		yMinValue = params.YMin
 	}
 
 	if yMaxValue <= yMinValue {
@@ -1671,7 +1671,7 @@ func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 
 	var order float64
 	var orderFactor float64
-	if params.yUnitSystem == "binary" {
+	if params.YUnitSystem == "binary" {
 		order = math.Log2(yVariance)
 		orderFactor = math.Pow(2, math.Floor(order))
 	} else {
@@ -1681,7 +1681,7 @@ func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 
 	v := yVariance / orderFactor // we work with a scaled down yVariance for simplicity
 
-	yDivisors := params.yDivisors
+	yDivisors := params.YDivisors
 
 	prettyValues := []float64{0.1, 0.2, 0.25, 0.5, 1.0, 1.2, 1.25, 1.5, 2.0, 2.25, 2.5}
 
@@ -1698,19 +1698,19 @@ func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 	prettyValue := divinfo[0].p        // our winner! Y-axis will have labels placed at multiples of our prettyValue
 	yStep := prettyValue * orderFactor // scale it back up to the order of yVariance
 
-	if !math.IsNaN(params.yStep) {
-		yStep = params.yStep
+	if !math.IsNaN(params.YStep) {
+		yStep = params.YStep
 	}
 
-	params.yStep = yStep
+	params.YStep = yStep
 
-	params.yBottom = params.yStep * math.Floor(yMinValue/params.yStep) // start labels at the greatest multiple of yStep <= yMinValue
-	params.yTop = params.yStep * math.Ceil(yMaxValue/params.yStep)     // Extend the top of our graph to the lowest yStep multiple >= yMaxValue
+	params.yBottom = params.YStep * math.Floor(yMinValue/params.YStep) // start labels at the greatest multiple of yStep <= yMinValue
+	params.yTop = params.YStep * math.Ceil(yMaxValue/params.YStep)     // Extend the top of our graph to the lowest yStep multiple >= yMaxValue
 
-	if params.logBase != 0 {
+	if params.LogBase != 0 {
 		if yMinValue > 0 {
-			params.yBottom = math.Pow(params.logBase, math.Floor(math.Log(yMinValue)/math.Log(params.logBase)))
-			params.yTop = math.Pow(params.logBase, math.Ceil(math.Log(yMaxValue)/math.Log(params.logBase)))
+			params.yBottom = math.Pow(params.LogBase, math.Floor(math.Log(yMinValue)/math.Log(params.LogBase)))
+			params.yTop = math.Pow(params.LogBase, math.Ceil(math.Log(yMaxValue)/math.Log(params.LogBase)))
 		} else {
 			panic("logscale with minvalue <= 0")
 			// raise GraphError('Logarithmic scale specified with a dataset with a minimum value less than or equal to zero')
@@ -1739,14 +1739,14 @@ func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 	params.graphHeight = params.area.ymax - params.area.ymin
 	params.yScaleFactor = params.graphHeight / params.ySpan
 
-	if !params.hideAxes {
+	if !params.HideAxes {
 		// Create and measure the Y-labels
 
-		params.yLabelValues = getYLabelValues(params, params.yBottom, params.yTop, params.yStep)
+		params.yLabelValues = getYLabelValues(params, params.yBottom, params.yTop, params.YStep)
 
 		params.yLabels = make([]string, len(params.yLabelValues))
 		for i, v := range params.yLabelValues {
-			params.yLabels[i] = makeLabel(v, params.yStep, params.ySpan, params.yUnitSystem)
+			params.yLabels[i] = makeLabel(v, params.YStep, params.ySpan, params.YUnitSystem)
 		}
 
 		params.yLabelWidth = 0
@@ -1757,15 +1757,15 @@ func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 			}
 		}
 
-		if !params.hideYAxis {
-			if params.yAxisSide == YAxisSideLeft { // scoot the graph over to the left just enough to fit the y-labels
-				xMin := float64(params.margin) + float64(params.yLabelWidth)*1.02
+		if !params.HideYAxis {
+			if params.YAxisSide == YAxisSideLeft { // scoot the graph over to the left just enough to fit the y-labels
+				xMin := float64(params.Margin) + float64(params.yLabelWidth)*1.02
 				if params.area.xmin < xMin {
 					params.area.xmin = xMin
 				}
 			} else { // scoot the graph over to the right just enough to fit the y-labels
 				// xMin := 0 // TODO(dgryski): bug?  Why is this set?
-				xMax := float64(params.margin) - float64(params.yLabelWidth)*1.02
+				xMax := float64(params.Margin) - float64(params.yLabelWidth)*1.02
 				if params.area.xmax >= xMax {
 					params.area.xmax = xMax
 				}
@@ -1831,8 +1831,8 @@ func formatUnits(v, step float64, system string) (float64, string) {
 }
 
 func getYLabelValues(params *Params, minYValue, maxYValue, yStep float64) []float64 {
-	if params.logBase != 0 {
-		return logrange(params.logBase, minYValue, maxYValue)
+	if params.LogBase != 0 {
+		return logrange(params.LogBase, minYValue, maxYValue)
 	}
 
 	return frange(minYValue, maxYValue, yStep)
@@ -1897,11 +1897,11 @@ func setupXAxis(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 		self.end_dt = datetime.fromtimestamp(self.endTime, tzinfo)
 	*/
 
-	secondsPerPixel := float64(params.timeRange) / float64(params.graphWidth)
-	params.xScaleFactor = float64(params.graphWidth) / float64(params.timeRange)
+	secondsPerPixel := float64(params.TimeRange) / float64(params.graphWidth)
+	params.xScaleFactor = float64(params.graphWidth) / float64(params.TimeRange)
 
 	for _, c := range xAxisConfigs {
-		if c.seconds <= secondsPerPixel && c.maxInterval >= params.timeRange {
+		if c.seconds <= secondsPerPixel && c.maxInterval >= params.TimeRange {
 			params.xConf = c
 		}
 	}
@@ -1916,10 +1916,10 @@ func setupXAxis(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 }
 
 func drawLabels(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
-	if !params.hideYAxis {
+	if !params.HideYAxis {
 		drawYAxis(cr, params, results)
 	}
-	if !params.hideXAxis {
+	if !params.HideXAxis {
 		drawXAxis(cr, params, results)
 	}
 }
@@ -1929,7 +1929,7 @@ func drawYAxis(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 	if params.secondYAxis {
 
 		for _, value := range params.yLabelValuesL {
-			label := makeLabel(value, params.yStepL, params.ySpanL, params.yUnitSystem)
+			label := makeLabel(value, params.YStepL, params.ySpanL, params.YUnitSystem)
 			y := getYCoord(params, value, YCoordSideLeft)
 			if y < 0 {
 				y = 0
@@ -1941,7 +1941,7 @@ func drawYAxis(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 		}
 
 		for _, value := range params.yLabelValuesR {
-			label := makeLabel(value, params.yStepR, params.ySpanR, params.yUnitSystem)
+			label := makeLabel(value, params.YStepR, params.ySpanR, params.YUnitSystem)
 			y := getYCoord(params, value, YCoordSideRight)
 			if y < 0 {
 				y = 0
@@ -1954,13 +1954,13 @@ func drawYAxis(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 	}
 
 	for _, value := range params.yLabelValues {
-		label := makeLabel(value, params.yStep, params.ySpan, params.yUnitSystem)
+		label := makeLabel(value, params.YStep, params.ySpan, params.YUnitSystem)
 		y := getYCoord(params, value, YCoordSideNone)
 		if y < 0 {
 			y = 0
 		}
 
-		if params.yAxisSide == YAxisSideLeft {
+		if params.YAxisSide == YAxisSideLeft {
 			x = params.area.xmin - float64(params.yLabelWidth)*0.02
 			drawText(cr, params, label, x, y, HAlignRight, VAlignCenter, 0)
 		} else {
@@ -2001,18 +2001,18 @@ func findXTimes(start int32, unit TimeUnit, step float64) (int32, int32) {
 
 func drawXAxis(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 
-	dt, xDelta := findXTimes(params.startTime, params.xConf.labelUnit, float64(params.xConf.labelStep))
+	dt, xDelta := findXTimes(params.StartTime, params.xConf.labelUnit, float64(params.xConf.labelStep))
 
-	xFormat := params.xFormat
+	xFormat := params.XFormat
 	if xFormat == "" {
 		xFormat = params.xConf.format
 	}
 
 	maxAscent := getFontExtents(cr).Ascent
 
-	for dt < params.endTime {
-		label, _ := strftime.Format(xFormat, time.Unix(int64(dt), 0).In(params.tz))
-		x := params.area.xmin + float64(dt-params.startTime)*params.xScaleFactor
+	for dt < params.EndTime {
+		label, _ := strftime.Format(xFormat, time.Unix(int64(dt), 0).In(params.Tz))
+		x := params.area.xmin + float64(dt-params.StartTime)*params.xScaleFactor
 		y := params.area.ymax + maxAscent
 		drawText(cr, params, label, x, y, HAlignCenter, VAlignTop, 0)
 		dt += xDelta
@@ -2035,7 +2035,7 @@ func drawGridLines(cr *cairoSurfaceContext, params *Params, results []*MetricDat
 
 	for i, value := range labels {
 		cr.context.SetLineWidth(0.4)
-		setColor(cr, string2RGBA(params.majorGridLineColor))
+		setColor(cr, string2RGBA(params.MajorGridLineColor))
 
 		var y float64
 		if params.secondYAxis {
@@ -2053,25 +2053,25 @@ func drawGridLines(cr *cairoSurfaceContext, params *Params, results []*MetricDat
 		cr.context.Stroke()
 
 		// draw minor gridlines if this isn't the last label
-		if params.minorY >= 1 && i < len(labels)-1 {
+		if params.MinorY >= 1 && i < len(labels)-1 {
 			valueLower, valueUpper := value, labels[i+1]
 
 			// each minor gridline is 1/minorY apart from the nearby gridlines.
 			// we calculate that distance, for adding to the value in the loop.
-			distance := ((valueUpper - valueLower) / float64(1+params.minorY))
+			distance := ((valueUpper - valueLower) / float64(1+params.MinorY))
 
 			// starting from the initial valueLower, we add the minor distance
 			// for each minor gridline that we wish to draw, and then draw it.
-			for minor := 0; minor < params.minorY; minor++ {
+			for minor := 0; minor < params.MinorY; minor++ {
 				cr.context.SetLineWidth(0.3)
-				setColor(cr, string2RGBA(params.minorGridLineColor))
+				setColor(cr, string2RGBA(params.MinorGridLineColor))
 
 				// the current minor gridline value is halfway between the current and next major gridline values
 				value = (valueLower + ((1 + float64(minor)) * distance))
 
 				var yTopFactor float64
-				if params.logBase != 0 {
-					yTopFactor = params.logBase * params.logBase
+				if params.LogBase != 0 {
+					yTopFactor = params.LogBase * params.LogBase
 				} else {
 					yTopFactor = 1
 				}
@@ -2110,11 +2110,11 @@ func drawGridLines(cr *cairoSurfaceContext, params *Params, results []*MetricDat
 
 	// First we do the minor grid lines (majors will paint over them)
 	cr.context.SetLineWidth(0.25)
-	setColor(cr, string2RGBA(params.minorGridLineColor))
-	dt, xMinorDelta := findXTimes(params.startTime, params.xConf.minorGridUnit, params.xConf.minorGridStep)
+	setColor(cr, string2RGBA(params.MinorGridLineColor))
+	dt, xMinorDelta := findXTimes(params.StartTime, params.xConf.minorGridUnit, params.xConf.minorGridStep)
 
-	for dt < params.endTime {
-		x := params.area.xmin + float64(dt-params.startTime)*params.xScaleFactor
+	for dt < params.EndTime {
+		x := params.area.xmin + float64(dt-params.StartTime)*params.xScaleFactor
 
 		if x < params.area.xmax {
 			cr.context.MoveTo(x, bottom)
@@ -2127,11 +2127,11 @@ func drawGridLines(cr *cairoSurfaceContext, params *Params, results []*MetricDat
 
 	// Now we do the major grid lines
 	cr.context.SetLineWidth(0.33)
-	setColor(cr, string2RGBA(params.majorGridLineColor))
-	dt, xMajorDelta := findXTimes(params.startTime, params.xConf.majorGridUnit, float64(params.xConf.majorGridStep))
+	setColor(cr, string2RGBA(params.MajorGridLineColor))
+	dt, xMajorDelta := findXTimes(params.StartTime, params.xConf.majorGridUnit, float64(params.xConf.majorGridStep))
 
-	for dt < params.endTime {
-		x := params.area.xmin + float64(dt-params.startTime)*params.xScaleFactor
+	for dt < params.EndTime {
+		x := params.area.xmin + float64(dt-params.StartTime)*params.xScaleFactor
 
 		if x < params.area.xmax {
 			cr.context.MoveTo(x, bottom)
@@ -2209,12 +2209,12 @@ func getYCoord(params *Params, value float64, side YCoordSide) (y float64) {
 	pixelRange := params.area.ymax - params.area.ymin
 	relativeValue := (value - lowestValue)
 	valueRange := (highestValue - lowestValue)
-	if params.logBase != 0 {
+	if params.LogBase != 0 {
 		if value <= 0 {
 			return math.NaN()
 		}
-		relativeValue = (math.Log(value) / math.Log(params.logBase)) - (math.Log(lowestValue) / math.Log(params.logBase))
-		valueRange = (math.Log(highestValue) / math.Log(params.logBase)) - (math.Log(lowestValue) / math.Log(params.logBase))
+		relativeValue = (math.Log(value) / math.Log(params.LogBase)) - (math.Log(lowestValue) / math.Log(params.LogBase))
+		valueRange = (math.Log(highestValue) / math.Log(params.LogBase)) - (math.Log(lowestValue) / math.Log(params.LogBase))
 	}
 	pixelToValueRatio := (pixelRange / valueRange)
 	valueInPixels := (pixelToValueRatio * relativeValue)
@@ -2226,17 +2226,17 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 	linecap := "butt"
 	linejoin := "miter"
 
-	cr.context.SetLineWidth(params.lineWidth)
+	cr.context.SetLineWidth(params.LineWidth)
 
-	originalWidth := params.lineWidth
+	originalWidth := params.LineWidth
 
 	cr.context.SetDash(nil, 0)
 
 	cr.context.SetLineCap(str2linecap(linecap))
 	cr.context.SetLineJoin(str2linejoin(linejoin))
 
-	if !math.IsNaN(params.areaAlpha) {
-		alpha := params.areaAlpha
+	if !math.IsNaN(params.AreaAlpha) {
+		alpha := params.AreaAlpha
 		var strokeSeries []*MetricData
 		for _, r := range results {
 			if r.stacked {
@@ -2299,9 +2299,9 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 			setColor(cr, string2RGBA(series.color))
 		}
 
-		missingPoints := float64(series.StartTime-params.startTime) / float64(series.StepTime)
+		missingPoints := float64(series.StartTime-params.StartTime) / float64(series.StepTime)
 		startShift := series.xStep * (missingPoints / float64(series.valuesPerPoint))
-		x := float64(params.area.xmin) + startShift + (params.lineWidth / 2.0)
+		x := float64(params.area.xmin) + startShift + (params.LineWidth / 2.0)
 		y := float64(params.area.ymin)
 		origX := x
 		startX := x
@@ -2315,7 +2315,7 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 				value = math.NaN()
 			}
 
-			if params.drawNullAsZero && math.IsNaN(value) {
+			if params.DrawNullAsZero && math.IsNaN(value) {
 				value = 0
 			}
 
@@ -2363,7 +2363,7 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 				}
 
 				if !math.IsNaN(y) {
-					switch params.lineMode {
+					switch params.LineMode {
 
 					case LineModeStaircase:
 						if consecutiveNones > 0 {
@@ -2376,7 +2376,7 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*MetricData) {
 							cr.context.MoveTo(x, y)
 						}
 					case LineModeConnected:
-						if consecutiveNones > params.connectedLimit || consecutiveNones == index {
+						if consecutiveNones > params.ConnectedLimit || consecutiveNones == index {
 							cr.context.MoveTo(x, y)
 						}
 					}
@@ -2425,7 +2425,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 	var uniqueNames map[string]bool
 	var numRight int
 	var legend []SeriesLegend
-	if params.uniqueLegend {
+	if params.UniqueLegend {
 		uniqueNames = make(map[string]bool)
 	}
 
@@ -2441,7 +2441,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 		if res.secondYAxis {
 			numRight++
 		}
-		if params.uniqueLegend {
+		if params.UniqueLegend {
 			if _, ok := uniqueNames[res.Name]; !ok {
 				var tmp = SeriesLegend{
 					res.Name,
@@ -2466,7 +2466,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 	var textExtents cairo.TextExtents
 	cr.context.TextExtents(testSizeName, &textExtents)
 	testWidth := textExtents.XAdvance + 2*(params.fontExtents.Height+padding)
-	if testWidth+50 < params.width {
+	if testWidth+50 < params.Width {
 		rightSideLabels = true
 	}
 
@@ -2478,7 +2478,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 	x := params.area.xmin
 
 	if params.secondYAxis && rightSideLabels {
-		columns := math.Max(1, math.Floor(math.Floor((params.width-params.area.xmin)/labelWidth)/2.0))
+		columns := math.Max(1, math.Floor(math.Floor((params.Width-params.area.xmin)/labelWidth)/2.0))
 		numberOfLines := math.Max(float64(len(results)-numRight), float64(numRight))
 		legendHeight := math.Max(1, (numberOfLines/columns)) * (lineHeight + padding)
 		params.area.ymax -= legendHeight
@@ -2496,7 +2496,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 				color := colors["darkgray"]
 				setColor(cr, color)
 				drawRectangle(cr, params, xRight-padding, yRight, boxSize, boxSize, false)
-				setColor(cr, params.fgColor)
+				setColor(cr, params.FgColor)
 				drawText(cr, params, item.name, xRight-boxSize, yRight, HAlignRight, VAlignTop, 0.0)
 				xRight -= labelWidth
 				if nRight%int(columns) == 0 {
@@ -2509,7 +2509,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 				color := colors["darkgray"]
 				setColor(cr, color)
 				drawRectangle(cr, params, x, y, boxSize, boxSize, false)
-				setColor(cr, params.fgColor)
+				setColor(cr, params.FgColor)
 				drawText(cr, params, item.name, x+boxSize+padding, y, HAlignLeft, VAlignTop, 0.0)
 				x += labelWidth
 				if n%int(columns) == 0 {
@@ -2521,7 +2521,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 		return
 	}
 	// else
-	columns := math.Max(1, math.Floor(params.width/labelWidth))
+	columns := math.Max(1, math.Floor(params.Width/labelWidth))
 	numberOfLines := math.Ceil(float64(len(results)) / columns)
 	legendHeight := (numberOfLines * lineHeight) + padding
 	params.area.ymax -= legendHeight
@@ -2534,7 +2534,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 			color := colors["darkgray"]
 			setColor(cr, color)
 			drawRectangle(cr, params, x+labelWidth+padding, y, boxSize, boxSize, false)
-			setColor(cr, params.fgColor)
+			setColor(cr, params.FgColor)
 			drawText(cr, params, item.name, x+labelWidth, y, HAlignRight, VAlignTop, 0.0)
 			x += labelWidth
 		} else {
@@ -2542,7 +2542,7 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 			color := colors["darkgray"]
 			setColor(cr, color)
 			drawRectangle(cr, params, x, y, boxSize, boxSize, false)
-			setColor(cr, params.fgColor)
+			setColor(cr, params.FgColor)
 			drawText(cr, params, item.name, x+boxSize+padding, y, HAlignLeft, VAlignTop, 0.0)
 			x += labelWidth
 		}
@@ -2557,8 +2557,8 @@ func drawLegend(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 
 func drawTitle(cr *cairoSurfaceContext, params *Params) {
 	y := params.area.ymin
-	x := params.width / 2.0
-	lines := strings.Split(params.title, "\n")
+	x := params.Width / 2.0
+	lines := strings.Split(params.Title, "\n")
 	lineHeight := params.fontExtents.Height
 
 	for _, line := range lines {
@@ -2566,8 +2566,8 @@ func drawTitle(cr *cairoSurfaceContext, params *Params) {
 		y += lineHeight
 	}
 	params.area.ymin = y
-	if params.yAxisSide != YAxisSideRight {
-		params.area.ymin += float64(params.margin)
+	if params.YAxisSide != YAxisSideRight {
+		params.area.ymin += float64(params.Margin)
 	}
 }
 
@@ -2576,20 +2576,20 @@ func drawVTitle(cr *cairoSurfaceContext, params *Params, title string, rightAlig
 
 	if rightAlign {
 		x := params.area.xmax - lineHeight
-		y := params.height / 2.0
+		y := params.Height / 2.0
 		for _, line := range strings.Split(title, "\n") {
 			drawText(cr, params, line, x, y, HAlignCenter, VAlignBaseline, 90.0)
 			x -= lineHeight
 		}
-		params.area.xmax = x - float64(params.margin) - lineHeight
+		params.area.xmax = x - float64(params.Margin) - lineHeight
 	} else {
 		x := params.area.xmin + lineHeight
-		y := params.height / 2.0
+		y := params.Height / 2.0
 		for _, line := range strings.Split(title, "\n") {
 			drawText(cr, params, line, x, y, HAlignCenter, VAlignBaseline, 270.0)
 			x += lineHeight
 		}
-		params.area.xmin = x + float64(params.margin) + lineHeight
+		params.area.xmin = x + float64(params.Margin) + lineHeight
 	}
 }
 
@@ -2649,7 +2649,7 @@ func setColor(cr *cairoSurfaceContext, color color.RGBA) {
 }
 
 func setFont(cr *cairoSurfaceContext, params *Params, size float64) {
-	cr.context.SelectFontFace(params.fontName, params.fontItalic, params.fontBold)
+	cr.context.SelectFontFace(params.FontName, params.FontItalic, params.FontBold)
 	cr.context.SetFontSize(size)
 	cr.context.FontExtents(&params.fontExtents)
 }
@@ -2687,7 +2687,7 @@ func fillAreaAndClip(cr *cairoSurfaceContext, params *Params, x, y, startX, area
 	cr.context.LineTo(x, areaYFrom)      // bottom endX
 	cr.context.LineTo(startX, areaYFrom) // bottom startX
 	cr.context.ClosePath()
-	if params.areaMode == AreaModeAll {
+	if params.AreaMode == AreaModeAll {
 		cr.context.FillPreserve()
 	} else {
 		cr.context.Fill()
