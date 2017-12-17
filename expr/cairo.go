@@ -879,16 +879,26 @@ func evalExprGraph(e *expr, from, until int32, values map[MetricRequest][]*Metri
 	return nil, errUnknownFunction(e.target)
 }
 
-func MarshalSVG(r *http.Request, results []*MetricData) []byte {
-	return marshalCairo(r, results, cairoSVG)
+func MarshalSVGRequest(r *http.Request, results []*MetricData) []byte {
+	params := buildParams(r, results)
+	return MarshalSVG(params, results)
 }
 
-func MarshalPNG(r *http.Request, results []*MetricData) []byte {
-	return marshalCairo(r, results, cairoPNG)
+func MarshalSVG(params Params, results []*MetricData) []byte {
+	return marshalCairo(params, results, cairoSVG)
 }
 
-func marshalCairo(r *http.Request, results []*MetricData, backend cairoBackend) []byte {
-	var params = Params{
+func MarshalPNGRequest(r *http.Request, results []*MetricData) []byte {
+	params := buildParams(r, results)
+	return MarshalPNG(params, results)
+}
+
+func MarshalPNG(params Params, results []*MetricData) []byte {
+	return marshalCairo(params, results, cairoPNG)
+}
+
+func buildParams(r *http.Request, results []*MetricData) Params {
+	params := Params{
 		Width:      getFloat64(r.FormValue("width"), 330),
 		Height:     getFloat64(r.FormValue("height"), 250),
 		Margin:     getInt(r.FormValue("margin"), 10),
@@ -965,7 +975,10 @@ func marshalCairo(r *http.Request, results []*MetricData, backend cairoBackend) 
 	params.area.ymin = margin
 	params.area.ymax = params.Height - margin
 	params.HideLegend = getBool(r.FormValue("hideLegend"), len(results) > 10)
+	return params
+}
 
+func marshalCairo(params Params, results []*MetricData, backend cairoBackend) []byte {
 	var cr cairoSurfaceContext
 	var surface *cairo.Surface
 	var tmpfile *os.File
