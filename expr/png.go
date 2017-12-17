@@ -13,6 +13,14 @@ func evalExprGraph(e *expr, from, until int32, values map[MetricRequest][]*Metri
 	return nil, nil
 }
 
+func MarshalPNGRequest(r *http.Request, results []*MetricData) []byte {
+	return nil
+}
+
+func MarshalSVGRequest(r *http.Request, results []*MetricData) []byte {
+	return nil
+}
+
 func MarshalPNG(r *http.Request, results []*MetricData) []byte {
 	return nil
 }
