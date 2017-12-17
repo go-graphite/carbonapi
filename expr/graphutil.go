@@ -41,6 +41,17 @@ func getFloat64(s string, def float64) float64 {
 	return n
 }
 
+func getInt(s string, def int) int {
+	if s == "" {
+		return def
+	}
+	n, err := strconv.ParseInt(s, 10, 32)
+	if err != nil {
+		return def
+	}
+	return int(n)
+}
+
 var colors = map[string]color.RGBA{
 	// Graphite default colors
 	"black":     {0x00, 0x00, 0x00, 0xff},
