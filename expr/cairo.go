@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -73,8 +72,6 @@ const (
 	Hour            = 60 * Minute
 	Day             = 24 * Hour
 )
-
-var defaultColorList = []string{"blue", "green", "red", "purple", "brown", "yellow", "aqua", "grey", "magenta", "pink", "gold", "rose"}
 
 type unitPrefix struct {
 	prefix string
@@ -2555,47 +2552,6 @@ func fillAreaAndClip(cr *cairoSurfaceContext, params *Params, x, y, startX, area
 	cr.context.LineTo(startX, areaYFrom)                  // yZero startX
 	cr.context.ClosePath()
 	cr.context.Clip()
-}
-
-func string2RGBA(clr string) color.RGBA {
-	if c, ok := colors[clr]; ok {
-		return c
-	}
-	return hexToRGBA(clr)
-}
-
-// https://code.google.com/p/sadbox/source/browse/color/hex.go
-// hexToColor converts an Hex string to a RGB triple.
-func hexToRGBA(h string) color.RGBA {
-	var r, g, b uint8
-	if len(h) > 0 && h[0] == '#' {
-		h = h[1:]
-	}
-
-	if len(h) == 3 {
-		h = h[:1] + h[:1] + h[1:2] + h[1:2] + h[2:] + h[2:]
-	}
-
-	alpha := byte(255)
-
-	if len(h) == 6 {
-		if rgb, err := strconv.ParseUint(string(h), 16, 32); err == nil {
-			r = uint8(rgb >> 16)
-			g = uint8(rgb >> 8)
-			b = uint8(rgb)
-		}
-	}
-
-	if len(h) == 8 {
-		if rgb, err := strconv.ParseUint(string(h), 16, 32); err == nil {
-			r = uint8(rgb >> 24)
-			g = uint8(rgb >> 16)
-			b = uint8(rgb >> 8)
-			alpha = uint8(rgb)
-		}
-	}
-
-	return color.RGBA{r, g, b, alpha}
 }
 
 type ByStacked []*MetricData
