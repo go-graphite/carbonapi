@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -57,38 +56,6 @@ const (
 	VAlignBaseline        = 64
 )
 
-type LineMode int
-
-const (
-	LineModeSlope     LineMode = 1
-	LineModeStaircase          = 2
-	LineModeConnected          = 4
-)
-
-type AreaMode int
-
-const (
-	AreaModeNone    AreaMode = 1
-	AreaModeFirst            = 2
-	AreaModeAll              = 4
-	AreaModeStacked          = 8
-)
-
-type PieMode int
-
-const (
-	PieModeMaximum PieMode = 1
-	PieModeMinimum         = 2
-	PieModeAverage         = 4
-)
-
-type YAxisSide int
-
-const (
-	YAxisSideRight YAxisSide = 1
-	YAxisSideLeft            = 2
-)
-
 type YCoordSide int
 
 const (
@@ -105,8 +72,6 @@ const (
 	Hour            = 60 * Minute
 	Day             = 24 * Hour
 )
-
-var defaultColorList = []string{"blue", "green", "red", "purple", "brown", "yellow", "aqua", "grey", "magenta", "pink", "gold", "rose"}
 
 type unitPrefix struct {
 	prefix string
@@ -398,151 +363,19 @@ var xAxisConfigs = []xAxisStruct{
 	},
 }
 
-func getInt(s string, def int) int {
-	if s == "" {
-		return def
-	}
-
-	n, err := strconv.ParseInt(s, 10, 32)
-	if err != nil {
-		return def
-	}
-
-	return int(n)
-}
-
-func getLogBase(s string) float64 {
-	if s == "e" {
-		return math.E
-	}
-
-	b, err := strconv.ParseFloat(s, 64)
-	if err != nil || b < 1 {
-		return 0
-	}
-
-	return b
-}
-
-func getFloatArray(s string, def []float64) []float64 {
-	if s == "" {
-		return def
-	}
-
-	ss := strings.Split(s, ",")
-	var fs []float64
-	for _, v := range ss {
-		f, err := strconv.ParseFloat(v, 64)
-		if err != nil {
-			return def
-		}
-		fs = append(fs, f)
-	}
-
-	return fs
-}
-
-func getStringArray(s string, def []string) []string {
-	if s == "" {
-		return def
-	}
-
-	ss := strings.Split(s, ",")
-	var strs []string
-	for _, v := range ss {
-		strs = append(strs, strings.TrimSpace(v))
-	}
-
-	return strs
-}
-
-func getFontItalic(s string) cairo.FontSlant {
-	if TruthyBool(s) {
+func getCairoFontItalic(s FontSlant) cairo.FontSlant {
+	if s == FontSlantItalic {
 		return cairo.FontSlantItalic
 	}
-
 	return cairo.FontSlantNormal
 }
 
-func getFontWeight(s string) cairo.FontWeight {
-	if TruthyBool(s) {
+func getCairoFontWeight(weight FontWeight) cairo.FontWeight {
+	if weight == FontWeightBold {
 		return cairo.FontWeightBold
 	}
 
 	return cairo.FontWeightNormal
-}
-
-func getLineMode(s string, def LineMode) LineMode {
-	if s == "" {
-		return def
-	}
-
-	if s == "slope" {
-		return LineModeSlope
-	}
-	if s == "staircase" {
-		return LineModeStaircase
-	}
-
-	return LineModeConnected
-}
-
-func getAreaMode(s string, def AreaMode) AreaMode {
-	if s == "" {
-		return def
-	}
-
-	switch s {
-	case "first":
-		return AreaModeFirst
-	case "all":
-		return AreaModeAll
-	case "stacked":
-		return AreaModeStacked
-
-	}
-
-	return AreaModeNone
-}
-
-func getPieMode(s string, def PieMode) PieMode {
-	if s == "" {
-		return def
-	}
-
-	if s == "maximum" {
-		return PieModeMaximum
-	}
-	if s == "minimum" {
-		return PieModeMinimum
-	}
-
-	return PieModeAverage
-}
-
-func getAxisSide(s string, def YAxisSide) YAxisSide {
-	if s == "" {
-		return def
-	}
-
-	if s == "right" {
-		return YAxisSideRight
-	}
-
-	return YAxisSideLeft
-}
-
-func getTimeZone(s string, def *time.Location) *time.Location {
-	if s == "" {
-		return def
-	}
-
-	tz, err := time.LoadLocation(s)
-	if err != nil {
-		return def
-	}
-
-	return tz
 }
 
 type Area struct {
@@ -819,7 +652,7 @@ func evalExprGraph(e *expr, from, until int32, values map[MetricRequest][]*Metri
 			return nil, err
 		}
 
-		width , err := getFloatArg(e, 1)
+		width, err := getFloatArg(e, 1)
 		if err != nil {
 			return nil, err
 		}
@@ -879,84 +712,92 @@ func evalExprGraph(e *expr, from, until int32, values map[MetricRequest][]*Metri
 	return nil, errUnknownFunction(e.target)
 }
 
-func MarshalSVG(r *http.Request, results []*MetricData) []byte {
-	return marshalCairo(r, results, cairoSVG)
+func MarshalSVG(params PictureParams, results []*MetricData) []byte {
+	return marshalCairo(params, results, cairoSVG)
 }
 
-func MarshalPNG(r *http.Request, results []*MetricData) []byte {
-	return marshalCairo(r, results, cairoPNG)
+func MarshalPNG(params PictureParams, results []*MetricData) []byte {
+	return marshalCairo(params, results, cairoPNG)
 }
 
-func marshalCairo(r *http.Request, results []*MetricData, backend cairoBackend) []byte {
+func MarshalSVGRequest(r *http.Request, results []*MetricData) []byte {
+	return marshalCairo(getPictureParams(r, results), results, cairoSVG)
+}
+
+func MarshalPNGRequest(r *http.Request, results []*MetricData) []byte {
+	return marshalCairo(getPictureParams(r, results), results, cairoPNG)
+}
+
+func marshalCairo(p PictureParams, results []*MetricData, backend cairoBackend) []byte {
 	var params = Params{
-		width:          getFloat64(r.FormValue("width"), 330),
-		height:         getFloat64(r.FormValue("height"), 250),
-		margin:         getInt(r.FormValue("margin"), 10),
-		logBase:        getLogBase(r.FormValue("logBase")),
-		fgColor:        string2RGBA(getString(r.FormValue("fgcolor"), "white")),
-		bgColor:        string2RGBA(getString(r.FormValue("bgcolor"), "black")),
-		majorLine:      string2RGBA(getString(r.FormValue("majorLine"), "rose")),
-		minorLine:      string2RGBA(getString(r.FormValue("minorLine"), "grey")),
-		fontName:       getString(r.FormValue("fontName"), "Sans"),
-		fontSize:       getFloat64(r.FormValue("fontSize"), 10.0),
-		fontBold:       getFontWeight(r.FormValue("fontBold")),
-		fontItalic:     getFontItalic(r.FormValue("fontItalic")),
-		graphOnly:      getBool(r.FormValue("graphOnly"), false),
-		hideLegend:     getBool(r.FormValue("hideLegend"), false),
-		hideGrid:       getBool(r.FormValue("hideGrid"), false),
-		hideAxes:       getBool(r.FormValue("hideAxes"), false),
-		hideYAxis:      getBool(r.FormValue("hideYAxis"), false),
-		hideXAxis:      getBool(r.FormValue("hideXAxis"), false),
-		yAxisSide:      getAxisSide(r.FormValue("yAxisSide"), YAxisSideLeft),
-		connectedLimit: getInt(r.FormValue("connectedLimit"), math.MaxUint32),
-		lineMode:       getLineMode(r.FormValue("lineMode"), LineModeSlope),
-		areaMode:       getAreaMode(r.FormValue("areaMode"), AreaModeNone),
-		areaAlpha:      getFloat64(r.FormValue("areaAlpha"), math.NaN()),
-		pieMode:        getPieMode(r.FormValue("pieMode"), PieModeAverage),
-		lineWidth:      getFloat64(r.FormValue("lineWidth"), 1.2),
+		width:          p.Width,
+		height:         p.Height,
+		margin:         p.Margin,
+		logBase:        p.LogBase,
+		fgColor:        p.FgColor,
+		bgColor:        p.BgColor,
+		majorLine:      p.MajorLine,
+		minorLine:      p.MinorLine,
+		fontName:       p.FontName,
+		fontSize:       p.FontSize,
+		fontBold:       getCairoFontWeight(p.FontBold),
+		fontItalic:     getCairoFontItalic(p.FontItalic),
+		graphOnly:      p.GraphOnly,
+		hideLegend:     p.HideLegend,
+		hideGrid:       p.HideGrid,
+		hideAxes:       p.HideAxes,
+		hideYAxis:      p.HideYAxis,
+		hideXAxis:      p.HideXAxis,
+		yAxisSide:      p.YAxisSide,
+		connectedLimit: p.ConnectedLimit,
+		lineMode:       p.LineMode,
+		areaMode:       p.AreaMode,
+		areaAlpha:      p.AreaAlpha,
+		pieMode:        p.PieMode,
+		lineWidth:      p.LeftWidth,
 
-		rightWidth:  getFloat64(r.FormValue("rightWidth"), 1.2),
-		rightDashed: getBool(r.FormValue("rightDashed"), false),
-		rightColor:  getString(r.FormValue("rightColor"), ""),
+		rightWidth:  p.RightWidth,
+		rightDashed: p.RightDashed,
+		rightColor:  p.RightColor,
 
-		leftWidth:  getFloat64(r.FormValue("leftWidth"), 1.2),
-		leftDashed: getBool(r.FormValue("leftDashed"), false),
-		leftColor:  getString(r.FormValue("leftColor"), ""),
+		leftWidth:  p.LeftWidth,
+		leftDashed: p.LeftDashed,
+		leftColor:  p.LeftColor,
 
-		title:       getString(r.FormValue("title"), ""),
-		vtitle:      getString(r.FormValue("vtitle"), ""),
-		vtitleRight: getString(r.FormValue("vtitleRight"), ""),
-		tz:          getTimeZone(r.FormValue("tz"), time.Local),
+		title:       p.Title,
+		vtitle:      p.Vtitle,
+		vtitleRight: p.VtitleRight,
+		tz:          p.Tz,
 
-		colorList: getStringArray(r.FormValue("colorList"), defaultColorList),
+		colorList: p.ColorList,
 		isPng:     true,
 
-		majorGridLineColor: getString(r.FormValue("majorGridLineColor"), "white"),
-		minorGridLineColor: getString(r.FormValue("minorGridLineColor"), "grey"),
+		majorGridLineColor: p.MajorGridLineColor,
+		minorGridLineColor: p.MinorGridLineColor,
 
-		uniqueLegend:   getBool(r.FormValue("uniqueLegend"), false),
-		drawNullAsZero: getBool(r.FormValue("drawNullAsZero"), false),
-		drawAsInfinite: getBool(r.FormValue("drawAsInfinite"), false),
-		yMin:           getFloat64(r.FormValue("yMin"), math.NaN()),
-		yMax:           getFloat64(r.FormValue("yMax"), math.NaN()),
-		yStep:          getFloat64(r.FormValue("yStep"), math.NaN()),
-		xMin:           getFloat64(r.FormValue("xMin"), math.NaN()),
-		xMax:           getFloat64(r.FormValue("xMax"), math.NaN()),
-		xStep:          getFloat64(r.FormValue("xStep"), math.NaN()),
-		xFormat:        getString(r.FormValue("xFormat"), ""),
-		minorY:         getInt(r.FormValue("minorY"), 1),
+		uniqueLegend:   p.UniqueLegend,
+		drawNullAsZero: p.DrawNullAsZero,
+		drawAsInfinite: p.DrawAsInfinite,
+		yMin:           p.YMin,
+		yMax:           p.YMax,
+		yStep:          p.YStep,
+		xMin:           p.XMin,
+		xMax:           p.XMax,
+		xStep:          p.XStep,
+		xFormat:        p.XFormat,
+		minorY:         p.MinorY,
 
-		yMinLeft:    getFloat64(r.FormValue("yMinLeft"), math.NaN()),
-		yMinRight:   getFloat64(r.FormValue("yMinRight"), math.NaN()),
-		yMaxLeft:    getFloat64(r.FormValue("yMaxLeft"), math.NaN()),
-		yMaxRight:   getFloat64(r.FormValue("yMaxRight"), math.NaN()),
-		yStepL:      getFloat64(r.FormValue("yStepLeft"), math.NaN()),
-		yStepR:      getFloat64(r.FormValue("yStepRight"), math.NaN()),
-		yLimitLeft:  getFloat64(r.FormValue("yLimitLeft"), math.NaN()),
-		yLimitRight: getFloat64(r.FormValue("yLimitRight"), math.NaN()),
+		yMinLeft:    p.YMinLeft,
+		yMinRight:   p.YMinRight,
+		yMaxLeft:    p.YMaxLeft,
+		yMaxRight:   p.YMaxRight,
+		yStepL:      p.YStepL,
+		yStepR:      p.YStepR,
+		yLimitLeft:  p.YLimitLeft,
+		yLimitRight: p.YLimitRight,
 
-		yUnitSystem: getString(r.FormValue("yUnitSystem"), "si"),
-		yDivisors:   getFloatArray(r.FormValue("yDivisors"), []float64{4, 5, 6}),
+		yUnitSystem: p.YUnitSystem,
+		yDivisors:   p.YDivisors,
 	}
 
 	margin := float64(params.margin)
@@ -964,7 +805,6 @@ func marshalCairo(r *http.Request, results []*MetricData, backend cairoBackend) 
 	params.area.xmax = params.width - margin
 	params.area.ymin = margin
 	params.area.ymax = params.height - margin
-	params.hideLegend = getBool(r.FormValue("hideLegend"), len(results) > 10)
 
 	var cr cairoSurfaceContext
 	var surface *cairo.Surface
@@ -2711,47 +2551,6 @@ func fillAreaAndClip(cr *cairoSurfaceContext, params *Params, x, y, startX, area
 	cr.context.LineTo(startX, areaYFrom)                  // yZero startX
 	cr.context.ClosePath()
 	cr.context.Clip()
-}
-
-func string2RGBA(clr string) color.RGBA {
-	if c, ok := colors[clr]; ok {
-		return c
-	}
-	return hexToRGBA(clr)
-}
-
-// https://code.google.com/p/sadbox/source/browse/color/hex.go
-// hexToColor converts an Hex string to a RGB triple.
-func hexToRGBA(h string) color.RGBA {
-	var r, g, b uint8
-	if len(h) > 0 && h[0] == '#' {
-		h = h[1:]
-	}
-
-	if len(h) == 3 {
-		h = h[:1] + h[:1] + h[1:2] + h[1:2] + h[2:] + h[2:]
-	}
-
-	alpha := byte(255)
-
-	if len(h) == 6 {
-		if rgb, err := strconv.ParseUint(string(h), 16, 32); err == nil {
-			r = uint8(rgb >> 16)
-			g = uint8(rgb >> 8)
-			b = uint8(rgb)
-		}
-	}
-
-	if len(h) == 8 {
-		if rgb, err := strconv.ParseUint(string(h), 16, 32); err == nil {
-			r = uint8(rgb >> 24)
-			g = uint8(rgb >> 16)
-			b = uint8(rgb >> 8)
-			alpha = uint8(rgb)
-		}
-	}
-
-	return color.RGBA{r, g, b, alpha}
 }
 
 type ByStacked []*MetricData

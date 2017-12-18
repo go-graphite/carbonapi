@@ -562,9 +562,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	case pickleFormat:
 		body = expr.MarshalPickle(results)
 	case pngFormat:
-		body = expr.MarshalPNG(r, results)
+		body = expr.MarshalPNGRequest(r, results)
 	case svgFormat:
-		body = expr.MarshalSVG(r, results)
+		body = expr.MarshalSVGRequest(r, results)
 	}
 
 	writeResponse(w, body, format, jsonp)
