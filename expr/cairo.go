@@ -721,11 +721,11 @@ func MarshalPNG(params PictureParams, results []*MetricData) []byte {
 }
 
 func MarshalSVGRequest(r *http.Request, results []*MetricData) []byte {
-	return marshalCairo(getPictureParams(r, results), results, cairoSVG)
+	return marshalCairo(GetPictureParams(r, results), results, cairoSVG)
 }
 
 func MarshalPNGRequest(r *http.Request, results []*MetricData) []byte {
-	return marshalCairo(getPictureParams(r, results), results, cairoPNG)
+	return marshalCairo(GetPictureParams(r, results), results, cairoPNG)
 }
 
 func marshalCairo(p PictureParams, results []*MetricData, backend cairoBackend) []byte {
@@ -734,10 +734,10 @@ func marshalCairo(p PictureParams, results []*MetricData, backend cairoBackend) 
 		height:         p.Height,
 		margin:         p.Margin,
 		logBase:        p.LogBase,
-		fgColor:        p.FgColor,
-		bgColor:        p.BgColor,
-		majorLine:      p.MajorLine,
-		minorLine:      p.MinorLine,
+		fgColor:        string2RGBA(p.FgColor),
+		bgColor:        string2RGBA(p.BgColor),
+		majorLine:      string2RGBA(p.MajorLine),
+		minorLine:      string2RGBA(p.MinorLine),
 		fontName:       p.FontName,
 		fontSize:       p.FontSize,
 		fontBold:       getCairoFontWeight(p.FontBold),
