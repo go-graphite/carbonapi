@@ -478,6 +478,9 @@ func (z *Zipper) multiGet(ctx context.Context, logger *zap.Logger, servers []str
 		zap.String("uri", uri),
 	)
 
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	// buffered channel so the goroutines don't block on send
 	ch := make(chan ServerResponse, len(servers))
 	startedch := make(chan struct{}, len(servers))
