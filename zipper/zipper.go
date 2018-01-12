@@ -21,7 +21,6 @@ import (
 
 	"strings"
 
-	"github.com/lomik/zapwriter"
 	"github.com/satori/go.uuid"
 	"go.uber.org/zap"
 )
@@ -80,6 +79,8 @@ type Zipper struct {
 	maxIdleConnsPerHost       int
 
 	sendStats func(*Stats)
+
+	logger *zap.Logger
 }
 
 // Stats provides zipper-related statistics
@@ -104,8 +105,7 @@ type nameLeaf struct {
 }
 
 // NewZipper allows to create new Zipper
-func NewZipper(sender func(*Stats), config *Config) *Zipper {
-	logger := zapwriter.Logger("new_zipper")
+func NewZipper(sender func(*Stats), config *Config, logger *zap.Logger) *Zipper {
 	z := &Zipper{
 		probeTicker: time.NewTicker(10 * time.Minute),
 		ProbeQuit:   make(chan struct{}),
@@ -127,6 +127,8 @@ func NewZipper(sender func(*Stats), config *Config) *Zipper {
 		timeoutAfterAllStarted:    config.Timeouts.AfterStarted,
 		timeout:                   config.Timeouts.Global,
 		timeoutConnect:            config.Timeouts.Connect,
+
+		logger: logger,
 	}
 
 	logger.Info("zipper config",
@@ -167,8 +169,8 @@ type ServerResponse struct {
 var errNoResponses = fmt.Errorf("No responses fetched from upstream")
 var errNoMetricsFetched = fmt.Errorf("No metrics in the response")
 
-func mergeResponses(responses []ServerResponse, stats *Stats) ([]string, *pb3.MultiFetchResponse) {
-	logger := zapwriter.Logger("zipper_render")
+func (z *Zipper) mergeResponses(responses []ServerResponse, stats *Stats) ([]string, *pb3.MultiFetchResponse) {
+	logger := z.logger.With(zap.String("function", "mergeResponses"))
 
 	servers := make([]string, 0, len(responses))
 	metrics := make(map[string][]pb3.FetchResponse)
@@ -226,7 +228,7 @@ func mergeResponses(responses []ServerResponse, stats *Stats) ([]string, *pb3.Mu
 
 		metric := decoded[0]
 
-		mergeValues(&metric, decoded, stats)
+		z.mergeValues(&metric, decoded, stats)
 		multi.Metrics = append(multi.Metrics, metric)
 	}
 
@@ -235,8 +237,8 @@ func mergeResponses(responses []ServerResponse, stats *Stats) ([]string, *pb3.Mu
 	return servers, &multi
 }
 
-func mergeValues(metric *pb3.FetchResponse, decoded []pb3.FetchResponse, stats *Stats) {
-	logger := zapwriter.Logger("zipper_render")
+func (z *Zipper) mergeValues(metric *pb3.FetchResponse, decoded []pb3.FetchResponse, stats *Stats) {
+	logger := z.logger.With(zap.String("function", "mergeValues"))
 
 	var responseLengthMismatch bool
 	for i := range metric.Values {
@@ -275,8 +277,8 @@ func mergeValues(metric *pb3.FetchResponse, decoded []pb3.FetchResponse, stats *
 	}
 }
 
-func infoUnpackPB(responses []ServerResponse, stats *Stats) map[string]pb3.InfoResponse {
-	logger := zapwriter.Logger("zipper_info").With(zap.String("handler", "info"))
+func (z *Zipper) infoUnpackPB(responses []ServerResponse, stats *Stats) map[string]pb3.InfoResponse {
+	logger := z.logger.With(zap.String("function", "infoUnpackPB"))
 
 	decoded := make(map[string]pb3.InfoResponse)
 	for _, r := range responses {
@@ -306,8 +308,8 @@ func infoUnpackPB(responses []ServerResponse, stats *Stats) map[string]pb3.InfoR
 	return decoded
 }
 
-func findUnpackPB(responses []ServerResponse, stats *Stats) ([]pb3.GlobMatch, map[string][]string) {
-	logger := zapwriter.Logger("zipper_find").With(zap.String("handler", "findUnpackPB"))
+func (z *Zipper) findUnpackPB(responses []ServerResponse, stats *Stats) ([]pb3.GlobMatch, map[string][]string) {
+	logger := z.logger.With(zap.String("handler", "findUnpackPB"))
 
 	// metric -> [server1, ... ]
 	paths := make(map[string][]string)
@@ -350,7 +352,7 @@ func findUnpackPB(responses []ServerResponse, stats *Stats) ([]pb3.GlobMatch, ma
 
 func (z *Zipper) doProbe() {
 	stats := &Stats{}
-	logger := zapwriter.Logger("probe")
+	logger := z.logger.With(zap.String("function", "probe"))
 	// Generate unique ID on every restart
 	uuid := uuid.NewV4()
 	ctx := util.SetUUID(context.Background(), uuid.String())
@@ -363,7 +365,7 @@ func (z *Zipper) doProbe() {
 		return
 	}
 
-	_, paths := findUnpackPB(responses, stats)
+	_, paths := z.findUnpackPB(responses, stats)
 
 	z.sendStats(stats)
 
@@ -554,7 +556,7 @@ GATHER:
 	}
 
 	if len(erroredServerList) != 0 {
-		logger.Error("non fatal errors happened while querying servers",
+		logger.Debug("non fatal errors happened while querying servers",
 			zap.Int("", len(erroredServerList)),
 			zap.Any("list_of_errors", erroredServerList),
 		)
@@ -566,7 +568,7 @@ GATHER:
 func (z *Zipper) fetchCarbonsearchResponse(ctx context.Context, logger *zap.Logger, url string, stats *Stats) []string {
 	// Send query to SearchBackend. The result is []queries for StorageBackends
 	searchResponse := z.multiGet(ctx, logger, []string{z.searchBackend}, url, stats)
-	m, _ := findUnpackPB(searchResponse, stats)
+	m, _ := z.findUnpackPB(searchResponse, stats)
 
 	queries := make([]string, 0, len(m))
 	for _, v := range m {
@@ -646,7 +648,7 @@ func (z *Zipper) Render(ctx context.Context, logger *zap.Logger, target string, 
 		return nil, stats, errNoResponses
 	}
 
-	servers, metrics := mergeResponses(responses, stats)
+	servers, metrics := z.mergeResponses(responses, stats)
 
 	if metrics == nil {
 		return nil, stats, errNoMetricsFetched
@@ -685,7 +687,7 @@ func (z *Zipper) Info(ctx context.Context, logger *zap.Logger, target string) (m
 		return nil, stats, errNoResponses
 	}
 
-	infos := infoUnpackPB(responses, stats)
+	infos := z.infoUnpackPB(responses, stats)
 	return infos, stats, nil
 }
 
@@ -707,7 +709,7 @@ func (z *Zipper) Find(ctx context.Context, logger *zap.Logger, query string) ([]
 		// a trailing '*' by graphite-web
 		if strings.HasSuffix(query, "*") {
 			searchCompleterResponse := z.multiGet(ctx, logger, []string{z.searchBackend}, rewrite.RequestURI(), stats)
-			matches, _ := findUnpackPB(searchCompleterResponse, stats)
+			matches, _ := z.findUnpackPB(searchCompleterResponse, stats)
 			// this is a completer request, and so we should return the set of
 			// virtual metrics returned by carbonsearch verbatim, rather than trying
 			// to find them on the stores
@@ -754,7 +756,7 @@ func (z *Zipper) Find(ctx context.Context, logger *zap.Logger, query string) ([]
 			return nil, stats, errNoResponses
 		}
 
-		m, paths := findUnpackPB(responses, stats)
+		m, paths := z.findUnpackPB(responses, stats)
 		metrics = append(metrics, m...)
 
 		// update our cache of which servers have which metrics
