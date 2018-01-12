@@ -54,8 +54,8 @@
   name = "github.com/facebookgo/pidfile"
 
 [[constraint]]
+  branch = "master"
   name = "github.com/go-graphite/carbonzipper"
-  version = "0.73.2"
 
 [[constraint]]
   branch = "master"

@@ -18,6 +18,7 @@ type zipper struct {
 
 	logger      *zap.Logger
 	statsSender func(*realZipper.Stats)
+	ignoreClientTimeout bool
 }
 
 // The CarbonZipper interface exposes access to realZipper
@@ -28,11 +29,12 @@ type CarbonZipper interface {
 	Render(ctx context.Context, metric string, from, until int32) ([]*expr.MetricData, error)
 }
 
-func newZipper(sender func(*realZipper.Stats), config *realZipper.Config, logger *zap.Logger) *zipper {
+func newZipper(sender func(*realZipper.Stats), config *realZipper.Config, ignoreClientTimeout bool, logger *zap.Logger) *zipper {
 	z := &zipper{
-		z:           realZipper.NewZipper(sender, config),
+		z:           realZipper.NewZipper(sender, config, logger),
 		logger:      logger,
 		statsSender: sender,
+		ignoreClientTimeout: ignoreClientTimeout,
 	}
 
 	return z
@@ -40,8 +42,12 @@ func newZipper(sender func(*realZipper.Stats), config *realZipper.Config, logger
 
 func (z zipper) Find(ctx context.Context, metric string) (pb.GlobResponse, error) {
 	var pbresp pb.GlobResponse
+	newCtx := ctx
+	if z.ignoreClientTimeout {
+		newCtx = context.Background()
+	}
 
-	res, stats, err := z.z.Find(ctx, z.logger, metric)
+	res, stats, err := z.z.Find(newCtx, z.logger, metric)
 	if err != nil {
 		return pbresp, err
 	}
@@ -55,7 +61,11 @@ func (z zipper) Find(ctx context.Context, metric string) (pb.GlobResponse, error
 }
 
 func (z zipper) Info(ctx context.Context, metric string) (map[string]pb.InfoResponse, error) {
-	resp, stats, err := z.z.Info(ctx, z.logger, metric)
+	newCtx := ctx
+	if z.ignoreClientTimeout {
+		newCtx = context.Background()
+	}
+	resp, stats, err := z.z.Info(newCtx, z.logger, metric)
 	if err != nil {
 		return nil, fmt.Errorf("http.Get: %+v", err)
 	}
@@ -67,7 +77,11 @@ func (z zipper) Info(ctx context.Context, metric string) (map[string]pb.InfoResp
 
 func (z zipper) Render(ctx context.Context, metric string, from, until int32) ([]*expr.MetricData, error) {
 	var result []*expr.MetricData
-	pbresp, stats, err := z.z.Render(ctx, z.logger, metric, from, until)
+	newCtx := ctx
+	if z.ignoreClientTimeout {
+		newCtx = context.Background()
+	}
+	pbresp, stats, err := z.z.Render(newCtx, z.logger, metric, from, until)
 	if err != nil {
 		return result, err
 	}

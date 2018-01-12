@@ -977,6 +977,7 @@ var config = struct {
 	Upstreams                  realZipper.Config  `yaml:"upstreams"`
 	ExpireDelaySec             int32              `yaml:"expireDelaySec"`
 	GraphiteWeb09Compatibility bool               `yaml:"graphite09compat"`
+	IgnoreClientTimeout        bool               `yaml:"ignoreClientTimeout"`
 
 	queryCache cache.BytesCache
 	findCache  cache.BytesCache
@@ -1366,7 +1367,7 @@ func main() {
 
 	setUpViper(logger)
 	setUpConfigUpstreams(logger)
-	zipper := newZipper(zipperStats, &config.Upstreams, logger.With(zap.String("handler", "zipper")))
+	zipper := newZipper(zipperStats, &config.Upstreams, config.IgnoreClientTimeout, logger.With(zap.String("handler", "zipper")))
 	setUpConfig(logger, zipper)
 
 	r := initHandlers()
