@@ -3,6 +3,7 @@ package zipper
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -160,6 +161,7 @@ func NewZipper(sender func(*Stats), config *Config) *Zipper {
 type ServerResponse struct {
 	server   string
 	response []byte
+	err      error
 }
 
 var errNoResponses = fmt.Errorf("No responses fetched from upstream")
@@ -403,23 +405,28 @@ func (z *Zipper) probeTlds() {
 	}
 }
 
+var errBadResponseCode = errors.New("bad response code")
+
 func (z *Zipper) singleGet(ctx context.Context, logger *zap.Logger, uri, server string, ch chan<- ServerResponse, started chan<- struct{}) {
 	logger = logger.With(zap.String("handler", "singleGet"))
 
 	u, err := url.Parse(server + uri)
 	if err != nil {
-		logger.Error("error parsing uri",
+		logger.Debug("error parsing uri",
 			zap.String("uri", server+uri),
 			zap.Error(err),
 		)
-		ch <- ServerResponse{server, nil}
+		ch <- ServerResponse{server: server, response: nil, err: err}
 		return
 	}
+
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
-		logger.Error("failed to create new request",
+		logger.Debug("failed to create new request",
 			zap.Error(err),
 		)
+		ch <- ServerResponse{server: server, response: nil, err: err}
+		return
 	}
 	req = cu.MarshalCtx(ctx, util.MarshalCtx(ctx, req))
 
@@ -429,10 +436,10 @@ func (z *Zipper) singleGet(ctx context.Context, logger *zap.Logger, uri, server 
 	defer z.limiter.Leave(server)
 	resp, err := z.storageClient.Do(req.WithContext(ctx))
 	if err != nil {
-		logger.Error("query error",
+		logger.Debug("query error",
 			zap.Error(err),
 		)
-		ch <- ServerResponse{server, nil}
+		ch <- ServerResponse{server: server, response: nil, err: err}
 		return
 	}
 	defer resp.Body.Close()
@@ -440,28 +447,28 @@ func (z *Zipper) singleGet(ctx context.Context, logger *zap.Logger, uri, server 
 	if resp.StatusCode == http.StatusNotFound {
 		// carbonsserver replies with Not Found if we request a
 		// metric that it doesn't have -- makes sense
-		ch <- ServerResponse{server, nil}
+		ch <- ServerResponse{server: server, response: nil, err: nil}
 		return
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		logger.Error("bad response code",
+		logger.Debug("bad response code",
 			zap.Int("response_code", resp.StatusCode),
 		)
-		ch <- ServerResponse{server, nil}
+		ch <- ServerResponse{server: server, response: nil, err: errBadResponseCode}
 		return
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		logger.Error("error reading body",
+		logger.Debug("error reading body",
 			zap.Error(err),
 		)
-		ch <- ServerResponse{server, nil}
+		ch <- ServerResponse{server: server, response: nil, err: err}
 		return
 	}
 
-	ch <- ServerResponse{server, body}
+	ch <- ServerResponse{server: server, response: body, err: nil}
 }
 
 func (z *Zipper) multiGet(ctx context.Context, logger *zap.Logger, servers []string, uri string, stats *Stats) []ServerResponse {
@@ -486,6 +493,8 @@ func (z *Zipper) multiGet(ctx context.Context, logger *zap.Logger, servers []str
 	var responses int
 	var started int
 
+	erroredServerList := make(map[string][]string)
+
 GATHER:
 	for {
 		select {
@@ -499,6 +508,12 @@ GATHER:
 			responses++
 			if r.response != nil {
 				response = append(response, r)
+			} else {
+				if r.err != nil {
+					list := erroredServerList[r.err.Error()]
+					list = append(list, r.server)
+					erroredServerList[r.err.Error()] = list
+				}
 			}
 
 			if responses == len(servers) {
@@ -533,6 +548,13 @@ GATHER:
 			stats.Timeouts++
 			break GATHER
 		}
+	}
+
+	if len(erroredServerList) != 0 {
+		logger.Error("non fatal errors happened while querying servers",
+			zap.Int("", len(erroredServerList)),
+			zap.Any("list_of_errors", erroredServerList),
+		)
 	}
 
 	return response
