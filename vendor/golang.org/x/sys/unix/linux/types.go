@@ -24,6 +24,7 @@ package unix
 #include <netinet/tcp.h>
 #include <netpacket/packet.h>
 #include <poll.h>
+#include <sched.h>
 #include <signal.h>
 #include <stdio.h>
 #include <sys/epoll.h>
@@ -63,6 +64,7 @@ package unix
 #include <linux/vm_sockets.h>
 #include <linux/random.h>
 #include <linux/taskstats.h>
+#include <linux/cgroupstats.h>
 #include <linux/genetlink.h>
 
 // On mips64, the glibc stat and kernel stat do not agree
@@ -542,7 +544,7 @@ type Termios C.termios_t
 
 type Winsize C.struct_winsize
 
-// Taskstats
+// Taskstats and cgroup stats.
 
 type Taskstats C.struct_taskstats
 
@@ -562,6 +564,18 @@ const (
 	TASKSTATS_CMD_ATTR_TGID               = C.TASKSTATS_CMD_ATTR_TGID
 	TASKSTATS_CMD_ATTR_REGISTER_CPUMASK   = C.TASKSTATS_CMD_ATTR_REGISTER_CPUMASK
 	TASKSTATS_CMD_ATTR_DEREGISTER_CPUMASK = C.TASKSTATS_CMD_ATTR_DEREGISTER_CPUMASK
+)
+
+type CGroupStats C.struct_cgroupstats
+
+const (
+	CGROUPSTATS_CMD_UNSPEC        = C.__TASKSTATS_CMD_MAX
+	CGROUPSTATS_CMD_GET           = C.CGROUPSTATS_CMD_GET
+	CGROUPSTATS_CMD_NEW           = C.CGROUPSTATS_CMD_NEW
+	CGROUPSTATS_TYPE_UNSPEC       = C.CGROUPSTATS_TYPE_UNSPEC
+	CGROUPSTATS_TYPE_CGROUP_STATS = C.CGROUPSTATS_TYPE_CGROUP_STATS
+	CGROUPSTATS_CMD_ATTR_UNSPEC   = C.CGROUPSTATS_CMD_ATTR_UNSPEC
+	CGROUPSTATS_CMD_ATTR_FD       = C.CGROUPSTATS_CMD_ATTR_FD
 )
 
 // Generic netlink
@@ -593,4 +607,13 @@ const (
 	CTRL_ATTR_MCAST_GRP_UNSPEC = C.CTRL_ATTR_MCAST_GRP_UNSPEC
 	CTRL_ATTR_MCAST_GRP_NAME   = C.CTRL_ATTR_MCAST_GRP_NAME
 	CTRL_ATTR_MCAST_GRP_ID     = C.CTRL_ATTR_MCAST_GRP_ID
+)
+
+// CPU affinity
+
+type cpuMask C.__cpu_mask
+
+const (
+	_CPU_SETSIZE = C.__CPU_SETSIZE
+	_NCPUBITS    = C.__NCPUBITS
 )
