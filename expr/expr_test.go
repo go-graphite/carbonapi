@@ -1233,6 +1233,30 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "mapSeries",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "servers.*.cpu.*"},
+					{val: 1, etype: etConst},
+				},
+			},
+			map[MetricRequest][]*MetricData{
+				{"servers.*.cpu.*", 0, 1}: {
+					makeResponse("servers.server1.cpu.*", []float64{1, 2, 3}, 1, now32),
+					makeResponse("servers.server2.cpu.*", []float64{6, 7, 8}, 1, now32),
+					makeResponse("servers.server3.cpu.*", []float64{9, 10, 11}, 1, now32),
+					makeResponse("servers.server4.cpu.*", []float64{12, 13, 14}, 1, now32),
+				},
+			},
+			[]*MetricData{
+				makeResponse("servers.server1.cpu.*", []float64{1, 2, 3}, 1, now32),
+				makeResponse("servers.server2.cpu.*", []float64{6, 7, 8}, 1, now32),
+				makeResponse("servers.server3.cpu.*", []float64{9, 10, 11}, 1, now32),
+				makeResponse("servers.server4.cpu.*", []float64{12, 13, 14}, 1, now32),
+			},
+		},
+		{
+			&expr{
 				target: "maxSeries",
 				etype:  etFunc,
 				args: []*expr{
