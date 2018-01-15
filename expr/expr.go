@@ -2189,6 +2189,47 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		}
 		return results, nil
 
+	case "mapSeries", "map": // mapSeries(seriesList, *mapNodes)
+		args, err := getSeriesArg(e.args[0], from, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		var fields []int
+
+		fields, err = getIntArgs(e, 1)
+		if err != nil {
+			return nil, err
+		}
+
+		var results []*MetricData
+
+		groups := make(map[string][]*MetricData)
+		var nodeList []string
+
+		for _, a := range args {
+
+			metric := extractMetric(a.Name)
+			nodes := strings.Split(metric, ".")
+			nodeKey := make([]string, 0, len(fields))
+			for _, f := range fields {
+				nodeKey = append(nodeKey, nodes[f])
+			}
+			node := strings.Join(nodeKey, ".")
+			if len(groups[node]) == 0 {
+				nodeList = append(nodeList, node)
+			}
+
+			groups[node] = append(groups[node], a)
+		}
+
+		for _, group := range groups {
+			results = append(results, group...)
+		}
+
+		return results, nil
+
+
 	case "maxSeries": // maxSeries(*seriesLists)
 		args, err := getSeriesArgsAndRemoveNonExisting(e, from, until, values)
 		if err != nil {
