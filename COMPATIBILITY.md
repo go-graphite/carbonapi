@@ -167,7 +167,7 @@ logarithm(seriesList, base=10), alias log()                               |  0.9
 lowestAverage(seriesList, n)                                              |  0.9.9  | Supported
 lowestCurrent(seriesList, n)                                              |  0.9.9  | Supported
 [lowPass](https://en.wikipedia.org/wiki/Low-pass_filter)(seriesList, cutPercent)                                           |  not in graphite | Experimental
-mapSeries(seriesList, mapNode), Short form: map()                         |  1.0.0  |
+mapSeries(seriesList, mapNode), Short form: map()                         |  1.0.0  | Supported
 maxSeries(*seriesLists)                                                   |  0.9.9  | Supported
 maximumAbove(seriesList, n)                                               |  0.9.9  | Supported
 maximumBelow(seriesList, n)                                               |  0.9.9  | Supported
