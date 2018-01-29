@@ -1601,6 +1601,38 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "reduceSeries",
+				etype: etFunc,
+				args: []*expr{
+					{
+						target: "mapSeries",
+						etype:  etFunc,
+						args: []*expr{
+							{target: "devops.service.*.filter.received.*.count"},
+							{val: 2, etype: etConst},
+						},
+					},
+					{valStr: "asPercent", etype: etString},
+					{val: 5, etype: etConst},
+					{valStr: "valid", etype: etString},
+					{valStr: "total", etype: etString},
+				},
+			},
+			map[MetricRequest][]*MetricData{
+				{"devops.service.*.filter.received.*.count", 0, 1}: {
+					makeResponse("devops.service.server1.filter.received.valid.count", []float64{2, 4, 8}, 1, now32),
+					makeResponse("devops.service.server1.filter.received.total.count", []float64{8, 2, 4}, 1, now32),
+					makeResponse("devops.service.server2.filter.received.valid.count", []float64{3, 9, 12}, 1, now32),
+					makeResponse("devops.service.server2.filter.received.total.count", []float64{12, 9, 3}, 1, now32),
+				},
+			},
+			[]*MetricData{
+				makeResponse("devops.service.server1.filter.received.reduce.asPercent.count", []float64{25, 200, 200}, 1, now32),
+				makeResponse("devops.service.server2.filter.received.reduce.asPercent.count", []float64{25, 100, 400}, 1, now32),
+			},
+		},
+		{
+			&expr{
 				target: "transformNull",
 				etype:  etFunc,
 				args: []*expr{
