@@ -195,7 +195,7 @@ pow(seriesList, factor)                                                   |  0.9
 powSeries(*seriesLists)                                                   |  1.0.0  |
 randomWalkFunction(name, step=60), Short Alias: randomWalk()              |  0.9.9  | Supported
 rangeOfSeries(*seriesLists)                                               |  0.9.10 | Supported
-reduceSeries(seriesLists, reduceFunction, reduceNode, *reduceMatchers)    |  0.9.14 |
+reduceSeries(seriesLists, reduceFunction, reduceNode, *reduceMatchers)    |  0.9.14 | Supported
 reduce()                                                                  |  - - -  | Short form of reduceSeries()
 removeAbovePercentile(seriesList, n)                                      |  0.9.10 | Supported
 removeAboveValue(seriesList, n)                                           |  0.9.10 | Supported
