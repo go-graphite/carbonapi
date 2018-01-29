@@ -2223,8 +2223,8 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			groups[node] = append(groups[node], a)
 		}
 
-		for _, group := range groups {
-			results = append(results, group...)
+		for _, node := range nodeList {
+			results = append(results, groups[node]...)
 		}
 
 		return results, nil
