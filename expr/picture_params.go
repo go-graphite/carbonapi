@@ -391,7 +391,7 @@ var DefaultParams = PictureParams{
 
 	Tz: time.Local,
 
-	ConnectedLimit: math.MaxUint32,
+	ConnectedLimit: math.MaxInt32,
 	LineMode:       LineModeSlope,
 	AreaMode:       AreaModeNone,
 	AreaAlpha:      math.NaN(),
