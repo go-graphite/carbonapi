@@ -764,7 +764,7 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		}
 		return results, nil
 
-	case "asPercent": // asPercent(seriesList, total=None)
+	case "asPercent": // asPercent(seriesList, total=None, *nodes)
 		arg, err := getSeriesArg(e.args[0], from, until, values)
 		if err != nil {
 			return nil, err
@@ -776,6 +776,8 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 		var multipleSeries bool
 		var numerators []*MetricData
 		var denominators []*MetricData
+
+		var results []*MetricData
 
 		if len(e.args) == 1 {
 			getTotal = func(i int) float64 {
@@ -838,12 +840,160 @@ func EvalExpr(e *expr, from, until int32, values map[MetricRequest][]*MetricData
 			formatName = func(a, b string) string {
 				return fmt.Sprintf("asPercent(%s,%s)", a, b)
 			}
+		} else if len(e.args) >= 3 {
+			total, err := getSeriesArg(e.args[1], from, until, values)
+			if err != nil {
+				return nil, err
+			}
+
+			if len(total) != 1 && len(total) != len(arg) {
+				return nil, ErrWildcardNotAllowed
+			}
+
+			nodeIndexes, err := getIntArgs(e, 2)
+			if err != nil {
+				return nil, err
+			}
+
+			sumSeries := func(seriesList []*MetricData) (*MetricData, error) {
+				seriesNames := make([]string, len(seriesList))
+				for i, series := range seriesList {
+					seriesNames[i] = series.Name
+				}
+
+				seriesNameExprs := make([]*expr, len(seriesList))
+				for i, seriesName := range seriesNames {
+					seriesNameExprs[i] = &expr{target:seriesName}
+				}
+
+				result, err := EvalExpr(&expr {
+					target: "sumSeries",
+					etype:  etFunc,
+					args: seriesNameExprs,
+					argString: strings.Join(seriesNames, ","),
+				}, from, until, values)
+
+				if err != nil {
+					return nil, err
+				}
+
+				// sumSeries uses aggregateSeries function which returns only one series
+				return result[0], nil
+			}
+
+			groupByNodes := func(seriesList []*MetricData, nodeIndexes []int) (map[string][]*MetricData, []string) {
+				var nodeKeys []string
+				groups := make(map[string][]*MetricData)
+
+				for _, series := range seriesList {
+					metric := extractMetric(series.Name)
+					nodes := strings.Split(metric, ".")
+					nodeKey := make([]string, 0, len(nodeIndexes))
+					for _, index := range nodeIndexes {
+						nodeKey = append(nodeKey, nodes[index])
+					}
+					node := strings.Join(nodeKey, ".")
+					_, exist := groups[node]
+
+					if !exist {
+						nodeKeys = append(nodeKeys, node)
+					}
+
+					groups[node] = append(groups[node], series)
+				}
+
+				return groups, nodeKeys
+			}
+
+			distinct := func (slice []string) []string {
+				keys := make(map[string]bool)
+				var list []string
+				for _, entry := range slice {
+					if _, value := keys[entry]; !value {
+						keys[entry] = true
+						list = append(list, entry)
+					}
+				}
+				return list
+			}
+
+			metaSeriesGroup, metaKeys := groupByNodes(arg, nodeIndexes)
+
+			totalSeriesGroup := make(map[string]*MetricData)
+			var groups map[string][]*MetricData
+			var groupKeys []string
+
+			if len(total) == 0 {
+				groups, groupKeys = metaSeriesGroup, metaKeys
+			} else {
+				groups, groupKeys = groupByNodes(total, nodeIndexes)
+			}
+
+			for _, nodeKey := range groupKeys {
+				if len(groups[nodeKey]) == 1 {
+					totalSeriesGroup[nodeKey] = groups[nodeKey][0]
+				} else {
+					totalSeriesGroup[nodeKey], err = sumSeries(groups[nodeKey])
+					if err != nil {
+						return nil, err
+					}
+				}
+			}
+
+			nodeKeys := distinct(append(metaKeys, groupKeys...))
+
+			for _, nodeKey := range nodeKeys {
+				metaSeriesList, existInMeta := metaSeriesGroup[nodeKey]
+				if !existInMeta {
+					totalSeries := totalSeriesGroup[nodeKey]
+					result := *totalSeries
+					result.Name = fmt.Sprintf("asPercent(MISSING,%s)", totalSeries.Name)
+					result.Values = make([]float64, len(totalSeries.Values))
+					result.IsAbsent = make([]bool, len(totalSeries.Values))
+					for i := range result.Values {
+						result.Values[i] = 0
+						result.IsAbsent[i] = true
+					}
+
+					results = append(results, &result)
+					continue
+				}
+
+				for _, metaSeries := range metaSeriesList {
+					result := *metaSeries
+					totalSeries, existInTotal := totalSeriesGroup[nodeKey]
+					if !existInTotal {
+						result.Name = fmt.Sprintf("asPercent(%s,MISSING)", metaSeries.Name)
+						result.Values = make([]float64, len(metaSeries.Values))
+						result.IsAbsent = make([]bool, len(metaSeries.Values))
+						for i := range result.Values {
+							result.Values[i] = 0
+							result.IsAbsent[i] = true
+						}
+					} else {
+						result.Name = fmt.Sprintf("asPercent(%s,%s)", metaSeries.Name, totalSeries.Name)
+						result.Values = make([]float64, len(metaSeries.Values))
+						result.IsAbsent = make([]bool, len(metaSeries.Values))
+						for i := range metaSeries.Values {
+							if metaSeries.IsAbsent[i] || totalSeries.IsAbsent[i] {
+								result.Values[i] = 0
+								result.IsAbsent[i] = true
+								continue
+							}
+							result.Values[i] = (metaSeries.Values[i] / totalSeries.Values[i]) * 100
+						}
+					}
+
+					results = append(results, &result)
+				}
+			}
+
+			return results, nil
+
 		} else {
 			fmt.Printf("%v %v\n", len(e.args), len(arg))
 			return nil, errors.New("total must be either a constant or a series")
 		}
-
-		var results []*MetricData
 
 		if multipleSeries {
 			/* We should have two equal length lists of arguments

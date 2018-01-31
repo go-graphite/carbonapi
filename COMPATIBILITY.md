@@ -106,7 +106,7 @@ aliasSub(seriesList, search, replace)                                     |  0.9
 alpha(seriesList, alpha)                                                  |  0.9.10 | Supported
 applyByNode(seriesList, nodeNum, templateFunction, newName=None)          |  1.0.0  | Supported
 areaBetween(seriesList)                                                   |  0.9.14 | Supported
-asPercent(seriesList, total=None)                                         |  0.9.10 | Supported
+asPercent(seriesList, total=None, *nodes)                                 |  1.1.1  | Supported
 averageAbove(seriesList, n)                                               |  0.9.9  | Supported
 averageBelow(seriesList, n)                                               |  0.9.9  | Supported
 averageOutsidePercentile(seriesList, n)                                   |  1.0.0  |
