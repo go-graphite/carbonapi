@@ -1343,6 +1343,56 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "asPercent",
+				etype: etFunc,
+				args: []*expr{
+					{target: "Server{1,2}.memory.used"},
+					{target: "Server{1,3}.memory.total"},
+				},
+			},
+			map[MetricRequest][]*MetricData{
+				{"Server{1,2}.memory.used", 0, 1}: {
+					makeResponse("Server1.memory.used", []float64{1, 20, 10}, 1, now32),
+					makeResponse("Server2.memory.used", []float64{1, 10, 20}, 1, now32),
+				},
+				{"Server{1,3}.memory.total", 0, 1}: {
+					makeResponse("Server1.memory.total", []float64{4, 4, 8}, 1, now32),
+					makeResponse("Server3.memory.total", []float64{4, 16, 2}, 1, now32),
+				},
+			},
+			[]*MetricData{
+				makeResponse("asPercent(Server1.memory.used,Server1.memory.total)", []float64{25, 500, 125}, 1, now32),
+				makeResponse("asPercent(Server2.memory.used,Server3.memory.total)", []float64{25, 62.5, 1000}, 1, now32),
+			},
+		},
+		{
+			&expr{
+				target: "asPercent",
+				etype: etFunc,
+				args: []*expr{
+					{target: "Server{1,2}.memory.used"},
+					{target: "Server{1,3}.memory.total"},
+					{val: 0, etype: etConst},
+				},
+			},
+			map[MetricRequest][]*MetricData{
+				{"Server{1,2}.memory.used", 0, 1}: {
+					makeResponse("Server1.memory.used", []float64{1, 20, 10}, 1, now32),
+					makeResponse("Server2.memory.used", []float64{1, 10, 20}, 1, now32),
+				},
+				{"Server{1,3}.memory.total", 0, 1}: {
+					makeResponse("Server1.memory.total", []float64{4, 4, 8}, 1, now32),
+					makeResponse("Server3.memory.total", []float64{4, 16, 2}, 1, now32),
+				},
+			},
+			[]*MetricData{
+				makeResponse("asPercent(Server1.memory.used,Server1.memory.total)", []float64{25, 500, 125}, 1, now32),
+				makeResponse("asPercent(Server2.memory.used,MISSING)", []float64{math.NaN(), math.NaN(), math.NaN()}, 1, now32),
+				makeResponse("asPercent(MISSING,Server3.memory.total)", []float64{math.NaN(), math.NaN(), math.NaN()}, 1, now32),
+			},
+		},
+		{
+			&expr{
 				target: "divideSeries",
 				etype:  etFunc,
 				args: []*expr{
