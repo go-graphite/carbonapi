@@ -1187,6 +1187,21 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 			&expr{
+				target: "delay",
+				etype:  etFunc,
+				args: []*expr{
+					{target: "metric1", etype: etName},
+					{val: 3, etype: etConst},
+				},
+			},
+			map[MetricRequest][]*MetricData{
+				{"metric1", 0, 1}: {makeResponse("metric1", []float64{1, 2, 3, math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
+			},
+			[]*MetricData{makeResponse("delay(metric1,3)",
+				[]float64{math.NaN(), math.NaN(), math.NaN(), 1, 2, 3}, 1, now32)},
+		},
+		{
+			&expr{
 				target: "derivative",
 				etype:  etFunc,
 				args: []*expr{
