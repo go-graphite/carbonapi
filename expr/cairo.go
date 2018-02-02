@@ -1551,8 +1551,8 @@ func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*MetricData) 
 
 	params.yStep = yStep
 
-	params.yBottom = params.yStep * math.Floor(yMinValue/params.yStep) // start labels at the greatest multiple of yStep <= yMinValue
-	params.yTop = params.yStep * math.Ceil(yMaxValue/params.yStep)     // Extend the top of our graph to the lowest yStep multiple >= yMaxValue
+	params.yBottom = params.yStep * math.Floor(yMinValue/params.yStep+floatEpsilon) // start labels at the greatest multiple of yStep <= yMinValue
+	params.yTop = params.yStep * math.Ceil(yMaxValue/params.yStep-floatEpsilon)     // Extend the top of our graph to the lowest yStep multiple >= yMaxValue
 
 	if params.logBase != 0 {
 		if yMinValue > 0 {
@@ -1703,7 +1703,7 @@ func logrange(base, scaleMin, scaleMax float64) []float64 {
 func frange(start, end, step float64) []float64 {
 	var vals []float64
 	f := start
-	for f <= end {
+	for f <= (end + floatEpsilon) {
 		vals = append(vals, f)
 		f += step
 		// Protect against rounding errors on very small float ranges
