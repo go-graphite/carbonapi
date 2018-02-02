@@ -363,6 +363,13 @@ var xAxisConfigs = []xAxisStruct{
 	},
 }
 
+// We accept values fractionally outside of nominal limits, so that
+// rounding errors don't cause weird effects. Since our goal is to
+// create plots, and the maximum resolution of the plots is likely to
+// be less than 10000 pixels, errors smaller than this size shouldn't
+// create any visible effects.
+const floatEpsilon = 0.00000000001
+
 func getCairoFontItalic(s FontSlant) cairo.FontSlant {
 	if s == FontSlantItalic {
 		return cairo.FontSlantItalic
@@ -1437,7 +1444,7 @@ func makeLabel(yValue, yStep, ySpan float64, yUnitSystem string) string {
 	case yValue < 1.0:
 		return fmt.Sprintf("%.2f %s", yValue, prefix)
 	case ySpan > 10 || spanPrefix != prefix:
-		if yValue-math.Floor(yValue) < 0.00000000001 {
+		if yValue-math.Floor(yValue) < floatEpsilon {
 			return fmt.Sprintf("%.1f %s", yValue, prefix)
 		}
 		return fmt.Sprintf("%d %s", int(yValue), prefix)
@@ -1657,14 +1664,14 @@ func formatUnits(v, step float64, system string) (float64, string) {
 		fsize := float64(p.size)
 		if condition(fsize) {
 			v2 := v / fsize
-			if (v2-math.Floor(v2)) < 0.00000000001 && v > 1 {
+			if (v2-math.Floor(v2)) < floatEpsilon && v > 1 {
 				v2 = math.Floor(v2)
 			}
 			return v2, p.prefix
 		}
 	}
 
-	if (v-math.Floor(v)) < 0.00000000001 && v > 1 {
+	if (v-math.Floor(v)) < floatEpsilon && v > 1 {
 		v = math.Floor(v)
 	}
 	return v, ""
