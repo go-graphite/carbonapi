@@ -40,7 +40,7 @@ cp ./contrib/common/carbonapi.env "${TMPDIR}"/etc/sysconfig/carbonapi
 
 fpm -s dir -t rpm -n carbonapi -v ${VERSION} -C ${TMPDIR} \
     --iteration ${RELEASE} \
-    -p carbonapi_VERSION-ITERATION.ARCH.rpm \
+    -p carbonapi-VERSION-ITERATION.ARCH.rpm \
     -d "cairo" \
     --after-install contrib/fpm/systemd-reload.sh \
     --description "carbonapi: replacement graphite API server" \
