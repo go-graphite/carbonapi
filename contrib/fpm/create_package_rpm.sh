@@ -10,7 +10,7 @@ die() {
 }
 
 pwd
-VERSION_GIT=$(git describe --abbrev=6 --always --tags | rev | sed 's/-/./' | rev) 
+VERSION_GIT=$(git describe --abbrev=6 --always --tags | rev | sed 's/-/./' | rev)
 VERSION=$(cut -d'-' -f 1 <<< ${VERSION_GIT})
 RELEASE=$(cut -d'-' -f 2 <<< ${VERSION_GIT})
 if [[ "${VERSION}" == "${RELEASE}" ]]; then
@@ -40,7 +40,7 @@ cp ./contrib/common/carbonapi.env "${TMPDIR}"/etc/sysconfig/carbonapi
 
 fpm -s dir -t rpm -n carbonapi -v ${VERSION} -C ${TMPDIR} \
     --iteration ${RELEASE} \
-    -p carbonapi_VERSION-ITERATION_ARCH.rpm \
+    -p carbonapi_VERSION-ITERATION.ARCH.rpm \
     -d "cairo" \
     --after-install contrib/fpm/systemd-reload.sh \
     --description "carbonapi: replacement graphite API server" \
