@@ -1,11 +1,11 @@
-package expr
+package parser
 
 import (
 	"errors"
 	"strconv"
 )
 
-var errUnknownTimeUnits = errors.New("unknown time units")
+var ErrUnknownTimeUnits = errors.New("unknown time units")
 
 // IntervalString converts a sign and string into a number of seconds
 func IntervalString(s string, defaultSign int) (int32, error) {
@@ -54,7 +54,7 @@ func IntervalString(s string, defaultSign int) (int32, error) {
 		case "y", "year", "years":
 			units = 365 * 24 * 60 * 60
 		default:
-			return 0, errUnknownTimeUnits
+			return 0, ErrUnknownTimeUnits
 		}
 
 		offset, err := strconv.Atoi(offsetStr)

@@ -1,8 +1,8 @@
-package expr
+package parser
 
 import (
-	"strings"
-	"testing"
+"strings"
+"testing"
 )
 
 func TestInterval(t *testing.T) {

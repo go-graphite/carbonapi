@@ -23,6 +23,7 @@ import (
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/date"
 	"github.com/go-graphite/carbonapi/expr"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 	"github.com/go-graphite/carbonapi/util"
 	"github.com/go-graphite/carbonzipper/cache"
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
@@ -284,7 +285,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	from := r.FormValue("from")
 	until := r.FormValue("until")
 	format := r.FormValue("format")
-	useCache := !expr.TruthyBool(r.FormValue("noCache"))
+	useCache := !parser.TruthyBool(r.FormValue("noCache"))
 
 	var jsonp string
 
@@ -293,7 +294,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		jsonp = r.FormValue("jsonp")
 	}
 
-	if format == "" && (expr.TruthyBool(r.FormValue("rawData")) || expr.TruthyBool(r.FormValue("rawdata"))) {
+	if format == "" && (parser.TruthyBool(r.FormValue("rawData")) || parser.TruthyBool(r.FormValue("rawdata"))) {
 		format = rawFormat
 	}
 
@@ -370,7 +371,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	var results []*expr.MetricData
 	errors := make(map[string]string)
-	metricMap := make(map[expr.MetricRequest][]*expr.MetricData)
+	metricMap := make(map[parser.MetricRequest][]*expr.MetricData)
 
 	var metrics []string
 	var targetIdx = 0
@@ -378,7 +379,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		var target = targets[targetIdx]
 		targetIdx++
 
-		exp, e, err := expr.ParseExpr(target)
+		exp, e, err := parser.ParseExpr(target)
 
 		if err != nil || e != "" {
 			msg := buildParseErrorString(target, e, err)
@@ -506,7 +507,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		var rewritten bool
 		var newTargets []string
 		rewritten, newTargets, err = expr.RewriteExpr(exp, from32, until32, metricMap)
-		if err != nil && err != expr.ErrSeriesDoesNotExist {
+		if err != nil && err != parser.ErrSeriesDoesNotExist {
 			errors[target] = err.Error()
 			accessLogDetails.Reason = err.Error()
 			logAsError = true
@@ -524,7 +525,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 					}
 				}()
 				exprs, err := expr.EvalExpr(exp, from32, until32, metricMap)
-				if err != nil && err != expr.ErrSeriesDoesNotExist {
+				if err != nil && err != parser.ErrSeriesDoesNotExist {
 					errors[target] = err.Error()
 					accessLogDetails.Reason = err.Error()
 					logAsError = true
@@ -1156,10 +1157,10 @@ func setUpConfig(logger *zap.Logger, zipper CarbonZipper) {
 
 	if len(config.UnicodeRangeTables) != 0 {
 		for _, stringRange := range config.UnicodeRangeTables {
-			expr.RangeTables = append(expr.RangeTables, unicode.Scripts[stringRange])
+			parser.RangeTables = append(parser.RangeTables, unicode.Scripts[stringRange])
 		}
 	} else {
-		expr.RangeTables = append(expr.RangeTables, unicode.Latin)
+		parser.RangeTables = append(parser.RangeTables, unicode.Latin)
 	}
 
 	if config.Cpus != 0 {

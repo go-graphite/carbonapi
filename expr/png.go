@@ -2,14 +2,17 @@
 
 package expr
 
-import "net/http"
+import (
+	"net/http"
+	"github.com/go-graphite/carbonapi/pkg/parser"
+)
 
 const haveGraphSupport = false
 
 type graphOptions struct {
 }
 
-func evalExprGraph(e *expr, from, until int32, values map[MetricRequest][]*MetricData) ([]*MetricData, error) {
+func evalExprGraph(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*MetricData) ([]*MetricData, error) {
 	return nil, nil
 }
 

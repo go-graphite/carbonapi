@@ -2,6 +2,8 @@ package expr
 
 import (
 	"testing"
+
+	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
 func TestSortMetrics(t *testing.T) {
@@ -16,7 +18,7 @@ func TestSortMetrics(t *testing.T) {
 	)
 	tests := []struct {
 		metrics []*MetricData
-		mfetch  MetricRequest
+		mfetch  parser.MetricRequest
 		sorted  []*MetricData
 	}{
 		{
@@ -30,7 +32,7 @@ func TestSortMetrics(t *testing.T) {
 				makeResponse(silver, []float64{}, 1, 0),
 				makeResponse(third, []float64{}, 1, 0),
 			},
-			MetricRequest{
+			parser.MetricRequest{
 				Metric: "a.{first,second,third,fourth}.c.d",
 				From:   0,
 				Until:  1,

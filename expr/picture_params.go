@@ -8,6 +8,8 @@ import (
 	"math"
 	"strconv"
 	"strings"
+
+	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
 var DefaultColorList = []string{"blue", "green", "red", "purple", "brown", "yellow", "aqua", "grey", "magenta", "pink", "gold", "rose"}
@@ -103,7 +105,7 @@ const (
 )
 
 func getFontWeight(s string) FontWeight {
-	if TruthyBool(s) {
+	if parser.TruthyBool(s) {
 		return FontWeightBold
 	}
 	return FontWeightNormal
@@ -118,7 +120,7 @@ const (
 )
 
 func getFontItalic(s string) FontSlant {
-	if TruthyBool(s) {
+	if parser.TruthyBool(s) {
 		return FontSlantItalic
 	}
 	return FontSlantNormal
