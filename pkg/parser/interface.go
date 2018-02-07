@@ -23,7 +23,7 @@ const (
 	EtFunc
 	// EtConst is a const for 'Constant' type expression
 	EtConst
-	// EtName is a const for 'String' type expression
+	// EtString is a const for 'String' type expression
 	EtString
 )
 
@@ -134,7 +134,7 @@ func Parse(e string) (Expr, string, error) {
 	return ParseExpr(e)
 }
 
-// Creates new expression with specified target only.
+// NewTargetExpr Creates new expression with specified target only.
 func NewTargetExpr(target string) Expr {
 	e := &expr{
 		target: target,
@@ -143,7 +143,7 @@ func NewTargetExpr(target string) Expr {
 	return e
 }
 
-// Creates new expression with specified name only.
+// NewNameExpr Creates new expression with specified name only.
 func NewNameExpr(name string) Expr {
 	e := &expr{
 		target: name,
@@ -153,7 +153,7 @@ func NewNameExpr(name string) Expr {
 	return e
 }
 
-// Creates new Constant expression.
+// NewConstExpr Creates new Constant expression.
 func NewConstExpr(value float64) Expr {
 	e := &expr{
 		val: value,
@@ -163,7 +163,7 @@ func NewConstExpr(value float64) Expr {
 	return e
 }
 
-// Creates new Value expression.
+// NewValueExpr Creates new Value expression.
 func NewValueExpr(value string) Expr {
 	e := &expr{
 		valStr: value,

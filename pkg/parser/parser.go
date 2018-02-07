@@ -298,7 +298,7 @@ func (e *expr) GetBoolArgDefault(n int, b bool) (bool, error) {
 }
 
 // ParseExpr actually do all the parsing. It returns expression, original string and error (if any)
-func ParseExpr(e string) (*expr, string, error) {
+func ParseExpr(e string) (Expr, string, error) {
 
 	// skip whitespace
 	for len(e) > 1 && e[0] == ' ' {
@@ -339,7 +339,7 @@ func ParseExpr(e string) (*expr, string, error) {
 	return &expr{target: name}, e, nil
 }
 
-/// IsNameChar checks if specified char is actually a valid (from graphite's protocol point of view)
+// IsNameChar checks if specified char is actually a valid (from graphite's protocol point of view)
 func IsNameChar(r byte) bool {
 	return false ||
 		'a' <= r && r <= 'z' ||
@@ -374,7 +374,7 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 	e = e[1:]
 
 	for {
-		var arg *expr
+		var arg Expr
 		var err error
 		arg, e, err = ParseExpr(e)
 		if err != nil {
@@ -386,7 +386,7 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 		}
 
 		// we now know we're parsing a key-value pair
-		if arg.etype == EtName && e[0] == '=' {
+		if arg.IsName() && e[0] == '=' {
 			e = e[1:]
 			argCont, eCont, errCont := ParseExpr(e)
 			if errCont != nil {
@@ -397,7 +397,7 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 				return "", nil, nil, "", ErrMissingComma
 			}
 
-			if argCont.etype != EtConst && argCont.etype != EtName && argCont.etype != EtString {
+			if !argCont.IsConst() && !argCont.IsName() && !argCont.IsString() {
 				return "", nil, nil, eCont, ErrBadType
 			}
 
@@ -405,16 +405,16 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 				namedArgs = make(map[string]*expr)
 			}
 
-			namedArgs[arg.target] = &expr{
-				etype:  argCont.etype,
-				val:    argCont.val,
-				valStr: argCont.valStr,
-				target: argCont.target,
+			namedArgs[arg.Target()] = &expr{
+				etype:  argCont.Type(),
+				val:    argCont.FloatValue(),
+				valStr: argCont.StringValue(),
+				target: argCont.Target(),
 			}
 
 			e = eCont
 		} else {
-			posArgs = append(posArgs, arg)
+			posArgs = append(posArgs, arg.toExpr().(*expr))
 		}
 
 		// after the argument, trim any trailing spaces
