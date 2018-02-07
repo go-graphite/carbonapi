@@ -78,7 +78,7 @@ func getSeriesArgsAndRemoveNonExisting(e parser.Expr, from, until int32, values 
 
 	// We need to rewrite name if there are some missing metrics
 	if len(args) < len(e.Args()) {
-		e.SetString(removeEmptySeriesFromName(args))
+		e.SetRawArgs(removeEmptySeriesFromName(args))
 	}
 
 	return args, nil
@@ -323,7 +323,7 @@ func EvalExpr(e parser.Expr, from, until int32, values map[parser.MetricRequest]
 				if e.Args()[1].IsName() {
 					totalString = e.Args()[1].Target()
 				} else {
-					totalString = fmt.Sprintf("%s(%s)", e.Args()[1].Target(), e.Args()[1].StringValue())
+					totalString = fmt.Sprintf("%s(%s)", e.Args()[1].Target(), e.Args()[1].RawArgs())
 				}
 			} else {
 				multipleSeries = true
@@ -750,7 +750,7 @@ func EvalExpr(e parser.Expr, from, until int32, values map[parser.MetricRequest]
 		}
 
 		r := *args[0]
-		r.Name = fmt.Sprintf("countSeries(%s)", e.StringValue())
+		r.Name = fmt.Sprintf("countSeries(%s)", e.RawArgs())
 		r.Values = make([]float64, len(args[0].Values))
 		r.IsAbsent = make([]bool, len(args[0].Values))
 		count := float64(len(args))
@@ -783,14 +783,14 @@ func EvalExpr(e parser.Expr, from, until int32, values map[parser.MetricRequest]
 				removeEmptySeriesFromName(minuends),
 				removeEmptySeriesFromName(subtrahends),
 			}
-			e.SetString(strings.Join(args, ","))
+			e.SetRawArgs(strings.Join(args, ","))
 		}
 
 		minuend := minuends[0]
 
 		// FIXME: need more error checking on minuend, subtrahends here
 		r := *minuend
-		r.Name = fmt.Sprintf("diffSeries(%s)", e.StringValue())
+		r.Name = fmt.Sprintf("diffSeries(%s)", e.RawArgs())
 		r.Values = make([]float64, len(minuend.Values))
 		r.IsAbsent = make([]bool, len(minuend.Values))
 
@@ -821,7 +821,7 @@ func EvalExpr(e parser.Expr, from, until int32, values map[parser.MetricRequest]
 		}
 
 		r := *series[0]
-		r.Name = fmt.Sprintf("%s(%s)", e.Target(), e.StringValue())
+		r.Name = fmt.Sprintf("%s(%s)", e.Target(), e.RawArgs())
 		r.Values = make([]float64, len(series[0].Values))
 		r.IsAbsent = make([]bool, len(series[0].Values))
 
@@ -975,7 +975,7 @@ func EvalExpr(e parser.Expr, from, until int32, values map[parser.MetricRequest]
 			if useMetricNames {
 				r.Name = fmt.Sprintf("divideSeries(%s,%s)", numerator.Name, denominator.Name)
 			} else {
-				r.Name = fmt.Sprintf("divideSeries(%s)", e.StringValue())
+				r.Name = fmt.Sprintf("divideSeries(%s)", e.RawArgs())
 			}
 			r.Values = make([]float64, len(numerator.Values))
 			r.IsAbsent = make([]bool, len(numerator.Values))
@@ -1055,7 +1055,7 @@ func EvalExpr(e parser.Expr, from, until int32, values map[parser.MetricRequest]
 	case "multiplySeries": // multiplySeries(factorsSeriesList)
 		r := MetricData{
 			FetchResponse: pb.FetchResponse{
-				Name:      fmt.Sprintf("multiplySeries(%s)", e.StringValue()),
+				Name:      fmt.Sprintf("multiplySeries(%s)", e.RawArgs()),
 				StartTime: from,
 				StopTime:  until,
 			},
@@ -1307,11 +1307,13 @@ func EvalExpr(e parser.Expr, from, until int32, values map[parser.MetricRequest]
 	case "lowPass": // lowPass(seriesList, cutPercent)
 		arg, err := getSeriesArg(e.Args()[0], from, until, values)
 		if err != nil {
+			fmt.Printf("lowPass failed: 1\n")
 			return nil, err
 		}
 
 		cutPercent, err := e.GetFloatArg(1)
 		if err != nil {
+			fmt.Printf("lowPass failed: 2\n")
 			return nil, err
 		}
 
@@ -1482,7 +1484,7 @@ func EvalExpr(e parser.Expr, from, until int32, values map[parser.MetricRequest]
 			// create a stub context to evaluate the callback in
 			nexpr, _, err := parser.ParseExpr(expr)
 			// remove all stub_ prefixes we've prepended before
-			nexpr.SetString(strings.Replace(nexpr.StringValue(), "stub_", "", 1))
+			nexpr.SetRawArgs(strings.Replace(nexpr.RawArgs(), "stub_", "", 1))
 			for argIdx := range nexpr.Args() {
 				nexpr.Args()[argIdx].SetTarget(strings.Replace(nexpr.Args()[0].Target(), "stub_", "", 1))
 			}
@@ -3939,7 +3941,7 @@ func aggregateSeries(e parser.Expr, args []*MetricData, function aggregateFunc) 
 	length := len(args[0].Values)
 
 	r := *args[0]
-	r.Name = fmt.Sprintf("%s(%s)", e.Target(), e.StringValue())
+	r.Name = fmt.Sprintf("%s(%s)", e.Target(), e.RawArgs())
 	r.Values = make([]float64, length)
 	r.IsAbsent = make([]bool, length)
 

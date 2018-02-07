@@ -42,6 +42,10 @@ func (e *expr) SetTarget(target string) {
 	e.target = target
 }
 
+func (e *expr) MutateTarget(target string) Expr {
+	e.SetTarget(target)
+	return e
+}
 
 func (e *expr) Target() string {
 	return e.target
@@ -55,8 +59,13 @@ func (e *expr) StringValue() string {
 	return e.valStr
 }
 
-func (e *expr) SetString(value string) {
+func (e *expr) SetValString(value string) {
 	e.valStr = value
+}
+
+func (e *expr) MutateValString(value string) Expr {
+	e.SetValString(value)
+	return e
 }
 
 func (e *expr) RawArgs() string {
@@ -65,6 +74,11 @@ func (e *expr) RawArgs() string {
 
 func (e *expr) SetRawArgs(args string) {
 	e.argString = args
+}
+
+func (e *expr) MutateRawArgs(args string) Expr {
+	e.SetRawArgs(args)
+	return e
 }
 
 func (e *expr) Args() []Expr {

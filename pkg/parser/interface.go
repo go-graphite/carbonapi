@@ -3,6 +3,7 @@ package parser
 import (
 	"errors"
 	"strings"
+	"fmt"
 )
 
 type MetricRequest struct {
@@ -47,13 +48,16 @@ type Expr interface {
 	Type() ExprType
 	Target() string
 	SetTarget(string)
+	MutateTarget(string) Expr
 	FloatValue() float64
 	StringValue() string
-	SetString(string)
+	SetValString(string)
+	MutateValString(string) Expr
 	Args() []Expr
 	NamedArgs() map[string]Expr
 	RawArgs() string
 	SetRawArgs(args string)
+	MutateRawArgs(args string) Expr
 	Metrics() []MetricRequest
 
 	GetIntervalArg(n int, defaultSign int) (int32, error)
@@ -88,6 +92,7 @@ func Parse(e string) (Expr, string, error) {
 func NewTargetExpr(target string) Expr {
 	e := &expr{
 		target: target,
+		argString: target,
 	}
 	return e
 }
@@ -96,6 +101,7 @@ func NewNameExpr(name string) Expr {
 	e := &expr{
 		target: name,
 		etype: EtName,
+		argString: name,
 	}
 	return e
 }
@@ -104,6 +110,7 @@ func NewConstExpr(value float64) Expr {
 	e := &expr{
 		val: value,
 		etype: EtConst,
+		argString: fmt.Sprintf("%v", value),
 	}
 	return e
 }
@@ -112,47 +119,34 @@ func NewValueExpr(value string) Expr {
 	e := &expr{
 		valStr: value,
 		etype: EtString,
+		argString: value,
 	}
 	return e
 }
 
-type NameArg string
-type ValueArg string
+type ArgName string
+type ArgValue string
+type NamedArgs map[string]interface{}
 
 func NewExpr(target string, vaArgs... interface{}) Expr {
-	args := sliceExpr(vaArgs)
+	var nArgsFinal map[string]*expr
+	args, nArgs := sliceExpr(vaArgs)
+	if args == nil {
+		fmt.Printf("Unsupported argument list for target=%v\n", target)
+	}
+
 	var a []*expr
 	var argStrs []string
 	for _, arg := range args {
-		argStrs = append(argStrs, arg.Target())
-		a = append(a, &expr{target: arg.Target()})
+		argStrs = append(argStrs, arg.RawArgs())
+		a = append(a, arg)
 	}
 
-	e := &expr{
-		target:    target,
-		etype:     EtFunc,
-		args:      a,
-		argString: strings.Join(argStrs, ","),
-	}
-
-	return e
-}
-
-func NewExprNamed(target string, namedArgsIface map[string]interface{}, vaArgs... interface{}) Expr {
-	args := sliceExpr(vaArgs)
-	namedArgs := mapExpr(namedArgsIface)
-	var a []*expr
-	var argStrs []string
-	for _, arg := range args {
-		argStrs = append(argStrs, arg.Target())
-		a = append(a, &expr{target: arg.Target()})
-	}
-
-	nArgs := make(map[string]*expr)
-	if namedArgs != nil {
-		for k, v := range namedArgs {
-			nArgs[k] = v.toExpr().(*expr)
-			argStrs = append(argStrs, k + "=" + v.Target())
+	if nArgs != nil {
+		nArgsFinal = make(map[string]*expr)
+		for k, v := range nArgs {
+			nArgsFinal[k] = v
+			argStrs = append(argStrs, k + "=" + v.RawArgs())
 		}
 	}
 
@@ -161,7 +155,10 @@ func NewExprNamed(target string, namedArgsIface map[string]interface{}, vaArgs..
 		etype:     EtFunc,
 		args:      a,
 		argString: strings.Join(argStrs, ","),
-		namedArgs: nArgs,
+	}
+
+	if nArgsFinal != nil {
+		e.namedArgs = nArgsFinal
 	}
 
 	return e
@@ -172,7 +169,7 @@ func NewExprTyped(target string, args []Expr) Expr {
 	var argStrs []string
 	for _, arg := range args {
 		argStrs = append(argStrs, arg.Target())
-		a = append(a, &expr{target: arg.Target()})
+		a = append(a, arg.toExpr().(*expr))
 	}
 
 	e := &expr{
