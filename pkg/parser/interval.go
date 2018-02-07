@@ -5,8 +5,6 @@ import (
 	"strconv"
 )
 
-var ErrUnknownTimeUnits = errors.New("unknown time units")
-
 // IntervalString converts a sign and string into a number of seconds
 func IntervalString(s string, defaultSign int) (int32, error) {
 

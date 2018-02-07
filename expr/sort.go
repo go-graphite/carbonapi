@@ -113,6 +113,7 @@ func sortByBraces(metrics []*MetricData, part int, pattern string) {
 	}
 }
 
+// SortMetrics sort metric data alphabetically.
 func SortMetrics(metrics []*MetricData, mfetch parser.MetricRequest) {
 	// Don't do any work if there are no globs in the metric name
 	if !strings.ContainsAny(mfetch.Metric, "*?[{") {

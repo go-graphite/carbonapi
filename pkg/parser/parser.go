@@ -297,6 +297,7 @@ func (e *expr) GetBoolArgDefault(n int, b bool) (bool, error) {
 	return e.args[n].doGetBoolArg()
 }
 
+// ParseExpr actually do all the parsing. It returns expression, original string and error (if any)
 func ParseExpr(e string) (*expr, string, error) {
 
 	// skip whitespace
@@ -338,6 +339,7 @@ func ParseExpr(e string) (*expr, string, error) {
 	return &expr{target: name}, e, nil
 }
 
+/// IsNameChar checks if specified char is actually a valid (from graphite's protocol point of view)
 func IsNameChar(r byte) bool {
 	return false ||
 		'a' <= r && r <= 'z' ||
