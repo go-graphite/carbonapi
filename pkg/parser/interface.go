@@ -217,7 +217,7 @@ func NewExpr(target string, vaArgs... interface{}) Expr {
 	return e
 }
 
-// NewExpr creates a new expression with specified target and arguments. Strictly typed one.
+// NewExprTyped creates a new expression with specified target and arguments. Strictly typed one.
 func NewExprTyped(target string, args []Expr) Expr {
 	var a []*expr
 	var argStrs []string
