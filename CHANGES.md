@@ -13,7 +13,7 @@ Changes
 
 CHANGELOG
 ---------
-**Master**
+**0.9.0**
  - [Improvement] Merge carbonzipper into carbonapi. Please migrate to new 'upstreams' in the config file.
  - [Improvement] Make default cache timeout configurable.
  - [Improvement] Add divideSeriesLists (thx. to Oleg Matrokhin)
