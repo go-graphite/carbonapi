@@ -3,13 +3,12 @@ package parser
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
 	"runtime/debug"
 )
 
 func (e *expr) doGetIntArg() (int, error) {
 	if e.etype != EtConst {
-		return 0, errors.WithStack(ErrBadType)
+		return 0, ErrBadType
 	}
 
 	return int(e.val), nil
@@ -25,7 +24,7 @@ func (e *expr) getNamedArg(name string) *expr {
 
 func (e *expr) doGetFloatArg() (float64, error) {
 	if e.etype != EtConst {
-		return 0, errors.WithStack(ErrBadType)
+		return 0, ErrBadType
 	}
 
 	return e.val, nil
@@ -33,7 +32,7 @@ func (e *expr) doGetFloatArg() (float64, error) {
 
 func (e *expr) doGetStringArg() (string, error) {
 	if e.etype != EtString {
-		return "", errors.WithStack(ErrBadType)
+		return "", ErrBadType
 	}
 
 	return e.valStr, nil
@@ -52,7 +51,7 @@ func (e *expr) doGetBoolArg() (bool, error) {
 		return true, nil
 	}
 
-	return false, errors.WithStack(ErrBadType)
+	return false, ErrBadType
 }
 
 func (e *expr) toExpr() interface{} {

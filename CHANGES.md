@@ -13,6 +13,9 @@ Changes
 
 CHANGELOG
 ---------
+**Master**
+ - [Code] Refactor expr. Split it into pkg/parser. Simplify tests.
+
 **0.9.0**
  - [Improvement] Merge carbonzipper into carbonapi. Please migrate to new 'upstreams' in the config file.
  - [Improvement] Make default cache timeout configurable.
