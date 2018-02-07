@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
 func TestCorpus(t *testing.T) {
@@ -29,7 +31,7 @@ func TestCorpus(t *testing.T) {
 			return
 		}
 
-		_, rem, err := ParseExpr(strings.TrimSpace(string(contents)))
+		_, rem, err := parser.ParseExpr(strings.TrimSpace(string(contents)))
 		if rem != "" || err != nil {
 			t.Errorf("error parsing: %s: %q: %v, rem=%q", corpusFile, contents, err, rem)
 		}

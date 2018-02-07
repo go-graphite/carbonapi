@@ -15,6 +15,7 @@ import (
 	"time"
 
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 
 	"bitbucket.org/tebeka/strftime"
 	"github.com/evmar/gocairo/cairo"
@@ -515,17 +516,17 @@ const (
 	cairoSVG
 )
 
-func evalExprGraph(e *expr, from, until int32, values map[MetricRequest][]*MetricData) ([]*MetricData, error) {
+func evalExprGraph(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*MetricData) ([]*MetricData, error) {
 
-	switch e.target {
+	switch e.Target() {
 
 	case "color": // color(seriesList, theColor)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := getSeriesArg(e.Args()[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
 
-		color, err := getStringArg(e, 1) // get color
+		color, err := e.GetStringArg( 1) // get color
 		if err != nil {
 			return nil, err
 		}
@@ -541,12 +542,12 @@ func evalExprGraph(e *expr, from, until int32, values map[MetricRequest][]*Metri
 		return results, nil
 
 	case "stacked": // stacked(seriesList, stackname="__DEFAULT__")
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := getSeriesArg(e.Args()[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
 
-		stackName, err := getStringNamedOrPosArgDefault(e, "stackname", 1, defaultStackName)
+		stackName, err := e.GetStringNamedOrPosArgDefault( "stackname", 1, defaultStackName)
 		if err != nil {
 			return nil, err
 		}
@@ -563,7 +564,7 @@ func evalExprGraph(e *expr, from, until int32, values map[MetricRequest][]*Metri
 		return results, nil
 
 	case "areaBetween":
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := getSeriesArg(e.Args()[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -572,7 +573,7 @@ func evalExprGraph(e *expr, from, until int32, values map[MetricRequest][]*Metri
 			return nil, fmt.Errorf("areaBetween needs exactly two arguments (%d given)", len(arg))
 		}
 
-		name := fmt.Sprintf("%s(%s)", e.target, e.argString)
+		name := fmt.Sprintf("%s(%s)", e.Target(), e.RawArgs())
 
 		lower := *arg[0]
 		lower.stacked = true
@@ -603,12 +604,12 @@ func evalExprGraph(e *expr, from, until int32, values map[MetricRequest][]*Metri
 		return []*MetricData{&lower, &upper}, nil
 
 	case "alpha": // alpha(seriesList, theAlpha)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := getSeriesArg(e.Args()[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
 
-		alpha, err := getFloatArg(e, 1)
+		alpha, err := e.GetFloatArg(1)
 		if err != nil {
 			return nil, err
 		}
@@ -625,7 +626,7 @@ func evalExprGraph(e *expr, from, until int32, values map[MetricRequest][]*Metri
 		return results, nil
 
 	case "dashed", "drawAsInfinite", "secondYAxis":
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := getSeriesArg(e.Args()[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -634,11 +635,11 @@ func evalExprGraph(e *expr, from, until int32, values map[MetricRequest][]*Metri
 
 		for _, a := range arg {
 			r := *a
-			r.Name = fmt.Sprintf("%s(%s)", e.target, a.Name)
+			r.Name = fmt.Sprintf("%s(%s)", e.Target(), a.Name)
 
-			switch e.target {
+			switch e.Target() {
 			case "dashed":
-				d, err := getFloatArgDefault(e, 1, 2.5)
+				d, err := e.GetFloatArgDefault(1, 2.5)
 				if err != nil {
 					return nil, err
 				}
@@ -654,12 +655,12 @@ func evalExprGraph(e *expr, from, until int32, values map[MetricRequest][]*Metri
 		return results, nil
 
 	case "lineWidth": // lineWidth(seriesList, width)
-		arg, err := getSeriesArg(e.args[0], from, until, values)
+		arg, err := getSeriesArg(e.Args()[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
 
-		width, err := getFloatArg(e, 1)
+		width, err := e.GetFloatArg( 1)
 		if err != nil {
 			return nil, err
 		}
@@ -684,18 +685,18 @@ func evalExprGraph(e *expr, from, until int32, values map[MetricRequest][]*Metri
 		//			   label = "Aurum" (by named argument)
 		//			   color = "" (by default as len(positionalArgs) == 2 and there is no named 'color' arg)
 
-		value, err := getFloatArg(e, 0)
+		value, err := e.GetFloatArg( 0)
 
 		if err != nil {
 			return nil, err
 		}
 
-		name, err := getStringNamedOrPosArgDefault(e, "label", 1, fmt.Sprintf("%g", value))
+		name, err := e.GetStringNamedOrPosArgDefault( "label", 1, fmt.Sprintf("%g", value))
 		if err != nil {
 			return nil, err
 		}
 
-		color, err := getStringNamedOrPosArgDefault(e, "color", 2, "")
+		color, err := e.GetStringNamedOrPosArgDefault( "color", 2, "")
 		if err != nil {
 			return nil, err
 		}
@@ -716,7 +717,7 @@ func evalExprGraph(e *expr, from, until int32, values map[MetricRequest][]*Metri
 
 	}
 
-	return nil, errUnknownFunction(e.target)
+	return nil, errUnknownFunction(e.Target())
 }
 
 func MarshalSVG(params PictureParams, results []*MetricData) []byte {

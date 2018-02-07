@@ -4,6 +4,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
 // type for sorting a list of metrics by the nth part of the metric name.
@@ -111,7 +113,8 @@ func sortByBraces(metrics []*MetricData, part int, pattern string) {
 	}
 }
 
-func SortMetrics(metrics []*MetricData, mfetch MetricRequest) {
+// SortMetrics sort metric data alphabetically.
+func SortMetrics(metrics []*MetricData, mfetch parser.MetricRequest) {
 	// Don't do any work if there are no globs in the metric name
 	if !strings.ContainsAny(mfetch.Metric, "*?[{") {
 		return

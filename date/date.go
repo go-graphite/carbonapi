@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-graphite/carbonapi/expr"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
 var errBadTime = errors.New("bad time")
@@ -55,7 +55,7 @@ func DateParamToEpoch(s string, qtz string, d int64, defaultTimeZone *time.Locat
 
 	// relative timestamp
 	if s[0] == '-' {
-		offset, err := expr.IntervalString(s, -1)
+		offset, err := parser.IntervalString(s, -1)
 		if err != nil {
 			return int32(d)
 		}
