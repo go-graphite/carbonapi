@@ -20,14 +20,38 @@ CHANGELOG
  - [Improvement] Add groupByNodes (thx to @errx)
  - [Improvement] Add cumulative(thx to Oleg Matrokhin)
  - [Improvement] Add diffSeriesLists and multiplySeriesLists functions (works the same way as divideSeriesLists vs divideSeries)
+ - [Imprvoement] Add linearRegression function (thx. to Oleg Matrokhin)
  - [Improvement] Allow applyByNode to generate new targets
  - [Improvement] Allow diffSeries to substract series with different Steps
  - [Imprvoement] Make cache timeouts configurable
  - [Improvement] Make batch size configurable for sendGlobAsIs
+ - [Improvement] Export GoVersion through expvars
+ - [Improvement] Allow overriding config variables through ENV
+ - [Improvement] Allow to use .toml in addition to .yaml as config file (determined by extension)
+ - [Improvement] Add fallbackSeries (thx to @gksinghjsr)
+ - [Improvement] Implement areaMode in cairo rendering (thx. to @ibuclaw)
+ - [Improvement] Implement lineWidth, rightWidth, leftWidth (for cairo rendering) (thx. to @ibuclaw)
+ - [Improvement] Add Unicode support for series names (thx. to @korservick)
+ - [Improvement] Add multiplySeriesWithWildcards (thx. to @kamaev)
+ - [Improvement] Add stddevSeries (thx. to @kamaev)
+ - [Improvement] Add mapSeries (thx. to @kipwoker)
+ - [Improvement] Add reduceSeries (thx. to @kipwoker)
+ - [Improvement] Add delay() function (thx. to @kipwoker)
+ - [Improvement] Update asPercent to graphite-web 1.1 (thx. to @kipwoker)
+ - [Fix] Fix rounding errors when generating yLables for Cairo-based renders (thx. to @ibuclaw)
+ - [Fix] Fix integer overflow when building for 32bit systems
+ - [Fix] Don't set path in treejson if '.' not found in name (thx. to @ibuclaw)
+ - [Fix] Fix derivative() if first arg is missing (thx. to Oleg Matrokhin)
+ - [Fix] Fix calculation of yTop when using log base (thx. to @ibuclaw)
+ - [Fix] Fix asPercent() to handle multiple series (thx. to @ibuclaw)
+ - [Fix] Swap red and darkred colors (thx to @ibuclaw)
  - [Fix] Make asPercent graphite-compatible #213
  - [Fix] Fix summarize for cases when bucketSize < stepTime
  - [Fix] Fixed #90 - carbonapi shouldn't fail if one of the series doesn't exist
- -
+ - [Fix] Make PNG rendering looks like graphite-web (thx. to @lomik)
+ - [Fix] Don't fail if argument is empty series (graphite-web compatibility, thx. to @gksinghjsr)
+ - [Fix] Fix group() function #225 (thx. to @gksinghjsr)
+ - [Code] Small refactor of PictureParams structs. Makes GetPictureParams and DefaultColorList public.
 
 **0.8.0**
  - **[Breaking]** Most of the configuration options moved to a config file
