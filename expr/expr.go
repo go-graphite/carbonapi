@@ -137,7 +137,10 @@ func ParseExpr(e string) (*expr, string, error) {
 
 	if '0' <= e[0] && e[0] <= '9' || e[0] == '-' || e[0] == '+' {
 		val, e, err := parseConst(e)
-		return &expr{val: val, etype: etConst}, e, err
+		r, _ := utf8.DecodeRuneInString(e)
+		if !unicode.IsLetter(r) {
+			return &expr{val: val, etype: etConst}, e, err
+		}
 	}
 
 	if e[0] == '\'' || e[0] == '"' {

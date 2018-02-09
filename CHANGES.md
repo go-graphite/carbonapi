@@ -13,6 +13,9 @@ Changes
 
 CHANGELOG
 ---------
+**0.9.1 (Unreleased)** 
+ - [Fix] Fix #278 - properly parse target names that stats with a digit
+
 **0.9.0**
  - [Improvement] Merge carbonzipper into carbonapi. Please migrate to new 'upstreams' in the config file.
  - [Improvement] Make default cache timeout configurable.

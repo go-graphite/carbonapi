@@ -158,9 +158,9 @@ func TestAlignToInterval(t *testing.T) {
 }
 
 func TestEvalExpr(t *testing.T) {
-	exp, _, err := ParseExpr("summarize(metric1,'1min')")
-	if err != nil {
-		t.Errorf("error %s", err)
+	exp, e, err := ParseExpr("summarize(metric1,'1min')")
+	if err != nil || e != "" {
+		t.Errorf("error=%v leftovers=%v", err, e)
 	}
 
 	metricMap := make(map[MetricRequest][]*MetricData)
