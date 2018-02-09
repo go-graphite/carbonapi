@@ -111,7 +111,7 @@ func (e *expr) Metrics() []MetricRequest {
 
 		switch e.target {
 		case "timeShift":
-			offs, err := e.GetIntervalArg( 1, -1)
+			offs, err := e.GetIntervalArg(1, -1)
 			if err != nil {
 				return nil
 			}
@@ -120,17 +120,17 @@ func (e *expr) Metrics() []MetricRequest {
 				r[i].Until += offs
 			}
 		case "timeStack":
-			offs, err := e.GetIntervalArg( 1, -1)
+			offs, err := e.GetIntervalArg(1, -1)
 			if err != nil {
 				return nil
 			}
 
-			start, err := e.GetIntArg( 2)
+			start, err := e.GetIntArg(2)
 			if err != nil {
 				return nil
 			}
 
-			end, err := e.GetIntArg( 3)
+			end, err := e.GetIntArg(3)
 			if err != nil {
 				return nil
 			}
@@ -154,7 +154,7 @@ func (e *expr) Metrics() []MetricRequest {
 		case "movingAverage", "movingMedian", "movingMin", "movingMax", "movingSum":
 			switch e.args[1].etype {
 			case EtString:
-				offs, err := e.GetIntervalArg( 1, 1)
+				offs, err := e.GetIntervalArg(1, 1)
 				if err != nil {
 					return nil
 				}
@@ -251,7 +251,7 @@ func (e *expr) GetIntArgs(n int) ([]int, error) {
 	var ints []int
 
 	for i := n; i < len(e.args); i++ {
-		a, err := e.GetIntArg( i)
+		a, err := e.GetIntArg(i)
 		if err != nil {
 			return nil, err
 		}
@@ -311,7 +311,10 @@ func ParseExpr(e string) (Expr, string, error) {
 
 	if '0' <= e[0] && e[0] <= '9' || e[0] == '-' || e[0] == '+' {
 		val, e, err := parseConst(e)
-		return &expr{val: val, etype: EtConst}, e, err
+		r, _ := utf8.DecodeRuneInString(e)
+		if !unicode.IsLetter(r) {
+			return &expr{val: val, etype: EtConst}, e, err
+		}
 	}
 
 	if e[0] == '\'' || e[0] == '"' {
@@ -356,7 +359,6 @@ func IsNameChar(r byte) bool {
 func isDigit(r byte) bool {
 	return '0' <= r && r <= '9'
 }
-
 
 func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 
