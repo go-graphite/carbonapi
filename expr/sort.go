@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
@@ -15,7 +16,7 @@ import (
 // the relevant metric name part to avoid excessive calls to strings.Split.
 type byPartBase struct {
 	// the metrics to be sorted
-	metrics []*MetricData
+	metrics []*types.MetricData
 	// which part of the name we are sorting on
 	part int
 	// a cache of the relevant part of the name for each metric in metrics
@@ -29,7 +30,7 @@ func (b byPartBase) Swap(i, j int) {
 	b.keys[i], b.keys[j] = b.keys[j], b.keys[i]
 }
 
-func getPart(metric *MetricData, part int) string {
+func getPart(metric *types.MetricData, part int) string {
 	parts := strings.Split(metric.Name, ".")
 	return parts[part]
 }
@@ -51,7 +52,7 @@ func (b byPartBase) compareBy(i, j int, comparator func(string, string) bool) bo
 }
 
 // ByPart returns a byPartBase suitable for sorting 'metrics' by 'part'.
-func ByPart(metrics []*MetricData, part int) byPartBase {
+func ByPart(metrics []*types.MetricData, part int) byPartBase {
 	return byPartBase{
 		metrics: metrics,
 		keys:    make([]*string, len(metrics)),
@@ -71,11 +72,11 @@ func (b byPartAlphabetical) Less(i, j int) bool {
 }
 
 // AlphabeticallyByPart returns a byPartAlphabetical that will sort 'metrics' alphabetically by 'part'.
-func AlphabeticallyByPart(metrics []*MetricData, part int) sort.Interface {
+func AlphabeticallyByPart(metrics []*types.MetricData, part int) sort.Interface {
 	return byPartAlphabetical{ByPart(metrics, part)}
 }
 
-func sortByBraces(metrics []*MetricData, part int, pattern string) {
+func sortByBraces(metrics []*types.MetricData, part int, pattern string) {
 	bStart := strings.IndexRune(pattern, '{')
 	bEnd := strings.IndexRune(pattern, '}')
 	if bStart == -1 || bEnd <= bStart {
@@ -86,7 +87,7 @@ func sortByBraces(metrics []*MetricData, part int, pattern string) {
 	for i, metric := range metrics {
 		parts[i] = getPart(metric, part)
 	}
-	src := make([]*MetricData, len(metrics))
+	src := make([]*types.MetricData, len(metrics))
 	used := make([]bool, len(metrics))
 	copy(src, metrics)
 	j := 0
@@ -114,7 +115,7 @@ func sortByBraces(metrics []*MetricData, part int, pattern string) {
 }
 
 // SortMetrics sort metric data alphabetically.
-func SortMetrics(metrics []*MetricData, mfetch parser.MetricRequest) {
+func SortMetrics(metrics []*types.MetricData, mfetch parser.MetricRequest) {
 	// Don't do any work if there are no globs in the metric name
 	if !strings.ContainsAny(mfetch.Metric, "*?[{") {
 		return

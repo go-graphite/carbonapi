@@ -23,6 +23,8 @@ import (
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/date"
 	"github.com/go-graphite/carbonapi/expr"
+	"github.com/go-graphite/carbonapi/expr/png"
+	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	"github.com/go-graphite/carbonapi/util"
 	"github.com/go-graphite/carbonzipper/cache"
@@ -369,9 +371,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var results []*expr.MetricData
+	var results []*types.MetricData
 	errors := make(map[string]string)
-	metricMap := make(map[parser.MetricRequest][]*expr.MetricData)
+	metricMap := make(map[parser.MetricRequest][]*types.MetricData)
 
 	var metrics []string
 	var targetIdx = 0
@@ -466,7 +468,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			} else {
 				// Request is "too large"; send render requests individually
 				// TODO(dgryski): group the render requests into batches
-				rch := make(chan *expr.MetricData, len(glob.Matches))
+				rch := make(chan *types.MetricData, len(glob.Matches))
 				var leaves int
 				for _, m := range glob.Matches {
 					if !m.IsLeaf {
@@ -541,12 +543,12 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	switch format {
 	case jsonFormat:
 		if maxDataPoints, _ := strconv.Atoi(r.FormValue("maxDataPoints")); maxDataPoints != 0 {
-			expr.ConsolidateJSON(maxDataPoints, results)
+			types.ConsolidateJSON(maxDataPoints, results)
 		}
 
-		body = expr.MarshalJSON(results)
+		body = types.MarshalJSON(results)
 	case protobufFormat, protobuf3Format:
-		body, err = expr.MarshalProtobuf(results)
+		body, err = types.MarshalProtobuf(results)
 		if err != nil {
 			logger.Info("request failed",
 				zap.Int("http_code", http.StatusInternalServerError),
@@ -557,15 +559,15 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case rawFormat:
-		body = expr.MarshalRaw(results)
+		body = types.MarshalRaw(results)
 	case csvFormat:
-		body = expr.MarshalCSV(results)
+		body = types.MarshalCSV(results)
 	case pickleFormat:
-		body = expr.MarshalPickle(results)
+		body = types.MarshalPickle(results)
 	case pngFormat:
-		body = expr.MarshalPNGRequest(r, results)
+		body = png.MarshalPNGRequest(r, results)
 	case svgFormat:
-		body = expr.MarshalSVGRequest(r, results)
+		body = png.MarshalSVGRequest(r, results)
 	}
 
 	writeResponse(w, body, format, jsonp)
