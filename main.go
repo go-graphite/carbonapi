@@ -618,6 +618,15 @@ func setUpConfigUpstreams(logger *zap.Logger) {
 		logger.Warn("found legacy 'zipper' option, will use it instead of any 'upstreams' specified. This will be removed in future versions!")
 
 		config.Upstreams.Backends = []string{config.Zipper}
+		config.Upstreams.ConcurrencyLimitPerServer = config.Concurency
+		config.Upstreams.MaxIdleConnsPerHost = config.IdleConnections
+		config.Upstreams.KeepAliveInterval = 10 * time.Second
+		// To emulate previous behavior
+		config.Upstreams.Timeouts = realZipper.Timeouts{
+			Connect: 1 * time.Second,
+			AfterStarted: 600 * time.Second,
+			Global: 600 * time.Second,
+		}
 	}
 	if len(config.Upstreams.Backends) == 0 {
 		logger.Fatal("no backends specified for upstreams!")
