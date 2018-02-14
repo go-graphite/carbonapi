@@ -145,7 +145,6 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	size := 0
-	zipperRequests := 0
 	apiMetrics.Requests.Add(1)
 
 	err := r.ParseForm()
@@ -298,7 +297,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 				apiMetrics.FindCacheMisses.Add(1)
 				var err error
 				apiMetrics.FindRequests.Add(1)
-				zipperRequests++
+				accessLogDetails.ZipperRequests++
 
 				glob, err = config.zipper.Find(ctx, m.Metric)
 				if err != nil {
@@ -325,7 +324,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 				apiMetrics.RenderRequests.Add(1)
 				config.limiter.enter()
-				zipperRequests++
+				accessLogDetails.ZipperRequests++
 
 				r, err := config.zipper.Render(ctx, m.Metric, mfetch.From, mfetch.Until)
 				if err != nil {
@@ -352,7 +351,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 					apiMetrics.RenderRequests.Add(1)
 					config.limiter.enter()
-					zipperRequests++
+					accessLogDetails.ZipperRequests++
 
 					go func(path string, from, until int32) {
 						if r, err := config.zipper.Render(ctx, path, from, until); err == nil {

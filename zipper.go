@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/go-graphite/carbonapi/util"
 	"github.com/go-graphite/carbonapi/expr/types"
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 	realZipper "github.com/go-graphite/carbonzipper/zipper"
@@ -44,7 +45,8 @@ func (z zipper) Find(ctx context.Context, metric string) (pb.GlobResponse, error
 	var pbresp pb.GlobResponse
 	newCtx := ctx
 	if z.ignoreClientTimeout {
-		newCtx = context.Background()
+		uuid := util.GetUUID(ctx)
+		newCtx = util.SetUUID(context.Background(), uuid)
 	}
 
 	res, stats, err := z.z.Find(newCtx, z.logger, metric)
@@ -63,7 +65,8 @@ func (z zipper) Find(ctx context.Context, metric string) (pb.GlobResponse, error
 func (z zipper) Info(ctx context.Context, metric string) (map[string]pb.InfoResponse, error) {
 	newCtx := ctx
 	if z.ignoreClientTimeout {
-		newCtx = context.Background()
+		uuid := util.GetUUID(ctx)
+		newCtx = util.SetUUID(context.Background(), uuid)
 	}
 	resp, stats, err := z.z.Info(newCtx, z.logger, metric)
 	if err != nil {
@@ -79,7 +82,8 @@ func (z zipper) Render(ctx context.Context, metric string, from, until int32) ([
 	var result []*types.MetricData
 	newCtx := ctx
 	if z.ignoreClientTimeout {
-		newCtx = context.Background()
+		uuid := util.GetUUID(ctx)
+		newCtx = util.SetUUID(context.Background(), uuid)
 	}
 	pbresp, stats, err := z.z.Render(newCtx, z.logger, metric, from, until)
 	if err != nil {
