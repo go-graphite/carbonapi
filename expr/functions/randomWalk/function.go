@@ -10,19 +10,19 @@ import (
 )
 
 func init() {
-	f := &Function{}
+	f := &function{}
 	functions := []string{"randomWalk", "randomWalkFunction"}
 	for _, function := range functions {
 		metadata.RegisterFunction(function, f)
 	}
 }
 
-type Function struct {
+type function struct {
 	interfaces.FunctionBase
 }
 
 // squareRoot(seriesList)
-func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	name, err := e.GetStringArg(0)
 	if err != nil {
 		name = "randomWalk"

@@ -11,16 +11,16 @@ import (
 )
 
 func init() {
-	f := &Function{}
+	f := &function{}
 	metadata.RegisterFunction("reduceSeries", f)
 	metadata.RegisterFunction("reduce", f)
 }
 
-type Function struct {
+type function struct {
 	interfaces.FunctionBase
 }
 
-func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	const matchersStartIndex = 3
 
 	if len(e.Args()) < matchersStartIndex+1 {

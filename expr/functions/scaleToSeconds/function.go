@@ -10,15 +10,15 @@ import (
 )
 
 func init() {
-	metadata.RegisterFunction("scaleToSeconds", &Function{})
+	metadata.RegisterFunction("scaleToSeconds", &function{})
 }
 
-type Function struct {
+type function struct {
 	interfaces.FunctionBase
 }
 
 // scaleToSeconds(seriesList, seconds)
-func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err

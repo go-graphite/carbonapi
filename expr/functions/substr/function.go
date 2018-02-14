@@ -11,19 +11,19 @@ import (
 )
 
 func init() {
-	f := &Function{}
+	f := &function{}
 	functions := []string{"substr"}
 	for _, function := range functions {
 		metadata.RegisterFunction(function, f)
 	}
 }
 
-type Function struct {
+type function struct {
 	interfaces.FunctionBase
 }
 
 // aliasSub(seriesList, start, stop)
-func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// BUG: affected by the same positional arg issue as 'threshold'.
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {

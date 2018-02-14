@@ -23,6 +23,7 @@ import (
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/date"
 	"github.com/go-graphite/carbonapi/expr"
+	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/png"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -522,6 +523,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 					if r := recover(); r != nil {
 						logger.Error("panic during eval:",
 							zap.String("cache_key", cacheKey),
+							zap.Any("reason", r),
 							zap.Stack("stack"),
 						)
 					}
@@ -964,6 +966,7 @@ type graphiteConfig struct {
 }
 
 var config = struct {
+	ExtrapolateExperiment      bool               `yaml:"extrapolateExperiment"`
 	Logger                     []zapwriter.Config `yaml:"logger"`
 	Listen                     string             `yaml:"listen"`
 	Concurency                 int                `yaml:"concurency"`
@@ -993,6 +996,7 @@ var config = struct {
 	// Limiter limits concurrent zipper requests
 	limiter limiter
 }{
+	ExtrapolateExperiment: false,
 	Listen:        "[::]:8081",
 	Concurency:    20,
 	SendGlobsAsIs: false,
@@ -1260,6 +1264,13 @@ func setUpConfig(logger *zap.Logger, zipper CarbonZipper) {
 				zap.Error(err),
 			)
 		}
+	}
+
+	helper.ExtrapolatePoints = config.ExtrapolateExperiment
+	if config.ExtrapolateExperiment {
+		logger.Warn("extraploation experiment is enabled",
+			zap.String("reason", "this feature is highly experimental and untested"),
+		)
 	}
 }
 

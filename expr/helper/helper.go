@@ -107,19 +107,109 @@ func ForEachSeriesDo(e parser.Expr, from, until int32, values map[parser.MetricR
 	return results, nil
 }
 
+func alignSeries(args []*types.MetricData) []*types.MetricData {
+	minStart := args[0].StartTime
+	maxStop := args[0].StopTime
+	maxVals := 0
+	minStepTime := args[0].StepTime
+	for j := 0; j < 2; j++ {
+		if ExtrapolatePoints {
+			for _, arg := range args {
+				if arg.StepTime < minStepTime {
+					minStepTime = arg.StepTime
+				}
+
+				if arg.StepTime > minStepTime {
+					valsCnt := int(math.Ceil(float64(arg.StopTime-arg.StartTime) / float64(minStepTime)))
+					newVals := make([]float64, valsCnt)
+					newIsAbsent := make([]bool, valsCnt)
+					ts := arg.StartTime
+					nextTs := arg.StartTime + arg.StepTime
+					i := 0
+					j := 0
+					pointsPerInterval := float64(ts-nextTs) / float64(minStepTime)
+					v := arg.Values[0]
+					dv := (arg.Values[0] - arg.Values[1]) / pointsPerInterval
+					for ts < arg.StopTime {
+						newVals[i] = v
+						v += dv
+						if ts > nextTs {
+							j++
+							nextTs += arg.StepTime
+							v = arg.Values[j]
+							dv = (arg.Values[j-1] - v) / pointsPerInterval
+						}
+						ts += minStepTime
+						i++
+					}
+					arg.IsAbsent = newIsAbsent
+					arg.Values = newVals
+					arg.StepTime = minStepTime
+				}
+			}
+		}
+
+		for _, arg := range args {
+			if len(arg.IsAbsent) > maxVals {
+				maxVals = len(arg.IsAbsent)
+			}
+			if arg.StartTime < minStart {
+				minStart = arg.StartTime
+			}
+			if minStart < arg.StartTime {
+				valCnt := (arg.StartTime - minStart) / arg.StepTime
+				newVals := make([]float64, valCnt)
+				newVals = append(newVals, arg.Values...)
+				arg.Values = newVals
+				arg.StartTime = minStart
+
+				newIsAbsent := make([]bool, valCnt)
+				for i := range newIsAbsent {
+					newIsAbsent[i] = true
+				}
+				newIsAbsent = append(newIsAbsent, arg.IsAbsent...)
+				arg.IsAbsent = newIsAbsent
+			}
+
+			if arg.StopTime > maxStop {
+				maxStop = arg.StopTime
+			}
+			if maxStop > arg.StopTime {
+				valCnt := (maxStop - arg.StopTime) / arg.StepTime
+				newVals := make([]float64, valCnt)
+				arg.Values = append(arg.Values, newVals...)
+				arg.StopTime = maxStop
+
+				newIsAbsent := make([]bool, valCnt)
+				for i := range newIsAbsent {
+					newIsAbsent[i] = true
+				}
+				arg.IsAbsent = append(arg.IsAbsent, newIsAbsent...)
+			}
+		}
+	}
+	return args
+}
+
 type AggregateFunc func([]float64) float64
 
 func AggregateSeries(e parser.Expr, args []*types.MetricData, function AggregateFunc) ([]*types.MetricData, error) {
+	args = alignSeries(args)
 	length := len(args[0].Values)
-
 	r := *args[0]
 	r.Name = fmt.Sprintf("%s(%s)", e.Target(), e.RawArgs())
 	r.Values = make([]float64, length)
 	r.IsAbsent = make([]bool, length)
 
+	for _, arg := range args {
+		fmt.Printf("AggregateSeries: %v: len(isAbsent)=%v, len(Values)=%v\n", arg.Name, len(arg.IsAbsent), len(arg.Values))
+	}
 	for i := range args[0].Values {
 		var values []float64
 		for _, arg := range args {
+			if len(arg.IsAbsent) <= i {
+
+			}
 			if !arg.IsAbsent[i] {
 				values = append(values, arg.Values[i])
 			}

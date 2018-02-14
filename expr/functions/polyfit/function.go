@@ -12,19 +12,19 @@ import (
 )
 
 func init() {
-	f := &Function{}
+	f := &function{}
 	functions := []string{"polyfit"}
 	for _, function := range functions {
 		metadata.RegisterFunction(function, f)
 	}
 }
 
-type Function struct {
+type function struct {
 	interfaces.FunctionBase
 }
 
 // polyfit(seriesList, degree=1, offset="0d")
-func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// Fitting Nth degree polynom to the dataset
 	// https://en.wikipedia.org/wiki/Polynomial_regression#Matrix_form_and_calculation_of_estimates
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)

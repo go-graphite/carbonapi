@@ -11,15 +11,15 @@ import (
 )
 
 func init() {
-	metadata.RegisterFunction("rangeOfSeries", &Function{})
+	metadata.RegisterFunction("rangeOfSeries", &function{})
 }
 
-type Function struct {
+type function struct {
 	interfaces.FunctionBase
 }
 
 // rangeOfSeries(*seriesLists)
-func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	series, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err

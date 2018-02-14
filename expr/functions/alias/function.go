@@ -42,6 +42,28 @@ func (f *Alias) Do(e parser.Expr, from, until int32, values map[parser.MetricReq
 	return results, nil
 }
 
+func (f *Alias) Description() *types.FunctionDescription {
+return &types.FunctionDescription{
+		Description: "Takes one metric or a wildcard seriesList and a string in quotes.\nPrints the string instead of the metric name in the legend.\n\n.. code-block:: none\n\n  &target=alias(Sales.widgets.largeBlue,\"Large Blue Widgets\")",
+		Function: "alias(seriesList, newName)",
+		Group: "Alias",
+		Module: "graphite.render.functions",
+		Name: "alias",
+		Params: []types.FunctionParam{
+			{
+				Name: "seriesList",
+				Required: true,
+				Type: types.SeriesList,
+			},
+			{
+				Name: "newName",
+				Required: true,
+				Type: types.String,
+			},
+		},
+	}
+}
+
 type AliasByMetric struct {
 	interfaces.FunctionBase
 }

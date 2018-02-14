@@ -11,21 +11,21 @@ import (
 )
 
 func init() {
-	f := &Sum{}
+	f := &sum{}
 	functions := []string{"sum", "sumSeries"}
 	for _, function := range functions {
 		metadata.RegisterFunction(function, f)
 	}
 
-	metadata.RegisterFunction("sumSeriesWithWildcards", &SumSeriesWithWildcards{})
+	metadata.RegisterFunction("sumSeriesWithWildcards", &withWildcards{})
 }
 
-type Sum struct {
+type sum struct {
 	interfaces.FunctionBase
 }
 
 // sumSeries(*seriesLists)
-func (f *Sum) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *sum) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(dgryski): make sure the arrays are all the same 'size'
 	args, err := helper.GetSeriesArgsAndRemoveNonExisting(e, from, until, values)
 	if err != nil {
@@ -42,12 +42,12 @@ func (f *Sum) Do(e parser.Expr, from, until int32, values map[parser.MetricReque
 	})
 }
 
-type SumSeriesWithWildcards struct {
+type withWildcards struct {
 	interfaces.FunctionBase
 }
 
-// SumSeriesWithWildcards(*seriesLists)
-func (f *SumSeriesWithWildcards) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+// sumSeriesWithWildcards(*seriesLists)
+func (f *withWildcards) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(dgryski): make sure the arrays are all the same 'size'
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {

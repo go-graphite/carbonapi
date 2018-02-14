@@ -10,26 +10,26 @@ import (
 )
 
 func init() {
-	f := &Function{}
+	f := &function{}
 	functions := []string{"timeShift"}
 	for _, function := range functions {
 		metadata.RegisterFunction(function, f)
 	}
 }
 
-type Function struct {
+type function struct {
 	interfaces.FunctionBase
 }
 
 // timeShift(seriesList, timeShift, resetEnd=True)
-func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// FIXME(dgryski): support resetEnd=true
-
 	offs, err := e.GetIntervalArg(1, -1)
 	if err != nil {
 		return nil, err
 	}
 
+	fmt.Printf("TimeShift: %v: offs=%v, from+offs=%v, until+offs=%v\n", e.RawArgs(), offs, from+offs, until+offs)
 	arg, err := helper.GetSeriesArg(e.Args()[0], from+offs, until+offs, values)
 	if err != nil {
 		return nil, err
@@ -44,5 +44,6 @@ func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.Metric
 		r.StopTime = a.StopTime - offs
 		results = append(results, &r)
 	}
+
 	return results, nil
 }

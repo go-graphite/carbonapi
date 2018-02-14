@@ -10,20 +10,20 @@ import (
 )
 
 func init() {
+	f := &mathSort{}
 	functions := []string{"sortByMaxima", "sortByMinima", "sortByTotal"}
-	fObj := &MathSort{}
-	for _, f := range functions {
-		metadata.RegisterFunction(f, fObj)
+	for _, function := range functions {
+		metadata.RegisterFunction(function, f)
 	}
-	metadata.RegisterFunction("sortByName", &SortByName{})
+	metadata.RegisterFunction("sortByName", &byName{})
 }
 
-type MathSort struct {
+type mathSort struct {
 	interfaces.FunctionBase
 }
 
 // sortByMaxima(seriesList), sortByMinima(seriesList), sortByTotal(seriesList)
-func (f *MathSort) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *mathSort) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	original, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -49,12 +49,12 @@ func (f *MathSort) Do(e parser.Expr, from, until int32, values map[parser.Metric
 	return arg, nil
 }
 
-type SortByName struct {
+type byName struct {
 	interfaces.FunctionBase
 }
 
 // sortByName(seriesList, natural=false)
-func (f *SortByName) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *byName) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	original, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
