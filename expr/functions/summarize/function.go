@@ -64,7 +64,6 @@ func (f *function) Do(e parser.Expr, from, until int32, values map[parser.Metric
 	}
 
 	buckets := helper.GetBuckets(start, stop, bucketSize)
-	fmt.Printf("Summarize: %v: start=%v stop=%v from=%v until=%v buckets=%v\n", e.RawArgs(), start, stop, from, until, buckets)
 	results := make([]*types.MetricData, 0, len(args))
 	for _, arg := range args {
 

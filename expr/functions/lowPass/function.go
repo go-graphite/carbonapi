@@ -21,13 +21,11 @@ type Function struct {
 func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
-		fmt.Printf("lowPass failed: 1\n")
 		return nil, err
 	}
 
 	cutPercent, err := e.GetFloatArg(1)
 	if err != nil {
-		fmt.Printf("lowPass failed: 2\n")
 		return nil, err
 	}
 

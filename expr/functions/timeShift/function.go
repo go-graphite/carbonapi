@@ -29,7 +29,6 @@ func (f *function) Do(e parser.Expr, from, until int32, values map[parser.Metric
 		return nil, err
 	}
 
-	fmt.Printf("TimeShift: %v: offs=%v, from+offs=%v, until+offs=%v\n", e.RawArgs(), offs, from+offs, until+offs)
 	arg, err := helper.GetSeriesArg(e.Args()[0], from+offs, until+offs, values)
 	if err != nil {
 		return nil, err

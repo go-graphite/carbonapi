@@ -185,7 +185,7 @@ func NewExpr(target string, vaArgs... interface{}) Expr {
 	var nArgsFinal map[string]*expr
 	args, nArgs := sliceExpr(vaArgs)
 	if args == nil {
-		fmt.Printf("Unsupported argument list for target=%v\n", target)
+		panic(fmt.Sprintf("unsupported argument list for target=%v\n", target))
 	}
 
 	var a []*expr

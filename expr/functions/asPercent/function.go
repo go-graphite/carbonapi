@@ -245,7 +245,6 @@ func (f *AsPercent) Do(e parser.Expr, from, until int32, values map[parser.Metri
 		return results, nil
 
 	} else {
-		fmt.Printf("%v %v\n", len(e.Args()), len(arg))
 		return nil, errors.New("total must be either a constant or a series")
 	}
 

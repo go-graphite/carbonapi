@@ -96,8 +96,7 @@ func sliceExpr(args []interface{}) ([]*expr, map[string]*expr) {
 			nArgsNew := mapExpr(v)
 			nArgs = mergeNamedArgs(nArgs, nArgsNew)
 		default:
-			fmt.Printf("BUG! THIS SHOULD NEVER HAPPEN! Unknown type=%T\n%v\n", a, string(debug.Stack()))
-			return nil, nil
+			panic(fmt.Sprintf("BUG! THIS SHOULD NEVER HAPPEN! Unknown type=%T\n%v\n", a, string(debug.Stack())))
 		}
 	}
 
