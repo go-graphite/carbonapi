@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// FunctionType is a special type to handle parameter type in function description
 type FunctionType int
 
 const (

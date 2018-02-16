@@ -238,7 +238,7 @@ func (r *MetricData) AggregatedTimeStep() int32 {
 	return r.StepTime * int32(r.ValuesPerPoint)
 }
 
-// AggregatedValues aggregates values
+// AggregatedValues aggregates values (with cache)
 func (r *MetricData) AggregatedValues() []float64 {
 	if r.aggregatedValues == nil {
 		r.AggregateValues()
@@ -254,7 +254,7 @@ func (r *MetricData) AggregatedAbsent() []bool {
 	return r.aggregatedAbsent
 }
 
-// AggregatedAbsent aggregates values
+// AggregateValues aggregates values
 func (r *MetricData) AggregateValues() {
 	if r.ValuesPerPoint == 1 || r.ValuesPerPoint == 0 {
 		r.aggregatedValues = make([]float64, len(r.Values))
