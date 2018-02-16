@@ -88,11 +88,11 @@ func (f *transformNull) Description() map[string]*types.FunctionDescription {
 					Name:    "default",
 					Type:    types.Float,
 				},
-/*				{
-					Name: "referenceSeries",
-					Type: types.SeriesList,
-				},
-*/
+				/*				{
+									Name: "referenceSeries",
+									Type: types.SeriesList,
+								},
+				*/
 			},
 		},
 	}

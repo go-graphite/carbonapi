@@ -63,15 +63,15 @@ func (f *ewma) Description() map[string]*types.FunctionDescription {
 	return map[string]*types.FunctionDescription{
 		"exponentialWeightedMovingAverage": {
 			Description: "Takes a series of values and a alpha and produces an exponential moving\naverage using algorithm described at https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average\n\nExample:\n\n.. code-block:: none\n\n  &target=exponentialWeightedMovingAverage(*.transactions.count, 0.1)",
-			Function: "exponentialWeightedMovingAverage(seriesList, alpha)",
-			Group: "Calculate",
-			Module: "graphite.render.functions.custom",
-			Name: "exponentialWeightedMovingAverage",
+			Function:    "exponentialWeightedMovingAverage(seriesList, alpha)",
+			Group:       "Calculate",
+			Module:      "graphite.render.functions.custom",
+			Name:        "exponentialWeightedMovingAverage",
 			Params: []types.FunctionParam{
 				{
-					Name: "seriesList",
+					Name:     "seriesList",
 					Required: true,
-					Type: types.SeriesList,
+					Type:     types.SeriesList,
 				},
 				{
 					Name:     "alpha",
@@ -87,15 +87,15 @@ func (f *ewma) Description() map[string]*types.FunctionDescription {
 		},
 		"ewma": {
 			Description: "Takes a series of values and a alpha and produces an exponential moving\naverage using algorithm described at https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average\n\nExample:\n\n.. code-block:: none\n\n  &target=exponentialWeightedMovingAverage(*.transactions.count, 0.1)",
-			Function: "exponentialWeightedMovingAverage(seriesList, alpha)",
-			Group: "Calculate",
-			Module: "graphite.render.functions.custom",
-			Name: "ewma",
+			Function:    "exponentialWeightedMovingAverage(seriesList, alpha)",
+			Group:       "Calculate",
+			Module:      "graphite.render.functions.custom",
+			Name:        "ewma",
 			Params: []types.FunctionParam{
 				{
-					Name: "seriesList",
+					Name:     "seriesList",
 					Required: true,
-					Type: types.SeriesList,
+					Type:     types.SeriesList,
 				},
 				{
 					Name:     "alpha",

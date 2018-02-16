@@ -18,7 +18,7 @@ var (
 	ErrTooManyArguments = errors.New("too many arguments")
 )
 
-// MetricData
+// MetricData contains necessary data to represent parsed metric (ready to be send out or drawn)
 type MetricData struct {
 	pb.FetchResponse
 
@@ -229,7 +229,7 @@ func (r *MetricData) SetValuesPerPoint(v int) {
 	r.aggregatedAbsent = nil
 }
 
-// SetValuesPerPoint aggregates time step
+// AggregatedTimeStep aggregates time step
 func (r *MetricData) AggregatedTimeStep() int32 {
 	if r.ValuesPerPoint == 1 || r.ValuesPerPoint == 0 {
 		return r.StepTime
@@ -238,7 +238,7 @@ func (r *MetricData) AggregatedTimeStep() int32 {
 	return r.StepTime * int32(r.ValuesPerPoint)
 }
 
-// AggregatedAbsent aggregates values
+// AggregatedValues aggregates values
 func (r *MetricData) AggregatedValues() []float64 {
 	if r.aggregatedValues == nil {
 		r.AggregateValues()
@@ -349,7 +349,7 @@ func AggSum(v []float64, absent []bool) (float64, bool) {
 	return sum, abs
 }
 
-// AggMean returns first point
+// AggFirst returns first point
 func AggFirst(v []float64, absent []bool) (float64, bool) {
 	var m = math.Inf(-1)
 	var abs = true
@@ -359,7 +359,7 @@ func AggFirst(v []float64, absent []bool) (float64, bool) {
 	return m, abs
 }
 
-// AggMean returns last point
+// AggLast returns last point
 func AggLast(v []float64, absent []bool) (float64, bool) {
 	var m = math.Inf(-1)
 	var abs = true

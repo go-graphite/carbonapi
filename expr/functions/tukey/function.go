@@ -168,13 +168,13 @@ func (f *tukey) Description() map[string]*types.FunctionDescription {
 				},
 				{
 					Required: true,
-					Name:    "basis",
-					Type:    types.Float,
+					Name:     "basis",
+					Type:     types.Float,
 				},
 				{
 					Required: true,
-					Name:    "n",
-					Type:    types.Integer,
+					Name:     "n",
+					Type:     types.Integer,
 				},
 				{
 					Default: "0",
@@ -197,13 +197,13 @@ func (f *tukey) Description() map[string]*types.FunctionDescription {
 				},
 				{
 					Required: true,
-					Name:    "basis",
-					Type:    types.Float,
+					Name:     "basis",
+					Type:     types.Float,
 				},
 				{
 					Required: true,
-					Name:    "n",
-					Type:    types.Integer,
+					Name:     "n",
+					Type:     types.Integer,
 				},
 				{
 					Default: "0",

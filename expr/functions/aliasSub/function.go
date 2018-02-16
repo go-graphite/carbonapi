@@ -54,7 +54,6 @@ func (f *aliasSub) Do(e parser.Expr, from, until int32, values map[parser.Metric
 	return results, nil
 }
 
-
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
 func (f *aliasSub) Description() map[string]*types.FunctionDescription {
 	return map[string]*types.FunctionDescription{

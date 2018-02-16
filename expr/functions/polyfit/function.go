@@ -118,7 +118,7 @@ func (f *polyfit) Description() map[string]*types.FunctionDescription {
 				},
 				{
 					Name:     "degree",
-					Default: "1",
+					Default:  "1",
 					Required: true,
 					Type:     types.Integer,
 				},

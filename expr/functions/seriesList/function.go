@@ -49,7 +49,7 @@ func (f *seriesList) Do(e parser.Expr, from, until int32, values map[parser.Metr
 	case "diffSeriesLists":
 		compute = func(l, r float64) float64 { return l - r }
 	case "powSeriesLists":
-		compute = func(l, r float64) float64 { return math.Pow(l, r)}
+		compute = func(l, r float64) float64 { return math.Pow(l, r) }
 	}
 	for i, numerator := range numerators {
 		denominator := denominators[i]
@@ -104,7 +104,7 @@ func (f *seriesList) Description() map[string]*types.FunctionDescription {
 				},
 			},
 		},
-		"diffSeriesLists":     {
+		"diffSeriesLists": {
 			Description: "Iterates over a two lists and substracts list1[0} by list2[0}, list1[1} by list2[1} and so on.\nThe lists need to be the same length",
 			Function:    "diffSeriesLists(firstSeriesList, secondSeriesList)",
 			Group:       "Combine",

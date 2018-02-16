@@ -84,11 +84,11 @@ func (f *timeShift) Description() map[string]*types.FunctionDescription {
 					Type:    types.Boolean,
 				},
 				/*
-				{
-					Default: "false",
-					Name:    "alignDst",
-					Type:    types.Boolean,
-				},
+					{
+						Default: "false",
+						Name:    "alignDst",
+						Type:    types.Boolean,
+					},
 				*/
 			},
 		},

@@ -8,11 +8,11 @@ import (
 	"unicode"
 
 	"fmt"
-	"github.com/go-graphite/carbonapi/test"
+	_ "github.com/go-graphite/carbonapi/expr/functions"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/types"
-	_ "github.com/go-graphite/carbonapi/expr/functions"
 	"github.com/go-graphite/carbonapi/pkg/parser"
+	"github.com/go-graphite/carbonapi/test"
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 )
 

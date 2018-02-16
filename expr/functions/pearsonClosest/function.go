@@ -150,10 +150,10 @@ Pearson will discard epochs where either series has a missing value.
 
 Additionally there is a special case where a series (or window) containing only zeros leads to a division-by-zero
 and will manifest as if the entire window/series had missing values.`,
-			Function:    "pearsonClosest(seriesList, seriesList, n, direction)",
-			Group:       "Transform",
-			Module:      "graphite.render.functions.custom",
-			Name:        "pearsonClosest",
+			Function: "pearsonClosest(seriesList, seriesList, n, direction)",
+			Group:    "Transform",
+			Module:   "graphite.render.functions.custom",
+			Name:     "pearsonClosest",
 			Params: []types.FunctionParam{
 				{
 					Name:     "seriesList",
@@ -178,7 +178,7 @@ and will manifest as if the entire window/series had missing values.`,
 						"pos",
 						"neg",
 					},
-					Type:     types.String,
+					Type: types.String,
 				},
 			},
 		},

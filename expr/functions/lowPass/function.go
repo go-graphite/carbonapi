@@ -71,9 +71,9 @@ func (f *lowPass) Description() map[string]*types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 				{
-					Name:    "cutPercent",
+					Name:     "cutPercent",
 					Required: true,
-					Type:    types.Float,
+					Type:     types.Float,
 				},
 			},
 		},
@@ -90,9 +90,9 @@ func (f *lowPass) Description() map[string]*types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 				{
-					Name:    "cutPercent",
+					Name:     "cutPercent",
 					Required: true,
-					Type:    types.Float,
+					Type:     types.Float,
 				},
 			},
 		},

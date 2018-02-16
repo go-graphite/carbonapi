@@ -453,6 +453,7 @@ func Vandermonde(absent []bool, deg int) *mat64.Dense {
 	return mat64.NewDense(len(e)/(deg+1), deg+1, e)
 }
 
+// Poly computes polynom with specified coefficients
 func Poly(x float64, coeffs ...float64) float64 {
 	y := coeffs[0]
 	v := 1.0

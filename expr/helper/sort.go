@@ -8,6 +8,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 )
 
+// ByVals sorts by values
 // Total (sortByTotal), max (sortByMaxima), min (sortByMinima) sorting
 // For 'min', we actually store 1/v so the sorting logic is the same
 type ByVals struct {
@@ -34,10 +35,10 @@ func (s ByVals) Less(i, j int) bool {
 type ByName []*types.MetricData
 
 // Len returns length, required to be sortable
-func (s ByName) Len() int           { return len(s) }
+func (s ByName) Len() int { return len(s) }
 
 // Swap swaps to elements by IDs, required to be sortable
-func (s ByName) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s ByName) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 
 // Less compares two elements with specified IDs, required to be sortable
 func (s ByName) Less(i, j int) bool { return s[i].Name < s[j].Name }
@@ -57,10 +58,10 @@ func (s ByNameNatural) pad(str string) string {
 }
 
 // Len returns length, required to be sortable
-func (s ByNameNatural) Len() int           { return len(s) }
+func (s ByNameNatural) Len() int { return len(s) }
 
 // Swap swaps to elements by IDs, required to be sortable
-func (s ByNameNatural) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s ByNameNatural) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 
 // Less compares two elements with specified IDs, required to be sortable
 func (s ByNameNatural) Less(i, j int) bool { return s.pad(s[i].Name) < s.pad(s[j].Name) }

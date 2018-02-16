@@ -28,6 +28,7 @@ func init() {
 	metadata.SetEvaluator(_evaluator)
 }
 
+// EvalExpr is the main expression evaluator
 func EvalExpr(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 
 	if e.IsName() {

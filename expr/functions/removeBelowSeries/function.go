@@ -81,7 +81,6 @@ func (f *removeBelowSeries) Do(e parser.Expr, from, until int32, values map[pars
 	return results, nil
 }
 
-
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
 func (f *removeBelowSeries) Description() map[string]*types.FunctionDescription {
 	return map[string]*types.FunctionDescription{

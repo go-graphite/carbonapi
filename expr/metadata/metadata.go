@@ -1,8 +1,8 @@
 package metadata
 
 import (
-	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
+	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
 	"sync"

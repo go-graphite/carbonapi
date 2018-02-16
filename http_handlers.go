@@ -22,9 +22,9 @@ import (
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 	"github.com/go-graphite/carbonzipper/intervalset"
 
+	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
-	"github.com/go-graphite/carbonapi/expr/metadata"
 )
 
 const (
@@ -767,14 +767,14 @@ func functionsHandler(w http.ResponseWriter, r *http.Request) {
 
 	accessLogger := zapwriter.Logger("access")
 	var accessLogDetails = carbonapipb.AccessLogDetails{
-	Handler:       "functions",
-	Username:      username,
-	Url:           r.URL.RequestURI(),
-	PeerIp:        srcIP,
-	PeerPort:      srcPort,
-	Host:          r.Host,
-	Referer:       r.Referer(),
-	Uri:           r.RequestURI,
+		Handler:  "functions",
+		Username: username,
+		Url:      r.URL.RequestURI(),
+		PeerIp:   srcIP,
+		PeerPort: srcPort,
+		Host:     r.Host,
+		Referer:  r.Referer(),
+		Uri:      r.RequestURI,
 	}
 
 	logAsError := false
@@ -786,24 +786,24 @@ func functionsHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := r.ParseForm()
 	if err != nil {
-	http.Error(w, http.StatusText(http.StatusBadRequest)+": "+err.Error(), http.StatusBadRequest)
-	accessLogDetails.HttpCode = http.StatusBadRequest
-	accessLogDetails.Reason = err.Error()
-	logAsError = true
-	return
+		http.Error(w, http.StatusText(http.StatusBadRequest)+": "+err.Error(), http.StatusBadRequest)
+		accessLogDetails.HttpCode = http.StatusBadRequest
+		accessLogDetails.Reason = err.Error()
+		logAsError = true
+		return
 	}
 
 	grouped := false
 	groupedStr := r.FormValue("grouped")
 	prettyStr := r.FormValue("pretty")
-	var marshaler func (interface{}) ([]byte, error)
+	var marshaler func(interface{}) ([]byte, error)
 
 	if groupedStr == "1" {
 		grouped = true
 	}
 
 	if prettyStr == "1" {
-		marshaler = func(v interface{}) ([]byte, error)  {
+		marshaler = func(v interface{}) ([]byte, error) {
 			return json.MarshalIndent(v, "", "\t")
 		}
 	} else {
@@ -815,7 +815,6 @@ func functionsHandler(w http.ResponseWriter, r *http.Request) {
 	if len(path) > 3 {
 		function = path[2]
 	}
-	fmt.Printf("\n\n\nDEBUG\n\n%+v\n%+v\n%v\n\n", function, path, len(path))
 
 	metadata.FunctionMD.RLock()
 	var b []byte
