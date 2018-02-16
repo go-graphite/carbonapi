@@ -645,6 +645,10 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
 	format := r.FormValue("format")
 
+	if format == "" {
+		format = jsonFormat
+	}
+
 	accessLogger := zapwriter.Logger("access")
 	var accessLogDetails = carbonapipb.AccessLogDetails{
 		Handler:       "info",
@@ -689,7 +693,9 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	case jsonFormat:
 		b, err = json.Marshal(data)
 	case protobufFormat, protobuf3Format:
-		err = fmt.Errorf("Not implemented yet")
+		err = fmt.Errorf("not implemented yet")
+	default:
+		err = fmt.Errorf("unknown format %v", format)
 	}
 
 	if err != nil {
