@@ -25,5 +25,5 @@ type Function interface {
 	SetEvaluator(evaluator Evaluator)
 	GetEvaluator() Evaluator
 	Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
-	// Description() *types.FunctionDescription
+	Description() map[string]*types.FunctionDescription
 }

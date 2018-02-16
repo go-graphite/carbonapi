@@ -9,20 +9,18 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 	"math"
-	"strings"
 )
 
 func init() {
-	metadata.RegisterFunction("multiplySeries", &MultiplySeries{})
-	metadata.RegisterFunction("multiplySeriesWithWildcards", &MultiplySeriesWithWildcards{})
+	metadata.RegisterFunction("multiplySeries", &multiplySeries{})
 }
 
-type MultiplySeries struct {
+type multiplySeries struct {
 	interfaces.FunctionBase
 }
 
 // multiplySeries(factorsSeriesList)
-func (f *MultiplySeries) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *multiplySeries) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	r := types.MetricData{
 		FetchResponse: pb.FetchResponse{
 			Name:      fmt.Sprintf("multiplySeries(%s)", e.RawArgs()),
@@ -61,84 +59,23 @@ func (f *MultiplySeries) Do(e parser.Expr, from, until int32, values map[parser.
 	return []*types.MetricData{&r}, nil
 }
 
-type MultiplySeriesWithWildcards struct {
-	interfaces.FunctionBase
-}
-
-// multiplySeriesWithWildcards(seriesList, *position)
-func (f *MultiplySeriesWithWildcards) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	/* TODO(dgryski): make sure the arrays are all the same 'size'
-	   (duplicated from sumSeriesWithWildcards because of similar logic but multiplication) */
-	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
-	if err != nil {
-		return nil, err
+// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
+func (f *multiplySeries) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"multiplySeries": {
+			Description: "Takes two or more series and multiplies their points. A constant may not be\nused. To multiply by a constant, use the scale() function.\n\nExample:\n\n.. code-block:: none\n\n  &target=multiplySeries(Series.dividends,Series.divisors)\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``multiply``.",
+			Function:    "multiplySeries(*seriesLists)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions",
+			Name:        "multiplySeries",
+			Params: []types.FunctionParam{
+				{
+					Multiple: true,
+					Name:     "seriesLists",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+			},
+		},
 	}
-
-	fields, err := e.GetIntArgs(1)
-	if err != nil {
-		return nil, err
-	}
-
-	var results []*types.MetricData
-
-	nodeList := []string{}
-	groups := make(map[string][]*types.MetricData)
-
-	for _, a := range args {
-		metric := helper.ExtractMetric(a.Name)
-		nodes := strings.Split(metric, ".")
-		var s []string
-		// Yes, this is O(n^2), but len(nodes) < 10 and len(fields) < 3
-		// Iterating an int slice is faster than a map for n ~ 30
-		// http://www.antoine.im/posts/someone_is_wrong_on_the_internet
-		for i, n := range nodes {
-			if !helper.Contains(fields, i) {
-				s = append(s, n)
-			}
-		}
-
-		node := strings.Join(s, ".")
-
-		if len(groups[node]) == 0 {
-			nodeList = append(nodeList, node)
-		}
-
-		groups[node] = append(groups[node], a)
-	}
-
-	for _, series := range nodeList {
-		args := groups[series]
-		r := *args[0]
-		r.Name = fmt.Sprintf("multiplySeriesWithWildcards(%s)", series)
-		r.Values = make([]float64, len(args[0].Values))
-		r.IsAbsent = make([]bool, len(args[0].Values))
-
-		atLeastOne := make([]bool, len(args[0].Values))
-		hasVal := make([]bool, len(args[0].Values))
-
-		for _, arg := range args {
-			for i, v := range arg.Values {
-				if arg.IsAbsent[i] {
-					continue
-				}
-
-				atLeastOne[i] = true
-				if hasVal[i] == false {
-					r.Values[i] = v
-					hasVal[i] = true
-				} else {
-					r.Values[i] *= v
-				}
-			}
-		}
-
-		for i, v := range atLeastOne {
-			if !v {
-				r.IsAbsent[i] = true
-			}
-		}
-
-		results = append(results, &r)
-	}
-	return results, nil
 }

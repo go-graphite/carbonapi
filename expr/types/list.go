@@ -26,7 +26,10 @@ type FunctionParam struct {
 	Required bool `json:"required,omitempty"`
 	Type FunctionType `json:"type,omitempty"`
 	Options []string `json:"options,omitempty"`
+	Suggestions []string `json:"suggestions,omitempty"`
+	Default string `json:"default,omitempty"`
 }
+
 
 type FunctionDescription struct {
 	Description string `json:"description"`

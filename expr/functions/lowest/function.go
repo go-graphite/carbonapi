@@ -10,16 +10,17 @@ import (
 )
 
 func init() {
-	metadata.RegisterFunction("lowestAverage", &Function{})
-	metadata.RegisterFunction("lowestCurrent", &Function{})
+	f := &lowest{}
+	metadata.RegisterFunction("lowestAverage", f)
+	metadata.RegisterFunction("lowestCurrent", f)
 }
 
-type Function struct {
+type lowest struct {
 	interfaces.FunctionBase
 }
 
 // lowestAverage(seriesList, n) , lowestCurrent(seriesList, n)
-func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *lowest) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -64,4 +65,48 @@ func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.Metric
 	}
 
 	return results, nil
+}
+
+// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
+func (f *lowest) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"lowestAverage": {
+			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\nOut of all metrics passed, draws only the bottom N metrics with the lowest\naverage value for the time period specified.\n\nExample:\n\n.. code-block:: none\n\n  &target=lowestAverage(server*.instance*.threads.busy,5)\n\nDraws the bottom 5 servers with the lowest average value.\n\nThis is an alias for :py:func:`lowest <lowest>` with aggregation ``average``.",
+			Function:    "lowestAverage(seriesList, n)",
+			Group:       "Filter Series",
+			Module:      "graphite.render.functions",
+			Name:        "lowestAverage",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "n",
+					Required: true,
+					Type:     types.Integer,
+				},
+			},
+		},
+		"lowestCurrent": {
+			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\nOut of all metrics passed, draws only the N metrics with the lowest value at\nthe end of the time period specified.\n\nExample:\n\n.. code-block:: none\n\n  &target=lowestCurrent(server*.instance*.threads.busy,5)\n\nDraws the 5 servers with the least busy threads right now.\n\nThis is an alias for :py:func:`lowest <lowest>` with aggregation ``current``.",
+			Function:    "lowestCurrent(seriesList, n)",
+			Group:       "Filter Series",
+			Module:      "graphite.render.functions",
+			Name:        "lowestCurrent",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "n",
+					Required: true,
+					Type:     types.Integer,
+				},
+			},
+		},
+	}
 }

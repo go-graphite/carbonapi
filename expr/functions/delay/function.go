@@ -10,15 +10,15 @@ import (
 )
 
 func init() {
-	metadata.RegisterFunction("delay", &Delay{})
+	metadata.RegisterFunction("delay", &delay{})
 }
 
-type Delay struct {
+type delay struct {
 	interfaces.FunctionBase
 }
 
 // delay(seriesList, steps)
-func (f *Delay) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *delay) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	seriesList, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -66,4 +66,29 @@ func (f *Delay) Do(e parser.Expr, from, until int32, values map[parser.MetricReq
 	}
 
 	return results, nil
+}
+
+// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
+func (f *delay) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"delay": {
+			Description: "This shifts all samples later by an integer number of steps. This can be\nused for custom derivative calculations, among other things. Note: this\nwill pad the early end of the data with None for every step shifted.\n\nThis complements other time-displacement functions such as timeShift and\ntimeSlice, in that this function is indifferent about the step intervals\nbeing shifted.\n\nExample:\n\n.. code-block:: none\n\n  &target=divideSeries(server.FreeSpace,delay(server.FreeSpace,1))\n\nThis computes the change in server free space as a percentage of the previous\nfree space.",
+			Function:    "delay(seriesList, steps)",
+			Group:       "Transform",
+			Module:      "graphite.render.functions",
+			Name:        "delay",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "steps",
+					Required: true,
+					Type:     types.Integer,
+				},
+			},
+		},
+	}
 }

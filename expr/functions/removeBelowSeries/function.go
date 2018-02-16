@@ -12,19 +12,19 @@ import (
 )
 
 func init() {
-	f := &function{}
+	f := &removeBelowSeries{}
 	functions := []string{"removeBelowValue", "removeAboveValue", "removeBelowPercentile", "removeAbovePercentile"}
 	for _, function := range functions {
 		metadata.RegisterFunction(function, f)
 	}
 }
 
-type function struct {
+type removeBelowSeries struct {
 	interfaces.FunctionBase
 }
 
 // removeBelowValue(seriesLists, n), removeAboveValue(seriesLists, n), removeBelowPercentile(seriesLists, percent), removeAbovePercentile(seriesLists, percent)
-func (f *function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *removeBelowSeries) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -79,4 +79,87 @@ func (f *function) Do(e parser.Expr, from, until int32, values map[parser.Metric
 	}
 
 	return results, nil
+}
+
+
+// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
+func (f *removeBelowSeries) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"removeBelowValue": {
+			Description: "Removes data below the given threshold from the series or list of series provided.\nValues below this threshold are assigned a value of None.",
+			Function:    "removeBelowValue(seriesList, n)",
+			Group:       "Filter Data",
+			Module:      "graphite.render.functions",
+			Name:        "removeBelowValue",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "n",
+					Required: true,
+					Type:     types.Integer,
+				},
+			},
+		},
+		"removeAboveValue": {
+			Description: "Removes data above the given threshold from the series or list of series provided.\nValues above this threshold are assigned a value of None.",
+			Function:    "removeAboveValue(seriesList, n)",
+			Group:       "Filter Data",
+			Module:      "graphite.render.functions",
+			Name:        "removeAboveValue",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "n",
+					Required: true,
+					Type:     types.Integer,
+				},
+			},
+		},
+		"removeBelowPercentile": {
+			Description: "Removes data below the nth percentile from the series or list of series provided.\nValues below this percentile are assigned a value of None.",
+			Function:    "removeBelowPercentile(seriesList, n)",
+			Group:       "Filter Data",
+			Module:      "graphite.render.functions",
+			Name:        "removeBelowPercentile",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "n",
+					Required: true,
+					Type:     types.Integer,
+				},
+			},
+		},
+		"removeAbovePercentile": {
+			Description: "Removes data above the nth percentile from the series or list of series provided.\nValues above this percentile are assigned a value of None.",
+			Function:    "removeAbovePercentile(seriesList, n)",
+			Group:       "Filter Data",
+			Module:      "graphite.render.functions",
+			Name:        "removeAbovePercentile",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "n",
+					Required: true,
+					Type:     types.Integer,
+				},
+			},
+		},
+	}
 }

@@ -11,15 +11,15 @@ import (
 )
 
 func init() {
-	metadata.RegisterFunction("legendValue", &LegendValue{})
+	metadata.RegisterFunction("legendValue", &legendValue{})
 }
 
-type LegendValue struct {
+type legendValue struct {
 	interfaces.FunctionBase
 }
 
 // legendValue(seriesList, newName)
-func (f *LegendValue) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *legendValue) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -47,4 +47,44 @@ func (f *LegendValue) Do(e parser.Expr, from, until int32, values map[parser.Met
 		results = append(results, &r)
 	}
 	return results, nil
+}
+
+// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
+func (f *legendValue) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"legendValue": {
+			Description: "Takes one metric or a wildcard seriesList and a string in quotes.\nAppends a value to the metric name in the legend.  Currently one or several of: `last`, `avg`,\n`total`, `min`, `max`.\nThe last argument can be `si` (default) or `binary`, in that case values will be formatted in the\ncorresponding system.\n\n.. code-block:: none\n\n  &target=legendValue(Sales.widgets.largeBlue, 'avg', 'max', 'si')",
+			Function:    "legendValue(seriesList, *valueTypes)",
+			Group:       "Alias",
+			Module:      "graphite.render.functions",
+			Name:        "legendValue",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Multiple: true,
+					Name:     "valuesTypes",
+					Options: []string{
+						"average",
+						"count",
+						"diff",
+						"last",
+						"max",
+						"median",
+						"min",
+						"multiply",
+						"range",
+						"stddev",
+						"sum",
+						"si",
+						"binary",
+					},
+					Type: types.String,
+				},
+			},
+		},
+	}
 }

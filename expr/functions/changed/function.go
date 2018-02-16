@@ -11,15 +11,15 @@ import (
 )
 
 func init() {
-	metadata.RegisterFunction("changed", &Function{})
+	metadata.RegisterFunction("changed", &changed{})
 }
 
-type Function struct {
+type changed struct {
 	interfaces.FunctionBase
 }
 
 // changed(SeriesList)
-func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *changed) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -47,4 +47,24 @@ func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.Metric
 		result = append(result, &r)
 	}
 	return result, nil
+}
+
+// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
+func (f *changed) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"changed": {
+			Description: "Takes one metric or a wildcard seriesList.\nOutput 1 when the value changed, 0 when null or the same\n\nExample:\n\n.. code-block:: none\n\n  &target=changed(Server01.connections.handled)",
+			Function:    "changed(seriesList)",
+			Group:       "Special",
+			Module:      "graphite.render.functions",
+			Name:        "changed",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+			},
+		},
+	}
 }

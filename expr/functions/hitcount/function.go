@@ -12,15 +12,15 @@ import (
 )
 
 func init() {
-	metadata.RegisterFunction("hitcount", &Function{})
+	metadata.RegisterFunction("hitcount", &hitcount{})
 }
 
-type Function struct {
+type hitcount struct {
 	interfaces.FunctionBase
 }
 
 // hitcount(seriesList, intervalString, alignToInterval=False)
-func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *hitcount) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(dgryski): make sure the arrays are all the same 'size'
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
@@ -115,4 +115,39 @@ func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.Metric
 		results = append(results, &r)
 	}
 	return results, nil
+}
+
+// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
+func (f *hitcount) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"hitcount": {
+			Description: "Estimate hit counts from a list of time series.\n\nThis function assumes the values in each time series represent\nhits per second.  It calculates hits per some larger interval\nsuch as per day or per hour.  This function is like summarize(),\nexcept that it compensates automatically for different time scales\n(so that a similar graph results from using either fine-grained\nor coarse-grained records) and handles rarely-occurring events\ngracefully.",
+			Function:    "hitcount(seriesList, intervalString, alignToInterval=False)",
+			Group:       "Transform",
+			Module:      "graphite.render.functions",
+			Name:        "hitcount",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "intervalString",
+					Required: true,
+					Suggestions: []string{
+						"10min",
+						"1h",
+						"1d",
+					},
+					Type: types.Interval,
+				},
+				{
+					Default: "false",
+					Name:    "alignToInterval",
+					Type:    types.Boolean,
+				},
+			},
+		},
+	}
 }

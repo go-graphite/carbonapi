@@ -11,15 +11,15 @@ import (
 )
 
 func init() {
-	metadata.RegisterFunction("keepLastValue", &Function{})
+	metadata.RegisterFunction("keepLastValue", &keepLastValue{})
 }
 
-type Function struct {
+type keepLastValue struct {
 	interfaces.FunctionBase
 }
 
 // keepLastValue(seriesList, limit=inf)
-func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *keepLastValue) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -71,4 +71,29 @@ func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.Metric
 		results = append(results, &r)
 	}
 	return results, err
+}
+
+// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
+func (f *keepLastValue) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"keepLastValue": {
+			Description: "Takes one metric or a wildcard seriesList, and optionally a limit to the number of 'None' values to skip over.\nContinues the line with the last received value when gaps ('None' values) appear in your data, rather than breaking your line.\n\nExample:\n\n.. code-block:: none\n\n  &target=keepLastValue(Server01.connections.handled)\n  &target=keepLastValue(Server01.connections.handled, 10)",
+			Function:    "keepLastValue(seriesList, limit=inf)",
+			Group:       "Transform",
+			Module:      "graphite.render.functions",
+			Name:        "keepLastValue",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Default: "INF",
+					Name:    "limit",
+					Type:    types.Integer,
+				},
+			},
+		},
+	}
 }

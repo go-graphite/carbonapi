@@ -11,15 +11,15 @@ import (
 )
 
 func init() {
-	metadata.RegisterFunction("divideSeries", &Function{})
+	metadata.RegisterFunction("divideSeries", &divideSeries{})
 }
 
-type Function struct {
+type divideSeries struct {
 	interfaces.FunctionBase
 }
 
 // divideSeries(dividendSeriesList, divisorSeriesList)
-func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *divideSeries) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if len(e.Args()) < 1 {
 		return nil, parser.ErrMissingTimeseries
 	}
@@ -83,4 +83,29 @@ func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.Metric
 
 	return results, nil
 
+}
+
+// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
+func (f *divideSeries) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"divideSeries": {
+			Description: "Takes a dividend metric and a divisor metric and draws the division result.\nA constant may *not* be passed. To divide by a constant, use the scale()\nfunction (which is essentially a multiplication operation) and use the inverse\nof the dividend. (Division by 8 = multiplication by 1/8 or 0.125)\n\nExample:\n\n.. code-block:: none\n\n  &target=divideSeries(Series.dividends,Series.divisors)",
+			Function:    "divideSeries(dividendSeriesList, divisorSeries)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions",
+			Name:        "divideSeries",
+			Params: []types.FunctionParam{
+				{
+					Name:     "dividendSeriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "divisorSeries",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+			},
+		},
+	}
 }

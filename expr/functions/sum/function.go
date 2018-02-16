@@ -1,13 +1,11 @@
 package sum
 
 import (
-	"fmt"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"strings"
 )
 
 func init() {
@@ -16,8 +14,6 @@ func init() {
 	for _, function := range functions {
 		metadata.RegisterFunction(function, f)
 	}
-
-	metadata.RegisterFunction("sumSeriesWithWildcards", &withWildcards{})
 }
 
 type sum struct {
@@ -42,75 +38,38 @@ func (f *sum) Do(e parser.Expr, from, until int32, values map[parser.MetricReque
 	})
 }
 
-type withWildcards struct {
-	interfaces.FunctionBase
-}
-
-// sumSeriesWithWildcards(*seriesLists)
-func (f *withWildcards) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	// TODO(dgryski): make sure the arrays are all the same 'size'
-	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
-	if err != nil {
-		return nil, err
+// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
+func (f *sum) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"sum": {
+			Description: "Short form: sum()\n\nThis will add metrics together and return the sum at each datapoint. (See\nintegral for a sum over time)\n\nExample:\n\n.. code-block:: none\n\n  &target=sum(company.server.application*.requestsHandled)\n\nThis would show the sum of all requests handled per minute (provided\nrequestsHandled are collected once a minute).   If metrics with different\nretention rates are combined, the coarsest metric is graphed, and the sum\nof the other metrics is averaged for the metrics with finer retention rates.\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``sum``.",
+			Function:    "sum(*seriesLists)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions",
+			Name:        "sum",
+			Params: []types.FunctionParam{
+				{
+					Multiple: true,
+					Name:     "seriesLists",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+			},
+		},
+		"sumSeries": {
+			Description: "Short form: sum()\n\nThis will add metrics together and return the sum at each datapoint. (See\nintegral for a sum over time)\n\nExample:\n\n.. code-block:: none\n\n  &target=sum(company.server.application*.requestsHandled)\n\nThis would show the sum of all requests handled per minute (provided\nrequestsHandled are collected once a minute).   If metrics with different\nretention rates are combined, the coarsest metric is graphed, and the sum\nof the other metrics is averaged for the metrics with finer retention rates.\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``sum``.",
+			Function:    "sumSeries(*seriesLists)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions",
+			Name:        "sumSeries",
+			Params: []types.FunctionParam{
+				{
+					Multiple: true,
+					Name:     "seriesLists",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+			},
+		},
 	}
-
-	fields, err := e.GetIntArgs(1)
-	if err != nil {
-		return nil, err
-	}
-
-	var results []*types.MetricData
-
-	nodeList := []string{}
-	groups := make(map[string][]*types.MetricData)
-
-	for _, a := range args {
-		metric := helper.ExtractMetric(a.Name)
-		nodes := strings.Split(metric, ".")
-		var s []string
-		// Yes, this is O(n^2), but len(nodes) < 10 and len(fields) < 3
-		// Iterating an int slice is faster than a map for n ~ 30
-		// http://www.antoine.im/posts/someone_is_wrong_on_the_internet
-		for i, n := range nodes {
-			if !helper.Contains(fields, i) {
-				s = append(s, n)
-			}
-		}
-
-		node := strings.Join(s, ".")
-
-		if len(groups[node]) == 0 {
-			nodeList = append(nodeList, node)
-		}
-
-		groups[node] = append(groups[node], a)
-	}
-
-	for _, series := range nodeList {
-		args := groups[series]
-		r := *args[0]
-		r.Name = fmt.Sprintf("sumSeriesWithWildcards(%s)", series)
-		r.Values = make([]float64, len(args[0].Values))
-		r.IsAbsent = make([]bool, len(args[0].Values))
-
-		atLeastOne := make([]bool, len(args[0].Values))
-		for _, arg := range args {
-			for i, v := range arg.Values {
-				if arg.IsAbsent[i] {
-					continue
-				}
-				atLeastOne[i] = true
-				r.Values[i] += v
-			}
-		}
-
-		for i, v := range atLeastOne {
-			if !v {
-				r.IsAbsent[i] = true
-			}
-		}
-
-		results = append(results, &r)
-	}
-	return results, nil
 }

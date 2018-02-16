@@ -9,15 +9,15 @@ import (
 )
 
 func init() {
-	metadata.RegisterFunction("integral", &Function{})
+	metadata.RegisterFunction("integral", &integral{})
 }
 
-type Function struct {
+type integral struct {
 	interfaces.FunctionBase
 }
 
 // integral(seriesList)
-func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *integral) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	return helper.ForEachSeriesDo(e, from, until, values, func(a *types.MetricData, r *types.MetricData) *types.MetricData {
 		current := 0.0
 		for i, v := range a.Values {
@@ -31,4 +31,24 @@ func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.Metric
 		}
 		return r
 	})
+}
+
+// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
+func (f *integral) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"integral": {
+			Description: "This will show the sum over time, sort of like a continuous addition function.\nUseful for finding totals or trends in metrics that are collected per minute.\n\nExample:\n\n.. code-block:: none\n\n  &target=integral(company.sales.perMinute)\n\nThis would start at zero on the left side of the graph, adding the sales each\nminute, and show the total sales for the time period selected at the right\nside, (time now, or the time specified by '&until=').",
+			Function:    "integral(seriesList)",
+			Group:       "Transform",
+			Module:      "graphite.render.functions",
+			Name:        "integral",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+			},
+		},
+	}
 }

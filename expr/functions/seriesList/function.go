@@ -7,21 +7,22 @@ import (
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
+	"math"
 )
 
 func init() {
-	f := &function{}
-	functions := []string{"divideSeriesLists", "diffSeriesLists", "multiplySeriesLists"}
+	f := &seriesList{}
+	functions := []string{"divideSeriesLists", "diffSeriesLists", "multiplySeriesLists", "powSeriesLists"}
 	for _, function := range functions {
 		metadata.RegisterFunction(function, f)
 	}
 }
 
-type function struct {
+type seriesList struct {
 	interfaces.FunctionBase
 }
 
-func (f *function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *seriesList) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	numerators, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -32,7 +33,7 @@ func (f *function) Do(e parser.Expr, from, until int32, values map[parser.Metric
 	}
 
 	if len(numerators) != len(denominators) {
-		return nil, fmt.Errorf("Both %s arguments must have equal length", e.Target())
+		return nil, fmt.Errorf("both %s arguments must have equal length", e.Target())
 	}
 
 	var results []*types.MetricData
@@ -47,7 +48,8 @@ func (f *function) Do(e parser.Expr, from, until int32, values map[parser.Metric
 		compute = func(l, r float64) float64 { return l * r }
 	case "diffSeriesLists":
 		compute = func(l, r float64) float64 { return l - r }
-
+	case "powSeriesLists":
+		compute = func(l, r float64) float64 { return math.Pow(l, r)}
 	}
 	for i, numerator := range numerators {
 		denominator := denominators[i]
@@ -78,4 +80,86 @@ func (f *function) Do(e parser.Expr, from, until int32, values map[parser.Metric
 		results = append(results, &r)
 	}
 	return results, nil
+}
+
+// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
+func (f *seriesList) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"divideSeriesLists": {
+			Description: "Iterates over a two lists and divides list1[0} by list2[0}, list1[1} by list2[1} and so on.\nThe lists need to be the same length",
+			Function:    "divideSeriesLists(dividendSeriesList, divisorSeriesList)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions",
+			Name:        "divideSeriesLists",
+			Params: []types.FunctionParam{
+				{
+					Name:     "dividendSeriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "divisorSeriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+			},
+		},
+		"diffSeriesLists":     {
+			Description: "Iterates over a two lists and substracts list1[0} by list2[0}, list1[1} by list2[1} and so on.\nThe lists need to be the same length",
+			Function:    "diffSeriesLists(firstSeriesList, secondSeriesList)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions.custom",
+			Name:        "diffSeriesLists",
+			Params: []types.FunctionParam{
+				{
+					Name:     "firstSeriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "secondSeriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+			},
+		},
+		"multiplySeriesLists": {
+			Description: "Iterates over a two lists and multiplies list1[0} by list2[0}, list1[1} by list2[1} and so on.\nThe lists need to be the same length",
+			Function:    "multiplySeriesLists(sourceSeriesList, factorSeriesList)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions.custom",
+			Name:        "multiplySeriesLists",
+			Params: []types.FunctionParam{
+				{
+					Name:     "sourceSeriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "factorSeriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+			},
+		},
+		"powSeriesLists": {
+			Description: "Iterates over a two lists and do list1[0} in power of list2[0}, list1[1} in power of  list2[1} and so on.\nThe lists need to be the same length",
+			Function:    "powSeriesLists(sourceSeriesList, factorSeriesList)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions.custom",
+			Name:        "powSeriesLists",
+			Params: []types.FunctionParam{
+				{
+					Name:     "sourceSeriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "factorSeriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+			},
+		},
+	}
 }

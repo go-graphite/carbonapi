@@ -12,19 +12,19 @@ import (
 )
 
 func init() {
-	f := &Function{}
+	f := &cactiStyle{}
 	functions := []string{"cactiStyle"}
 	for _, function := range functions {
 		metadata.RegisterFunction(function, f)
 	}
 }
 
-type Function struct {
+type cactiStyle struct {
 	interfaces.FunctionBase
 }
 
 // cactiStyle(seriesList, system=None, units=None)
-func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *cactiStyle) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// Get the series data
 	original, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
@@ -100,4 +100,36 @@ func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.Metric
 	}
 
 	return metrics, nil
+}
+
+// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
+func (f *cactiStyle) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"cactiStyle": {
+			Description: "Takes a series list and modifies the aliases to provide column aligned\noutput with Current, Max, and Min values in the style of cacti. Optionally\ntakes a \"system\" value to apply unit formatting in the same style as the\nY-axis, or a \"unit\" string to append an arbitrary unit suffix.\n\n.. code-block:: none\n\n  &target=cactiStyle(ganglia.*.net.bytes_out,\"si\")\n  &target=cactiStyle(ganglia.*.net.bytes_out,\"si\",\"b\")\n\nA possible value for ``system`` is ``si``, which would express your values in\nmultiples of a thousand. A second option is to use ``binary`` which will\ninstead express your values in multiples of 1024 (useful for network devices).\n\nColumn alignment of the Current, Max, Min values works under two conditions:\nyou use a monospace font such as terminus and use a single cactiStyle call, as\nseparate cactiStyle calls are not aware of each other. In case you have\ndifferent targets for which you would like to have cactiStyle to line up, you\ncan use ``group()`` to combine them before applying cactiStyle, such as:\n\n.. code-block:: none\n\n  &target=cactiStyle(group(metricA,metricB))",
+			Function:    "cactiStyle(seriesList, system=None, units=None)",
+			Group:       "Special",
+			Module:      "graphite.render.functions",
+			Name:        "cactiStyle",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name: "system",
+					Options: []string{
+						"si",
+						"binary",
+					},
+					Type: types.String,
+				},
+				{
+					Name: "units",
+					Type: types.String,
+				},
+			},
+		},
+	}
 }

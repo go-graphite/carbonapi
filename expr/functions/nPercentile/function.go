@@ -10,15 +10,15 @@ import (
 )
 
 func init() {
-	metadata.RegisterFunction("nPercentile", &Function{})
+	metadata.RegisterFunction("nPercentile", &nPercentile{})
 }
 
-type Function struct {
+type nPercentile struct {
 	interfaces.FunctionBase
 }
 
 // nPercentile(seriesList, n)
-func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *nPercentile) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -50,4 +50,29 @@ func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.Metric
 		results = append(results, &r)
 	}
 	return results, nil
+}
+
+// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
+func (f *nPercentile) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"nPercentile": {
+			Description: "Returns n-percent of each series in the seriesList.",
+			Function:    "nPercentile(seriesList, n)",
+			Group:       "Calculate",
+			Module:      "graphite.render.functions",
+			Name:        "nPercentile",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "n",
+					Required: true,
+					Type:     types.Integer,
+				},
+			},
+		},
+	}
 }

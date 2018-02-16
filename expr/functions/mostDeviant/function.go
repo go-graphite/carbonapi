@@ -11,15 +11,15 @@ import (
 )
 
 func init() {
-	metadata.RegisterFunction("mostDeviant", &Function{})
+	metadata.RegisterFunction("mostDeviant", &mostDeviant{})
 }
 
-type Function struct {
+type mostDeviant struct {
 	interfaces.FunctionBase
 }
 
 // mostDeviant(seriesList, n) -or- mostDeviant(n, seriesList)
-func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *mostDeviant) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	var nArg int
 	if !e.Args()[0].IsConst() {
 		// mostDeviant(seriesList, n)
@@ -65,4 +65,29 @@ func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.Metric
 	}
 
 	return results, err
+}
+
+// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
+func (f *mostDeviant) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"mostDeviant": {
+			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\nDraws the N most deviant metrics.\nTo find the deviants, the standard deviation (sigma) of each series\nis taken and ranked. The top N standard deviations are returned.\n\n  Example:\n\n.. code-block:: none\n\n  &target=mostDeviant(server*.instance*.memory.free, 5)\n\nDraws the 5 instances furthest from the average memory free.",
+			Function:    "mostDeviant(seriesList, n)",
+			Group:       "Filter Series",
+			Module:      "graphite.render.functions",
+			Name:        "mostDeviant",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "n",
+					Required: true,
+					Type:     types.Integer,
+				},
+			},
+		},
+	}
 }

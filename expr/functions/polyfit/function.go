@@ -12,19 +12,19 @@ import (
 )
 
 func init() {
-	f := &function{}
+	f := &polyfit{}
 	functions := []string{"polyfit"}
 	for _, function := range functions {
 		metadata.RegisterFunction(function, f)
 	}
 }
 
-type function struct {
+type polyfit struct {
 	interfaces.FunctionBase
 }
 
 // polyfit(seriesList, degree=1, offset="0d")
-func (f *function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *polyfit) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// Fitting Nth degree polynom to the dataset
 	// https://en.wikipedia.org/wiki/Polynomial_regression#Matrix_form_and_calculation_of_estimates
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
@@ -100,4 +100,34 @@ func (f *function) Do(e parser.Expr, from, until int32, values map[parser.Metric
 		results = append(results, &r)
 	}
 	return results, nil
+}
+
+func (f *polyfit) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"polyfit": {
+			Description: "Fitting Nth degree polynom to the dataset. https://en.wikipedia.org/wiki/Polynomial_regression#Matrix_form_and_calculation_of_estimates",
+			Function:    "polyfit(seriesList, degree=1, offset=\"0d\")",
+			Group:       "Combine",
+			Module:      "graphite.render.functions.custom",
+			Name:        "Fitting",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "degree",
+					Default: "1",
+					Required: true,
+					Type:     types.Integer,
+				},
+				{
+					Default: "0d",
+					Name:    "offset",
+					Type:    types.Interval,
+				},
+			},
+		},
+	}
 }

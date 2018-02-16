@@ -1,27 +1,25 @@
 package averageSeries
 
 import (
-	"fmt"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"strings"
 )
 
 func init() {
-	metadata.RegisterFunction("avg", &AverageSeries{})
-	metadata.RegisterFunction("averageSeries", &AverageSeries{})
-	metadata.RegisterFunction("averageSeriesWithWildcards", &AverageSeriesWithWildcards{})
+	f := &averageSeries{}
+	metadata.RegisterFunction("avg", f)
+	metadata.RegisterFunction("averageSeries", f)
 }
 
-type AverageSeries struct {
+type averageSeries struct {
 	interfaces.FunctionBase
 }
 
 // averageSeries(*seriesLists)
-func (f *AverageSeries) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *averageSeries) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	args, err := helper.GetSeriesArgsAndRemoveNonExisting(e, from, until, values)
 	if err != nil {
 		return nil, err
@@ -37,80 +35,38 @@ func (f *AverageSeries) Do(e parser.Expr, from, until int32, values map[parser.M
 	})
 }
 
-type AverageSeriesWithWildcards struct {
-	interfaces.FunctionBase
-}
-
-// averageSeriesWithWildcards(seriesLIst, *position)
-func (f *AverageSeriesWithWildcards) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	/* TODO(dgryski): make sure the arrays are all the same 'size'
-	   (duplicated from sumSeriesWithWildcards because of similar logic but aggregation) */
-	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
-	if err != nil {
-		return nil, err
+// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
+func (f *averageSeries) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"avg": {
+			Description: "Short Alias: avg()\n\nTakes one metric or a wildcard seriesList.\nDraws the average value of all metrics passed at each time.\n\nExample:\n\n.. code-block:: none\n\n  &target=averageSeries(company.server.*.threads.busy)\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``average``.",
+			Function:    "avg(*seriesLists)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions",
+			Name:        "avg",
+			Params: []types.FunctionParam{
+				{
+					Multiple: true,
+					Name:     "seriesLists",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+			},
+		},
+		"averageSeries": {
+			Description: "Short Alias: avg()\n\nTakes one metric or a wildcard seriesList.\nDraws the average value of all metrics passed at each time.\n\nExample:\n\n.. code-block:: none\n\n  &target=averageSeries(company.server.*.threads.busy)\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``average``.",
+			Function:    "averageSeries(*seriesLists)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions",
+			Name:        "averageSeries",
+			Params: []types.FunctionParam{
+				{
+					Multiple: true,
+					Name:     "seriesLists",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+			},
+		},
 	}
-
-	fields, err := e.GetIntArgs(1)
-	if err != nil {
-		return nil, err
-	}
-
-	var results []*types.MetricData
-
-	nodeList := []string{}
-	groups := make(map[string][]*types.MetricData)
-
-	for _, a := range args {
-		metric := helper.ExtractMetric(a.Name)
-		nodes := strings.Split(metric, ".")
-		var s []string
-		// Yes, this is O(n^2), but len(nodes) < 10 and len(fields) < 3
-		// Iterating an int slice is faster than a map for n ~ 30
-		// http://www.antoine.im/posts/someone_is_wrong_on_the_internet
-		for i, n := range nodes {
-			if !helper.Contains(fields, i) {
-				s = append(s, n)
-			}
-		}
-
-		node := strings.Join(s, ".")
-
-		if len(groups[node]) == 0 {
-			nodeList = append(nodeList, node)
-		}
-
-		groups[node] = append(groups[node], a)
-	}
-
-	for _, series := range nodeList {
-		args := groups[series]
-		r := *args[0]
-		r.Name = fmt.Sprintf("averageSeriesWithWildcards(%s)", series)
-		r.Values = make([]float64, len(args[0].Values))
-		r.IsAbsent = make([]bool, len(args[0].Values))
-
-		length := make([]float64, len(args[0].Values))
-		atLeastOne := make([]bool, len(args[0].Values))
-		for _, arg := range args {
-			for i, v := range arg.Values {
-				if arg.IsAbsent[i] {
-					continue
-				}
-				atLeastOne[i] = true
-				length[i]++
-				r.Values[i] += v
-			}
-		}
-
-		for i, v := range atLeastOne {
-			if v {
-				r.Values[i] = r.Values[i] / length[i]
-			} else {
-				r.IsAbsent[i] = true
-			}
-		}
-
-		results = append(results, &r)
-	}
-	return results, nil
 }

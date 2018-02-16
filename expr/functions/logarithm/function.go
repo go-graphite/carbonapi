@@ -11,17 +11,18 @@ import (
 )
 
 func init() {
-	metadata.RegisterFunction("logarithm", &Function{})
-	metadata.RegisterFunction("log", &Function{})
+	f := &logarithm{}
+	metadata.RegisterFunction("logarithm", f)
+	metadata.RegisterFunction("log", f)
 }
 
-type Function struct {
+type logarithm struct {
 	interfaces.FunctionBase
 }
 
 // logarithm(seriesList, base=10)
 // Alias: log
-func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *logarithm) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -64,4 +65,48 @@ func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.Metric
 		results = append(results, &r)
 	}
 	return results, nil
+}
+
+// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
+func (f *logarithm) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"logarithm": {
+			Description: "Takes one metric or a wildcard seriesList, a base, and draws the y-axis in logarithmic\nformat.  If base is omitted, the function defaults to base 10.\n\nExample:\n\n.. code-block:: none\n\n  &target=log(carbon.agents.hostname.avgUpdateTime,2)",
+			Function:    "log(seriesList, base=10)",
+			Group:       "Transform",
+			Module:      "graphite.render.functions",
+			Name:        "log",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Default: "10",
+					Name:    "base",
+					Type:    types.Integer,
+				},
+			},
+		},
+		"log": {
+			Description: "Takes one metric or a wildcard seriesList, a base, and draws the y-axis in logarithmic\nformat.  If base is omitted, the function defaults to base 10.\n\nExample:\n\n.. code-block:: none\n\n  &target=log(carbon.agents.hostname.avgUpdateTime,2)",
+			Function:    "log(seriesList, base=10)",
+			Group:       "Transform",
+			Module:      "graphite.render.functions",
+			Name:        "log",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Default: "10",
+					Name:    "base",
+					Type:    types.Integer,
+				},
+			},
+		},
+	}
 }

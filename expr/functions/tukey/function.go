@@ -13,19 +13,19 @@ import (
 )
 
 func init() {
-	f := &function{}
+	f := &tukey{}
 	functions := []string{"tukeyAbove", "tukeyBelow"}
 	for _, function := range functions {
 		metadata.RegisterFunction(function, f)
 	}
 }
 
-type function struct {
+type tukey struct {
 	interfaces.FunctionBase
 }
 
 // tukeyAbove(seriesList,basis,n,interval=0) , tukeyBelow(seriesList,basis,n,interval=0)
-func (f *function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *tukey) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -149,4 +149,68 @@ func (f *function) Do(e parser.Expr, from, until int32, values map[parser.Metric
 	}
 
 	return results, nil
+}
+
+// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
+func (f *tukey) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"tukeyAbove": {
+			Description: "Tukey's range test, also known as the Tukey's test, Tukey method, Tukey's honest significance test, Tukey's HSD (honest significant difference) test,[1] or the Tukey–Kramer method, is a single-step multiple comparison procedure and statistical test. https://en.wikipedia.org/wiki/Tukey%27s_range_test",
+			Function:    "tukeyAbove(seriesList, basis, n, interval=0)",
+			Group:       "Transform",
+			Module:      "graphite.render.functions.custom",
+			Name:        "tukeyAbove",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Required: true,
+					Name:    "basis",
+					Type:    types.Float,
+				},
+				{
+					Required: true,
+					Name:    "n",
+					Type:    types.Integer,
+				},
+				{
+					Default: "0",
+					Name:    "interval",
+					Type:    types.IntOrInterval,
+				},
+			},
+		},
+		"tukeyBelow": {
+			Description: "Tukey's range test, also known as the Tukey's test, Tukey method, Tukey's honest significance test, Tukey's HSD (honest significant difference) test,[1] or the Tukey–Kramer method, is a single-step multiple comparison procedure and statistical test. https://en.wikipedia.org/wiki/Tukey%27s_range_test",
+			Function:    "tukeyBelow(seriesList, basis, n, interval=0)",
+			Group:       "Transform",
+			Module:      "graphite.render.functions.custom",
+			Name:        "tukeyBelow",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Required: true,
+					Name:    "basis",
+					Type:    types.Float,
+				},
+				{
+					Required: true,
+					Name:    "n",
+					Type:    types.Integer,
+				},
+				{
+					Default: "0",
+					Name:    "interval",
+					Type:    types.IntOrInterval,
+				},
+			},
+		},
+	}
 }

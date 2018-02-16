@@ -10,15 +10,15 @@ import (
 )
 
 func init() {
-	metadata.RegisterFunction("scale", &function{})
+	metadata.RegisterFunction("scale", &scale{})
 }
 
-type function struct {
+type scale struct {
 	interfaces.FunctionBase
 }
 
 // scale(seriesList, factor)
-func (f *function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *scale) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -46,4 +46,29 @@ func (f *function) Do(e parser.Expr, from, until int32, values map[parser.Metric
 		results = append(results, &r)
 	}
 	return results, nil
+}
+
+// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
+func (f *scale) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"scale": {
+			Description: "Takes one metric or a wildcard seriesList followed by a constant, and multiplies the datapoint\nby the constant provided at each point.\n\nExample:\n\n.. code-block:: none\n\n  &target=scale(Server.instance01.threads.busy,10)\n  &target=scale(Server.instance*.threads.busy,10)",
+			Function:    "scale(seriesList, factor)",
+			Group:       "Transform",
+			Module:      "graphite.render.functions",
+			Name:        "scale",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "factor",
+					Required: true,
+					Type:     types.Float,
+				},
+			},
+		},
+	}
 }

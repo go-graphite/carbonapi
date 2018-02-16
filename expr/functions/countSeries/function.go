@@ -10,15 +10,15 @@ import (
 )
 
 func init() {
-	metadata.RegisterFunction("countSeries", &CountSeries{})
+	metadata.RegisterFunction("countSeries", &countSeries{})
 }
 
-type CountSeries struct {
+type countSeries struct {
 	interfaces.FunctionBase
 }
 
 // countSeries(seriesList)
-func (f *CountSeries) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *countSeries) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(civil): Check that series have equal length
 	args, err := helper.GetSeriesArgsAndRemoveNonExisting(e, from, until, values)
 	if err != nil {
@@ -36,4 +36,24 @@ func (f *CountSeries) Do(e parser.Expr, from, until int32, values map[parser.Met
 	}
 
 	return []*types.MetricData{&r}, nil
+}
+
+// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
+func (f *countSeries) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"countSeries": {
+			Description: "Draws a horizontal line representing the number of nodes found in the seriesList.\n\n.. code-block:: none\n\n  &target=countSeries(carbon.agents.*.*)",
+			Function:    "countSeries(*seriesLists)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions",
+			Name:        "countSeries",
+			Params: []types.FunctionParam{
+				{
+					Multiple: true,
+					Name:     "seriesLists",
+					Type:     types.SeriesList,
+				},
+			},
+		},
+	}
 }

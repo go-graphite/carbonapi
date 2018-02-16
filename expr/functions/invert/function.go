@@ -9,15 +9,15 @@ import (
 )
 
 func init() {
-	metadata.RegisterFunction("invert", &Function{})
+	metadata.RegisterFunction("invert", &invert{})
 }
 
-type Function struct {
+type invert struct {
 	interfaces.FunctionBase
 }
 
 // invert(seriesList)
-func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *invert) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	return helper.ForEachSeriesDo(e, from, until, values, func(a *types.MetricData, r *types.MetricData) *types.MetricData {
 		for i, v := range a.Values {
 			if a.IsAbsent[i] || v == 0 {
@@ -29,4 +29,24 @@ func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.Metric
 		}
 		return r
 	})
+}
+
+// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
+func (f *invert) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"invert": {
+			Description: "Takes one metric or a wildcard seriesList, and inverts each datapoint (i.e. 1/x).\n\nExample:\n\n.. code-block:: none\n\n  &target=invert(Server.instance01.threads.busy)",
+			Function:    "invert(seriesList)",
+			Group:       "Transform",
+			Module:      "graphite.render.functions",
+			Name:        "invert",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+			},
+		},
+	}
 }

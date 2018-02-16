@@ -7,22 +7,21 @@ import (
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"github.com/mjibson/go-dsp/fft"
+	realFFT "github.com/mjibson/go-dsp/fft"
 	"math/cmplx"
 )
 
 func init() {
-	metadata.RegisterFunction("fft", &FFT{})
-	metadata.RegisterFunction("ifft", &IFFT{})
+	metadata.RegisterFunction("fft", &fft{})
 }
 
-type FFT struct {
+type fft struct {
 	interfaces.FunctionBase
 }
 
 // fft(seriesList, mode)
 // mode: "", abs, phase. Empty string means "both"
-func (f *FFT) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *fft) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -45,7 +44,7 @@ func (f *FFT) Do(e parser.Expr, from, until int32, values map[parser.MetricReque
 	}
 
 	for _, a := range arg {
-		values := fft.FFTReal(a.Values)
+		values := realFFT.FFTReal(a.Values)
 
 		switch mode {
 		case "", "both", "all":
@@ -61,57 +60,32 @@ func (f *FFT) Do(e parser.Expr, from, until int32, values map[parser.MetricReque
 	return results, nil
 }
 
-type IFFT struct {
-	interfaces.FunctionBase
-}
-
-// ifft(absSeriesList, phaseSeriesList)
-func (f *IFFT) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	absSeriesList, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
-	if err != nil {
-		return nil, err
+// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
+func (f *fft) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"fft": {
+			Description: "An algorithm that samples a signal over a period of time (or space) and divides it into its frequency components. Computes discrete Fourier transform https://en.wikipedia.org/wiki/Fast_Fourier_transform \n\nExample:\n\n.. code-block:: none\n\n  &target=fft(server*.requests_per_second)\n\n  &target=fft(server*.requests_per_second, \"abs\")\n",
+			Function:    "fft(seriesList, mode)",
+			Group:       "Transform",
+			Module:      "graphite.render.functions.custom",
+			Name:        "fft",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "mode",
+					Required: false,
+					Type:     types.String,
+					Options: []string{
+						"abs",
+						"phase",
+						"both",
+					},
+				},
+			},
+		},
 	}
-
-	var phaseSeriesList []*types.MetricData
-	if len(e.Args()) > 1 {
-		phaseSeriesList, err = helper.GetSeriesArg(e.Args()[1], from, until, values)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	var results []*types.MetricData
-	for j, a := range absSeriesList {
-		r := *a
-		r.Values = make([]float64, len(a.Values))
-		r.IsAbsent = make([]bool, len(a.Values))
-		if len(phaseSeriesList) > j {
-			p := phaseSeriesList[j]
-			name := fmt.Sprintf("ifft(%s, %s)", a.Name, p.Name)
-			r.Name = name
-			values := make([]complex128, len(a.Values))
-			for i, v := range a.Values {
-				if a.IsAbsent[i] {
-					v = 0
-				}
-
-				values[i] = cmplx.Rect(v, p.Values[i])
-			}
-
-			values = fft.IFFT(values)
-			for i, v := range values {
-				r.Values[i] = cmplx.Abs(v)
-			}
-		} else {
-			name := fmt.Sprintf("ifft(%s)", a.Name)
-			r.Name = name
-			values := fft.IFFTReal(a.Values)
-			for i, v := range values {
-				r.Values[i] = cmplx.Abs(v)
-			}
-		}
-
-		results = append(results, &r)
-	}
-	return results, nil
 }

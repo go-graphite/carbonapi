@@ -12,18 +12,18 @@ import (
 )
 
 func init() {
-	f := &Function{}
+	f := &kolmogorovSmirnovTest2{}
 	metadata.RegisterFunction("kolmogorovSmirnovTest2", f)
 	metadata.RegisterFunction("ksTest2", f)
 }
 
-type Function struct {
+type kolmogorovSmirnovTest2 struct {
 	interfaces.FunctionBase
 }
 
 // ksTest2(series, series, points|"interval")
 // https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test
-func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *kolmogorovSmirnovTest2) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg1, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -80,4 +80,59 @@ func (f *Function) Do(e parser.Expr, from, until int32, values map[parser.Metric
 		}
 	}
 	return []*types.MetricData{&r}, nil
+}
+
+// TODO: Implement normal description
+// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
+func (f *kolmogorovSmirnovTest2) Description() map[string]*types.FunctionDescription {
+	return map[string]*types.FunctionDescription{
+		"kolmogorovSmirnovTest2": {
+			Description: "Nonparametric test of the equality of continuous, one-dimensional probability distributions that can be used to compare a sample with a reference probability distribution (one-sample K–S test), or to compare two samples (two-sample K–S test). https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test",
+			Function:    "kolmogorovSmirnovTest2(seriesList, seriesList, windowSize)",
+			Group:       "Transform",
+			Module:      "graphite.render.functions",
+			Name:        "kolmogorovSmirnovTest2",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "window",
+					Required: true,
+					Type:     types.Integer,
+				},
+			},
+		},
+		"ksTest2": {
+			Description: "Nonparametric test of the equality of continuous, one-dimensional probability distributions that can be used to compare a sample with a reference probability distribution (one-sample K–S test), or to compare two samples (two-sample K–S test). https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test",
+			Function:    "ksTest2(seriesList, seriesList, windowSize)",
+			Group:       "Transform",
+			Module:      "graphite.render.functions.custom",
+			Name:        "ksTest2",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "window",
+					Required: true,
+					Type:     types.Integer,
+				},
+			},
+		},
+	}
 }

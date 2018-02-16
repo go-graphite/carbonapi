@@ -331,3 +331,23 @@ func AggSum(v []float64, absent []bool) (float64, bool) {
 	}
 	return sum, abs
 }
+
+func AggFirst(v []float64, absent []bool) (float64, bool) {
+	var m = math.Inf(-1)
+	var abs = true
+	if len(v) > 0 {
+		m = v[0]
+		abs = absent[0]
+	}
+	return m, abs
+}
+
+func AggLast(v []float64, absent []bool) (float64, bool) {
+	var m = math.Inf(-1)
+	var abs = true
+	if len(v) > 0 {
+		m = v[len(v)-1]
+		abs = absent[len(v)-1]
+	}
+	return m, abs
+}
