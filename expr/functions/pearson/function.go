@@ -76,7 +76,21 @@ func (f *pearson) Do(e parser.Expr, from, until int32, values map[parser.MetricR
 func (f *pearson) Description() map[string]*types.FunctionDescription {
 	return map[string]*types.FunctionDescription{
 		"pearson": {
-			Description: "The Pearson product-moment correlation coefficient (PPMCC) or the bivariate correlation,[1] is a measure of the linear correlation between two variables X and Y. It has a value between +1 and −1, where 1 is total positive linear correlation, 0 is no linear correlation, and −1 is total negative linear correlation.",
+			Description: `
+Implementation of Pearson product-moment correlation coefficient (PMCC) function(s)
+
+.. code-block:: none
+
+	pearson( seriesA, seriesB, windowSize )
+
+
+Calculate Pearson score between seriesA and seriesB over windowSize.
+
+Note:
+Pearson will discard epochs where either series has a missing value.
+
+Additionally there is a special case where a series (or window) containing only zeros leads to a division-by-zero
+and will manifest as if the entire window/series had missing values.`,
 			Function:    "pearson(seriesList, seriesList, windowSize)",
 			Group:       "Transform",
 			Module:      "graphite.render.functions.custom",

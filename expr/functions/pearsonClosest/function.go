@@ -109,7 +109,47 @@ func (f *pearsonClosest) Do(e parser.Expr, from, until int32, values map[parser.
 func (f *pearsonClosest) Description() map[string]*types.FunctionDescription {
 	return map[string]*types.FunctionDescription{
 		"pearsonClosest": {
-			Description: "The Pearson product-moment correlation coefficient (PPMCC) or the bivariate correlation,[1] is a measure of the linear correlation between two variables X and Y. It has a value between +1 and −1, where 1 is total positive linear correlation, 0 is no linear correlation, and −1 is total negative linear correlation.",
+			Description: `
+Implementation of Pearson product-moment correlation coefficient (PMCC) function(s)
+
+.. code-block:: none
+
+	pearsonClosest( series, seriesList, n, direction="abs" )
+
+    
+Return the n series in seriesList with closest Pearson score to the first series argument.
+An optional direction parameter may also be given:
+	"abs"   - (default) Series with any Pearson score + or - [-1 .. 1].
+    "pos"   - Only series with positive correlation score [0 .. 1]
+    "neg"   - Only series with negative correlation score [1 .. 0]
+
+
+The default is "abs" which is most correlated (in either direction)
+
+Examples:
+
+.. code-block:: none
+
+	#  metrics from 'metric.forest.*'' that "look like" 'metric.abnormal'' (have closest correllation coeeficient)
+	pearsonClosest( metric.abnormal , metric.forest.* , 2, direction="pos" )
+
+
+.. code-block:: none
+
+	# 2 metrics from "metric.forest.*"" that are most negatively correlated to "metric.increasing" (ie. "metric.forest.decreasing" )
+	pearsonClosest( metric.increasing , metric.forest.* , 2, direction="neg" )
+
+
+.. code-block:: none
+
+    # you'd get "metric.increasing", "metric.decreasing"
+    pearsonClosest( metric.increasing, group (metric.increasing, metric.decreasing, metric.flat, metric.sine), 2 )
+
+Note:
+Pearson will discard epochs where either series has a missing value.
+
+Additionally there is a special case where a series (or window) containing only zeros leads to a division-by-zero
+and will manifest as if the entire window/series had missing values.`,
 			Function:    "pearsonClosest(seriesList, seriesList, n, direction)",
 			Group:       "Transform",
 			Module:      "graphite.render.functions.custom",
