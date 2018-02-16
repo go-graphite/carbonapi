@@ -24,6 +24,7 @@ import (
 
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
+	"github.com/go-graphite/carbonapi/expr/metadata"
 )
 
 const (
@@ -53,6 +54,9 @@ func initHandlers() *http.ServeMux {
 
 	r.HandleFunc("/version", versionHandler)
 	r.HandleFunc("/version/", versionHandler)
+
+	r.HandleFunc("/functions", functionsHandler)
+	r.HandleFunc("/functions/", functionsHandler)
 
 	r.HandleFunc("/", usageHandler)
 	return r
@@ -748,11 +752,98 @@ func versionHandler(w http.ResponseWriter, r *http.Request) {
 	accessLogger.Info("request served", zap.Any("data", accessLogDetails))
 }
 
+func functionsHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO: Implement helper for specific functions
+	t0 := time.Now()
+	username, _, _ := r.BasicAuth()
+
+	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
+
+	accessLogger := zapwriter.Logger("access")
+	var accessLogDetails = carbonapipb.AccessLogDetails{
+	Handler:       "functions",
+	Username:      username,
+	Url:           r.URL.RequestURI(),
+	PeerIp:        srcIP,
+	PeerPort:      srcPort,
+	Host:          r.Host,
+	Referer:       r.Referer(),
+	Uri:           r.RequestURI,
+	}
+
+	logAsError := false
+	defer func() {
+		deferredAccessLogging(accessLogger, &accessLogDetails, t0, logAsError)
+	}()
+
+	apiMetrics.Requests.Add(1)
+
+	err := r.ParseForm()
+	if err != nil {
+	http.Error(w, http.StatusText(http.StatusBadRequest)+": "+err.Error(), http.StatusBadRequest)
+	accessLogDetails.HttpCode = http.StatusBadRequest
+	accessLogDetails.Reason = err.Error()
+	logAsError = true
+	return
+	}
+
+	grouped := false
+	groupedStr := r.FormValue("grouped")
+	prettyStr := r.FormValue("pretty")
+	var marshaler func (interface{}) ([]byte, error)
+
+	if groupedStr == "1" {
+		grouped = true
+	}
+
+	if prettyStr == "1" {
+		marshaler = func(v interface{}) ([]byte, error)  {
+			return json.MarshalIndent(v, "", "\t")
+		}
+	} else {
+		marshaler = json.Marshal
+	}
+
+	path := strings.Split(r.URL.EscapedPath(), "/")
+	function := ""
+	if len(path) > 3 {
+		function = path[2]
+	}
+	fmt.Printf("\n\n\nDEBUG\n\n%+v\n%+v\n%v\n\n", function, path, len(path))
+
+	metadata.FunctionMD.RLock()
+	var b []byte
+	if function != "" {
+		b, err = marshaler(metadata.FunctionDescriptions[function])
+	} else if grouped {
+		b, err = marshaler(metadata.FunctionDescriptionsGrouped)
+	} else {
+		b, err = marshaler(metadata.FunctionDescriptions)
+	}
+
+	metadata.FunctionMD.RUnlock()
+
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		accessLogDetails.HttpCode = http.StatusInternalServerError
+		accessLogDetails.Reason = err.Error()
+		logAsError = true
+		return
+	}
+
+	w.Write(b)
+	accessLogDetails.Runtime = time.Since(t0).Seconds()
+	accessLogDetails.HttpCode = http.StatusOK
+
+	accessLogger.Info("request served", zap.Any("data", accessLogDetails))
+}
+
 var usageMsg = []byte(`
 supported requests:
 	/render/?target=
 	/metrics/find/?query=
 	/info/?target=
+	/functions/
 `)
 
 func usageHandler(w http.ResponseWriter, r *http.Request) {

@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
@@ -20,6 +21,14 @@ func RegisterFunction(name string, function interfaces.Function) {
 		)
 	}
 	FunctionMD.Functions[name] = function
+
+	for k, v := range function.Description() {
+		FunctionDescriptions[k] = v
+		if _, ok := FunctionDescriptionsGrouped[v.Group]; !ok {
+			FunctionDescriptionsGrouped[v.Group] = make(map[string]*types.FunctionDescription)
+		}
+		FunctionDescriptionsGrouped[v.Group][k] = v
+	}
 }
 
 func SetEvaluator(evaluator interfaces.Evaluator) {
@@ -41,3 +50,6 @@ type Metadata struct {
 var FunctionMD = Metadata{
 	Functions: make(map[string]interfaces.Function),
 }
+
+var FunctionDescriptions = make(map[string]*types.FunctionDescription)
+var FunctionDescriptionsGrouped = make(map[string]map[string]*types.FunctionDescription)
