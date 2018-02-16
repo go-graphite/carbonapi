@@ -31,4 +31,5 @@ message AccessLogDetails {
     string until_raw = 25;
     string uri = 26;
     bool from_cache = 27;
+    int64 zipper_requests = 28;
 }

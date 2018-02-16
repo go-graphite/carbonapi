@@ -15,6 +15,9 @@ CHANGELOG
 ---------
 **Master**
  - [Code] Refactor expr. Split it into pkg/parser. Simplify tests.
+ - [Code] Refactor expr. Split functions into directories.
+ - [Improvement] API to get list of functions (graphite-web 1.1 compatibility)
+ - [Improvement] Add 'first' and 'last' as consolidateBy options
 
 **0.9.0**
  - [Improvement] Merge carbonzipper into carbonapi. Please migrate to new 'upstreams' in the config file.
