@@ -298,7 +298,28 @@ func (z *Zipper) infoUnpackPB(responses []ServerResponse, stats *Stats) map[stri
 			stats.InfoErrors++
 			continue
 		}
-		decoded[r.server] = d
+		if d.Name[0] == '\n' {
+			var d pb3.ZipperInfoResponse
+			err := d.Unmarshal(r.response)
+			if err != nil {
+				logger.Error("error decoding protobuf response",
+					zap.String("server", r.server),
+					zap.Error(err),
+				)
+				logger.Debug("response hexdump",
+					zap.String("response", hex.Dump(r.response)),
+				)
+				stats.InfoErrors++
+				continue
+			}
+			for _, r := range d.Responses {
+				if r.Info != nil {
+					decoded[r.Server] = *r.Info
+				}
+			}
+		} else {
+			decoded[r.server] = d
+		}
 	}
 
 	logger.Debug("info request",
