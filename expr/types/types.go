@@ -18,6 +18,7 @@ var (
 	ErrTooManyArguments = errors.New("too many arguments")
 )
 
+// MetricData
 type MetricData struct {
 	pb.FetchResponse
 
@@ -29,6 +30,7 @@ type MetricData struct {
 	AggregateFunction func([]float64, []bool) (float64, bool)
 }
 
+// MarshalCSV marshals metric data to CSV
 func MarshalCSV(results []*MetricData) []byte {
 
 	var b []byte
@@ -54,6 +56,7 @@ func MarshalCSV(results []*MetricData) []byte {
 	return b
 }
 
+// ConsolidateJSON consolidates values to maxDataPoints size
 func ConsolidateJSON(maxDataPoints int, results []*MetricData) {
 	var startTime int32 = -1
 	var endTime int32 = -1
@@ -84,6 +87,7 @@ func ConsolidateJSON(maxDataPoints int, results []*MetricData) {
 	}
 }
 
+// MarshalJSON marshals metric data to JSON
 func MarshalJSON(results []*MetricData) []byte {
 	var b []byte
 	b = append(b, '[')
@@ -137,6 +141,7 @@ func MarshalJSON(results []*MetricData) []byte {
 	return b
 }
 
+// MarshalPickle marshals metric data to pickle format
 func MarshalPickle(results []*MetricData) []byte {
 
 	var p []map[string]interface{}
@@ -168,6 +173,7 @@ func MarshalPickle(results []*MetricData) []byte {
 	return buf.Bytes()
 }
 
+// MarshalProtobuf marshals metric data to protobuf
 func MarshalProtobuf(results []*MetricData) ([]byte, error) {
 	response := pb.MultiFetchResponse{}
 	for _, metric := range results {
@@ -181,6 +187,7 @@ func MarshalProtobuf(results []*MetricData) ([]byte, error) {
 	return b, nil
 }
 
+// MarshalRaw marshals metric data to graphite's internal format, called 'raw'
 func MarshalRaw(results []*MetricData) []byte {
 
 	var b []byte
@@ -215,12 +222,14 @@ func MarshalRaw(results []*MetricData) []byte {
 	return b
 }
 
+// SetValuesPerPoint sets value per point coefficient.
 func (r *MetricData) SetValuesPerPoint(v int) {
 	r.ValuesPerPoint = v
 	r.aggregatedValues = nil
 	r.aggregatedAbsent = nil
 }
 
+// SetValuesPerPoint aggregates time step
 func (r *MetricData) AggregatedTimeStep() int32 {
 	if r.ValuesPerPoint == 1 || r.ValuesPerPoint == 0 {
 		return r.StepTime
@@ -229,6 +238,7 @@ func (r *MetricData) AggregatedTimeStep() int32 {
 	return r.StepTime * int32(r.ValuesPerPoint)
 }
 
+// AggregatedAbsent aggregates values
 func (r *MetricData) AggregatedValues() []float64 {
 	if r.aggregatedValues == nil {
 		r.AggregateValues()
@@ -236,12 +246,15 @@ func (r *MetricData) AggregatedValues() []float64 {
 	return r.aggregatedValues
 }
 
+// AggregatedAbsent aggregates absent values
 func (r *MetricData) AggregatedAbsent() []bool {
 	if r.aggregatedAbsent == nil {
 		r.AggregateValues()
 	}
 	return r.aggregatedAbsent
 }
+
+// AggregatedAbsent aggregates values
 func (r *MetricData) AggregateValues() {
 	if r.ValuesPerPoint == 1 || r.ValuesPerPoint == 0 {
 		r.aggregatedValues = make([]float64, len(r.Values))

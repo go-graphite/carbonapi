@@ -1,5 +1,6 @@
 package description
 
+// FunctionType specifies list of available types
 type FunctionType int
 
 const (
@@ -18,6 +19,7 @@ const (
 	Tag
 )
 
+// FunctionParam contains list of all available parameters of function
 type FunctionParam struct {
 	Name string `json:"name"`
 	Multiple bool `json:"multiple,omitempty"`
@@ -26,6 +28,7 @@ type FunctionParam struct {
 	Options []string `json:"options,omitempty"`
 }
 
+// FunctionDescription contains full function description.
 type FunctionDescription struct {
 	Description string `json:"description"`
 	Function string `json:"function"`

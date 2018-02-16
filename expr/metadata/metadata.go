@@ -8,6 +8,7 @@ import (
 	"sync"
 )
 
+// RegisterFunction registers function in metadata and fills out all Description structs
 func RegisterFunction(name string, function interfaces.Function) {
 	FunctionMD.Lock()
 	defer FunctionMD.Unlock()
@@ -31,6 +32,7 @@ func RegisterFunction(name string, function interfaces.Function) {
 	}
 }
 
+// SetEvaluator sets new evaluator function to be default for everything that needs it
 func SetEvaluator(evaluator interfaces.Evaluator) {
 	FunctionMD.Lock()
 	defer FunctionMD.Unlock()
@@ -41,15 +43,20 @@ func SetEvaluator(evaluator interfaces.Evaluator) {
 	}
 }
 
+// Metadata is a type to store global function metadata
 type Metadata struct {
 	sync.RWMutex
 	Functions map[string]interfaces.Function
 	evaluator interfaces.Evaluator
 }
 
+// FunctionMD is actual global variable that stores metadata
 var FunctionMD = Metadata{
 	Functions: make(map[string]interfaces.Function),
 }
 
+// FunctionDescriptions is actual global variable that stores description of all functions we support
 var FunctionDescriptions = make(map[string]*types.FunctionDescription)
+
+// FunctionDescriptionsGrouped is actual global variable that stores description of all functions we support organised by group
 var FunctionDescriptionsGrouped = make(map[string]map[string]*types.FunctionDescription)

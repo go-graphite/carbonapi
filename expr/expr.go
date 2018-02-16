@@ -16,6 +16,7 @@ import (
 
 type evaluator struct{}
 
+// EvalExpr evalualtes expressions
 func (eval evaluator) EvalExpr(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	return EvalExpr(e, from, until, values)
 }

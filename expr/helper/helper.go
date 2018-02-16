@@ -19,8 +19,10 @@ import (
 
 var evaluator interfaces.Evaluator
 
+// Backref is a pre-compiled expression for backref
 var Backref = regexp.MustCompile(`\\(\d+)`)
 
+// ErrUnknownFunction is an error message about unknown function
 type ErrUnknownFunction string
 
 func (e ErrUnknownFunction) Error() string {
@@ -28,10 +30,12 @@ func (e ErrUnknownFunction) Error() string {
 
 }
 
+// SetEvaluator sets evaluator for all helper functions
 func SetEvaluator(e interfaces.Evaluator) {
 	evaluator = e
 }
 
+// GetSeriesArg returns argument from series.
 func GetSeriesArg(arg parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if !arg.IsName() && !arg.IsFunc() {
 		return nil, parser.ErrMissingTimeseries
@@ -45,6 +49,7 @@ func GetSeriesArg(arg parser.Expr, from, until int32, values map[parser.MetricRe
 	return a, nil
 }
 
+// RemoveEmptySeriesFromName removes empty series from list of names.
 func RemoveEmptySeriesFromName(args []*types.MetricData) string {
 	var argNames []string
 	for _, arg := range args {
@@ -54,6 +59,7 @@ func RemoveEmptySeriesFromName(args []*types.MetricData) string {
 	return strings.Join(argNames, ",")
 }
 
+// GetSeriesArgs returns arguments of series
 func GetSeriesArgs(e []parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	var args []*types.MetricData
 
@@ -90,6 +96,7 @@ func GetSeriesArgsAndRemoveNonExisting(e parser.Expr, from, until int32, values 
 
 type seriesFunc func(*types.MetricData, *types.MetricData) *types.MetricData
 
+// ForEachSeriesDo do action for each serie in list.
 func ForEachSeriesDo(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData, function seriesFunc) ([]*types.MetricData, error) {
 	arg, err := GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
@@ -107,7 +114,8 @@ func ForEachSeriesDo(e parser.Expr, from, until int32, values map[parser.MetricR
 	return results, nil
 }
 
-func alignSeries(args []*types.MetricData) []*types.MetricData {
+// AlignSeries aligns different series together. By default it only prepends and appends NaNs in case of different length, but if ExtrapolatePoints is enabled, it can extrapolate
+func AlignSeries(args []*types.MetricData) []*types.MetricData {
 	minStart := args[0].StartTime
 	maxStop := args[0].StopTime
 	maxVals := 0
@@ -191,10 +199,12 @@ func alignSeries(args []*types.MetricData) []*types.MetricData {
 	return args
 }
 
+// AggregateFunc type that defined aggregate function
 type AggregateFunc func([]float64) float64
 
+// AggregateSeries aggregates series
 func AggregateSeries(e parser.Expr, args []*types.MetricData, function AggregateFunc) ([]*types.MetricData, error) {
-	args = alignSeries(args)
+	args = AlignSeries(args)
 	length := len(args[0].Values)
 	r := *args[0]
 	r.Name = fmt.Sprintf("%s(%s)", e.Target(), e.RawArgs())
@@ -220,6 +230,7 @@ func AggregateSeries(e parser.Expr, args []*types.MetricData, function Aggregate
 	return []*types.MetricData{&r}, nil
 }
 
+// SummarizeValues summarizes values
 func SummarizeValues(f string, values []float64) float64 {
 	rv := 0.0
 
@@ -268,6 +279,7 @@ func SummarizeValues(f string, values []float64) float64 {
 	return rv
 }
 
+// ExtractMetric extracts metric out of function list
 func ExtractMetric(s string) string {
 
 	// search for a metric name in 's'
@@ -314,6 +326,7 @@ FOR:
 	return s[start:i]
 }
 
+// Contains check if slice 'a' contains value 'i'
 func Contains(a []int, i int) bool {
 	for _, aa := range a {
 		if aa == i {
@@ -323,6 +336,7 @@ func Contains(a []int, i int) bool {
 	return false
 }
 
+// Percentile returns percent-th percentile. Can interpolate if needed
 func Percentile(data []float64, percent float64, interpolate bool) float64 {
 	if len(data) == 0 || percent < 0 || percent > 100 {
 		return math.NaN()
@@ -350,6 +364,7 @@ func Percentile(data []float64, percent float64, interpolate bool) float64 {
 	return (top * remainder) + (secondTop * (1 - remainder))
 }
 
+// MaxValue returns maximum from the list
 func MaxValue(f64s []float64, absent []bool) float64 {
 	m := math.Inf(-1)
 	for i, v := range f64s {
@@ -363,6 +378,7 @@ func MaxValue(f64s []float64, absent []bool) float64 {
 	return m
 }
 
+// MinValue returns minimal from the list
 func MinValue(f64s []float64, absent []bool) float64 {
 	m := math.Inf(1)
 	for i, v := range f64s {
@@ -376,6 +392,7 @@ func MinValue(f64s []float64, absent []bool) float64 {
 	return m
 }
 
+// AvgValue returns average of list of values
 func AvgValue(f64s []float64, absent []bool) float64 {
 	var t float64
 	var elts int
@@ -389,6 +406,7 @@ func AvgValue(f64s []float64, absent []bool) float64 {
 	return t / float64(elts)
 }
 
+// CurrentValue returns last non-absent value (if any), otherwise returns NaN
 func CurrentValue(f64s []float64, absent []bool) float64 {
 	for i := len(f64s) - 1; i >= 0; i-- {
 		if !absent[i] {
@@ -399,6 +417,7 @@ func CurrentValue(f64s []float64, absent []bool) float64 {
 	return math.NaN()
 }
 
+// VarianceValue gets variances of list of values
 func VarianceValue(f64s []float64, absent []bool) float64 {
 	var squareSum float64
 	var elts int
