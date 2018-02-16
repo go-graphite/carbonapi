@@ -13,9 +13,12 @@ Changes
 
 CHANGELOG
 ---------
-**Master**
+**0.9.1**
  - [Code] Refactor expr. Split it into pkg/parser. Simplify tests.
  - [Code] Refactor expr. Split functions into directories.
+ - [Code] Simple docs about how to add a new function.
+ - [Fix] All aggregating functions (e.x. summarize) now adds math.NaN() to begin and end of value list to make them same size.
+ - [Fix] Experimental option `ExtrapolateExperiment` that allows aggregating functions to extrapolate data. Function is not tested properly yet and might be buggy, disabled by default
  - [Improvement] API to get list of functions (graphite-web 1.1 compatibility)
  - [Improvement] Add 'first' and 'last' as consolidateBy options
 
