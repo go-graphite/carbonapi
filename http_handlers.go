@@ -812,7 +812,7 @@ func functionsHandler(w http.ResponseWriter, r *http.Request) {
 
 	path := strings.Split(r.URL.EscapedPath(), "/")
 	function := ""
-	if len(path) > 3 {
+	if len(path) >= 3 {
 		function = path[2]
 	}
 

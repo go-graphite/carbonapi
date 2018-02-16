@@ -39,7 +39,6 @@ const (
 
 // MarshalJSON marshals metric data to JSON
 func (t FunctionType) MarshalJSON() ([]byte, error) {
-	fmt.Printf("marsheller is called!\n")
 	switch t {
 	case AggFunc:
 		return json.Marshal("aggFunc")
@@ -53,6 +52,8 @@ func (t FunctionType) MarshalJSON() ([]byte, error) {
 		return json.Marshal("intOrInterval")
 	case Integer:
 		return json.Marshal("integer")
+	case Interval:
+		return json.Marshal("interval")
 	case Node:
 		return json.Marshal("node")
 	case NodeOrTag:
