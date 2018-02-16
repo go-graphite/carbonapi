@@ -11,6 +11,7 @@ import (
 // Note that this uses a slightly unstable but faster implementation of
 // standard deviation.  This is also required to be compatible with graphite.
 
+// Windowed is a struct to compute simple windowed stats
 type Windowed struct {
 	Data   []float64
 	head   int
@@ -20,6 +21,7 @@ type Windowed struct {
 	nans   int
 }
 
+// Push pushes data
 func (w *Windowed) Push(n float64) {
 	old := w.Data[w.head]
 
@@ -46,6 +48,7 @@ func (w *Windowed) Push(n float64) {
 	}
 }
 
+// Len returns current len of data
 func (w *Windowed) Len() int {
 	if w.length < len(w.Data) {
 		return w.length - w.nans
@@ -54,6 +57,7 @@ func (w *Windowed) Len() int {
 	return len(w.Data) - w.nans
 }
 
+// Stdev computes standard deviation of data
 func (w *Windowed) Stdev() float64 {
 	l := w.Len()
 
@@ -65,17 +69,22 @@ func (w *Windowed) Stdev() float64 {
 	return math.Sqrt(n*w.sumsq-(w.sum*w.sum)) / n
 }
 
+// SumSQ returns sum of squares
 func (w *Windowed) SumSQ() float64 {
 	return w.sumsq
 }
 
+// Sum returns sum of data
 func (w *Windowed) Sum() float64 {
 	return w.sum
 }
 
+// Mean returns mean value of data
 func (w *Windowed) Mean() float64 { return w.sum / float64(w.Len()) }
+
+// Max returns max(values)
 func (w *Windowed) Max() float64 {
-	var rv float64 = math.NaN()
+	rv := math.NaN()
 	for _, f := range w.Data {
 		if math.IsNaN(rv) || f > rv {
 			rv = f
@@ -84,8 +93,9 @@ func (w *Windowed) Max() float64 {
 	return rv
 }
 
+// Min returns min(values)
 func (w *Windowed) Min() float64 {
-	var rv float64 = math.NaN()
+	rv := math.NaN()
 	for _, f := range w.Data {
 		if math.IsNaN(rv) || f < rv {
 			rv = f

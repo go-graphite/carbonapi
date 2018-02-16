@@ -280,6 +280,7 @@ func (r *MetricData) AggregateValues() {
 	r.aggregatedAbsent = aggA
 }
 
+// AggMean computes mean (sum(v)/len(v), excluding NaN points) of values
 func AggMean(v []float64, absent []bool) (float64, bool) {
 	var sum float64
 	var n int
@@ -292,6 +293,7 @@ func AggMean(v []float64, absent []bool) (float64, bool) {
 	return sum / float64(n), n == 0
 }
 
+// AggMax computes max of values
 func AggMax(v []float64, absent []bool) (float64, bool) {
 	var m = math.Inf(-1)
 	var abs = true
@@ -306,6 +308,7 @@ func AggMax(v []float64, absent []bool) (float64, bool) {
 	return m, abs
 }
 
+// AggMin computes min of values
 func AggMin(v []float64, absent []bool) (float64, bool) {
 	var m = math.Inf(1)
 	var abs = true
@@ -320,6 +323,7 @@ func AggMin(v []float64, absent []bool) (float64, bool) {
 	return m, abs
 }
 
+// AggSum computes sum of values
 func AggSum(v []float64, absent []bool) (float64, bool) {
 	var sum float64
 	var abs = true
@@ -332,22 +336,22 @@ func AggSum(v []float64, absent []bool) (float64, bool) {
 	return sum, abs
 }
 
+// AggMean returns first point
 func AggFirst(v []float64, absent []bool) (float64, bool) {
 	var m = math.Inf(-1)
 	var abs = true
 	if len(v) > 0 {
-		m = v[0]
-		abs = absent[0]
+		return v[0], absent[0]
 	}
 	return m, abs
 }
 
+// AggMean returns last point
 func AggLast(v []float64, absent []bool) (float64, bool) {
 	var m = math.Inf(-1)
 	var abs = true
 	if len(v) > 0 {
-		m = v[len(v)-1]
-		abs = absent[len(v)-1]
+		return v[len(v)-1], absent[len(v)-1]
 	}
 	return m, abs
 }

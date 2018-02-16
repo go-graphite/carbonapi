@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	// Import all known functions
 	_ "github.com/go-graphite/carbonapi/expr/functions"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/metadata"

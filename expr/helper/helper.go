@@ -418,7 +418,7 @@ func VarianceValue(f64s []float64, absent []bool) float64 {
 	return squareSum / float64(elts)
 }
 
-// Create a Vandermonde matrix
+// Vandermonde creates a Vandermonde matrix
 func Vandermonde(absent []bool, deg int) *mat64.Dense {
 	e := []float64{}
 	for i := range absent {
