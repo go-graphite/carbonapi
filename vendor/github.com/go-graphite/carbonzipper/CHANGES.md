@@ -14,6 +14,12 @@ Changes
 
 Changes
 -------
+**0.74**
+   - [Fix] Add a workaround for /info handler for zipper over zipper.
+   - [Fix] Deduplicate servers in pathCache (thx. to @korsevick)
+   - [Code] Refine logging
+   - [Code] Improve error handling
+
 **0.73.2**
    - [Code] Remove carbonapi cross-dependency by moving context handling code to util
 

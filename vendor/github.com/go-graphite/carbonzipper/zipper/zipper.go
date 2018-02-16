@@ -298,7 +298,28 @@ func (z *Zipper) infoUnpackPB(responses []ServerResponse, stats *Stats) map[stri
 			stats.InfoErrors++
 			continue
 		}
-		decoded[r.server] = d
+		if d.Name[0] == '\n' {
+			var d pb3.ZipperInfoResponse
+			err := d.Unmarshal(r.response)
+			if err != nil {
+				logger.Error("error decoding protobuf response",
+					zap.String("server", r.server),
+					zap.Error(err),
+				)
+				logger.Debug("response hexdump",
+					zap.String("response", hex.Dump(r.response)),
+				)
+				stats.InfoErrors++
+				continue
+			}
+			for _, r := range d.Responses {
+				if r.Info != nil {
+					decoded[r.Server] = *r.Info
+				}
+			}
+		} else {
+			decoded[r.server] = d
+		}
 	}
 
 	logger.Debug("info request",
@@ -761,9 +782,21 @@ func (z *Zipper) Find(ctx context.Context, logger *zap.Logger, query string) ([]
 
 		// update our cache of which servers have which metrics
 		allServers := make([]string, 0)
+		allServersSeen := make(map[string]struct{})
 		for k, v := range paths {
-			z.pathCache.Set(k, v)
-			allServers = append(allServers, v...)
+			servers := make([]string, 0)
+			serversSeen := make(map[string]struct{})
+			for _, s := range v {
+				if _, ok := serversSeen[s]; !ok {
+					serversSeen[s] = struct{}{}
+					servers = append(servers, s)
+				}
+				if _, ok := allServersSeen[s]; !ok {
+					allServersSeen[s] = struct{}{}
+					allServers = append(allServers, s)
+				}
+			}
+			z.pathCache.Set(k, servers)
 		}
 		z.pathCache.Set(query, allServers)
 	}

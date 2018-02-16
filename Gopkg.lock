@@ -98,10 +98,10 @@
   version = "v1.4.7"
 
 [[projects]]
-  branch = "master"
   name = "github.com/go-graphite/carbonzipper"
   packages = ["cache","carbonzipperpb3","intervalset","limiter","mstats","pathcache","util/apictx","util/zipperctx","zipper"]
-  revision = "5696c41e38d7ef91dc3863879794f4d2626d72a7"
+  revision = "54ed0747e074cb0f705f00f90df22387c5824763"
+  version = "0.74"
 
 [[projects]]
   name = "github.com/gogo/protobuf"
@@ -113,31 +113,31 @@
   branch = "master"
   name = "github.com/gonum/blas"
   packages = [".","blas64","native","native/internal/math32"]
-  revision = "37e82626499e1df7c54aeaba0959fd6e7e8dc1e4"
+  revision = "e7c5890b24cf6f3bb173f76e1bd71e80e887e3f9"
 
 [[projects]]
   branch = "master"
   name = "github.com/gonum/floats"
   packages = ["."]
-  revision = "f74b330d45c56584a6ea7a27f5c64ea2900631e9"
+  revision = "7de1f4ea7ab57890bfd427af68c7994cd67975d4"
 
 [[projects]]
   branch = "master"
   name = "github.com/gonum/internal"
   packages = ["asm/f32","asm/f64"]
-  revision = "e57e4534cf9b3b00ef6c0175f59d8d2d34f60914"
+  revision = "fda53f8d25717c07e2dac25758075a182bd74235"
 
 [[projects]]
   branch = "master"
   name = "github.com/gonum/lapack"
   packages = [".","lapack64","native"]
-  revision = "5ed4b826becd1807e09377508f51756586d1a98c"
+  revision = "f0b8b25edeceafb3a2752941c7bf0cda962df112"
 
 [[projects]]
   branch = "master"
   name = "github.com/gonum/matrix"
   packages = [".","mat64"]
-  revision = "dd6034299e4242c9f0ea36735e6d4264dfcb3f9f"
+  revision = "a41cc49d4c29f7451775f4379a5cc6ec6239dfab"
 
 [[projects]]
   name = "github.com/gorilla/handlers"
@@ -166,14 +166,14 @@
 [[projects]]
   name = "github.com/magiconair/properties"
   packages = ["."]
-  revision = "d419a98cdbed11a922bf76f257b7c4be79b50e73"
-  version = "v1.7.4"
+  revision = "c3beff4c2358b44d0493c7dda585e7db7ff28ae6"
+  version = "v1.7.6"
 
 [[projects]]
   branch = "master"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
-  revision = "b4575eea38cca1123ec2dc90c26529b5c5acfcff"
+  revision = "a4e142e9c047c904fa2f1e144d9a84e6133024bc"
 
 [[projects]]
   branch = "master"
@@ -184,8 +184,8 @@
 [[projects]]
   name = "github.com/pelletier/go-toml"
   packages = ["."]
-  revision = "16398bac157da96aa88f98a2df640c7f32af1da2"
-  version = "v1.0.1"
+  revision = "acdc4509485b587f5e675510c4f2c63e90ff68a8"
+  version = "v1.1.0"
 
 [[projects]]
   branch = "master"
@@ -208,14 +208,14 @@
 [[projects]]
   name = "github.com/spf13/afero"
   packages = [".","mem"]
-  revision = "ec3a3111d1e1bdff38a61e09d5a5f5e974905611"
-  version = "v1.0.1"
+  revision = "bb8f1927f2a9d3ab41c9340aa034f6b803f4359c"
+  version = "v1.0.2"
 
 [[projects]]
   name = "github.com/spf13/cast"
   packages = ["."]
-  revision = "acbeb36b902d72a7a4c18e8f3241075e7ab763e4"
-  version = "v1.1.0"
+  revision = "8965335b8c7107321228e3e3702cab9832751bac"
+  version = "v1.2.0"
 
 [[projects]]
   branch = "master"
@@ -238,8 +238,8 @@
 [[projects]]
   name = "github.com/stretchr/testify"
   packages = ["assert"]
-  revision = "b91bfb9ebec76498946beb6af7c0230c7cc7ba6c"
-  version = "v1.2.0"
+  revision = "12b6f73e6084dad08a7c6e575284b177ecafbc71"
+  version = "v1.2.1"
 
 [[projects]]
   branch = "master"
@@ -269,13 +269,13 @@
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "810d7000345868fc619eb81f46307107118f4ae1"
+  revision = "37707fdb30a5b38865cfb95e5aab41707daec7fd"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
   packages = ["internal/gen","internal/triegen","internal/ucd","transform","unicode/cldr","unicode/norm"]
-  revision = "e19ae1496984b1c655b8044a65c0300a3c878dd3"
+  revision = "4e4a3210bb54bb31f6ab2cdca2edcc0b50c420c1"
 
 [[projects]]
   branch = "v2"
