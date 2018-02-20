@@ -346,6 +346,17 @@ func TestParseExpr(t *testing.T) {
 				argString: `aliasByNode(company.server*.applicationInstance.requestsHandled,1),"5min"`,
 			},
 		},
+		{
+			`company.server*.applicationInstance.requestsHandled|keepLastValue()`,
+			&expr{
+				target: "keepLastValue",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "company.server*.applicationInstance.requestsHandled"},
+				},
+				argString: `company.server*.applicationInstance.requestsHandled`,
+			},
+		},
 	}
 
 	for _, tt := range tests {

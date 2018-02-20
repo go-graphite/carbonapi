@@ -444,6 +444,12 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 
 	e = e[1:]
 
+	// check for empty args
+	t := strings.TrimLeft(e, " ")
+	if t != "" && t[0] == ')' {
+		return "", posArgs, namedArgs, t[1:], nil
+	}
+
 	for {
 		var arg Expr
 		var err error
