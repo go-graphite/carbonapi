@@ -1,7 +1,10 @@
 package parser
 
 import (
+	"bytes"
+	"fmt"
 	"strconv"
+	"strings"
 	"unicode"
 	"unicode/utf8"
 )
@@ -36,6 +39,22 @@ func (e *expr) IsString() bool {
 
 func (e *expr) Type() ExprType {
 	return e.etype
+}
+
+func (e *expr) toString() string {
+	switch e.etype {
+	case EtFunc:
+		return fmt.Sprintf("%s(%s)", e.target, e.argString)
+	case EtConst:
+		return fmt.Sprint(e.val)
+	case EtString:
+		s := e.valStr
+		s = strings.Replace(s, `\`, `\\`, -1)
+		s = strings.Replace(s, `'`, `\'`, -1)
+		return "'" + s + "'"
+	}
+
+	return e.target
 }
 
 func (e *expr) SetTarget(target string) {
@@ -297,9 +316,24 @@ func (e *expr) GetBoolArgDefault(n int, b bool) (bool, error) {
 	return e.args[n].doGetBoolArg()
 }
 
-// ParseExpr actually do all the parsing. It returns expression, original string and error (if any)
-func ParseExpr(e string) (Expr, string, error) {
+func (e *expr) insertFirstArg(exp *expr) error {
+	if e.etype != EtFunc {
+		return fmt.Errorf("pipe to not a function")
+	}
 
+	newArgs := []*expr{exp}
+	e.args = append(newArgs, e.args...)
+
+	if e.argString == "" {
+		e.argString = exp.toString()
+	} else {
+		e.argString = exp.toString() + "," + e.argString
+	}
+
+	return nil
+}
+
+func parseExprWithoutPipe(e string) (Expr, string, error) {
 	// skip whitespace
 	for len(e) > 1 && e[0] == ' ' {
 		e = e[1:]
@@ -342,6 +376,41 @@ func ParseExpr(e string) (Expr, string, error) {
 	return &expr{target: name}, e, nil
 }
 
+// ParseExpr actually do all the parsing. It returns expression, original string and error (if any)
+func ParseExpr(e string) (Expr, string, error) {
+	exp, e, err := parseExprWithoutPipe(e)
+	if err != nil {
+		return exp, e, err
+	}
+	return pipe(exp.(*expr), e)
+}
+
+func pipe(exp *expr, e string) (*expr, string, error) {
+	for len(e) > 1 && e[0] == ' ' {
+		e = e[1:]
+	}
+
+	if e == "" || e[0] != '|' {
+		return exp, e, nil
+	}
+
+	wr, e, err := parseExprWithoutPipe(e[1:])
+	if err != nil {
+		return exp, e, err
+	}
+	if wr == nil {
+		return exp, e, nil
+	}
+
+	err = wr.(*expr).insertFirstArg(exp)
+	if err != nil {
+		return exp, e, err
+	}
+	exp = wr.(*expr)
+
+	return pipe(exp, e)
+}
+
 // IsNameChar checks if specified char is actually a valid (from graphite's protocol point of view)
 func IsNameChar(r byte) bool {
 	return false ||
@@ -371,13 +440,21 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 		panic("arg list should start with paren")
 	}
 
-	argString := e[1:]
+	var argStringBuffer bytes.Buffer
 
 	e = e[1:]
+
+	// check for empty args
+	t := strings.TrimLeft(e, " ")
+	if t != "" && t[0] == ')' {
+		return "", posArgs, namedArgs, t[1:], nil
+	}
 
 	for {
 		var arg Expr
 		var err error
+
+		argString := e
 		arg, e, err = ParseExpr(e)
 		if err != nil {
 			return "", nil, nil, e, err
@@ -407,16 +484,31 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 				namedArgs = make(map[string]*expr)
 			}
 
-			namedArgs[arg.Target()] = &expr{
+			exp := &expr{
 				etype:  argCont.Type(),
 				val:    argCont.FloatValue(),
 				valStr: argCont.StringValue(),
 				target: argCont.Target(),
 			}
+			namedArgs[arg.Target()] = exp
 
 			e = eCont
+			if argStringBuffer.Len() > 0 {
+				argStringBuffer.WriteByte(',')
+			}
+			argStringBuffer.WriteString(argString[:len(argString)-len(e)])
 		} else {
-			posArgs = append(posArgs, arg.toExpr().(*expr))
+			exp := arg.toExpr().(*expr)
+			posArgs = append(posArgs, exp)
+
+			if argStringBuffer.Len() > 0 {
+				argStringBuffer.WriteByte(',')
+			}
+			if exp.IsFunc() {
+				argStringBuffer.WriteString(exp.toString())
+			} else {
+				argStringBuffer.WriteString(argString[:len(argString)-len(e)])
+			}
 		}
 
 		// after the argument, trim any trailing spaces
@@ -425,7 +517,7 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 		}
 
 		if e[0] == ')' {
-			return argString[:len(argString)-len(e)], posArgs, namedArgs, e[1:], nil
+			return argStringBuffer.String(), posArgs, namedArgs, e[1:], nil
 		}
 
 		if e[0] != ',' && e[0] != ' ' {
