@@ -1,8 +1,8 @@
 package parser
 
 import (
-	"testing"
 	"reflect"
+	"testing"
 
 	"github.com/davecgh/go-spew/spew"
 )
@@ -271,6 +271,79 @@ func TestParseExpr(t *testing.T) {
 			&expr{
 				target: "virt.v1.*.text-match:<foo.bar.qux>",
 				etype:  EtName,
+			},
+		},
+		{
+			"func2(metricA, metricB)|func1(metric1,metric3)",
+			&expr{
+				target: "func1",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "func2",
+						etype:     EtFunc,
+						args:      []*expr{{target: "metricA"}, {target: "metricB"}},
+						argString: "metricA, metricB",
+					},
+					{target: "metric1"},
+					{target: "metric3"}},
+				argString: "func2(metricA, metricB),metric1,metric3",
+			},
+		},
+		{
+			`movingAverage(company.server*.applicationInstance.requestsHandled|aliasByNode(1),"5min")`,
+			&expr{
+				target: "movingAverage",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "aliasByNode",
+						etype: EtFunc,
+						args: []*expr{
+							{target: "company.server*.applicationInstance.requestsHandled"},
+							{val: 1, etype: EtConst},
+						},
+						argString: "company.server*.applicationInstance.requestsHandled,1",
+					},
+					{etype: EtString, valStr: "5min"},
+				},
+				argString: `aliasByNode(company.server*.applicationInstance.requestsHandled,1),"5min"`,
+			},
+		},
+		{
+			`aliasByNode(company.server*.applicationInstance.requestsHandled,1)|movingAverage("5min")`,
+			&expr{
+				target: "movingAverage",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "aliasByNode",
+						etype: EtFunc,
+						args: []*expr{
+							{target: "company.server*.applicationInstance.requestsHandled"},
+							{val: 1, etype: EtConst},
+						},
+						argString: "company.server*.applicationInstance.requestsHandled,1",
+					},
+					{etype: EtString, valStr: "5min"},
+				},
+				argString: `aliasByNode(company.server*.applicationInstance.requestsHandled,1),"5min"`,
+			},
+		},
+		{
+			`company.server*.applicationInstance.requestsHandled|aliasByNode(1)|movingAverage("5min")`,
+			&expr{
+				target: "movingAverage",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "aliasByNode",
+						etype: EtFunc,
+						args: []*expr{
+							{target: "company.server*.applicationInstance.requestsHandled"},
+							{val: 1, etype: EtConst},
+						},
+						argString: "company.server*.applicationInstance.requestsHandled,1",
+					},
+					{etype: EtString, valStr: "5min"},
+				},
+				argString: `aliasByNode(company.server*.applicationInstance.requestsHandled,1),"5min"`,
 			},
 		},
 	}
