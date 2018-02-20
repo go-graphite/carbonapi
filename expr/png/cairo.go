@@ -747,7 +747,7 @@ func marshalCairo(p PictureParams, results []*types.MetricData, backend cairoBac
 		areaMode:       p.AreaMode,
 		areaAlpha:      p.AreaAlpha,
 		pieMode:        p.PieMode,
-		lineWidth:      p.LeftWidth,
+		lineWidth:      p.LineWidth,
 
 		rightWidth:  p.RightWidth,
 		rightDashed: p.RightDashed,
@@ -2118,6 +2118,8 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*types.MetricD
 
 		if series.HasLineWidth {
 			cr.context.SetLineWidth(series.LineWidth)
+		} else {
+			cr.context.SetLineWidth(params.lineWidth)
 		}
 
 		if series.Dashed != 0 {
