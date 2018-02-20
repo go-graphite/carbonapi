@@ -13,6 +13,9 @@ Changes
 
 CHANGELOG
 ---------
+**Master**
+ - [Improvement] "pipe" function chaining syntax. Same way as in https://github.com/graphite-project/graphite-web/pull/2042 (thx. to @lomik)
+ 
 **0.9.1**
  - [Code] Refactor expr. Split it into pkg/parser. Simplify tests.
  - [Code] Refactor expr. Split functions into directories.
