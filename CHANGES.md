@@ -13,6 +13,9 @@ Changes
 
 CHANGELOG
 ---------
+**Master**
+ - [Fix] `lineWidth` param is not working
+ 
 **0.9.2**
  - [Improvement] "pipe" function chaining syntax. Same way as in https://github.com/graphite-project/graphite-web/pull/2042 (thx. to @lomik)
  
