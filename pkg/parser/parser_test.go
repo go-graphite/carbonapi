@@ -357,6 +357,9 @@ func TestParseExpr(t *testing.T) {
 				argString: `company.server*.applicationInstance.requestsHandled`,
 			},
 		},
+		{"hello&world",
+			&expr{target: "hello&world"},
+		},
 	}
 
 	for _, tt := range tests {
