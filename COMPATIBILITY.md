@@ -1,8 +1,19 @@
 # CarbonAPI compatibility with Graphite
 
 Topics:
+* [Default settings](#default-settings)
 * [URI Parameters](#uri-params)
 * [Functions](#functions)
+
+<a name="default-settings"></a>
+## Default Settings
+
+### Default Line Colors
+Default colors for png or svg rendering intentionally specified like it is in graphite-web 1.1.0
+
+You can redefine that in config to be more more precise. In default config example they are defined in the same way as in [original graphite PR to make them right](https://github.com/graphite-project/graphite-web/pull/2239)
+
+Reason behind that change is that on dark background it's much nicer to read old colors than new one
 
 <a name="uri-params"></a>
 ## URI Parameters

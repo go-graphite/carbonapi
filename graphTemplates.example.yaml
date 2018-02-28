@@ -1,13 +1,18 @@
-default:
+graphite:
     bgColor: "white"
     fgColor: "black"
     colorList: ["blue", "green", "red", "purple", "brown", "yellow", "aqua", "grey", "magenta", "pink", "gold", "rose" ]
+
+graphite-dark:
+    colorList: ["blue", "green", "red", "purple", "brown", "yellow", "aqua", "grey", "magenta", "pink", "gold", "rose" ]
+
 solarized-light:
     bgColor: "#fdf6e3"
     fgColor: "#657b83"
     majorLine: "#073642"
     minorLine: "#586e75"
     colorList: ["268bd2aa","859900aa","dc322faa","d33682aa","db4b16aa","b58900aa","2aa198aa","6c71c4aa"]
+
 solarized-dark:
     bgColor: "#002b36"
     fgColor: "#839496"

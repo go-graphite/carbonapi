@@ -39,13 +39,15 @@ file = "carbonapi.log"
 level = "info"
 logger = ""
 
-[defaultColors]
-red = "c80032"
-green = "00c800"
-blue = "6464ff"
-darkred = "ff0000"
-darkgreen = "00ff0"
-darkblue = "0000ff"
+# Uncomment this to get the behavior of graphite-web as proposed in https://github.com/graphite-project/graphite-web/pull/2239
+# Beware this will make darkbackground graphs less readable
+#[defaultColors]
+#red = "ff0000"
+#green = "00ff00"
+#blue = "#0000ff"
+#darkred = "#c80032"
+#darkgreen = "00c800"
+#darkblue = "002173"
 
 [upstreams]
 backends = ["http://10.0.0.1:8080", "http://10.0.0.2:8080", "http://192.168.0.100:8080", "http://192.168.0.200:8080", "http://192.168.1.212:8080"]

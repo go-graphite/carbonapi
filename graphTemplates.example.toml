@@ -1,8 +1,11 @@
-[default]
+[graphite]
 bgColor = "white"
 fgColor = "black"
 minorLine = "grey"
 majorLine = "rose"
+colorList = ["blue", "green", "red", "purple", "brown", "yellow", "aqua", "grey", "magenta", "pink", "gold", "rose"]
+
+[graphite-dark]
 colorList = ["blue", "green", "red", "purple", "brown", "yellow", "aqua", "grey", "magenta", "pink", "gold", "rose"]
 
 [solarized-light]
