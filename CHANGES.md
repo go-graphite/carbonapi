@@ -16,6 +16,10 @@ CHANGELOG
 **Master**
  - [Fix] `lineWidth` param is not working
  - [Fix] Support `&` in metric name
+ - [Fix] default colors for png and svg are now defined as in graphite-web after https://github.com/graphite-project/graphite-web/pull/2239 
+ - [Improvement] You can override default colors through config
+ - [Improvement] It's now possible to specify 'template=' option to png or svg renders. It will use templates that's specified by 'graphTemplates' option in config. Template config format is not compatible with graphite-web though and uses either toml or yaml. Options naming is also different and follows URL override style.
+ - [Code] Minor API changes in expr/png: MarshalPNGRequest and MarshalSVGRequest now requires to specify template.
  
 **0.9.2**
  - [Improvement] "pipe" function chaining syntax. Same way as in https://github.com/graphite-project/graphite-web/pull/2042 (thx. to @lomik)

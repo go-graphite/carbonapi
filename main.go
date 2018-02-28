@@ -22,6 +22,7 @@ import (
 	"github.com/facebookgo/pidfile"
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/expr/helper"
+	"github.com/go-graphite/carbonapi/expr/png"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	"github.com/go-graphite/carbonzipper/cache"
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
@@ -252,6 +253,8 @@ var config = struct {
 	ExpireDelaySec             int32              `yaml:"expireDelaySec"`
 	GraphiteWeb09Compatibility bool               `yaml:"graphite09compat"`
 	IgnoreClientTimeout        bool               `yaml:"ignoreClientTimeout"`
+	DefaultColors              map[string]string  `yaml:"defaultColors"`
+	GraphTemplates             string             `yaml:"graphTemplates"`
 
 	queryCache cache.BytesCache
 	findCache  cache.BytesCache
@@ -265,10 +268,10 @@ var config = struct {
 	limiter limiter
 }{
 	ExtrapolateExperiment: false,
-	Listen:        "[::]:8081",
-	Concurency:    20,
-	SendGlobsAsIs: false,
-	MaxBatchSize:  100,
+	Listen:                "[::]:8081",
+	Concurency:            20,
+	SendGlobsAsIs:         false,
+	MaxBatchSize:          100,
 	Cache: cacheConfig{
 		Type:              "mem",
 		DefaultTimeoutSec: 60,
@@ -316,6 +319,8 @@ func zipperStats(stats *realZipper.Stats) {
 	zipperMetrics.CacheHits.Add(stats.CacheHits)
 }
 
+var graphTemplates map[string]png.PictureParams
+
 func setUpConfig(logger *zap.Logger, zipper CarbonZipper) {
 	config.Cache.MemcachedServers = viper.GetStringSlice("cache.memcachedServers")
 	if n := viper.GetString("logger.logger"); n != "" {
@@ -342,6 +347,76 @@ func setUpConfig(logger *zap.Logger, zipper CarbonZipper) {
 			zap.Any("configuration", config.Logger),
 			zap.Error(err),
 		)
+	}
+
+	if config.GraphTemplates != "" {
+		graphTemplates = make(map[string]png.PictureParams)
+		graphTemplatesViper := viper.New()
+		b, err := ioutil.ReadFile(config.GraphTemplates)
+		if err != nil {
+			logger.Fatal("error reading graphTemplates file",
+				zap.String("graphTemplate_path", config.GraphTemplates),
+				zap.Error(err),
+			)
+		}
+
+		if strings.HasSuffix(config.GraphTemplates, ".toml") {
+			logger.Info("will parse config as toml",
+				zap.String("graphTemplate_path", config.GraphTemplates),
+			)
+			graphTemplatesViper.SetConfigType("TOML")
+		} else {
+			logger.Info("will parse config as yaml",
+				zap.String("graphTemplate_path", config.GraphTemplates),
+			)
+			graphTemplatesViper.SetConfigType("YAML")
+		}
+
+		err = graphTemplatesViper.ReadConfig(bytes.NewBuffer(b))
+		if err != nil {
+			logger.Fatal("failed to parse config",
+				zap.String("graphTemplate_path", config.GraphTemplates),
+				zap.Error(err),
+			)
+		}
+
+		for k := range graphTemplatesViper.AllSettings() {
+			// we need to explicitly copy	YDivisors and ColorList
+			newStruct := png.DefaultParams
+			newStruct.ColorList = nil
+			newStruct.YDivisors = nil
+			sub := graphTemplatesViper.Sub(k)
+			sub.Unmarshal(&newStruct)
+			if newStruct.ColorList == nil || len(newStruct.ColorList) == 0 {
+				newStruct.ColorList = make([]string, len(png.DefaultParams.ColorList))
+				for i, v := range png.DefaultParams.ColorList {
+					newStruct.ColorList[i] = v
+				}
+			}
+			if newStruct.YDivisors == nil || len(newStruct.YDivisors) == 0 {
+				newStruct.YDivisors = make([]float64, len(png.DefaultParams.YDivisors))
+				for i, v := range png.DefaultParams.YDivisors {
+					newStruct.YDivisors[i] = v
+				}
+			}
+			graphTemplates[k] = newStruct
+		}
+
+		for name, params := range graphTemplates {
+			png.SetTemplate(name, params)
+		}
+	}
+
+	if config.DefaultColors != nil {
+		for name, color := range config.DefaultColors {
+			err = png.SetColor(name, color)
+			if err != nil {
+				logger.Warn("invalid color specified and will be ignored",
+					zap.String("reason", "color must be valid hex rgb or rbga value, e.x. '#c80032', 'c80032', 'c80032ff', etc."),
+					zap.Error(err),
+				)
+			}
+		}
 	}
 
 	expvar.NewString("GoVersion").Set(runtime.Version())
@@ -623,9 +698,9 @@ func setUpConfigUpstreams(logger *zap.Logger) {
 		config.Upstreams.KeepAliveInterval = 10 * time.Second
 		// To emulate previous behavior
 		config.Upstreams.Timeouts = realZipper.Timeouts{
-			Connect: 1 * time.Second,
+			Connect:      1 * time.Second,
 			AfterStarted: 600 * time.Second,
-			Global: 600 * time.Second,
+			Global:       600 * time.Second,
 		}
 	}
 	if len(config.Upstreams.Backends) == 0 {

@@ -3,6 +3,7 @@ package png
 import (
 	"image/color"
 	"strconv"
+	"strings"
 )
 
 func getBool(s string, def bool) bool {
@@ -52,12 +53,61 @@ func getInt(s string, def int) int {
 	return int(n)
 }
 
+func string2RGBA(clr string) color.RGBA {
+	if c, ok := colors[clr]; ok {
+		return c
+	}
+	c, err := hexToRGBA(clr)
+	if err != nil {
+		return color.RGBA{0, 0, 0, 255}
+	}
+	return *c
+}
+
+// https://code.google.com/p/sadbox/source/browse/color/hex.go
+// hexToRGBA converts an Hex string to a RGB triple.
+func hexToRGBA(h string) (*color.RGBA, error) {
+	var r, g, b uint8
+	if len(h) > 0 && h[0] == '#' {
+		h = h[1:]
+	}
+
+	if len(h) == 3 {
+		h = h[:1] + h[:1] + h[1:2] + h[1:2] + h[2:] + h[2:]
+	}
+
+	alpha := byte(255)
+
+	if len(h) == 6 {
+		if rgb, err := strconv.ParseUint(string(h), 16, 32); err == nil {
+			r = uint8(rgb >> 16)
+			g = uint8(rgb >> 8)
+			b = uint8(rgb)
+		} else {
+			return nil, err
+		}
+	}
+
+	if len(h) == 8 {
+		if rgb, err := strconv.ParseUint(string(h), 16, 32); err == nil {
+			r = uint8(rgb >> 24)
+			g = uint8(rgb >> 16)
+			b = uint8(rgb >> 8)
+			alpha = uint8(rgb)
+		} else {
+			return nil, err
+		}
+	}
+
+	return &color.RGBA{r, g, b, alpha}, nil
+}
+
 var colors = map[string]color.RGBA{
 	// Graphite default colors
 	"black":     {0x00, 0x00, 0x00, 0xff},
 	"white":     {0xff, 0xff, 0xff, 0xff},
-	"blue":      {0x64, 0x64, 0xff, 0xff},
-	"green":     {0x00, 0xc8, 0x00, 0xff},
+	"blue":      {0x00, 0x00, 0xff, 0xff},
+	"green":     {0x00, 0xff, 0x00, 0xff},
 	"red":       {0xff, 0x00, 0x00, 0xff},
 	"yellow":    {0xff, 0xff, 0x00, 0xff},
 	"orange":    {0xff, 0xa5, 0x00, 0xff},
@@ -71,8 +121,8 @@ var colors = map[string]color.RGBA{
 	"pink":      {0xff, 0x64, 0x64, 0xff},
 	"gold":      {0xc8, 0xc8, 0x00, 0xff},
 	"rose":      {0xc8, 0x96, 0xc8, 0xff},
-	"darkblue":  {0x00, 0x00, 0xff, 0xff},
-	"darkgreen": {0x00, 0xff, 0x00, 0xff},
+	"darkblue":  {0x00, 0x21, 0x73, 0xff},
+	"darkgreen": {0x00, 0xc8, 0x00, 0xff},
 	"darkred":   {0xc8, 0x00, 0x32, 0xff},
 	"darkgray":  {0x6f, 0x6f, 0x6f, 0xff},
 	"darkgrey":  {0x6f, 0x6f, 0x6f, 0xff},
@@ -158,4 +208,15 @@ var colors = map[string]color.RGBA{
 	"snow":                 {0xff, 0xfa, 0xfa, 0xff},
 	"lightyellow":          {0xff, 0xff, 0xe0, 0xff},
 	"ivory":                {0xff, 0xff, 0xf0, 0xff},
+}
+
+func SetColor(name, rgba string) error {
+	color, err := hexToRGBA(rgba)
+	if err != nil {
+		return err
+	}
+
+	name = strings.ToLower(name)
+	colors[name] = *color
+	return nil
 }

@@ -22,10 +22,10 @@ func MarshalSVG(params PictureParams, results []*types.MetricData) []byte {
 	return nil
 }
 
-func MarshalPNGRequest(r *http.Request, results []*types.MetricData) []byte {
+func MarshalPNGRequest(r *http.Request, results []*types.MetricData, templateName string) []byte {
 	return nil
 }
 
-func MarshalSVGRequest(r *http.Request, results []*types.MetricData) []byte {
+func MarshalSVGRequest(r *http.Request, results []*types.MetricData, templateName string) []byte {
 	return nil
 }

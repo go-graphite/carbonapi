@@ -164,6 +164,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	from := r.FormValue("from")
 	until := r.FormValue("until")
 	format := r.FormValue("format")
+	template := r.FormValue("template")
 	useCache := !parser.TruthyBool(r.FormValue("noCache"))
 
 	var jsonp string
@@ -447,9 +448,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	case pickleFormat:
 		body = types.MarshalPickle(results)
 	case pngFormat:
-		body = png.MarshalPNGRequest(r, results)
+		body = png.MarshalPNGRequest(r, results, template)
 	case svgFormat:
-		body = png.MarshalSVGRequest(r, results)
+		body = png.MarshalSVGRequest(r, results, template)
 	}
 
 	writeResponse(w, body, format, jsonp)

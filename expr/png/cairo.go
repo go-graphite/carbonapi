@@ -713,12 +713,12 @@ func MarshalPNG(params PictureParams, results []*types.MetricData) []byte {
 	return marshalCairo(params, results, cairoPNG)
 }
 
-func MarshalSVGRequest(r *http.Request, results []*types.MetricData) []byte {
-	return marshalCairo(GetPictureParams(r, results), results, cairoSVG)
+func MarshalSVGRequest(r *http.Request, results []*types.MetricData, templateName string) []byte {
+	return marshalCairo(GetPictureParamsWithTemplate(r, templateName, results), results, cairoSVG)
 }
 
-func MarshalPNGRequest(r *http.Request, results []*types.MetricData) []byte {
-	return marshalCairo(GetPictureParams(r, results), results, cairoPNG)
+func MarshalPNGRequest(r *http.Request, results []*types.MetricData, templateName string) []byte {
+	return marshalCairo(GetPictureParamsWithTemplate(r, templateName, results), results, cairoPNG)
 }
 
 func marshalCairo(p PictureParams, results []*types.MetricData, backend cairoBackend) []byte {
@@ -855,6 +855,7 @@ func marshalCairo(p PictureParams, results []*types.MetricData, backend cairoBac
 
 func drawGraph(cr *cairoSurfaceContext, params *Params, results []*types.MetricData) {
 	var minNumberOfPoints, maxNumberOfPoints int32
+
 	params.secondYAxis = false
 
 	params.startTime = -1

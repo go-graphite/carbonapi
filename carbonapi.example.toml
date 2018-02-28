@@ -11,6 +11,7 @@ maxBatchSize = 100
 pidFile = ""
 sendGlobsAsIs = false
 tz = ""
+graphTemplates = "graphTemplates.example.toml"
 
 [cache]
 defaultTimeoutSec = 60
@@ -37,6 +38,14 @@ encoding = "json"
 file = "carbonapi.log"
 level = "info"
 logger = ""
+
+[defaultColors]
+red = "c80032"
+green = "00c800"
+blue = "6464ff"
+darkred = "ff0000"
+darkgreen = "00ff0"
+darkblue = "0000ff"
 
 [upstreams]
 backends = ["http://10.0.0.1:8080", "http://10.0.0.2:8080", "http://192.168.0.100:8080", "http://192.168.0.200:8080", "http://192.168.1.212:8080"]

@@ -1,13 +1,11 @@
 package png
 
 import (
-	"image/color"
-	"net/http"
-	"time"
-
 	"math"
+	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -105,7 +103,10 @@ const (
 	FontWeightBold
 )
 
-func getFontWeight(s string) FontWeight {
+func getFontWeight(s string, def FontWeight) FontWeight {
+	if s == "" {
+		return def
+	}
 	if parser.TruthyBool(s) {
 		return FontWeightBold
 	}
@@ -120,7 +121,10 @@ const (
 	FontSlantOblique
 )
 
-func getFontItalic(s string) FontSlant {
+func getFontItalic(s string, def FontSlant) FontSlant {
+	if s == "" {
+		return def
+	}
 	if parser.TruthyBool(s) {
 		return FontSlantItalic
 	}
@@ -199,77 +203,87 @@ type PictureParams struct {
 	MajorGridLineColor string
 }
 
+// GetPictureParams returns PictureParams with default settings
 func GetPictureParams(r *http.Request, metricData []*types.MetricData) PictureParams {
+	return GetPictureParamsWithTemplate(r, "default", metricData)
+}
+
+// GetPictureParamsWithTemplate returns PictureParams with specified template
+func GetPictureParamsWithTemplate(r *http.Request, template string, metricData []*types.MetricData) PictureParams {
+	t, ok := templates[template]
+	if !ok {
+		t = templates["default"]
+	}
 	return PictureParams{
-		Width:      getFloat64(r.FormValue("width"), DefaultParams.Width),
-		Height:     getFloat64(r.FormValue("height"), DefaultParams.Height),
-		Margin:     getInt(r.FormValue("margin"), DefaultParams.Margin),
+		Width:      getFloat64(r.FormValue("width"), t.Width),
+		Height:     getFloat64(r.FormValue("height"), t.Height),
+		Margin:     getInt(r.FormValue("margin"), t.Margin),
 		LogBase:    getLogBase(r.FormValue("logBase")),
-		FgColor:    getString(r.FormValue("fgcolor"), DefaultParams.FgColor),
-		BgColor:    getString(r.FormValue("bgcolor"), DefaultParams.BgColor),
-		MajorLine:  getString(r.FormValue("majorLine"), DefaultParams.MajorLine),
-		MinorLine:  getString(r.FormValue("minorLine"), DefaultParams.MinorLine),
-		FontName:   getString(r.FormValue("fontName"), DefaultParams.FontName),
-		FontSize:   getFloat64(r.FormValue("fontSize"), DefaultParams.FontSize),
-		FontBold:   getFontWeight(r.FormValue("fontBold")),
-		FontItalic: getFontItalic(r.FormValue("fontItalic")),
+		FgColor:    getString(r.FormValue("fgcolor"), t.FgColor),
+		BgColor:    getString(r.FormValue("bgcolor"), t.BgColor),
+		MajorLine:  getString(r.FormValue("majorLine"), t.MajorLine),
+		MinorLine:  getString(r.FormValue("minorLine"), t.MinorLine),
+		FontName:   getString(r.FormValue("fontName"), t.FontName),
+		FontSize:   getFloat64(r.FormValue("fontSize"), t.FontSize),
+		FontBold:   getFontWeight(r.FormValue("fontBold"), t.FontBold),
+		FontItalic: getFontItalic(r.FormValue("fontItalic"), t.FontItalic),
 
-		GraphOnly:  getBool(r.FormValue("graphOnly"), DefaultParams.GraphOnly),
+		GraphOnly:  getBool(r.FormValue("graphOnly"), t.GraphOnly),
 		HideLegend: getBool(r.FormValue("hideLegend"), len(metricData) > 10),
-		HideGrid:   getBool(r.FormValue("hideGrid"), DefaultParams.HideGrid),
-		HideAxes:   getBool(r.FormValue("hideAxes"), DefaultParams.HideAxes),
-		HideYAxis:  getBool(r.FormValue("hideYAxis"), DefaultParams.HideYAxis),
-		HideXAxis:  getBool(r.FormValue("hideXAxis"), DefaultParams.HideXAxis),
-		YAxisSide:  getAxisSide(r.FormValue("yAxisSide"), DefaultParams.YAxisSide),
+		HideGrid:   getBool(r.FormValue("hideGrid"), t.HideGrid),
+		HideAxes:   getBool(r.FormValue("hideAxes"), t.HideAxes),
+		HideYAxis:  getBool(r.FormValue("hideYAxis"), t.HideYAxis),
+		HideXAxis:  getBool(r.FormValue("hideXAxis"), t.HideXAxis),
+		YAxisSide:  getAxisSide(r.FormValue("yAxisSide"), t.YAxisSide),
 
-		Title:       getString(r.FormValue("title"), DefaultParams.Title),
-		Vtitle:      getString(r.FormValue("vtitle"), DefaultParams.Vtitle),
-		VtitleRight: getString(r.FormValue("vtitleRight"), DefaultParams.VtitleRight),
+		Title:       getString(r.FormValue("title"), t.Title),
+		Vtitle:      getString(r.FormValue("vtitle"), t.Vtitle),
+		VtitleRight: getString(r.FormValue("vtitleRight"), t.VtitleRight),
 
-		Tz: getTimeZone(r.FormValue("tz"), DefaultParams.Tz),
+		Tz: getTimeZone(r.FormValue("tz"), t.Tz),
 
-		ConnectedLimit: getInt(r.FormValue("connectedLimit"), DefaultParams.ConnectedLimit),
-		LineMode:       getLineMode(r.FormValue("lineMode"), DefaultParams.LineMode),
-		AreaMode:       getAreaMode(r.FormValue("areaMode"), DefaultParams.AreaMode),
-		AreaAlpha:      getFloat64(r.FormValue("areaAlpha"), DefaultParams.AreaAlpha),
-		PieMode:        getPieMode(r.FormValue("pieMode"), DefaultParams.PieMode),
-		LineWidth:      getFloat64(r.FormValue("lineWidth"), DefaultParams.LineWidth),
-		ColorList:      getStringArray(r.FormValue("colorList"), DefaultParams.ColorList),
+		ConnectedLimit: getInt(r.FormValue("connectedLimit"), t.ConnectedLimit),
+		LineMode:       getLineMode(r.FormValue("lineMode"), t.LineMode),
+		AreaMode:       getAreaMode(r.FormValue("areaMode"), t.AreaMode),
+		AreaAlpha:      getFloat64(r.FormValue("areaAlpha"), t.AreaAlpha),
+		PieMode:        getPieMode(r.FormValue("pieMode"), t.PieMode),
+		LineWidth:      getFloat64(r.FormValue("lineWidth"), t.LineWidth),
+		ColorList:      getStringArray(r.FormValue("colorList"), t.ColorList),
 
-		YMin:    getFloat64(r.FormValue("yMin"), DefaultParams.YMin),
-		YMax:    getFloat64(r.FormValue("yMax"), DefaultParams.YMax),
-		YStep:   getFloat64(r.FormValue("yStep"), DefaultParams.YStep),
-		XMin:    getFloat64(r.FormValue("xMin"), DefaultParams.XMin),
-		XMax:    getFloat64(r.FormValue("xMax"), DefaultParams.XMax),
-		XStep:   getFloat64(r.FormValue("xStep"), DefaultParams.XStep),
-		XFormat: getString(r.FormValue("xFormat"), DefaultParams.XFormat),
-		MinorY:  getInt(r.FormValue("minorY"), DefaultParams.MinorY),
+		YMin:    getFloat64(r.FormValue("yMin"), t.YMin),
+		YMax:    getFloat64(r.FormValue("yMax"), t.YMax),
+		YStep:   getFloat64(r.FormValue("yStep"), t.YStep),
+		XMin:    getFloat64(r.FormValue("xMin"), t.XMin),
+		XMax:    getFloat64(r.FormValue("xMax"), t.XMax),
+		XStep:   getFloat64(r.FormValue("xStep"), t.XStep),
+		XFormat: getString(r.FormValue("xFormat"), t.XFormat),
+		MinorY:  getInt(r.FormValue("minorY"), t.MinorY),
 
-		UniqueLegend:   getBool(r.FormValue("uniqueLegend"), DefaultParams.UniqueLegend),
-		DrawNullAsZero: getBool(r.FormValue("drawNullAsZero"), DefaultParams.DrawNullAsZero),
-		DrawAsInfinite: getBool(r.FormValue("drawAsInfinite"), DefaultParams.DrawAsInfinite),
+		UniqueLegend:   getBool(r.FormValue("uniqueLegend"), t.UniqueLegend),
+		DrawNullAsZero: getBool(r.FormValue("drawNullAsZero"), t.DrawNullAsZero),
+		DrawAsInfinite: getBool(r.FormValue("drawAsInfinite"), t.DrawAsInfinite),
 
-		YMinLeft:    getFloat64(r.FormValue("yMinLeft"), DefaultParams.YMinLeft),
-		YMinRight:   getFloat64(r.FormValue("yMinRight"), DefaultParams.YMinRight),
-		YMaxLeft:    getFloat64(r.FormValue("yMaxLeft"), DefaultParams.YMaxLeft),
-		YMaxRight:   getFloat64(r.FormValue("yMaxRight"), DefaultParams.YMaxRight),
-		YStepL:      getFloat64(r.FormValue("yStepLeft"), DefaultParams.YStepL),
-		YStepR:      getFloat64(r.FormValue("yStepRight"), DefaultParams.YStepR),
-		YLimitLeft:  getFloat64(r.FormValue("yLimitLeft"), DefaultParams.YLimitLeft),
-		YLimitRight: getFloat64(r.FormValue("yLimitRight"), DefaultParams.YLimitRight),
+		YMinLeft:    getFloat64(r.FormValue("yMinLeft"), t.YMinLeft),
+		YMinRight:   getFloat64(r.FormValue("yMinRight"), t.YMinRight),
+		YMaxLeft:    getFloat64(r.FormValue("yMaxLeft"), t.YMaxLeft),
+		YMaxRight:   getFloat64(r.FormValue("yMaxRight"), t.YMaxRight),
+		YStepL:      getFloat64(r.FormValue("yStepLeft"), t.YStepL),
+		YStepR:      getFloat64(r.FormValue("yStepRight"), t.YStepR),
+		YLimitLeft:  getFloat64(r.FormValue("yLimitLeft"), t.YLimitLeft),
+		YLimitRight: getFloat64(r.FormValue("yLimitRight"), t.YLimitRight),
 
-		YUnitSystem: getString(r.FormValue("yUnitSystem"), DefaultParams.YUnitSystem),
-		YDivisors:   getFloatArray(r.FormValue("yDivisors"), DefaultParams.YDivisors),
+		YUnitSystem: getString(r.FormValue("yUnitSystem"), t.YUnitSystem),
+		YDivisors:   getFloatArray(r.FormValue("yDivisors"), t.YDivisors),
 
-		RightWidth:  getFloat64(r.FormValue("rightWidth"), DefaultParams.RightWidth),
-		RightDashed: getBool(r.FormValue("rightDashed"), DefaultParams.RightDashed),
-		RightColor:  getString(r.FormValue("rightColor"), DefaultParams.RightColor),
-		LeftWidth:   getFloat64(r.FormValue("leftWidth"), DefaultParams.LeftWidth),
-		LeftDashed:  getBool(r.FormValue("leftDashed"), DefaultParams.LeftDashed),
-		LeftColor:   getString(r.FormValue("leftColor"), DefaultParams.LeftColor),
+		RightWidth:  getFloat64(r.FormValue("rightWidth"), t.RightWidth),
+		RightDashed: getBool(r.FormValue("rightDashed"), t.RightDashed),
+		RightColor:  getString(r.FormValue("rightColor"), t.RightColor),
+		LeftWidth:   getFloat64(r.FormValue("leftWidth"), t.LeftWidth),
+		LeftDashed:  getBool(r.FormValue("leftDashed"), t.LeftDashed),
+		LeftColor:   getString(r.FormValue("leftColor"), t.LeftColor),
 
-		MajorGridLineColor: getString(r.FormValue("majorGridLineColor"), DefaultParams.MajorGridLineColor),
-		MinorGridLineColor: getString(r.FormValue("minorGridLineColor"), DefaultParams.MinorGridLineColor),
+		MajorGridLineColor: getString(r.FormValue("majorGridLineColor"), t.MajorGridLineColor),
+		MinorGridLineColor: getString(r.FormValue("minorGridLineColor"), t.MinorGridLineColor),
 	}
 }
 
@@ -325,45 +339,9 @@ func getTimeZone(s string, def *time.Location) *time.Location {
 	return tz
 }
 
-func string2RGBA(clr string) color.RGBA {
-	if c, ok := colors[clr]; ok {
-		return c
-	}
-	return hexToRGBA(clr)
-}
-
-// https://code.google.com/p/sadbox/source/browse/color/hex.go
-// hexToColor converts an Hex string to a RGB triple.
-func hexToRGBA(h string) color.RGBA {
-	var r, g, b uint8
-	if len(h) > 0 && h[0] == '#' {
-		h = h[1:]
-	}
-
-	if len(h) == 3 {
-		h = h[:1] + h[:1] + h[1:2] + h[1:2] + h[2:] + h[2:]
-	}
-
-	alpha := byte(255)
-
-	if len(h) == 6 {
-		if rgb, err := strconv.ParseUint(string(h), 16, 32); err == nil {
-			r = uint8(rgb >> 16)
-			g = uint8(rgb >> 8)
-			b = uint8(rgb)
-		}
-	}
-
-	if len(h) == 8 {
-		if rgb, err := strconv.ParseUint(string(h), 16, 32); err == nil {
-			r = uint8(rgb >> 24)
-			g = uint8(rgb >> 16)
-			b = uint8(rgb >> 8)
-			alpha = uint8(rgb)
-		}
-	}
-
-	return color.RGBA{r, g, b, alpha}
+// SetTemplate adds a picture param template with specified name and parameters
+func SetTemplate(name string, params PictureParams) {
+	templates[name] = params
 }
 
 var DefaultParams = PictureParams{
@@ -436,4 +414,78 @@ var DefaultParams = PictureParams{
 
 	MajorGridLineColor: "white",
 	MinorGridLineColor: "grey",
+}
+
+var templates = map[string]PictureParams{
+	"default": {
+		Width:      330,
+		Height:     250,
+		Margin:     10,
+		LogBase:    0,
+		FgColor:    "white",
+		BgColor:    "black",
+		MajorLine:  "rose",
+		MinorLine:  "grey",
+		FontName:   "Sans",
+		FontSize:   10,
+		FontBold:   FontWeightNormal,
+		FontItalic: FontSlantNormal,
+
+		GraphOnly:  false,
+		HideLegend: false,
+		HideGrid:   false,
+		HideAxes:   false,
+		HideYAxis:  false,
+		HideXAxis:  false,
+		YAxisSide:  YAxisSideLeft,
+
+		Title:       "",
+		Vtitle:      "",
+		VtitleRight: "",
+
+		Tz: time.Local,
+
+		ConnectedLimit: math.MaxInt32,
+		LineMode:       LineModeSlope,
+		AreaMode:       AreaModeNone,
+		AreaAlpha:      math.NaN(),
+		PieMode:        PieModeAverage,
+		LineWidth:      1.2,
+		ColorList:      DefaultColorList,
+
+		YMin:    math.NaN(),
+		YMax:    math.NaN(),
+		YStep:   math.NaN(),
+		XMin:    math.NaN(),
+		XMax:    math.NaN(),
+		XStep:   math.NaN(),
+		XFormat: "",
+		MinorY:  1,
+
+		UniqueLegend:   false,
+		DrawNullAsZero: false,
+		DrawAsInfinite: false,
+
+		YMinLeft:    math.NaN(),
+		YMinRight:   math.NaN(),
+		YMaxLeft:    math.NaN(),
+		YMaxRight:   math.NaN(),
+		YStepL:      math.NaN(),
+		YStepR:      math.NaN(),
+		YLimitLeft:  math.NaN(),
+		YLimitRight: math.NaN(),
+
+		YUnitSystem: "si",
+		YDivisors:   []float64{4, 5, 6},
+
+		RightWidth:  1.2,
+		RightDashed: false,
+		RightColor:  "",
+		LeftWidth:   1.2,
+		LeftDashed:  false,
+		LeftColor:   "",
+
+		MajorGridLineColor: "white",
+		MinorGridLineColor: "grey",
+	},
 }
