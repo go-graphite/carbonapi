@@ -13,7 +13,7 @@ Changes
 
 CHANGELOG
 ---------
-**Master**
+**0.10.0**
  - [Fix] `lineWidth` param is not working
  - [Fix] Support `&` in metric name
  - [Fix] default colors for png and svg are now defined as in graphite-web in 1.1.0, but add example of how to set them to new colors 
