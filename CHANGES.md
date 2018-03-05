@@ -13,6 +13,9 @@ Changes
 
 CHANGELOG
 ---------
+**0.10.0.1**
+ - [Fix] Autobuild scripts. Version bump to avoid retagging.
+
 **0.10.0**
  - [Fix] `lineWidth` param is not working
  - [Fix] Support `&` in metric name

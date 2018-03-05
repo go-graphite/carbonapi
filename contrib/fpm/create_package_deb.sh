@@ -12,13 +12,13 @@ die() {
 
 VERSION=$(git describe --abbrev=6 --always --tags)
 echo "version: ${VERSION}"
-grep '^[0-9]\+\.[0-9]\.' <<< ${VERSION} || {
+grep '^[0-9]\+\.[0-9]\+\.' <<< ${VERSION} || {
 	echo "Revision: $(git rev-parse HEAD)";
 	echo "Version: $(git describe --abbrev=6 --always --tags)";
 	echo "Known tags: $(git tag)";
 	echo;
 	echo;
-	die "Can't get latest version from git";
+	die 1 "Can't get latest version from git";
 }
 
 TMPDIR=$(mktemp -d)
