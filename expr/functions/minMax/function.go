@@ -4,22 +4,27 @@ import (
 	"fmt"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
-	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	"math"
 )
 
-func init() {
-	functions := []string{"minSeries", "min", "maxSeries", "max"}
-	f := &minMax{}
-	for _, function := range functions {
-		metadata.RegisterFunction(function, f)
-	}
-}
-
 type minMax struct {
 	interfaces.FunctionBase
+}
+
+func GetOrder() interfaces.Order {
+	return interfaces.Any
+}
+
+func New(configFile string) []interfaces.FunctionMetadata {
+	res := make([]interfaces.FunctionMetadata, 0)
+	f := &minMax{}
+	functions := []string{"minSeries", "min", "maxSeries", "max"}
+	for _, n := range functions {
+		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
+	}
+	return res
 }
 
 // maxSeries(*seriesLists)

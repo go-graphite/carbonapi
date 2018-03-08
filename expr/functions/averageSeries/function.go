@@ -3,20 +3,27 @@ package averageSeries
 import (
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
-	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-func init() {
-	f := &averageSeries{}
-	metadata.RegisterFunction("avg", f)
-	metadata.RegisterFunction("averageSeries", f)
-}
-
 type averageSeries struct {
 	interfaces.FunctionBase
 }
+
+func GetOrder() interfaces.Order {
+	return interfaces.Any
+}
+
+func New(configFile string) []interfaces.FunctionMetadata {
+	f := &averageSeries{}
+	res := make([]interfaces.FunctionMetadata, 0)
+	for _, n := range []string{"avg", "averageSeries"} {
+		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
+	}
+	return res
+}
+
 
 // averageSeries(*seriesLists)
 func (f *averageSeries) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {

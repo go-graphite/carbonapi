@@ -5,7 +5,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-// FunctionBase is a set of base methods that partly statisfy Function interface and most probably nobody will modify
+// FunctionBase is a set of base methods that partly satisfy Function interface and most probably nobody will modify
 type FunctionBase struct {
 	Evaluator Evaluator
 }
@@ -23,6 +23,19 @@ func (b *FunctionBase) GetEvaluator() Evaluator {
 // Evaluator is a interface for any existing expression parser
 type Evaluator interface {
 	EvalExpr(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
+}
+
+type Order int
+
+const (
+	Any Order = iota
+	Last
+)
+
+type FunctionMetadata struct {
+	Name string
+	Order Order
+	F Function
 }
 
 // Function is interface that all graphite functions should follow

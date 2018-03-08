@@ -820,11 +820,11 @@ func functionsHandler(w http.ResponseWriter, r *http.Request) {
 	metadata.FunctionMD.RLock()
 	var b []byte
 	if function != "" {
-		b, err = marshaler(metadata.FunctionDescriptions[function])
+		b, err = marshaler(metadata.FunctionMD.Descriptions[function])
 	} else if grouped {
-		b, err = marshaler(metadata.FunctionDescriptionsGrouped)
+		b, err = marshaler(metadata.FunctionMD.DescriptionsGrouped)
 	} else {
-		b, err = marshaler(metadata.FunctionDescriptions)
+		b, err = marshaler(metadata.FunctionMD.Descriptions)
 	}
 
 	metadata.FunctionMD.RUnlock()

@@ -35,6 +35,7 @@ import (
 
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
+	"github.com/go-graphite/carbonapi/expr/functions"
 )
 
 var apiMetrics = struct {
@@ -255,6 +256,7 @@ var config = struct {
 	IgnoreClientTimeout        bool               `yaml:"ignoreClientTimeout"`
 	DefaultColors              map[string]string  `yaml:"defaultColors"`
 	GraphTemplates             string             `yaml:"graphTemplates"`
+	FunctionsConfigs           map[string]string  `yaml:"functionsConfig"`
 
 	queryCache cache.BytesCache
 	findCache  cache.BytesCache
@@ -418,6 +420,16 @@ func setUpConfig(logger *zap.Logger, zipper CarbonZipper) {
 			}
 		}
 	}
+
+	if config.FunctionsConfigs != nil {
+		logger.Info("extra configuration for functions found",
+			zap.Any("extra_config", config.FunctionsConfigs),
+		)
+	} else {
+		config.FunctionsConfigs = make(map[string]string)
+	}
+
+	functions.New(config.FunctionsConfigs)
 
 	expvar.NewString("GoVersion").Set(runtime.Version())
 	expvar.NewString("BuildVersion").Set(BuildVersion)

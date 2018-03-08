@@ -3,22 +3,27 @@ package sortBy
 import (
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
-	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	"sort"
 )
 
-func init() {
-	f := &sortBy{}
-	functions := []string{"sortByMaxima", "sortByMinima", "sortByTotal"}
-	for _, function := range functions {
-		metadata.RegisterFunction(function, f)
-	}
-}
-
 type sortBy struct {
 	interfaces.FunctionBase
+}
+
+func GetOrder() interfaces.Order {
+	return interfaces.Any
+}
+
+func New(configFile string) []interfaces.FunctionMetadata {
+	res := make([]interfaces.FunctionMetadata, 0)
+	f := &sortBy{}
+	functions := []string{"sortByMaxima", "sortByMinima", "sortByTotal"}
+	for _, n := range functions {
+		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
+	}
+	return res
 }
 
 // sortByMaxima(seriesList), sortByMinima(seriesList), sortByTotal(seriesList)

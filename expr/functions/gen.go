@@ -1,3 +1,3 @@
 package functions
 
-//go:generate ../../scripts/generate_functions.sh
+//go:generate go run ../../internal/generateFuncs/gen.go

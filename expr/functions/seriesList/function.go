@@ -4,22 +4,27 @@ import (
 	"fmt"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
-	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	"math"
 )
 
-func init() {
-	f := &seriesList{}
-	functions := []string{"divideSeriesLists", "diffSeriesLists", "multiplySeriesLists", "powSeriesLists"}
-	for _, function := range functions {
-		metadata.RegisterFunction(function, f)
-	}
-}
-
 type seriesList struct {
 	interfaces.FunctionBase
+}
+
+func GetOrder() interfaces.Order {
+	return interfaces.Any
+}
+
+func New(configFile string) []interfaces.FunctionMetadata {
+	res := make([]interfaces.FunctionMetadata, 0)
+	f := &seriesList{}
+	functions := []string{"divideSeriesLists", "diffSeriesLists", "multiplySeriesLists", "powSeriesLists"}
+	for _, n := range functions {
+		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
+	}
+	return res
 }
 
 func (f *seriesList) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {

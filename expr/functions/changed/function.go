@@ -4,18 +4,27 @@ import (
 	"fmt"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
-	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	"math"
 )
 
-func init() {
-	metadata.RegisterFunction("changed", &changed{})
-}
-
 type changed struct {
 	interfaces.FunctionBase
+}
+
+func GetOrder() interfaces.Order {
+	return interfaces.Any
+}
+
+func New(configFile string) []interfaces.FunctionMetadata {
+	res := make([]interfaces.FunctionMetadata, 0)
+	f := &changed{}
+	functions := []string{"changed"}
+	for _, n := range functions {
+		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
+	}
+	return res
 }
 
 // changed(SeriesList)

@@ -3,19 +3,27 @@ package aliasByMetric
 import (
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
-	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 
 	"strings"
 )
 
-func init() {
-	metadata.RegisterFunction("aliasByMetric", &aliasByMetric{})
-}
-
 type aliasByMetric struct {
 	interfaces.FunctionBase
+}
+
+func GetOrder() interfaces.Order {
+	return interfaces.Any
+}
+
+func New(configFile string) []interfaces.FunctionMetadata {
+	res := make([]interfaces.FunctionMetadata, 0)
+	f := &aliasByMetric{}
+	for _, n := range []string{"aliasByMetric"} {
+		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
+	}
+	return res
 }
 
 func (f *aliasByMetric) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {

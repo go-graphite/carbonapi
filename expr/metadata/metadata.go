@@ -24,11 +24,11 @@ func RegisterFunction(name string, function interfaces.Function) {
 	FunctionMD.Functions[name] = function
 
 	for k, v := range function.Description() {
-		FunctionDescriptions[k] = v
-		if _, ok := FunctionDescriptionsGrouped[v.Group]; !ok {
-			FunctionDescriptionsGrouped[v.Group] = make(map[string]*types.FunctionDescription)
+		FunctionMD.Descriptions[k] = v
+		if _, ok := FunctionMD.DescriptionsGrouped[v.Group]; !ok {
+			FunctionMD.DescriptionsGrouped[v.Group] = make(map[string]*types.FunctionDescription)
 		}
-		FunctionDescriptionsGrouped[v.Group][k] = v
+		FunctionMD.DescriptionsGrouped[v.Group][k] = v
 	}
 }
 
@@ -46,17 +46,19 @@ func SetEvaluator(evaluator interfaces.Evaluator) {
 // Metadata is a type to store global function metadata
 type Metadata struct {
 	sync.RWMutex
+
 	Functions map[string]interfaces.Function
+	Descriptions map[string]*types.FunctionDescription
+	DescriptionsGrouped map[string]map[string]*types.FunctionDescription
+	FunctionConfigFiles map[string]string
+
 	evaluator interfaces.Evaluator
 }
 
 // FunctionMD is actual global variable that stores metadata
 var FunctionMD = Metadata{
 	Functions: make(map[string]interfaces.Function),
+	Descriptions: make(map[string]*types.FunctionDescription),
+	DescriptionsGrouped: make(map[string]map[string]*types.FunctionDescription),
+	FunctionConfigFiles: make(map[string]string),
 }
-
-// FunctionDescriptions is actual global variable that stores description of all functions we support
-var FunctionDescriptions = make(map[string]*types.FunctionDescription)
-
-// FunctionDescriptionsGrouped is actual global variable that stores description of all functions we support organised by group
-var FunctionDescriptionsGrouped = make(map[string]map[string]*types.FunctionDescription)

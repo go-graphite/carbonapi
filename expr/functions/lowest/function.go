@@ -4,19 +4,26 @@ import (
 	"container/heap"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
-	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-func init() {
-	f := &lowest{}
-	metadata.RegisterFunction("lowestAverage", f)
-	metadata.RegisterFunction("lowestCurrent", f)
-}
-
 type lowest struct {
 	interfaces.FunctionBase
+}
+
+func GetOrder() interfaces.Order {
+	return interfaces.Any
+}
+
+func New(configFile string) []interfaces.FunctionMetadata {
+	res := make([]interfaces.FunctionMetadata, 0)
+	f := &lowest{}
+	functions := []string{"lowestAverage", "lowestCurrent"}
+	for _, n := range functions {
+		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
+	}
+	return res
 }
 
 // lowestAverage(seriesList, n) , lowestCurrent(seriesList, n)

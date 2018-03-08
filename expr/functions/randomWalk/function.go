@@ -2,23 +2,28 @@ package randomWalk
 
 import (
 	"github.com/go-graphite/carbonapi/expr/interfaces"
-	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 	"math/rand"
 )
 
-func init() {
-	f := &randomWalk{}
-	functions := []string{"randomWalk", "randomWalkFunction"}
-	for _, function := range functions {
-		metadata.RegisterFunction(function, f)
-	}
-}
-
 type randomWalk struct {
 	interfaces.FunctionBase
+}
+
+func GetOrder() interfaces.Order {
+	return interfaces.Any
+}
+
+func New(configFile string) []interfaces.FunctionMetadata {
+	res := make([]interfaces.FunctionMetadata, 0)
+	f := &randomWalk{}
+	functions := []string{"randomWalk", "randomWalkFunction"}
+	for _, n := range functions {
+		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
+	}
+	return res
 }
 
 // squareRoot(seriesList)

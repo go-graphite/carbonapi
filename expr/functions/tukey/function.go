@@ -5,23 +5,28 @@ import (
 	"errors"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
-	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	"sort"
 	"strings"
 )
 
-func init() {
-	f := &tukey{}
-	functions := []string{"tukeyAbove", "tukeyBelow"}
-	for _, function := range functions {
-		metadata.RegisterFunction(function, f)
-	}
-}
-
 type tukey struct {
 	interfaces.FunctionBase
+}
+
+func GetOrder() interfaces.Order {
+	return interfaces.Any
+}
+
+func New(configFile string) []interfaces.FunctionMetadata {
+	res := make([]interfaces.FunctionMetadata, 0)
+	f := &tukey{}
+	functions := []string{"tukeyAbove", "tukeyBelow"}
+	for _, n := range functions {
+		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
+	}
+	return res
 }
 
 // tukeyAbove(seriesList,basis,n,interval=0) , tukeyBelow(seriesList,basis,n,interval=0)

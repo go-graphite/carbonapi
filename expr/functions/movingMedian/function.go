@@ -5,23 +5,28 @@ import (
 	"github.com/JaderDias/movingmedian"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
-	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	"math"
 	"strconv"
 )
 
-func init() {
-	functions := []string{"movingMedian"}
-	fObj := &movingMedian{}
-	for _, f := range functions {
-		metadata.RegisterFunction(f, fObj)
-	}
-}
-
 type movingMedian struct {
 	interfaces.FunctionBase
+}
+
+func GetOrder() interfaces.Order {
+	return interfaces.Any
+}
+
+func New(configFile string) []interfaces.FunctionMetadata {
+	res := make([]interfaces.FunctionMetadata, 0)
+	f := &movingMedian{}
+	functions := []string{"movingMedian"}
+	for _, n := range functions {
+		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
+	}
+	return res
 }
 
 // movingMedian(seriesList, windowSize)
