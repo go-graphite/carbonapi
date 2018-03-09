@@ -16,7 +16,7 @@ func RegisterFunction(name string, function interfaces.Function) {
 	_, ok := FunctionMD.Functions[name]
 	if ok {
 		logger := zapwriter.Logger("registerFunction")
-		logger.Error("function already registered, will register new anyway",
+		logger.Warn("function already registered, will register new anyway",
 			zap.String("name", name),
 			zap.Stack("stack"),
 		)
