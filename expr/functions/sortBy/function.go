@@ -54,8 +54,8 @@ func (f *sortBy) Do(e parser.Expr, from, until int32, values map[parser.MetricRe
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *sortBy) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *sortBy) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"sortByMaxima": {
 			Description: "Takes one metric or a wildcard seriesList.\n\nSorts the list of metrics in descending order by the maximum value across the time period\nspecified.  Useful with the &areaMode=all parameter, to keep the\nlowest value lines visible.\n\nExample:\n\n.. code-block:: none\n\n  &target=sortByMaxima(server*.instance*.memory.free)",
 			Function:    "sortByMaxima(seriesList)",

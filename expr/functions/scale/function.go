@@ -58,8 +58,8 @@ func (f *scale) Do(e parser.Expr, from, until int32, values map[parser.MetricReq
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *scale) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *scale) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"scale": {
 			Description: "Takes one metric or a wildcard seriesList followed by a constant, and multiplies the datapoint\nby the constant provided at each point.\n\nExample:\n\n.. code-block:: none\n\n  &target=scale(Server.instance01.threads.busy,10)\n  &target=scale(Server.instance*.threads.busy,10)",
 			Function:    "scale(seriesList, factor)",

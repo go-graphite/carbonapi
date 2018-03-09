@@ -161,8 +161,8 @@ func (f *summarize) Do(e parser.Expr, from, until int32, values map[parser.Metri
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *summarize) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *summarize) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"summarize": {
 			Description: "Summarize the data into interval buckets of a certain size.\n\nBy default, the contents of each interval bucket are summed together. This is\nuseful for counters where each increment represents a discrete event and\nretrieving a \"per X\" value requires summing all the events in that interval.\n\nSpecifying 'average' instead will return the mean for each bucket, which can be more\nuseful when the value is a gauge that represents a certain value in time.\n\nThis function can be used with aggregation functions ``average``, ``median``, ``sum``, ``min``,\n``max``, ``diff``, ``stddev``, ``count``, ``range``, ``multiply`` & ``last``.\n\nBy default, buckets are calculated by rounding to the nearest interval. This\nworks well for intervals smaller than a day. For example, 22:32 will end up\nin the bucket 22:00-23:00 when the interval=1hour.\n\nPassing alignToFrom=true will instead create buckets starting at the from\ntime. In this case, the bucket for 22:32 depends on the from time. If\nfrom=6:30 then the 1hour bucket for 22:32 is 22:30-23:30.\n\nExample:\n\n.. code-block:: none\n\n  &target=summarize(counter.errors, \"1hour\") # total errors per hour\n  &target=summarize(nonNegativeDerivative(gauge.num_users), \"1week\") # new users per week\n  &target=summarize(queue.size, \"1hour\", \"avg\") # average queue size per hour\n  &target=summarize(queue.size, \"1hour\", \"max\") # maximum queue size during each hour\n  &target=summarize(metric, \"13week\", \"avg\", true)&from=midnight+20100101 # 2010 Q1-4",
 			Function:    "summarize(seriesList, intervalString, func='sum', alignToFrom=False)",
@@ -178,15 +178,15 @@ func (f *summarize) Description() map[string]*types.FunctionDescription {
 				{
 					Name:     "intervalString",
 					Required: true,
-					Suggestions: []string{
+					Suggestions: types.NewSuggestions(
 						"10min",
 						"1h",
 						"1d",
-					},
+					),
 					Type: types.Interval,
 				},
 				{
-					Default: "sum",
+					Default: types.NewSuggestion("sum"),
 					Name:    "func",
 					Options: []string{
 						"average",
@@ -204,7 +204,7 @@ func (f *summarize) Description() map[string]*types.FunctionDescription {
 					Type: types.AggFunc,
 				},
 				{
-					Default: "false",
+					Default: types.NewSuggestion(false),
 					Name:    "alignToFrom",
 					Type:    types.Boolean,
 				},

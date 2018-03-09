@@ -69,8 +69,8 @@ func (f *mapSeries) Do(e parser.Expr, from, until int32, values map[parser.Metri
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *mapSeries) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *mapSeries) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"mapSeries": {
 			Description: "Short form: ``map()``\n\nTakes a seriesList and maps it to a list of seriesList. Each seriesList has the\ngiven mapNodes in common.\n\n.. note:: This function is not very useful alone. It should be used with :py:func:`reduceSeries`\n\n.. code-block:: none\n\n  mapSeries(servers.*.cpu.*,1) =>\n\n    [\n      servers.server1.cpu.*,\n      servers.server2.cpu.*,\n      ...\n      servers.serverN.cpu.*\n    }\n\nEach node may be an integer referencing a node in the series name or a string identifying a tag.",
 			Function:    "mapSeries(seriesList, *mapNodes)",

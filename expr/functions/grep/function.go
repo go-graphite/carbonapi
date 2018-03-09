@@ -55,8 +55,8 @@ func (f *grep) Do(e parser.Expr, from, until int32, values map[parser.MetricRequ
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *grep) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *grep) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"grep": {
 			Description: "Takes a metric or a wildcard seriesList, followed by a regular expression\nin double quotes.  Excludes metrics that don't match the regular expression.\n\nExample:\n\n.. code-block:: none\n\n  &target=grep(servers*.instance*.threads.busy,\"server02\")",
 			Function:    "grep(seriesList, pattern)",

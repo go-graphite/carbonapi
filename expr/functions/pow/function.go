@@ -59,8 +59,8 @@ func (f *pow) Do(e parser.Expr, from, until int32, values map[parser.MetricReque
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *pow) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *pow) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"pow": {
 			Description: "Takes one metric or a wildcard seriesList followed by a constant, and raises the datapoint\nby the power of the constant provided at each point.\n\nExample:\n\n.. code-block:: none\n\n  &target=pow(Server.instance01.threads.busy,10)\n  &target=pow(Server.instance*.threads.busy,10)",
 			Function:    "pow(seriesList, factor)",

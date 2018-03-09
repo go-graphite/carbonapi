@@ -64,8 +64,8 @@ func (f *minMax) Do(e parser.Expr, from, until int32, values map[parser.MetricRe
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *minMax) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *minMax) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"minSeries": {
 			Description: "Takes one metric or a wildcard seriesList.\nFor each datapoint from each metric passed in, pick the minimum value and graph it.\n\nExample:\n\n.. code-block:: none\n\n  &target=minSeries(Server*.connections.total)\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``min``.",
 			Function:    "minSeries(*seriesLists)",

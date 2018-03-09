@@ -45,8 +45,8 @@ func (f *limit) Do(e parser.Expr, from, until int32, values map[parser.MetricReq
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *limit) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *limit) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"limit": {
 			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\n\nOnly draw the first N metrics.  Useful when testing a wildcard in a metric.\n\nExample:\n\n.. code-block:: none\n\n  &target=limit(server*.instance*.memory.free,5)\n\nDraws only the first 5 instance's memory free.",
 			Function:    "limit(seriesList, n)",

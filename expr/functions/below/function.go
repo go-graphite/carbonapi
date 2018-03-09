@@ -77,8 +77,8 @@ func (f *below) Do(e parser.Expr, from, until int32, values map[parser.MetricReq
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *below) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *below) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"averageAbove": {
 			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\nOut of all metrics passed, draws only the metrics with an average value\nabove N for the time period specified.\n\nExample:\n\n.. code-block:: none\n\n  &target=averageAbove(server*.instance*.threads.busy,25)\n\nDraws the servers with average values above 25.",
 			Function:    "averageAbove(seriesList, n)",

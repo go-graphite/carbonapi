@@ -77,8 +77,8 @@ func (f *mostDeviant) Do(e parser.Expr, from, until int32, values map[parser.Met
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *mostDeviant) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *mostDeviant) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"mostDeviant": {
 			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\nDraws the N most deviant metrics.\nTo find the deviants, the standard deviation (sigma) of each series\nis taken and ranked. The top N standard deviations are returned.\n\n  Example:\n\n.. code-block:: none\n\n  &target=mostDeviant(server*.instance*.memory.free, 5)\n\nDraws the 5 instances furthest from the average memory free.",
 			Function:    "mostDeviant(seriesList, n)",

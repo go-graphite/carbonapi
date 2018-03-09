@@ -67,8 +67,8 @@ func (f *consolidateBy) Do(e parser.Expr, from, until int32, values map[parser.M
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *consolidateBy) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *consolidateBy) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"consolidateBy": {
 			Description: "Takes one metric or a wildcard seriesList and a consolidation function name.\n\nValid function names are 'sum', 'average', 'min', 'max', 'first' & 'last'.\n\nWhen a graph is drawn where width of the graph size in pixels is smaller than\nthe number of datapoints to be graphed, Graphite consolidates the values to\nto prevent line overlap. The consolidateBy() function changes the consolidation\nfunction from the default of 'average' to one of 'sum', 'max', 'min', 'first', or 'last'.\nThis is especially useful in sales graphs, where fractional values make no sense and a 'sum'\nof consolidated values is appropriate.\n\n.. code-block:: none\n\n  &target=consolidateBy(Sales.widgets.largeBlue, 'sum')\n  &target=consolidateBy(Servers.web01.sda1.free_space, 'max')",
 			Function:    "consolidateBy(seriesList, consolidationFunc)",

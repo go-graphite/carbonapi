@@ -43,6 +43,8 @@ sendGlobsAsIs: false
 # For go-carbon you might want it to keep in some reasonable limits, 100 is good "safe" defaults
 #
 # For some backends (e.x. graphite-clickhouse) you might want to set it to some insanly high value, like 100000
+functionsConfigs:
+    graphiteWeb: ./graphiteWeb.example.yaml
 maxBatchSize: 100
 graphite:
     # Host:port where to send internal metrics

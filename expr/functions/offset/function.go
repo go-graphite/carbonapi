@@ -58,8 +58,8 @@ func (f *offset) Do(e parser.Expr, from, until int32, values map[parser.MetricRe
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *offset) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *offset) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"offset": {
 			Description: "Takes one metric or a wildcard seriesList followed by a constant, and adds the constant to\neach datapoint.\n\nExample:\n\n.. code-block:: none\n\n  &target=offset(Server.instance01.threads.busy,10)",
 			Function:    "offset(seriesList, factor)",

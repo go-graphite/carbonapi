@@ -87,8 +87,8 @@ func (f *removeBelowSeries) Do(e parser.Expr, from, until int32, values map[pars
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *removeBelowSeries) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *removeBelowSeries) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"removeBelowValue": {
 			Description: "Removes data below the given threshold from the series or list of series provided.\nValues below this threshold are assigned a value of None.",
 			Function:    "removeBelowValue(seriesList, n)",

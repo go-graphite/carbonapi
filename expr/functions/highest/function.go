@@ -93,8 +93,8 @@ func (f *highest) Do(e parser.Expr, from, until int32, values map[parser.MetricR
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *highest) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *highest) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"highestAverage": {
 			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\nOut of all metrics passed, draws only the top N metrics with the highest\naverage value for the time period specified.\n\nExample:\n\n.. code-block:: none\n\n  &target=highestAverage(server*.instance*.threads.busy,5)\n\nDraws the top 5 servers with the highest average value.\n\nThis is an alias for :py:func:`highest <highest>` with aggregation ``average``.",
 			Function:    "highestAverage(seriesList, n)",

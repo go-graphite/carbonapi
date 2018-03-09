@@ -59,8 +59,8 @@ func (f *legendValue) Do(e parser.Expr, from, until int32, values map[parser.Met
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *legendValue) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *legendValue) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"legendValue": {
 			Description: "Takes one metric or a wildcard seriesList and a string in quotes.\nAppends a value to the metric name in the legend.  Currently one or several of: `last`, `avg`,\n`total`, `min`, `max`.\nThe last argument can be `si` (default) or `binary`, in that case values will be formatted in the\ncorresponding system.\n\n.. code-block:: none\n\n  &target=legendValue(Sales.widgets.largeBlue, 'avg', 'max', 'si')",
 			Function:    "legendValue(seriesList, *valueTypes)",

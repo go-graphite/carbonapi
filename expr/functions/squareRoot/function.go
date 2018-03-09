@@ -55,8 +55,8 @@ func (f *squareRoot) Do(e parser.Expr, from, until int32, values map[parser.Metr
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *squareRoot) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *squareRoot) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"squareRoot": {
 			Description: "Takes one metric or a wildcard seriesList, and computes the square root of each datapoint.\n\nExample:\n\n.. code-block:: none\n\n  &target=squareRoot(Server.instance01.threads.busy)",
 			Function:    "squareRoot(seriesList)",

@@ -86,8 +86,8 @@ func (f *holtWintersConfidenceBands) Do(e parser.Expr, from, until int32, values
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *holtWintersConfidenceBands) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *holtWintersConfidenceBands) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"holtWintersConfidenceBands": {
 			Description: "Performs a Holt-Winters forecast using the series as input data and plots\nupper and lower bands with the predicted forecast deviations.",
 			Function:    "holtWintersConfidenceBands(seriesList, delta=3, bootstrapInterval='7d')",
@@ -101,17 +101,17 @@ func (f *holtWintersConfidenceBands) Description() map[string]*types.FunctionDes
 					Type:     types.SeriesList,
 				},
 				{
-					Default: "3",
+					Default: types.NewSuggestion(3),
 					Name:    "delta",
 					Type:    types.Integer,
 				},
 				{
-					Default: "7d",
+					Default: types.NewSuggestion("7d"),
 					Name:    "bootstrapInterval",
-					Suggestions: []string{
+					Suggestions: types.NewSuggestions(
 						"7d",
 						"30d",
-					},
+					),
 					Type: types.Interval,
 				},
 			},

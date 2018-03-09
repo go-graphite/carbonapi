@@ -97,8 +97,8 @@ func (f *sumSeriesWithWildcards) Do(e parser.Expr, from, until int32, values map
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *sumSeriesWithWildcards) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *sumSeriesWithWildcards) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"sumSeriesWithWildcards": {
 			Description: "Call sumSeries after inserting wildcards at the given position(s).\n\nExample:\n\n.. code-block:: none\n\n  &target=sumSeriesWithWildcards(host.cpu-[0-7}.cpu-{user,system}.value, 1)\n\nThis would be the equivalent of\n\n.. code-block:: none\n\n  &target=sumSeries(host.cpu-[0-7}.cpu-user.value)&target=sumSeries(host.cpu-[0-7}.cpu-system.value)\n\nThis is an alias for :py:func:`aggregateWithWildcards <aggregateWithWildcards>` with aggregation ``sum``.",
 			Function:    "sumSeriesWithWildcards(seriesList, *position)",

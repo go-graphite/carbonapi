@@ -74,8 +74,8 @@ func (f *perSecond) Do(e parser.Expr, from, until int32, values map[parser.Metri
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *perSecond) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *perSecond) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"perSecond": {
 			Description: "NonNegativeDerivative adjusted for the series time interval\nThis is useful for taking a running total metric and showing how many requests\nper second were handled.\n\nExample:\n\n.. code-block:: none\n\n  &target=perSecond(company.server.application01.ifconfig.TXPackets)\n\nEach time you run ifconfig, the RX and TXPackets are higher (assuming there\nis network traffic.) By applying the perSecond function, you can get an\nidea of the packets per second sent or received, even though you're only\nrecording the total.",
 			Function:    "perSecond(seriesList, maxValue=None)",

@@ -43,8 +43,8 @@ func (f *averageSeries) Do(e parser.Expr, from, until int32, values map[parser.M
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *averageSeries) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *averageSeries) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"avg": {
 			Description: "Short Alias: avg()\n\nTakes one metric or a wildcard seriesList.\nDraws the average value of all metrics passed at each time.\n\nExample:\n\n.. code-block:: none\n\n  &target=averageSeries(company.server.*.threads.busy)\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``average``.",
 			Function:    "avg(*seriesLists)",

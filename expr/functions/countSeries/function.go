@@ -48,8 +48,8 @@ func (f *countSeries) Do(e parser.Expr, from, until int32, values map[parser.Met
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *countSeries) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *countSeries) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"countSeries": {
 			Description: "Draws a horizontal line representing the number of nodes found in the seriesList.\n\n.. code-block:: none\n\n  &target=countSeries(carbon.agents.*.*)",
 			Function:    "countSeries(*seriesLists)",

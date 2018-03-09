@@ -157,8 +157,8 @@ func (f *tukey) Do(e parser.Expr, from, until int32, values map[parser.MetricReq
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *tukey) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *tukey) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"tukeyAbove": {
 			Description: "Tukey's range test, also known as the Tukey's test, Tukey method, Tukey's honest significance test, Tukey's HSD (honest significant difference) test,[1] or the Tukey–Kramer method, is a single-step multiple comparison procedure and statistical test. https://en.wikipedia.org/wiki/Tukey%27s_range_test",
 			Function:    "tukeyAbove(seriesList, basis, n, interval=0)",
@@ -182,7 +182,7 @@ func (f *tukey) Description() map[string]*types.FunctionDescription {
 					Type:     types.Integer,
 				},
 				{
-					Default: "0",
+					Default: types.NewSuggestion(0),
 					Name:    "interval",
 					Type:    types.IntOrInterval,
 				},
@@ -211,7 +211,7 @@ func (f *tukey) Description() map[string]*types.FunctionDescription {
 					Type:     types.Integer,
 				},
 				{
-					Default: "0",
+					Default: types.NewSuggestion(0),
 					Name:    "interval",
 					Type:    types.IntOrInterval,
 				},

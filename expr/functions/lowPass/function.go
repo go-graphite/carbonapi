@@ -61,8 +61,8 @@ func (f *lowPass) Do(e parser.Expr, from, until int32, values map[parser.MetricR
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *lowPass) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *lowPass) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"lpf": {
 			Description: "Low-pass filters provide a smoother form of a signal, removing the short-term fluctuations, and leaving the longer-term trend. https://en.wikipedia.org/wiki/Low-pass_filter",
 			Function:    "lpf(seriesList, cutPercent)",

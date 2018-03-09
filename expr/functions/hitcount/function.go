@@ -127,8 +127,8 @@ func (f *hitcount) Do(e parser.Expr, from, until int32, values map[parser.Metric
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *hitcount) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *hitcount) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"hitcount": {
 			Description: "Estimate hit counts from a list of time series.\n\nThis function assumes the values in each time series represent\nhits per second.  It calculates hits per some larger interval\nsuch as per day or per hour.  This function is like summarize(),\nexcept that it compensates automatically for different time scales\n(so that a similar graph results from using either fine-grained\nor coarse-grained records) and handles rarely-occurring events\ngracefully.",
 			Function:    "hitcount(seriesList, intervalString, alignToInterval=False)",
@@ -144,15 +144,15 @@ func (f *hitcount) Description() map[string]*types.FunctionDescription {
 				{
 					Name:     "intervalString",
 					Required: true,
-					Suggestions: []string{
+					Suggestions: types.NewSuggestions(
 						"10min",
 						"1h",
 						"1d",
-					},
+					),
 					Type: types.Interval,
 				},
 				{
-					Default: "false",
+					Default: types.NewSuggestion(false),
 					Name:    "alignToInterval",
 					Type:    types.Boolean,
 				},

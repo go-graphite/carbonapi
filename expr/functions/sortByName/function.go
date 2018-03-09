@@ -50,8 +50,8 @@ func (f *sortByName) Do(e parser.Expr, from, until int32, values map[parser.Metr
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *sortByName) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *sortByName) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"sortByName": {
 			Description: "Takes one metric or a wildcard seriesList.\nSorts the list of metrics by the metric name using either alphabetical order or natural sorting.\nNatural sorting allows names containing numbers to be sorted more naturally, e.g:\n- Alphabetical sorting: server1, server11, server12, server2\n- Natural sorting: server1, server2, server11, server12",
 			Function:    "sortByName(seriesList, natural=False, reverse=False)",
@@ -65,12 +65,12 @@ func (f *sortByName) Description() map[string]*types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 				{
-					Default: "false",
+					Default: types.NewSuggestion(false),
 					Name:    "natural",
 					Type:    types.Boolean,
 				},
 				{
-					Default: "false",
+					Default: types.NewSuggestion(false),
 					Name:    "reverse",
 					Type:    types.Boolean,
 				},

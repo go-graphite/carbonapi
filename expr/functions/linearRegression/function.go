@@ -91,8 +91,8 @@ func (f *linearRegression) Do(e parser.Expr, from, until int32, values map[parse
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *linearRegression) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *linearRegression) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"linearRegression": {
 			Description: "Graphs the liner regression function by least squares method.\n\nTakes one metric or a wildcard seriesList, followed by a quoted string with the\ntime to start the line and another quoted string with the time to end the line.\nThe start and end times are inclusive (default range is from to until). See\n``from / until`` in the render\\_api_ for examples of time formats. Datapoints\nin the range is used to regression.\n\nExample:\n\n.. code-block:: none\n\n  &target=linearRegression(Server.instance01.threads.busy, '-1d')\n  &target=linearRegression(Server.instance*.threads.busy, \"00:00 20140101\",\"11:59 20140630\")",
 			Function:    "linearRegression(seriesList, startSourceAt=None, endSourceAt=None)",

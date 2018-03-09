@@ -70,8 +70,8 @@ func (f *fft) Do(e parser.Expr, from, until int32, values map[parser.MetricReque
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *fft) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *fft) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"fft": {
 			Description: "An algorithm that samples a signal over a period of time (or space) and divides it into its frequency components. Computes discrete Fourier transform https://en.wikipedia.org/wiki/Fast_Fourier_transform \n\nExample:\n\n.. code-block:: none\n\n  &target=fft(server*.requests_per_second)\n\n  &target=fft(server*.requests_per_second, \"abs\")\n",
 			Function:    "fft(seriesList, mode)",

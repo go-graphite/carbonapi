@@ -108,8 +108,8 @@ func (f *movingMedian) Do(e parser.Expr, from, until int32, values map[parser.Me
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *movingMedian) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *movingMedian) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"movingMedian": {
 			Description: "Graphs the moving median of a metric (or metrics) over a fixed number of\npast points, or a time interval.\n\nTakes one metric or a wildcard seriesList followed by a number N of datapoints\nor a quoted string with a length of time like '1hour' or '5min' (See ``from /\nuntil`` in the render\\_api_ for examples of time formats), and an xFilesFactor value to specify\nhow many points in the window must be non-null for the output to be considered valid. Graphs the\nmedian of the preceeding datapoints for each point on the graph.\n\nExample:\n\n.. code-block:: none\n\n  &target=movingMedian(Server.instance01.threads.busy,10)\n  &target=movingMedian(Server.instance*.threads.idle,'5min')",
 			Function:    "movingMedian(seriesList, windowSize, xFilesFactor=None)",
@@ -125,16 +125,16 @@ func (f *movingMedian) Description() map[string]*types.FunctionDescription {
 				{
 					Name:     "windowSize",
 					Required: true,
-					Suggestions: []string{
-						"5",
-						"7",
-						"10",
+					Suggestions: types.NewSuggestions(
+						5,
+						7,
+						10,
 						"1min",
 						"5min",
 						"10min",
 						"30min",
 						"1hour",
-					},
+					),
 					Type: types.IntOrInterval,
 				},
 				{

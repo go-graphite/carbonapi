@@ -49,8 +49,8 @@ func (f *stddevSeries) Do(e parser.Expr, from, until int32, values map[parser.Me
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *stddevSeries) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *stddevSeries) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"stddevSeries": {
 			Description: "Takes one metric or a wildcard seriesList.\nDraws the standard deviation of all metrics passed at each time.\n\nExample:\n\n.. code-block:: none\n\n  &target=stddevSeries(company.server.*.threads.busy)\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``stddev``.",
 			Function:    "stddevSeries(*seriesLists)",

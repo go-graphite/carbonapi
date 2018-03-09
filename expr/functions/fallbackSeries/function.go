@@ -44,8 +44,8 @@ func (f *fallbackSeries) Do(e parser.Expr, from, until int32, values map[parser.
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *fallbackSeries) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *fallbackSeries) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"fallbackSeries": {
 			Description: "Takes a wildcard seriesList, and a second fallback metric.\nIf the wildcard does not match any series, draws the fallback metric.\n\nExample:\n\n.. code-block:: none\n\n  &target=fallbackSeries(server*.requests_per_second, constantLine(0))\n\nDraws a 0 line when server metric does not exist.",
 			Function:    "fallbackSeries(seriesList, fallback)",

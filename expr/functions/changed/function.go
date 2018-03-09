@@ -59,8 +59,8 @@ func (f *changed) Do(e parser.Expr, from, until int32, values map[parser.MetricR
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *changed) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *changed) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"changed": {
 			Description: "Takes one metric or a wildcard seriesList.\nOutput 1 when the value changed, 0 when null or the same\n\nExample:\n\n.. code-block:: none\n\n  &target=changed(Server01.connections.handled)",
 			Function:    "changed(seriesList)",

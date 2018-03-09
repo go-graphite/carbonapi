@@ -117,8 +117,8 @@ func (f *moving) Do(e parser.Expr, from, until int32, values map[parser.MetricRe
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *moving) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *moving) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"movingAverage": {
 			Description: "Graphs the moving average of a metric (or metrics) over a fixed number of\npast points, or a time interval.\n\nTakes one metric or a wildcard seriesList followed by a number N of datapoints\nor a quoted string with a length of time like '1hour' or '5min' (See ``from /\nuntil`` in the render\\_api_ for examples of time formats), and an xFilesFactor value to specify\nhow many points in the window must be non-null for the output to be considered valid. Graphs the\naverage of the preceeding datapoints for each point on the graph.\n\nExample:\n\n.. code-block:: none\n\n  &target=movingAverage(Server.instance01.threads.busy,10)\n  &target=movingAverage(Server.instance*.threads.idle,'5min')",
 			Function:    "movingAverage(seriesList, windowSize, xFilesFactor=None)",
@@ -134,16 +134,16 @@ func (f *moving) Description() map[string]*types.FunctionDescription {
 				{
 					Name:     "windowSize",
 					Required: true,
-					Suggestions: []string{
-						"5",
-						"7",
-						"10",
+					Suggestions: types.NewSuggestions(
+						5,
+						7,
+						10,
 						"1min",
 						"5min",
 						"10min",
 						"30min",
 						"1hour",
-					},
+					),
 					Type: types.IntOrInterval,
 				},
 				{
@@ -167,16 +167,16 @@ func (f *moving) Description() map[string]*types.FunctionDescription {
 				{
 					Name:     "windowSize",
 					Required: true,
-					Suggestions: []string{
-						"5",
-						"7",
-						"10",
+					Suggestions: types.NewSuggestions(
+						5,
+						7,
+						10,
 						"1min",
 						"5min",
 						"10min",
 						"30min",
 						"1hour",
-					},
+					),
 					Type: types.IntOrInterval,
 				},
 				{
@@ -200,16 +200,16 @@ func (f *moving) Description() map[string]*types.FunctionDescription {
 				{
 					Name:     "windowSize",
 					Required: true,
-					Suggestions: []string{
-						"5",
-						"7",
-						"10",
+					Suggestions: types.NewSuggestions(
+						5,
+						7,
+						10,
 						"1min",
 						"5min",
 						"10min",
 						"30min",
 						"1hour",
-					},
+					),
 					Type: types.IntOrInterval,
 				},
 				{
@@ -233,16 +233,16 @@ func (f *moving) Description() map[string]*types.FunctionDescription {
 				{
 					Name:     "windowSize",
 					Required: true,
-					Suggestions: []string{
-						"5",
-						"7",
-						"10",
+					Suggestions: types.NewSuggestions(
+						5,
+						7,
+						10,
 						"1min",
 						"5min",
 						"10min",
 						"30min",
 						"1hour",
-					},
+					),
 					Type: types.IntOrInterval,
 				},
 				{

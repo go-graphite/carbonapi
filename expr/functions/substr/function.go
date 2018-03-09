@@ -73,8 +73,8 @@ func (f *substr) Do(e parser.Expr, from, until int32, values map[parser.MetricRe
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *substr) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *substr) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"substr": {
 			Description: "Takes one metric or a wildcard seriesList followed by 1 or 2 integers.  Assume that the\nmetric name is a list or array, with each element separated by dots.  Prints\nn - length elements of the array (if only one integer n is passed) or n - m\nelements of the array (if two integers n and m are passed).  The list starts\nwith element 0 and ends with element (length - 1).\n\nExample:\n\n.. code-block:: none\n\n  &target=substr(carbon.agents.hostname.avgUpdateTime,2,4)\n\nThe label would be printed as \"hostname.avgUpdateTime\".",
 			Function:    "substr(seriesList, start=0, stop=0)",
@@ -88,12 +88,12 @@ func (f *substr) Description() map[string]*types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 				{
-					Default: "0",
+					Default: types.NewSuggestion(0),
 					Name:    "start",
 					Type:    types.Node,
 				},
 				{
-					Default: "0",
+					Default: types.NewSuggestion(0),
 					Name:    "stop",
 					Type:    types.Node,
 				},

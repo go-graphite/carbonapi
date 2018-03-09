@@ -82,8 +82,8 @@ func (f *pearson) Do(e parser.Expr, from, until int32, values map[parser.MetricR
 	return []*types.MetricData{&r}, nil
 }
 
-func (f *pearson) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *pearson) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"pearson": {
 			Description: `
 Implementation of Pearson product-moment correlation coefficient (PMCC) function(s)

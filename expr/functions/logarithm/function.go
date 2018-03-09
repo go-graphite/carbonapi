@@ -75,8 +75,8 @@ func (f *logarithm) Do(e parser.Expr, from, until int32, values map[parser.Metri
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *logarithm) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *logarithm) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"logarithm": {
 			Description: "Takes one metric or a wildcard seriesList, a base, and draws the y-axis in logarithmic\nformat.  If base is omitted, the function defaults to base 10.\n\nExample:\n\n.. code-block:: none\n\n  &target=log(carbon.agents.hostname.avgUpdateTime,2)",
 			Function:    "log(seriesList, base=10)",
@@ -90,7 +90,7 @@ func (f *logarithm) Description() map[string]*types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 				{
-					Default: "10",
+					Default: types.NewSuggestion(10),
 					Name:    "base",
 					Type:    types.Integer,
 				},
@@ -109,7 +109,7 @@ func (f *logarithm) Description() map[string]*types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 				{
-					Default: "10",
+					Default: types.NewSuggestion(10),
 					Name:    "base",
 					Type:    types.Integer,
 				},

@@ -21,8 +21,8 @@ import (
 	"github.com/facebookgo/grace/gracehttp"
 	"github.com/facebookgo/pidfile"
 	"github.com/go-graphite/carbonapi/carbonapipb"
+	"github.com/go-graphite/carbonapi/expr/functions/cairo/png"
 	"github.com/go-graphite/carbonapi/expr/helper"
-	"github.com/go-graphite/carbonapi/expr/png"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	"github.com/go-graphite/carbonzipper/cache"
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
@@ -33,9 +33,9 @@ import (
 	"github.com/peterbourgon/g2g"
 	"github.com/spf13/viper"
 
+	"github.com/go-graphite/carbonapi/expr/functions"
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
-	"github.com/go-graphite/carbonapi/expr/functions"
 )
 
 var apiMetrics = struct {

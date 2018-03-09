@@ -49,8 +49,8 @@ func (f *percentileOfSeries) Do(e parser.Expr, from, until int32, values map[par
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *percentileOfSeries) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *percentileOfSeries) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"percentileOfSeries": {
 			Description: "percentileOfSeries returns a single series which is composed of the n-percentile\nvalues taken across a wildcard series at each point. Unless `interpolate` is\nset to True, percentile values are actual values contained in one of the\nsupplied series.",
 			Function:    "percentileOfSeries(seriesList, n, interpolate=False)",
@@ -69,7 +69,7 @@ func (f *percentileOfSeries) Description() map[string]*types.FunctionDescription
 					Type:     types.Integer,
 				},
 				{
-					Default: "false",
+					Default: types.NewSuggestion(false),
 					Name:    "interpolate",
 					Type:    types.Boolean,
 				},

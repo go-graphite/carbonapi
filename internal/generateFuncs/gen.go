@@ -3,13 +3,13 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
+	"fmt"
 	"io/ioutil"
 	"log"
-	"fmt"
-	"strings"
-	"bytes"
-	"bufio"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -38,6 +38,7 @@ func main() {
 
 import (
 	"sort"
+	"strings"
 `)
 	for _, m := range funcs {
 		fmt.Fprintf(writer, "	\"github.com/go-graphite/carbonapi/expr/functions/%s\"\n", m)
@@ -74,7 +75,7 @@ func New(configs map[string]string) {
 	})
 
 	for _, f := range funcs {
-		md := f.f(configs[f.name])
+		md := f.f(configs[strings.ToLower(f.name)])
 		for _, m := range md {
 			metadata.RegisterFunction(m.Name, m.F)
 		}

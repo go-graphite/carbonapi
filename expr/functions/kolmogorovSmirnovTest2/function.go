@@ -91,8 +91,8 @@ func (f *kolmogorovSmirnovTest2) Do(e parser.Expr, from, until int32, values map
 
 // TODO: Implement normal description
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *kolmogorovSmirnovTest2) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *kolmogorovSmirnovTest2) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"kolmogorovSmirnovTest2": {
 			Description: "Nonparametric test of the equality of continuous, one-dimensional probability distributions that can be used to compare a sample with a reference probability distribution (one-sample K–S test), or to compare two samples (two-sample K–S test). https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test",
 			Function:    "kolmogorovSmirnovTest2(seriesList, seriesList, windowSize)",

@@ -59,8 +59,8 @@ func (f *holtWintersForecast) Do(e parser.Expr, from, until int32, values map[pa
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *holtWintersForecast) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *holtWintersForecast) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"holtWintersForecast": {
 			Description: "Performs a Holt-Winters forecast using the series as input data. Data from\n`bootstrapInterval` (one week by default) previous to the series is used to bootstrap the initial forecast.",
 			Function:    "holtWintersForecast(seriesList, bootstrapInterval='7d')",
@@ -74,12 +74,12 @@ func (f *holtWintersForecast) Description() map[string]*types.FunctionDescriptio
 					Type:     types.SeriesList,
 				},
 				{
-					Default: "7d",
+					Default: types.NewSuggestion("7d"),
 					Name:    "bootstrapInterval",
-					Suggestions: []string{
+					Suggestions: types.NewSuggestions(
 						"7d",
 						"30d",
-					},
+					),
 					Type: types.Interval,
 				},
 			},

@@ -38,8 +38,8 @@ func (f *aliasByMetric) Do(e parser.Expr, from, until int32, values map[parser.M
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *aliasByMetric) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *aliasByMetric) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"aliasByMetric": {
 			Description: "Takes a seriesList and applies an alias derived from the base metric name.\n\n.. code-block:: none\n\n  &target=aliasByMetric(carbon.agents.graphite.creates)",
 			Function:    "aliasByMetric(seriesList)",

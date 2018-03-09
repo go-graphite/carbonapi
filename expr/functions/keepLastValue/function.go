@@ -83,8 +83,8 @@ func (f *keepLastValue) Do(e parser.Expr, from, until int32, values map[parser.M
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *keepLastValue) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *keepLastValue) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"keepLastValue": {
 			Description: "Takes one metric or a wildcard seriesList, and optionally a limit to the number of 'None' values to skip over.\nContinues the line with the last received value when gaps ('None' values) appear in your data, rather than breaking your line.\n\nExample:\n\n.. code-block:: none\n\n  &target=keepLastValue(Server01.connections.handled)\n  &target=keepLastValue(Server01.connections.handled, 10)",
 			Function:    "keepLastValue(seriesList, limit=inf)",
@@ -98,7 +98,7 @@ func (f *keepLastValue) Description() map[string]*types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 				{
-					Default: "INF",
+					Default: types.NewSuggestion("INF"),
 					Name:    "limit",
 					Type:    types.Integer,
 				},

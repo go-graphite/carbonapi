@@ -67,8 +67,8 @@ func (f *ewma) Do(e parser.Expr, from, until int32, values map[parser.MetricRequ
 	return results, nil
 }
 
-func (f *ewma) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *ewma) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"exponentialWeightedMovingAverage": {
 			Description: "Takes a series of values and a alpha and produces an exponential moving\naverage using algorithm described at https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average\n\nExample:\n\n.. code-block:: none\n\n  &target=exponentialWeightedMovingAverage(*.transactions.count, 0.1)",
 			Function:    "exponentialWeightedMovingAverage(seriesList, alpha)",
@@ -84,11 +84,11 @@ func (f *ewma) Description() map[string]*types.FunctionDescription {
 				{
 					Name:     "alpha",
 					Required: true,
-					Suggestions: []string{
-						"0.1",
-						"0.5",
-						"0.7",
-					},
+					Suggestions: types.NewSuggestions(
+						0.1,
+						0.5,
+						0.7,
+					),
 					Type: types.Float,
 				},
 			},
@@ -108,11 +108,11 @@ func (f *ewma) Description() map[string]*types.FunctionDescription {
 				{
 					Name:     "alpha",
 					Required: true,
-					Suggestions: []string{
-						"0.1",
-						"0.5",
-						"0.7",
-					},
+					Suggestions: types.NewSuggestions(
+						0.1,
+						0.5,
+						0.7,
+					),
 					Type: types.Float,
 				},
 			},

@@ -68,8 +68,8 @@ func (f *timeFunction) Do(e parser.Expr, from, until int32, values map[parser.Me
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *timeFunction) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *timeFunction) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"timeFunction": {
 			Description: "Short Alias: time()\n\nJust returns the timestamp for each X value. T\n\nExample:\n\n.. code-block:: none\n\n  &target=time(\"The.time.series\")\n\nThis would create a series named \"The.time.series\" that contains in Y the same\nvalue (in seconds) as X.\nAccepts optional second argument as 'step' parameter (default step is 60 sec)",
 			Function:    "timeFunction(name, step=60)",
@@ -83,7 +83,7 @@ func (f *timeFunction) Description() map[string]*types.FunctionDescription {
 					Type:     types.String,
 				},
 				{
-					Default: "60",
+					Default: types.NewSuggestion(60),
 					Name:    "step",
 					Type:    types.Integer,
 				},
@@ -102,7 +102,7 @@ func (f *timeFunction) Description() map[string]*types.FunctionDescription {
 					Type:     types.String,
 				},
 				{
-					Default: "60",
+					Default: types.NewSuggestion(60),
 					Name:    "step",
 					Type:    types.Integer,
 				},

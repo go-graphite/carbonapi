@@ -36,8 +36,8 @@ func (f *group) Do(e parser.Expr, from, until int32, values map[parser.MetricReq
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *group) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *group) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"group": {
 			Description: "Takes an arbitrary number of seriesLists and adds them to a single seriesList. This is used\nto pass multiple seriesLists to a function which only takes one",
 			Function:    "group(*seriesLists)",

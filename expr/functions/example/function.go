@@ -33,8 +33,8 @@ func (f *example) Do(e parser.Expr, from, until int32, values map[parser.MetricR
 	return nil, nil
 }
 
-func (f *example) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *example) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"example": {
 			Description: "This is just an example of function",
 			Function:    "example(seriesList, func, xFilesFactor=None)",

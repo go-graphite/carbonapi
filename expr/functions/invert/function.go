@@ -41,8 +41,8 @@ func (f *invert) Do(e parser.Expr, from, until int32, values map[parser.MetricRe
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *invert) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *invert) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"invert": {
 			Description: "Takes one metric or a wildcard seriesList, and inverts each datapoint (i.e. 1/x).\n\nExample:\n\n.. code-block:: none\n\n  &target=invert(Server.instance01.threads.busy)",
 			Function:    "invert(seriesList)",

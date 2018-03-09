@@ -41,7 +41,7 @@ func (e *expr) Type() ExprType {
 	return e.etype
 }
 
-func (e *expr) toString() string {
+func (e *expr) ToString() string {
 	switch e.etype {
 	case EtFunc:
 		return fmt.Sprintf("%s(%s)", e.target, e.argString)
@@ -325,9 +325,9 @@ func (e *expr) insertFirstArg(exp *expr) error {
 	e.args = append(newArgs, e.args...)
 
 	if e.argString == "" {
-		e.argString = exp.toString()
+		e.argString = exp.ToString()
 	} else {
-		e.argString = exp.toString() + "," + e.argString
+		e.argString = exp.ToString() + "," + e.argString
 	}
 
 	return nil
@@ -506,7 +506,7 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 				argStringBuffer.WriteByte(',')
 			}
 			if exp.IsFunc() {
-				argStringBuffer.WriteString(exp.toString())
+				argStringBuffer.WriteString(exp.ToString())
 			} else {
 				argStringBuffer.WriteString(argString[:len(argString)-len(e)])
 			}

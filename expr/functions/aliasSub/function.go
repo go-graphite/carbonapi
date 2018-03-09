@@ -63,8 +63,8 @@ func (f *aliasSub) Do(e parser.Expr, from, until int32, values map[parser.Metric
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *aliasSub) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *aliasSub) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"aliasSub": {
 			Description: "Runs series names through a regex search/replace.\n\n.. code-block:: none\n\n  &target=aliasSub(ip.*TCP*,\"^.*TCP(\\d+)\",\"\\1\")",
 			Function:    "aliasSub(seriesList, search, replace)",

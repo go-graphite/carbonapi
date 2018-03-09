@@ -75,8 +75,8 @@ func (f *lowest) Do(e parser.Expr, from, until int32, values map[parser.MetricRe
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *lowest) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *lowest) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"lowestAverage": {
 			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\nOut of all metrics passed, draws only the bottom N metrics with the lowest\naverage value for the time period specified.\n\nExample:\n\n.. code-block:: none\n\n  &target=lowestAverage(server*.instance*.threads.busy,5)\n\nDraws the bottom 5 servers with the lowest average value.\n\nThis is an alias for :py:func:`lowest <lowest>` with aggregation ``average``.",
 			Function:    "lowestAverage(seriesList, n)",

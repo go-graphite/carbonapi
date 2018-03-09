@@ -51,8 +51,8 @@ func (f *randomWalk) Do(e parser.Expr, from, until int32, values map[parser.Metr
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *randomWalk) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *randomWalk) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"randomWalk": {
 			Description: "Short Alias: randomWalk()\n\nReturns a random walk starting at 0. This is great for testing when there is\nno real data in whisper.\n\nExample:\n\n.. code-block:: none\n\n  &target=randomWalk(\"The.time.series\")\n\nThis would create a series named \"The.time.series\" that contains points where\nx(t) == x(t-1)+random()-0.5, and x(0) == 0.\nAccepts optional second argument as 'step' parameter (default step is 60 sec)",
 			Function:    "randomWalk(name, step=60)",
@@ -66,7 +66,7 @@ func (f *randomWalk) Description() map[string]*types.FunctionDescription {
 					Type:     types.String,
 				},
 				{
-					Default: "60",
+					Default: types.NewSuggestion(60),
 					Name:    "step",
 					Type:    types.Integer,
 				},
@@ -85,7 +85,7 @@ func (f *randomWalk) Description() map[string]*types.FunctionDescription {
 					Type:     types.String,
 				},
 				{
-					Default: "60",
+					Default: types.NewSuggestion(60),
 					Name:    "step",
 					Type:    types.Integer,
 				},

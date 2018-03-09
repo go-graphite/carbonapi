@@ -2,8 +2,8 @@ package parser
 
 import (
 	"errors"
-	"strings"
 	"fmt"
+	"strings"
 )
 
 // MetricRequest contains all necessary data to request a metric.
@@ -18,7 +18,7 @@ type ExprType int
 
 const (
 	// EtName is a const for 'Series Name' type expression
-	EtName   ExprType = iota
+	EtName ExprType = iota
 	// EtFunc is a const for 'Function' type expression
 	EtFunc
 	// EtConst is a const for 'Constant' type expression
@@ -66,6 +66,8 @@ type Expr interface {
 	SetTarget(string)
 	// MutateTarget changes target for the expression and returns new interface. Please note that it doesn't copy object yet
 	MutateTarget(string) Expr
+	// ToString returns string representation of expression
+	ToString() string
 
 	// FloatValue returns float value for expression.
 	FloatValue() float64
@@ -137,7 +139,7 @@ func Parse(e string) (Expr, string, error) {
 // NewTargetExpr Creates new expression with specified target only.
 func NewTargetExpr(target string) Expr {
 	e := &expr{
-		target: target,
+		target:    target,
 		argString: target,
 	}
 	return e
@@ -146,8 +148,8 @@ func NewTargetExpr(target string) Expr {
 // NewNameExpr Creates new expression with specified name only.
 func NewNameExpr(name string) Expr {
 	e := &expr{
-		target: name,
-		etype: EtName,
+		target:    name,
+		etype:     EtName,
 		argString: name,
 	}
 	return e
@@ -156,8 +158,8 @@ func NewNameExpr(name string) Expr {
 // NewConstExpr Creates new Constant expression.
 func NewConstExpr(value float64) Expr {
 	e := &expr{
-		val: value,
-		etype: EtConst,
+		val:       value,
+		etype:     EtConst,
 		argString: fmt.Sprintf("%v", value),
 	}
 	return e
@@ -166,8 +168,8 @@ func NewConstExpr(value float64) Expr {
 // NewValueExpr Creates new Value expression.
 func NewValueExpr(value string) Expr {
 	e := &expr{
-		valStr: value,
-		etype: EtString,
+		valStr:    value,
+		etype:     EtString,
 		argString: value,
 	}
 	return e
@@ -175,13 +177,15 @@ func NewValueExpr(value string) Expr {
 
 // ArgName is a type for Name Argument
 type ArgName string
+
 // ArgValue is a type for Value Argument
 type ArgValue string
+
 // NamedArgs is a type for Hashmap of Named Arguments.
 type NamedArgs map[string]interface{}
 
 // NewExpr creates a new expression with specified target and arguments. It will do best it can to identify type of argument
-func NewExpr(target string, vaArgs... interface{}) Expr {
+func NewExpr(target string, vaArgs ...interface{}) Expr {
 	var nArgsFinal map[string]*expr
 	args, nArgs := sliceExpr(vaArgs)
 	if args == nil {
@@ -199,7 +203,7 @@ func NewExpr(target string, vaArgs... interface{}) Expr {
 		nArgsFinal = make(map[string]*expr)
 		for k, v := range nArgs {
 			nArgsFinal[k] = v
-			argStrs = append(argStrs, k + "=" + v.RawArgs())
+			argStrs = append(argStrs, k+"="+v.RawArgs())
 		}
 	}
 

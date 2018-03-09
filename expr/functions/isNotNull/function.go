@@ -45,8 +45,8 @@ func (f *isNotNull) Do(e parser.Expr, from, until int32, values map[parser.Metri
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *isNotNull) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *isNotNull) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"isNotNull": {
 			Description: "Takes a metric or wildcard seriesList and counts up the number of non-null\nvalues.  This is useful for understanding the number of metrics that have data\nat a given point in time (i.e. to count which servers are alive).\n\nExample:\n\n.. code-block:: none\n\n  &target=isNotNull(webapp.pages.*.views)\n\nReturns a seriesList where 1 is specified for non-null values, and\n0 is specified for null values.",
 			Function:    "isNotNull(seriesList)",

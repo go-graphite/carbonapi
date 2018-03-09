@@ -42,8 +42,8 @@ func (f *cumulative) Do(e parser.Expr, from, until int32, values map[parser.Metr
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *cumulative) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *cumulative) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"cumulative": {
 			Description: "Takes one metric or a wildcard seriesList.\n\nWhen a graph is drawn where width of the graph size in pixels is smaller than\nthe number of datapoints to be graphed, Graphite consolidates the values to\nto prevent line overlap. The cumulative() function changes the consolidation\nfunction from the default of 'average' to 'sum'. This is especially useful in\nsales graphs, where fractional values make no sense and a 'sum' of consolidated\nvalues is appropriate.\n\nAlias for :func:`consolidateBy(series, 'sum') <graphite.render.functions.consolidateBy>`\n\n.. code-block:: none\n\n  &target=cumulative(Sales.widgets.largeBlue)",
 			Function:    "cumulative(seriesList)",

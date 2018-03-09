@@ -80,8 +80,8 @@ func (f *nonNegativeDerivative) Do(e parser.Expr, from, until int32, values map[
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *nonNegativeDerivative) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *nonNegativeDerivative) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"nonNegativeDerivative": {
 			Description: "Same as the derivative function above, but ignores datapoints that trend\ndown.  Useful for counters that increase for a long time, then wrap or\nreset. (Such as if a network interface is destroyed and recreated by unloading\nand re-loading a kernel module, common with USB / WiFi cards.\n\nExample:\n\n.. code-block:: none\n\n  &target=nonNegativederivative(company.server.application01.ifconfig.TXPackets)",
 			Function:    "nonNegativeDerivative(seriesList, maxValue=None)",

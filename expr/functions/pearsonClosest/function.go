@@ -115,8 +115,8 @@ func (f *pearsonClosest) Do(e parser.Expr, from, until int32, values map[parser.
 	return results, nil
 }
 
-func (f *pearsonClosest) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *pearsonClosest) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"pearsonClosest": {
 			Description: `
 Implementation of Pearson product-moment correlation coefficient (PMCC) function(s)

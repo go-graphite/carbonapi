@@ -62,8 +62,8 @@ func (f *nPercentile) Do(e parser.Expr, from, until int32, values map[parser.Met
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *nPercentile) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *nPercentile) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"nPercentile": {
 			Description: "Returns n-percent of each series in the seriesList.",
 			Function:    "nPercentile(seriesList, n)",

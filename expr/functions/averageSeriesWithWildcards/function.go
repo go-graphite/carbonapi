@@ -101,8 +101,8 @@ func (f *averageSeriesWithWildcards) Do(e parser.Expr, from, until int32, values
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *averageSeriesWithWildcards) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *averageSeriesWithWildcards) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"averageSeriesWithWildcards": {
 			Description: "Call averageSeries after inserting wildcards at the given position(s).\n\nExample:\n\n.. code-block:: none\n\n  &target=averageSeriesWithWildcards(host.cpu-[0-7}.cpu-{user,system}.value, 1)\n\nThis would be the equivalent of\n\n.. code-block:: none\n\n  &target=averageSeries(host.*.cpu-user.value)&target=averageSeries(host.*.cpu-system.value)\n\nThis is an alias for :py:func:`aggregateWithWildcards <aggregateWithWildcards>` with aggregation ``average``.",
 			Function:    "averageSeriesWithWildcards(seriesList, *position)",

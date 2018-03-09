@@ -8,7 +8,6 @@ import (
 	_ "github.com/go-graphite/carbonapi/expr/functions"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/metadata"
-	"github.com/go-graphite/carbonapi/expr/png"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
@@ -50,10 +49,6 @@ func EvalExpr(e parser.Expr, from, until int32, values map[parser.MetricRequest]
 	metadata.FunctionMD.RUnlock()
 	if ok {
 		return f.Do(e, from, until, values)
-	}
-
-	if png.HaveGraphSupport {
-		return png.EvalExprGraph(e, from, until, values)
 	}
 
 	return nil, helper.ErrUnknownFunction(e.Target())

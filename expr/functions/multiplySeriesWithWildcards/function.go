@@ -106,8 +106,8 @@ func (f *multiplySeriesWithWildcards) Do(e parser.Expr, from, until int32, value
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *multiplySeriesWithWildcards) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *multiplySeriesWithWildcards) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"multiplySeriesWithWildcards": {
 			Description: "Call multiplySeries after inserting wildcards at the given position(s).\n\nExample:\n\n.. code-block:: none\n\n  &target=multiplySeriesWithWildcards(web.host-[0-7}.{avg-response,total-request}.value, 2)\n\nThis would be the equivalent of\n\n.. code-block:: none\n\n  &target=multiplySeries(web.host-0.{avg-response,total-request}.value)&target=multiplySeries(web.host-1.{avg-response,total-request}.value)...\n\nThis is an alias for :py:func:`aggregateWithWildcards <aggregateWithWildcards>` with aggregation ``multiply``.",
 			Function:    "multiplySeriesWithWildcards(seriesList, *position)",

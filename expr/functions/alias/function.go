@@ -45,8 +45,8 @@ func (f *alias) Do(e parser.Expr, from, until int32, values map[parser.MetricReq
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *alias) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *alias) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"alias": {
 			Description: "Takes one metric or a wildcard seriesList and a string in quotes.\nPrints the string instead of the metric name in the legend.\n\n.. code-block:: none\n\n  &target=alias(Sales.widgets.largeBlue,\"Large Blue Widgets\")",
 			Function:    "alias(seriesList, newName)",

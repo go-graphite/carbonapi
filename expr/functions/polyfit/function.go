@@ -107,8 +107,8 @@ func (f *polyfit) Do(e parser.Expr, from, until int32, values map[parser.MetricR
 	return results, nil
 }
 
-func (f *polyfit) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *polyfit) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"polyfit": {
 			Description: "Fitting Nth degree polynom to the dataset. https://en.wikipedia.org/wiki/Polynomial_regression#Matrix_form_and_calculation_of_estimates",
 			Function:    "polyfit(seriesList, degree=1, offset=\"0d\")",
@@ -123,12 +123,12 @@ func (f *polyfit) Description() map[string]*types.FunctionDescription {
 				},
 				{
 					Name:     "degree",
-					Default:  "1",
+					Default:  types.NewSuggestion(1),
 					Required: true,
 					Type:     types.Integer,
 				},
 				{
-					Default: "0d",
+					Default: types.NewSuggestion("0d"),
 					Name:    "offset",
 					Type:    types.Interval,
 				},

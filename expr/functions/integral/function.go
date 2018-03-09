@@ -43,8 +43,8 @@ func (f *integral) Do(e parser.Expr, from, until int32, values map[parser.Metric
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *integral) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *integral) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"integral": {
 			Description: "This will show the sum over time, sort of like a continuous addition function.\nUseful for finding totals or trends in metrics that are collected per minute.\n\nExample:\n\n.. code-block:: none\n\n  &target=integral(company.sales.perMinute)\n\nThis would start at zero on the left side of the graph, adding the sales each\nminute, and show the total sales for the time period selected at the right\nside, (time now, or the time specified by '&until=').",
 			Function:    "integral(seriesList)",

@@ -117,8 +117,8 @@ func (f *groupByNode) Do(e parser.Expr, from, until int32, values map[parser.Met
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *groupByNode) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *groupByNode) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"groupByNode": {
 			Description: "Takes a serieslist and maps a callback to subgroups within as defined by a common node\n\n.. code-block:: none\n\n  &target=groupByNode(ganglia.by-function.*.*.cpu.load5,2,\"sumSeries\")\n\nWould return multiple series which are each the result of applying the \"sumSeries\" function\nto groups joined on the second node (0 indexed) resulting in a list of targets like\n\n.. code-block :: none\n\n  sumSeries(ganglia.by-function.server1.*.cpu.load5),sumSeries(ganglia.by-function.server2.*.cpu.load5),...\n\nNode may be an integer referencing a node in the series name or a string identifying a tag.\n\nThis is an alias for using :py:func:`groupByNodes <groupByNodes>` with a single node.",
 			Function:    "groupByNode(seriesList, nodeNum, callback='average')",
@@ -137,7 +137,7 @@ func (f *groupByNode) Description() map[string]*types.FunctionDescription {
 					Type:     types.NodeOrTag,
 				},
 				{
-					Default: "average",
+					Default: types.NewSuggestion("average"),
 					Name:    "callback",
 					Options: []string{
 						"average",

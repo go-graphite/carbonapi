@@ -69,8 +69,8 @@ func (f *multiplySeries) Do(e parser.Expr, from, until int32, values map[parser.
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *multiplySeries) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *multiplySeries) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"multiplySeries": {
 			Description: "Takes two or more series and multiplies their points. A constant may not be\nused. To multiply by a constant, use the scale() function.\n\nExample:\n\n.. code-block:: none\n\n  &target=multiplySeries(Series.dividends,Series.divisors)\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``multiply``.",
 			Function:    "multiplySeries(*seriesLists)",

@@ -64,8 +64,8 @@ func (f *aliasByNode) Do(e parser.Expr, from, until int32, values map[parser.Met
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *aliasByNode) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *aliasByNode) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"aliasByNode": {
 			Description: "Takes a seriesList and applies an alias derived from one or more \"node\"\nportion/s of the target name or tags. Node indices are 0 indexed.\n\n.. code-block:: none\n\n  &target=aliasByNode(ganglia.*.cpu.load5,1)\n\nEach node may be an integer referencing a node in the series name or a string identifying a tag.\n\n.. code-block :: none\n\n  &target=seriesByTag(\"name=~cpu.load.*\", \"server=~server[1-9}+\", \"datacenter=dc1\")|aliasByNode(\"datacenter\", \"server\", 1)\n\n  # will produce output series like\n  # dc1.server1.load5, dc1.server2.load5, dc1.server1.load10, dc1.server2.load10",
 			Function:    "aliasByNode(seriesList, *nodes)",

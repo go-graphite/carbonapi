@@ -88,8 +88,8 @@ func (f *seriesList) Do(e parser.Expr, from, until int32, values map[parser.Metr
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *seriesList) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *seriesList) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"divideSeriesLists": {
 			Description: "Iterates over a two lists and divides list1[0} by list2[0}, list1[1} by list2[1} and so on.\nThe lists need to be the same length",
 			Function:    "divideSeriesLists(dividendSeriesList, divisorSeriesList)",

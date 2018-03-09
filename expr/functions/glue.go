@@ -2,6 +2,7 @@ package functions
 
 import (
 	"sort"
+	"strings"
 
 	"github.com/go-graphite/carbonapi/expr/functions/absolute"
 	"github.com/go-graphite/carbonapi/expr/functions/alias"
@@ -13,6 +14,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/averageSeriesWithWildcards"
 	"github.com/go-graphite/carbonapi/expr/functions/below"
 	"github.com/go-graphite/carbonapi/expr/functions/cactiStyle"
+	"github.com/go-graphite/carbonapi/expr/functions/cairo"
 	"github.com/go-graphite/carbonapi/expr/functions/changed"
 	"github.com/go-graphite/carbonapi/expr/functions/consolidateBy"
 	"github.com/go-graphite/carbonapi/expr/functions/constantLine"
@@ -26,6 +28,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/exclude"
 	"github.com/go-graphite/carbonapi/expr/functions/fallbackSeries"
 	"github.com/go-graphite/carbonapi/expr/functions/fft"
+	"github.com/go-graphite/carbonapi/expr/functions/graphiteWeb"
 	"github.com/go-graphite/carbonapi/expr/functions/grep"
 	"github.com/go-graphite/carbonapi/expr/functions/group"
 	"github.com/go-graphite/carbonapi/expr/functions/groupByNode"
@@ -96,7 +99,7 @@ type initFunc struct {
 }
 
 func New(configs map[string]string) {
-	funcs := make([]initFunc, 0, 83)
+	funcs := make([]initFunc, 0, 84)
 
 	funcs = append(funcs, initFunc{name: "absolute", order: absolute.GetOrder(), f: absolute.New})
 
@@ -117,6 +120,8 @@ func New(configs map[string]string) {
 	funcs = append(funcs, initFunc{name: "below", order: below.GetOrder(), f: below.New})
 
 	funcs = append(funcs, initFunc{name: "cactiStyle", order: cactiStyle.GetOrder(), f: cactiStyle.New})
+
+	funcs = append(funcs, initFunc{name: "cairo", order: cairo.GetOrder(), f: cairo.New})
 
 	funcs = append(funcs, initFunc{name: "changed", order: changed.GetOrder(), f: changed.New})
 
@@ -275,7 +280,7 @@ func New(configs map[string]string) {
 	})
 
 	for _, f := range funcs {
-		md := f.f(configs[f.name])
+		md := f.f(configs[strings.ToLower(f.name)])
 		for _, m := range md {
 			metadata.RegisterFunction(m.Name, m.F)
 		}

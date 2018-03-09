@@ -68,8 +68,8 @@ func (f *rangeOfSeries) Do(e parser.Expr, from, until int32, values map[parser.M
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *rangeOfSeries) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *rangeOfSeries) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"rangeOfSeries": {
 			Description: "Takes a wildcard seriesList.\nDistills down a set of inputs into the range of the series\n\nExample:\n\n.. code-block:: none\n\n    &target=rangeOfSeries(Server*.connections.total)\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``rangeOf``.",
 			Function:    "rangeOfSeries(*seriesLists)",

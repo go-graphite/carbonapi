@@ -61,8 +61,8 @@ func (f *scaleToSeconds) Do(e parser.Expr, from, until int32, values map[parser.
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *scaleToSeconds) Description() map[string]*types.FunctionDescription {
-	return map[string]*types.FunctionDescription{
+func (f *scaleToSeconds) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
 		"scaleToSeconds": {
 			Description: "Takes one metric or a wildcard seriesList and returns \"value per seconds\" where\nseconds is a last argument to this functions.\n\nUseful in conjunction with derivative or integral function if you want\nto normalize its result to a known resolution for arbitrary retentions",
 			Function:    "scaleToSeconds(seriesList, seconds)",
