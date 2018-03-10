@@ -8,13 +8,17 @@ import (
 	"unicode"
 
 	"fmt"
-	_ "github.com/go-graphite/carbonapi/expr/functions"
+	"github.com/go-graphite/carbonapi/expr/functions"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	"github.com/go-graphite/carbonapi/test"
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 )
+
+func init() {
+	functions.New(make(map[string]string))
+}
 
 func deepClone(original map[parser.MetricRequest][]*types.MetricData) map[parser.MetricRequest][]*types.MetricData {
 	clone := map[parser.MetricRequest][]*types.MetricData{}
