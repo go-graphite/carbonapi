@@ -30,6 +30,30 @@ type MetricData struct {
 	AggregateFunction func([]float64, []bool) (float64, bool)
 }
 
+// MakeMetricData creates new metrics data with given metric timeseries
+func MakeMetricData(name string, values []float64, step, start int32) *MetricData {
+
+	absent := make([]bool, len(values))
+
+	for i, v := range values {
+		if math.IsNaN(v) {
+			values[i] = 0
+			absent[i] = true
+		}
+	}
+
+	stop := start + int32(len(values))*step
+
+	return &MetricData{FetchResponse: pb.FetchResponse{
+		Name:      name,
+		Values:    values,
+		StartTime: start,
+		StepTime:  step,
+		StopTime:  stop,
+		IsAbsent:  absent,
+	}}
+}
+
 // MarshalCSV marshals metric data to CSV
 func MarshalCSV(results []*MetricData) []byte {
 

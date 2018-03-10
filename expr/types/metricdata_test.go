@@ -5,8 +5,6 @@ import (
 	"math"
 	"math/rand"
 	"testing"
-
-	"github.com/go-graphite/carbonapi/test"
 )
 
 func TestJSONResponse(t *testing.T) {
@@ -17,8 +15,8 @@ func TestJSONResponse(t *testing.T) {
 	}{
 		{
 			[]*MetricData{
-				test.MakeResponse("metric1", []float64{1, 1.5, 2.25, math.NaN()}, 100, 100),
-				test.MakeResponse("metric2", []float64{2, 2.5, 3.25, 4, 5}, 100, 100),
+				MakeMetricData("metric1", []float64{1, 1.5, 2.25, math.NaN()}, 100, 100),
+				MakeMetricData("metric2", []float64{2, 2.5, 3.25, 4, 5}, 100, 100),
 			},
 			[]byte(`[{"target":"metric1","datapoints":[[1,100],[1.5,200],[2.25,300],[null,400]]},{"target":"metric2","datapoints":[[2,100],[2.5,200],[3.25,300],[4,400],[5,500]]}]`),
 		},
@@ -40,8 +38,8 @@ func TestRawResponse(t *testing.T) {
 	}{
 		{
 			[]*MetricData{
-				test.MakeResponse("metric1", []float64{1, 1.5, 2.25, math.NaN()}, 100, 100),
-				test.MakeResponse("metric2", []float64{2, 2.5, 3.25, 4, 5}, 100, 100),
+				MakeMetricData("metric1", []float64{1, 1.5, 2.25, math.NaN()}, 100, 100),
+				MakeMetricData("metric2", []float64{2, 2.5, 3.25, 4, 5}, 100, 100),
 			},
 			[]byte(`metric1,100,500,100|1,1.5,2.25,None` + "\n" + `metric2,100,600,100|2,2.5,3.25,4,5` + "\n"),
 		},
@@ -67,8 +65,8 @@ func getData(rangeSize int) []float64 {
 
 func BenchmarkMarshalJSON(b *testing.B) {
 	data := []*MetricData{
-		test.MakeResponse("metric1", getData(10000), 100, 100),
-		test.MakeResponse("metric2", getData(100000), 100, 100),
+		MakeMetricData("metric1", getData(10000), 100, 100),
+		MakeMetricData("metric2", getData(100000), 100, 100),
 	}
 
 	b.ResetTimer()

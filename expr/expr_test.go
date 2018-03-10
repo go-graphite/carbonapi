@@ -12,7 +12,6 @@ import (
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"github.com/go-graphite/carbonapi/test"
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 )
 
@@ -273,21 +272,21 @@ func TestEvalExpression(t *testing.T) {
 		{
 			parser.NewTargetExpr("metric"),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric", 0, 1}: {test.MakeResponse("metric", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{"metric", 0, 1}: {types.MakeMetricData("metric", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("metric", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("metric", []float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
 			parser.NewTargetExpr("metric*"),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
-					test.MakeResponse("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
-					test.MakeResponse("metric2", []float64{2, 3, 4, 5, 6}, 1, now32),
+					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric2", []float64{2, 3, 4, 5, 6}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
-				test.MakeResponse("metric2", []float64{2, 3, 4, 5, 6}, 1, now32),
+				types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
+				types.MakeMetricData("metric2", []float64{2, 3, 4, 5, 6}, 1, now32),
 			},
 		},
 		{
@@ -295,51 +294,51 @@ func TestEvalExpression(t *testing.T) {
 				"metric1", "metric2", "metric3",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 2, 3, 4, 5, math.NaN()}, 1, now32)},
-				{"metric2", 0, 1}: {test.MakeResponse("metric2", []float64{2, 3, math.NaN(), 5, 6, math.NaN()}, 1, now32)},
-				{"metric3", 0, 1}: {test.MakeResponse("metric3", []float64{3, 4, 5, 6, math.NaN(), math.NaN()}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5, math.NaN()}, 1, now32)},
+				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, 3, math.NaN(), 5, 6, math.NaN()}, 1, now32)},
+				{"metric3", 0, 1}: {types.MakeMetricData("metric3", []float64{3, 4, 5, 6, math.NaN(), math.NaN()}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("sumSeries(metric1,metric2,metric3)", []float64{6, 9, 8, 15, 11, math.NaN()}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("sumSeries(metric1,metric2,metric3)", []float64{6, 9, 8, 15, 11, math.NaN()}, 1, now32)},
 		},
 		{
 			parser.NewExpr("sum",
 				"metric1", "metric2", "metric3", "metric4",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 2, 3, 4, 5, math.NaN()}, 1, now32)},
-				{"metric2", 0, 1}: {test.MakeResponse("metric2", []float64{2, 3, math.NaN(), 5, 6, math.NaN()}, 1, now32)},
-				{"metric3", 0, 1}: {test.MakeResponse("metric3", []float64{3, 4, 5, 6, math.NaN(), math.NaN()}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5, math.NaN()}, 1, now32)},
+				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, 3, math.NaN(), 5, 6, math.NaN()}, 1, now32)},
+				{"metric3", 0, 1}: {types.MakeMetricData("metric3", []float64{3, 4, 5, 6, math.NaN(), math.NaN()}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("sumSeries(metric1,metric2,metric3)", []float64{6, 9, 8, 15, 11, math.NaN()}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("sumSeries(metric1,metric2,metric3)", []float64{6, 9, 8, 15, 11, math.NaN()}, 1, now32)},
 		},
 		{
 			parser.NewExpr("lowPass",
 				"metric1", 40,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("lowPass(metric1,40)", []float64{0, 1, math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 8, 9}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("lowPass(metric1,40)", []float64{0, 1, math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 8, 9}, 1, now32)},
 		},
 		{
 			parser.NewExpr("countSeries",
 				"metric1", "metric2", "metric3",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, math.NaN(), 3, 4, 5, math.NaN()}, 1, now32)},
-				{"metric2", 0, 1}: {test.MakeResponse("metric2", []float64{2, math.NaN(), math.NaN(), 5, 6, math.NaN()}, 1, now32)},
-				{"metric3", 0, 1}: {test.MakeResponse("metric3", []float64{3, math.NaN(), 5, 6, math.NaN(), math.NaN()}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), 3, 4, 5, math.NaN()}, 1, now32)},
+				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), math.NaN(), 5, 6, math.NaN()}, 1, now32)},
+				{"metric3", 0, 1}: {types.MakeMetricData("metric3", []float64{3, math.NaN(), 5, 6, math.NaN(), math.NaN()}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("countSeries(metric1,metric2,metric3)", []float64{3, 3, 3, 3, 3, 3}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("countSeries(metric1,metric2,metric3)", []float64{3, 3, 3, 3, 3, 3}, 1, now32)},
 		},
 		{
 			parser.NewExpr("percentileOfSeries",
 				"metric1", 4,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, math.NaN()}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, math.NaN()}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("percentileOfSeries(metric1,4)", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, math.NaN()}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("percentileOfSeries(metric1,4)", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, math.NaN()}, 1, now32)},
 		},
 		{
 			parser.NewExpr("percentileOfSeries",
@@ -347,13 +346,13 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.*.*", 0, 1}: {
-					test.MakeResponse("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, math.NaN(), math.NaN()}, 1, now32),
-					test.MakeResponse("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10, math.NaN()}, 1, now32),
-					test.MakeResponse("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15, math.NaN()}, 1, now32),
-					test.MakeResponse("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11, math.NaN()}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, math.NaN(), math.NaN()}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10, math.NaN()}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15, math.NaN()}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11, math.NaN()}, 1, now32),
 				},
 			},
-			[]*types.MetricData{test.MakeResponse("percentileOfSeries(metric1.foo.*.*,50)", []float64{7, 8, 9, 10, 11, math.NaN()}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("percentileOfSeries(metric1.foo.*.*,50)", []float64{7, 8, 9, 10, 11, math.NaN()}, 1, now32)},
 		},
 		{
 			parser.NewExpr("percentileOfSeries",
@@ -362,40 +361,40 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.*.*", 0, 1}: {
-					test.MakeResponse("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, math.NaN(), math.NaN()}, 1, now32),
-					test.MakeResponse("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10, math.NaN()}, 1, now32),
-					test.MakeResponse("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15, math.NaN()}, 1, now32),
-					test.MakeResponse("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11, math.NaN()}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, math.NaN(), math.NaN()}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10, math.NaN()}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15, math.NaN()}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11, math.NaN()}, 1, now32),
 				},
 			},
-			[]*types.MetricData{test.MakeResponse("percentileOfSeries(metric1.foo.*.*,50,interpolate=true)", []float64{6.5, 7.5, 8.5, 9.5, 11, math.NaN()}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("percentileOfSeries(metric1.foo.*.*,50,interpolate=true)", []float64{6.5, 7.5, 8.5, 9.5, 11, math.NaN()}, 1, now32)},
 		},
 		{
 			parser.NewExpr("nPercentile",
 				"metric1", 50,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{2, 4, 6, 10, 14, 20, math.NaN()}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{2, 4, 6, 10, 14, 20, math.NaN()}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("nPercentile(metric1,50)", []float64{8, 8, 8, 8, 8, 8, 8}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("nPercentile(metric1,50)", []float64{8, 8, 8, 8, 8, 8, 8}, 1, now32)},
 		},
 		{
 			parser.NewExpr("nonNegativeDerivative",
 				"metric1",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{2, 4, 6, 10, 14, 20}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{2, 4, 6, 10, 14, 20}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("nonNegativeDerivative(metric1)", []float64{math.NaN(), 2, 2, 4, 4, 6}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("nonNegativeDerivative(metric1)", []float64{math.NaN(), 2, 2, 4, 4, 6}, 1, now32)},
 		},
 		{
 			parser.NewExpr("nonNegativeDerivative",
 				"metric1",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{2, 4, 6, 1, 4, math.NaN(), 8}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{2, 4, 6, 1, 4, math.NaN(), 8}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("nonNegativeDerivative(metric1)", []float64{math.NaN(), 2, 2, math.NaN(), 3, math.NaN(), math.NaN()}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("nonNegativeDerivative(metric1)", []float64{math.NaN(), 2, 2, math.NaN(), 3, math.NaN(), math.NaN()}, 1, now32)},
 		},
 		{
 			parser.NewExpr("nonNegativeDerivative",
@@ -405,99 +404,99 @@ func TestEvalExpression(t *testing.T) {
 				},
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{2, 4, 0, 10, 1, math.NaN(), 8, 40, 37}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{2, 4, 0, 10, 1, math.NaN(), 8, 40, 37}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("nonNegativeDerivative(metric1,32)", []float64{math.NaN(), 2, 29, 10, 24, math.NaN(), math.NaN(), 32, math.NaN()}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("nonNegativeDerivative(metric1,32)", []float64{math.NaN(), 2, 29, 10, 24, math.NaN(), math.NaN(), 32, math.NaN()}, 1, now32)},
 		},
 		{
 			parser.NewExpr("perSecond",
 				"metric1",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{27, 19, math.NaN(), 10, 1, 100, 1.5, 10.20}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{27, 19, math.NaN(), 10, 1, 100, 1.5, 10.20}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("perSecond(metric1)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 99, math.NaN(), 8.7}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("perSecond(metric1)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 99, math.NaN(), 8.7}, 1, now32)},
 		},
 		{
 			parser.NewExpr("perSecond",
 				"metric1", 32,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{math.NaN(), 1, 2, 3, 4, 30, 0, 32, math.NaN()}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), 1, 2, 3, 4, 30, 0, 32, math.NaN()}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("perSecond(metric1,32)", []float64{math.NaN(), math.NaN(), 1, 1, 1, 26, 3, 32, math.NaN()}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("perSecond(metric1,32)", []float64{math.NaN(), math.NaN(), 1, 1, 1, 26, 3, 32, math.NaN()}, 1, now32)},
 		},
 		{
 			parser.NewExpr("movingAverage",
 				"metric1", 4,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("movingAverage(metric1,4)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), 1, 1.25, 1.5, 1.75, 2.5, 3.5, 4, 5}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("movingAverage(metric1,4)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), 1, 1.25, 1.5, 1.75, 2.5, 3.5, 4, 5}, 1, now32)},
 		},
 		{
 			parser.NewExpr("movingSum",
 				"metric1", 2,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 2, 3, 4, 5, 6}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5, 6}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("movingSum(metric1,2)", []float64{math.NaN(), math.NaN(), 3, 5, 7, 9}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("movingSum(metric1,2)", []float64{math.NaN(), math.NaN(), 3, 5, 7, 9}, 1, now32)},
 		},
 		{
 			parser.NewExpr("movingMin",
 				"metric1", 2,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 2, 3, 2, 1, 0}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 2, 1, 0}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("movingMin(metric1,2)", []float64{math.NaN(), math.NaN(), 1, 2, 2, 1}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("movingMin(metric1,2)", []float64{math.NaN(), math.NaN(), 1, 2, 2, 1}, 1, now32)},
 		},
 		{
 			parser.NewExpr("movingMax",
 				"metric1", 2,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 2, 3, 2, 1, 0}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 2, 1, 0}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("movingMax(metric1,2)", []float64{math.NaN(), math.NaN(), 2, 3, 3, 2}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("movingMax(metric1,2)", []float64{math.NaN(), math.NaN(), 2, 3, 3, 2}, 1, now32)},
 		},
 		{
 			parser.NewExpr("movingMedian",
 				"metric1", 4,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("movingMedian(metric1,4)", []float64{math.NaN(), math.NaN(), math.NaN(), 1, 1, 1.5, 2, 2, 3, 4, 5, 6}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,4)", []float64{math.NaN(), math.NaN(), math.NaN(), 1, 1, 1.5, 2, 2, 3, 4, 5, 6}, 1, now32)},
 		},
 		{
 			parser.NewExpr("movingMedian",
 				"metric1", 5,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, math.NaN()}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, math.NaN()}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("movingMedian(metric1,5)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), 1, 1, 2, 2, 2, 4, 4, 6, 6, 4, 2}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,5)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), 1, 1, 2, 2, 2, 4, 4, 6, 6, 4, 2}, 1, now32)},
 		},
 		{
 			parser.NewExpr("movingMedian",
 				"metric1", parser.ArgValue("1s"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", -1, 1}: {test.MakeResponse("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, 0}, 1, now32)},
+				{"metric1", -1, 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, 0}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("movingMedian(metric1,\"1s\")", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, 0}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,\"1s\")", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, 0}, 1, now32)},
 		},
 		{
 			parser.NewExpr("movingMedian",
 				"metric1", parser.ArgValue("3s"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", -3, 1}: {test.MakeResponse("metric1", []float64{0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2}, 1, now32)},
+				{"metric1", -3, 1}: {types.MakeMetricData("metric1", []float64{0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("movingMedian(metric1,\"3s\")", []float64{0, 1, 1, 1, 1, 2, 2, 2, 4, 4, 6, 6, 6, 2}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,\"3s\")", []float64{0, 1, 1, 1, 1, 2, 2, 2, 4, 4, 6, 6, 6, 2}, 1, now32)},
 		},
 		{
 
@@ -505,37 +504,37 @@ func TestEvalExpression(t *testing.T) {
 				"metric1", "metric2", 6,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{43, 21, 25, 42, 57, 59}, 1, now32)},
-				{"metric2", 0, 1}: {test.MakeResponse("metric2", []float64{99, 65, 79, 75, 87, 81}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{43, 21, 25, 42, 57, 59}, 1, now32)},
+				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{99, 65, 79, 75, 87, 81}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("pearson(metric1,metric2,6)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0.5298089018901744}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("pearson(metric1,metric2,6)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0.5298089018901744}, 1, now32)},
 		},
 		{
 			parser.NewExpr("scale",
 				"metric1", 2.5,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 2, math.NaN(), 4, 5}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, math.NaN(), 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("scale(metric1,2.5)", []float64{2.5, 5.0, math.NaN(), 10.0, 12.5}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("scale(metric1,2.5)", []float64{2.5, 5.0, math.NaN(), 10.0, 12.5}, 1, now32)},
 		},
 		{
 			parser.NewExpr("scaleToSeconds",
 				"metric1", 5,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{60, 120, math.NaN(), 120, 120}, 60, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{60, 120, math.NaN(), 120, 120}, 60, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("scaleToSeconds(metric1,5)", []float64{5, 10, math.NaN(), 10, 10}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("scaleToSeconds(metric1,5)", []float64{5, 10, math.NaN(), 10, 10}, 1, now32)},
 		},
 		{
 			parser.NewExpr("pow",
 				"metric1", 3,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{5, 1, math.NaN(), 0, 12, 125, 10.4, 1.1}, 60, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{5, 1, math.NaN(), 0, 12, 125, 10.4, 1.1}, 60, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("pow(metric1,3)", []float64{125, 1, math.NaN(), 0, 1728, 1953125, 1124.864, 1.331}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("pow(metric1,3)", []float64{125, 1, math.NaN(), 0, 1728, 1953125, 1124.864, 1.331}, 1, now32)},
 		},
 		{
 			parser.NewExpr("keepLastValue",
@@ -543,9 +542,9 @@ func TestEvalExpression(t *testing.T) {
 				parser.NamedArgs{"limit": 3},
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("keepLastValue(metric1,3)", []float64{math.NaN(), 2, 2, 2, 2, math.NaN(), 4, 5}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("keepLastValue(metric1,3)", []float64{math.NaN(), 2, 2, 2, 2, math.NaN(), 4, 5}, 1, now32)},
 		},
 		{
 			parser.NewExpr("keepLastValue",
@@ -553,9 +552,9 @@ func TestEvalExpression(t *testing.T) {
 			),
 
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("keepLastValue(metric1)", []float64{math.NaN(), 2, 2, 2, 2, 2, 4, 5}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("keepLastValue(metric1)", []float64{math.NaN(), 2, 2, 2, 2, 2, 4, 5}, 1, now32)},
 		},
 		{
 			parser.NewExpr("keepLastValue",
@@ -563,13 +562,13 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
-					test.MakeResponse("metric1", []float64{1, math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32),
-					test.MakeResponse("metric2", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32),
+					types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32),
+					types.MakeMetricData("metric2", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("keepLastValue(metric1)", []float64{1, 1, 1, 1, 1, 1, 4, 5}, 1, now32),
-				test.MakeResponse("keepLastValue(metric2)", []float64{math.NaN(), 2, 2, 2, 2, 2, 4, 5}, 1, now32),
+				types.MakeMetricData("keepLastValue(metric1)", []float64{1, 1, 1, 1, 1, 1, 4, 5}, 1, now32),
+				types.MakeMetricData("keepLastValue(metric2)", []float64{math.NaN(), 2, 2, 2, 2, 2, 4, 5}, 1, now32),
 			},
 		},
 		{
@@ -577,9 +576,9 @@ func TestEvalExpression(t *testing.T) {
 				"metric1",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0, 0, 0, math.NaN(), math.NaN(), 1, 1, 2, 3, 4, 4, 5, 5, 5, 6, 7}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0, 0, 0, math.NaN(), math.NaN(), 1, 1, 2, 3, 4, 4, 5, 5, 5, 6, 7}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("changed(metric1)",
+			[]*types.MetricData{types.MakeMetricData("changed(metric1)",
 				[]float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1}, 1, now32)},
 		},
 		{
@@ -587,9 +586,9 @@ func TestEvalExpression(t *testing.T) {
 				"metric1", parser.ArgValue("renamed"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("renamed",
+			[]*types.MetricData{types.MakeMetricData("renamed",
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
@@ -597,27 +596,27 @@ func TestEvalExpression(t *testing.T) {
 				"metric1.foo.bar.baz",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.bar.baz", 0, 1}: {test.MakeResponse("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{"metric1.foo.bar.baz", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
 			parser.NewExpr("aliasByNode",
 				"metric1.foo.bar.baz", 1,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.bar.baz", 0, 1}: {test.MakeResponse("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{"metric1.foo.bar.baz", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("foo", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("foo", []float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
 			parser.NewExpr("aliasByNode",
 				"metric1.foo.bar.baz", 1, 3,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.bar.baz", 0, 1}: {test.MakeResponse("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{"metric1.foo.bar.baz", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("foo.baz",
+			[]*types.MetricData{types.MakeMetricData("foo.baz",
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
@@ -625,9 +624,9 @@ func TestEvalExpression(t *testing.T) {
 				"metric1.foo.bar.baz", 1, -2,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.bar.baz", 0, 1}: {test.MakeResponse("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{"metric1.foo.bar.baz", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("foo.bar",
+			[]*types.MetricData{types.MakeMetricData("foo.bar",
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
@@ -635,9 +634,9 @@ func TestEvalExpression(t *testing.T) {
 				"metric1", parser.ArgValue("avg"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("metric1 (avg: 3.000000)",
+			[]*types.MetricData{types.MakeMetricData("metric1 (avg: 3.000000)",
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
@@ -645,9 +644,9 @@ func TestEvalExpression(t *testing.T) {
 				"metric1", parser.ArgValue("sum"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("metric1 (sum: 15.000000)",
+			[]*types.MetricData{types.MakeMetricData("metric1 (sum: 15.000000)",
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
@@ -655,9 +654,9 @@ func TestEvalExpression(t *testing.T) {
 				"metric1", parser.ArgValue("total"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("metric1 (total: 15.000000)",
+			[]*types.MetricData{types.MakeMetricData("metric1 (total: 15.000000)",
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
@@ -665,9 +664,9 @@ func TestEvalExpression(t *testing.T) {
 				"metric1", parser.ArgValue("sum"), parser.ArgValue("avg"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("metric1 (sum: 15.000000) (avg: 3.000000)",
+			[]*types.MetricData{types.MakeMetricData("metric1 (sum: 15.000000) (avg: 3.000000)",
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
@@ -675,9 +674,9 @@ func TestEvalExpression(t *testing.T) {
 				"metric1.foo.bar.baz", 1, 3,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.bar.baz", 0, 1}: {test.MakeResponse("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{"metric1.foo.bar.baz", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("foo.bar",
+			[]*types.MetricData{types.MakeMetricData("foo.bar",
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
@@ -685,9 +684,9 @@ func TestEvalExpression(t *testing.T) {
 				"metric1.foo.bar.baz", parser.ArgValue("foo"), parser.ArgValue("replaced"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.bar.baz", 0, 1}: {test.MakeResponse("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{"metric1.foo.bar.baz", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("metric1.replaced.bar.baz",
+			[]*types.MetricData{types.MakeMetricData("metric1.replaced.bar.baz",
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
@@ -695,9 +694,9 @@ func TestEvalExpression(t *testing.T) {
 				"metric1.TCP100", parser.ArgValue("^.*TCP(\\d+)"), parser.ArgValue("$1"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.TCP100", 0, 1}: {test.MakeResponse("metric1.TCP100", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{"metric1.TCP100", 0, 1}: {types.MakeMetricData("metric1.TCP100", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("100",
+			[]*types.MetricData{types.MakeMetricData("100",
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
@@ -705,9 +704,9 @@ func TestEvalExpression(t *testing.T) {
 				"metric1.TCP100", parser.ArgValue("^.*TCP(\\d+)"), parser.ArgValue("\\1"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.TCP100", 0, 1}: {test.MakeResponse("metric1.TCP100", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{"metric1.TCP100", 0, 1}: {types.MakeMetricData("metric1.TCP100", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("100",
+			[]*types.MetricData{types.MakeMetricData("100",
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
@@ -715,9 +714,9 @@ func TestEvalExpression(t *testing.T) {
 				"metric1", 3,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 2, 3, math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("delay(metric1,3)",
+			[]*types.MetricData{types.MakeMetricData("delay(metric1,3)",
 				[]float64{math.NaN(), math.NaN(), math.NaN(), 1, 2, 3}, 1, now32)},
 		},
 		{
@@ -725,9 +724,9 @@ func TestEvalExpression(t *testing.T) {
 				"metric1",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{2, 4, 6, 1, 4, math.NaN(), 8}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{2, 4, 6, 1, 4, math.NaN(), 8}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("derivative(metric1)",
+			[]*types.MetricData{types.MakeMetricData("derivative(metric1)",
 				[]float64{math.NaN(), 2, 2, -5, 3, math.NaN(), 4}, 1, now32)},
 		},
 		{
@@ -735,9 +734,9 @@ func TestEvalExpression(t *testing.T) {
 				"metric1",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{math.NaN(), 4, 6, 1, 4, math.NaN(), 8}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), 4, 6, 1, 4, math.NaN(), 8}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("derivative(metric1)",
+			[]*types.MetricData{types.MakeMetricData("derivative(metric1)",
 				[]float64{math.NaN(), math.NaN(), 2, -5, 3, math.NaN(), 4}, 1, now32)},
 		},
 		{
@@ -745,11 +744,11 @@ func TestEvalExpression(t *testing.T) {
 				"metric1", "metric2", "metric3",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32)},
-				{"metric2", 0, 1}: {test.MakeResponse("metric2", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32)},
-				{"metric3", 0, 1}: {test.MakeResponse("metric3", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32)},
+				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32)},
+				{"metric3", 0, 1}: {types.MakeMetricData("metric3", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("averageSeries(metric1,metric2,metric3)",
+			[]*types.MetricData{types.MakeMetricData("averageSeries(metric1,metric2,metric3)",
 				[]float64{2, math.NaN(), 3, 4, 5, 5.5}, 1, now32)},
 		},
 		{
@@ -758,25 +757,25 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"servers.*.cpu.*", 0, 1}: {
-					test.MakeResponse("servers.server1.cpu.valid", []float64{1, 2, 3}, 1, now32),
-					test.MakeResponse("servers.server2.cpu.valid", []float64{6, 7, 8}, 1, now32),
-					test.MakeResponse("servers.server1.cpu.total", []float64{1, 2, 4}, 1, now32),
-					test.MakeResponse("servers.server2.cpu.total", []float64{5, 7, 8}, 1, now32),
-					test.MakeResponse("servers.server3.cpu.valid", []float64{8, 10, 11}, 1, now32),
-					test.MakeResponse("servers.server3.cpu.total", []float64{9, 10, 11}, 1, now32),
-					test.MakeResponse("servers.server4.cpu.valid", []float64{11, 13, 14}, 1, now32),
-					test.MakeResponse("servers.server4.cpu.total", []float64{12, 13, 14}, 1, now32),
+					types.MakeMetricData("servers.server1.cpu.valid", []float64{1, 2, 3}, 1, now32),
+					types.MakeMetricData("servers.server2.cpu.valid", []float64{6, 7, 8}, 1, now32),
+					types.MakeMetricData("servers.server1.cpu.total", []float64{1, 2, 4}, 1, now32),
+					types.MakeMetricData("servers.server2.cpu.total", []float64{5, 7, 8}, 1, now32),
+					types.MakeMetricData("servers.server3.cpu.valid", []float64{8, 10, 11}, 1, now32),
+					types.MakeMetricData("servers.server3.cpu.total", []float64{9, 10, 11}, 1, now32),
+					types.MakeMetricData("servers.server4.cpu.valid", []float64{11, 13, 14}, 1, now32),
+					types.MakeMetricData("servers.server4.cpu.total", []float64{12, 13, 14}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("servers.server1.cpu.valid", []float64{1, 2, 3}, 1, now32),
-				test.MakeResponse("servers.server1.cpu.total", []float64{1, 2, 4}, 1, now32),
-				test.MakeResponse("servers.server2.cpu.valid", []float64{6, 7, 8}, 1, now32),
-				test.MakeResponse("servers.server2.cpu.total", []float64{5, 7, 8}, 1, now32),
-				test.MakeResponse("servers.server3.cpu.valid", []float64{8, 10, 11}, 1, now32),
-				test.MakeResponse("servers.server3.cpu.total", []float64{9, 10, 11}, 1, now32),
-				test.MakeResponse("servers.server4.cpu.valid", []float64{11, 13, 14}, 1, now32),
-				test.MakeResponse("servers.server4.cpu.total", []float64{12, 13, 14}, 1, now32),
+				types.MakeMetricData("servers.server1.cpu.valid", []float64{1, 2, 3}, 1, now32),
+				types.MakeMetricData("servers.server1.cpu.total", []float64{1, 2, 4}, 1, now32),
+				types.MakeMetricData("servers.server2.cpu.valid", []float64{6, 7, 8}, 1, now32),
+				types.MakeMetricData("servers.server2.cpu.total", []float64{5, 7, 8}, 1, now32),
+				types.MakeMetricData("servers.server3.cpu.valid", []float64{8, 10, 11}, 1, now32),
+				types.MakeMetricData("servers.server3.cpu.total", []float64{9, 10, 11}, 1, now32),
+				types.MakeMetricData("servers.server4.cpu.valid", []float64{11, 13, 14}, 1, now32),
+				types.MakeMetricData("servers.server4.cpu.total", []float64{12, 13, 14}, 1, now32),
 			},
 		},
 		{
@@ -784,11 +783,11 @@ func TestEvalExpression(t *testing.T) {
 				"metric1", "metric2", "metric3",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32)},
-				{"metric2", 0, 1}: {test.MakeResponse("metric2", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32)},
-				{"metric3", 0, 1}: {test.MakeResponse("metric3", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32)},
+				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32)},
+				{"metric3", 0, 1}: {types.MakeMetricData("metric3", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("maxSeries(metric1,metric2,metric3)",
+			[]*types.MetricData{types.MakeMetricData("maxSeries(metric1,metric2,metric3)",
 				[]float64{3, math.NaN(), 4, 5, 6, 6}, 1, now32)},
 		},
 		{
@@ -796,11 +795,11 @@ func TestEvalExpression(t *testing.T) {
 				"metric1", "metric2", "metric3",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32)},
-				{"metric2", 0, 1}: {test.MakeResponse("metric2", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32)},
-				{"metric3", 0, 1}: {test.MakeResponse("metric3", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32)},
+				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32)},
+				{"metric3", 0, 1}: {types.MakeMetricData("metric3", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("minSeries(metric1,metric2,metric3)",
+			[]*types.MetricData{types.MakeMetricData("minSeries(metric1,metric2,metric3)",
 				[]float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32)},
 		},
 		{
@@ -808,10 +807,10 @@ func TestEvalExpression(t *testing.T) {
 				"metric1", "metric2",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
-				{"metric2", 0, 1}: {test.MakeResponse("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
+				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("asPercent(metric1,metric2)",
+			[]*types.MetricData{types.MakeMetricData("asPercent(metric1,metric2)",
 				[]float64{50, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 200}, 1, now32)},
 		},
 		{
@@ -820,17 +819,17 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metricA*", 0, 1}: {
-					test.MakeResponse("metricA1", []float64{1, 20, 10}, 1, now32),
-					test.MakeResponse("metricA2", []float64{1, 10, 20}, 1, now32),
+					types.MakeMetricData("metricA1", []float64{1, 20, 10}, 1, now32),
+					types.MakeMetricData("metricA2", []float64{1, 10, 20}, 1, now32),
 				},
 				{"metricB*", 0, 1}: {
-					test.MakeResponse("metricB1", []float64{4, 4, 8}, 1, now32),
-					test.MakeResponse("metricB2", []float64{4, 16, 2}, 1, now32),
+					types.MakeMetricData("metricB1", []float64{4, 4, 8}, 1, now32),
+					types.MakeMetricData("metricB2", []float64{4, 16, 2}, 1, now32),
 				},
 			},
-			[]*types.MetricData{test.MakeResponse("asPercent(metricA1,metricB1)",
+			[]*types.MetricData{types.MakeMetricData("asPercent(metricA1,metricB1)",
 				[]float64{25, 500, 125}, 1, now32),
-				test.MakeResponse("asPercent(metricA2,metricB2)",
+				types.MakeMetricData("asPercent(metricA2,metricB2)",
 					[]float64{25, 62.5, 1000}, 1, now32)},
 		},
 		{
@@ -839,17 +838,17 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"Server{1,2}.memory.used", 0, 1}: {
-					test.MakeResponse("Server1.memory.used", []float64{1, 20, 10}, 1, now32),
-					test.MakeResponse("Server2.memory.used", []float64{1, 10, 20}, 1, now32),
+					types.MakeMetricData("Server1.memory.used", []float64{1, 20, 10}, 1, now32),
+					types.MakeMetricData("Server2.memory.used", []float64{1, 10, 20}, 1, now32),
 				},
 				{"Server{1,3}.memory.total", 0, 1}: {
-					test.MakeResponse("Server1.memory.total", []float64{4, 4, 8}, 1, now32),
-					test.MakeResponse("Server3.memory.total", []float64{4, 16, 2}, 1, now32),
+					types.MakeMetricData("Server1.memory.total", []float64{4, 4, 8}, 1, now32),
+					types.MakeMetricData("Server3.memory.total", []float64{4, 16, 2}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("asPercent(Server1.memory.used,Server1.memory.total)", []float64{25, 500, 125}, 1, now32),
-				test.MakeResponse("asPercent(Server2.memory.used,Server3.memory.total)", []float64{25, 62.5, 1000}, 1, now32),
+				types.MakeMetricData("asPercent(Server1.memory.used,Server1.memory.total)", []float64{25, 500, 125}, 1, now32),
+				types.MakeMetricData("asPercent(Server2.memory.used,Server3.memory.total)", []float64{25, 62.5, 1000}, 1, now32),
 			},
 		},
 		{
@@ -858,18 +857,18 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"Server{1,2}.memory.used", 0, 1}: {
-					test.MakeResponse("Server1.memory.used", []float64{1, 20, 10}, 1, now32),
-					test.MakeResponse("Server2.memory.used", []float64{1, 10, 20}, 1, now32),
+					types.MakeMetricData("Server1.memory.used", []float64{1, 20, 10}, 1, now32),
+					types.MakeMetricData("Server2.memory.used", []float64{1, 10, 20}, 1, now32),
 				},
 				{"Server{1,3}.memory.total", 0, 1}: {
-					test.MakeResponse("Server1.memory.total", []float64{4, 4, 8}, 1, now32),
-					test.MakeResponse("Server3.memory.total", []float64{4, 16, 2}, 1, now32),
+					types.MakeMetricData("Server1.memory.total", []float64{4, 4, 8}, 1, now32),
+					types.MakeMetricData("Server3.memory.total", []float64{4, 16, 2}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("asPercent(Server1.memory.used,Server1.memory.total)", []float64{25, 500, 125}, 1, now32),
-				test.MakeResponse("asPercent(Server2.memory.used,MISSING)", []float64{math.NaN(), math.NaN(), math.NaN()}, 1, now32),
-				test.MakeResponse("asPercent(MISSING,Server3.memory.total)", []float64{math.NaN(), math.NaN(), math.NaN()}, 1, now32),
+				types.MakeMetricData("asPercent(Server1.memory.used,Server1.memory.total)", []float64{25, 500, 125}, 1, now32),
+				types.MakeMetricData("asPercent(Server2.memory.used,MISSING)", []float64{math.NaN(), math.NaN(), math.NaN()}, 1, now32),
+				types.MakeMetricData("asPercent(MISSING,Server3.memory.total)", []float64{math.NaN(), math.NaN(), math.NaN()}, 1, now32),
 			},
 		},
 		{
@@ -877,10 +876,10 @@ func TestEvalExpression(t *testing.T) {
 				"metric1", "metric2",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
-				{"metric2", 0, 1}: {test.MakeResponse("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
+				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("divideSeries(metric1,metric2)",
+			[]*types.MetricData{types.MakeMetricData("divideSeries(metric1,metric2)",
 				[]float64{0.5, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 2}, 1, now32)},
 		},
 		{
@@ -889,11 +888,11 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[12]", 0, 1}: {
-					test.MakeResponse("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32),
-					test.MakeResponse("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32),
+					types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32),
+					types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32),
 				},
 			},
-			[]*types.MetricData{test.MakeResponse("divideSeries(metric[12])",
+			[]*types.MetricData{types.MakeMetricData("divideSeries(metric[12])",
 				[]float64{0.5, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 2}, 1, now32)},
 		},
 		{
@@ -901,10 +900,10 @@ func TestEvalExpression(t *testing.T) {
 				"metric1", "metric2",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
-				{"metric2", 0, 1}: {test.MakeResponse("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
+				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("divideSeries(metric1,metric2)",
+			[]*types.MetricData{types.MakeMetricData("divideSeries(metric1,metric2)",
 				[]float64{0.5, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 2}, 1, now32)},
 		},
 		{
@@ -912,10 +911,10 @@ func TestEvalExpression(t *testing.T) {
 				"metric1", "metric2",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
-				{"metric2", 0, 1}: {test.MakeResponse("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
+				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("multiplySeries(metric1,metric2)",
+			[]*types.MetricData{types.MakeMetricData("multiplySeries(metric1,metric2)",
 				[]float64{2, math.NaN(), math.NaN(), math.NaN(), 0, 72}, 1, now32)},
 		},
 		{
@@ -924,10 +923,10 @@ func TestEvalExpression(t *testing.T) {
 				"metric2",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
-				{"metric2", 0, 1}: {test.MakeResponse("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
+				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("diffSeries(metric1,metric2)",
+			[]*types.MetricData{types.MakeMetricData("diffSeries(metric1,metric2)",
 				[]float64{-1, math.NaN(), math.NaN(), math.NaN(), 4, 6}, 1, now32)},
 		},
 
@@ -937,10 +936,10 @@ func TestEvalExpression(t *testing.T) {
 				"metric2",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
-				{"metric2", 0, 1}: {test.MakeResponse("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
+				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("multiplySeries(metric1,metric2)",
+			[]*types.MetricData{types.MakeMetricData("multiplySeries(metric1,metric2)",
 				[]float64{2, math.NaN(), math.NaN(), math.NaN(), 0, 72}, 1, now32)},
 		},
 		{
@@ -950,10 +949,10 @@ func TestEvalExpression(t *testing.T) {
 				"metric2",
 			).MutateRawArgs("metric[12]"),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
-				{"metric2", 0, 1}: {test.MakeResponse("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
+				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("multiplySeries(metric[12])",
+			[]*types.MetricData{types.MakeMetricData("multiplySeries(metric[12])",
 				[]float64{2, math.NaN(), math.NaN(), math.NaN(), 0, 72}, 1, now32)},
 		},
 		{
@@ -964,11 +963,11 @@ func TestEvalExpression(t *testing.T) {
 				"metric3",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
-				{"metric2", 0, 1}: {test.MakeResponse("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
-				{"metric3", 0, 1}: {test.MakeResponse("metric3", []float64{3, math.NaN(), 4, math.NaN(), 7, 8}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
+				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
+				{"metric3", 0, 1}: {types.MakeMetricData("metric3", []float64{3, math.NaN(), 4, math.NaN(), 7, 8}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("multiplySeries(metric1,metric2,metric3)",
+			[]*types.MetricData{types.MakeMetricData("multiplySeries(metric1,metric2,metric3)",
 				[]float64{6, math.NaN(), math.NaN(), math.NaN(), 0, 576}, 1, now32)},
 		},
 		{
@@ -978,10 +977,10 @@ func TestEvalExpression(t *testing.T) {
 				"metric2",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
-				{"metric2", 0, 1}: {test.MakeResponse("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
+				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("diffSeries(metric1,metric2)",
+			[]*types.MetricData{types.MakeMetricData("diffSeries(metric1,metric2)",
 				[]float64{-1, math.NaN(), math.NaN(), 3, 4, 6}, 1, now32)},
 		},
 		{
@@ -992,11 +991,11 @@ func TestEvalExpression(t *testing.T) {
 				"metric3",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{5, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
-				{"metric2", 0, 1}: {test.MakeResponse("metric2", []float64{3, math.NaN(), 3, math.NaN(), 0, 7}, 1, now32)},
-				{"metric3", 0, 1}: {test.MakeResponse("metric3", []float64{1, math.NaN(), 3, math.NaN(), 0, 4}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{5, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
+				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{3, math.NaN(), 3, math.NaN(), 0, 7}, 1, now32)},
+				{"metric3", 0, 1}: {types.MakeMetricData("metric3", []float64{1, math.NaN(), 3, math.NaN(), 0, 4}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("diffSeries(metric1,metric2,metric3)",
+			[]*types.MetricData{types.MakeMetricData("diffSeries(metric1,metric2,metric3)",
 				[]float64{1, math.NaN(), math.NaN(), 3, 4, 1}, 1, now32)},
 		},
 		{
@@ -1008,11 +1007,11 @@ func TestEvalExpression(t *testing.T) {
 				"metric4",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{5, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
-				{"metric2", 0, 1}: {test.MakeResponse("metric2", []float64{3, math.NaN(), 3, math.NaN(), 0, 7}, 1, now32)},
-				{"metric3", 0, 1}: {test.MakeResponse("metric3", []float64{1, math.NaN(), 3, math.NaN(), 0, 4}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{5, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
+				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{3, math.NaN(), 3, math.NaN(), 0, 7}, 1, now32)},
+				{"metric3", 0, 1}: {types.MakeMetricData("metric3", []float64{1, math.NaN(), 3, math.NaN(), 0, 4}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("diffSeries(metric1,metric2,metric3)",
+			[]*types.MetricData{types.MakeMetricData("diffSeries(metric1,metric2,metric3)",
 				[]float64{1, math.NaN(), math.NaN(), 3, 4, 1}, 1, now32)},
 		},
 		{
@@ -1022,11 +1021,11 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
-					test.MakeResponse("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32),
-					test.MakeResponse("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32),
+					types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32),
+					types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32),
 				},
 			},
-			[]*types.MetricData{test.MakeResponse("diffSeries(metric*)",
+			[]*types.MetricData{types.MakeMetricData("diffSeries(metric*)",
 				[]float64{-1, math.NaN(), math.NaN(), 3, 4, 6}, 1, now32)},
 		},
 		{
@@ -1036,11 +1035,11 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
-					test.MakeResponse("metric1", []float64{1, 2, math.NaN(), 3, 4, math.NaN()}, 1, now32),
-					test.MakeResponse("metric2", []float64{5, math.NaN(), 6}, 2, now32),
+					types.MakeMetricData("metric1", []float64{1, 2, math.NaN(), 3, 4, math.NaN()}, 1, now32),
+					types.MakeMetricData("metric2", []float64{5, math.NaN(), 6}, 2, now32),
 				},
 			},
-			[]*types.MetricData{test.MakeResponse("diffSeries(metric*)",
+			[]*types.MetricData{types.MakeMetricData("diffSeries(metric*)",
 				[]float64{-4, -3, math.NaN(), 3, -2, math.NaN()}, 1, now32)},
 		},
 		{
@@ -1050,12 +1049,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
-					test.MakeResponse("metric1", []float64{math.NaN(), math.NaN(), math.NaN(), 3, 4, 12, -10}, 1, now32),
-					test.MakeResponse("metric2", []float64{2, math.NaN(), math.NaN(), 15, 0, 6, 10}, 1, now32),
-					test.MakeResponse("metric3", []float64{1, 2, math.NaN(), 4, 5, 6, 7}, 1, now32),
+					types.MakeMetricData("metric1", []float64{math.NaN(), math.NaN(), math.NaN(), 3, 4, 12, -10}, 1, now32),
+					types.MakeMetricData("metric2", []float64{2, math.NaN(), math.NaN(), 15, 0, 6, 10}, 1, now32),
+					types.MakeMetricData("metric3", []float64{1, 2, math.NaN(), 4, 5, 6, 7}, 1, now32),
 				},
 			},
-			[]*types.MetricData{test.MakeResponse("rangeOfSeries(metric*)",
+			[]*types.MetricData{types.MakeMetricData("rangeOfSeries(metric*)",
 				[]float64{1, math.NaN(), math.NaN(), 12, 5, 6, 20}, 1, now32)},
 		},
 		{
@@ -1064,9 +1063,9 @@ func TestEvalExpression(t *testing.T) {
 				"metric1",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("transformNull(metric1)",
+			[]*types.MetricData{types.MakeMetricData("transformNull(metric1)",
 				[]float64{1, 0, 0, 3, 4, 12}, 1, now32)},
 		},
 		{
@@ -1079,15 +1078,15 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"devops.service.*.filter.received.*.count", 0, 1}: {
-					test.MakeResponse("devops.service.server1.filter.received.valid.count", []float64{2, 4, 8}, 1, now32),
-					test.MakeResponse("devops.service.server1.filter.received.total.count", []float64{8, 2, 4}, 1, now32),
-					test.MakeResponse("devops.service.server2.filter.received.valid.count", []float64{3, 9, 12}, 1, now32),
-					test.MakeResponse("devops.service.server2.filter.received.total.count", []float64{12, 9, 3}, 1, now32),
+					types.MakeMetricData("devops.service.server1.filter.received.valid.count", []float64{2, 4, 8}, 1, now32),
+					types.MakeMetricData("devops.service.server1.filter.received.total.count", []float64{8, 2, 4}, 1, now32),
+					types.MakeMetricData("devops.service.server2.filter.received.valid.count", []float64{3, 9, 12}, 1, now32),
+					types.MakeMetricData("devops.service.server2.filter.received.total.count", []float64{12, 9, 3}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("devops.service.server1.filter.received.reduce.asPercent.count", []float64{25, 200, 200}, 1, now32),
-				test.MakeResponse("devops.service.server2.filter.received.reduce.asPercent.count", []float64{25, 100, 400}, 1, now32),
+				types.MakeMetricData("devops.service.server1.filter.received.reduce.asPercent.count", []float64{25, 200, 200}, 1, now32),
+				types.MakeMetricData("devops.service.server2.filter.received.reduce.asPercent.count", []float64{25, 100, 400}, 1, now32),
 			},
 		},
 		{
@@ -1098,9 +1097,9 @@ func TestEvalExpression(t *testing.T) {
 				},
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("transformNull(metric1,5)",
+			[]*types.MetricData{types.MakeMetricData("transformNull(metric1,5)",
 				[]float64{1, 5, 5, 3, 4, 12}, 1, now32)},
 		},
 		{
@@ -1111,12 +1110,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metricA", []float64{1, 1, 3, 3, 12, 11}, 1, now32),
-					test.MakeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
-					test.MakeResponse("metricC", []float64{1, 1, 3, 3, 4, 10}, 1, now32),
+					types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 12, 11}, 1, now32),
+					types.MakeMetricData("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 10}, 1, now32),
 				},
 			},
-			[]*types.MetricData{test.MakeResponse("metricA", // NOTE(dgryski): not sure if this matches graphite
+			[]*types.MetricData{types.MakeMetricData("metricA", // NOTE(dgryski): not sure if this matches graphite
 				[]float64{1, 1, 3, 3, 12, 11}, 1, now32)},
 		},
 		{
@@ -1127,12 +1126,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
-					test.MakeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
-					test.MakeResponse("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
+					types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
+					types.MakeMetricData("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
 				},
 			},
-			[]*types.MetricData{test.MakeResponse("metricB", // NOTE(dgryski): not sure if this matches graphite
+			[]*types.MetricData{types.MakeMetricData("metricB", // NOTE(dgryski): not sure if this matches graphite
 				[]float64{1, 1, 3, 3, 4, 1}, 1, now32)},
 		},
 		{
@@ -1143,13 +1142,13 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metric0", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
-					test.MakeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
-					test.MakeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
-					test.MakeResponse("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
+					types.MakeMetricData("metric0", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
+					types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
+					types.MakeMetricData("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
 				},
 			},
-			[]*types.MetricData{test.MakeResponse("metricC", // NOTE(dgryski): not sure if this matches graphite
+			[]*types.MetricData{types.MakeMetricData("metricC", // NOTE(dgryski): not sure if this matches graphite
 				[]float64{1, 1, 3, 3, 4, 15}, 1, now32)},
 		},
 		{
@@ -1160,19 +1159,19 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metric0", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
-					test.MakeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
-					test.MakeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
-					test.MakeResponse("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
+					types.MakeMetricData("metric0", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
+					types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
+					types.MakeMetricData("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
-				test.MakeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
-				test.MakeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+				types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
+				types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
+				types.MakeMetricData("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
 				//NOTE(nnuss): highest* functions filter null-valued series as a side-effect when `n` >= number of series
 				//TODO(nnuss): bring lowest* functions into harmony with this side effect or get rid of it
-				//test.MakeResponse("metric0", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
+				//types.MakeMetricData("metric0", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
 			},
 		},
 		{
@@ -1183,12 +1182,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
-					test.MakeResponse("metricB", []float64{1, 5, 5, 5, 5, 5}, 1, now32),
-					test.MakeResponse("metricC", []float64{1, 1, 3, 3, 4, 10}, 1, now32),
+					types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
+					types.MakeMetricData("metricB", []float64{1, 5, 5, 5, 5, 5}, 1, now32),
+					types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 10}, 1, now32),
 				},
 			},
-			[]*types.MetricData{test.MakeResponse("metricB", // NOTE(dgryski): not sure if this matches graphite
+			[]*types.MetricData{types.MakeMetricData("metricB", // NOTE(dgryski): not sure if this matches graphite
 				[]float64{1, 5, 5, 5, 5, 5}, 1, now32)},
 		},
 		{
@@ -1199,12 +1198,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metricFoo", []float64{1, 1, 1, 1, 1}, 1, now32),
-					test.MakeResponse("metricBar", []float64{2, 2, 2, 2, 2}, 1, now32),
-					test.MakeResponse("metricBaz", []float64{3, 3, 3, 3, 3}, 1, now32),
+					types.MakeMetricData("metricFoo", []float64{1, 1, 1, 1, 1}, 1, now32),
+					types.MakeMetricData("metricBar", []float64{2, 2, 2, 2, 2}, 1, now32),
+					types.MakeMetricData("metricBaz", []float64{3, 3, 3, 3, 3}, 1, now32),
 				},
 			},
-			[]*types.MetricData{test.MakeResponse("metricBar", // NOTE(dgryski): not sure if this matches graphite
+			[]*types.MetricData{types.MakeMetricData("metricBar", // NOTE(dgryski): not sure if this matches graphite
 				[]float64{2, 2, 2, 2, 2}, 1, now32)},
 		},
 		{
@@ -1214,10 +1213,10 @@ func TestEvalExpression(t *testing.T) {
 				0.9,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{0, 1, 1, 1, math.NaN(), 1, 1}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{0, 1, 1, 1, math.NaN(), 1, 1}, 1, now32)},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("ewma(metric1,0.9)", []float64{0, 0.9, 0.99, 0.999, math.NaN(), 0.9999, 0.99999}, 1, now32),
+				types.MakeMetricData("ewma(metric1,0.9)", []float64{0, 0.9, 0.99, 0.999, math.NaN(), 0.9999, 0.99999}, 1, now32),
 			},
 		},
 		{
@@ -1227,11 +1226,11 @@ func TestEvalExpression(t *testing.T) {
 				"fallbackmetric",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}:        {test.MakeResponse("metric1", []float64{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, 1, now32)},
-				{"fallbackmetric", 0, 1}: {test.MakeResponse("fallbackmetric", []float64{0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7}, 1, now32)},
+				{"metric1", 0, 1}:        {types.MakeMetricData("metric1", []float64{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, 1, now32)},
+				{"fallbackmetric", 0, 1}: {types.MakeMetricData("fallbackmetric", []float64{0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7}, 1, now32)},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("fallbackmetric", []float64{0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7}, 1, now32),
+				types.MakeMetricData("fallbackmetric", []float64{0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7}, 1, now32),
 			},
 		},
 		{
@@ -1241,11 +1240,11 @@ func TestEvalExpression(t *testing.T) {
 				"metric2",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, 1, now32)},
-				{"metric2", 0, 1}: {test.MakeResponse("metric2", []float64{0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, 1, now32)},
+				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7}, 1, now32)},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("metric1", []float64{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, 1, now32),
+				types.MakeMetricData("metric1", []float64{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, 1, now32),
 			},
 		},
 		{
@@ -1255,11 +1254,11 @@ func TestEvalExpression(t *testing.T) {
 				"fallbackmetric",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}:        {test.MakeResponse("metric1", []float64{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, 1, now32)},
-				{"fallbackmetric", 0, 1}: {test.MakeResponse("fallbackmetric", []float64{0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7}, 1, now32)},
+				{"metric1", 0, 1}:        {types.MakeMetricData("metric1", []float64{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, 1, now32)},
+				{"fallbackmetric", 0, 1}: {types.MakeMetricData("fallbackmetric", []float64{0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7}, 1, now32)},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("fallbackmetric", []float64{0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7}, 1, now32),
+				types.MakeMetricData("fallbackmetric", []float64{0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7}, 1, now32),
 			},
 		},
 		{
@@ -1269,10 +1268,10 @@ func TestEvalExpression(t *testing.T) {
 				"metric2",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, 1, now32)},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("metric1", []float64{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, 1, now32),
+				types.MakeMetricData("metric1", []float64{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, 1, now32),
 			},
 		},
 		{
@@ -1282,10 +1281,10 @@ func TestEvalExpression(t *testing.T) {
 				0.9,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{0, 1, 1, 1, math.NaN(), 1, 1}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{0, 1, 1, 1, math.NaN(), 1, 1}, 1, now32)},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("ewma(metric1,0.9)", []float64{0, 0.9, 0.99, 0.999, math.NaN(), 0.9999, 0.99999}, 1, now32),
+				types.MakeMetricData("ewma(metric1,0.9)", []float64{0, 0.9, 0.99, 0.999, math.NaN(), 0.9999, 0.99999}, 1, now32),
 			},
 		},
 		{
@@ -1296,12 +1295,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metricFoo", []float64{1, 1, 1, 1, 1}, 1, now32),
-					test.MakeResponse("metricBar", []float64{2, 2, 2, 2, 2}, 1, now32),
-					test.MakeResponse("metricBaz", []float64{3, 3, 3, 3, 3}, 1, now32),
+					types.MakeMetricData("metricFoo", []float64{1, 1, 1, 1, 1}, 1, now32),
+					types.MakeMetricData("metricBar", []float64{2, 2, 2, 2, 2}, 1, now32),
+					types.MakeMetricData("metricBaz", []float64{3, 3, 3, 3, 3}, 1, now32),
 				},
 			},
-			[]*types.MetricData{test.MakeResponse("metricBar", // NOTE(dgryski): not sure if this matches graphite
+			[]*types.MetricData{types.MakeMetricData("metricBar", // NOTE(dgryski): not sure if this matches graphite
 				[]float64{2, 2, 2, 2, 2}, 1, now32)},
 		},
 		{
@@ -1310,9 +1309,9 @@ func TestEvalExpression(t *testing.T) {
 				"metric1",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 10, 100, 1000, 10000}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 10, 100, 1000, 10000}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("logarithm(metric1)",
+			[]*types.MetricData{types.MakeMetricData("logarithm(metric1)",
 				[]float64{0, 1, 2, 3, 4}, 1, now32)},
 		},
 		{
@@ -1323,9 +1322,9 @@ func TestEvalExpression(t *testing.T) {
 				},
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 2, 4, 8, 16, 32}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 4, 8, 16, 32}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("logarithm(metric1,2)",
+			[]*types.MetricData{types.MakeMetricData("logarithm(metric1,2)",
 				[]float64{0, 1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
@@ -1334,9 +1333,9 @@ func TestEvalExpression(t *testing.T) {
 				"metric1",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{0, -1, 2, -3, 4, 5}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{0, -1, 2, -3, 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("absolute(metric1)",
+			[]*types.MetricData{types.MakeMetricData("absolute(metric1)",
 				[]float64{0, 1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
@@ -1345,9 +1344,9 @@ func TestEvalExpression(t *testing.T) {
 				"metric1",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{math.NaN(), -1, math.NaN(), -3, 4, 5}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), -1, math.NaN(), -3, 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("isNonNull(metric1)",
+			[]*types.MetricData{types.MakeMetricData("isNonNull(metric1)",
 				[]float64{0, 1, 0, 1, 1, 1}, 1, now32)},
 		},
 		{
@@ -1357,13 +1356,13 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metricFoo", []float64{math.NaN(), -1, math.NaN(), -3, 4, 5}, 1, now32),
-					test.MakeResponse("metricBaz", []float64{1, -1, math.NaN(), -3, 4, 5}, 1, now32),
+					types.MakeMetricData("metricFoo", []float64{math.NaN(), -1, math.NaN(), -3, 4, 5}, 1, now32),
+					types.MakeMetricData("metricBaz", []float64{1, -1, math.NaN(), -3, 4, 5}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("isNonNull(metricFoo)", []float64{0, 1, 0, 1, 1, 1}, 1, now32),
-				test.MakeResponse("isNonNull(metricBaz)", []float64{1, 1, 0, 1, 1, 1}, 1, now32),
+				types.MakeMetricData("isNonNull(metricFoo)", []float64{0, 1, 0, 1, 1, 1}, 1, now32),
+				types.MakeMetricData("isNonNull(metricBaz)", []float64{1, 1, 0, 1, 1, 1}, 1, now32),
 			},
 		},
 		{
@@ -1374,14 +1373,14 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
-					test.MakeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
-				test.MakeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+				types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+				types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 			},
 		},
 		{
@@ -1392,12 +1391,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
-					test.MakeResponse("metricC", []float64{0, 4, 4, 5, 5, 6}, 1, now32),
+					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					types.MakeMetricData("metricC", []float64{0, 4, 4, 5, 5, 6}, 1, now32),
 				},
 			},
-			[]*types.MetricData{test.MakeResponse("metricA",
+			[]*types.MetricData{types.MakeMetricData("metricA",
 				[]float64{0, 0, 0, 0, 0, 0}, 1, now32)},
 		},
 		{
@@ -1408,12 +1407,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
-					test.MakeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 				},
 			},
-			[]*types.MetricData{test.MakeResponse("metricB",
+			[]*types.MetricData{types.MakeMetricData("metricB",
 				[]float64{3, 4, 5, 6, 7, 8}, 1, now32)},
 		},
 		{
@@ -1424,12 +1423,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
-					test.MakeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 				},
 			},
-			[]*types.MetricData{test.MakeResponse("metricA",
+			[]*types.MetricData{types.MakeMetricData("metricA",
 				[]float64{0, 0, 0, 0, 0, 0}, 1, now32)},
 		},
 		{
@@ -1440,12 +1439,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metricB", []float64{1, 4, 5, 6, 7, 8}, 1, now32),
-					test.MakeResponse("metricC", []float64{2, 4, 4, 5, 5, 6}, 1, now32),
+					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricB", []float64{1, 4, 5, 6, 7, 8}, 1, now32),
+					types.MakeMetricData("metricC", []float64{2, 4, 4, 5, 5, 6}, 1, now32),
 				},
 			},
-			[]*types.MetricData{test.MakeResponse("metricC",
+			[]*types.MetricData{types.MakeMetricData("metricC",
 				[]float64{2, 4, 4, 5, 5, 6}, 1, now32)},
 		},
 		{
@@ -1456,12 +1455,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metricB", []float64{-1, 4, 5, 6, 7, 8}, 1, now32),
-					test.MakeResponse("metricC", []float64{-2, 4, 4, 5, 5, 6}, 1, now32),
+					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricB", []float64{-1, 4, 5, 6, 7, 8}, 1, now32),
+					types.MakeMetricData("metricC", []float64{-2, 4, 4, 5, 5, 6}, 1, now32),
 				},
 			},
-			[]*types.MetricData{test.MakeResponse("metricC",
+			[]*types.MetricData{types.MakeMetricData("metricC",
 				[]float64{-2, 4, 4, 5, 5, 6}, 1, now32)},
 		},
 		{
@@ -1473,15 +1472,15 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metricX", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					types.MakeMetricData("metricX", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
 				},
 				{"metric2", 0, 1}: {
-					test.MakeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metricB", []float64{3, math.NaN(), 5, 6, 7, 8}, 1, now32),
-					test.MakeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricB", []float64{3, math.NaN(), 5, 6, 7, 8}, 1, now32),
+					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 				},
 			},
-			[]*types.MetricData{test.MakeResponse("metricB",
+			[]*types.MetricData{types.MakeMetricData("metricB",
 				[]float64{3, math.NaN(), 5, 6, 7, 8}, 1, now32)},
 		},
 		{
@@ -1490,9 +1489,9 @@ func TestEvalExpression(t *testing.T) {
 				"metric1",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{-4, -2, -1, 0, 1, 2, 4}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{-4, -2, -1, 0, 1, 2, 4}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("invert(metric1)",
+			[]*types.MetricData{types.MakeMetricData("invert(metric1)",
 				[]float64{-0.25, -0.5, -1, math.NaN(), 1, 0.5, 0.25}, 1, now32)},
 		},
 		{
@@ -1502,9 +1501,9 @@ func TestEvalExpression(t *testing.T) {
 				10,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{93, 94, 95, math.NaN(), 97, 98, 99, 100, 101}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{93, 94, 95, math.NaN(), 97, 98, 99, 100, 101}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("offset(metric1,10)",
+			[]*types.MetricData{types.MakeMetricData("offset(metric1,10)",
 				[]float64{103, 104, 105, math.NaN(), 107, 108, 109, 110, 111}, 1, now32)},
 		},
 		{
@@ -1513,9 +1512,9 @@ func TestEvalExpression(t *testing.T) {
 				"metric1",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{93, 94, 95, math.NaN(), 97, 98, 99, 100, 101}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{93, 94, 95, math.NaN(), 97, 98, 99, 100, 101}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("offsetToZero(metric1)",
+			[]*types.MetricData{types.MakeMetricData("offsetToZero(metric1)",
 				[]float64{0, 1, 2, math.NaN(), 4, 5, 6, 7, 8}, 1, now32)},
 		},
 		{
@@ -1526,12 +1525,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
-					test.MakeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 				},
 			},
-			[]*types.MetricData{test.MakeResponse("metricB",
+			[]*types.MetricData{types.MakeMetricData("metricB",
 				[]float64{3, 4, 5, 6, 7, 8}, 1, now32)},
 		},
 		{
@@ -1542,12 +1541,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metricA", []float64{0, 0, 0, 0, 0, math.NaN()}, 1, now32),
-					test.MakeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
-					test.MakeResponse("metricC", []float64{0, 4, 4, 5, 5, 6}, 1, now32),
+					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, math.NaN()}, 1, now32),
+					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					types.MakeMetricData("metricC", []float64{0, 4, 4, 5, 5, 6}, 1, now32),
 				},
 			},
-			[]*types.MetricData{test.MakeResponse("metricA",
+			[]*types.MetricData{types.MakeMetricData("metricA",
 				[]float64{0, 0, 0, 0, 0, math.NaN()}, 1, now32)},
 		},
 		{
@@ -1556,9 +1555,9 @@ func TestEvalExpression(t *testing.T) {
 				"metric1",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 0, 2, 3, 4, 5, math.NaN(), 7, 8}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 0, 2, 3, 4, 5, math.NaN(), 7, 8}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("integral(metric1)",
+			[]*types.MetricData{types.MakeMetricData("integral(metric1)",
 				[]float64{1, 1, 3, 6, 10, 15, math.NaN(), 22, 30}, 1, now32)},
 		},
 		{
@@ -1568,15 +1567,15 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metricB", []float64{5, 5, 5, 5, 5, 5}, 1, now32),
-					test.MakeResponse("metricC", []float64{4, 4, 5, 5, 4, 4}, 1, now32),
+					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricB", []float64{5, 5, 5, 5, 5, 5}, 1, now32),
+					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 4, 4}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("metricB", []float64{5, 5, 5, 5, 5, 5}, 1, now32),
-				test.MakeResponse("metricC", []float64{4, 4, 5, 5, 4, 4}, 1, now32),
-				test.MakeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+				types.MakeMetricData("metricB", []float64{5, 5, 5, 5, 5, 5}, 1, now32),
+				types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 4, 4}, 1, now32),
+				types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 			},
 		},
 		{
@@ -1586,15 +1585,15 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metricB", []float64{5, 5, 5, 5, 5, 5}, 1, now32),
-					test.MakeResponse("metricC", []float64{2, 2, 10, 5, 2, 2}, 1, now32),
+					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricB", []float64{5, 5, 5, 5, 5, 5}, 1, now32),
+					types.MakeMetricData("metricC", []float64{2, 2, 10, 5, 2, 2}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("metricC", []float64{2, 2, 10, 5, 2, 2}, 1, now32),
-				test.MakeResponse("metricB", []float64{5, 5, 5, 5, 5, 5}, 1, now32),
-				test.MakeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+				types.MakeMetricData("metricC", []float64{2, 2, 10, 5, 2, 2}, 1, now32),
+				types.MakeMetricData("metricB", []float64{5, 5, 5, 5, 5, 5}, 1, now32),
+				types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 			},
 		},
 		{
@@ -1604,15 +1603,15 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
-					test.MakeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
-				test.MakeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
-				test.MakeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+				types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+				types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+				types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 			},
 		},
 		{
@@ -1622,17 +1621,17 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metricX", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metricA", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metricB", []float64{0, 0, 2, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metricC", []float64{0, 0, 0, 3, 0, 0}, 1, now32),
+					types.MakeMetricData("metricX", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricA", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricB", []float64{0, 0, 2, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricC", []float64{0, 0, 0, 3, 0, 0}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("metricA", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
-				test.MakeResponse("metricB", []float64{0, 0, 2, 0, 0, 0}, 1, now32),
-				test.MakeResponse("metricC", []float64{0, 0, 0, 3, 0, 0}, 1, now32),
-				test.MakeResponse("metricX", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+				types.MakeMetricData("metricA", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
+				types.MakeMetricData("metricB", []float64{0, 0, 2, 0, 0, 0}, 1, now32),
+				types.MakeMetricData("metricC", []float64{0, 0, 0, 3, 0, 0}, 1, now32),
+				types.MakeMetricData("metricX", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 			},
 		},
 		{
@@ -1644,21 +1643,21 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metric1", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metric12", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metric1234567890", []float64{0, 0, 0, 5, 0, 0}, 1, now32),
-					test.MakeResponse("metric2", []float64{0, 0, 2, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metric11", []float64{0, 0, 0, 3, 0, 0}, 1, now32),
-					test.MakeResponse("metric", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metric1", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metric12", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metric1234567890", []float64{0, 0, 0, 5, 0, 0}, 1, now32),
+					types.MakeMetricData("metric2", []float64{0, 0, 2, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metric11", []float64{0, 0, 0, 3, 0, 0}, 1, now32),
+					types.MakeMetricData("metric", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("metric", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
-				test.MakeResponse("metric1", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
-				test.MakeResponse("metric2", []float64{0, 0, 2, 0, 0, 0}, 1, now32),
-				test.MakeResponse("metric11", []float64{0, 0, 0, 3, 0, 0}, 1, now32),
-				test.MakeResponse("metric12", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
-				test.MakeResponse("metric1234567890", []float64{0, 0, 0, 5, 0, 0}, 1, now32),
+				types.MakeMetricData("metric", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+				types.MakeMetricData("metric1", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+				types.MakeMetricData("metric2", []float64{0, 0, 2, 0, 0, 0}, 1, now32),
+				types.MakeMetricData("metric11", []float64{0, 0, 0, 3, 0, 0}, 1, now32),
+				types.MakeMetricData("metric12", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
+				types.MakeMetricData("metric1234567890", []float64{0, 0, 0, 5, 0, 0}, 1, now32),
 			},
 		},
 		{
@@ -1667,9 +1666,9 @@ func TestEvalExpression(t *testing.T) {
 				42.42,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"42.42", 0, 1}: {test.MakeResponse("constantLine", []float64{12.3, 12.3}, 1, now32)},
+				{"42.42", 0, 1}: {types.MakeMetricData("constantLine", []float64{12.3, 12.3}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("42.42",
+			[]*types.MetricData{types.MakeMetricData("42.42",
 				[]float64{42.42, 42.42}, 1, now32)},
 		},
 		{
@@ -1678,9 +1677,9 @@ func TestEvalExpression(t *testing.T) {
 				"metric1",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("squareRoot(metric1)",
+			[]*types.MetricData{types.MakeMetricData("squareRoot(metric1)",
 				[]float64{1, 1.4142135623730951, 0, 2.6457513110645907, 2.8284271247461903, 4.47213595499958, 5.477225575051661, math.NaN()}, 1, now32)},
 		},
 		{
@@ -1690,14 +1689,14 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
-					test.MakeResponse("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32),
-					test.MakeResponse("metric2", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
-					test.MakeResponse("metric3", []float64{0, 0, 0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32),
+					types.MakeMetricData("metric2", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
+					types.MakeMetricData("metric3", []float64{0, 0, 0, 0, 0, 0, 0, 0}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32),
-				test.MakeResponse("metric3", []float64{0, 0, 0, 0, 0, 0, 0, 0}, 1, now32),
+				types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32),
+				types.MakeMetricData("metric3", []float64{0, 0, 0, 0, 0, 0, 0, 0}, 1, now32),
 			},
 		},
 		{
@@ -1707,13 +1706,13 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
-					test.MakeResponse("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32),
-					test.MakeResponse("metric2", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
-					test.MakeResponse("metric3", []float64{0, 0, 0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32),
+					types.MakeMetricData("metric2", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
+					types.MakeMetricData("metric3", []float64{0, 0, 0, 0, 0, 0, 0, 0}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32),
+				types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32),
 			},
 		},
 		{
@@ -1723,9 +1722,9 @@ func TestEvalExpression(t *testing.T) {
 				0,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("removeBelowValue(metric1, 0)",
+			[]*types.MetricData{types.MakeMetricData("removeBelowValue(metric1, 0)",
 				[]float64{1, 2, math.NaN(), 7, 8, 20, 30, math.NaN()}, 1, now32)},
 		},
 		{
@@ -1735,9 +1734,9 @@ func TestEvalExpression(t *testing.T) {
 				10,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("removeAboveValue(metric1, 10)",
+			[]*types.MetricData{types.MakeMetricData("removeAboveValue(metric1, 10)",
 				[]float64{1, 2, -1, 7, 8, math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
 		},
 		{
@@ -1747,9 +1746,9 @@ func TestEvalExpression(t *testing.T) {
 				50,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("removeBelowPercentile(metric1, 50)",
+			[]*types.MetricData{types.MakeMetricData("removeBelowPercentile(metric1, 50)",
 				[]float64{math.NaN(), math.NaN(), math.NaN(), 7, 8, 20, 30, math.NaN()}, 1, now32)},
 		},
 		{
@@ -1759,9 +1758,9 @@ func TestEvalExpression(t *testing.T) {
 				50,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
-			[]*types.MetricData{test.MakeResponse("removeAbovePercentile(metric1, 50)",
+			[]*types.MetricData{types.MakeMetricData("removeAbovePercentile(metric1, 50)",
 				[]float64{1, 2, -1, 7, math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
 		},
 		{
@@ -1772,12 +1771,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metric1",
+					types.MakeMetricData("metric1",
 						[]float64{math.NaN(), 20531.733333333334, 20196.4, 17925.333333333332, 20950.4, 35168.13333333333, 19965.866666666665, 24556.4, 22266.4, 58039.86666666667}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("metric1 Current: 58k Max: 58k Min: 18k",
+				types.MakeMetricData("metric1 Current: 58k Max: 58k Min: 18k",
 					[]float64{math.NaN(), 20531.733333333334, 20196.4, 17925.333333333332, 20950.4, 35168.13333333333, 19965.866666666665, 24556.4, 22266.4, 58039.86666666667}, 1, now32),
 			},
 		},
@@ -1789,12 +1788,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metric1",
+					types.MakeMetricData("metric1",
 						[]float64{1.432729, 1.434207, 1.404762, 1.414609, 1.399159, 1.411343, 1.406217, 1.407123, 1.392078, math.NaN()}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("metric1 Current: 1 Max: 1 Min: 1",
+				types.MakeMetricData("metric1 Current: 1 Max: 1 Min: 1",
 					[]float64{1.432729, 1.434207, 1.404762, 1.414609, 1.399159, 1.411343, 1.406217, 1.407123, 1.392078, math.NaN()}, 1, now32),
 			},
 		},
@@ -1807,12 +1806,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metric1",
+					types.MakeMetricData("metric1",
 						[]float64{1.432729, 1.434207, 1.404762, 1.414609, 1.399159, 1.411343, 1.406217, 1.407123, 1.392078, math.NaN()}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("metric1 Current: 1 carrot Max: 1 carrot Min: 1 carrot",
+				types.MakeMetricData("metric1 Current: 1 carrot Max: 1 carrot Min: 1 carrot",
 					[]float64{1.432729, 1.434207, 1.404762, 1.414609, 1.399159, 1.411343, 1.406217, 1.407123, 1.392078, math.NaN()}, 1, now32),
 			},
 		},
@@ -1824,12 +1823,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metric1",
+					types.MakeMetricData("metric1",
 						[]float64{math.NaN(), 88364212.53333333, 79008410.93333334, 80312920.0, 69860465.2, 83876830.0, 80399148.8, 90481297.46666667, 79628113.73333333, math.NaN()}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("metric1 Current: 80M Max: 90M Min: 70M",
+				types.MakeMetricData("metric1 Current: 80M Max: 90M Min: 70M",
 					[]float64{math.NaN(), 88364212.53333333, 79008410.93333334, 80312920.0, 69860465.2, 83876830.0, 80399148.8, 90481297.46666667, 79628113.73333333, math.NaN()}, 1, now32),
 			},
 		},
@@ -1841,12 +1840,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metric1",
+					types.MakeMetricData("metric1",
 						[]float64{1000}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("metric1 Current: 1k Max: 1k Min: 1k",
+				types.MakeMetricData("metric1 Current: 1k Max: 1k Min: 1k",
 					[]float64{1000}, 1, now32),
 			},
 		},
@@ -1857,12 +1856,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metric1",
+					types.MakeMetricData("metric1",
 						[]float64{1000}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("metric1 Current: 1000 Max: 1000 Min: 1000",
+				types.MakeMetricData("metric1 Current: 1000 Max: 1000 Min: 1000",
 					[]float64{1000}, 1, now32),
 			},
 		},
@@ -1875,12 +1874,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metric1",
+					types.MakeMetricData("metric1",
 						[]float64{10}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("metric1 Current: 10 apples Max: 10 apples Min: 10 apples",
+				types.MakeMetricData("metric1 Current: 10 apples Max: 10 apples Min: 10 apples",
 					[]float64{10}, 1, now32),
 			},
 		},
@@ -1892,12 +1891,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metric1",
+					types.MakeMetricData("metric1",
 						[]float64{240.0, 240.0, 240.0, 240.0, 240.0, 240.0, 240.0, 240.0, 240.0, math.NaN()}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("metric1 Current: 240 Max: 240 Min: 240",
+				types.MakeMetricData("metric1 Current: 240 Max: 240 Min: 240",
 					[]float64{240.0, 240.0, 240.0, 240.0, 240.0, 240.0, 240.0, 240.0, 240.0, math.NaN()}, 1, now32),
 			},
 		},
@@ -1909,12 +1908,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metric1",
+					types.MakeMetricData("metric1",
 						[]float64{-1.0, -2.0, -1.0, -3.0, -1.0, -1.0, -0.0, -0.0, -0.0}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("metric1 Current: 0 Max: 0 Min: -3",
+				types.MakeMetricData("metric1 Current: 0 Max: 0 Min: -3",
 					[]float64{-1.0, -2.0, -1.0, -3.0, -1.0, -1.0, -0.0, -0.0, -0.0}, 1, now32),
 			},
 		},
@@ -1926,12 +1925,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metric1",
+					types.MakeMetricData("metric1",
 						[]float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("metric1 Current: NaN Max: NaN Min: NaN",
+				types.MakeMetricData("metric1 Current: NaN Max: NaN Min: NaN",
 					[]float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
 			},
 		},
@@ -1942,12 +1941,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metric1",
+					types.MakeMetricData("metric1",
 						[]float64{1, 2, math.NaN(), math.NaN(), 5, 6}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("linearRegression(metric1)",
+				types.MakeMetricData("linearRegression(metric1)",
 					[]float64{1, 2, 3, 4, 5, 6}, 1, now32),
 			},
 		},
@@ -1959,12 +1958,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metric1",
+					types.MakeMetricData("metric1",
 						[]float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("polyfit(metric1,3)",
+				types.MakeMetricData("polyfit(metric1,3)",
 					[]float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
 			},
 		},
@@ -1975,12 +1974,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metric1",
+					types.MakeMetricData("metric1",
 						[]float64{7.79, 7.7, 7.92, 5.25, 6.24, 7.25, 7.15, 8.56, 7.82, 8.52}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("polyfit(metric1)",
+				types.MakeMetricData("polyfit(metric1)",
 					[]float64{6.94763636364, 7.05260606061, 7.15757575758, 7.26254545455, 7.36751515152,
 						7.47248484848, 7.57745454545, 7.68242424242, 7.78739393939, 7.89236363636}, 1, now32),
 			},
@@ -1993,12 +1992,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metric1",
+					types.MakeMetricData("metric1",
 						[]float64{7.79, 7.7, 7.92, 5.25, 6.24, math.NaN(), 7.15, 8.56, 7.82, 8.52}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("polyfit(metric1,2)",
+				types.MakeMetricData("polyfit(metric1,2)",
 					[]float64{7.9733096590909085, 7.364842329545457, 6.933910511363642, 6.680514204545464, 6.604653409090922,
 						6.706328125000017, 6.985538352272748, 7.442284090909116, 8.07656534090912, 8.888382102272761}, 1, now32),
 			},
@@ -2012,12 +2011,12 @@ func TestEvalExpression(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metric1",
+					types.MakeMetricData("metric1",
 						[]float64{7.79, 7.7, 7.92, 5.25, 6.24, 7.25, 7.15, 8.56, 7.82, 8.52}, 1, now32),
 				},
 			},
 			[]*types.MetricData{
-				test.MakeResponse("polyfit(metric1,3,'5sec')",
+				types.MakeMetricData("polyfit(metric1,3,'5sec')",
 					[]float64{8.22944055944, 7.26958041958, 6.73364801865, 6.54653846154, 6.63314685315,
 						6.91836829837, 7.3270979021, 7.78423076923, 8.21466200466, 8.54328671329,
 						8.695, 8.5946969697, 8.16727272727, 7.33762237762, 6.03064102564}, 1, now32),
@@ -2108,7 +2107,7 @@ func TestEvalSummarize(t *testing.T) {
 				parser.ArgValue("5s"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{
 					1, 1, 1, 1, 1,
 					2, 2, 2, 2, 2,
 					3, 3, 3, 3, 3,
@@ -2131,7 +2130,7 @@ func TestEvalSummarize(t *testing.T) {
 				parser.ArgValue("5s"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{
 					1, 2, 3, 4, 5,
 				}, 10, now32)},
 			},
@@ -2149,7 +2148,7 @@ func TestEvalSummarize(t *testing.T) {
 				},
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 1, 2, 3, math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 1, 2, 3, math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
 			},
 			[]float64{1, 2, 3, 4, 5, 2, math.NaN()},
 			"summarize(metric1,'5s','avg')",
@@ -2165,7 +2164,7 @@ func TestEvalSummarize(t *testing.T) {
 				},
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
 			[]float64{1, 2, 3, 4.5, 5},
 			"summarize(metric1,'5s','max')",
@@ -2181,7 +2180,7 @@ func TestEvalSummarize(t *testing.T) {
 				},
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
 			[]float64{0, 1, 1.5, 2, 5},
 			"summarize(metric1,'5s','min')",
@@ -2197,7 +2196,7 @@ func TestEvalSummarize(t *testing.T) {
 				},
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
 			[]float64{1, 2, 3, 4.5, 5},
 			"summarize(metric1,'5s','last')",
@@ -2213,7 +2212,7 @@ func TestEvalSummarize(t *testing.T) {
 				parser.ArgValue("p50"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
 			[]float64{0.5, 1.5, 2, 3, 5},
 			"summarize(metric1,'5s','p50')",
@@ -2229,7 +2228,7 @@ func TestEvalSummarize(t *testing.T) {
 				parser.ArgValue("p25"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
 			[]float64{0, 1, 2, 3, 5},
 			"summarize(metric1,'5s','p25')",
@@ -2245,7 +2244,7 @@ func TestEvalSummarize(t *testing.T) {
 				parser.ArgValue("p99.9"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
 			[]float64{1, 2, 3, 4.498, 5},
 			"summarize(metric1,'5s','p99.9')",
@@ -2261,7 +2260,7 @@ func TestEvalSummarize(t *testing.T) {
 				parser.ArgValue("p100.1"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
 			[]float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()},
 			"summarize(metric1,'5s','p100.1')",
@@ -2277,7 +2276,7 @@ func TestEvalSummarize(t *testing.T) {
 				parser.ArgValue("p50"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
 			[]float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5},
 			"summarize(metric1,'1s','p50')",
@@ -2292,7 +2291,7 @@ func TestEvalSummarize(t *testing.T) {
 				parser.ArgValue("10min"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{
 					1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
 					3, 3, 3, 3, 3, 4, 4, 4, 4, 4,
 					5, 5, 5, 5, 5}, 60, tenThirtyTwo)},
@@ -2312,7 +2311,7 @@ func TestEvalSummarize(t *testing.T) {
 				},
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{
 					1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
 					3, 3, 3, 3, 3, 4, 4, 4, 4, 4,
 					5, 5, 5, 5, 5}, 60, tenThirtyTwo)},
@@ -2331,7 +2330,7 @@ func TestEvalSummarize(t *testing.T) {
 				},
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{
 					1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
 					3, 3, 3, 3, 3, 4, 4, 4, 4, 4,
 					5, 5, 5, 5, 5}, 60, tenThirtyTwo)},
@@ -2349,7 +2348,7 @@ func TestEvalSummarize(t *testing.T) {
 				parser.ArgValue("30s"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{
 					1, 1, 1, 1, 1, 2,
 					2, 2, 2, 2, 3, 3,
 					3, 3, 3, 4, 4, 4,
@@ -2370,7 +2369,7 @@ func TestEvalSummarize(t *testing.T) {
 				parser.ArgValue("1h"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{
 					1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3,
 					3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5,
 					5}, 5, tenFiftyNine)},
@@ -2389,7 +2388,7 @@ func TestEvalSummarize(t *testing.T) {
 				parser.ArgName("true"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{
 					1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3,
 					3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5,
 					5}, 5, tenFiftyNine)},
@@ -2408,7 +2407,7 @@ func TestEvalSummarize(t *testing.T) {
 				},
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{
 					1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3,
 					3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5,
 					5}, 5, tenFiftyNine)},
@@ -2468,10 +2467,10 @@ func TestRewriteExpr(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
-					test.MakeResponse("metric1", []float64{1, 2, 3}, 1, now32),
+					types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32),
 				},
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metric1", []float64{1, 2, 3}, 1, now32),
+					types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32),
 				},
 			},
 			false,
@@ -2487,10 +2486,10 @@ func TestRewriteExpr(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
-					test.MakeResponse("metric1", []float64{1, 2, 3}, 1, now32),
+					types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32),
 				},
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metric1", []float64{1, 2, 3}, 1, now32),
+					types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32),
 				},
 			},
 			true,
@@ -2507,10 +2506,10 @@ func TestRewriteExpr(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
-					test.MakeResponse("metric1", []float64{1, 2, 3}, 1, now32),
+					types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32),
 				},
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metric1", []float64{1, 2, 3}, 1, now32),
+					types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32),
 				},
 			},
 			true,
@@ -2526,14 +2525,14 @@ func TestRewriteExpr(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"foo.metric*", 0, 1}: {
-					test.MakeResponse("foo.metric1", []float64{1, 2, 3}, 1, now32),
-					test.MakeResponse("foo.metric2", []float64{1, 2, 3}, 1, now32),
+					types.MakeMetricData("foo.metric1", []float64{1, 2, 3}, 1, now32),
+					types.MakeMetricData("foo.metric2", []float64{1, 2, 3}, 1, now32),
 				},
 				{"foo.metric1", 0, 1}: {
-					test.MakeResponse("foo.metric1", []float64{1, 2, 3}, 1, now32),
+					types.MakeMetricData("foo.metric1", []float64{1, 2, 3}, 1, now32),
 				},
 				{"foo.metric2", 0, 1}: {
-					test.MakeResponse("foo.metric2", []float64{1, 2, 3}, 1, now32),
+					types.MakeMetricData("foo.metric2", []float64{1, 2, 3}, 1, now32),
 				},
 			},
 			true,
@@ -2591,16 +2590,16 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.*.*", 0, 1}: {
-					test.MakeResponse("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
-					test.MakeResponse("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, now32),
-					test.MakeResponse("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
-					test.MakeResponse("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11}, 1, now32),
 				},
 			},
 			"groupByNode",
 			map[string][]*types.MetricData{
-				"baz": {test.MakeResponse("baz", []float64{12, 14, 16, 18, 20}, 1, now32)},
-				"qux": {test.MakeResponse("qux", []float64{13, 15, 17, 19, 21}, 1, now32)},
+				"baz": {types.MakeMetricData("baz", []float64{12, 14, 16, 18, 20}, 1, now32)},
+				"qux": {types.MakeMetricData("qux", []float64{13, 15, 17, 19, 21}, 1, now32)},
 			},
 		},
 		{
@@ -2612,16 +2611,16 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.*.*", 0, 1}: {
-					test.MakeResponse("metric1.foo.bar1.01", []float64{1, 2, 3, 4, 5}, 1, now32),
-					test.MakeResponse("metric1.foo.bar1.10", []float64{6, 7, 8, 9, 10}, 1, now32),
-					test.MakeResponse("metric1.foo.bar2.01", []float64{11, 12, 13, 14, 15}, 1, now32),
-					test.MakeResponse("metric1.foo.bar2.10", []float64{7, 8, 9, 10, 11}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar1.01", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar1.10", []float64{6, 7, 8, 9, 10}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.01", []float64{11, 12, 13, 14, 15}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.10", []float64{7, 8, 9, 10, 11}, 1, now32),
 				},
 			},
 			"groupByNode_names_with_int",
 			map[string][]*types.MetricData{
-				"01": {test.MakeResponse("01", []float64{12, 14, 16, 18, 20}, 1, now32)},
-				"10": {test.MakeResponse("10", []float64{13, 15, 17, 19, 21}, 1, now32)},
+				"01": {types.MakeMetricData("01", []float64{12, 14, 16, 18, 20}, 1, now32)},
+				"10": {types.MakeMetricData("10", []float64{13, 15, 17, 19, 21}, 1, now32)},
 			},
 		},
 		{
@@ -2633,16 +2632,16 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.*.*", 0, 1}: {
-					test.MakeResponse("metric1.foo.bar1.127_0_0_1:2003", []float64{1, 2, 3, 4, 5}, 1, now32),
-					test.MakeResponse("metric1.foo.bar1.127_0_0_1:2004", []float64{6, 7, 8, 9, 10}, 1, now32),
-					test.MakeResponse("metric1.foo.bar2.127_0_0_1:2003", []float64{11, 12, 13, 14, 15}, 1, now32),
-					test.MakeResponse("metric1.foo.bar2.127_0_0_1:2004", []float64{7, 8, 9, 10, 11}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar1.127_0_0_1:2003", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar1.127_0_0_1:2004", []float64{6, 7, 8, 9, 10}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.127_0_0_1:2003", []float64{11, 12, 13, 14, 15}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.127_0_0_1:2004", []float64{7, 8, 9, 10, 11}, 1, now32),
 				},
 			},
 			"groupByNode_names_with_colons",
 			map[string][]*types.MetricData{
-				"127_0_0_1:2003": {test.MakeResponse("127_0_0_1:2003", []float64{12, 14, 16, 18, 20}, 1, now32)},
-				"127_0_0_1:2004": {test.MakeResponse("127_0_0_1:2004", []float64{13, 15, 17, 19, 21}, 1, now32)},
+				"127_0_0_1:2003": {types.MakeMetricData("127_0_0_1:2003", []float64{12, 14, 16, 18, 20}, 1, now32)},
+				"127_0_0_1:2004": {types.MakeMetricData("127_0_0_1:2004", []float64{13, 15, 17, 19, 21}, 1, now32)},
 			},
 		},
 		{
@@ -2656,16 +2655,16 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.*.*", 0, 1}: {
-					test.MakeResponse("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
-					test.MakeResponse("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, now32),
-					test.MakeResponse("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
-					test.MakeResponse("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11}, 1, now32),
 				},
 			},
 			"groupByNodes",
 			map[string][]*types.MetricData{
-				"metric1.foo.baz": {test.MakeResponse("metric1.foo.baz", []float64{12, 14, 16, 18, 20}, 1, now32)},
-				"metric1.foo.qux": {test.MakeResponse("metric1.foo.qux", []float64{13, 15, 17, 19, 21}, 1, now32)},
+				"metric1.foo.baz": {types.MakeMetricData("metric1.foo.baz", []float64{12, 14, 16, 18, 20}, 1, now32)},
+				"metric1.foo.qux": {types.MakeMetricData("metric1.foo.qux", []float64{13, 15, 17, 19, 21}, 1, now32)},
 			},
 		},
 		{
@@ -2676,20 +2675,20 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[12]", 0, 1}: {
-					test.MakeResponse("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
-					test.MakeResponse("metric2", []float64{2, 4, 6, 8, 10}, 1, now32),
+					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric2", []float64{2, 4, 6, 8, 10}, 1, now32),
 				},
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
 				},
 				{"metric2", 0, 1}: {
-					test.MakeResponse("metric2", []float64{2, 4, 6, 8, 10}, 1, now32),
+					types.MakeMetricData("metric2", []float64{2, 4, 6, 8, 10}, 1, now32),
 				},
 			},
 			"divideSeries",
 			map[string][]*types.MetricData{
-				"divideSeries(metric1,metric2)": {test.MakeResponse("divideSeries(metric1,metric2)", []float64{0.5, 0.5, 0.5, 0.5, 0.5}, 1, now32)},
-				"divideSeries(metric2,metric2)": {test.MakeResponse("divideSeries(metric2,metric2)", []float64{1, 1, 1, 1, 1}, 1, now32)},
+				"divideSeries(metric1,metric2)": {types.MakeMetricData("divideSeries(metric1,metric2)", []float64{0.5, 0.5, 0.5, 0.5, 0.5}, 1, now32)},
+				"divideSeries(metric2,metric2)": {types.MakeMetricData("divideSeries(metric2,metric2)", []float64{1, 1, 1, 1, 1}, 1, now32)},
 			},
 		},
 		{
@@ -2700,14 +2699,14 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[12]", 0, 1}: {
-					test.MakeResponse("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
-					test.MakeResponse("metric2", []float64{2, 4, 6, 8, 10}, 1, now32),
+					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric2", []float64{2, 4, 6, 8, 10}, 1, now32),
 				},
 			},
 			"divideSeriesListSameGroups",
 			map[string][]*types.MetricData{
-				"divideSeries(metric1,metric1)": {test.MakeResponse("divideSeries(metric1,metric1)", []float64{1, 1, 1, 1, 1}, 1, now32)},
-				"divideSeries(metric2,metric2)": {test.MakeResponse("divideSeries(metric2,metric2)", []float64{1, 1, 1, 1, 1}, 1, now32)},
+				"divideSeries(metric1,metric1)": {types.MakeMetricData("divideSeries(metric1,metric1)", []float64{1, 1, 1, 1, 1}, 1, now32)},
+				"divideSeries(metric2,metric2)": {types.MakeMetricData("divideSeries(metric2,metric2)", []float64{1, 1, 1, 1, 1}, 1, now32)},
 			},
 		},
 		{
@@ -2718,14 +2717,14 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[12]", 0, 1}: {
-					test.MakeResponse("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
-					test.MakeResponse("metric2", []float64{2, 4, 6, 8, 10}, 1, now32),
+					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric2", []float64{2, 4, 6, 8, 10}, 1, now32),
 				},
 			},
 			"multiplySeriesListSameGroups",
 			map[string][]*types.MetricData{
-				"multiplySeries(metric1,metric1)": {test.MakeResponse("multiplySeries(metric1,metric1)", []float64{1, 4, 9, 16, 25}, 1, now32)},
-				"multiplySeries(metric2,metric2)": {test.MakeResponse("multiplySeries(metric2,metric2)", []float64{4, 16, 36, 64, 100}, 1, now32)},
+				"multiplySeries(metric1,metric1)": {types.MakeMetricData("multiplySeries(metric1,metric1)", []float64{1, 4, 9, 16, 25}, 1, now32)},
+				"multiplySeries(metric2,metric2)": {types.MakeMetricData("multiplySeries(metric2,metric2)", []float64{4, 16, 36, 64, 100}, 1, now32)},
 			},
 		},
 		{
@@ -2736,14 +2735,14 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[12]", 0, 1}: {
-					test.MakeResponse("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
-					test.MakeResponse("metric2", []float64{2, 4, 6, 8, 10}, 1, now32),
+					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric2", []float64{2, 4, 6, 8, 10}, 1, now32),
 				},
 			},
 			"diffSeriesListSameGroups",
 			map[string][]*types.MetricData{
-				"diffSeries(metric1,metric1)": {test.MakeResponse("diffSeries(metric1,metric1)", []float64{0, 0, 0, 0, 0}, 1, now32)},
-				"diffSeries(metric2,metric2)": {test.MakeResponse("diffSeries(metric2,metric2)", []float64{0, 0, 0, 0, 0}, 1, now32)},
+				"diffSeries(metric1,metric1)": {types.MakeMetricData("diffSeries(metric1,metric1)", []float64{0, 0, 0, 0, 0}, 1, now32)},
+				"diffSeries(metric2,metric2)": {types.MakeMetricData("diffSeries(metric2,metric2)", []float64{0, 0, 0, 0, 0}, 1, now32)},
 			},
 		},
 		{
@@ -2755,16 +2754,16 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.*.*", 0, 1}: {
-					test.MakeResponse("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
-					test.MakeResponse("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, now32),
-					test.MakeResponse("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
-					test.MakeResponse("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11}, 1, now32),
 				},
 			},
 			"sumSeriesWithWildcards",
 			map[string][]*types.MetricData{
-				"sumSeriesWithWildcards(metric1.baz)": {test.MakeResponse("sumSeriesWithWildcards(metric1.baz)", []float64{12, 14, 16, 18, 20}, 1, now32)},
-				"sumSeriesWithWildcards(metric1.qux)": {test.MakeResponse("sumSeriesWithWildcards(metric1.qux)", []float64{13, 15, 17, 19, 21}, 1, now32)},
+				"sumSeriesWithWildcards(metric1.baz)": {types.MakeMetricData("sumSeriesWithWildcards(metric1.baz)", []float64{12, 14, 16, 18, 20}, 1, now32)},
+				"sumSeriesWithWildcards(metric1.qux)": {types.MakeMetricData("sumSeriesWithWildcards(metric1.qux)", []float64{13, 15, 17, 19, 21}, 1, now32)},
 			},
 		},
 		{
@@ -2776,17 +2775,17 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.*.*", 0, 1}: {
-					test.MakeResponse("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
-					test.MakeResponse("metric1.foo.bar1.qux", []float64{6, 0, 8, 9, 10}, 1, now32),
-					test.MakeResponse("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
-					test.MakeResponse("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11}, 1, now32),
-					test.MakeResponse("metric1.foo.bar3.baz", []float64{2, 2, 2, 2, 2}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar1.qux", []float64{6, 0, 8, 9, 10}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar3.baz", []float64{2, 2, 2, 2, 2}, 1, now32),
 				},
 			},
 			"multiplySeriesWithWildcards",
 			map[string][]*types.MetricData{
-				"multiplySeriesWithWildcards(metric1.baz)": {test.MakeResponse("multiplySeriesWithWildcards(metric1.baz)", []float64{22, 48, 78, 112, 150}, 1, now32)},
-				"multiplySeriesWithWildcards(metric1.qux)": {test.MakeResponse("multiplySeriesWithWildcards(metric1.qux)", []float64{42, 0, 72, 90, 110}, 1, now32)},
+				"multiplySeriesWithWildcards(metric1.baz)": {types.MakeMetricData("multiplySeriesWithWildcards(metric1.baz)", []float64{22, 48, 78, 112, 150}, 1, now32)},
+				"multiplySeriesWithWildcards(metric1.qux)": {types.MakeMetricData("multiplySeriesWithWildcards(metric1.qux)", []float64{42, 0, 72, 90, 110}, 1, now32)},
 			},
 		},
 		{
@@ -2797,13 +2796,13 @@ func TestEvalMultipleReturns(t *testing.T) {
 				"metric3",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {test.MakeResponse("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
-				{"metric2", 0, 1}: {test.MakeResponse("metric2", []float64{2, 4, 6, 8, 10}, 1, now32)},
-				{"metric3", 0, 1}: {test.MakeResponse("metric3", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, 4, 6, 8, 10}, 1, now32)},
+				{"metric3", 0, 1}: {types.MakeMetricData("metric3", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			"stddevSeries",
 			map[string][]*types.MetricData{
-				"stddevSeries(metric1,metric2,metric3)": {test.MakeResponse("stddevSeries(metric1,metric2,metric3)", []float64{0.4714045207910317, 0.9428090415820634, 1.4142135623730951, 1.8856180831641267, 2.357022603955158}, 1, now32)},
+				"stddevSeries(metric1,metric2,metric3)": {types.MakeMetricData("stddevSeries(metric1,metric2,metric3)", []float64{0.4714045207910317, 0.9428090415820634, 1.4142135623730951, 1.8856180831641267, 2.357022603955158}, 1, now32)},
 			},
 		},
 		{
@@ -2815,16 +2814,16 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.*.*", 0, 1}: {
-					test.MakeResponse("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
-					test.MakeResponse("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, now32),
-					test.MakeResponse("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
-					test.MakeResponse("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11}, 1, now32),
 				},
 			},
 			"averageSeriesWithWildcards",
 			map[string][]*types.MetricData{
-				"averageSeriesWithWildcards(metric1.baz)": {test.MakeResponse("averageSeriesWithWildcards(metric1.baz)", []float64{6, 7, 8, 9, 10}, 1, now32)},
-				"averageSeriesWithWildcards(metric1.qux)": {test.MakeResponse("averageSeriesWithWildcards(metric1.qux)", []float64{6.5, 7.5, 8.5, 9.5, 10.5}, 1, now32)},
+				"averageSeriesWithWildcards(metric1.baz)": {types.MakeMetricData("averageSeriesWithWildcards(metric1.baz)", []float64{6, 7, 8, 9, 10}, 1, now32)},
+				"averageSeriesWithWildcards(metric1.qux)": {types.MakeMetricData("averageSeriesWithWildcards(metric1.qux)", []float64{6.5, 7.5, 8.5, 9.5, 10.5}, 1, now32)},
 			},
 		},
 		{
@@ -2835,15 +2834,15 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
-					test.MakeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
-					test.MakeResponse("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
+					types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
+					types.MakeMetricData("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
 				},
 			},
 			"highestCurrent",
 			map[string][]*types.MetricData{
-				"metricA": {test.MakeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32)},
-				"metricC": {test.MakeResponse("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32)},
+				"metricA": {types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32)},
+				"metricC": {types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32)},
 			},
 		},
 		{
@@ -2853,14 +2852,14 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				parser.MetricRequest{"metric1", 0, 1}: {
-					test.MakeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
-					test.MakeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
-					test.MakeResponse("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
+					types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
+					types.MakeMetricData("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
 				},
 			},
 			"highestCurrent",
 			map[string][]*types.MetricData{
-				"metricC": {test.MakeResponse("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32)},
+				"metricC": {types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32)},
 			},
 		},
 		{
@@ -2871,17 +2870,17 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
-					test.MakeResponse("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
-					test.MakeResponse("metricD", []float64{1, 1, 3, 3, 4, 3}, 1, now32),
-					test.MakeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
+					types.MakeMetricData("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
+					types.MakeMetricData("metricD", []float64{1, 1, 3, 3, 4, 3}, 1, now32),
+					types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
 				},
 			},
 			"lowestCurrent",
 			map[string][]*types.MetricData{
-				"metricA": {test.MakeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32)},
-				"metricB": {test.MakeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32)},
-				"metricD": {test.MakeResponse("metricD", []float64{1, 1, 3, 3, 4, 3}, 1, now32)},
+				"metricA": {types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32)},
+				"metricB": {types.MakeMetricData("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32)},
+				"metricD": {types.MakeMetricData("metricD", []float64{1, 1, 3, 3, 4, 3}, 1, now32)},
 			},
 		},
 		{
@@ -2891,15 +2890,15 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				parser.MetricRequest{"metric1", 0, 1}: {
-					test.MakeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
-					test.MakeResponse("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
-					test.MakeResponse("metricD", []float64{1, 1, 3, 3, 4, 3}, 1, now32),
-					test.MakeResponse("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
+					types.MakeMetricData("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
+					types.MakeMetricData("metricD", []float64{1, 1, 3, 3, 4, 3}, 1, now32),
+					types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
 				},
 			},
 			"lowestCurrent",
 			map[string][]*types.MetricData{
-				"metricB": {test.MakeResponse("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32)},
+				"metricB": {types.MakeMetricData("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32)},
 			},
 		},
 		{
@@ -2910,17 +2909,17 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metricA", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metricB", []float64{0, 0, 1, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metricC", []float64{0, 0, 0, 1, 0, 0}, 1, now32),
-					test.MakeResponse("metricD", []float64{0, 0, 0, 0, 1, 0}, 1, now32),
-					test.MakeResponse("metricE", []float64{0, 0, 0, 0, 0, 1}, 1, now32),
+					types.MakeMetricData("metricA", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricB", []float64{0, 0, 1, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricC", []float64{0, 0, 0, 1, 0, 0}, 1, now32),
+					types.MakeMetricData("metricD", []float64{0, 0, 0, 0, 1, 0}, 1, now32),
+					types.MakeMetricData("metricE", []float64{0, 0, 0, 0, 0, 1}, 1, now32),
 				},
 			},
 			"limit",
 			map[string][]*types.MetricData{
-				"metricA": {test.MakeResponse("metricA", []float64{0, 1, 0, 0, 0, 0}, 1, now32)},
-				"metricB": {test.MakeResponse("metricB", []float64{0, 0, 1, 0, 0, 0}, 1, now32)},
+				"metricA": {types.MakeMetricData("metricA", []float64{0, 1, 0, 0, 0, 0}, 1, now32)},
+				"metricB": {types.MakeMetricData("metricB", []float64{0, 0, 1, 0, 0, 0}, 1, now32)},
 			},
 		},
 		{
@@ -2931,20 +2930,20 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					test.MakeResponse("metricA", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metricB", []float64{0, 0, 1, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metricC", []float64{0, 0, 0, 1, 0, 0}, 1, now32),
-					test.MakeResponse("metricD", []float64{0, 0, 0, 0, 1, 0}, 1, now32),
-					test.MakeResponse("metricE", []float64{0, 0, 0, 0, 0, 1}, 1, now32),
+					types.MakeMetricData("metricA", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricB", []float64{0, 0, 1, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricC", []float64{0, 0, 0, 1, 0, 0}, 1, now32),
+					types.MakeMetricData("metricD", []float64{0, 0, 0, 0, 1, 0}, 1, now32),
+					types.MakeMetricData("metricE", []float64{0, 0, 0, 0, 0, 1}, 1, now32),
 				},
 			},
 			"limit",
 			map[string][]*types.MetricData{
-				"metricA": {test.MakeResponse("metricA", []float64{0, 1, 0, 0, 0, 0}, 1, now32)},
-				"metricB": {test.MakeResponse("metricB", []float64{0, 0, 1, 0, 0, 0}, 1, now32)},
-				"metricC": {test.MakeResponse("metricC", []float64{0, 0, 0, 1, 0, 0}, 1, now32)},
-				"metricD": {test.MakeResponse("metricD", []float64{0, 0, 0, 0, 1, 0}, 1, now32)},
-				"metricE": {test.MakeResponse("metricE", []float64{0, 0, 0, 0, 0, 1}, 1, now32)},
+				"metricA": {types.MakeMetricData("metricA", []float64{0, 1, 0, 0, 0, 0}, 1, now32)},
+				"metricB": {types.MakeMetricData("metricB", []float64{0, 0, 1, 0, 0, 0}, 1, now32)},
+				"metricC": {types.MakeMetricData("metricC", []float64{0, 0, 0, 1, 0, 0}, 1, now32)},
+				"metricD": {types.MakeMetricData("metricD", []float64{0, 0, 0, 0, 1, 0}, 1, now32)},
+				"metricE": {types.MakeMetricData("metricE", []float64{0, 0, 0, 0, 0, 1}, 1, now32)},
 			},
 		},
 		{
@@ -2955,17 +2954,17 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
-					test.MakeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
-					test.MakeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
-					test.MakeResponse("metricD", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
-					test.MakeResponse("metricE", []float64{4, 7, 7, 7, 7, 1}, 1, now32),
+					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					types.MakeMetricData("metricD", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					types.MakeMetricData("metricE", []float64{4, 7, 7, 7, 7, 1}, 1, now32),
 				},
 			},
 			"mostDeviant",
 			map[string][]*types.MetricData{
-				"metricB": {test.MakeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32)},
-				"metricE": {test.MakeResponse("metricE", []float64{4, 7, 7, 7, 7, 1}, 1, now32)},
+				"metricB": {types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32)},
+				"metricE": {types.MakeMetricData("metricE", []float64{4, 7, 7, 7, 7, 1}, 1, now32)},
 			},
 		},
 		{
@@ -2976,17 +2975,17 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
-					test.MakeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
-					test.MakeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
-					test.MakeResponse("metricD", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
-					test.MakeResponse("metricE", []float64{4, 7, 7, 7, 7, 1}, 1, now32),
+					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					types.MakeMetricData("metricD", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					types.MakeMetricData("metricE", []float64{4, 7, 7, 7, 7, 1}, 1, now32),
 				},
 			},
 			"mostDeviant",
 			map[string][]*types.MetricData{
-				"metricB": {test.MakeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32)},
-				"metricE": {test.MakeResponse("metricE", []float64{4, 7, 7, 7, 7, 1}, 1, now32)},
+				"metricB": {types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32)},
+				"metricE": {types.MakeMetricData("metricE", []float64{4, 7, 7, 7, 7, 1}, 1, now32)},
 			},
 		},
 		{
@@ -2998,20 +2997,20 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
-					test.MakeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
-					test.MakeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
-					test.MakeResponse("metricD", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
-					test.MakeResponse("metricE", []float64{4, 7, 7, 7, 7, 1}, 1, now32),
+					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					types.MakeMetricData("metricD", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					types.MakeMetricData("metricE", []float64{4, 7, 7, 7, 7, 1}, 1, now32),
 				},
 				{"metricC", 0, 1}: {
-					test.MakeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 				},
 			},
 			"pearsonClosest",
 			map[string][]*types.MetricData{
-				"metricC": {test.MakeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32)},
-				"metricD": {test.MakeResponse("metricD", []float64{4, 4, 5, 5, 6, 6}, 1, now32)},
+				"metricC": {types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32)},
+				"metricD": {types.MakeMetricData("metricD", []float64{4, 4, 5, 5, 6, 6}, 1, now32)},
 			},
 		},
 		{
@@ -3023,21 +3022,21 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
-					test.MakeResponse("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
-					test.MakeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
-					test.MakeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
-					test.MakeResponse("metricD", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
-					test.MakeResponse("metricE", []float64{4, 7, 7, 7, 7, 1}, 1, now32),
+					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					types.MakeMetricData("metricD", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					types.MakeMetricData("metricE", []float64{4, 7, 7, 7, 7, 1}, 1, now32),
 				},
 				{"metricC", 0, 1}: {
-					test.MakeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 				},
 			},
 			"pearsonClosest",
 			map[string][]*types.MetricData{
-				"metricB": {test.MakeResponse("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32)},
-				"metricC": {test.MakeResponse("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32)},
-				"metricD": {test.MakeResponse("metricD", []float64{4, 4, 5, 5, 6, 6}, 1, now32)},
+				"metricB": {types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32)},
+				"metricC": {types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32)},
+				"metricD": {types.MakeMetricData("metricD", []float64{4, 4, 5, 5, 6, 6}, 1, now32)},
 			},
 		},
 		{
@@ -3049,19 +3048,19 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
-					test.MakeResponse("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32),
-					test.MakeResponse("metricB", []float64{20, 18, 21, 19, 20, 20}, 1, now32),
-					test.MakeResponse("metricC", []float64{19, 19, 21, 17, 23, 20}, 1, now32),
-					test.MakeResponse("metricD", []float64{18, 20, 22, 14, 26, 20}, 1, now32),
-					test.MakeResponse("metricE", []float64{17, 21, 8, 30, 18, 28}, 1, now32),
+					types.MakeMetricData("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32),
+					types.MakeMetricData("metricB", []float64{20, 18, 21, 19, 20, 20}, 1, now32),
+					types.MakeMetricData("metricC", []float64{19, 19, 21, 17, 23, 20}, 1, now32),
+					types.MakeMetricData("metricD", []float64{18, 20, 22, 14, 26, 20}, 1, now32),
+					types.MakeMetricData("metricE", []float64{17, 21, 8, 30, 18, 28}, 1, now32),
 				},
 			},
 
 			"tukeyAbove",
 			map[string][]*types.MetricData{
-				"metricA": {test.MakeResponse("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32)},
-				"metricD": {test.MakeResponse("metricD", []float64{18, 20, 22, 14, 26, 20}, 1, now32)},
-				"metricE": {test.MakeResponse("metricE", []float64{17, 21, 8, 30, 18, 28}, 1, now32)},
+				"metricA": {types.MakeMetricData("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32)},
+				"metricD": {types.MakeMetricData("metricD", []float64{18, 20, 22, 14, 26, 20}, 1, now32)},
+				"metricE": {types.MakeMetricData("metricE", []float64{17, 21, 8, 30, 18, 28}, 1, now32)},
 			},
 		},
 		{
@@ -3073,17 +3072,17 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
-					test.MakeResponse("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32),
-					test.MakeResponse("metricB", []float64{20, 18, 21, 19, 20, 20}, 1, now32),
-					test.MakeResponse("metricC", []float64{19, 19, 21, 17, 23, 20}, 1, now32),
-					test.MakeResponse("metricD", []float64{18, 20, 22, 14, 26, 20}, 1, now32),
-					test.MakeResponse("metricE", []float64{17, 21, 8, 30, 18, 28}, 1, now32),
+					types.MakeMetricData("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32),
+					types.MakeMetricData("metricB", []float64{20, 18, 21, 19, 20, 20}, 1, now32),
+					types.MakeMetricData("metricC", []float64{19, 19, 21, 17, 23, 20}, 1, now32),
+					types.MakeMetricData("metricD", []float64{18, 20, 22, 14, 26, 20}, 1, now32),
+					types.MakeMetricData("metricE", []float64{17, 21, 8, 30, 18, 28}, 1, now32),
 				},
 			},
 
 			"tukeyAbove",
 			map[string][]*types.MetricData{
-				"metricE": {test.MakeResponse("metricE", []float64{17, 21, 8, 30, 18, 28}, 1, now32)},
+				"metricE": {types.MakeMetricData("metricE", []float64{17, 21, 8, 30, 18, 28}, 1, now32)},
 			},
 		},
 		{
@@ -3096,19 +3095,19 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
-					test.MakeResponse("metricA", []float64{20, 20, 20, 20, 21, 17, 20, 20, 10, 29}, 1, now32),
-					test.MakeResponse("metricB", []float64{20, 20, 20, 20, 20, 18, 21, 19, 20, 20}, 1, now32),
-					test.MakeResponse("metricC", []float64{20, 20, 20, 20, 19, 19, 21, 17, 23, 20}, 1, now32),
-					test.MakeResponse("metricD", []float64{20, 20, 20, 20, 18, 20, 22, 14, 26, 20}, 1, now32),
-					test.MakeResponse("metricE", []float64{20, 20, 20, 20, 17, 21, 8, 30, 18, 28}, 1, now32),
+					types.MakeMetricData("metricA", []float64{20, 20, 20, 20, 21, 17, 20, 20, 10, 29}, 1, now32),
+					types.MakeMetricData("metricB", []float64{20, 20, 20, 20, 20, 18, 21, 19, 20, 20}, 1, now32),
+					types.MakeMetricData("metricC", []float64{20, 20, 20, 20, 19, 19, 21, 17, 23, 20}, 1, now32),
+					types.MakeMetricData("metricD", []float64{20, 20, 20, 20, 18, 20, 22, 14, 26, 20}, 1, now32),
+					types.MakeMetricData("metricE", []float64{20, 20, 20, 20, 17, 21, 8, 30, 18, 28}, 1, now32),
 				},
 			},
 
 			"tukeyAbove(metric*, 1.5, 5, 6)",
 			map[string][]*types.MetricData{
-				"metricA": {test.MakeResponse("metricA", []float64{20, 20, 20, 20, 21, 17, 20, 20, 10, 29}, 1, now32)},
-				"metricD": {test.MakeResponse("metricD", []float64{20, 20, 20, 20, 18, 20, 22, 14, 26, 20}, 1, now32)},
-				"metricE": {test.MakeResponse("metricE", []float64{20, 20, 20, 20, 17, 21, 8, 30, 18, 28}, 1, now32)},
+				"metricA": {types.MakeMetricData("metricA", []float64{20, 20, 20, 20, 21, 17, 20, 20, 10, 29}, 1, now32)},
+				"metricD": {types.MakeMetricData("metricD", []float64{20, 20, 20, 20, 18, 20, 22, 14, 26, 20}, 1, now32)},
+				"metricE": {types.MakeMetricData("metricE", []float64{20, 20, 20, 20, 17, 21, 8, 30, 18, 28}, 1, now32)},
 			},
 		},
 		{
@@ -3121,19 +3120,19 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
-					test.MakeResponse("metricA", []float64{20, 20, 20, 20, 21, 17, 20, 20, 10, 29}, 1, now32),
-					test.MakeResponse("metricB", []float64{20, 20, 20, 20, 20, 18, 21, 19, 20, 20}, 1, now32),
-					test.MakeResponse("metricC", []float64{20, 20, 20, 20, 19, 19, 21, 17, 23, 20}, 1, now32),
-					test.MakeResponse("metricD", []float64{20, 20, 20, 20, 18, 20, 22, 14, 26, 20}, 1, now32),
-					test.MakeResponse("metricE", []float64{20, 20, 20, 20, 17, 21, 8, 30, 18, 28}, 1, now32),
+					types.MakeMetricData("metricA", []float64{20, 20, 20, 20, 21, 17, 20, 20, 10, 29}, 1, now32),
+					types.MakeMetricData("metricB", []float64{20, 20, 20, 20, 20, 18, 21, 19, 20, 20}, 1, now32),
+					types.MakeMetricData("metricC", []float64{20, 20, 20, 20, 19, 19, 21, 17, 23, 20}, 1, now32),
+					types.MakeMetricData("metricD", []float64{20, 20, 20, 20, 18, 20, 22, 14, 26, 20}, 1, now32),
+					types.MakeMetricData("metricE", []float64{20, 20, 20, 20, 17, 21, 8, 30, 18, 28}, 1, now32),
 				},
 			},
 
 			`tukeyAbove(metric*, 1.5, 5, "6s")`,
 			map[string][]*types.MetricData{
-				"metricA": {test.MakeResponse("metricA", []float64{20, 20, 20, 20, 21, 17, 20, 20, 10, 29}, 1, now32)},
-				"metricD": {test.MakeResponse("metricD", []float64{20, 20, 20, 20, 18, 20, 22, 14, 26, 20}, 1, now32)},
-				"metricE": {test.MakeResponse("metricE", []float64{20, 20, 20, 20, 17, 21, 8, 30, 18, 28}, 1, now32)},
+				"metricA": {types.MakeMetricData("metricA", []float64{20, 20, 20, 20, 21, 17, 20, 20, 10, 29}, 1, now32)},
+				"metricD": {types.MakeMetricData("metricD", []float64{20, 20, 20, 20, 18, 20, 22, 14, 26, 20}, 1, now32)},
+				"metricE": {types.MakeMetricData("metricE", []float64{20, 20, 20, 20, 17, 21, 8, 30, 18, 28}, 1, now32)},
 			},
 		},
 		{
@@ -3145,18 +3144,18 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
-					test.MakeResponse("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32),
-					test.MakeResponse("metricB", []float64{20, 18, 21, 19, 20, 20}, 1, now32),
-					test.MakeResponse("metricC", []float64{19, 19, 21, 17, 23, 20}, 1, now32),
-					test.MakeResponse("metricD", []float64{18, 20, 22, 14, 26, 20}, 1, now32),
-					test.MakeResponse("metricE", []float64{17, 21, 8, 30, 18, 28}, 1, now32),
+					types.MakeMetricData("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32),
+					types.MakeMetricData("metricB", []float64{20, 18, 21, 19, 20, 20}, 1, now32),
+					types.MakeMetricData("metricC", []float64{19, 19, 21, 17, 23, 20}, 1, now32),
+					types.MakeMetricData("metricD", []float64{18, 20, 22, 14, 26, 20}, 1, now32),
+					types.MakeMetricData("metricE", []float64{17, 21, 8, 30, 18, 28}, 1, now32),
 				},
 			},
 
 			"tukeyBelow",
 			map[string][]*types.MetricData{
-				"metricA": {test.MakeResponse("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32)},
-				"metricE": {test.MakeResponse("metricE", []float64{17, 21, 8, 30, 18, 28}, 1, now32)},
+				"metricA": {types.MakeMetricData("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32)},
+				"metricE": {types.MakeMetricData("metricE", []float64{17, 21, 8, 30, 18, 28}, 1, now32)},
 			},
 		},
 		{
@@ -3169,18 +3168,18 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
-					test.MakeResponse("metricA", []float64{21, 17, 20, 20, 10, 29, 20, 20, 20, 20}, 1, now32),
-					test.MakeResponse("metricB", []float64{20, 18, 21, 19, 20, 20, 20, 20, 20, 20}, 1, now32),
-					test.MakeResponse("metricC", []float64{19, 19, 21, 17, 23, 20, 20, 20, 20, 20}, 1, now32),
-					test.MakeResponse("metricD", []float64{18, 20, 22, 14, 26, 20, 20, 20, 20, 20}, 1, now32),
-					test.MakeResponse("metricE", []float64{17, 21, 8, 30, 18, 28, 20, 20, 20, 20}, 1, now32),
+					types.MakeMetricData("metricA", []float64{21, 17, 20, 20, 10, 29, 20, 20, 20, 20}, 1, now32),
+					types.MakeMetricData("metricB", []float64{20, 18, 21, 19, 20, 20, 20, 20, 20, 20}, 1, now32),
+					types.MakeMetricData("metricC", []float64{19, 19, 21, 17, 23, 20, 20, 20, 20, 20}, 1, now32),
+					types.MakeMetricData("metricD", []float64{18, 20, 22, 14, 26, 20, 20, 20, 20, 20}, 1, now32),
+					types.MakeMetricData("metricE", []float64{17, 21, 8, 30, 18, 28, 20, 20, 20, 20}, 1, now32),
 				},
 			},
 
 			"tukeyBelow",
 			map[string][]*types.MetricData{
-				"metricA": {test.MakeResponse("metricA", []float64{21, 17, 20, 20, 10, 29, 20, 20, 20, 20}, 1, now32)},
-				"metricE": {test.MakeResponse("metricE", []float64{17, 21, 8, 30, 18, 28, 20, 20, 20, 20}, 1, now32)},
+				"metricA": {types.MakeMetricData("metricA", []float64{21, 17, 20, 20, 10, 29, 20, 20, 20, 20}, 1, now32)},
+				"metricE": {types.MakeMetricData("metricE", []float64{17, 21, 8, 30, 18, 28, 20, 20, 20, 20}, 1, now32)},
 			},
 		},
 		{
@@ -3193,18 +3192,18 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
-					test.MakeResponse("metricA", []float64{21, 17, 20, 20, 10, 29, 20, 20, 20, 20}, 1, now32),
-					test.MakeResponse("metricB", []float64{20, 18, 21, 19, 20, 20, 20, 20, 20, 20}, 1, now32),
-					test.MakeResponse("metricC", []float64{19, 19, 21, 17, 23, 20, 20, 20, 20, 20}, 1, now32),
-					test.MakeResponse("metricD", []float64{18, 20, 22, 14, 26, 20, 20, 20, 20, 20}, 1, now32),
-					test.MakeResponse("metricE", []float64{17, 21, 8, 30, 18, 28, 20, 20, 20, 20}, 1, now32),
+					types.MakeMetricData("metricA", []float64{21, 17, 20, 20, 10, 29, 20, 20, 20, 20}, 1, now32),
+					types.MakeMetricData("metricB", []float64{20, 18, 21, 19, 20, 20, 20, 20, 20, 20}, 1, now32),
+					types.MakeMetricData("metricC", []float64{19, 19, 21, 17, 23, 20, 20, 20, 20, 20}, 1, now32),
+					types.MakeMetricData("metricD", []float64{18, 20, 22, 14, 26, 20, 20, 20, 20, 20}, 1, now32),
+					types.MakeMetricData("metricE", []float64{17, 21, 8, 30, 18, 28, 20, 20, 20, 20}, 1, now32),
 				},
 			},
 
 			"tukeyBelow",
 			map[string][]*types.MetricData{
-				"metricA": {test.MakeResponse("metricA", []float64{21, 17, 20, 20, 10, 29, 20, 20, 20, 20}, 1, now32)},
-				"metricE": {test.MakeResponse("metricE", []float64{17, 21, 8, 30, 18, 28, 20, 20, 20, 20}, 1, now32)},
+				"metricA": {types.MakeMetricData("metricA", []float64{21, 17, 20, 20, 10, 29, 20, 20, 20, 20}, 1, now32)},
+				"metricE": {types.MakeMetricData("metricE", []float64{17, 21, 8, 30, 18, 28, 20, 20, 20, 20}, 1, now32)},
 			},
 		},
 		{
@@ -3216,17 +3215,17 @@ func TestEvalMultipleReturns(t *testing.T) {
 			),
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
-					test.MakeResponse("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32),
-					test.MakeResponse("metricB", []float64{20, 18, 21, 19, 20, 20}, 1, now32),
-					test.MakeResponse("metricC", []float64{19, 19, 21, 17, 23, 20}, 1, now32),
-					test.MakeResponse("metricD", []float64{18, 20, 22, 14, 26, 20}, 1, now32),
-					test.MakeResponse("metricE", []float64{17, 21, 8, 30, 18, 28}, 1, now32),
+					types.MakeMetricData("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32),
+					types.MakeMetricData("metricB", []float64{20, 18, 21, 19, 20, 20}, 1, now32),
+					types.MakeMetricData("metricC", []float64{19, 19, 21, 17, 23, 20}, 1, now32),
+					types.MakeMetricData("metricD", []float64{18, 20, 22, 14, 26, 20}, 1, now32),
+					types.MakeMetricData("metricE", []float64{17, 21, 8, 30, 18, 28}, 1, now32),
 				},
 			},
 
 			"tukeyBelow",
 			map[string][]*types.MetricData{
-				"metricE": {test.MakeResponse("metricE", []float64{17, 21, 8, 30, 18, 28}, 1, now32)},
+				"metricE": {types.MakeMetricData("metricE", []float64{17, 21, 8, 30, 18, 28}, 1, now32)},
 			},
 		},
 	}
