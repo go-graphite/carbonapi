@@ -203,7 +203,7 @@
   branch = "master"
   name = "github.com/lomik/zapwriter"
   packages = ["."]
-  revision = "d4499a33b5929c4a2e7e169165f594f35b39638c"
+  revision = "3b568a1c89582d7059d81f13aa9e3f97aa9af97e"
 
 [[projects]]
   name = "github.com/magiconair/properties"
@@ -348,6 +348,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "222db3ae751f4f39ddf3012792dea949e65b3ea09a85899a79b4829c9c50f631"
+  inputs-digest = "b4a8d33859a59f1934459752cfbae419e4633834e3441894b5d980c8b8368991"
   solver-name = "gps-cdcl"
   solver-version = 1
