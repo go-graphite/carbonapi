@@ -18,21 +18,29 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"sync/atomic"
 	"time"
 )
 
 type graphiteWeb struct {
 	interfaces.FunctionBase
 
-	working     bool
-	strict      bool
-	fallbackUrl string
-	proxy       *http.Client
+	working      bool
+	strict       bool
+	maxTries     int
+	fallbackUrls []string
+	proxy        *http.Client
 
 	supportedFunctions map[string]types.FunctionDescription
 	limiter            limiter.ServerLimiter
 
-	logger *zap.Logger
+	logger         *zap.Logger
+	requestCounter uint64
+}
+
+func (f *graphiteWeb) pickServer() string {
+	sid := atomic.AddUint64(&f.requestCounter, 1)
+	return f.fallbackUrls[sid%uint64(len(f.fallbackUrls))]
 }
 
 func GetOrder() interfaces.Order {
@@ -40,9 +48,11 @@ func GetOrder() interfaces.Order {
 }
 
 type graphiteWebConfig struct {
-	FallbackUrl              string
+	Enabled                  bool
+	FallbackUrls             []string
 	Strict                   bool
 	MaxConcurrentConnections int
+	MaxTries                 int
 	Timeout                  time.Duration
 	KeepAliveInterval        time.Duration
 	ForceKeep                []string
@@ -69,7 +79,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 		logger.Error("no config file specified",
 			zap.Error(fmt.Errorf("config is required for this function")),
 		)
-		return []interfaces.FunctionMetadata{}
+		return nil
 	}
 	v := viper.New()
 	v.SetConfigFile(configFile)
@@ -81,10 +91,12 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	}
 
 	cfg := graphiteWebConfig{
-		Strict: false,
+		Enabled: false,
+		Strict:  false,
 		MaxConcurrentConnections: 10,
 		Timeout:                  60 * time.Second,
 		KeepAliveInterval:        30 * time.Second,
+		MaxTries:                 3,
 	}
 	err = v.Unmarshal(&cfg)
 	if err != nil {
@@ -93,13 +105,18 @@ func New(configFile string) []interfaces.FunctionMetadata {
 		)
 	}
 
+	if !cfg.Enabled {
+		logger.Warn("graphiteWeb config found but graphiteWeb proxy is disabled")
+		return nil
+	}
+
 	logger.Info("graphiteWeb configured",
 		zap.Any("config", cfg),
 		zap.String("config_file", configFile),
 	)
 
 	f := &graphiteWeb{
-		limiter: limiter.NewServerLimiter([]string{cfg.FallbackUrl}, cfg.MaxConcurrentConnections),
+		limiter: limiter.NewServerLimiter(cfg.FallbackUrls, cfg.MaxConcurrentConnections),
 		proxy: &http.Client{
 			Transport: &http.Transport{
 				MaxIdleConnsPerHost: cfg.MaxConcurrentConnections,
@@ -110,10 +127,11 @@ func New(configFile string) []interfaces.FunctionMetadata {
 				}).DialContext,
 			},
 		},
-		fallbackUrl: cfg.FallbackUrl,
-		strict:      cfg.Strict,
-		working:     false,
-		logger:      zapwriter.Logger("graphiteWeb"),
+		fallbackUrls: cfg.FallbackUrls,
+		strict:       cfg.Strict,
+		maxTries:     cfg.MaxTries,
+		working:      false,
+		logger:       zapwriter.Logger("graphiteWeb"),
 		supportedFunctions: map[string]types.FunctionDescription{
 			"graphiteWeb": {
 				Description: "This is special function which will pass everything inside to graphiteWeb (if configured)",
@@ -132,37 +150,57 @@ func New(configFile string) []interfaces.FunctionMetadata {
 		},
 	}
 
-	req, err := http.NewRequest("GET", f.fallbackUrl+"/functions/?format=json", nil)
-	if err != nil {
-		logger.Error("failed to create list of functions",
-			zap.Error(err),
-		)
-		return nil
+	ok := false
+	var body []byte
+	for i := 0; i < len(f.fallbackUrls); i++ {
+		srv := f.fallbackUrls[i]
+		req, err := http.NewRequest("GET", srv+"/functions/?format=json", nil)
+		if err != nil {
+			logger.Warn("failed to create list of functions, will try next fallbackUrl",
+				zap.String("backend", srv),
+				zap.Error(err),
+			)
+			continue
+		}
+
+		resp, err := f.proxy.Do(req)
+		if err != nil {
+			logger.Warn("failed to obtain list of functions, will try next fallbackUrl",
+				zap.String("backend", srv),
+				zap.Error(err),
+			)
+			continue
+		}
+
+		body, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			logger.Warn("failed to obtain list of functions, will try next fallbackUrl",
+				zap.String("backend", srv),
+				zap.Error(fmt.Errorf("return code is not 200 OK")),
+				zap.Int("status_code", resp.StatusCode),
+			)
+			resp.Body.Close()
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			logger.Warn("failed to obtain list of functions, will try next fallbackUrl",
+				zap.String("backend", srv),
+				zap.Error(fmt.Errorf("return code is not 200 OK")),
+				zap.Int("status_code", resp.StatusCode),
+				zap.String("body", string(body)),
+			)
+			resp.Body.Close()
+			continue
+		}
+		resp.Body.Close()
+		ok = true
+		break
 	}
 
-	resp, err := f.proxy.Do(req)
-	if err != nil {
-		logger.Error("failed to obtain list of functions",
-			zap.Error(err),
-		)
-		return nil
-	}
-
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		logger.Error("failed to obtain list of functions",
-			zap.Error(fmt.Errorf("return code is not 200 OK")),
-			zap.Int("status_code", resp.StatusCode),
-		)
-		return nil
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		logger.Error("failed to obtain list of functions",
-			zap.Error(fmt.Errorf("return code is not 200 OK")),
-			zap.Int("status_code", resp.StatusCode),
-			zap.String("body", string(body)),
+	if !ok {
+		logger.Error("failed to initialize graphiteWeb fallback function",
+			zap.Error(fmt.Errorf("no more backends to try, see warnings above for more details")),
 		)
 		return nil
 	}
@@ -262,6 +300,11 @@ type graphiteMetric struct {
 	Datapoints [][2]float64
 }
 
+type graphiteError struct {
+	server string
+	err    error
+}
+
 func (f *graphiteWeb) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	f.logger.Info("received request",
 		zap.Bool("working", f.working),
@@ -277,48 +320,73 @@ func (f *graphiteWeb) Do(e parser.Expr, from, until int32, values map[parser.Met
 		target = e.ToString()
 	}
 
-	rewrite, _ := url.Parse(f.fallbackUrl + "/render/")
-	v := url.Values{
-		"target": []string{target},
-		"from":   []string{strconv.FormatInt(int64(from), 10)},
-		"until":  []string{strconv.FormatInt(int64(until), 10)},
-		"format": []string{"json"},
+	var body []byte
+	var srv string
+	var request string
+	var errors []graphiteError
+	ok := false
+	for i := 0; i < f.maxTries; i++ {
+		srv = f.pickServer()
+		rewrite, _ := url.Parse(srv + "/render/")
+		v := url.Values{
+			"target": []string{target},
+			"from":   []string{strconv.FormatInt(int64(from), 10)},
+			"until":  []string{strconv.FormatInt(int64(until), 10)},
+			"format": []string{"json"},
+		}
+
+		rewrite.RawQuery = v.Encode()
+
+		f.limiter.Enter(srv)
+
+		req, err := http.NewRequest("GET", rewrite.String(), nil)
+		if err != nil {
+			f.limiter.Leave(srv)
+			return nil, err
+		}
+
+		resp, err := f.proxy.Do(req)
+		f.limiter.Leave(srv)
+		if err != nil {
+			errors = append(errors, graphiteError{srv, err})
+			resp.Body.Close()
+			continue
+		}
+
+		body, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			errors = append(errors, graphiteError{srv, err})
+			resp.Body.Close()
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			err := fmt.Errorf("return code is not 200 OK, code: %v, body: %v", resp.StatusCode, string(body))
+			errors = append(errors, graphiteError{srv, err})
+			continue
+		}
+		resp.Body.Close()
+		ok = true
+		request = rewrite.String()
+		break
 	}
 
-	rewrite.RawQuery = v.Encode()
-
-	f.limiter.Enter(f.fallbackUrl)
-
-	req, err := http.NewRequest("GET", rewrite.String(), nil)
-	if err != nil {
-		f.limiter.Leave(f.fallbackUrl)
-		return nil, err
-	}
-
-	resp, err := f.proxy.Do(req)
-	f.limiter.Leave(f.fallbackUrl)
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("return code is not 200 OK, code: %v, body: %v", resp.StatusCode, string(body))
+	if !ok {
+		f.logger.Error("failed to get response from graphite-web, max tries exceeded",
+			zap.Any("errors", errors),
+		)
+		return nil, fmt.Errorf("max tries exceeded for request target=%v", target)
 	}
 
 	f.logger.Debug("got response",
-		zap.String("request", rewrite.String()),
+		zap.String("request", request),
 		zap.String("body", string(body)),
 	)
 
 	var tmp []graphiteMetric
 
-	err = json.Unmarshal(body, &tmp)
+	err := json.Unmarshal(body, &tmp)
 	if err != nil {
 		return nil, err
 	}
