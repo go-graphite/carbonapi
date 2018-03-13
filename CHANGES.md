@@ -16,6 +16,7 @@ CHANGELOG
 **Master**
  - [Improvement] graphiteWeb function that implements force-fallback to graphtieWeb
  - [Improvement] graphiteWeb can query graphite-web 1.1.0+ for a list of supported functions and automatically do fallback to graphite in case user calls unimplemented function
+ - [Fix] Fix typo in polyfit function description
 
 **0.10.0.1**
  - [Fix] Autobuild scripts. Version bump to avoid retagging.

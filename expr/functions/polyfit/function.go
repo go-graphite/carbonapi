@@ -114,7 +114,7 @@ func (f *polyfit) Description() map[string]types.FunctionDescription {
 			Function:    "polyfit(seriesList, degree=1, offset=\"0d\")",
 			Group:       "Combine",
 			Module:      "graphite.render.functions.custom",
-			Name:        "Fitting",
+			Name:        "polyfit",
 			Params: []types.FunctionParam{
 				{
 					Name:     "seriesList",
