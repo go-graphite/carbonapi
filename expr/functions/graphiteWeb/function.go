@@ -134,11 +134,20 @@ func New(configFile string) []interfaces.FunctionMetadata {
 		logger:       zapwriter.Logger("graphiteWeb"),
 		supportedFunctions: map[string]types.FunctionDescription{
 			"graphiteWeb": {
-				Description: "This is special function which will pass everything inside to graphiteWeb (if configured)",
-				Function:    "graphiteWeb(seriesList)",
-				Group:       "Fallback",
-				Module:      "graphite.render.fallback.custom",
-				Name:        "example",
+				Description: `This is special function which will pass everything inside to graphiteWeb (if configured)
+
+This function will pass everything inside of it to graphite-web and return result to any function above it
+
+If configured, it will also auto-register everything that's not supported by carbonapi as a passthrough to graphite-web 
+Example:
+    target=sum(graphiteWeb(smartSummarize(foo.bar.*, '15min'))
+
+smartSummarise will be performed by graphite-web and then results will be passed to sum, that will be performed by carbonapi
+`,
+				Function: "graphiteWeb(seriesList)",
+				Group:    "Fallback",
+				Module:   "graphite.render.fallback.custom",
+				Name:     "graphiteWeb",
 				Params: []types.FunctionParam{
 					{
 						Name:     "seriesList",
