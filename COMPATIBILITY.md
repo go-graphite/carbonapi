@@ -106,13 +106,18 @@ _When `format=png`_ (default if not specified)
 
 **Note:** _Version_ listed in the table below represents the earliest graphite version where the function appeared with the current signature. In **most** cases this was when the function was introduced.
 
+Missing function: "applyByNode", "aliasQuery", "filterSeries", "unique", "integralByInterval", "xFilesFactor", "lowest"
+
 Graphite Function                                                         | Version | Carbon API
 :------------------------------------------------------------------------ | :------ | :---------
 absolute(seriesList)                                                      |  0.9.10 | Supported
+aggregate                                                                 |  1.1.0  |
 aggregateLine(seriesList, func='avg')                                     |  1.0.0  |
+aggregateWithWildcards                                                    |  1.1.0  |
 alias(seriesList, newName)                                                |  0.9.9  | Supported
 aliasByMetric(seriesList)                                                 |  0.9.10 | Supported
 aliasByNode(seriesList, *nodes)                                           |  0.9.14 | Supported
+aliasByTags                                                               |  1.1.0  |
 aliasSub(seriesList, search, replace)                                     |  0.9.10 | Supported
 alpha(seriesList, alpha)                                                  |  0.9.10 | Supported
 applyByNode(seriesList, nodeNum, templateFunction, newName=None)          |  1.0.0  | Supported
@@ -152,6 +157,8 @@ grep(seriesList, pattern)                                                 |  1.0
 group(*seriesLists)                                                       |  0.9.10 | Supported
 groupByNode(seriesList, nodeNum, callback)                                |  0.9.9  | Supported
 groupByNodes(seriesList, callback, *nodes)                                |  1.0.0  | Supported
+groupByTags                                                               |  1.1.0  |
+highest                                                                   |  1.1.0  |
 highestAverage(seriesList, n)                                             |  0.9.9  | Supported
 highestCurrent(seriesList, n)                                             |  0.9.9  | Supported
 highestMax(seriesList, n)                                                 |  0.9.9  | Supported
@@ -183,6 +190,7 @@ maxSeries(*seriesLists)                                                   |  0.9
 maximumAbove(seriesList, n)                                               |  0.9.9  | Supported
 maximumBelow(seriesList, n)                                               |  0.9.9  | Supported
 minSeries(*seriesLists)                                                   |  0.9.9  | Supported
+minMax                                                                    |  1.1.0  |
 minimumAbove(seriesList, n)                                               |  0.9.10 | Supported
 minimumBelow(seriesList, n)                                               |  0.9.14 | Supported
 mostDeviant(seriesList, n)                                                |  0.9.9  | Supported
@@ -191,12 +199,14 @@ movingMax(seriesList, windowSize)                                         |  1.0
 movingMedian(seriesList, windowSize)                                      |  0.9.14 | Supported
 movingMin(seriesList, windowSize)                                         |  1.0.0  | Supported
 movingSum(seriesList, windowSize)                                         |  1.0.0  | Supported
+movingWindow                                                              |  1.1.0  |
 multiplySeries(*seriesLists)                                              |  0.9.10 | Supported
 multiplySeriesWithWildcards(seriesList, *position)                        |  1.0.0  | Supported
 nPercentile(seriesList, n)                                                |  0.9.9  | Supported
 nonNegativeDerivative(seriesList, maxValue=None)                          |  0.9.9  | Supported
 offset(seriesList, factor)                                                |  0.9.9  | Supported
 offsetToZero(seriesList)                                                  |  1.0.0  | Supported
+pct                                                                       |  1.1.0  |
 [pearson](https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient)(series, series, n)                                                |  not in graphite | Experimental
 pearsonClosest(series, seriesList, windowSize, direction="abs")           |  not in graphite | Experimental
 perSecond(seriesList, maxValue=None)                                      |  0.9.14 | Supported
@@ -215,11 +225,15 @@ removeBelowValue(seriesList, n)                                           |  0.9
 removeBetweenPercentile(seriesList, n)                                    |  1.0.0  |
 removeEmptySeries(seriesList)                                             |  1.0.0  | Supported
 removeZeroSeries(seriesList)                                              |  0.9.14 | Supported
+round                                                                     |  1.1.0  |
 scale(seriesList, factor)                                                 |  0.9.9  | Supported
 scaleToSeconds(seriesList, seconds)                                       |  0.9.10 | Supported
 secondYAxis(seriesList)                                                   |  0.9.10 | Supported
+seriesByTag                                                               |  1.1.0  |
+setXFilesFactor                                                           |  1.1.0  |
 sinFunction(name, amplitude=1, step=60), Short Alias: sin()               |  0.9.9  |
 smartSummarize(seriesList, intervalString, func='sum', alignToFrom=False) |  0.9.10 |
+sortBy                                                                    |  1.1.0  |
 sortByMaxima(seriesList)                                                  |  0.9.9  | Supported
 sortByMinima(seriesList)                                                  |  0.9.9  | Supported
 sortByName(seriesList)                                                    |  0.9.15 | Supported

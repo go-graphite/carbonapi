@@ -664,6 +664,7 @@ func Description() map[string]types.FunctionDescription {
 	}
 }
 
+// TODO(civil): Split this into several separate functions.
 func EvalExprGraph(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 
 	switch e.Target() {
