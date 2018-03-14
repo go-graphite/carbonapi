@@ -113,33 +113,33 @@ type Suggestion struct {
 	Value interface{}
 }
 
-func NewSuggestion(arg interface{}) Suggestion {
+func NewSuggestion(arg interface{}) *Suggestion {
 	switch v := arg.(type) {
 	case int:
-		return Suggestion{Type: SString, Value: v}
+		return &Suggestion{Type: SInt, Value: v}
 	case int32:
-		return Suggestion{Type: SInt32, Value: v}
+		return &Suggestion{Type: SInt32, Value: v}
 	case int64:
-		return Suggestion{Type: SInt64, Value: v}
+		return &Suggestion{Type: SInt64, Value: v}
 	case uint:
-		return Suggestion{Type: SUint, Value: v}
+		return &Suggestion{Type: SUint, Value: v}
 	case uint32:
-		return Suggestion{Type: SUint32, Value: v}
+		return &Suggestion{Type: SUint32, Value: v}
 	case uint64:
-		return Suggestion{Type: SUint64, Value: v}
+		return &Suggestion{Type: SUint64, Value: v}
 	case float64:
-		return Suggestion{Type: SFloat64, Value: v}
+		return &Suggestion{Type: SFloat64, Value: v}
 	case string:
-		return Suggestion{Type: SString, Value: v}
+		return &Suggestion{Type: SString, Value: v}
 	case bool:
-		return Suggestion{Type: SBool, Value: v}
+		return &Suggestion{Type: SBool, Value: v}
 	}
 
-	return Suggestion{Type: SNone}
+	return &Suggestion{Type: SNone}
 }
 
-func NewSuggestions(vaArgs ...interface{}) []Suggestion {
-	res := make([]Suggestion, 0, len(vaArgs))
+func NewSuggestions(vaArgs ...interface{}) []*Suggestion {
+	res := make([]*Suggestion, 0, len(vaArgs))
 
 	for _, a := range vaArgs {
 		res = append(res, NewSuggestion(a))
@@ -219,8 +219,8 @@ type FunctionParam struct {
 	Required    bool         `json:"required,omitempty"`
 	Type        FunctionType `json:"type,omitempty"`
 	Options     []string     `json:"options,omitempty"`
-	Suggestions []Suggestion `json:"suggestions,omitempty"`
-	Default     Suggestion   `json:"default,omitempty"`
+	Suggestions []*Suggestion `json:"suggestions,omitempty"`
+	Default     *Suggestion   `json:"default,omitempty"`
 }
 
 // FunctionDescription contains full function description.
