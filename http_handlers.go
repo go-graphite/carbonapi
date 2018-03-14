@@ -298,7 +298,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 			if haveCacheData {
 				apiMetrics.FindCacheHits.Add(1)
-			} else {
+			} else if !config.AlwaysSendGlobsAsIs {
 				apiMetrics.FindCacheMisses.Add(1)
 				var err error
 				apiMetrics.FindRequests.Add(1)
@@ -321,7 +321,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			var sendGlobs = config.SendGlobsAsIs && len(glob.Matches) < config.MaxBatchSize
+			sendGlobs := config.AlwaysSendGlobsAsIs || (config.SendGlobsAsIs && len(glob.Matches) < config.MaxBatchSize)
 			accessLogDetails.SendGlobs = sendGlobs
 
 			if sendGlobs {

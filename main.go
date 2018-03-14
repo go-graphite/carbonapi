@@ -248,6 +248,7 @@ var config = struct {
 	IdleConnections            int                `yaml:"idleConnections"`
 	PidFile                    string             `yaml:"pidFile"`
 	SendGlobsAsIs              bool               `yaml:"sendGlobsAsIs"`
+	AlwaysSendGlobsAsIs        bool               `yaml:"alwaysSendGlobsAsIs"`
 	MaxBatchSize               int                `yaml:"maxBatchSize"`
 	Zipper                     string             `yaml:"zipper"`
 	Upstreams                  realZipper.Config  `yaml:"upstreams"`
@@ -273,6 +274,7 @@ var config = struct {
 	Listen:                "[::]:8081",
 	Concurency:            20,
 	SendGlobsAsIs:         false,
+	AlwaysSendGlobsAsIs:   false,
 	MaxBatchSize:          100,
 	Cache: cacheConfig{
 		Type:              "mem",
@@ -670,6 +672,7 @@ func setUpViper(logger *zap.Logger) {
 	viper.SetDefault("cpus", 0)
 	viper.SetDefault("tz", "")
 	viper.SetDefault("sendGlobsAsIs", false)
+	viper.SetDefault("AlwaysSendGlobsAsIs", false)
 	viper.SetDefault("maxBatchSize", 100)
 	viper.SetDefault("graphite.host", "")
 	viper.SetDefault("graphite.interval", "60s")
