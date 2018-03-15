@@ -27,7 +27,6 @@ type ErrUnknownFunction string
 
 func (e ErrUnknownFunction) Error() string {
 	return fmt.Sprintf("unknown function in evalExpr: %q", string(e))
-
 }
 
 // SetEvaluator sets evaluator for all helper functions

@@ -26,14 +26,12 @@ func init() {
 
 // EvalExpr is the main expression evaluator
 func EvalExpr(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-
 	if e.IsName() {
 		return values[parser.MetricRequest{Metric: e.Target(), From: from, Until: until}], nil
 	} else if e.IsConst() {
 		p := types.MetricData{FetchResponse: pb.FetchResponse{Name: e.Target(), Values: []float64{e.FloatValue()}}}
 		return []*types.MetricData{&p}, nil
 	}
-
 	// evaluate the function
 
 	// all functions have arguments -- check we do too
