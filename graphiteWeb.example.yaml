@@ -11,3 +11,15 @@ maxConcurrentConnections: 10
 # specify request timeouts
 timeout: "90s"
 keepAliveInterval: "30s"
+# Uncomment to make those functions force-proxied to graphite-web
+# forceAdd:
+#     - "sumSeries"
+#     - "derivative"
+
+# This will remove those functions from list of proxied ones
+# This is example and also suggestion for functions to remove.
+forceSkip:
+    - "aliasByTags"
+    - "seriesByTag"
+    - "groupByTags"
+    - "events"

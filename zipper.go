@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/go-graphite/carbonapi/util"
 	"github.com/go-graphite/carbonapi/expr/types"
+	"github.com/go-graphite/carbonapi/util"
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 	realZipper "github.com/go-graphite/carbonzipper/zipper"
 	"go.uber.org/zap"

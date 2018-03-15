@@ -795,8 +795,10 @@ func functionsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	grouped := false
+	nativeOnly := false
 	groupedStr := r.FormValue("grouped")
 	prettyStr := r.FormValue("pretty")
+	nativeOnlyStr := r.FormValue("nativeOnly")
 	var marshaler func(interface{}) ([]byte, error)
 
 	if groupedStr == "1" {
@@ -811,23 +813,62 @@ func functionsHandler(w http.ResponseWriter, r *http.Request) {
 		marshaler = json.Marshal
 	}
 
+	if nativeOnlyStr == "1" {
+		nativeOnly = true
+	}
+
 	path := strings.Split(r.URL.EscapedPath(), "/")
 	function := ""
 	if len(path) >= 3 {
 		function = path[2]
 	}
 
-	metadata.FunctionMD.RLock()
 	var b []byte
-	if function != "" {
-		b, err = marshaler(metadata.FunctionMD.Descriptions[function])
-	} else if grouped {
-		b, err = marshaler(metadata.FunctionMD.DescriptionsGrouped)
+	if !nativeOnly {
+		metadata.FunctionMD.RLock()
+		if function != "" {
+			b, err = marshaler(metadata.FunctionMD.Descriptions[function])
+		} else if grouped {
+			b, err = marshaler(metadata.FunctionMD.DescriptionsGrouped)
+		} else {
+			b, err = marshaler(metadata.FunctionMD.Descriptions)
+		}
+		metadata.FunctionMD.RUnlock()
 	} else {
-		b, err = marshaler(metadata.FunctionMD.Descriptions)
+		metadata.FunctionMD.RLock()
+		if function != "" {
+			if !metadata.FunctionMD.Descriptions[function].Proxied {
+				b, err = marshaler(metadata.FunctionMD.Descriptions[function])
+			} else {
+				err = fmt.Errorf("%v is proxied to graphite-web and nativeOnly was specified", function)
+			}
+		} else if grouped {
+			descGrouped := make(map[string]map[string]types.FunctionDescription)
+			for groupName, description := range metadata.FunctionMD.DescriptionsGrouped {
+				desc := make(map[string]types.FunctionDescription)
+				for f, d := range description {
+					if d.Proxied {
+						continue
+					}
+					desc[f] = d
+				}
+				if len(desc) > 0 {
+					descGrouped[groupName] = desc
+				}
+			}
+			b, err = marshaler(descGrouped)
+		} else {
+			desc := make(map[string]types.FunctionDescription)
+			for f, d := range metadata.FunctionMD.Descriptions {
+				if d.Proxied {
+					continue
+				}
+				desc[f] = d
+			}
+			b, err = marshaler(desc)
+		}
+		metadata.FunctionMD.RUnlock()
 	}
-
-	metadata.FunctionMD.RUnlock()
 
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

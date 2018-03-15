@@ -7,12 +7,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/go-graphite/carbonapi/expr/types"
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 	realZipper "github.com/go-graphite/carbonzipper/zipper"
 	"github.com/lomik/zapwriter"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
-	"github.com/go-graphite/carbonapi/expr/types"
 )
 
 type mockCarbonZipper struct {

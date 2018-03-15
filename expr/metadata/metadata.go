@@ -47,8 +47,8 @@ func SetEvaluator(evaluator interfaces.Evaluator) {
 type Metadata struct {
 	sync.RWMutex
 
-	Functions map[string]interfaces.Function
-	Descriptions map[string]types.FunctionDescription
+	Functions           map[string]interfaces.Function
+	Descriptions        map[string]types.FunctionDescription
 	DescriptionsGrouped map[string]map[string]types.FunctionDescription
 	FunctionConfigFiles map[string]string
 
@@ -57,8 +57,8 @@ type Metadata struct {
 
 // FunctionMD is actual global variable that stores metadata
 var FunctionMD = Metadata{
-	Functions: make(map[string]interfaces.Function),
-	Descriptions: make(map[string]types.FunctionDescription),
+	Functions:           make(map[string]interfaces.Function),
+	Descriptions:        make(map[string]types.FunctionDescription),
 	DescriptionsGrouped: make(map[string]map[string]types.FunctionDescription),
 	FunctionConfigFiles: make(map[string]string),
 }

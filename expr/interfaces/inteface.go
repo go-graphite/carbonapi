@@ -33,9 +33,9 @@ const (
 )
 
 type FunctionMetadata struct {
-	Name string
+	Name  string
 	Order Order
-	F Function
+	F     Function
 }
 
 // Function is interface that all graphite functions should follow

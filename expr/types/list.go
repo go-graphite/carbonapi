@@ -214,11 +214,11 @@ func (t *Suggestion) UnmarshalJSON(d []byte) error {
 
 // FunctionParam contains list of all available parameters of function
 type FunctionParam struct {
-	Name        string       `json:"name"`
-	Multiple    bool         `json:"multiple,omitempty"`
-	Required    bool         `json:"required,omitempty"`
-	Type        FunctionType `json:"type,omitempty"`
-	Options     []string     `json:"options,omitempty"`
+	Name        string        `json:"name"`
+	Multiple    bool          `json:"multiple,omitempty"`
+	Required    bool          `json:"required,omitempty"`
+	Type        FunctionType  `json:"type,omitempty"`
+	Options     []string      `json:"options,omitempty"`
 	Suggestions []*Suggestion `json:"suggestions,omitempty"`
 	Default     *Suggestion   `json:"default,omitempty"`
 }
@@ -231,4 +231,6 @@ type FunctionDescription struct {
 	Module      string          `json:"module"`
 	Name        string          `json:"name"`
 	Params      []FunctionParam `json:"params,omitempty"`
+
+	Proxied bool `json:"proxied"`
 }

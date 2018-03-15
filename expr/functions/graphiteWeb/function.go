@@ -3,6 +3,15 @@ package graphiteWeb
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"math"
+	"net"
+	"net/http"
+	"net/url"
+	"strconv"
+	"sync/atomic"
+	"time"
+
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -12,14 +21,6 @@ import (
 	"github.com/lomik/zapwriter"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
-	"io/ioutil"
-	"math"
-	"net"
-	"net/http"
-	"net/url"
-	"strconv"
-	"sync/atomic"
-	"time"
 )
 
 type graphiteWeb struct {
@@ -55,7 +56,7 @@ type graphiteWebConfig struct {
 	MaxTries                 int
 	Timeout                  time.Duration
 	KeepAliveInterval        time.Duration
-	ForceKeep                []string
+	ForceSkip                []string
 	ForceAdd                 []string
 }
 
@@ -219,9 +220,9 @@ smartSummarise will be performed by graphite-web and then results will be passed
 		forceAdd[n] = struct{}{}
 	}
 
-	forceKeep := make(map[string]struct{})
-	for _, n := range cfg.ForceKeep {
-		forceKeep[n] = struct{}{}
+	forceSkip := make(map[string]struct{})
+	for _, n := range cfg.ForceSkip {
+		forceSkip[n] = struct{}{}
 	}
 
 	graphiteWebSupportedFunctions := make(map[string]types.FunctionDescription)
@@ -238,12 +239,13 @@ smartSummarise will be performed by graphite-web and then results will be passed
 	metadata.FunctionMD.RLock()
 	for k, v := range graphiteWebSupportedFunctions {
 		var ok bool
-		if _, ok = forceKeep[k]; ok {
+		if _, ok = forceSkip[k]; ok {
 			continue
 		}
 
 		if _, ok = forceAdd[k]; ok {
 			functions = append(functions, k)
+			v.Proxied = true
 			f.supportedFunctions[k] = v
 			continue
 		}
@@ -258,6 +260,7 @@ smartSummarise will be performed by graphite-web and then results will be passed
 		}
 
 		functions = append(functions, k)
+		v.Proxied = true
 		f.supportedFunctions[k] = v
 	}
 	metadata.FunctionMD.RUnlock()

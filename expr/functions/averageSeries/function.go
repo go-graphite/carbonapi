@@ -24,7 +24,6 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-
 // averageSeries(*seriesLists)
 func (f *averageSeries) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	args, err := helper.GetSeriesArgsAndRemoveNonExisting(e, from, until, values)

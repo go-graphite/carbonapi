@@ -10,7 +10,6 @@ import (
 	"math"
 )
 
-
 type cactiStyle struct {
 	interfaces.FunctionBase
 }
