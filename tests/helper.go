@@ -140,6 +140,55 @@ func NearlyEqualMetrics(a, b *types.MetricData) bool {
 	return true
 }
 
+type MultiReturnEvalTestItem struct {
+	E       parser.Expr
+	M       map[parser.MetricRequest][]*types.MetricData
+	Name    string
+	Results map[string][]*types.MetricData
+}
+
+func TestMultiReturnEvalExpr(t *testing.T, tt *MultiReturnEvalTestItem) {
+	evaluator := metadata.GetEvaluator()
+
+	originalMetrics := DeepClone(tt.M)
+	g, err := evaluator.EvalExpr(tt.E, 0, 1, tt.M)
+	if err != nil {
+		t.Errorf("failed to eval %v: %+v", tt.Name, err)
+		return
+	}
+	DeepEqual(t, tt.Name, originalMetrics, tt.M)
+	if len(g) == 0 {
+		t.Errorf("returned no data %v", tt.Name)
+		return
+	}
+	if g[0] == nil {
+		t.Errorf("returned no value %v", tt.Name)
+		return
+	}
+	if g[0].StepTime == 0 {
+		t.Errorf("missing step for %+v", g)
+	}
+	if len(g) != len(tt.Results) {
+		t.Errorf("unexpected results len: got %d, want %d", len(g), len(tt.Results))
+	}
+	for _, gg := range g {
+		r, ok := tt.Results[gg.Name]
+		if !ok {
+			t.Errorf("missing result name: %v", gg.Name)
+			continue
+		}
+		if r[0].Name != gg.Name {
+			t.Errorf("result name mismatch, got\n%#v,\nwant\n%#v", gg.Name, r[0].Name)
+		}
+		if !reflect.DeepEqual(r[0].Values, gg.Values) || !reflect.DeepEqual(r[0].IsAbsent, gg.IsAbsent) ||
+			r[0].StartTime != gg.StartTime ||
+			r[0].StopTime != gg.StopTime ||
+			r[0].StepTime != gg.StepTime {
+			t.Errorf("result mismatch, got\n%#v,\nwant\n%#v", gg, r)
+		}
+	}
+}
+
 type EvalTestItem struct {
 	E    parser.Expr
 	M    map[parser.MetricRequest][]*types.MetricData
