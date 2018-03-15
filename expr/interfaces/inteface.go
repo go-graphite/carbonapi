@@ -32,6 +32,12 @@ const (
 	Last
 )
 
+type RewriteFunctionMetadata struct {
+	Name  string
+	Order Order
+	F     RewriteFunction
+}
+
 type FunctionMetadata struct {
 	Name  string
 	Order Order
@@ -43,5 +49,13 @@ type Function interface {
 	SetEvaluator(evaluator Evaluator)
 	GetEvaluator() Evaluator
 	Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
+	Description() map[string]types.FunctionDescription
+}
+
+// Function is interface that all graphite functions should follow
+type RewriteFunction interface {
+	SetEvaluator(evaluator Evaluator)
+	GetEvaluator() Evaluator
+	Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error)
 	Description() map[string]types.FunctionDescription
 }

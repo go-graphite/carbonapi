@@ -1,9 +1,6 @@
 package expr
 
 import (
-	"fmt"
-	"strings"
-
 	// Import all known functions
 	_ "github.com/go-graphite/carbonapi/expr/functions"
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -60,43 +57,13 @@ func EvalExpr(e parser.Expr, from, until int32, values map[parser.MetricRequest]
 // sumSeries(foo) -> (false, nil, nil)
 // Assumes that applyByNode only appears as the outermost function.
 func RewriteExpr(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
-	if e.IsFunc() && e.Target() == "applyByNode" {
-		args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
-		if err != nil {
-			return false, nil, err
+	if e.IsFunc() {
+		metadata.FunctionMD.RLock()
+		f, ok := metadata.FunctionMD.RewriteFunctions[e.Target()]
+		metadata.FunctionMD.RUnlock()
+		if ok {
+			return f.Do(e, from, until, values)
 		}
-
-		field, err := e.GetIntArg(1)
-		if err != nil {
-			return false, nil, err
-		}
-
-		callback, err := e.GetStringArg(2)
-		if err != nil {
-			return false, nil, err
-		}
-
-		var newName string
-		if len(e.Args()) == 4 {
-			newName, err = e.GetStringArg(3)
-			if err != nil {
-				return false, nil, err
-			}
-		}
-
-		var rv []string
-		for _, a := range args {
-			metric := helper.ExtractMetric(a.Name)
-			nodes := strings.Split(metric, ".")
-			node := strings.Join(nodes[0:field], ".")
-			newTarget := strings.Replace(callback, "%", node, -1)
-
-			if newName != "" {
-				newTarget = fmt.Sprintf("alias(%s,\"%s\")", newTarget, strings.Replace(newName, "%", node, -1))
-			}
-			rv = append(rv, newTarget)
-		}
-		return true, rv, nil
 	}
 	return false, nil, nil
 }

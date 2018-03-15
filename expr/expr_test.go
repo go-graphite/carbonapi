@@ -8,69 +8,19 @@ import (
 	"unicode"
 
 	"fmt"
+
 	"github.com/go-graphite/carbonapi/expr/functions"
 	"github.com/go-graphite/carbonapi/expr/helper"
+	"github.com/go-graphite/carbonapi/expr/rewrite"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
+	th "github.com/go-graphite/carbonapi/tests"
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 )
 
 func init() {
+	rewrite.New(make(map[string]string))
 	functions.New(make(map[string]string))
-}
-
-func deepClone(original map[parser.MetricRequest][]*types.MetricData) map[parser.MetricRequest][]*types.MetricData {
-	clone := map[parser.MetricRequest][]*types.MetricData{}
-	for key, originalMetrics := range original {
-		copiedMetrics := []*types.MetricData{}
-		for _, originalMetric := range originalMetrics {
-			copiedMetric := types.MetricData{
-				FetchResponse: pb.FetchResponse{
-					Name:      originalMetric.Name,
-					StartTime: originalMetric.StartTime,
-					StopTime:  originalMetric.StopTime,
-					StepTime:  originalMetric.StepTime,
-					Values:    make([]float64, len(originalMetric.Values)),
-					IsAbsent:  make([]bool, len(originalMetric.IsAbsent)),
-				},
-			}
-
-			copy(copiedMetric.Values, originalMetric.Values)
-			copy(copiedMetric.IsAbsent, originalMetric.IsAbsent)
-			copiedMetrics = append(copiedMetrics, &copiedMetric)
-		}
-
-		clone[key] = copiedMetrics
-	}
-
-	return clone
-}
-
-func deepEqual(t *testing.T, target string, original, modified map[parser.MetricRequest][]*types.MetricData) {
-	for key := range original {
-		if len(original[key]) == len(modified[key]) {
-			for i := range original[key] {
-				if !reflect.DeepEqual(original[key][i], modified[key][i]) {
-					t.Errorf(
-						"%s: source data was modified key %v index %v original:\n%v\n modified:\n%v",
-						target,
-						key,
-						i,
-						original[key][i],
-						modified[key][i],
-					)
-				}
-			}
-		} else {
-			t.Errorf(
-				"%s: source data was modified key %v original length %d, new length %d",
-				target,
-				key,
-				len(original[key]),
-				len(modified[key]),
-			)
-		}
-	}
 }
 
 func TestGetBuckets(t *testing.T) {
@@ -258,17 +208,11 @@ func TestEvalExpr(t *testing.T) {
 	}
 }
 
-type evalTestItem struct {
-	e    parser.Expr
-	m    map[parser.MetricRequest][]*types.MetricData
-	want []*types.MetricData
-}
-
 func TestEvalExpression(t *testing.T) {
 
 	now32 := int32(time.Now().Unix())
 
-	tests := []evalTestItem{
+	tests := []th.EvalTestItem{
 		{
 			parser.NewTargetExpr("metric"),
 			map[parser.MetricRequest][]*types.MetricData{
@@ -2025,44 +1969,10 @@ func TestEvalExpression(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		testName := tt.e.Target() + "(" + tt.e.RawArgs() + ")"
+		testName := tt.E.Target() + "(" + tt.E.RawArgs() + ")"
 		t.Run(testName, func(t *testing.T) {
-			testEvalExpr(t, &tt)
+			th.TestEvalExpr(t, &tt)
 		})
-	}
-}
-
-func testEvalExpr(t *testing.T, tt *evalTestItem) {
-	originalMetrics := deepClone(tt.m)
-	testName := tt.e.Target() + "(" + tt.e.RawArgs() + ")"
-	g, err := EvalExpr(tt.e, 0, 1, tt.m)
-	if err != nil {
-		t.Errorf("failed to eval %s: %+v", testName, err)
-		return
-	}
-	if len(g) != len(tt.want) {
-		t.Errorf("%s returned a different number of metrics, actual %v, want %v", testName, len(g), len(tt.want))
-		return
-
-	}
-	deepEqual(t, testName, originalMetrics, tt.m)
-
-	for i, want := range tt.want {
-		actual := g[i]
-		if actual == nil {
-			t.Errorf("returned no value %v", tt.e.RawArgs())
-			return
-		}
-		if actual.StepTime == 0 {
-			t.Errorf("missing step for %+v", g)
-		}
-		if actual.Name != want.Name {
-			t.Errorf("bad name for %s metric %d: got %s, want %s", testName, i, actual.Name, want.Name)
-		}
-		if !nearlyEqualMetrics(actual, want) {
-			t.Errorf("different values for %s metric %s: got %v, want %v", testName, actual.Name, actual.Values, want.Values)
-			return
-		}
 	}
 }
 
@@ -2422,13 +2332,13 @@ func TestEvalSummarize(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			originalMetrics := deepClone(tt.m)
+			originalMetrics := th.DeepClone(tt.m)
 			g, err := EvalExpr(tt.e, 0, 1, tt.m)
 			if err != nil {
 				t.Errorf("failed to eval %v: %+v", tt.name, err)
 				return
 			}
-			deepEqual(t, g[0].Name, originalMetrics, tt.m)
+			th.DeepEqual(t, g[0].Name, originalMetrics, tt.m)
 			if g[0].StepTime != tt.step {
 				t.Errorf("bad step for %s:\ngot  %d\nwant %d", g[0].Name, g[0].StepTime, tt.step)
 			}
@@ -2439,7 +2349,7 @@ func TestEvalSummarize(t *testing.T) {
 				t.Errorf("bad stop for %s: got %s want %s", g[0].Name, time.Unix(int64(g[0].StopTime), 0).Format(time.StampNano), time.Unix(int64(tt.stop), 0).Format(time.StampNano))
 			}
 
-			if !nearlyEqual(g[0].Values, g[0].IsAbsent, tt.w) {
+			if !th.NearlyEqual(g[0].Values, g[0].IsAbsent, tt.w) {
 				t.Errorf("failed: %s:\ngot  %+v,\nwant %+v", g[0].Name, g[0].Values, tt.w)
 			}
 			if g[0].Name != tt.name {
@@ -3232,13 +3142,13 @@ func TestEvalMultipleReturns(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			originalMetrics := deepClone(tt.m)
+			originalMetrics := th.DeepClone(tt.m)
 			g, err := EvalExpr(tt.e, 0, 1, tt.m)
 			if err != nil {
 				t.Errorf("failed to eval %v: %+v", tt.name, err)
 				return
 			}
-			deepEqual(t, tt.name, originalMetrics, tt.m)
+			th.DeepEqual(t, tt.name, originalMetrics, tt.m)
 			if len(g) == 0 {
 				t.Errorf("returned no data %v", tt.name)
 				return
@@ -3346,7 +3256,7 @@ func TestEvalCustomFromUntil(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			originalMetrics := deepClone(tt.m)
+			originalMetrics := th.DeepClone(tt.m)
 			g, err := EvalExpr(tt.e, tt.from, tt.until, tt.m)
 			if err != nil {
 				t.Errorf("failed to eval %v: %s", tt.name, err)
@@ -3357,12 +3267,12 @@ func TestEvalCustomFromUntil(t *testing.T) {
 				return
 			}
 
-			deepEqual(t, tt.e.Target(), originalMetrics, tt.m)
+			th.DeepEqual(t, tt.e.Target(), originalMetrics, tt.m)
 
 			if g[0].StepTime == 0 {
 				t.Errorf("missing step for %+v", g)
 			}
-			if !nearlyEqual(g[0].Values, g[0].IsAbsent, tt.w) {
+			if !th.NearlyEqual(g[0].Values, g[0].IsAbsent, tt.w) {
 				t.Errorf("failed: %s: got %+v, want %+v", g[0].Name, g[0].Values, tt.w)
 			}
 			if g[0].Name != tt.name {
@@ -3370,49 +3280,4 @@ func TestEvalCustomFromUntil(t *testing.T) {
 			}
 		})
 	}
-}
-
-const eps = 0.0000000001
-
-func nearlyEqual(a []float64, absent []bool, b []float64) bool {
-
-	if len(a) != len(b) {
-		return false
-	}
-
-	for i, v := range a {
-		// "same"
-		if absent[i] && math.IsNaN(b[i]) {
-			continue
-		}
-		if absent[i] || math.IsNaN(b[i]) {
-			// unexpected NaN
-			return false
-		}
-		// "close enough"
-		if math.Abs(v-b[i]) > eps {
-			return false
-		}
-	}
-
-	return true
-}
-
-func nearlyEqualMetrics(a, b *types.MetricData) bool {
-
-	if len(a.IsAbsent) != len(b.IsAbsent) {
-		return false
-	}
-
-	for i := range a.IsAbsent {
-		if a.IsAbsent[i] != b.IsAbsent[i] {
-			return false
-		}
-		// "close enough"
-		if math.Abs(a.Values[i]-b.Values[i]) > eps {
-			return false
-		}
-	}
-
-	return true
 }

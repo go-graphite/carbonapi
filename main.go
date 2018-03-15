@@ -34,6 +34,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/go-graphite/carbonapi/expr/functions"
+	"github.com/go-graphite/carbonapi/expr/rewrite"
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
 )
@@ -429,6 +430,7 @@ func setUpConfig(logger *zap.Logger, zipper CarbonZipper) {
 		config.FunctionsConfigs = make(map[string]string)
 	}
 
+	rewrite.New(config.FunctionsConfigs)
 	functions.New(config.FunctionsConfigs)
 
 	expvar.NewString("GoVersion").Set(runtime.Version())
