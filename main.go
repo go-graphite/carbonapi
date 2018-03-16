@@ -223,10 +223,10 @@ var defaultLoggerConfig = zapwriter.Config{
 }
 
 type cacheConfig struct {
-	Type              string   `yaml:"type"`
-	Size              int      `yaml:"size_mb"`
-	MemcachedServers  []string `yaml:"memcachedServers"`
-	DefaultTimeoutSec int32    `yaml:"defaultTimeoutSec"`
+	Type              string   `mapstructure:"type"`
+	Size              int      `mapstructure:"size_mb"`
+	MemcachedServers  []string `mapstructure:"memcachedServers"`
+	DefaultTimeoutSec int32    `mapstructure:"defaultTimeoutSec"`
 }
 
 type graphiteConfig struct {
@@ -237,28 +237,28 @@ type graphiteConfig struct {
 }
 
 var config = struct {
-	ExtrapolateExperiment      bool               `yaml:"extrapolateExperiment"`
-	Logger                     []zapwriter.Config `yaml:"logger"`
-	Listen                     string             `yaml:"listen"`
-	Concurency                 int                `yaml:"concurency"`
-	Cache                      cacheConfig        `yaml:"cache"`
-	Cpus                       int                `yaml:"cpus"`
-	TimezoneString             string             `yaml:"tz"`
-	UnicodeRangeTables         []string           `yaml:"unicodeRangeTables"`
-	Graphite                   graphiteConfig     `yaml:"graphite"`
-	IdleConnections            int                `yaml:"idleConnections"`
-	PidFile                    string             `yaml:"pidFile"`
-	SendGlobsAsIs              bool               `yaml:"sendGlobsAsIs"`
-	AlwaysSendGlobsAsIs        bool               `yaml:"alwaysSendGlobsAsIs"`
-	MaxBatchSize               int                `yaml:"maxBatchSize"`
-	Zipper                     string             `yaml:"zipper"`
-	Upstreams                  realZipper.Config  `yaml:"upstreams"`
-	ExpireDelaySec             int32              `yaml:"expireDelaySec"`
-	GraphiteWeb09Compatibility bool               `yaml:"graphite09compat"`
-	IgnoreClientTimeout        bool               `yaml:"ignoreClientTimeout"`
-	DefaultColors              map[string]string  `yaml:"defaultColors"`
-	GraphTemplates             string             `yaml:"graphTemplates"`
-	FunctionsConfigs           map[string]string  `yaml:"functionsConfig"`
+	ExtrapolateExperiment      bool               `mapstructure:"extrapolateExperiment"`
+	Logger                     []zapwriter.Config `mapstructure:"logger"`
+	Listen                     string             `mapstructure:"listen"`
+	Concurency                 int                `mapstructure:"concurency"`
+	Cache                      cacheConfig        `mapstructure:"cache"`
+	Cpus                       int                `mapstructure:"cpus"`
+	TimezoneString             string             `mapstructure:"tz"`
+	UnicodeRangeTables         []string           `mapstructure:"unicodeRangeTables"`
+	Graphite                   graphiteConfig     `mapstructure:"graphite"`
+	IdleConnections            int                `mapstructure:"idleConnections"`
+	PidFile                    string             `mapstructure:"pidFile"`
+	SendGlobsAsIs              bool               `mapstructure:"sendGlobsAsIs"`
+	AlwaysSendGlobsAsIs        bool               `mapstructure:"alwaysSendGlobsAsIs"`
+	MaxBatchSize               int                `mapstructure:"maxBatchSize"`
+	Zipper                     string             `mapstructure:"zipper"`
+	Upstreams                  realZipper.Config  `mapstructure:"upstreams"`
+	ExpireDelaySec             int32              `mapstructure:"expireDelaySec"`
+	GraphiteWeb09Compatibility bool               `mapstructure:"graphite09compat"`
+	IgnoreClientTimeout        bool               `mapstructure:"ignoreClientTimeout"`
+	DefaultColors              map[string]string  `mapstructure:"defaultColors"`
+	GraphTemplates             string             `mapstructure:"graphTemplates"`
+	FunctionsConfigs           map[string]string  `mapstructure:"functionsConfig"`
 
 	queryCache cache.BytesCache
 	findCache  cache.BytesCache
