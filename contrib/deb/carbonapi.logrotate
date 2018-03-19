@@ -1,0 +1,10 @@
+/var/log/carbonapi/carbonapi.log
+{
+    rotate 7
+    daily
+    missingok
+    copytruncate
+    notifempty
+    compress
+    delaycompress
+}

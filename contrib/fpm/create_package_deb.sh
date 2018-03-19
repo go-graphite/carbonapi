@@ -47,6 +47,10 @@ else
        cp ./contrib/deb/carbonapi.conf "${TMPDIR}"/etc/init/
 fi
 
+mkdir -p "${TMPDIR}"/var/log/carbonapi/
+mkdir -p "${TMPDIR}"/etc/logrotate.d/
+cp ./contrib/deb/carbonapi.logrotate "${TMPDIR}"/etc/logrotate.d/carbonapi
+
 fpm -s dir -t deb -n carbonapi -v ${VERSION} -C ${TMPDIR} \
     -p carbonapi_VERSION_ARCH.deb \
     -d "libcairo2 > 1.11" \
