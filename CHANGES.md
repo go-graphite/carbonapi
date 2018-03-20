@@ -14,13 +14,13 @@ Changes
 CHANGELOG
 ---------
 **Master**
+ - **[Breaking][Fix] Allow to specify prefix for environment variables through `-envprefix` command line parameter. Default now is "CARBONAPI_" which might break some environments**
  - [Improvement] graphiteWeb function that implements force-fallback to graphtieWeb
  - [Improvement] graphiteWeb can query graphite-web 1.1.0+ for a list of supported functions and automatically do fallback to graphite in case user calls unimplemented function
  - [Improvement] New config switch to disable find request before render. This is helpful for graphite-clickhouse backends
  - [Fix] Fix typo in polyfit function description
  - [Fix] Skip metrics without pairs in reduceSeries (thx. to @errx)
  - [Fix] Fix config file parsing (thx. to @errx)
- - [Fix] **BREAKING Allow to specify prefix for environment variables through `-envprefix` command line parameter. For now default is "" for compatibility reasons, but this WILL change in future. Please migrate to `CARBONAPI` prefix instead**
  - [Code] Move MakeResponse to expr/types and rename it to MakeMetricData. This is sometimes useful outside of tests. Thx. to @borovskyav
  - [Code] Add helper package that will ease doing per-function tests. See `expr/functions/absolute/function_test.go` for an example
 
