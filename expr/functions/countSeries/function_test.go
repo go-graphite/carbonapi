@@ -1,4 +1,4 @@
-package constantLine
+package countSeries
 
 import (
 	"testing"
@@ -9,6 +9,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
+	"math"
 )
 
 func init() {
@@ -21,19 +22,20 @@ func init() {
 	}
 }
 
-func TestConstantLine(t *testing.T) {
+func TestCountSeries(t *testing.T) {
 	now32 := int32(time.Now().Unix())
 
 	tests := []th.EvalTestItem{
 		{
-			parser.NewExpr("constantLine",
-				42.42,
+			parser.NewExpr("countSeries",
+				"metric1", "metric2", "metric3",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"42.42", 0, 1}: {types.MakeMetricData("constantLine", []float64{12.3, 12.3}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), 3, 4, 5, math.NaN()}, 1, now32)},
+				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), math.NaN(), 5, 6, math.NaN()}, 1, now32)},
+				{"metric3", 0, 1}: {types.MakeMetricData("metric3", []float64{3, math.NaN(), 5, 6, math.NaN(), math.NaN()}, 1, now32)},
 			},
-			[]*types.MetricData{types.MakeMetricData("42.42",
-				[]float64{42.42, 42.42}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("countSeries(metric1,metric2,metric3)", []float64{3, 3, 3, 3, 3, 3}, 1, now32)},
 		},
 	}
 

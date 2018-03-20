@@ -1,15 +1,17 @@
 package tests
 
 import (
+	"fmt"
+	"math"
+	"reflect"
 	"testing"
+	"time"
 
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
-	"math"
-	"reflect"
 )
 
 type FuncEvaluator struct {
@@ -38,6 +40,18 @@ func EvaluatorFromFunc(function interfaces.Function) interfaces.Evaluator {
 		eval: function.Do,
 	}
 
+	return e
+}
+
+func EvaluatorFromFuncWithMetadata(metadata map[string]interfaces.Function) interfaces.Evaluator {
+	e := &FuncEvaluator{
+		eval: func(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+			if f, ok := metadata[e.Target()]; ok {
+				return f.Do(e, from, until, values)
+			}
+			return nil, fmt.Errorf("unknown function: %v", e.Target())
+		},
+	}
 	return e
 }
 
@@ -140,6 +154,71 @@ func NearlyEqualMetrics(a, b *types.MetricData) bool {
 	return true
 }
 
+type SummarizeEvalTestItem struct {
+	E     parser.Expr
+	M     map[parser.MetricRequest][]*types.MetricData
+	W     []float64
+	Name  string
+	Step  int32
+	Start int32
+	Stop  int32
+}
+
+func InitTestSummarize() (int32, int32, int32) {
+	t0, err := time.Parse(time.UnixDate, "Wed Sep 10 10:32:00 CEST 2014")
+	if err != nil {
+		panic(err)
+	}
+
+	tenThirtyTwo := int32(t0.Unix())
+
+	t0, err = time.Parse(time.UnixDate, "Wed Sep 10 10:59:00 CEST 2014")
+	if err != nil {
+		panic(err)
+	}
+
+	tenFiftyNine := int32(t0.Unix())
+
+	t0, err = time.Parse(time.UnixDate, "Wed Sep 10 10:30:00 CEST 2014")
+	if err != nil {
+		panic(err)
+	}
+
+	tenThirty := int32(t0.Unix())
+
+	return tenThirtyTwo, tenFiftyNine, tenThirty
+}
+
+func TestSummarizeEvalExpr(t *testing.T, tt *SummarizeEvalTestItem) {
+	evaluator := metadata.GetEvaluator()
+
+	t.Run(tt.Name, func(t *testing.T) {
+		originalMetrics := DeepClone(tt.M)
+		g, err := evaluator.EvalExpr(tt.E, 0, 1, tt.M)
+		if err != nil {
+			t.Errorf("failed to eval %v: %+v", tt.Name, err)
+			return
+		}
+		DeepEqual(t, g[0].Name, originalMetrics, tt.M)
+		if g[0].StepTime != tt.Step {
+			t.Errorf("bad Step for %s:\ngot  %d\nwant %d", g[0].Name, g[0].StepTime, tt.Step)
+		}
+		if g[0].StartTime != tt.Start {
+			t.Errorf("bad Start for %s: got %s want %s", g[0].Name, time.Unix(int64(g[0].StartTime), 0).Format(time.StampNano), time.Unix(int64(tt.Start), 0).Format(time.StampNano))
+		}
+		if g[0].StopTime != tt.Stop {
+			t.Errorf("bad Stop for %s: got %s want %s", g[0].Name, time.Unix(int64(g[0].StopTime), 0).Format(time.StampNano), time.Unix(int64(tt.Stop), 0).Format(time.StampNano))
+		}
+
+		if !NearlyEqual(g[0].Values, g[0].IsAbsent, tt.W) {
+			t.Errorf("failed: %s:\ngot  %+v,\nwant %+v", g[0].Name, g[0].Values, tt.W)
+		}
+		if g[0].Name != tt.Name {
+			t.Errorf("bad Name for %+v: got %v, want %v", g, g[0].Name, tt.Name)
+		}
+	})
+}
+
 type MultiReturnEvalTestItem struct {
 	E       parser.Expr
 	M       map[parser.MetricRequest][]*types.MetricData
@@ -166,7 +245,7 @@ func TestMultiReturnEvalExpr(t *testing.T, tt *MultiReturnEvalTestItem) {
 		return
 	}
 	if g[0].StepTime == 0 {
-		t.Errorf("missing step for %+v", g)
+		t.Errorf("missing Step for %+v", g)
 	}
 	if len(g) != len(tt.Results) {
 		t.Errorf("unexpected results len: got %d, want %d", len(g), len(tt.Results))
@@ -174,11 +253,11 @@ func TestMultiReturnEvalExpr(t *testing.T, tt *MultiReturnEvalTestItem) {
 	for _, gg := range g {
 		r, ok := tt.Results[gg.Name]
 		if !ok {
-			t.Errorf("missing result name: %v", gg.Name)
+			t.Errorf("missing result Name: %v", gg.Name)
 			continue
 		}
 		if r[0].Name != gg.Name {
-			t.Errorf("result name mismatch, got\n%#v,\nwant\n%#v", gg.Name, r[0].Name)
+			t.Errorf("result Name mismatch, got\n%#v,\nwant\n%#v", gg.Name, r[0].Name)
 		}
 		if !reflect.DeepEqual(r[0].Values, gg.Values) || !reflect.DeepEqual(r[0].IsAbsent, gg.IsAbsent) ||
 			r[0].StartTime != gg.StartTime ||
@@ -218,10 +297,10 @@ func TestEvalExpr(t *testing.T, tt *EvalTestItem) {
 			return
 		}
 		if actual.StepTime == 0 {
-			t.Errorf("missing step for %+v", g)
+			t.Errorf("missing Step for %+v", g)
 		}
 		if actual.Name != want.Name {
-			t.Errorf("bad name for %s metric %d: got %s, Want %s", testName, i, actual.Name, want.Name)
+			t.Errorf("bad Name for %s metric %d: got %s, Want %s", testName, i, actual.Name, want.Name)
 		}
 		if !NearlyEqualMetrics(actual, want) {
 			t.Errorf("different values for %s metric %s: got %v, Want %v", testName, actual.Name, actual.Values, want.Values)

@@ -1,4 +1,4 @@
-package constantLine
+package delay
 
 import (
 	"testing"
@@ -9,6 +9,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
+	"math"
 )
 
 func init() {
@@ -21,19 +22,19 @@ func init() {
 	}
 }
 
-func TestConstantLine(t *testing.T) {
+func TestDelay(t *testing.T) {
 	now32 := int32(time.Now().Unix())
 
 	tests := []th.EvalTestItem{
 		{
-			parser.NewExpr("constantLine",
-				42.42,
+			parser.NewExpr("delay",
+				"metric1", 3,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"42.42", 0, 1}: {types.MakeMetricData("constantLine", []float64{12.3, 12.3}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
 			},
-			[]*types.MetricData{types.MakeMetricData("42.42",
-				[]float64{42.42, 42.42}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("delay(metric1,3)",
+				[]float64{math.NaN(), math.NaN(), math.NaN(), 1, 2, 3}, 1, now32)},
 		},
 	}
 

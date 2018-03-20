@@ -1,4 +1,4 @@
-package constantLine
+package grep
 
 import (
 	"testing"
@@ -21,19 +21,24 @@ func init() {
 	}
 }
 
-func TestConstantLine(t *testing.T) {
+func TestGrep(t *testing.T) {
 	now32 := int32(time.Now().Unix())
 
 	tests := []th.EvalTestItem{
 		{
-			parser.NewExpr("constantLine",
-				42.42,
+			parser.NewExpr("grep",
+				"metric1",
+				parser.ArgValue("Bar"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"42.42", 0, 1}: {types.MakeMetricData("constantLine", []float64{12.3, 12.3}, 1, now32)},
+				{"metric1", 0, 1}: {
+					types.MakeMetricData("metricFoo", []float64{1, 1, 1, 1, 1}, 1, now32),
+					types.MakeMetricData("metricBar", []float64{2, 2, 2, 2, 2}, 1, now32),
+					types.MakeMetricData("metricBaz", []float64{3, 3, 3, 3, 3}, 1, now32),
+				},
 			},
-			[]*types.MetricData{types.MakeMetricData("42.42",
-				[]float64{42.42, 42.42}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("metricBar", // NOTE(dgryski): not sure if this matches graphite
+				[]float64{2, 2, 2, 2, 2}, 1, now32)},
 		},
 	}
 

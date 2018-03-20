@@ -1,4 +1,4 @@
-package constantLine
+package ewma
 
 import (
 	"testing"
@@ -9,6 +9,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
+	"math"
 )
 
 func init() {
@@ -21,19 +22,33 @@ func init() {
 	}
 }
 
-func TestConstantLine(t *testing.T) {
+func TestEWMA(t *testing.T) {
 	now32 := int32(time.Now().Unix())
 
 	tests := []th.EvalTestItem{
 		{
-			parser.NewExpr("constantLine",
-				42.42,
+			parser.NewExpr("ewma",
+				"metric1",
+				0.9,
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"42.42", 0, 1}: {types.MakeMetricData("constantLine", []float64{12.3, 12.3}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{0, 1, 1, 1, math.NaN(), 1, 1}, 1, now32)},
 			},
-			[]*types.MetricData{types.MakeMetricData("42.42",
-				[]float64{42.42, 42.42}, 1, now32)},
+			[]*types.MetricData{
+				types.MakeMetricData("ewma(metric1,0.9)", []float64{0, 0.9, 0.99, 0.999, math.NaN(), 0.9999, 0.99999}, 1, now32),
+			},
+		},
+		{
+			parser.NewExpr("exponentialWeightedMovingAverage",
+				"metric1",
+				0.9,
+			),
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{0, 1, 1, 1, math.NaN(), 1, 1}, 1, now32)},
+			},
+			[]*types.MetricData{
+				types.MakeMetricData("ewma(metric1,0.9)", []float64{0, 0.9, 0.99, 0.999, math.NaN(), 0.9999, 0.99999}, 1, now32),
+			},
 		},
 	}
 

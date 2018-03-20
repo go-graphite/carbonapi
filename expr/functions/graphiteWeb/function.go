@@ -77,8 +77,8 @@ func paramsIsEqual(first, second []types.FunctionParam) bool {
 func New(configFile string) []interfaces.FunctionMetadata {
 	logger := zapwriter.Logger("functionInit").With(zap.String("function", "graphiteWeb"))
 	if configFile == "" {
-		logger.Error("no config file specified",
-			zap.Error(fmt.Errorf("config is required for this function")),
+		logger.Warn("no config file specified",
+			zap.String("message", "this function requrires config file to work properly"),
 		)
 		return nil
 	}
