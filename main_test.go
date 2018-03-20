@@ -88,6 +88,9 @@ func getMockInfoResponse() map[string]pb.InfoResponse {
 }
 
 func init() {
+	cfg := defaultLoggerConfig
+	cfg.Level = "debug"
+	zapwriter.ApplyConfig([]zapwriter.Config{cfg})
 	logger := zapwriter.Logger("main")
 
 	setUpViper(logger)
@@ -114,8 +117,14 @@ func TestRenderHandler(t *testing.T) {
 	expected := `[{"target":"foo.bar","datapoints":[[null,1510913280],[1510913759,1510913340],[1510913818,1510913400]]}]`
 
 	// Check the status code is what we expect.
-	assert.Equal(t, rr.Code, http.StatusOK, "HttpStatusCode should be 200 OK.")
-	assert.Equal(t, expected, rr.Body.String(), "Http response should be same.")
+	r := assert.Equal(t, rr.Code, http.StatusOK, "HttpStatusCode should be 200 OK.")
+	if !r {
+		t.Error("HttpStatusCode should be 200 OK.")
+	}
+	r = assert.Equal(t, expected, rr.Body.String(), "Http response should be same.")
+	if !r {
+		t.Error("Http response should be same.")
+	}
 }
 
 func TestFindHandler(t *testing.T) {
@@ -124,8 +133,14 @@ func TestFindHandler(t *testing.T) {
 
 	body := rr.Body.String()
 	expected := `[{"allowChildren":0,"expandable":0,"leaf":1,"id":"foo.bar","text":"bar","context":{}}]` + "\n"
-	assert.Equal(t, rr.Code, http.StatusOK, "HttpStatusCode should be 200 OK.")
-	assert.Equal(t, expected, body, "Http response should be same.")
+	r := assert.Equal(t, rr.Code, http.StatusOK, "HttpStatusCode should be 200 OK.")
+	if !r {
+		t.Error("HttpStatusCode should be 200 OK.")
+	}
+	r = assert.Equal(t, expected, body, "Http response should be same.")
+	if !r {
+		t.Error("Http response should be same.")
+	}
 }
 
 func TestInfoHandler(t *testing.T) {
@@ -135,8 +150,17 @@ func TestInfoHandler(t *testing.T) {
 	body := rr.Body.String()
 	expected := getMockInfoResponse()
 	expectedJson, err := json.Marshal(expected)
-	assert.Nil(t, err)
+	r := assert.Nil(t, err)
+	if !r {
+		t.Errorf("err should be nil, %v instead", err)
+	}
 
-	assert.Equal(t, rr.Code, http.StatusOK, "HttpStatusCode should be 200 OK.")
-	assert.Equal(t, string(expectedJson), body, "Http response should be same.")
+	r = assert.Equal(t, rr.Code, http.StatusOK, "HttpStatusCode should be 200 OK.")
+	if !r {
+		t.Error("Http response should be same.")
+	}
+	r = assert.Equal(t, string(expectedJson), body, "Http response should be same.")
+	if !r {
+		t.Error("Http response should be same.")
+	}
 }
