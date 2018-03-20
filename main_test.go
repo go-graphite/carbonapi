@@ -93,7 +93,8 @@ func init() {
 	zapwriter.ApplyConfig([]zapwriter.Config{cfg})
 	logger := zapwriter.Logger("main")
 
-	setUpViper(logger)
+	cfgFile := ""
+	setUpViper(logger, &cfgFile)
 	setUpConfigUpstreams(logger)
 	setUpConfig(logger, newMockCarbonZipper())
 	initHandlers()

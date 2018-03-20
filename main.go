@@ -499,6 +499,7 @@ func setUpConfig(logger *zap.Logger, zipper CarbonZipper) {
 		fields := strings.Split(config.TimezoneString, ",")
 		if len(fields) != 2 {
 			logger.Fatal("unexpected amount of fields in tz",
+				zap.String("timezone_string", config.TimezoneString),
 				zap.Int("fields_got", len(fields)),
 				zap.Int("fields_expected", 2),
 			)
@@ -633,9 +634,7 @@ func setUpConfig(logger *zap.Logger, zipper CarbonZipper) {
 	}
 }
 
-func setUpViper(logger *zap.Logger) {
-	configPath := flag.String("config", "", "Path to the `config file`.")
-	flag.Parse()
+func setUpViper(logger *zap.Logger, configPath *string) {
 	if *configPath != "" {
 		b, err := ioutil.ReadFile(*configPath)
 		if err != nil {
@@ -748,7 +747,9 @@ func main() {
 	}
 	logger := zapwriter.Logger("main")
 
-	setUpViper(logger)
+	configPath := flag.String("config", "", "Path to the `config file`.")
+	flag.Parse()
+	setUpViper(logger, configPath)
 	setUpConfigUpstreams(logger)
 	zipper := newZipper(zipperStats, &config.Upstreams, config.IgnoreClientTimeout, logger.With(zap.String("handler", "zipper")))
 	setUpConfig(logger, zipper)
