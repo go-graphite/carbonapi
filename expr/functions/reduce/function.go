@@ -83,12 +83,16 @@ func (f *reduce) Do(e parser.Expr, from, until int32, values map[parser.MetricRe
 		valueKey := parser.MetricRequest{series.Name, from, until}
 		reducedValues[valueKey] = append(reducedValues[valueKey], series)
 	}
-
+AliasLoop:
 	for _, aliasName := range aliasNames {
 
 		reducedNodes := make([]parser.Expr, len(reduceMatchers))
 		for i, reduceMatcher := range reduceMatchers {
-			reducedNodes[i] = parser.NewTargetExpr(reduceGroups[aliasName][reduceMatcher].Name)
+			matched, ok := reduceGroups[aliasName][reduceMatcher]
+			if !ok {
+				continue AliasLoop
+			}
+			reducedNodes[i] = parser.NewTargetExpr(matched.Name)
 		}
 
 		result, err := f.Evaluator.EvalExpr(parser.NewExprTyped("alias", []parser.Expr{
