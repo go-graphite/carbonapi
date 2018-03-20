@@ -94,7 +94,7 @@ func init() {
 	logger := zapwriter.Logger("main")
 
 	cfgFile := ""
-	setUpViper(logger, &cfgFile)
+	setUpViper(logger, &cfgFile, "CARBONAPI_")
 	setUpConfigUpstreams(logger)
 	setUpConfig(logger, newMockCarbonZipper())
 	initHandlers()

@@ -497,6 +497,7 @@ func setUpConfig(logger *zap.Logger, zipper CarbonZipper) {
 
 	if config.TimezoneString != "" {
 		fields := strings.Split(config.TimezoneString, ",")
+
 		if len(fields) != 2 {
 			logger.Fatal("unexpected amount of fields in tz",
 				zap.String("timezone_string", config.TimezoneString),
@@ -505,7 +506,6 @@ func setUpConfig(logger *zap.Logger, zipper CarbonZipper) {
 			)
 		}
 
-		var err error
 		offs, err := strconv.Atoi(fields[1])
 		if err != nil {
 			logger.Fatal("unable to parse seconds",
@@ -634,7 +634,7 @@ func setUpConfig(logger *zap.Logger, zipper CarbonZipper) {
 	}
 }
 
-func setUpViper(logger *zap.Logger, configPath *string) {
+func setUpViper(logger *zap.Logger, configPath *string, viperPrefix string) {
 	if *configPath != "" {
 		b, err := ioutil.ReadFile(*configPath)
 		if err != nil {
@@ -663,7 +663,12 @@ func setUpViper(logger *zap.Logger, configPath *string) {
 			)
 		}
 	}
+
+	if viperPrefix != "" {
+		viper.SetEnvPrefix(viperPrefix)
+	}
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.BindEnv("tz", "carbonapi_tz")
 	viper.SetDefault("listen", "localhost:8081")
 	viper.SetDefault("concurency", 20)
 	viper.SetDefault("cache.type", "mem")
@@ -748,8 +753,12 @@ func main() {
 	logger := zapwriter.Logger("main")
 
 	configPath := flag.String("config", "", "Path to the `config file`.")
+	envPrefix := flag.String("envprefix", "CARBONAPI_", "Preifx for environment variables override")
+	if *envPrefix == "" {
+		logger.Warn("empty prefix is not recommended due to possible collisions with OS environment variables")
+	}
 	flag.Parse()
-	setUpViper(logger, configPath)
+	setUpViper(logger, configPath, *envPrefix)
 	setUpConfigUpstreams(logger)
 	zipper := newZipper(zipperStats, &config.Upstreams, config.IgnoreClientTimeout, logger.With(zap.String("handler", "zipper")))
 	setUpConfig(logger, zipper)
