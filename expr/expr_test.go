@@ -864,6 +864,25 @@ func TestEvalExpression(t *testing.T) {
 			},
 		},
 		{
+			parser.NewExpr("reduceSeries",
+				// list of arguments
+				parser.NewExpr("mapSeries",
+					"devops.service.*.filter.received.*.count", 2,
+				),
+				parser.ArgValue("asPercent"), 5, parser.ArgValue("valid"), parser.ArgValue("total"),
+			),
+			map[parser.MetricRequest][]*types.MetricData{
+				{"devops.service.*.filter.received.*.count", 0, 1}: {
+					types.MakeMetricData("devops.service.server1.filter.received.total.count", []float64{8, 2, 4}, 1, now32),
+					types.MakeMetricData("devops.service.server2.filter.received.valid.count", []float64{3, 9, 12}, 1, now32),
+					types.MakeMetricData("devops.service.server2.filter.received.total.count", []float64{12, 9, 3}, 1, now32),
+				},
+			},
+			[]*types.MetricData{
+				types.MakeMetricData("devops.service.server2.filter.received.reduce.asPercent.count", []float64{25, 100, 400}, 1, now32),
+			},
+		},
+		{
 			parser.NewExpr("transformNull",
 				"metric1",
 				parser.NamedArgs{
