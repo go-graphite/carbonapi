@@ -14,6 +14,10 @@ Changes
 
 Changes
 -------
+**MASTER** **It's not recommended to switch to this release until it's marked as stable**
+   - [Improvement] Major rework of load balancing logic
+   - [Improvement] Support for new protobuf-based protocol that allow to pass metadata in the responses.
+
 **0.74**
    - [Fix] Add a workaround for /info handler for zipper over zipper.
    - [Fix] Deduplicate servers in pathCache (thx. to @korsevick)
