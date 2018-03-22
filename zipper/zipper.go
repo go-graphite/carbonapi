@@ -228,7 +228,7 @@ func NewZipper(sender func(*types.Stats), config *types.Config, logger *zap.Logg
 		}
 		for _, backend := range config.Backends {
 			backend := types.BackendV2{
-				GroupName:           config.CarbonSearch.Backend,
+				GroupName:           backend,
 				Protocol:            "carbonapi_v2_pb",
 				LBMethod:            types.RoundRobinLB,
 				Servers:             []string{backend},
