@@ -13,7 +13,7 @@ Changes
 
 CHANGELOG
 ---------
-**Master**
+**0.11.0**
  - **[Breaking][Fix] Allow to specify prefix for environment variables through `-envprefix` command line parameter. Default now is "CARBONAPI_" which might break some environments**
  - [Improvement] graphiteWeb function that implements force-fallback to graphtieWeb
  - [Improvement] graphiteWeb can query graphite-web 1.1.0+ for a list of supported functions and automatically do fallback to graphite in case user calls unimplemented function
