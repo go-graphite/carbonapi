@@ -10,6 +10,7 @@ import (
 type ServerClient interface {
 	Name() string
 	Backends() []string
+	MaxMetricsPerRequest() int
 
 	Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *Stats, *errors.Errors)
 	Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *Stats, *errors.Errors)

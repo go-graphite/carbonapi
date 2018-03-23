@@ -41,15 +41,16 @@ type ClientProtoV2Group struct {
 	counter             uint64
 	maxIdleConnsPerHost int
 
-	limiter  limiter.ServerLimiter
-	logger   *zap.Logger
-	timeout  types.Timeouts
-	maxTries int
+	limiter              *limiter.ServerLimiter
+	logger               *zap.Logger
+	timeout              types.Timeouts
+	maxTries             int
+	maxMetricsPerRequest int
 
 	httpQuery *helper.HttpQuery
 }
 
-func NewClientProtoV2GroupWithLimiter(config types.BackendV2, limiter limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
+func NewClientProtoV2GroupWithLimiter(config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
 	logger := zapwriter.Logger("protobufGroup")
 
 	logger = logger.With(zap.String("name", config.GroupName))
@@ -68,10 +69,11 @@ func NewClientProtoV2GroupWithLimiter(config types.BackendV2, limiter limiter.Se
 	httpQuery := helper.NewHttpQuery(logger, config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv2PB)
 
 	c := &ClientProtoV2Group{
-		groupName: config.GroupName,
-		servers:   config.Servers,
-		timeout:   *config.Timeouts,
-		maxTries:  *config.MaxTries,
+		groupName:            config.GroupName,
+		servers:              config.Servers,
+		timeout:              *config.Timeouts,
+		maxTries:             *config.MaxTries,
+		maxMetricsPerRequest: config.MaxGlobs,
 
 		client:  httpClient,
 		limiter: limiter,
@@ -83,7 +85,7 @@ func NewClientProtoV2GroupWithLimiter(config types.BackendV2, limiter limiter.Se
 }
 
 func NewClientProtoV2Group(config types.BackendV2) (types.ServerClient, *errors.Errors) {
-	if config.ConcurrencyLimit == nil || *config.ConcurrencyLimit == 0 {
+	if config.ConcurrencyLimit == nil {
 		return nil, errors.Fatal("concurency limit is not set")
 	}
 	if len(config.Servers) == 0 {
@@ -92,6 +94,10 @@ func NewClientProtoV2Group(config types.BackendV2) (types.ServerClient, *errors.
 	limiter := limiter.NewServerLimiter([]string{config.GroupName}, *config.ConcurrencyLimit)
 
 	return NewClientProtoV2GroupWithLimiter(config, limiter)
+}
+
+func (c ClientProtoV2Group) MaxMetricsPerRequest() int {
+	return c.maxMetricsPerRequest
 }
 
 func (c ClientProtoV2Group) Name() string {
@@ -123,6 +129,7 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 		err = &errors.Errors{}
 	}
 	if err.HaveFatalErrors {
+		err.HaveFatalErrors = false
 		return nil, stats, err
 	}
 

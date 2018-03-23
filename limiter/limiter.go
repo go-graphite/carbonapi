@@ -6,12 +6,15 @@ import (
 )
 
 // ServerLimiter provides interface to limit amount of requests
-type ServerLimiter map[string]chan struct{}
+type ServerLimiter struct {
+	m   map[string]chan struct{}
+	cap int
+}
 
 // NewServerLimiter creates a limiter for specific servers list.
-func NewServerLimiter(servers []string, l int) ServerLimiter {
+func NewServerLimiter(servers []string, l int) *ServerLimiter {
 	if l == 0 {
-		return nil
+		return &ServerLimiter{}
 	}
 
 	sl := make(map[string]chan struct{})
@@ -20,17 +23,24 @@ func NewServerLimiter(servers []string, l int) ServerLimiter {
 		sl[s] = make(chan struct{}, l)
 	}
 
-	return sl
+	return &ServerLimiter{
+		m:   sl,
+		cap: l,
+	}
+}
+
+func (sl ServerLimiter) Capacity() int {
+	return sl.cap
 }
 
 // Enter claims one of free slots or blocks until there is one.
 func (sl ServerLimiter) Enter(ctx context.Context, s string) error {
-	if sl == nil {
+	if sl.m == nil {
 		return nil
 	}
 
 	select {
-	case sl[s] <- struct{}{}:
+	case sl.m[s] <- struct{}{}:
 		return nil
 	case <-ctx.Done():
 		return errors.New("timeout exceeded")
@@ -39,9 +49,9 @@ func (sl ServerLimiter) Enter(ctx context.Context, s string) error {
 
 // Frees a slot in limiter
 func (sl ServerLimiter) Leave(ctx context.Context, s string) {
-	if sl == nil {
+	if sl.m == nil {
 		return
 	}
 
-	<-sl[s]
+	<-sl.m[s]
 }

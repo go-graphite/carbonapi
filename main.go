@@ -21,7 +21,7 @@ import (
 	"github.com/facebookgo/pidfile"
 	"github.com/go-graphite/carbonzipper/intervalset"
 	"github.com/go-graphite/carbonzipper/mstats"
-	"github.com/go-graphite/carbonzipper/pathcache"
+	// "github.com/go-graphite/carbonzipper/pathcache"
 	cu "github.com/go-graphite/carbonzipper/util/apictx"
 	util "github.com/go-graphite/carbonzipper/util/zipperctx"
 	"github.com/go-graphite/carbonzipper/zipper"
@@ -74,6 +74,7 @@ var config = struct {
 	CarbonSearchV2 types.CarbonSearchV2 `yaml:"carbonsearchv2"`
 
 	MaxIdleConnsPerHost int `yaml:"maxIdleConnsPerHost"`
+	MaxGlobs            int `yaml:"maxGlobs"`
 
 	ConcurrencyLimitPerServer  int                `yaml:"concurrencyLimit"`
 	ExpireDelaySec             int32              `yaml:"expireDelaySec"`
@@ -642,13 +643,12 @@ func main() {
 	/* Configure zipper */
 	// set up caches
 	zipperConfig := &zipperConfig.Config{
-		PathCache:   pathcache.NewPathCache(config.ExpireDelaySec),
-		SearchCache: pathcache.NewPathCache(config.ExpireDelaySec),
-
 		ConcurrencyLimitPerServer: config.ConcurrencyLimitPerServer,
 		MaxIdleConnsPerHost:       config.MaxIdleConnsPerHost,
 		Backends:                  config.Backends,
 		BackendsV2:                config.Backendsv2,
+		ExpireDelaySec:            config.ExpireDelaySec,
+		MaxGlobs:                  config.MaxGlobs,
 
 		CarbonSearch:      config.CarbonSearch,
 		CarbonSearchV2:    config.CarbonSearchV2,
@@ -656,17 +656,20 @@ func main() {
 		KeepAliveInterval: config.KeepAliveInterval,
 	}
 
-	Metrics.CacheSize = expvar.Func(func() interface{} { return zipperConfig.PathCache.ECSize() })
-	expvar.Publish("cacheSize", Metrics.CacheSize)
+	/*
+		TODO(civil): Restore those metrics
+		Metrics.CacheSize = expvar.Func(func() interface{} { return zipperConfig.PathCache.ECSize() })
+		expvar.Publish("cacheSize", Metrics.CacheSize)
 
-	Metrics.CacheItems = expvar.Func(func() interface{} { return zipperConfig.PathCache.ECItems() })
-	expvar.Publish("cacheItems", Metrics.CacheItems)
+		Metrics.CacheItems = expvar.Func(func() interface{} { return zipperConfig.PathCache.ECItems() })
+		expvar.Publish("cacheItems", Metrics.CacheItems)
 
-	Metrics.SearchCacheSize = expvar.Func(func() interface{} { return zipperConfig.SearchCache.ECSize() })
-	expvar.Publish("searchCacheSize", Metrics.SearchCacheSize)
+		Metrics.SearchCacheSize = expvar.Func(func() interface{} { return zipperConfig.SearchCache.ECSize() })
+		expvar.Publish("searchCacheSize", Metrics.SearchCacheSize)
 
-	Metrics.SearchCacheItems = expvar.Func(func() interface{} { return zipperConfig.SearchCache.ECItems() })
-	expvar.Publish("searchCacheItems", Metrics.SearchCacheItems)
+		Metrics.SearchCacheItems = expvar.Func(func() interface{} { return zipperConfig.SearchCache.ECItems() })
+		expvar.Publish("searchCacheItems", Metrics.SearchCacheItems)
+	*/
 
 	config.zipper, err = zipper.NewZipper(sendStats, zipperConfig, zapwriter.Logger("zipper"))
 	if err != nil {
@@ -725,11 +728,13 @@ func main() {
 			graphite.Register(fmt.Sprintf("%s.requests_in_%dms_to_%dms", pattern, i*100, (i+1)*100), bucketEntry(i))
 		}
 
+		/* TODO(civil): Find a way to return that data
 		graphite.Register(fmt.Sprintf("%s.cache_size", pattern), Metrics.CacheSize)
 		graphite.Register(fmt.Sprintf("%s.cache_items", pattern), Metrics.CacheItems)
 
 		graphite.Register(fmt.Sprintf("%s.search_cache_size", pattern), Metrics.SearchCacheSize)
 		graphite.Register(fmt.Sprintf("%s.search_cache_items", pattern), Metrics.SearchCacheItems)
+		*/
 
 		graphite.Register(fmt.Sprintf("%s.cache_hits", pattern), Metrics.CacheHits)
 		graphite.Register(fmt.Sprintf("%s.cache_misses", pattern), Metrics.CacheMisses)
