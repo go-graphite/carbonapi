@@ -3,7 +3,6 @@ package config
 import (
 	"time"
 
-	"github.com/go-graphite/carbonzipper/pathcache"
 	"github.com/go-graphite/carbonzipper/zipper/types"
 )
 
@@ -19,8 +18,7 @@ type Config struct {
 	CarbonSearch   types.CarbonSearch
 	CarbonSearchV2 types.CarbonSearchV2
 
-	PathCache         pathcache.PathCache
-	SearchCache       pathcache.PathCache
+	ExpireDelaySec    int32
 	Timeouts          types.Timeouts
 	KeepAliveInterval time.Duration `yaml:"keepAliveInterval"`
 }

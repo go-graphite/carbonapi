@@ -39,7 +39,7 @@ type ClientProtoV3Group struct {
 	counter             uint64
 	maxIdleConnsPerHost int
 
-	limiter              limiter.ServerLimiter
+	limiter              *limiter.ServerLimiter
 	logger               *zap.Logger
 	timeout              types.Timeouts
 	maxTries             int
@@ -49,7 +49,7 @@ type ClientProtoV3Group struct {
 }
 
 func New(config types.BackendV2) (types.ServerClient, *errors.Errors) {
-	if config.ConcurrencyLimit == nil || *config.ConcurrencyLimit == 0 {
+	if config.ConcurrencyLimit == nil {
 		return nil, errors.Fatal("concurency limit is not set")
 	}
 	if len(config.Servers) == 0 {
@@ -60,7 +60,7 @@ func New(config types.BackendV2) (types.ServerClient, *errors.Errors) {
 	return NewWithLimiter(config, limiter)
 }
 
-func NewWithLimiter(config types.BackendV2, limiter limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
+func NewWithLimiter(config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConnsPerHost: *config.MaxIdleConnsPerHost,
@@ -134,6 +134,7 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 		e = &errors.Errors{}
 	}
 	if e.HaveFatalErrors {
+		e.HaveFatalErrors = false
 		return nil, stats, e
 	}
 

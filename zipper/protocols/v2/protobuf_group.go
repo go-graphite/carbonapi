@@ -41,7 +41,7 @@ type ClientProtoV2Group struct {
 	counter             uint64
 	maxIdleConnsPerHost int
 
-	limiter              limiter.ServerLimiter
+	limiter              *limiter.ServerLimiter
 	logger               *zap.Logger
 	timeout              types.Timeouts
 	maxTries             int
@@ -50,7 +50,7 @@ type ClientProtoV2Group struct {
 	httpQuery *helper.HttpQuery
 }
 
-func NewClientProtoV2GroupWithLimiter(config types.BackendV2, limiter limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
+func NewClientProtoV2GroupWithLimiter(config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
 	logger := zapwriter.Logger("protobufGroup")
 
 	logger = logger.With(zap.String("name", config.GroupName))
@@ -85,7 +85,7 @@ func NewClientProtoV2GroupWithLimiter(config types.BackendV2, limiter limiter.Se
 }
 
 func NewClientProtoV2Group(config types.BackendV2) (types.ServerClient, *errors.Errors) {
-	if config.ConcurrencyLimit == nil || *config.ConcurrencyLimit == 0 {
+	if config.ConcurrencyLimit == nil {
 		return nil, errors.Fatal("concurency limit is not set")
 	}
 	if len(config.Servers) == 0 {
@@ -129,6 +129,7 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 		err = &errors.Errors{}
 	}
 	if err.HaveFatalErrors {
+		err.HaveFatalErrors = false
 		return nil, stats, err
 	}
 

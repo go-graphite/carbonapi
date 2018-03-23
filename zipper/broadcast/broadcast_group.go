@@ -17,7 +17,7 @@ import (
 )
 
 type BroadcastGroup struct {
-	limiter   limiter.ServerLimiter
+	limiter   *limiter.ServerLimiter
 	groupName string
 	timeout   types.Timeouts
 	clients   []types.ServerClient
@@ -32,10 +32,7 @@ type BroadcastGroup struct {
 	probeCache *cache.QueryCache
 }
 
-func NewBroadcastGroup(groupName string, servers []types.ServerClient, pathCache pathcache.PathCache, concurencyLimit int, timeout types.Timeouts) (*BroadcastGroup, *errors.Errors) {
-	if concurencyLimit == 0 {
-		return nil, errors.Fatal("concurency limit is not set")
-	}
+func NewBroadcastGroup(groupName string, servers []types.ServerClient, expireDelaySec int32, concurencyLimit int, timeout types.Timeouts) (*BroadcastGroup, *errors.Errors) {
 	if len(servers) == 0 {
 		return nil, errors.Fatal("no servers specified")
 	}
@@ -43,12 +40,13 @@ func NewBroadcastGroup(groupName string, servers []types.ServerClient, pathCache
 	for _, s := range servers {
 		serverNames = append(serverNames, s.Name())
 	}
+	pathCache := pathcache.NewPathCache(expireDelaySec)
 	limiter := limiter.NewServerLimiter(serverNames, concurencyLimit)
 
 	return NewBroadcastGroupWithLimiter(groupName, servers, serverNames, pathCache, limiter, timeout)
 }
 
-func NewBroadcastGroupWithLimiter(groupName string, servers []types.ServerClient, serverNames []string, pathCache pathcache.PathCache, limiter limiter.ServerLimiter, timeout types.Timeouts) (*BroadcastGroup, *errors.Errors) {
+func NewBroadcastGroupWithLimiter(groupName string, servers []types.ServerClient, serverNames []string, pathCache pathcache.PathCache, limiter *limiter.ServerLimiter, timeout types.Timeouts) (*BroadcastGroup, *errors.Errors) {
 	b := &BroadcastGroup{
 		timeout:   timeout,
 		groupName: groupName,
@@ -60,10 +58,10 @@ func NewBroadcastGroupWithLimiter(groupName string, servers []types.ServerClient
 		logger:    zapwriter.Logger("broadcastGroup").With(zap.String("groupName", groupName)),
 
 		// TODO: remove hardcode
-		infoCache:  cache.NewQueryCache(1024, 60),
-		findCache:  cache.NewQueryCache(1024, 60),
-		fetchCache: cache.NewQueryCache(25600, 5),
-		probeCache: cache.NewQueryCache(1024, 600),
+		infoCache:  cache.NewQueryCache(1024, 5),
+		findCache:  cache.NewQueryCache(1024, 5),
+		fetchCache: cache.NewQueryCache(25600, 1),
+		probeCache: cache.NewQueryCache(1024, 10),
 	}
 
 	b.logger.Debug("created broadcast group",
@@ -105,8 +103,8 @@ func (bg BroadcastGroup) MaxMetricsPerRequest() int {
 	return 0
 }
 
-func fetchRequestToKey(request *protov3.MultiFetchRequest) string {
-	key := make([]byte, 0)
+func fetchRequestToKey(prefix string, request *protov3.MultiFetchRequest) string {
+	key := []byte("prefix=" + prefix)
 	for _, r := range request.Metrics {
 		key = append(key, []byte("&"+r.Name+"&start="+strconv.FormatUint(uint64(r.StartTime), 10)+"&stop="+strconv.FormatUint(uint64(r.StopTime), 10)+"\n")...)
 	}
@@ -115,6 +113,9 @@ func fetchRequestToKey(request *protov3.MultiFetchRequest) string {
 }
 
 func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger, client types.ServerClient, request *protov3.MultiFetchRequest, resCh chan<- []*types.ServerFetchResponse) {
+	logger.Debug("waiting for slot",
+		zap.Int("maxConns", bg.limiter.Capacity()),
+	)
 	err := bg.limiter.Enter(ctx, client.Name())
 	if err != nil {
 		logger.Debug("timeout waiting for a slot")
@@ -124,6 +125,7 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 		}}
 		return
 	}
+	logger.Debug("got slot")
 	defer bg.limiter.Leave(ctx, client.Name())
 
 	var requests []*protov3.MultiFetchRequest
@@ -132,26 +134,38 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 		logger.Debug("will do single request, cause MaxMetrics is 0")
 		requests = []*protov3.MultiFetchRequest{request}
 	} else {
-		logger.Debug("will do my best to split request")
+		logger.Debug("will do my best to split request",
+			zap.Int("max_metrics", maxMetricPerRequest),
+		)
 		for _, metric := range request.Metrics {
 			f, _, e := bg.Find(ctx, &protov3.MultiGlobRequest{Metrics: []string{metric.Name}})
-			if e != nil && (e.HaveFatalErrors || len(e.Errors) > 0) {
+			if (e != nil && e.HaveFatalErrors && len(e.Errors) > 0) || f == nil || len(f.Metrics) == 0 {
 				continue
 			}
-			cnt := 0
 			newRequest := &protov3.MultiFetchRequest{}
-			for _, r := range f.Metrics {
-				if cnt >= maxMetricPerRequest {
-					newRequest = &protov3.MultiFetchRequest{}
+			logger.Debug("will split request",
+				zap.Any("f", f),
+				zap.Int("metrics", len(f.Metrics)),
+				zap.Int("max_metrics", maxMetricPerRequest),
+			)
+			for _, m := range f.Metrics {
+				for _, match := range m.Matches {
+					newRequest.Metrics = append(newRequest.Metrics, protov3.FetchRequest{
+						Name:            match.Path,
+						StartTime:       metric.StartTime,
+						StopTime:        metric.StopTime,
+						FilterFunctions: metric.FilterFunctions,
+					})
+					if len(newRequest.Metrics) == maxMetricPerRequest {
+						requests = append(requests, newRequest)
+						newRequest = &protov3.MultiFetchRequest{}
+					}
 				}
-				cnt++
-				newRequest.Metrics = append(newRequest.Metrics, protov3.FetchRequest{
-					Name:            r.Name,
-					StartTime:       metric.StartTime,
-					StopTime:        metric.StopTime,
-					FilterFunctions: metric.FilterFunctions,
-				})
 			}
+			requests = append(requests, newRequest)
+			logger.Debug("spliited request",
+				zap.Int("amount_of_requests", len(requests)),
+			)
 		}
 	}
 
@@ -165,7 +179,6 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 		}
 		r.Response, r.Stats, r.Err = client.Fetch(ctx, req)
 		rr = append(rr, r)
-		logger.Debug("request sent")
 	}
 	resCh <- rr
 }
@@ -178,7 +191,7 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	logger := bg.logger.With(zap.String("type", "fetch"), zap.Strings("request", requestNames))
 	logger.Debug("will try to fetch data")
 
-	key := fetchRequestToKey(request)
+	key := fetchRequestToKey(bg.groupName, request)
 	item := bg.fetchCache.GetQueryItem(key)
 	res, ok := item.FetchOrLock(ctx)
 	if ok {
@@ -194,9 +207,6 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	defer cancel()
 
 	clients := bg.chooseServers(requestNames)
-	logger.Debug("got ticket",
-		zap.Uint64("state", item.GetStatus()),
-	)
 	for _, client := range clients {
 		go bg.doSingleFetch(ctx, logger, client, request, resCh)
 	}
@@ -213,15 +223,16 @@ GATHER:
 		select {
 		case res := <-resCh:
 			responseCounts++
-			for _, r := range res {
-				answeredServers[r.Server] = struct{}{}
-				if r.Err != nil {
-					err.Merge(r.Err)
-				} else {
+			for i := range res {
+				answeredServers[res[i].Server] = struct{}{}
+				if res[i].Err != nil && len(res[i].Err.Errors) > 0 {
+					err.Merge(res[i].Err)
+				}
+				if res[i] != nil {
 					if result.Response == nil {
-						result = r
+						result = res[i]
 					} else {
-						result.Merge(r)
+						result.Merge(res[i])
 					}
 				}
 			}
@@ -243,7 +254,9 @@ GATHER:
 	logger.Debug("got some responses",
 		zap.Int("clients_count", len(bg.clients)),
 		zap.Int("response_count", responseCounts),
-		zap.Bool("have_errors", len(err.Errors) == 0),
+		zap.Bool("have_errors", len(err.Errors) != 0),
+		zap.Any("errors", err.Errors),
+		zap.Any("response", result.Response),
 	)
 
 	if result == nil || result.Response == nil {
@@ -260,8 +273,8 @@ GATHER:
 
 // Find request handling
 
-func findRequestToKey(request *protov3.MultiGlobRequest) string {
-	return strings.Join(request.Metrics, "&")
+func findRequestToKey(prefix string, request *protov3.MultiGlobRequest) string {
+	return "prefix=" + prefix + "&" + strings.Join(request.Metrics, "&")
 }
 
 func (bg *BroadcastGroup) doFind(ctx context.Context, logger *zap.Logger, client types.ServerClient, request *protov3.MultiGlobRequest, resCh chan<- *types.ServerFindResponse) {
@@ -290,7 +303,7 @@ func (bg *BroadcastGroup) doFind(ctx context.Context, logger *zap.Logger, client
 func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, *errors.Errors) {
 	logger := bg.logger.With(zap.String("type", "find"), zap.Strings("request", request.Metrics))
 
-	key := findRequestToKey(request)
+	key := findRequestToKey(bg.groupName, request)
 	item := bg.findCache.GetQueryItem(key)
 	res, ok := item.FetchOrLock(ctx)
 	if ok {
@@ -355,7 +368,9 @@ GATHER:
 	logger.Debug("got some responses",
 		zap.Int("clients_count", len(bg.clients)),
 		zap.Int("response_count", responseCounts),
-		zap.Bool("have_errors", len(err.Errors) == 0),
+		zap.Bool("have_errors", len(err.Errors) != 0),
+		zap.Any("errors", err.Errors),
+		zap.Any("response", result.Response),
 	)
 
 	item.StoreAndUnlock(result, uint64(result.Response.Size()))
@@ -365,8 +380,8 @@ GATHER:
 
 // Info request handling
 
-func infoRequestToKey(request *protov3.MultiMetricsInfoRequest) string {
-	return strings.Join(request.Names, "&")
+func infoRequestToKey(prefix string, request *protov3.MultiMetricsInfoRequest) string {
+	return "prefix=" + prefix + "&" + strings.Join(request.Names, "&")
 }
 
 func (bg *BroadcastGroup) doInfoRequest(ctx context.Context, logger *zap.Logger, request *protov3.MultiMetricsInfoRequest, client types.ServerClient, resCh chan<- *types.ServerInfoResponse) {
@@ -394,7 +409,7 @@ func (bg *BroadcastGroup) doInfoRequest(ctx context.Context, logger *zap.Logger,
 func (bg *BroadcastGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, *errors.Errors) {
 	logger := bg.logger.With(zap.String("type", "info"), zap.Strings("request", request.Names))
 
-	key := infoRequestToKey(request)
+	key := infoRequestToKey(bg.groupName, request)
 	item := bg.infoCache.GetQueryItem(key)
 	res, ok := item.FetchOrLock(ctx)
 	if ok {

@@ -45,7 +45,7 @@ type ClientGRPCGroup struct {
 	client protov3grpc.CarbonV1Client
 }
 
-func NewClientGRPCGroupWithLimiter(config types.BackendV2, limiter limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
+func NewClientGRPCGroupWithLimiter(config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
 	return NewClientGRPCGroup(config)
 }
 

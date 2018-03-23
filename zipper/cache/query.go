@@ -8,11 +8,13 @@ import (
 )
 
 const (
-	QueryIsPending uint64 = 1 << iota
+	Empty uint64 = iota
+	QueryIsPending
 	DataIsAvailable
 )
 
 type QueryItem struct {
+	Key           string
 	Data          atomic.Value
 	Flags         uint64 // DataIsAvailable or QueryIsPending
 	QueryFinished chan struct{}
@@ -31,7 +33,7 @@ func (q *QueryItem) FetchOrLock(ctx context.Context) (interface{}, bool) {
 		return d, true
 	}
 
-	ok := atomic.CompareAndSwapUint64(&q.Flags, 0, QueryIsPending)
+	ok := atomic.CompareAndSwapUint64(&q.Flags, Empty, QueryIsPending)
 	if ok {
 		// We are the leader now and will be fetching the data
 		return nil, false
@@ -85,8 +87,13 @@ func (q *QueryCache) GetQueryItem(k string) *QueryItem {
 	objectCount := atomic.AddUint64(&q.objectCount, 1)
 	size := atomic.AddUint64(&q.totalSize, 1)
 	emptyQueryItem := &QueryItem{
+		Key:           k,
 		QueryFinished: make(chan struct{}),
-		parent:        q,
+		Flags:         Empty,
+
+		parent: q,
 	}
-	return q.ec.GetOrSet(k, emptyQueryItem, size/objectCount, q.expireTime).(*QueryItem)
+	item := q.ec.GetOrSet(k, emptyQueryItem, size/objectCount, q.expireTime).(*QueryItem)
+
+	return item
 }

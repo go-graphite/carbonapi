@@ -78,7 +78,7 @@ func sanitizeTimouts(timeouts, defaultTimeouts types.Timeouts) types.Timeouts {
 	return timeouts
 }
 
-func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, pathCache pathcache.PathCache) ([]types.ServerClient, *errors.Errors) {
+func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelaySec int32) ([]types.ServerClient, *errors.Errors) {
 	storeClients := make([]types.ServerClient, 0)
 	var e errors.Errors
 	var ePtr *errors.Errors
@@ -154,7 +154,7 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, pathCache p
 				backends = append(backends, client)
 			}
 
-			client, ePtr = broadcast.NewBroadcastGroup(backend.GroupName, backends, pathCache, concurencyLimit, timeouts)
+			client, ePtr = broadcast.NewBroadcastGroup(backend.GroupName, backends, expireDelaySec, concurencyLimit, timeouts)
 			e.Merge(ePtr)
 			if e.HaveFatalErrors {
 				return nil, &e
@@ -199,14 +199,14 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 
 	if len(config.CarbonSearchV2.BackendsV2.Backends) > 0 {
 		prefix = config.CarbonSearchV2.Prefix
-		searchClients, err := createBackendsV2(logger, config.CarbonSearchV2.BackendsV2, config.PathCache)
+		searchClients, err := createBackendsV2(logger, config.CarbonSearchV2.BackendsV2, config.ExpireDelaySec)
 		if err != nil && err.HaveFatalErrors {
 			logger.Fatal("errors while initialing zipper search backends",
 				zap.Any("errors", err.Errors),
 			)
 		}
 
-		searchBackends, err = broadcast.NewBroadcastGroup("search", searchClients, config.PathCache, config.ConcurrencyLimitPerServer, config.Timeouts)
+		searchBackends, err = broadcast.NewBroadcastGroup("search", searchClients, config.ExpireDelaySec, config.ConcurrencyLimitPerServer, config.Timeouts)
 		if err != nil && err.HaveFatalErrors {
 			logger.Fatal("errors while initialing zipper search backends",
 				zap.Any("errors", err.Errors),
@@ -240,7 +240,7 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 		}
 	}
 
-	storeClients, err := createBackendsV2(logger, config.BackendsV2, config.PathCache)
+	storeClients, err := createBackendsV2(logger, config.BackendsV2, config.ExpireDelaySec)
 	if err != nil && err.HaveFatalErrors {
 		logger.Fatal("errors while initialing zipper store backends",
 			zap.Any("errors", err.Errors),
@@ -248,7 +248,7 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 	}
 
 	var storeBackends types.ServerClient
-	storeBackends, err = broadcast.NewBroadcastGroup("root", storeClients, config.PathCache, config.ConcurrencyLimitPerServer, config.Timeouts)
+	storeBackends, err = broadcast.NewBroadcastGroup("root", storeClients, config.ExpireDelaySec, config.ConcurrencyLimitPerServer, config.Timeouts)
 	if err != nil && err.HaveFatalErrors {
 		logger.Fatal("errors while initialing zipper store backends",
 			zap.Any("errors", err.Errors),
@@ -261,8 +261,6 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 		ProbeForce:  make(chan int),
 
 		sendStats: sender,
-
-		searchCache: config.SearchCache,
 
 		storeBackends:             storeBackends,
 		searchBackends:            searchBackends,
