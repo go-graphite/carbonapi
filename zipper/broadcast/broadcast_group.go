@@ -101,6 +101,10 @@ func (bg *BroadcastGroup) chooseServers(requests []string) []types.ServerClient 
 	return bg.clients
 }
 
+func (bg BroadcastGroup) MaxMetricsPerRequest() int {
+	return 0
+}
+
 func fetchRequestToKey(request *protov3.MultiFetchRequest) string {
 	key := make([]byte, 0)
 	for _, r := range request.Metrics {
@@ -110,21 +114,60 @@ func fetchRequestToKey(request *protov3.MultiFetchRequest) string {
 	return string(key)
 }
 
-func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger, client types.ServerClient, request *protov3.MultiFetchRequest, resCh chan<- *types.ServerFetchResponse) {
-	r := &types.ServerFetchResponse{
-		Server: client.Name(),
-	}
+func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger, client types.ServerClient, request *protov3.MultiFetchRequest, resCh chan<- []*types.ServerFetchResponse) {
 	err := bg.limiter.Enter(ctx, client.Name())
 	if err != nil {
 		logger.Debug("timeout waiting for a slot")
-		r.Err = errors.FromErrNonFatal(err)
-		resCh <- r
+		resCh <- []*types.ServerFetchResponse{{
+			Server: client.Name(),
+			Err:    errors.FromErrNonFatal(err),
+		}}
 		return
 	}
 	defer bg.limiter.Leave(ctx, client.Name())
 
-	r.Response, r.Stats, r.Err = client.Fetch(ctx, request)
-	resCh <- r
+	var requests []*protov3.MultiFetchRequest
+	maxMetricPerRequest := client.MaxMetricsPerRequest()
+	if maxMetricPerRequest == 0 {
+		logger.Debug("will do single request, cause MaxMetrics is 0")
+		requests = []*protov3.MultiFetchRequest{request}
+	} else {
+		logger.Debug("will do my best to split request")
+		for _, metric := range request.Metrics {
+			f, _, e := bg.Find(ctx, &protov3.MultiGlobRequest{Metrics: []string{metric.Name}})
+			if e != nil && (e.HaveFatalErrors || len(e.Errors) > 0) {
+				continue
+			}
+			cnt := 0
+			newRequest := &protov3.MultiFetchRequest{}
+			for _, r := range f.Metrics {
+				if cnt >= maxMetricPerRequest {
+					newRequest = &protov3.MultiFetchRequest{}
+				}
+				cnt++
+				newRequest.Metrics = append(newRequest.Metrics, protov3.FetchRequest{
+					Name:            r.Name,
+					StartTime:       metric.StartTime,
+					StopTime:        metric.StopTime,
+					FilterFunctions: metric.FilterFunctions,
+				})
+			}
+		}
+	}
+
+	rr := make([]*types.ServerFetchResponse, 0, len(requests))
+	for _, req := range requests {
+		logger.Debug("sending request",
+			zap.String("client_name", client.Name()),
+		)
+		r := &types.ServerFetchResponse{
+			Server: client.Name(),
+		}
+		r.Response, r.Stats, r.Err = client.Fetch(ctx, req)
+		rr = append(rr, r)
+		logger.Debug("request sent")
+	}
+	resCh <- rr
 }
 
 func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, *errors.Errors) {
@@ -133,6 +176,7 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 		requestNames = append(requestNames, request.Metrics[i].Name)
 	}
 	logger := bg.logger.With(zap.String("type", "fetch"), zap.Strings("request", requestNames))
+	logger.Debug("will try to fetch data")
 
 	key := fetchRequestToKey(request)
 	item := bg.fetchCache.GetQueryItem(key)
@@ -145,12 +189,14 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	defer item.StoreAbort()
 
 	// Now we have global lock for fetching data for this metric
-	resCh := make(chan *types.ServerFetchResponse, len(bg.clients))
+	resCh := make(chan []*types.ServerFetchResponse, len(bg.clients))
 	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Render)
 	defer cancel()
-	ctx = context.Background()
 
 	clients := bg.chooseServers(requestNames)
+	logger.Debug("got ticket",
+		zap.Uint64("state", item.GetStatus()),
+	)
 	for _, client := range clients {
 		go bg.doSingleFetch(ctx, logger, client, request, resCh)
 	}
@@ -161,22 +207,23 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	responseCounts := 0
 GATHER:
 	for {
+		if responseCounts == len(clients) {
+			break GATHER
+		}
 		select {
-		case r := <-resCh:
-			answeredServers[r.Server] = struct{}{}
+		case res := <-resCh:
 			responseCounts++
-			if r.Err != nil {
-				err.Merge(r.Err)
-			} else {
-				if result.Response == nil {
-					result = r
+			for _, r := range res {
+				answeredServers[r.Server] = struct{}{}
+				if r.Err != nil {
+					err.Merge(r.Err)
 				} else {
-					result.Merge(r)
+					if result.Response == nil {
+						result = r
+					} else {
+						result.Merge(r)
+					}
 				}
-			}
-
-			if responseCounts == len(clients) {
-				break GATHER
 			}
 		case <-ctx.Done():
 			noAnswer := make([]string, 0)
@@ -198,6 +245,13 @@ GATHER:
 		zap.Int("response_count", responseCounts),
 		zap.Bool("have_errors", len(err.Errors) == 0),
 	)
+
+	if result == nil || result.Response == nil {
+		logger.Error("failed to get any response")
+		item.StoreAbort()
+
+		return nil, nil, err.Addf("failed to get any response from backend group: %v", bg.groupName)
+	}
 
 	item.StoreAndUnlock(result, uint64(result.Response.Size()))
 
@@ -462,11 +516,14 @@ func (bg *BroadcastGroup) ProbeTLDs(ctx context.Context) ([]string, *errors.Erro
 	cache := make(map[string][]types.ServerClient)
 GATHER:
 	for {
+		if responses == len(bg.clients) {
+			break GATHER
+		}
 		select {
 		case r := <-resCh:
 			answeredServers[r.server.Name()] = struct{}{}
 			responses++
-			if r.err != nil {
+			if r.err != nil && len(r.err.Errors) > 0 {
 				err.Merge(r.err)
 				continue
 			}
@@ -474,10 +531,6 @@ GATHER:
 			for _, tld := range r.tlds {
 				size += uint64(len(tld))
 				cache[tld] = append(cache[tld], r.server)
-			}
-
-			if responses == len(bg.clients) {
-				break GATHER
 			}
 		case <-ctx.Done():
 			noAnswer := make([]string, 0)

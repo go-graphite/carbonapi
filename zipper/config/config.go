@@ -9,12 +9,12 @@ import (
 
 // Config is a structure that contains zipper-related configuration bits
 type Config struct {
-	ConcurrencyLimitPerServer int
-	MaxIdleConnsPerHost       int
-	Backends                  []string
-	BackendsV2                types.BackendsV2
-	MaxGlobs                  int
-	MaxTries                  int
+	ConcurrencyLimitPerServer int              `mapstructure:"concurrencyLimitPerServer"`
+	MaxIdleConnsPerHost       int              `mapstructure:"maxIdleConnsPerHost"`
+	Backends                  []string         `mapstructure:"backends"`
+	BackendsV2                types.BackendsV2 `mapstructure:"backendsv2"`
+	MaxGlobs                  int              `mapstructure:"maxGlobs"`
+	MaxTries                  int              `mapstructure:"maxTries"`
 
 	CarbonSearch   types.CarbonSearch
 	CarbonSearchV2 types.CarbonSearchV2

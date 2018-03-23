@@ -35,11 +35,12 @@ type ClientGRPCGroup struct {
 	groupName string
 	servers   []string
 
-	r        *manual.Resolver
-	conn     *grpc.ClientConn
-	dialerrc chan error
-	cleanup  func()
-	timeout  types.Timeouts
+	r                    *manual.Resolver
+	conn                 *grpc.ClientConn
+	dialerrc             chan error
+	cleanup              func()
+	timeout              types.Timeouts
+	maxMetricsPerRequest int
 
 	client protov3grpc.CarbonV1Client
 }
@@ -77,8 +78,9 @@ func NewClientGRPCGroup(config types.BackendV2) (types.ServerClient, *errors.Err
 	}
 
 	client := &ClientGRPCGroup{
-		groupName: config.GroupName,
-		servers:   config.Servers,
+		groupName:            config.GroupName,
+		servers:              config.Servers,
+		maxMetricsPerRequest: config.MaxGlobs,
 
 		r:       r,
 		cleanup: cleanup,
@@ -88,6 +90,10 @@ func NewClientGRPCGroup(config types.BackendV2) (types.ServerClient, *errors.Err
 	}
 
 	return client, nil
+}
+
+func (c ClientGRPCGroup) MaxMetricsPerRequest() int {
+	return c.maxMetricsPerRequest
 }
 
 func (c ClientGRPCGroup) Name() string {

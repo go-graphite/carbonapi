@@ -20,6 +20,11 @@ type QueryItem struct {
 	parent *QueryCache
 }
 
+func (q *QueryItem) GetStatus() uint64 {
+	s := atomic.LoadUint64(&q.Flags)
+	return s
+}
+
 func (q *QueryItem) FetchOrLock(ctx context.Context) (interface{}, bool) {
 	d := q.Data.Load()
 	if d != nil {

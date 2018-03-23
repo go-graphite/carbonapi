@@ -39,10 +39,11 @@ type ClientProtoV3Group struct {
 	counter             uint64
 	maxIdleConnsPerHost int
 
-	limiter  limiter.ServerLimiter
-	logger   *zap.Logger
-	timeout  types.Timeouts
-	maxTries int
+	limiter              limiter.ServerLimiter
+	logger               *zap.Logger
+	timeout              types.Timeouts
+	maxTries             int
+	maxMetricsPerRequest int
 
 	httpQuery *helper.HttpQuery
 }
@@ -76,10 +77,11 @@ func NewWithLimiter(config types.BackendV2, limiter limiter.ServerLimiter) (type
 	httpQuery := helper.NewHttpQuery(logger, config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv3PB)
 
 	c := &ClientProtoV3Group{
-		groupName: config.GroupName,
-		servers:   config.Servers,
-		timeout:   *config.Timeouts,
-		maxTries:  *config.MaxTries,
+		groupName:            config.GroupName,
+		servers:              config.Servers,
+		timeout:              *config.Timeouts,
+		maxTries:             *config.MaxTries,
+		maxMetricsPerRequest: config.MaxGlobs,
 
 		client:  httpClient,
 		limiter: limiter,
@@ -88,6 +90,10 @@ func NewWithLimiter(config types.BackendV2, limiter limiter.ServerLimiter) (type
 		httpQuery: httpQuery,
 	}
 	return c, nil
+}
+
+func (c ClientProtoV3Group) MaxMetricsPerRequest() int {
+	return c.maxMetricsPerRequest
 }
 
 func (c ClientProtoV3Group) Name() string {

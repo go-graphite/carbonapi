@@ -185,7 +185,7 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 				KeepAliveInterval:   &config.KeepAliveInterval,
 				MaxIdleConnsPerHost: &config.MaxIdleConnsPerHost,
 				MaxTries:            &config.MaxTries,
-				MaxGlobs:            config.MaxGlobs,
+				MaxGlobs:            0,
 			}},
 			MaxIdleConnsPerHost:       config.MaxIdleConnsPerHost,
 			ConcurrencyLimitPerServer: config.ConcurrencyLimitPerServer,
@@ -248,15 +248,11 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 	}
 
 	var storeBackends types.ServerClient
-	if len(storeClients) == 1 {
-		storeBackends = storeClients[0]
-	} else {
-		storeBackends, err = broadcast.NewBroadcastGroup("root", storeClients, config.PathCache, config.ConcurrencyLimitPerServer, config.Timeouts)
-		if err != nil && err.HaveFatalErrors {
-			logger.Fatal("errors while initialing zipper store backends",
-				zap.Any("errors", err.Errors),
-			)
-		}
+	storeBackends, err = broadcast.NewBroadcastGroup("root", storeClients, config.PathCache, config.ConcurrencyLimitPerServer, config.Timeouts)
+	if err != nil && err.HaveFatalErrors {
+		logger.Fatal("errors while initialing zipper store backends",
+			zap.Any("errors", err.Errors),
+		)
 	}
 
 	z := &Zipper{
@@ -367,7 +363,7 @@ func (z Zipper) FetchProtoV3(ctx context.Context, request *protov3.MultiFetchReq
 
 	e.Merge(err)
 
-	if e.HaveFatalErrors {
+	if e.HaveFatalErrors || res == nil {
 		z.logger.Error("had fatal errors while fetching result",
 			zap.Any("errors", e.Errors),
 		)
