@@ -49,7 +49,7 @@ func NewBroadcastGroup(groupName string, servers []types.ServerClient, pathCache
 }
 
 func NewBroadcastGroupWithLimiter(groupName string, servers []types.ServerClient, serverNames []string, pathCache pathcache.PathCache, limiter limiter.ServerLimiter, timeout types.Timeouts) (*BroadcastGroup, *errors.Errors) {
-	return &BroadcastGroup{
+	b := &BroadcastGroup{
 		timeout:   timeout,
 		groupName: groupName,
 		clients:   servers,
@@ -64,7 +64,14 @@ func NewBroadcastGroupWithLimiter(groupName string, servers []types.ServerClient
 		findCache:  cache.NewQueryCache(1024, 60),
 		fetchCache: cache.NewQueryCache(25600, 5),
 		probeCache: cache.NewQueryCache(1024, 600),
-	}, nil
+	}
+
+	b.logger.Debug("created broadcast group",
+		zap.String("group_name", b.groupName),
+		zap.Strings("clients", b.servers),
+	)
+
+	return b, nil
 }
 
 func (bg BroadcastGroup) Name() string {
@@ -107,12 +114,14 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 	r := &types.ServerFetchResponse{
 		Server: client.Name(),
 	}
-	err := bg.limiter.Enter(ctx, bg.groupName)
+	err := bg.limiter.Enter(ctx, client.Name())
 	if err != nil {
+		logger.Debug("timeout waiting for a slot")
+		r.Err = errors.FromErrNonFatal(err)
 		resCh <- r
 		return
 	}
-	defer bg.limiter.Leave(ctx, bg.groupName)
+	defer bg.limiter.Leave(ctx, client.Name())
 
 	r.Response, r.Stats, r.Err = client.Fetch(ctx, request)
 	resCh <- r
@@ -128,17 +137,18 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	key := fetchRequestToKey(request)
 	item := bg.fetchCache.GetQueryItem(key)
 	res, ok := item.FetchOrLock(ctx)
-
 	if ok {
 		logger.Debug("cache hit")
 		result := res.(*types.ServerFetchResponse)
 		return result.Response, result.Stats, nil
 	}
+	defer item.StoreAbort()
 
 	// Now we have global lock for fetching data for this metric
 	resCh := make(chan *types.ServerFetchResponse, len(bg.clients))
 	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Render)
 	defer cancel()
+	ctx = context.Background()
 
 	clients := bg.chooseServers(requestNames)
 	for _, client := range clients {
@@ -208,14 +218,14 @@ func (bg *BroadcastGroup) doFind(ctx context.Context, logger *zap.Logger, client
 	r := &types.ServerFindResponse{
 		Server: client.Name(),
 	}
-	err := bg.limiter.Enter(ctx, bg.groupName)
+	err := bg.limiter.Enter(ctx, client.Name())
 	if err != nil {
 		logger.Debug("timeout waiting for a slot")
 		r.Err = errors.FromErrNonFatal(types.ErrTimeoutExceeded)
 		resCh <- r
 		return
 	}
-	defer bg.limiter.Leave(ctx, bg.groupName)
+	defer bg.limiter.Leave(ctx, client.Name())
 
 	logger.Debug("got a slot")
 
@@ -229,16 +239,22 @@ func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	key := findRequestToKey(request)
 	item := bg.findCache.GetQueryItem(key)
 	res, ok := item.FetchOrLock(ctx)
-
 	if ok {
 		logger.Debug("cache hit")
 		result := res.(*types.ServerFindResponse)
 		return result.Response, result.Stats, nil
 	}
+	defer item.StoreAbort()
 
 	resCh := make(chan *types.ServerFindResponse, len(bg.clients))
-	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Find)
+
+	logger.Debug("will do query with timeout",
+		zap.Float64("timeout", bg.timeout.Find.Seconds()),
+	)
+
+	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Render)
 	defer cancel()
+	ctx = context.Background()
 
 	clients := bg.chooseServers(request.Metrics)
 	for _, client := range clients {
@@ -307,13 +323,14 @@ func (bg *BroadcastGroup) doInfoRequest(ctx context.Context, logger *zap.Logger,
 		zap.String("group_name", bg.groupName),
 		zap.String("client_name", client.Name()),
 	)
-	err := bg.limiter.Enter(ctx, bg.groupName)
+	err := bg.limiter.Enter(ctx, client.Name())
 	if err != nil {
 		logger.Debug("timeout waiting for a slot")
+		r.Err = errors.FromErrNonFatal(err)
 		resCh <- r
 		return
 	}
-	defer bg.limiter.Leave(ctx, bg.groupName)
+	defer bg.limiter.Leave(ctx, client.Name())
 
 	logger.Debug("got a slot")
 	r.Response, r.Stats, r.Err = client.Info(ctx, request)
@@ -326,12 +343,12 @@ func (bg *BroadcastGroup) Info(ctx context.Context, request *protov3.MultiMetric
 	key := infoRequestToKey(request)
 	item := bg.infoCache.GetQueryItem(key)
 	res, ok := item.FetchOrLock(ctx)
-
 	if ok {
 		logger.Debug("cache hit")
 		result := res.(*types.ServerInfoResponse)
 		return result.Response, result.Stats, nil
 	}
+	defer item.StoreAbort()
 
 	resCh := make(chan *types.ServerInfoResponse, len(bg.clients))
 	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Find)
@@ -421,13 +438,13 @@ func (bg *BroadcastGroup) ProbeTLDs(ctx context.Context) ([]string, *errors.Erro
 	key := "*"
 	item := bg.probeCache.GetQueryItem(key)
 	res, ok := item.FetchOrLock(ctx)
-
 	if ok {
 		logger.Debug("cache hit")
 		result := res.([]string)
 
 		return result, nil
 	}
+	defer item.StoreAbort()
 
 	var tlds []string
 	resCh := make(chan tldResponse, len(bg.clients))

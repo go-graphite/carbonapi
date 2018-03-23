@@ -88,7 +88,7 @@ func NewClientProtoV2Group(config types.BackendV2) (types.ServerClient, *errors.
 	if len(config.Servers) == 0 {
 		return nil, errors.Fatal("no servers specified")
 	}
-	limiter := limiter.NewServerLimiter(config.Servers, *config.ConcurrencyLimit)
+	limiter := limiter.NewServerLimiter([]string{config.GroupName}, *config.ConcurrencyLimit)
 
 	return NewClientProtoV2GroupWithLimiter(config, limiter)
 }
@@ -118,6 +118,9 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	}
 	rewrite.RawQuery = v.Encode()
 	res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI())
+	if err == nil {
+		err = &errors.Errors{}
+	}
 	if err.HaveFatalErrors {
 		return nil, stats, err
 	}
@@ -209,6 +212,7 @@ func (c *ClientProtoV2Group) Info(ctx context.Context, request *protov3.MultiMet
 	if len(c.servers) == 1 {
 		server = c.servers[0]
 	}
+
 	for _, query := range request.Names {
 		v := url.Values{
 			"target": []string{query},
@@ -280,8 +284,6 @@ func (c *ClientProtoV2Group) ProbeTLDs(ctx context.Context) ([]string, *errors.E
 	req := &protov3.MultiGlobRequest{
 		Metrics: []string{"*"},
 	}
-	ctx, cancel := context.WithTimeout(ctx, c.timeout.Find)
-	defer cancel()
 
 	logger.Debug("doing request",
 		zap.Strings("request", req.Metrics),

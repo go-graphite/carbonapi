@@ -43,6 +43,10 @@ func (q *QueryItem) FetchOrLock(ctx context.Context) (interface{}, bool) {
 }
 
 func (q *QueryItem) StoreAbort() {
+	d := q.Data.Load()
+	if d != nil {
+		return
+	}
 	oldChan := q.QueryFinished
 	q.QueryFinished = make(chan struct{})
 	close(oldChan)

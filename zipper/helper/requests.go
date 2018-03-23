@@ -85,11 +85,10 @@ func (c *HttpQuery) doRequest(ctx context.Context, uri string) (*ServerResponse,
 		c.logger.Debug("timeout waiting for a slot")
 		return nil, err
 	}
-	defer c.limiter.Leave(ctx, server)
-
 	c.logger.Debug("got slot")
 
 	resp, err := c.client.Do(req.WithContext(ctx))
+	c.limiter.Leave(ctx, server)
 	if err != nil {
 		c.logger.Error("error fetching result",
 			zap.Error(err),
@@ -128,13 +127,15 @@ func (c *HttpQuery) DoQuery(ctx context.Context, uri string) (*ServerResponse, *
 	if len(c.servers) > maxTries {
 		maxTries = len(c.servers)
 	}
-	var res *ServerResponse
+
 	var e errors.Errors
-	var err error
 	for try := 0; try < maxTries; try++ {
-		res, err = c.doRequest(ctx, uri)
+		res, err := c.doRequest(ctx, uri)
 		if err != nil {
 			e.Add(err)
+			if ctx.Err() != nil {
+				return nil, &e
+			}
 			continue
 		}
 

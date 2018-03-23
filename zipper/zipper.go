@@ -289,8 +289,7 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 }
 
 func (z *Zipper) doProbe(logger *zap.Logger) {
-	ctx, cancel := context.WithTimeout(context.Background(), z.timeout)
-	defer cancel()
+	ctx := context.Background()
 
 	_, err := z.storeBackends.ProbeTLDs(ctx)
 	if err != nil && err.HaveFatalErrors {
@@ -394,6 +393,9 @@ func (z Zipper) FindProtoV3(ctx context.Context, request *protov3.MultiGlobReque
 	}
 
 	res, stats, err := z.storeBackends.Find(ctx, request)
+	if err == nil {
+		err = &errors.Errors{}
+	}
 	findResponse := &types.ServerFindResponse{
 		Response: res,
 		Stats:    stats,

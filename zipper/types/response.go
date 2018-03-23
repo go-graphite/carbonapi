@@ -50,6 +50,9 @@ func mergeFindRequests(f1, f2 []protov3.GlobMatch) []protov3.GlobMatch {
 
 func (first *ServerFindResponse) Merge(second *ServerFindResponse) *errors.Errors {
 	first.Stats.Merge(second.Stats)
+	if first.Err == nil {
+		first.Err = &errors.Errors{}
+	}
 	first.Err.Merge(second.Err)
 	if first.Err.HaveFatalErrors {
 		return first.Err
@@ -173,6 +176,9 @@ out:
 
 func (first *ServerFetchResponse) Merge(second *ServerFetchResponse) {
 	first.Stats.Merge(second.Stats)
+	if first.Err == nil {
+		first.Err = &errors.Errors{}
+	}
 	first.Err.Merge(second.Err)
 	if first.Err.HaveFatalErrors {
 		return
