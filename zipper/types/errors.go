@@ -6,14 +6,15 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 )
 
-var ErrResponseLengthMismatch = errors.New("Response length mismatch")
-var ErrResponseStartTimeMismatch = errors.New("Response start time mismatch")
+var ErrResponseLengthMismatch = errors.New("response length mismatch")
+var ErrResponseStartTimeMismatch = errors.New("response start time mismatch")
 var ErrNotImplementedYet = errors.New("this feature is not implemented yet")
 var ErrTimeoutExceeded = errors.New("timeout while fetching Response")
-var ErrNonFatalErrors = errors.New("Response contains non-fatal errors")
+var ErrNonFatalErrors = errors.New("response contains non-fatal errors")
 var ErrNotFound = errors.New("metric not found")
-var ErrNoResponseFetched = errors.New("No responses fetched from upstream")
-var ErrNoMetricsFetched = errors.New("No metrics in the Response")
+var ErrNoResponseFetched = errors.New("no responses fetched from upstream")
+var ErrNoMetricsFetched = errors.New("no metrics in the Response")
+var ErrMaxTriesExceeded = errors.New("max tries exceeded")
 
 var ErrFailedToFetchFmt = "failed to fetch data from server group %v, code %v"
 

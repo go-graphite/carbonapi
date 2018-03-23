@@ -3,6 +3,7 @@ package types
 import (
 	"context"
 
+	"github.com/go-graphite/carbonzipper/zipper/errors"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
@@ -10,14 +11,14 @@ type ServerClient interface {
 	Name() string
 	Backends() []string
 
-	Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *Stats, error)
-	Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *Stats, error)
-	Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *Stats, error)
+	Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *Stats, *errors.Errors)
+	Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *Stats, *errors.Errors)
+	Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *Stats, *errors.Errors)
 
-	List(ctx context.Context) (*protov3.ListMetricsResponse, *Stats, error)
-	Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *Stats, error)
+	List(ctx context.Context) (*protov3.ListMetricsResponse, *Stats, *errors.Errors)
+	Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *Stats, *errors.Errors)
 
-	ProbeTLDs(ctx context.Context) ([]string, error)
+	ProbeTLDs(ctx context.Context) ([]string, *errors.Errors)
 }
 
 /*

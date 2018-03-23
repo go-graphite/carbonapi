@@ -2,7 +2,6 @@ package zipper
 
 import (
 	"context"
-	"fmt"
 	"math"
 	_ "net/http/pprof"
 	"strings"
@@ -11,6 +10,8 @@ import (
 	"github.com/go-graphite/carbonzipper/limiter"
 	"github.com/go-graphite/carbonzipper/pathcache"
 	"github.com/go-graphite/carbonzipper/zipper/broadcast"
+	"github.com/go-graphite/carbonzipper/zipper/config"
+	"github.com/go-graphite/carbonzipper/zipper/errors"
 	"github.com/go-graphite/carbonzipper/zipper/metadata"
 	"github.com/go-graphite/carbonzipper/zipper/types"
 	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
@@ -76,9 +77,10 @@ func sanitizeTimouts(timeouts, defaultTimeouts types.Timeouts) types.Timeouts {
 	return timeouts
 }
 
-func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, pathCache pathcache.PathCache) ([]types.ServerClient, error) {
+func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, pathCache pathcache.PathCache) ([]types.ServerClient, *errors.Errors) {
 	storeClients := make([]types.ServerClient, 0)
-	var err error
+	var e errors.Errors
+	var ePtr *errors.Errors
 	for _, backend := range backends.Backends {
 		concurencyLimit := backends.ConcurrencyLimitPerServer
 		timeouts := backends.Timeouts
@@ -111,60 +113,50 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, pathCache p
 			zap.Strings("servers", backend.Servers),
 			zap.Any("type", backend.LBMethod),
 		)
-		if backend.LBMethod == types.RoundRobinLB {
+
+		metadata.Metadata.RLock()
+		backendInit, ok := metadata.Metadata.ProtocolInits[backend.Protocol]
+		metadata.Metadata.RUnlock()
+		if !ok {
+			var protocols []string
 			metadata.Metadata.RLock()
-			backendInit, ok := metadata.Metadata.ProtocolInits[backend.Protocol]
-			metadata.Metadata.RUnlock()
-			if !ok {
-				var protocols []string
-				metadata.Metadata.RLock()
-				for p := range metadata.Metadata.SupportedProtocols {
-					protocols = append(protocols, p)
-				}
-				metadata.Metadata.RUnlock()
-				logger.Error("unknown backend protocol",
-					zap.Any("backend", backend),
-					zap.String("requested_protocol", backend.Protocol),
-					zap.Strings("supported_backends", protocols),
-				)
-				return nil, fmt.Errorf("unknown backend protocol '%v'", backend.Protocol)
+			for p := range metadata.Metadata.SupportedProtocols {
+				protocols = append(protocols, p)
 			}
-			client, err = backendInit(backend)
-			if err != nil {
-				return nil, err
+			metadata.Metadata.RUnlock()
+			logger.Error("unknown backend protocol",
+				zap.Any("backend", backend),
+				zap.String("requested_protocol", backend.Protocol),
+				zap.Strings("supported_backends", protocols),
+			)
+			return nil, errors.Fatalf("unknown backend protocol '%v'", backend.Protocol)
+		}
+
+		if backend.LBMethod == types.RoundRobinLB {
+			client, ePtr = backendInit(backend)
+			e.Merge(ePtr)
+			if e.HaveFatalErrors {
+				return nil, &e
 			}
 		} else {
 			config := backend
-			metadata.Metadata.RLock()
-			backendInit, ok := metadata.Metadata.ProtocolInits[backend.Protocol]
-			metadata.Metadata.RUnlock()
-			if !ok {
-				var protocols []string
-				metadata.Metadata.RLock()
-				for p := range metadata.Metadata.SupportedProtocols {
-					protocols = append(protocols, p)
-				}
-				metadata.Metadata.RUnlock()
-				logger.Error("unknown backend protocol",
-					zap.Any("backend", backend),
-					zap.String("requested_protocol", backend.Protocol),
-					zap.Strings("supported_protocols", protocols),
-				)
-				return nil, fmt.Errorf("unknown backend protocol '%v'", backend.Protocol)
-			}
+
 			backends := make([]types.ServerClient, 0, len(backend.Servers))
 			for _, server := range backend.Servers {
 				config.Servers = []string{server}
-				client, err = backendInit(backend)
-				if err != nil {
-					return nil, err
+				config.GroupName = server
+				client, ePtr = backendInit(config)
+				e.Merge(ePtr)
+				if e.HaveFatalErrors {
+					return nil, &e
 				}
 				backends = append(backends, client)
 			}
 
-			client, err = broadcast.NewBroadcastGroup(backend.GroupName, backends, pathCache, concurencyLimit, timeouts)
-			if err != nil {
-				return nil, err
+			client, ePtr = broadcast.NewBroadcastGroup(backend.GroupName, backends, pathCache, concurencyLimit, timeouts)
+			e.Merge(ePtr)
+			if e.HaveFatalErrors {
+				return nil, &e
 			}
 		}
 		storeClients = append(storeClients, client)
@@ -173,11 +165,12 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, pathCache p
 }
 
 // NewZipper allows to create new Zipper
-func NewZipper(sender func(*types.Stats), config *types.Config, logger *zap.Logger) (*Zipper, error) {
-	var err error
+func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Logger) (*Zipper, error) {
 	config.Timeouts = sanitizeTimouts(config.Timeouts, defaultTimeouts)
 
-	var searchClients []types.ServerClient
+	var searchBackends types.ServerClient
+	var prefix string
+
 	// Convert old config format to new one
 	if config.CarbonSearch.Backend != "" {
 		config.CarbonSearchV2.BackendsV2 = types.BackendsV2{
@@ -203,22 +196,40 @@ func NewZipper(sender func(*types.Stats), config *types.Config, logger *zap.Logg
 		config.CarbonSearchV2.Prefix = config.CarbonSearch.Prefix
 	}
 
-	searchClients, err = createBackendsV2(logger, config.CarbonSearchV2.BackendsV2, config.PathCache)
-	if err != nil {
-		return nil, err
-	}
-	prefix := config.CarbonSearchV2.Prefix
+	if len(config.CarbonSearchV2.BackendsV2.Backends) > 0 {
+		prefix = config.CarbonSearchV2.Prefix
+		searchClients, err := createBackendsV2(logger, config.CarbonSearchV2.BackendsV2, config.PathCache)
+		if err != nil && err.HaveFatalErrors {
+			logger.Fatal("errors while initialing zipper search backends",
+				zap.Any("errors", err.Errors),
+			)
+		}
 
-	searchBackends, err := broadcast.NewBroadcastGroup("search", searchClients, config.PathCache, config.ConcurrencyLimitPerServer, config.Timeouts)
-	if err != nil {
-		return nil, err
+		searchBackends, err = broadcast.NewBroadcastGroup("search", searchClients, config.PathCache, config.ConcurrencyLimitPerServer, config.Timeouts)
+		if err != nil && err.HaveFatalErrors {
+			logger.Fatal("errors while initialing zipper search backends",
+				zap.Any("errors", err.Errors),
+			)
+		}
 	}
 
-	storeClients := make([]types.ServerClient, 0)
 	// Convert old config format to new one
 	if config.Backends != nil && len(config.Backends) != 0 {
 		config.BackendsV2 = types.BackendsV2{
-			Backends:                  make([]types.BackendV2, 0, len(config.Backends)),
+			Backends: []types.BackendV2{
+				{
+					GroupName:           "backends",
+					Protocol:            "carbonapi_v2_pb",
+					LBMethod:            types.BroadcastLB,
+					Servers:             config.Backends,
+					Timeouts:            &config.Timeouts,
+					ConcurrencyLimit:    &config.ConcurrencyLimitPerServer,
+					KeepAliveInterval:   &config.KeepAliveInterval,
+					MaxIdleConnsPerHost: &config.MaxIdleConnsPerHost,
+					MaxTries:            &config.MaxTries,
+					MaxGlobs:            config.MaxGlobs,
+				},
+			},
 			MaxIdleConnsPerHost:       config.MaxIdleConnsPerHost,
 			ConcurrencyLimitPerServer: config.ConcurrencyLimitPerServer,
 			Timeouts:                  config.Timeouts,
@@ -226,30 +237,25 @@ func NewZipper(sender func(*types.Stats), config *types.Config, logger *zap.Logg
 			MaxTries:                  config.MaxTries,
 			MaxGlobs:                  config.MaxGlobs,
 		}
-		for _, backend := range config.Backends {
-			backend := types.BackendV2{
-				GroupName:           backend,
-				Protocol:            "carbonapi_v2_pb",
-				LBMethod:            types.RoundRobinLB,
-				Servers:             []string{backend},
-				Timeouts:            &config.Timeouts,
-				ConcurrencyLimit:    &config.ConcurrencyLimitPerServer,
-				KeepAliveInterval:   &config.KeepAliveInterval,
-				MaxIdleConnsPerHost: &config.MaxIdleConnsPerHost,
-				MaxTries:            &config.MaxTries,
-				MaxGlobs:            config.MaxGlobs,
-			}
-			config.BackendsV2.Backends = append(config.BackendsV2.Backends, backend)
-		}
 	}
 
-	storeClients, err = createBackendsV2(logger, config.BackendsV2, config.PathCache)
-	if err != nil {
-		return nil, err
+	storeClients, err := createBackendsV2(logger, config.BackendsV2, config.PathCache)
+	if err != nil && err.HaveFatalErrors {
+		logger.Fatal("errors while initialing zipper store backends",
+			zap.Any("errors", err.Errors),
+		)
 	}
-	storeBackends, err := broadcast.NewBroadcastGroup("root", storeClients, config.PathCache, config.ConcurrencyLimitPerServer, config.Timeouts)
-	if err != nil {
-		return nil, err
+
+	var storeBackends types.ServerClient
+	if len(storeClients) == 1 {
+		storeBackends = storeClients[0]
+	} else {
+		storeBackends, err = broadcast.NewBroadcastGroup("root", storeClients, config.PathCache, config.ConcurrencyLimitPerServer, config.Timeouts)
+		if err != nil && err.HaveFatalErrors {
+			logger.Fatal("errors while initialing zipper store backends",
+				zap.Any("errors", err.Errors),
+			)
+		}
 	}
 
 	z := &Zipper{
@@ -272,7 +278,7 @@ func NewZipper(sender func(*types.Stats), config *types.Config, logger *zap.Logg
 		logger:                    logger,
 	}
 
-	logger.Info("zipper config",
+	logger.Debug("zipper config",
 		zap.Any("config", config),
 	)
 
@@ -287,9 +293,9 @@ func (z *Zipper) doProbe(logger *zap.Logger) {
 	defer cancel()
 
 	_, err := z.storeBackends.ProbeTLDs(ctx)
-	if err != nil {
+	if err != nil && err.HaveFatalErrors {
 		logger.Error("failed to probe tlds",
-			zap.Error(err),
+			zap.Any("errors", err.Errors),
 		)
 	}
 }
@@ -312,12 +318,11 @@ func (z *Zipper) probeTlds() {
 // GRPC-compatible methods
 func (z Zipper) FetchProtoV3(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, error) {
 	var statsSearch *types.Stats
+	var e errors.Errors
 	if z.searchConfigured {
 		realRequest := &protov3.MultiFetchRequest{
 			Metrics: make([]protov3.FetchRequest, 0, len(request.Metrics)),
 		}
-
-		var errors []string
 		for _, metric := range request.Metrics {
 			if strings.HasPrefix(metric.Name, z.searchPrefix) {
 				r := &protov3.MultiGlobRequest{
@@ -326,7 +331,7 @@ func (z Zipper) FetchProtoV3(ctx context.Context, request *protov3.MultiFetchReq
 				res, stat, err := z.searchBackends.Find(ctx, r)
 				statsSearch.Merge(stat)
 				if err != nil {
-					errors = append(errors, err.Error())
+					e.Merge(err)
 					continue
 				}
 				if len(res.Metrics) == 0 {
@@ -359,7 +364,17 @@ func (z Zipper) FetchProtoV3(ctx context.Context, request *protov3.MultiFetchReq
 	if statsSearch != nil {
 		stats.Merge(statsSearch)
 	}
-	return res, stats, err
+
+	e.Merge(err)
+
+	if e.HaveFatalErrors {
+		z.logger.Error("had fatal errors while fetching result",
+			zap.Any("errors", e.Errors),
+		)
+		return nil, nil, types.ErrNoMetricsFetched
+	}
+
+	return res, stats, nil
 }
 
 func (z Zipper) FindProtoV3(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, error) {
@@ -393,7 +408,19 @@ func (z Zipper) FindProtoV3(ctx context.Context, request *protov3.MultiGlobReque
 		}
 		findResponse.Merge(searchResponse)
 	}
-	return findResponse.Response, findResponse.Stats, findResponse.Err
+
+	if findResponse.Err.HaveFatalErrors {
+		z.logger.Error("had fatal errors during request",
+			zap.Any("errors", findResponse.Err.Errors),
+		)
+		return nil, nil, types.ErrNoMetricsFetched
+	} else if len(findResponse.Err.Errors) > 0 {
+		z.logger.Warn("got non-fatal errors during request",
+			zap.Any("errors", findResponse.Err.Errors),
+		)
+	}
+
+	return findResponse.Response, findResponse.Stats, nil
 }
 
 func (z Zipper) InfoProtoV3(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.ZipperInfoResponse, *types.Stats, error) {
@@ -413,14 +440,46 @@ func (z Zipper) InfoProtoV3(ctx context.Context, request *protov3.MultiGlobReque
 		}
 	}
 
-	return z.storeBackends.Info(ctx, realRequest)
+	r, stats, e := z.storeBackends.Info(ctx, realRequest)
+	if e.HaveFatalErrors {
+		z.logger.Error("had fatal errors during request",
+			zap.Any("errors", e.Errors),
+		)
+		return nil, nil, types.ErrNoMetricsFetched
+	} else if len(e.Errors) > 0 {
+		z.logger.Warn("got non-fatal errors during request",
+			zap.Any("errors", e.Errors),
+		)
+	}
+
+	return r, stats, nil
 }
 
 func (z Zipper) ListProtoV3(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, error) {
-	return z.storeBackends.List(ctx)
+	r, stats, e := z.storeBackends.List(ctx)
+	if e.HaveFatalErrors {
+		z.logger.Error("had fatal errors during request",
+			zap.Any("errors", e.Errors),
+		)
+		return nil, nil, types.ErrNoMetricsFetched
+	} else if len(e.Errors) > 0 {
+		z.logger.Warn("got non-fatal errors during request",
+			zap.Any("errors", e.Errors),
+		)
+	}
+
+	return r, stats, nil
 }
 func (z Zipper) StatsProtoV3(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, error) {
-	return z.storeBackends.Stats(ctx)
+	r, stats, e := z.storeBackends.Stats(ctx)
+	if e.HaveFatalErrors {
+		z.logger.Error("had fatal errors while fetching result",
+			zap.Any("errors", e.Errors),
+		)
+		return nil, stats, types.ErrNoMetricsFetched
+	}
+
+	return r, stats, nil
 }
 
 // PB3-compatible methods

@@ -25,6 +25,7 @@ import (
 	cu "github.com/go-graphite/carbonzipper/util/apictx"
 	util "github.com/go-graphite/carbonzipper/util/zipperctx"
 	"github.com/go-graphite/carbonzipper/zipper"
+	zipperConfig "github.com/go-graphite/carbonzipper/zipper/config"
 	"github.com/go-graphite/carbonzipper/zipper/types"
 	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
@@ -640,7 +641,7 @@ func main() {
 
 	/* Configure zipper */
 	// set up caches
-	zipperConfig := &types.Config{
+	zipperConfig := &zipperConfig.Config{
 		PathCache:   pathcache.NewPathCache(config.ExpireDelaySec),
 		SearchCache: pathcache.NewPathCache(config.ExpireDelaySec),
 

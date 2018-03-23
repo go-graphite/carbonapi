@@ -11,6 +11,7 @@ import (
 	"github.com/go-graphite/carbonzipper/limiter"
 	cu "github.com/go-graphite/carbonzipper/util/apictx"
 	util "github.com/go-graphite/carbonzipper/util/zipperctx"
+	"github.com/go-graphite/carbonzipper/zipper/errors"
 	"github.com/go-graphite/carbonzipper/zipper/types"
 	"go.uber.org/zap"
 )
@@ -122,24 +123,24 @@ func (c *HttpQuery) doRequest(ctx context.Context, uri string) (*ServerResponse,
 	return &ServerResponse{Server: server, Response: body}, nil
 }
 
-func (c *HttpQuery) DoQuery(ctx context.Context, uri string) (*ServerResponse, error) {
+func (c *HttpQuery) DoQuery(ctx context.Context, uri string) (*ServerResponse, *errors.Errors) {
 	maxTries := c.maxTries
 	if len(c.servers) > maxTries {
 		maxTries = len(c.servers)
 	}
 	var res *ServerResponse
+	var e errors.Errors
 	var err error
 	for try := 0; try < maxTries; try++ {
 		res, err = c.doRequest(ctx, uri)
 		if err != nil {
-			if err == types.ErrNotFound {
-				return nil, err
-			}
+			e.Add(err)
 			continue
 		}
 
 		return res, nil
 	}
 
-	return nil, err
+	e.Add(types.ErrMaxTriesExceeded)
+	return nil, &e
 }

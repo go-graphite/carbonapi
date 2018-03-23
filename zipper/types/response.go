@@ -3,6 +3,7 @@ package types
 import (
 	"math"
 
+	"github.com/go-graphite/carbonzipper/zipper/errors"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
@@ -14,15 +15,17 @@ type ServerResponse struct {
 }
 
 type ServerInfoResponse struct {
+	Server   string
 	Response *protov3.ZipperInfoResponse
 	Stats    *Stats
-	Err      error
+	Err      *errors.Errors
 }
 
 type ServerFindResponse struct {
+	Server   string
 	Response *protov3.MultiGlobResponse
 	Stats    *Stats
-	Err      error
+	Err      *errors.Errors
 }
 
 /*
@@ -45,10 +48,11 @@ func mergeFindRequests(f1, f2 []protov3.GlobMatch) []protov3.GlobMatch {
 }
 */
 
-func (first *ServerFindResponse) Merge(second *ServerFindResponse) error {
+func (first *ServerFindResponse) Merge(second *ServerFindResponse) *errors.Errors {
 	first.Stats.Merge(second.Stats)
-	if second.Err != nil {
-		return second.Err
+	first.Err.Merge(second.Err)
+	if first.Err.HaveFatalErrors {
+		return first.Err
 	}
 
 	seenMetrics := make(map[string]int)
@@ -84,10 +88,11 @@ func (first *ServerFindResponse) Merge(second *ServerFindResponse) error {
 }
 
 type ServerFetchResponse struct {
+	Server       string
 	ResponsesMap map[string][]protov3.FetchResponse
 	Response     *protov3.MultiFetchResponse
 	Stats        *Stats
-	Err          error
+	Err          *errors.Errors
 }
 
 func swapFetchResponses(m1, m2 *protov3.FetchResponse) {
@@ -101,7 +106,7 @@ func swapFetchResponses(m1, m2 *protov3.FetchResponse) {
 	m1.StopTime, m2.StopTime = m2.StopTime, m1.StopTime
 }
 
-func mergeFetchResponses(m1, m2 *protov3.FetchResponse) error {
+func mergeFetchResponses(m1, m2 *protov3.FetchResponse) *errors.Errors {
 	logger := zapwriter.Logger("zipper_render")
 
 	if len(m1.Values) != len(m2.Values) {
@@ -133,7 +138,7 @@ func mergeFetchResponses(m1, m2 *protov3.FetchResponse) error {
 				zap.Int("response_values", len(m1.Values)),
 			)
 
-			return ErrResponseLengthMismatch
+			return errors.FromErr(ErrResponseLengthMismatch)
 		}
 
 		// len(m1) > len(m2)
@@ -150,7 +155,7 @@ func mergeFetchResponses(m1, m2 *protov3.FetchResponse) error {
 out:
 
 	if m1.StartTime != m2.StartTime {
-		return ErrResponseStartTimeMismatch
+		return errors.FromErr(ErrResponseStartTimeMismatch)
 	}
 
 	for i := range m1.Values {
@@ -168,8 +173,8 @@ out:
 
 func (first *ServerFetchResponse) Merge(second *ServerFetchResponse) {
 	first.Stats.Merge(second.Stats)
-
-	if second.Err != nil {
+	first.Err.Merge(second.Err)
+	if first.Err.HaveFatalErrors {
 		return
 	}
 

@@ -2,10 +2,10 @@ package grpc
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	"github.com/go-graphite/carbonzipper/limiter"
+	"github.com/go-graphite/carbonzipper/zipper/errors"
 	"github.com/go-graphite/carbonzipper/zipper/metadata"
 	"github.com/go-graphite/carbonzipper/zipper/types"
 	protov3grpc "github.com/go-graphite/protocol/carbonapi_v3_grpc"
@@ -44,14 +44,14 @@ type ClientGRPCGroup struct {
 	client protov3grpc.CarbonV1Client
 }
 
-func NewClientGRPCGroupWithLimiter(config types.BackendV2, limiter limiter.ServerLimiter) (types.ServerClient, error) {
+func NewClientGRPCGroupWithLimiter(config types.BackendV2, limiter limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
 	return NewClientGRPCGroup(config)
 }
 
-func NewClientGRPCGroup(config types.BackendV2) (types.ServerClient, error) {
+func NewClientGRPCGroup(config types.BackendV2) (types.ServerClient, *errors.Errors) {
 	// TODO: Implement normal resolver
 	if len(config.Servers) == 0 {
-		return nil, fmt.Errorf("no servers specified")
+		return nil, errors.Fatal("no servers specified")
 	}
 	r, cleanup := manual.GenerateAndRegisterManualResolver()
 	var resolvedAddrs []resolver.Address
@@ -73,7 +73,7 @@ func NewClientGRPCGroup(config types.BackendV2) (types.ServerClient, error) {
 	conn, err := grpc.Dial(r.Scheme()+":///server", opts...)
 	if err != nil {
 		cleanup()
-		return nil, err
+		return nil, errors.FromErr(err)
 	}
 
 	client := &ClientGRPCGroup{
@@ -98,7 +98,7 @@ func (c ClientGRPCGroup) Backends() []string {
 	return c.servers
 }
 
-func (c *ClientGRPCGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, error) {
+func (c *ClientGRPCGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, *errors.Errors) {
 	stats := &types.Stats{
 		Servers: []string{c.Name()},
 	}
@@ -113,10 +113,10 @@ func (c *ClientGRPCGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	}
 	stats.MemoryUsage = int64(res.Size())
 
-	return res, stats, err
+	return res, stats, errors.FromErrNonFatal(err)
 }
 
-func (c *ClientGRPCGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, error) {
+func (c *ClientGRPCGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, *errors.Errors) {
 	stats := &types.Stats{
 		Servers: []string{c.Name()},
 	}
@@ -131,9 +131,9 @@ func (c *ClientGRPCGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	}
 	stats.MemoryUsage = int64(res.Size())
 
-	return res, stats, err
+	return res, stats, errors.FromErrNonFatal(err)
 }
-func (c *ClientGRPCGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, error) {
+func (c *ClientGRPCGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, *errors.Errors) {
 	stats := &types.Stats{
 		Servers: []string{c.Name()},
 	}
@@ -154,10 +154,10 @@ func (c *ClientGRPCGroup) Info(ctx context.Context, request *protov3.MultiMetric
 		},
 	}
 
-	return r, stats, err
+	return r, stats, errors.FromErrNonFatal(err)
 }
 
-func (c *ClientGRPCGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, error) {
+func (c *ClientGRPCGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, *errors.Errors) {
 	stats := &types.Stats{
 		Servers: []string{c.Name()},
 	}
@@ -172,9 +172,9 @@ func (c *ClientGRPCGroup) List(ctx context.Context) (*protov3.ListMetricsRespons
 	}
 	stats.MemoryUsage = int64(res.Size())
 
-	return res, stats, err
+	return res, stats, errors.FromErrNonFatal(err)
 }
-func (c *ClientGRPCGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, error) {
+func (c *ClientGRPCGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, *errors.Errors) {
 	stats := &types.Stats{
 		Servers: []string{c.Name()},
 	}
@@ -189,10 +189,10 @@ func (c *ClientGRPCGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResp
 	}
 	stats.MemoryUsage = int64(res.Size())
 
-	return res, stats, err
+	return res, stats, errors.FromErrNonFatal(err)
 }
 
-func (c *ClientGRPCGroup) ProbeTLDs(ctx context.Context) ([]string, error) {
+func (c *ClientGRPCGroup) ProbeTLDs(ctx context.Context) ([]string, *errors.Errors) {
 	logger := zapwriter.Logger("probe").With(zap.String("groupName", c.groupName))
 
 	ctx, cancel := context.WithTimeout(ctx, c.timeout.Find)
