@@ -156,10 +156,10 @@ var BuildVersion = "(development version)"
 var searchConfigured = false
 
 const (
-	contentTypeJSON        = "application/json"
-	contentTypeProtobuf    = "application/x-protobuf"
-	contentTypePickle      = "application/pickle"
-	contentTypeCarbonAPIv3 = "application/x-carbon-api-v3-pb"
+	contentTypeJSON          = "application/json"
+	contentTypeProtobuf      = "application/x-protobuf"
+	contentTypePickle        = "application/pickle"
+	contentTypeCarbonAPIv3PB = "application/x-carbonapi-v3-pb"
 )
 
 func findHandler(w http.ResponseWriter, req *http.Request) {
@@ -519,7 +519,7 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 
 		switch format {
 		case "v3", "carbonapi_v3_pb":
-			w.Header().Set("Content-Type", contentTypeCarbonAPIv3)
+			w.Header().Set("Content-Type", contentTypeCarbonAPIv3PB)
 			b, err = result.Marshal()
 			/* #nosec */
 			_, _ = w.Write(b)

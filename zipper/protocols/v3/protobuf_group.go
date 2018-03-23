@@ -2,17 +2,16 @@ package v3
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"net/http"
 	"net/url"
-	"strconv"
 
 	"github.com/go-graphite/carbonzipper/limiter"
+	"github.com/go-graphite/carbonzipper/zipper/errors"
 	"github.com/go-graphite/carbonzipper/zipper/helper"
+	"github.com/go-graphite/carbonzipper/zipper/httpHeaders"
 	"github.com/go-graphite/carbonzipper/zipper/metadata"
 	"github.com/go-graphite/carbonzipper/zipper/types"
-	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
 	"github.com/lomik/zapwriter"
@@ -48,7 +47,19 @@ type ClientProtoV3Group struct {
 	httpQuery *helper.HttpQuery
 }
 
-func NewWithLimiter(config types.BackendV2, limiter limiter.ServerLimiter) (types.ServerClient, error) {
+func New(config types.BackendV2) (types.ServerClient, *errors.Errors) {
+	if config.ConcurrencyLimit == nil || *config.ConcurrencyLimit == 0 {
+		return nil, errors.Fatal("concurency limit is not set")
+	}
+	if len(config.Servers) == 0 {
+		return nil, errors.Fatal("no servers specified")
+	}
+	limiter := limiter.NewServerLimiter([]string{config.GroupName}, *config.ConcurrencyLimit)
+
+	return NewWithLimiter(config, limiter)
+}
+
+func NewWithLimiter(config types.BackendV2, limiter limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConnsPerHost: *config.MaxIdleConnsPerHost,
@@ -62,7 +73,7 @@ func NewWithLimiter(config types.BackendV2, limiter limiter.ServerLimiter) (type
 
 	logger := zapwriter.Logger("protobufGroup").With(zap.String("name", config.GroupName))
 
-	httpQuery := helper.NewHttpQuery(logger, config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient)
+	httpQuery := helper.NewHttpQuery(logger, config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv3PB)
 
 	c := &ClientProtoV3Group{
 		groupName: config.GroupName,
@@ -79,18 +90,6 @@ func NewWithLimiter(config types.BackendV2, limiter limiter.ServerLimiter) (type
 	return c, nil
 }
 
-func New(config types.BackendV2) (types.ServerClient, error) {
-	if config.ConcurrencyLimit == nil {
-		return nil, fmt.Errorf("concurency limit is not set")
-	}
-	if len(config.Servers) == 0 {
-		return nil, fmt.Errorf("no servers specified")
-	}
-	limiter := limiter.NewServerLimiter(config.Servers, *config.ConcurrencyLimit)
-
-	return NewWithLimiter(config, limiter)
-}
-
 func (c ClientProtoV3Group) Name() string {
 	return c.groupName
 }
@@ -99,7 +98,7 @@ func (c ClientProtoV3Group) Backends() []string {
 	return c.servers
 }
 
-func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, error) {
+func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, *errors.Errors) {
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/render/")
 
@@ -109,115 +108,111 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	}
 
 	v := url.Values{
-		"target": targets,
-		"format": []string{"protobuf"},
-		"from":   []string{strconv.Itoa(int(request.Metrics[0].StartTime))},
-		"until":  []string{strconv.Itoa(int(request.Metrics[0].StopTime))},
+		"format": []string{"carbonapi_v3_pb"},
 	}
 	rewrite.RawQuery = v.Encode()
-	res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI())
+
+	data, err := request.Marshal()
 	if err != nil {
-		return nil, stats, err
+		return nil, nil, errors.FromErrNonFatal(err)
 	}
 
-	var metrics protov2.MultiFetchResponse
-	err = metrics.Unmarshal(res.Response)
+	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), data)
 	if err != nil {
-		return nil, stats, err
+		return nil, stats, e
 	}
 
-	stats.Servers = append(stats.Servers, res.Server)
-
-	var r protov3.MultiFetchResponse
-	for _, m := range metrics.Metrics {
-		r.Metrics = append(r.Metrics, protov3.FetchResponse{
-			Name:              m.Name,
-			ConsolidationFunc: "average",
-			StopTime:          uint32(m.StopTime),
-			StartTime:         uint32(m.StartTime),
-			StepTime:          uint32(m.StepTime),
-			Values:            m.Values,
-		})
+	var metrics protov3.MultiFetchResponse
+	e.AddFatal(metrics.Unmarshal(res.Response))
+	if e == nil {
+		e = &errors.Errors{}
+	}
+	if e.HaveFatalErrors {
+		return nil, stats, e
 	}
 
-	return &r, stats, nil
+	return &metrics, stats, nil
 }
 
-func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, error) {
+func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, *errors.Errors) {
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/metrics/find/")
 
-	var r protov3.MultiGlobResponse
-	r.Metrics = make([]protov3.GlobResponse, 0)
-	var errors []error
-	for _, query := range request.Metrics {
-		v := url.Values{
-			"query":  []string{query},
-			"format": []string{"protobuf"},
-		}
-		rewrite.RawQuery = v.Encode()
-		res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI())
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
-		var globs protov2.GlobResponse
-		err = globs.Unmarshal(res.Response)
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
-		stats.Servers = append(stats.Servers, res.Server)
-		matches := make([]protov3.GlobMatch, 0, len(globs.Matches))
-		for _, m := range globs.Matches {
-			matches = append(matches, protov3.GlobMatch{
-				Path:   m.Path,
-				IsLeaf: m.IsLeaf,
-			})
-		}
-		r.Metrics = append(r.Metrics, protov3.GlobResponse{
-			Name:    globs.Name,
-			Matches: matches,
-		})
+	v := url.Values{
+		"format": []string{"carbonapi_v3_pb"},
+	}
+	rewrite.RawQuery = v.Encode()
+
+	data, err := request.Marshal()
+	if err != nil {
+		return nil, nil, errors.FromErrNonFatal(err)
 	}
 
-	if len(errors) != 0 {
-		strErrors := make([]string, 0, len(errors))
-		for _, e := range errors {
-			strErrors = append(strErrors, e.Error())
-		}
-		c.logger.Error("errors occurred while getting results",
-			zap.Strings("errors", strErrors),
-		)
+	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), data)
+	if e == nil {
+		e = &errors.Errors{}
 	}
 
-	if len(r.Metrics) == 0 {
-		return nil, stats, types.ErrNoResponseFetched
+	var globs protov3.MultiGlobResponse
+	err = globs.Unmarshal(res.Response)
+	if err != nil {
+		return nil, nil, errors.FromErrNonFatal(err)
 	}
-	return &r, stats, nil
+
+	return &globs, stats, nil
 }
 
-func (c *ClientProtoV3Group) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, error) {
-	return nil, nil, types.ErrNotImplementedYet
+func (c *ClientProtoV3Group) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, *errors.Errors) {
+	stats := &types.Stats{}
+	rewrite, _ := url.Parse("http://127.0.0.1/metrics/find/")
+
+	v := url.Values{
+		"format": []string{"carbonapi_v3_pb"},
+	}
+	rewrite.RawQuery = v.Encode()
+
+	data, err := request.Marshal()
+	if err != nil {
+		return nil, nil, errors.FromErrNonFatal(err)
+	}
+
+	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), data)
+	if e == nil {
+		e = &errors.Errors{}
+	}
+
+	var infos protov3.MultiMetricsInfoResponse
+	err = infos.Unmarshal(res.Response)
+	if err != nil {
+		return nil, nil, errors.FromErrNonFatal(err)
+	}
+
+	stats.MemoryUsage = int64(infos.Size())
+
+	r := &protov3.ZipperInfoResponse{
+		Info: map[string]protov3.MultiMetricsInfoResponse{
+			c.Name(): infos,
+		},
+	}
+
+	return r, stats, nil
 }
 
-func (c *ClientProtoV3Group) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, error) {
-	return nil, nil, types.ErrNotImplementedYet
+func (c *ClientProtoV3Group) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, *errors.Errors) {
+	return nil, nil, errors.FromErr(types.ErrNotImplementedYet)
 }
-func (c *ClientProtoV3Group) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, error) {
-	return nil, nil, types.ErrNotImplementedYet
+func (c *ClientProtoV3Group) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, *errors.Errors) {
+	return nil, nil, errors.FromErr(types.ErrNotImplementedYet)
 }
 
-func (c *ClientProtoV3Group) ProbeTLDs(ctx context.Context) ([]string, error) {
+func (c *ClientProtoV3Group) ProbeTLDs(ctx context.Context) ([]string, *errors.Errors) {
 	logger := c.logger.With(zap.String("function", "prober"))
 	req := &protov3.MultiGlobRequest{
 		Metrics: []string{"*"},
 	}
-	ctx, cancel := context.WithTimeout(ctx, c.timeout.Find)
-	defer cancel()
 
 	logger.Debug("doing request",
-		zap.Any("request", req),
+		zap.Strings("request", req.Metrics),
 	)
 
 	res, _, err := c.Find(ctx, req)

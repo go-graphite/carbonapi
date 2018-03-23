@@ -10,6 +10,7 @@ import (
 	"github.com/go-graphite/carbonzipper/limiter"
 	"github.com/go-graphite/carbonzipper/zipper/errors"
 	"github.com/go-graphite/carbonzipper/zipper/helper"
+	"github.com/go-graphite/carbonzipper/zipper/httpHeaders"
 	"github.com/go-graphite/carbonzipper/zipper/metadata"
 	"github.com/go-graphite/carbonzipper/zipper/types"
 	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
@@ -64,7 +65,7 @@ func NewClientProtoV2GroupWithLimiter(config types.BackendV2, limiter limiter.Se
 		},
 	}
 
-	httpQuery := helper.NewHttpQuery(logger, config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient)
+	httpQuery := helper.NewHttpQuery(logger, config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv2PB)
 
 	c := &ClientProtoV2Group{
 		groupName: config.GroupName,
@@ -117,7 +118,7 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 		"until":  []string{strconv.Itoa(int(request.Metrics[0].StopTime))},
 	}
 	rewrite.RawQuery = v.Encode()
-	res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI())
+	res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
 	if err == nil {
 		err = &errors.Errors{}
 	}
@@ -130,8 +131,6 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	if err.HaveFatalErrors {
 		return nil, stats, err
 	}
-
-	stats.Servers = append(stats.Servers, res.Server)
 
 	var r protov3.MultiFetchResponse
 	for _, m := range metrics.Metrics {
@@ -162,7 +161,7 @@ func (c *ClientProtoV2Group) Find(ctx context.Context, request *protov3.MultiGlo
 			"format": []string{"protobuf"},
 		}
 		rewrite.RawQuery = v.Encode()
-		res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI())
+		res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
 		if err != nil {
 			e.Merge(err)
 			continue
@@ -219,7 +218,7 @@ func (c *ClientProtoV2Group) Info(ctx context.Context, request *protov3.MultiMet
 			"format": []string{"protobuf"},
 		}
 		rewrite.RawQuery = v.Encode()
-		res, e2 := c.httpQuery.DoQuery(ctx, rewrite.RequestURI())
+		res, e2 := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
 		if e2 != nil {
 			e.Merge(e2)
 			continue

@@ -1,8 +1,10 @@
 package helper
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -28,11 +30,12 @@ type HttpQuery struct {
 	logger    *zap.Logger
 	limiter   limiter.ServerLimiter
 	client    *http.Client
+	encoding  string
 
 	counter uint64
 }
 
-func NewHttpQuery(logger *zap.Logger, groupName string, servers []string, maxTries int, limiter limiter.ServerLimiter, client *http.Client) *HttpQuery {
+func NewHttpQuery(logger *zap.Logger, groupName string, servers []string, maxTries int, limiter limiter.ServerLimiter, client *http.Client, encoding string) *HttpQuery {
 	return &HttpQuery{
 		groupName: groupName,
 		servers:   servers,
@@ -40,6 +43,7 @@ func NewHttpQuery(logger *zap.Logger, groupName string, servers []string, maxTri
 		logger:    logger.With(zap.String("action", "query")),
 		limiter:   limiter,
 		client:    client,
+		encoding:  encoding,
 	}
 }
 
@@ -61,7 +65,7 @@ func (c *HttpQuery) pickServer() string {
 	return srv
 }
 
-func (c *HttpQuery) doRequest(ctx context.Context, uri string) (*ServerResponse, error) {
+func (c *HttpQuery) doRequest(ctx context.Context, uri string, body []byte) (*ServerResponse, error) {
 	server := c.pickServer()
 
 	u, err := url.Parse(server + uri)
@@ -69,7 +73,12 @@ func (c *HttpQuery) doRequest(ctx context.Context, uri string) (*ServerResponse,
 		return nil, err
 	}
 
-	req, err := http.NewRequest("GET", u.String(), nil)
+	var reader io.Reader
+	if body != nil {
+		reader = bytes.NewReader(body)
+	}
+	req, err := http.NewRequest("GET", u.String(), reader)
+	req.Header.Set("Accept", c.encoding)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +120,7 @@ func (c *HttpQuery) doRequest(ctx context.Context, uri string) (*ServerResponse,
 		return nil, fmt.Errorf(types.ErrFailedToFetchFmt, c.groupName, resp.StatusCode)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		c.logger.Error("error reading body",
 			zap.Error(err),
@@ -122,7 +131,7 @@ func (c *HttpQuery) doRequest(ctx context.Context, uri string) (*ServerResponse,
 	return &ServerResponse{Server: server, Response: body}, nil
 }
 
-func (c *HttpQuery) DoQuery(ctx context.Context, uri string) (*ServerResponse, *errors.Errors) {
+func (c *HttpQuery) DoQuery(ctx context.Context, uri string, body []byte) (*ServerResponse, *errors.Errors) {
 	maxTries := c.maxTries
 	if len(c.servers) > maxTries {
 		maxTries = len(c.servers)
@@ -130,7 +139,7 @@ func (c *HttpQuery) DoQuery(ctx context.Context, uri string) (*ServerResponse, *
 
 	var e errors.Errors
 	for try := 0; try < maxTries; try++ {
-		res, err := c.doRequest(ctx, uri)
+		res, err := c.doRequest(ctx, uri, body)
 		if err != nil {
 			e.Add(err)
 			if ctx.Err() != nil {
