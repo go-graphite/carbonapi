@@ -112,17 +112,18 @@ func fetchRequestToKey(prefix string, request *protov3.MultiFetchRequest) string
 	return string(key)
 }
 
-func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger, client types.ServerClient, request *protov3.MultiFetchRequest, resCh chan<- []*types.ServerFetchResponse) {
+func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger, client types.ServerClient, request *protov3.MultiFetchRequest, doneCh chan<- string, resCh chan<- *types.ServerFetchResponse) {
 	logger.Debug("waiting for slot",
 		zap.Int("maxConns", bg.limiter.Capacity()),
 	)
 	err := bg.limiter.Enter(ctx, client.Name())
 	if err != nil {
 		logger.Debug("timeout waiting for a slot")
-		resCh <- []*types.ServerFetchResponse{{
+		resCh <- &types.ServerFetchResponse{
 			Server: client.Name(),
 			Err:    errors.FromErrNonFatal(err),
-		}}
+		}
+		doneCh <- client.Name()
 		return
 	}
 	logger.Debug("got slot")
@@ -144,7 +145,6 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 			}
 			newRequest := &protov3.MultiFetchRequest{}
 			logger.Debug("will split request",
-				zap.Any("f", f),
 				zap.Int("metrics", len(f.Metrics)),
 				zap.Int("max_metrics", maxMetricPerRequest),
 			)
@@ -169,7 +169,6 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 		}
 	}
 
-	rr := make([]*types.ServerFetchResponse, 0, len(requests))
 	for _, req := range requests {
 		logger.Debug("sending request",
 			zap.String("client_name", client.Name()),
@@ -178,9 +177,9 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 			Server: client.Name(),
 		}
 		r.Response, r.Stats, r.Err = client.Fetch(ctx, req)
-		rr = append(rr, r)
+		resCh <- r
 	}
-	resCh <- rr
+	doneCh <- client.Name()
 }
 
 func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, *errors.Errors) {
@@ -202,13 +201,14 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	defer item.StoreAbort()
 
 	// Now we have global lock for fetching data for this metric
-	resCh := make(chan []*types.ServerFetchResponse, len(bg.clients))
+	resCh := make(chan *types.ServerFetchResponse, len(bg.clients))
+	doneCh := make(chan string, len(bg.clients))
 	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Render)
 	defer cancel()
 
 	clients := bg.chooseServers(requestNames)
 	for _, client := range clients {
-		go bg.doSingleFetch(ctx, logger, client, request, resCh)
+		go bg.doSingleFetch(ctx, logger, client, request, doneCh, resCh)
 	}
 
 	result := &types.ServerFetchResponse{}
@@ -217,23 +217,22 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	responseCounts := 0
 GATHER:
 	for {
-		if responseCounts == len(clients) {
+		if responseCounts == len(clients) && len(resCh) == 0 {
 			break GATHER
 		}
 		select {
-		case res := <-resCh:
+		case name := <-doneCh:
 			responseCounts++
-			for i := range res {
-				answeredServers[res[i].Server] = struct{}{}
-				if res[i].Err != nil && len(res[i].Err.Errors) > 0 {
-					err.Merge(res[i].Err)
-				}
-				if res[i] != nil {
-					if result.Response == nil {
-						result = res[i]
-					} else {
-						result.Merge(res[i])
-					}
+			answeredServers[name] = struct{}{}
+		case res := <-resCh:
+			if res.Err != nil && len(res.Err.Errors) > 0 {
+				err.Merge(res.Err)
+			}
+			if res != nil {
+				if result.Response == nil {
+					result = res
+				} else {
+					result.Merge(res)
 				}
 			}
 		case <-ctx.Done():
