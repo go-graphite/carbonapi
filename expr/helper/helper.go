@@ -9,7 +9,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"github.com/gonum/matrix/mat64"
+	"gonum.org/v1/gonum/mat"
 	"strings"
 	"unicode/utf8"
 
@@ -437,7 +437,7 @@ func VarianceValue(f64s []float64, absent []bool) float64 {
 }
 
 // Vandermonde creates a Vandermonde matrix
-func Vandermonde(absent []bool, deg int) *mat64.Dense {
+func Vandermonde(absent []bool, deg int) *mat.Dense {
 	e := []float64{}
 	for i := range absent {
 		if absent[i] {
@@ -449,7 +449,7 @@ func Vandermonde(absent []bool, deg int) *mat64.Dense {
 			v *= i
 		}
 	}
-	return mat64.NewDense(len(e)/(deg+1), deg+1, e)
+	return mat.NewDense(len(e)/(deg+1), deg+1, e)
 }
 
 // Poly computes polynom with specified coefficients

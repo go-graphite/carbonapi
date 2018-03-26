@@ -7,7 +7,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"github.com/gonum/matrix/mat64"
+	"gonum.org/v1/gonum/mat"
 )
 
 type polyfit struct {
@@ -87,16 +87,16 @@ func (f *polyfit) Do(e parser.Expr, from, until int32, values map[parser.MetricR
 		// STEP 1: Creating Vandermonde (X)
 		v := helper.Vandermonde(a.IsAbsent, degree)
 		// STEP 2: Creating (X^T * X)**-1
-		var t mat64.Dense
+		var t mat.Dense
 		t.Mul(v.T(), v)
-		var i mat64.Dense
+		var i mat.Dense
 		err := i.Inverse(&t)
 		if err != nil {
 			continue
 		}
 		// STEP 3: Creating I * X^T * y
-		var c mat64.Dense
-		c.Product(&i, v.T(), mat64.NewDense(len(nonNulls), 1, nonNulls))
+		var c mat.Dense
+		c.Product(&i, v.T(), mat.NewDense(len(nonNulls), 1, nonNulls))
 		// END OF STEPS
 
 		for i := range r.Values {

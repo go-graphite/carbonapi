@@ -127,51 +127,6 @@
   version = "v0.4"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/gonum/blas"
-  packages = [
-    ".",
-    "blas64",
-    "native",
-    "native/internal/math32"
-  ]
-  revision = "e7c5890b24cf6f3bb173f76e1bd71e80e887e3f9"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/gonum/floats"
-  packages = ["."]
-  revision = "7de1f4ea7ab57890bfd427af68c7994cd67975d4"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/gonum/internal"
-  packages = [
-    "asm/f32",
-    "asm/f64"
-  ]
-  revision = "fda53f8d25717c07e2dac25758075a182bd74235"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/gonum/lapack"
-  packages = [
-    ".",
-    "lapack64",
-    "native"
-  ]
-  revision = "f0b8b25edeceafb3a2752941c7bf0cda962df112"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/gonum/matrix"
-  packages = [
-    ".",
-    "mat64"
-  ]
-  revision = "a41cc49d4c29f7451775f4379a5cc6ec6239dfab"
-
-[[projects]]
   name = "github.com/gorilla/handlers"
   packages = ["."]
   revision = "90663712d74cb411cbef281bc1e08c19d1a76145"
@@ -340,6 +295,25 @@
   version = "v0.3.0"
 
 [[projects]]
+  branch = "master"
+  name = "gonum.org/v1/gonum"
+  packages = [
+    "blas",
+    "blas/blas64",
+    "blas/gonum",
+    "floats",
+    "internal/asm/c128",
+    "internal/asm/f32",
+    "internal/asm/f64",
+    "internal/math32",
+    "lapack",
+    "lapack/gonum",
+    "lapack/lapack64",
+    "mat"
+  ]
+  revision = "6b03bc22e15aece534f0b4fb96cf6c8f1d885cd0"
+
+[[projects]]
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   revision = "7f97868eec74b32b0982dd158a51a446d1da7eb5"
@@ -348,6 +322,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b4a8d33859a59f1934459752cfbae419e4633834e3441894b5d980c8b8368991"
+  inputs-digest = "1715679fd0e76ee31fd358b9e72f90c6340fc2d339d13d4168c2ecdf52011453"
   solver-name = "gps-cdcl"
   solver-version = 1
