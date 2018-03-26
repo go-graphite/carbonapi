@@ -14,6 +14,9 @@ Changes
 
 Changes
 -------
+**1.0.0-alpha.2** **It's not recommended to switch to this release until it's marked as stable**
+   - [Code] Convert timestamps to be int32 (was uint32)
+
 **1.0.0-alpha.1** **It's not recommended to switch to this release until it's marked as stable**
    - [Improvement] Major rework of load balancing logic
    - [Improvement] Support for new protobuf-based protocol that allow to pass metadata in the responses.
