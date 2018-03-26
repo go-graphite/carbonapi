@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-graphite/carbonapi/expr/types"
 	realZipper "github.com/go-graphite/carbonzipper/zipper"
+	zipperTypes "github.com/go-graphite/carbonzipper/zipper/types"
 	pb "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	"github.com/lomik/zapwriter"
 	"github.com/stretchr/testify/assert"
@@ -19,7 +20,7 @@ type mockCarbonZipper struct {
 	z *realZipper.Zipper
 
 	logger      *zap.Logger
-	statsSender func(*realZipper.Stats)
+	statsSender func(*zipperTypes.Stats)
 }
 
 func newMockCarbonZipper() *mockCarbonZipper {
@@ -32,7 +33,7 @@ func (z mockCarbonZipper) Find(ctx context.Context, metric string) (pb.GlobRespo
 	return getGlobResponse(), nil
 }
 
-func (z mockCarbonZipper) Info(ctx context.Context, metric string) (map[string]pb.InfoResponse, error) {
+func (z mockCarbonZipper) Info(ctx context.Context, metric string) ([]*pb.ZipperInfoResponse, error) {
 	response := getMockInfoResponse()
 
 	return response, nil
@@ -70,21 +71,27 @@ func getMultiFetchResponse() pb.MultiFetchResponse {
 	return result
 }
 
-func getMockInfoResponse() map[string]pb.InfoResponse {
-	decoded := make(map[string]pb.InfoResponse)
+func getMockInfoResponse() []*pb.ZipperInfoResponse {
 	r := pb.Retention{
 		SecondsPerPoint: 60,
 		NumberOfPoints:  43200,
 	}
-	d := pb.InfoResponse{
-		Name:              "foo.bar",
-		AggregationMethod: "Average",
-		MaxRetention:      157680000,
-		XFilesFactor:      0.5,
-		Retentions:        []pb.Retention{r},
+	decoded := &pb.ZipperInfoResponse{
+		Responses: []pb.ServerInfoResponse{
+			{
+				Server: "http://127.0.0.1:8080",
+				Info: &pb.InfoResponse{
+					Name:              "foo.bar",
+					AggregationMethod: "Average",
+					MaxRetention:      157680000,
+					XFilesFactor:      0.5,
+					Retentions:        []pb.Retention{r},
+				},
+			},
+		},
 	}
-	decoded["http://127.0.0.1:8080"] = d
-	return decoded
+
+	return []*pb.ZipperInfoResponse{decoded}
 }
 
 func init() {

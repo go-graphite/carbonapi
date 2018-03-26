@@ -28,7 +28,7 @@ type zipper struct {
 // Exposes the functionality to find, get info or render metrics.
 type CarbonZipper interface {
 	Find(ctx context.Context, metric string) (pb.GlobResponse, error)
-	Info(ctx context.Context, metric string) (*pb.ZipperInfoResponse, error)
+	Info(ctx context.Context, metric string) ([]*pb.ZipperInfoResponse, error)
 	Render(ctx context.Context, metric string, from, until int32) ([]*types.MetricData, error)
 }
 
@@ -71,7 +71,7 @@ func (z zipper) Find(ctx context.Context, metric string) (pb.GlobResponse, error
 	return pbresp, err
 }
 
-func (z zipper) Info(ctx context.Context, metric string) (*pb.ZipperInfoResponse, error) {
+func (z zipper) Info(ctx context.Context, metric string) ([]*pb.ZipperInfoResponse, error) {
 	newCtx := ctx
 	if z.ignoreClientTimeout {
 		uuid := util.GetUUID(ctx)
@@ -84,7 +84,7 @@ func (z zipper) Info(ctx context.Context, metric string) (*pb.ZipperInfoResponse
 
 	z.statsSender(stats)
 
-	return resp, nil
+	return []*pb.ZipperInfoResponse{resp}, nil
 }
 
 func (z zipper) Render(ctx context.Context, metric string, from, until int32) ([]*types.MetricData, error) {

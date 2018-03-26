@@ -669,7 +669,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 		deferredAccessLogging(accessLogger, &accessLogDetails, t0, logAsError)
 	}()
 
-	var data *pb.ZipperInfoResponse
+	var data []*pb.ZipperInfoResponse
 	var err error
 
 	query := r.FormValue("target")
