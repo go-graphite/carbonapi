@@ -19,7 +19,7 @@ memcachedServers = ["127.0.0.1:1234", "127.0.0.2:1235"]
 size_mb = 0
 type = "mem"
 
-[functionsConfigs]
+[functionsConfig]
 graphiteWeb = graphiteWeb.example.yaml
 
 [graphite]

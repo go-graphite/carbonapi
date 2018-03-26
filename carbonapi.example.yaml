@@ -49,7 +49,7 @@ sendGlobsAsIs: false
 # in result it can increase performance for graphite-clickhouse by removing /metric/find request before calling /render
 alwaysSendGlobsAsIs: false
 
-functionsConfigs:
+functionsConfig:
     graphiteWeb: ./graphiteWeb.example.yaml
 maxBatchSize: 100
 graphite:
