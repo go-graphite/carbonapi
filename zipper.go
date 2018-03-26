@@ -8,6 +8,8 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/util"
 	realZipper "github.com/go-graphite/carbonzipper/zipper"
+	zipperCfg "github.com/go-graphite/carbonzipper/zipper/config"
+	zipperTypes "github.com/go-graphite/carbonzipper/zipper/types"
 	pb "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	"go.uber.org/zap"
 )
@@ -18,7 +20,7 @@ type zipper struct {
 	z *realZipper.Zipper
 
 	logger              *zap.Logger
-	statsSender         func(*realZipper.Stats)
+	statsSender         func(*zipperTypes.Stats)
 	ignoreClientTimeout bool
 }
 
@@ -26,13 +28,20 @@ type zipper struct {
 // Exposes the functionality to find, get info or render metrics.
 type CarbonZipper interface {
 	Find(ctx context.Context, metric string) (pb.GlobResponse, error)
-	Info(ctx context.Context, metric string) (map[string]pb.InfoResponse, error)
+	Info(ctx context.Context, metric string) (*pb.ZipperInfoResponse, error)
 	Render(ctx context.Context, metric string, from, until int32) ([]*types.MetricData, error)
 }
 
-func newZipper(sender func(*realZipper.Stats), config *realZipper.Config, ignoreClientTimeout bool, logger *zap.Logger) *zipper {
+func newZipper(sender func(*zipperTypes.Stats), config *zipperCfg.Config, ignoreClientTimeout bool, logger *zap.Logger) *zipper {
+	zz, err := realZipper.NewZipper(sender, config, logger)
+	if err != nil {
+		logger.Fatal("failed to initialize zipper",
+			zap.Error(err),
+		)
+		return nil
+	}
 	z := &zipper{
-		z:                   realZipper.NewZipper(sender, config, logger),
+		z:                   zz,
 		logger:              logger,
 		statsSender:         sender,
 		ignoreClientTimeout: ignoreClientTimeout,
@@ -49,26 +58,26 @@ func (z zipper) Find(ctx context.Context, metric string) (pb.GlobResponse, error
 		newCtx = util.SetUUID(context.Background(), uuid)
 	}
 
-	res, stats, err := z.z.Find(newCtx, z.logger, metric)
+	res, stats, err := z.z.FindProtoV2(newCtx, []string{metric})
 	if err != nil {
 		return pbresp, err
 	}
 
-	pbresp.Name = metric
-	pbresp.Matches = res
+	pbresp.Name = res[0].Name
+	pbresp.Matches = res[0].Matches
 
 	z.statsSender(stats)
 
 	return pbresp, err
 }
 
-func (z zipper) Info(ctx context.Context, metric string) (map[string]pb.InfoResponse, error) {
+func (z zipper) Info(ctx context.Context, metric string) (*pb.ZipperInfoResponse, error) {
 	newCtx := ctx
 	if z.ignoreClientTimeout {
 		uuid := util.GetUUID(ctx)
 		newCtx = util.SetUUID(context.Background(), uuid)
 	}
-	resp, stats, err := z.z.Info(newCtx, z.logger, metric)
+	resp, stats, err := z.z.InfoProtoV2(newCtx, []string{metric})
 	if err != nil {
 		return nil, fmt.Errorf("http.Get: %+v", err)
 	}
@@ -85,7 +94,7 @@ func (z zipper) Render(ctx context.Context, metric string, from, until int32) ([
 		uuid := util.GetUUID(ctx)
 		newCtx = util.SetUUID(context.Background(), uuid)
 	}
-	pbresp, stats, err := z.z.Render(newCtx, z.logger, metric, from, until)
+	pbresp, stats, err := z.z.FetchProtoV2(newCtx, []string{metric}, from, until)
 	if err != nil {
 		return result, err
 	}

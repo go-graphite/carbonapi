@@ -26,8 +26,8 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	"github.com/go-graphite/carbonzipper/cache"
 	"github.com/go-graphite/carbonzipper/mstats"
-	"github.com/go-graphite/carbonzipper/pathcache"
-	realZipper "github.com/go-graphite/carbonzipper/zipper"
+	zipperCfg "github.com/go-graphite/carbonzipper/zipper/config"
+	zipperTypes "github.com/go-graphite/carbonzipper/zipper/types"
 	pb "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	"github.com/gorilla/handlers"
 	"github.com/peterbourgon/g2g"
@@ -252,7 +252,7 @@ var config = struct {
 	AlwaysSendGlobsAsIs        bool               `mapstructure:"alwaysSendGlobsAsIs"`
 	MaxBatchSize               int                `mapstructure:"maxBatchSize"`
 	Zipper                     string             `mapstructure:"zipper"`
-	Upstreams                  realZipper.Config  `mapstructure:"upstreams"`
+	Upstreams                  zipperCfg.Config   `mapstructure:"upstreams"`
 	ExpireDelaySec             int32              `mapstructure:"expireDelaySec"`
 	GraphiteWeb09Compatibility bool               `mapstructure:"graphite09compat"`
 	IgnoreClientTimeout        bool               `mapstructure:"ignoreClientTimeout"`
@@ -298,11 +298,11 @@ var config = struct {
 	defaultTimeZone: time.Local,
 	Logger:          []zapwriter.Config{defaultLoggerConfig},
 
-	Upstreams: realZipper.Config{
-		Timeouts: realZipper.Timeouts{
-			Global:       10000 * time.Second,
-			AfterStarted: 2 * time.Second,
-			Connect:      200 * time.Millisecond,
+	Upstreams: zipperCfg.Config{
+		Timeouts: zipperTypes.Timeouts{
+			Render:  10000 * time.Second,
+			Find:    2 * time.Second,
+			Connect: 200 * time.Millisecond,
 		},
 		KeepAliveInterval: 30 * time.Second,
 
@@ -312,7 +312,7 @@ var config = struct {
 	GraphiteWeb09Compatibility: false,
 }
 
-func zipperStats(stats *realZipper.Stats) {
+func zipperStats(stats *zipperTypes.Stats) {
 	zipperMetrics.Timeouts.Add(stats.Timeouts)
 	zipperMetrics.FindErrors.Add(stats.FindErrors)
 	zipperMetrics.RenderErrors.Add(stats.RenderErrors)
@@ -718,10 +718,10 @@ func setUpConfigUpstreams(logger *zap.Logger) {
 		config.Upstreams.MaxIdleConnsPerHost = config.IdleConnections
 		config.Upstreams.KeepAliveInterval = 10 * time.Second
 		// To emulate previous behavior
-		config.Upstreams.Timeouts = realZipper.Timeouts{
-			Connect:      1 * time.Second,
-			AfterStarted: 600 * time.Second,
-			Global:       600 * time.Second,
+		config.Upstreams.Timeouts = zipperTypes.Timeouts{
+			Connect: 1 * time.Second,
+			Render:  600 * time.Second,
+			Find:    600 * time.Second,
 		}
 	}
 	if len(config.Upstreams.Backends) == 0 {
@@ -729,20 +729,20 @@ func setUpConfigUpstreams(logger *zap.Logger) {
 	}
 
 	// Setup in-memory path cache for carbonzipper requests
-	config.Upstreams.PathCache = pathcache.NewPathCache(config.ExpireDelaySec)
-	config.Upstreams.SearchCache = pathcache.NewPathCache(config.ExpireDelaySec)
+	// TODO(civil): Export pathcache metrics
+	/*
+		zipperMetrics.CacheSize = expvar.Func(func() interface{} { return config.Upstreams.PathCache.ECSize() })
+		expvar.Publish("cacheSize", zipperMetrics.CacheSize)
 
-	zipperMetrics.CacheSize = expvar.Func(func() interface{} { return config.Upstreams.PathCache.ECSize() })
-	expvar.Publish("cacheSize", zipperMetrics.CacheSize)
+		zipperMetrics.CacheItems = expvar.Func(func() interface{} { return config.Upstreams.PathCache.ECItems() })
+		expvar.Publish("cacheItems", zipperMetrics.CacheItems)
 
-	zipperMetrics.CacheItems = expvar.Func(func() interface{} { return config.Upstreams.PathCache.ECItems() })
-	expvar.Publish("cacheItems", zipperMetrics.CacheItems)
+		zipperMetrics.SearchCacheSize = expvar.Func(func() interface{} { return config.Upstreams.SearchCache.ECSize() })
+		expvar.Publish("searchCacheSize", zipperMetrics.SearchCacheSize)
 
-	zipperMetrics.SearchCacheSize = expvar.Func(func() interface{} { return config.Upstreams.SearchCache.ECSize() })
-	expvar.Publish("searchCacheSize", zipperMetrics.SearchCacheSize)
-
-	zipperMetrics.SearchCacheItems = expvar.Func(func() interface{} { return config.Upstreams.SearchCache.ECItems() })
-	expvar.Publish("searchCacheItems", zipperMetrics.SearchCacheItems)
+		zipperMetrics.SearchCacheItems = expvar.Func(func() interface{} { return config.Upstreams.SearchCache.ECItems() })
+		expvar.Publish("searchCacheItems", zipperMetrics.SearchCacheItems)
+	*/
 }
 
 func main() {

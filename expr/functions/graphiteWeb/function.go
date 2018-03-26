@@ -1,6 +1,7 @@
 package graphiteWeb
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -33,10 +34,11 @@ type graphiteWeb struct {
 	proxy        *http.Client
 
 	supportedFunctions map[string]types.FunctionDescription
-	limiter            limiter.ServerLimiter
+	limiter            *limiter.ServerLimiter
 
 	logger         *zap.Logger
 	requestCounter uint64
+	timeout        time.Duration
 }
 
 func (f *graphiteWeb) pickServer() string {
@@ -132,6 +134,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 		strict:       cfg.Strict,
 		maxTries:     cfg.MaxTries,
 		working:      false,
+		timeout:      cfg.Timeout,
 		logger:       zapwriter.Logger("graphiteWeb"),
 		supportedFunctions: map[string]types.FunctionDescription{
 			"graphiteWeb": {
@@ -349,16 +352,18 @@ func (f *graphiteWeb) Do(e parser.Expr, from, until int32, values map[parser.Met
 
 		rewrite.RawQuery = v.Encode()
 
-		f.limiter.Enter(srv)
+		ctx, cancel := context.WithTimeout(context.Background(), f.timeout)
+		defer cancel()
+		f.limiter.Enter(context.Background(), srv)
 
 		req, err := http.NewRequest("GET", rewrite.String(), nil)
 		if err != nil {
-			f.limiter.Leave(srv)
+			f.limiter.Leave(ctx, srv)
 			return nil, err
 		}
 
-		resp, err := f.proxy.Do(req)
-		f.limiter.Leave(srv)
+		resp, err := f.proxy.Do(req.WithContext(ctx))
+		f.limiter.Leave(ctx, srv)
 		if err != nil {
 			errors = append(errors, graphiteError{srv, err})
 			resp.Body.Close()
