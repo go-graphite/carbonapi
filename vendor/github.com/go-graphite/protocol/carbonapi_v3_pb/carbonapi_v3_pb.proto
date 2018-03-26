@@ -12,8 +12,8 @@ message FilteringFunction {
 // Fetch Data
 message FetchRequest {
     string name = 1;
-    int32 startTime = 2;
-    int32 stopTime = 3;
+    uint32 startTime = 2;
+    uint32 stopTime = 3;
     repeated FilteringFunction filterFunctions = 4;
 }
 
@@ -26,9 +26,9 @@ message FetchResponse {
     string name = 1;
     string pathExpression = 2;
     string consolidationFunc = 3;
-    int32 startTime = 4;
-    int32 stopTime = 5;
-    int32 stepTime = 6;
+    uint32 startTime = 4;
+    uint32 stopTime = 5;
+    uint32 stepTime = 6;
     float xFilesFactor = 7;
     repeated double values = 8;
     repeated string appliedFunctions = 9;
