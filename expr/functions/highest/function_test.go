@@ -23,7 +23,7 @@ func init() {
 }
 
 func TestHighestMultiReturn(t *testing.T) {
-	now32 := int32(time.Now().Unix())
+	now32 := uint32(time.Now().Unix())
 
 	tests := []th.MultiReturnEvalTestItem{
 		{
@@ -71,7 +71,7 @@ func TestHighestMultiReturn(t *testing.T) {
 }
 
 func TestHighest(t *testing.T) {
-	now32 := int32(time.Now().Unix())
+	now32 := uint32(time.Now().Unix())
 
 	tests := []th.EvalTestItem{
 		{

@@ -22,7 +22,7 @@ func init() {
 }
 
 func TestFallbackSeries(t *testing.T) {
-	now32 := int32(time.Now().Unix())
+	now32 := uint32(time.Now().Unix())
 
 	tests := []th.EvalTestItem{
 		{

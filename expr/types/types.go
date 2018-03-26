@@ -34,14 +34,11 @@ func MakeMetricData(name string, values []float64, step, start uint32) *MetricDa
 	stop := start + uint32(len(values))*step
 
 	return &MetricData{FetchResponse: pb.FetchResponse{
-		Name:              name,
-		PathExpression:    name,
-		ConsolidationFunc: "average",
-		Values:            values,
-		StartTime:         start,
-		StepTime:          step,
-		StopTime:          stop,
-		XFilesFactor:      0,
+		Name:      name,
+		Values:    values,
+		StartTime: start,
+		StepTime:  step,
+		StopTime:  stop,
 	}}
 }
 

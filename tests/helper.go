@@ -67,12 +67,10 @@ func DeepClone(original map[parser.MetricRequest][]*types.MetricData) map[parser
 					StopTime:  originalMetric.StopTime,
 					StepTime:  originalMetric.StepTime,
 					Values:    make([]float64, len(originalMetric.Values)),
-					IsAbsent:  make([]bool, len(originalMetric.IsAbsent)),
 				},
 			}
 
 			copy(copiedMetric.Values, originalMetric.Values)
-			copy(copiedMetric.IsAbsent, originalMetric.IsAbsent)
 			copiedMetrics = append(copiedMetrics, &copiedMetric)
 		}
 
@@ -111,7 +109,7 @@ func DeepEqual(t *testing.T, target string, original, modified map[parser.Metric
 
 const eps = 0.0000000001
 
-func NearlyEqual(a []float64, absent []bool, b []float64) bool {
+func NearlyEqual(a []float64, b []float64) bool {
 
 	if len(a) != len(b) {
 		return false
@@ -119,10 +117,10 @@ func NearlyEqual(a []float64, absent []bool, b []float64) bool {
 
 	for i, v := range a {
 		// "same"
-		if absent[i] && math.IsNaN(b[i]) {
+		if math.IsNaN(a[i]) && math.IsNaN(b[i]) {
 			continue
 		}
-		if absent[i] || math.IsNaN(b[i]) {
+		if math.IsNaN(a[i]) || math.IsNaN(b[i]) {
 			// unexpected NaN
 			return false
 		}
@@ -136,13 +134,8 @@ func NearlyEqual(a []float64, absent []bool, b []float64) bool {
 }
 
 func NearlyEqualMetrics(a, b *types.MetricData) bool {
-
-	if len(a.IsAbsent) != len(b.IsAbsent) {
-		return false
-	}
-
-	for i := range a.IsAbsent {
-		if a.IsAbsent[i] != b.IsAbsent[i] {
+	for i := range a.Values {
+		if (math.IsNaN(a.Values[i]) && !math.IsNaN(b.Values[i])) || (!math.IsNaN(a.Values[i]) && math.IsNaN(b.Values[i])) {
 			return false
 		}
 		// "close enough"
@@ -159,9 +152,9 @@ type SummarizeEvalTestItem struct {
 	M     map[parser.MetricRequest][]*types.MetricData
 	W     []float64
 	Name  string
-	Step  int32
-	Start int32
-	Stop  int32
+	Step  uint32
+	Start uint32
+	Stop  uint32
 }
 
 func InitTestSummarize() (int32, int32, int32) {
@@ -210,7 +203,7 @@ func TestSummarizeEvalExpr(t *testing.T, tt *SummarizeEvalTestItem) {
 			t.Errorf("bad Stop for %s: got %s want %s", g[0].Name, time.Unix(int64(g[0].StopTime), 0).Format(time.StampNano), time.Unix(int64(tt.Stop), 0).Format(time.StampNano))
 		}
 
-		if !NearlyEqual(g[0].Values, g[0].IsAbsent, tt.W) {
+		if !NearlyEqual(g[0].Values, tt.W) {
 			t.Errorf("failed: %s:\ngot  %+v,\nwant %+v", g[0].Name, g[0].Values, tt.W)
 		}
 		if g[0].Name != tt.Name {
@@ -259,7 +252,7 @@ func TestMultiReturnEvalExpr(t *testing.T, tt *MultiReturnEvalTestItem) {
 		if r[0].Name != gg.Name {
 			t.Errorf("result Name mismatch, got\n%#v,\nwant\n%#v", gg.Name, r[0].Name)
 		}
-		if !reflect.DeepEqual(r[0].Values, gg.Values) || !reflect.DeepEqual(r[0].IsAbsent, gg.IsAbsent) ||
+		if !reflect.DeepEqual(r[0].Values, gg.Values) ||
 			r[0].StartTime != gg.StartTime ||
 			r[0].StopTime != gg.StopTime ||
 			r[0].StepTime != gg.StepTime {

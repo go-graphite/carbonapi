@@ -31,6 +31,7 @@ func (f *aliasByMetric) Do(e parser.Expr, from, until uint32, values map[parser.
 		metric := helper.ExtractMetric(a.Name)
 		part := strings.Split(metric, ".")
 		r.Name = part[len(part)-1]
+		r.PathExpression = r.Name
 		r.Values = a.Values
 		return r
 	})
