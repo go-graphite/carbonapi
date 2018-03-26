@@ -485,8 +485,8 @@ func (z Zipper) FetchProtoV2(ctx context.Context, query []string, startTime, sto
 	for _, q := range query {
 		request.Metrics = append(request.Metrics, protov3.FetchRequest{
 			Name:      q,
-			StartTime: uint32(startTime),
-			StopTime:  uint32(stopTime),
+			StartTime: startTime,
+			StopTime:  stopTime,
 		})
 	}
 

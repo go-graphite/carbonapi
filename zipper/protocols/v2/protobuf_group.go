@@ -144,10 +144,11 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 		r.Metrics = append(r.Metrics, protov3.FetchResponse{
 			Name:              m.Name,
 			ConsolidationFunc: "average",
-			StopTime:          uint32(m.StopTime),
-			StartTime:         uint32(m.StartTime),
-			StepTime:          uint32(m.StepTime),
+			StopTime:          m.StopTime,
+			StartTime:         m.StartTime,
+			StepTime:          m.StepTime,
 			Values:            m.Values,
+			XFilesFactor:      0.0,
 		})
 	}
 

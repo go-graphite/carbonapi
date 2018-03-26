@@ -65,8 +65,8 @@
     "carbonapi_v3_grpc",
     "carbonapi_v3_pb"
   ]
-  revision = "4c8698b77a13886acd1bd5c8e6c09b8918fb6ab4"
-  version = "v0.1.1"
+  revision = "c914a8eca441b8c3475090391746277de87431e5"
+  version = "v0.1.2"
 
 [[projects]]
   name = "github.com/gogo/protobuf"
