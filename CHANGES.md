@@ -14,7 +14,7 @@ Changes
 
 Changes
 -------
-**MASTER** **It's not recommended to switch to this release until it's marked as stable**
+**1.0.0-alpha.1** **It's not recommended to switch to this release until it's marked as stable**
    - [Improvement] Major rework of load balancing logic
    - [Improvement] Support for new protobuf-based protocol that allow to pass metadata in the responses.
    - [Improvement] CarbonZipper now supports maxGlobs logic. It now will do it's best to split request into even parts of maxGlobs metrics each. Also maxGlobs=0 means "unlimited"
