@@ -9,8 +9,8 @@ import (
 // MetricRequest contains all necessary data to request a metric.
 type MetricRequest struct {
 	Metric string
-	From   int32
-	Until  int32
+	From   uint32
+	Until  uint32
 }
 
 // ExprType defines a type for expression types constants (e.x. functions, values, constants, parameters, strings)

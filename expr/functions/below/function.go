@@ -27,7 +27,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // averageAbove(seriesList, n), averageBelow(seriesList, n), currentAbove(seriesList, n), currentBelow(seriesList, n), maximumAbove(seriesList, n), maximumBelow(seriesList, n), minimumAbove(seriesList, n), minimumBelow
-func (f *below) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *below) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func (f *below) Do(e parser.Expr, from, until int32, values map[parser.MetricReq
 
 	isAbove := strings.HasSuffix(e.Target(), "Above")
 	isInclusive := true
-	var compute func([]float64, []bool) float64
+	var compute func([]float64) float64
 	switch {
 	case strings.HasPrefix(e.Target(), "average"):
 		compute = helper.AvgValue
@@ -55,7 +55,7 @@ func (f *below) Do(e parser.Expr, from, until int32, values map[parser.MetricReq
 	}
 	var results []*types.MetricData
 	for _, a := range args {
-		value := compute(a.Values, a.IsAbsent)
+		value := compute(a.Values)
 		if isAbove {
 			if isInclusive {
 				if value >= n {

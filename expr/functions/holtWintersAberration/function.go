@@ -7,7 +7,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	pb "github.com/go-graphite/protocol/carbonapi_v2_pb"
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"math"
 )
 
@@ -29,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *holtWintersAberration) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *holtWintersAberration) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	var results []*types.MetricData
 	args, err := helper.GetSeriesArg(e.Args()[0], from-7*86400, until, values)
 	if err != nil {
@@ -50,10 +50,9 @@ func (f *holtWintersAberration) Do(e parser.Expr, from, until int32, values map[
 
 		windowPoints := 7 * 86400 / stepTime
 		series := arg.Values[windowPoints:]
-		absent := arg.IsAbsent[windowPoints:]
 
 		for i := range series {
-			if absent[i] {
+			if math.IsNaN(series[i]) {
 				aberration = append(aberration, 0)
 			} else if !math.IsNaN(upperBand[i]) && series[i] > upperBand[i] {
 				aberration = append(aberration, series[i]-upperBand[i])
@@ -65,12 +64,14 @@ func (f *holtWintersAberration) Do(e parser.Expr, from, until int32, values map[
 		}
 
 		r := types.MetricData{FetchResponse: pb.FetchResponse{
-			Name:      fmt.Sprintf("holtWintersAberration(%s)", arg.Name),
-			Values:    aberration,
-			IsAbsent:  make([]bool, len(aberration)),
-			StepTime:  arg.StepTime,
-			StartTime: arg.StartTime + 7*86400,
-			StopTime:  arg.StopTime,
+			Name:              fmt.Sprintf("holtWintersAberration(%s)", arg.Name),
+			Values:            aberration,
+			StepTime:          arg.StepTime,
+			StartTime:         arg.StartTime + 7*86400,
+			StopTime:          arg.StopTime,
+			PathExpression:    fmt.Sprintf("holtWintersAberration(%s)", arg.Name),
+			ConsolidationFunc: arg.ConsolidationFunc,
+			XFilesFactor:      arg.XFilesFactor,
 		}}
 
 		results = append(results, &r)

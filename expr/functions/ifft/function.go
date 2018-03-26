@@ -2,12 +2,14 @@ package ifft
 
 import (
 	"fmt"
+	"math"
+	"math/cmplx"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	realFFT "github.com/mjibson/go-dsp/fft"
-	"math/cmplx"
 )
 
 type ifft struct {
@@ -29,7 +31,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // ifft(absSeriesList, phaseSeriesList)
-func (f *ifft) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *ifft) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	absSeriesList, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -47,14 +49,13 @@ func (f *ifft) Do(e parser.Expr, from, until int32, values map[parser.MetricRequ
 	for j, a := range absSeriesList {
 		r := *a
 		r.Values = make([]float64, len(a.Values))
-		r.IsAbsent = make([]bool, len(a.Values))
 		if len(phaseSeriesList) > j {
 			p := phaseSeriesList[j]
 			name := fmt.Sprintf("ifft(%s, %s)", a.Name, p.Name)
 			r.Name = name
 			values := make([]complex128, len(a.Values))
 			for i, v := range a.Values {
-				if a.IsAbsent[i] {
+				if math.IsNaN(v) {
 					v = 0
 				}
 

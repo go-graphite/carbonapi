@@ -22,7 +22,7 @@ func (b *FunctionBase) GetEvaluator() Evaluator {
 
 // Evaluator is a interface for any existing expression parser
 type Evaluator interface {
-	EvalExpr(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
+	EvalExpr(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
 }
 
 type Order int
@@ -48,7 +48,7 @@ type FunctionMetadata struct {
 type Function interface {
 	SetEvaluator(evaluator Evaluator)
 	GetEvaluator() Evaluator
-	Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
+	Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
 	Description() map[string]types.FunctionDescription
 }
 
@@ -56,6 +56,6 @@ type Function interface {
 type RewriteFunction interface {
 	SetEvaluator(evaluator Evaluator)
 	GetEvaluator() Evaluator
-	Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error)
+	Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error)
 	Description() map[string]types.FunctionDescription
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	pb "github.com/go-graphite/protocol/carbonapi_v2_pb"
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"math"
 )
 
@@ -29,17 +29,18 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // hitcount(seriesList, intervalString, alignToInterval=False)
-func (f *hitcount) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *hitcount) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(dgryski): make sure the arrays are all the same 'size'
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
-	bucketSize, err := e.GetIntervalArg(1, 1)
+	bucketSizeInt32, err := e.GetIntervalArg(1, 1)
 	if err != nil {
 		return nil, err
 	}
+	bucketSize := uint32(bucketSizeInt32)
 
 	alignToInterval, err := e.GetBoolNamedOrPosArgDefault("alignToInterval", 2, false)
 	if err != nil {
@@ -69,7 +70,6 @@ func (f *hitcount) Do(e parser.Expr, from, until int32, values map[parser.Metric
 		r := types.MetricData{FetchResponse: pb.FetchResponse{
 			Name:      name,
 			Values:    make([]float64, buckets, buckets+1),
-			IsAbsent:  make([]bool, buckets, buckets+1),
 			StepTime:  bucketSize,
 			StartTime: start,
 			StopTime:  stop,
@@ -80,9 +80,9 @@ func (f *hitcount) Do(e parser.Expr, from, until int32, values map[parser.Metric
 		ridx := 0
 		var count float64
 		bucketItems := 0
-		for i, v := range arg.Values {
+		for _, v := range arg.Values {
 			bucketItems++
-			if !arg.IsAbsent[i] {
+			if !math.IsNaN(v) {
 				if math.IsNaN(count) {
 					count = 0
 				}
@@ -97,12 +97,7 @@ func (f *hitcount) Do(e parser.Expr, from, until int32, values map[parser.Metric
 			}
 
 			if t >= bucketEnd {
-				if math.IsNaN(count) {
-					r.Values[ridx] = 0
-					r.IsAbsent[ridx] = true
-				} else {
-					r.Values[ridx] = count
-				}
+				r.Values[ridx] = count
 
 				ridx++
 				bucketEnd += bucketSize
@@ -113,12 +108,7 @@ func (f *hitcount) Do(e parser.Expr, from, until int32, values map[parser.Metric
 
 		// remaining values
 		if bucketItems > 0 {
-			if math.IsNaN(count) {
-				r.Values[ridx] = 0
-				r.IsAbsent[ridx] = true
-			} else {
-				r.Values[ridx] = count
-			}
+			r.Values[ridx] = count
 		}
 
 		results = append(results, &r)

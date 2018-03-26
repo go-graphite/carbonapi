@@ -6,7 +6,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	pb "github.com/go-graphite/protocol/carbonapi_v2_pb"
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"math"
 )
 
@@ -29,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // summarize(seriesList, intervalString, func='sum', alignToFrom=False)
-func (f *summarize) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *summarize) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(dgryski): make sure the arrays are all the same 'size'
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
@@ -39,10 +39,12 @@ func (f *summarize) Do(e parser.Expr, from, until int32, values map[parser.Metri
 		return nil, nil
 	}
 
-	bucketSize, err := e.GetIntervalArg(1, 1)
+	bucketSizeInt32, err := e.GetIntervalArg(1, 1)
 	if err != nil {
 		return nil, err
 	}
+
+	bucketSize := uint32(bucketSizeInt32)
 
 	summarizeFunction, err := e.GetStringNamedOrPosArgDefault("func", 2, "sum")
 	if err != nil {
@@ -92,23 +94,27 @@ func (f *summarize) Do(e parser.Expr, from, until int32, values map[parser.Metri
 		if arg.StepTime > bucketSize {
 			// We don't have enough data to do math
 			results = append(results, &types.MetricData{FetchResponse: pb.FetchResponse{
-				Name:      name,
-				Values:    arg.Values,
-				IsAbsent:  arg.IsAbsent,
-				StepTime:  arg.StepTime,
-				StartTime: arg.StartTime,
-				StopTime:  arg.StopTime,
+				Name:              name,
+				Values:            arg.Values,
+				StepTime:          arg.StepTime,
+				StartTime:         arg.StartTime,
+				StopTime:          arg.StopTime,
+				XFilesFactor:      arg.XFilesFactor,
+				PathExpression:    arg.PathExpression,
+				ConsolidationFunc: arg.ConsolidationFunc,
 			}})
 			continue
 		}
 
 		r := types.MetricData{FetchResponse: pb.FetchResponse{
-			Name:      name,
-			Values:    make([]float64, buckets, buckets),
-			IsAbsent:  make([]bool, buckets, buckets),
-			StepTime:  bucketSize,
-			StartTime: start,
-			StopTime:  stop,
+			Name:              name,
+			Values:            make([]float64, buckets, buckets),
+			StepTime:          bucketSize,
+			StartTime:         start,
+			StopTime:          stop,
+			XFilesFactor:      arg.XFilesFactor,
+			PathExpression:    name,
+			ConsolidationFunc: arg.ConsolidationFunc,
 		}}
 
 		t := arg.StartTime // unadjusted
@@ -116,9 +122,9 @@ func (f *summarize) Do(e parser.Expr, from, until int32, values map[parser.Metri
 		values := make([]float64, 0, bucketSize/arg.StepTime)
 		ridx := 0
 		bucketItems := 0
-		for i, v := range arg.Values {
+		for _, v := range arg.Values {
 			bucketItems++
-			if !arg.IsAbsent[i] {
+			if !math.IsNaN(v) {
 				values = append(values, v)
 			}
 
@@ -131,10 +137,6 @@ func (f *summarize) Do(e parser.Expr, from, until int32, values map[parser.Metri
 			if t >= bucketEnd {
 				rv := helper.SummarizeValues(summarizeFunction, values)
 
-				if math.IsNaN(rv) {
-					r.IsAbsent[ridx] = true
-				}
-
 				r.Values[ridx] = rv
 				ridx++
 				bucketEnd += bucketSize
@@ -146,17 +148,12 @@ func (f *summarize) Do(e parser.Expr, from, until int32, values map[parser.Metri
 		// last partial bucket
 		if bucketItems > 0 {
 			rv := helper.SummarizeValues(summarizeFunction, values)
-			if math.IsNaN(rv) {
-				r.Values[ridx] = 0
-				r.IsAbsent[ridx] = true
-			} else {
-				r.Values[ridx] = rv
-				r.IsAbsent[ridx] = false
-			}
+			r.Values[ridx] = rv
 		}
 
 		results = append(results, &r)
 	}
+
 	return results, nil
 }
 

@@ -2,6 +2,8 @@ package lowPass
 
 import (
 	"fmt"
+	"math"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -27,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // lowPass(seriesList, cutPercent)
-func (f *lowPass) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *lowPass) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -44,14 +46,13 @@ func (f *lowPass) Do(e parser.Expr, from, until int32, values map[parser.MetricR
 		r := *a
 		r.Name = name
 		r.Values = make([]float64, len(a.Values))
-		r.IsAbsent = make([]bool, len(a.Values))
 		lowCut := int((cutPercent / 200) * float64(len(a.Values)))
 		highCut := len(a.Values) - lowCut
 		for i, v := range a.Values {
 			if i < lowCut || i >= highCut {
 				r.Values[i] = v
 			} else {
-				r.IsAbsent[i] = true
+				r.Values[i] = math.NaN()
 			}
 		}
 

@@ -26,14 +26,9 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // invert(seriesList)
-func (f *invert) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *invert) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	return helper.ForEachSeriesDo(e, from, until, values, func(a *types.MetricData, r *types.MetricData) *types.MetricData {
 		for i, v := range a.Values {
-			if a.IsAbsent[i] || v == 0 {
-				r.Values[i] = 0
-				r.IsAbsent[i] = true
-				continue
-			}
 			r.Values[i] = 1 / v
 		}
 		return r

@@ -35,7 +35,7 @@ func SetEvaluator(e interfaces.Evaluator) {
 }
 
 // GetSeriesArg returns argument from series.
-func GetSeriesArg(arg parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func GetSeriesArg(arg parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if !arg.IsName() && !arg.IsFunc() {
 		return nil, parser.ErrMissingTimeseries
 	}
@@ -59,7 +59,7 @@ func RemoveEmptySeriesFromName(args []*types.MetricData) string {
 }
 
 // GetSeriesArgs returns arguments of series
-func GetSeriesArgs(e []parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func GetSeriesArgs(e []parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	var args []*types.MetricData
 
 	for _, arg := range e {
@@ -79,7 +79,7 @@ func GetSeriesArgs(e []parser.Expr, from, until int32, values map[parser.MetricR
 
 // GetSeriesArgsAndRemoveNonExisting will fetch all required arguments, but will also filter out non existing Series
 // This is needed to be graphite-web compatible in cases when you pass non-existing Series to, for example, sumSeries
-func GetSeriesArgsAndRemoveNonExisting(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func GetSeriesArgsAndRemoveNonExisting(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	args, err := GetSeriesArgs(e.Args(), from, until, values)
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func GetSeriesArgsAndRemoveNonExisting(e parser.Expr, from, until int32, values 
 type seriesFunc func(*types.MetricData, *types.MetricData) *types.MetricData
 
 // ForEachSeriesDo do action for each serie in list.
-func ForEachSeriesDo(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData, function seriesFunc) ([]*types.MetricData, error) {
+func ForEachSeriesDo(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData, function seriesFunc) ([]*types.MetricData, error) {
 	arg, err := GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, parser.ErrMissingTimeseries
@@ -107,7 +107,6 @@ func ForEachSeriesDo(e parser.Expr, from, until int32, values map[parser.MetricR
 		r := *a
 		r.Name = fmt.Sprintf("%s(%s)", e.Target(), a.Name)
 		r.Values = make([]float64, len(a.Values))
-		r.IsAbsent = make([]bool, len(a.Values))
 		results = append(results, function(a, &r))
 	}
 	return results, nil
@@ -129,7 +128,6 @@ func AlignSeries(args []*types.MetricData) []*types.MetricData {
 				if arg.StepTime > minStepTime {
 					valsCnt := int(math.Ceil(float64(arg.StopTime-arg.StartTime) / float64(minStepTime)))
 					newVals := make([]float64, valsCnt)
-					newIsAbsent := make([]bool, valsCnt)
 					ts := arg.StartTime
 					nextTs := arg.StartTime + arg.StepTime
 					i := 0
@@ -149,7 +147,6 @@ func AlignSeries(args []*types.MetricData) []*types.MetricData {
 						ts += minStepTime
 						i++
 					}
-					arg.IsAbsent = newIsAbsent
 					arg.Values = newVals
 					arg.StepTime = minStepTime
 				}
@@ -157,8 +154,8 @@ func AlignSeries(args []*types.MetricData) []*types.MetricData {
 		}
 
 		for _, arg := range args {
-			if len(arg.IsAbsent) > maxVals {
-				maxVals = len(arg.IsAbsent)
+			if len(arg.Values) > maxVals {
+				maxVals = len(arg.Values)
 			}
 			if arg.StartTime < minStart {
 				minStart = arg.StartTime
@@ -169,13 +166,6 @@ func AlignSeries(args []*types.MetricData) []*types.MetricData {
 				newVals = append(newVals, arg.Values...)
 				arg.Values = newVals
 				arg.StartTime = minStart
-
-				newIsAbsent := make([]bool, valCnt)
-				for i := range newIsAbsent {
-					newIsAbsent[i] = true
-				}
-				newIsAbsent = append(newIsAbsent, arg.IsAbsent...)
-				arg.IsAbsent = newIsAbsent
 			}
 
 			if arg.StopTime > maxStop {
@@ -186,12 +176,6 @@ func AlignSeries(args []*types.MetricData) []*types.MetricData {
 				newVals := make([]float64, valCnt)
 				arg.Values = append(arg.Values, newVals...)
 				arg.StopTime = maxStop
-
-				newIsAbsent := make([]bool, valCnt)
-				for i := range newIsAbsent {
-					newIsAbsent[i] = true
-				}
-				arg.IsAbsent = append(arg.IsAbsent, newIsAbsent...)
 			}
 		}
 	}
@@ -208,12 +192,11 @@ func AggregateSeries(e parser.Expr, args []*types.MetricData, function Aggregate
 	r := *args[0]
 	r.Name = fmt.Sprintf("%s(%s)", e.Target(), e.RawArgs())
 	r.Values = make([]float64, length)
-	r.IsAbsent = make([]bool, length)
 
 	for i := range args[0].Values {
 		var values []float64
 		for _, arg := range args {
-			if !arg.IsAbsent[i] {
+			if !math.IsNaN(arg.Values[i]) {
 				values = append(values, arg.Values[i])
 			}
 		}
@@ -222,8 +205,6 @@ func AggregateSeries(e parser.Expr, args []*types.MetricData, function Aggregate
 		if len(values) > 0 {
 			r.Values[i] = function(values)
 		}
-
-		r.IsAbsent[i] = math.IsNaN(r.Values[i])
 	}
 
 	return []*types.MetricData{&r}, nil
@@ -364,10 +345,10 @@ func Percentile(data []float64, percent float64, interpolate bool) float64 {
 }
 
 // MaxValue returns maximum from the list
-func MaxValue(f64s []float64, absent []bool) float64 {
+func MaxValue(f64s []float64) float64 {
 	m := math.Inf(-1)
-	for i, v := range f64s {
-		if absent[i] {
+	for _, v := range f64s {
+		if math.IsNaN(v) {
 			continue
 		}
 		if v > m {
@@ -378,10 +359,10 @@ func MaxValue(f64s []float64, absent []bool) float64 {
 }
 
 // MinValue returns minimal from the list
-func MinValue(f64s []float64, absent []bool) float64 {
+func MinValue(f64s []float64) float64 {
 	m := math.Inf(1)
-	for i, v := range f64s {
-		if absent[i] {
+	for _, v := range f64s {
+		if math.IsNaN(v) {
 			continue
 		}
 		if v < m {
@@ -392,11 +373,11 @@ func MinValue(f64s []float64, absent []bool) float64 {
 }
 
 // AvgValue returns average of list of values
-func AvgValue(f64s []float64, absent []bool) float64 {
+func AvgValue(f64s []float64) float64 {
 	var t float64
 	var elts int
-	for i, v := range f64s {
-		if absent[i] {
+	for _, v := range f64s {
+		if math.IsNaN(v) {
 			continue
 		}
 		elts++
@@ -406,9 +387,9 @@ func AvgValue(f64s []float64, absent []bool) float64 {
 }
 
 // CurrentValue returns last non-absent value (if any), otherwise returns NaN
-func CurrentValue(f64s []float64, absent []bool) float64 {
+func CurrentValue(f64s []float64) float64 {
 	for i := len(f64s) - 1; i >= 0; i-- {
-		if !absent[i] {
+		if !math.IsNaN(f64s[i]) {
 			return f64s[i]
 		}
 	}
@@ -417,17 +398,17 @@ func CurrentValue(f64s []float64, absent []bool) float64 {
 }
 
 // VarianceValue gets variances of list of values
-func VarianceValue(f64s []float64, absent []bool) float64 {
+func VarianceValue(f64s []float64) float64 {
 	var squareSum float64
 	var elts int
 
-	mean := AvgValue(f64s, absent)
+	mean := AvgValue(f64s)
 	if math.IsNaN(mean) {
 		return mean
 	}
 
-	for i, v := range f64s {
-		if absent[i] {
+	for _, v := range f64s {
+		if math.IsNaN(v) {
 			continue
 		}
 		elts++
@@ -437,10 +418,10 @@ func VarianceValue(f64s []float64, absent []bool) float64 {
 }
 
 // Vandermonde creates a Vandermonde matrix
-func Vandermonde(absent []bool, deg int) *mat.Dense {
+func Vandermonde(absent []float64, deg int) *mat.Dense {
 	e := []float64{}
 	for i := range absent {
-		if absent[i] {
+		if math.IsNaN(absent[i]) {
 			continue
 		}
 		v := 1

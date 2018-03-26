@@ -10,7 +10,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 	realZipper "github.com/go-graphite/carbonzipper/zipper"
 	zipperTypes "github.com/go-graphite/carbonzipper/zipper/types"
-	pb "github.com/go-graphite/protocol/carbonapi_v2_pb"
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
@@ -39,7 +39,7 @@ func (z mockCarbonZipper) Info(ctx context.Context, metric string) ([]*pb.Zipper
 	return response, nil
 }
 
-func (z mockCarbonZipper) Render(ctx context.Context, metric string, from, until int32) ([]*types.MetricData, error) {
+func (z mockCarbonZipper) Render(ctx context.Context, metric string, from, until uint32) ([]*types.MetricData, error) {
 	var result []*types.MetricData
 	multiFetchResponse := getMultiFetchResponse()
 	result = append(result, &types.MetricData{FetchResponse: multiFetchResponse.Metrics[0]})

@@ -5,7 +5,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	pb "github.com/go-graphite/protocol/carbonapi_v2_pb"
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
 type constantLine struct {
@@ -26,7 +26,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *constantLine) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *constantLine) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	value, err := e.GetFloatArg(0)
 
 	if err != nil {
@@ -39,7 +39,6 @@ func (f *constantLine) Do(e parser.Expr, from, until int32, values map[parser.Me
 			StopTime:  until,
 			StepTime:  until - from,
 			Values:    []float64{value, value},
-			IsAbsent:  []bool{false, false},
 		},
 	}
 

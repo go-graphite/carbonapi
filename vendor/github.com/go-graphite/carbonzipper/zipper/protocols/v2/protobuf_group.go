@@ -148,6 +148,7 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 			StartTime:         uint32(m.StartTime),
 			StepTime:          uint32(m.StepTime),
 			Values:            m.Values,
+			XFilesFactor:      0.0,
 		})
 	}
 

@@ -29,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // pearson(series, series, windowSize)
-func (f *pearson) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *pearson) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg1, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -58,24 +58,18 @@ func (f *pearson) Do(e parser.Expr, from, until int32, values map[parser.MetricR
 	r := *a1
 	r.Name = fmt.Sprintf("pearson(%s,%s,%d)", a1.Name, a2.Name, windowSize)
 	r.Values = make([]float64, len(a1.Values))
-	r.IsAbsent = make([]bool, len(a1.Values))
 	r.StartTime = from
 	r.StopTime = until
 
 	for i, v1 := range a1.Values {
 		v2 := a2.Values[i]
-		if a1.IsAbsent[i] || a2.IsAbsent[i] {
-			// ignore if either is missing
-			v1 = math.NaN()
-			v2 = math.NaN()
-		}
+
 		w1.Push(v1)
 		w2.Push(v2)
 		if i >= windowSize-1 {
 			r.Values[i] = onlinestats.Pearson(w1.Data, w2.Data)
 		} else {
-			r.Values[i] = 0
-			r.IsAbsent[i] = true
+			r.Values[i] = math.NaN()
 		}
 	}
 

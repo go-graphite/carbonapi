@@ -31,7 +31,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // asPercent(seriesList, total=None, *nodes)
-func (f *asPercent) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *asPercent) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func (f *asPercent) Do(e parser.Expr, from, until int32, values map[parser.Metri
 			var t float64
 			var atLeastOne bool
 			for _, a := range arg {
-				if a.IsAbsent[i] {
+				if math.IsNaN(a.Values[i]) {
 					continue
 				}
 				atLeastOne = true
@@ -86,9 +86,6 @@ func (f *asPercent) Do(e parser.Expr, from, until int32, values map[parser.Metri
 		}
 		if len(total) == 1 {
 			getTotal = func(i int) float64 {
-				if total[0].IsAbsent[i] {
-					return math.NaN()
-				}
 				return total[0].Values[i]
 			}
 			if e.Args()[1].IsName() {
@@ -211,10 +208,8 @@ func (f *asPercent) Do(e parser.Expr, from, until int32, values map[parser.Metri
 				result := *totalSeries
 				result.Name = fmt.Sprintf("asPercent(MISSING,%s)", totalSeries.Name)
 				result.Values = make([]float64, len(totalSeries.Values))
-				result.IsAbsent = make([]bool, len(totalSeries.Values))
 				for i := range result.Values {
-					result.Values[i] = 0
-					result.IsAbsent[i] = true
+					result.Values[i] = math.NaN()
 				}
 
 				results = append(results, &result)
@@ -227,19 +222,15 @@ func (f *asPercent) Do(e parser.Expr, from, until int32, values map[parser.Metri
 				if !existInTotal {
 					result.Name = fmt.Sprintf("asPercent(%s,MISSING)", metaSeries.Name)
 					result.Values = make([]float64, len(metaSeries.Values))
-					result.IsAbsent = make([]bool, len(metaSeries.Values))
 					for i := range result.Values {
-						result.Values[i] = 0
-						result.IsAbsent[i] = true
+						result.Values[i] = math.NaN()
 					}
 				} else {
 					result.Name = fmt.Sprintf("asPercent(%s,%s)", metaSeries.Name, totalSeries.Name)
 					result.Values = make([]float64, len(metaSeries.Values))
-					result.IsAbsent = make([]bool, len(metaSeries.Values))
 					for i := range metaSeries.Values {
-						if metaSeries.IsAbsent[i] || totalSeries.IsAbsent[i] {
-							result.Values[i] = 0
-							result.IsAbsent[i] = true
+						if math.IsNaN(metaSeries.Values[i]) || math.IsNaN(totalSeries.Values[i]) {
+							result.Values[i] = math.NaN()
 							continue
 						}
 						result.Values[i] = (metaSeries.Values[i] / totalSeries.Values[i]) * 100
@@ -270,11 +261,9 @@ func (f *asPercent) Do(e parser.Expr, from, until int32, values map[parser.Metri
 			r := *a
 			r.Name = formatName(a.Name, b.Name)
 			r.Values = make([]float64, len(a.Values))
-			r.IsAbsent = make([]bool, len(a.Values))
 			for k := range a.Values {
-				if a.IsAbsent[k] || b.IsAbsent[k] {
-					r.Values[k] = 0
-					r.IsAbsent[k] = true
+				if math.IsNaN(a.Values[k]) || math.IsNaN(b.Values[k]) {
+					r.Values[k] = math.NaN()
 					continue
 				}
 				r.Values[k] = (a.Values[k] / b.Values[k]) * 100
@@ -286,7 +275,6 @@ func (f *asPercent) Do(e parser.Expr, from, until int32, values map[parser.Metri
 			r := *a
 			r.Name = formatName(a.Name, totalString)
 			r.Values = make([]float64, len(a.Values))
-			r.IsAbsent = make([]bool, len(a.Values))
 			results = append(results, &r)
 		}
 
@@ -298,9 +286,8 @@ func (f *asPercent) Do(e parser.Expr, from, until int32, values map[parser.Metri
 				r := results[j]
 				a := arg[j]
 
-				if a.IsAbsent[i] || math.IsNaN(total) || total == 0 {
-					r.Values[i] = 0
-					r.IsAbsent[i] = true
+				if math.IsNaN(a.Values[i]) || math.IsNaN(total) || total == 0 {
+					r.Values[i] = math.NaN()
 					continue
 				}
 

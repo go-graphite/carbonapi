@@ -27,7 +27,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // scale(seriesList, factor)
-func (f *scale) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *scale) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -42,14 +42,8 @@ func (f *scale) Do(e parser.Expr, from, until int32, values map[parser.MetricReq
 		r := *a
 		r.Name = fmt.Sprintf("scale(%s,%g)", a.Name, scale)
 		r.Values = make([]float64, len(a.Values))
-		r.IsAbsent = make([]bool, len(a.Values))
 
 		for i, v := range a.Values {
-			if a.IsAbsent[i] {
-				r.Values[i] = 0
-				r.IsAbsent[i] = true
-				continue
-			}
 			r.Values[i] = v * scale
 		}
 		results = append(results, &r)

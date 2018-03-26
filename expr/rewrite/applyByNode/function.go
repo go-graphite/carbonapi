@@ -26,7 +26,7 @@ func New(configFile string) []interfaces.RewriteFunctionMetadata {
 	return res
 }
 
-func (f *applyByNode) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
+func (f *applyByNode) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return false, nil, err

@@ -2,11 +2,13 @@ package averageSeriesWithWildcards
 
 import (
 	"fmt"
+	"math"
+	"strings"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"strings"
 )
 
 type averageSeriesWithWildcards struct {
@@ -27,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // averageSeriesWithWildcards(seriesLIst, *position)
-func (f *averageSeriesWithWildcards) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *averageSeriesWithWildcards) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	/* TODO(dgryski): make sure the arrays are all the same 'size'
 	   (duplicated from sumSeriesWithWildcards because of similar logic but aggregation) */
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
@@ -72,13 +74,12 @@ func (f *averageSeriesWithWildcards) Do(e parser.Expr, from, until int32, values
 		r := *args[0]
 		r.Name = fmt.Sprintf("averageSeriesWithWildcards(%s)", series)
 		r.Values = make([]float64, len(args[0].Values))
-		r.IsAbsent = make([]bool, len(args[0].Values))
 
 		length := make([]float64, len(args[0].Values))
 		atLeastOne := make([]bool, len(args[0].Values))
 		for _, arg := range args {
 			for i, v := range arg.Values {
-				if arg.IsAbsent[i] {
+				if math.IsNaN(v) {
 					continue
 				}
 				atLeastOne[i] = true
@@ -91,7 +92,7 @@ func (f *averageSeriesWithWildcards) Do(e parser.Expr, from, until int32, values
 			if v {
 				r.Values[i] = r.Values[i] / length[i]
 			} else {
-				r.IsAbsent[i] = true
+				r.Values[i] = math.NaN()
 			}
 		}
 

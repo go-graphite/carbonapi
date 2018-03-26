@@ -27,20 +27,16 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // offsetToZero(seriesList)
-func (f *offsetToZero) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *offsetToZero) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	return helper.ForEachSeriesDo(e, from, until, values, func(a *types.MetricData, r *types.MetricData) *types.MetricData {
 		minimum := math.Inf(1)
-		for i, v := range a.Values {
-			if !a.IsAbsent[i] && v < minimum {
+		for _, v := range a.Values {
+			// NaN < val is always false
+			if v < minimum {
 				minimum = v
 			}
 		}
 		for i, v := range a.Values {
-			if a.IsAbsent[i] {
-				r.Values[i] = 0
-				r.IsAbsent[i] = true
-				continue
-			}
 			r.Values[i] = v - minimum
 		}
 		return r

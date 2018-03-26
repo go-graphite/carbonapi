@@ -27,7 +27,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *seriesList) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *seriesList) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	numerators, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -64,23 +64,15 @@ func (f *seriesList) Do(e parser.Expr, from, until int32, values map[parser.Metr
 		r := *numerator
 		r.Name = fmt.Sprintf("%s(%s,%s)", functionName, numerator.Name, denominator.Name)
 		r.Values = make([]float64, len(numerator.Values))
-		r.IsAbsent = make([]bool, len(numerator.Values))
 		for i, v := range numerator.Values {
-			if numerator.IsAbsent[i] || denominator.IsAbsent[i] {
-				r.IsAbsent[i] = true
-				continue
-			}
-
 			switch e.Target() {
 			case "divideSeriesLists":
 				if denominator.Values[i] == 0 {
-					r.IsAbsent[i] = true
+					r.Values[i] = math.NaN()
 					continue
 				}
-				r.Values[i] = compute(v, denominator.Values[i])
-			default:
-				r.Values[i] = compute(v, denominator.Values[i])
 			}
+			r.Values[i] = compute(v, denominator.Values[i])
 		}
 		results = append(results, &r)
 	}

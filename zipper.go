@@ -10,7 +10,7 @@ import (
 	realZipper "github.com/go-graphite/carbonzipper/zipper"
 	zipperCfg "github.com/go-graphite/carbonzipper/zipper/config"
 	zipperTypes "github.com/go-graphite/carbonzipper/zipper/types"
-	pb "github.com/go-graphite/protocol/carbonapi_v2_pb"
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"go.uber.org/zap"
 )
 
@@ -27,9 +27,9 @@ type zipper struct {
 // The CarbonZipper interface exposes access to realZipper
 // Exposes the functionality to find, get info or render metrics.
 type CarbonZipper interface {
-	Find(ctx context.Context, metric string) (pb.GlobResponse, error)
-	Info(ctx context.Context, metric string) ([]*pb.ZipperInfoResponse, error)
-	Render(ctx context.Context, metric string, from, until int32) ([]*types.MetricData, error)
+	Find(ctx context.Context, metric string) (*pb.MultiGlobResponse, error)
+	Info(ctx context.Context, metric string) (*pb.ZipperInfoResponse, error)
+	Render(ctx context.Context, metric string, from, until uint32) ([]*types.MetricData, error)
 }
 
 func newZipper(sender func(*zipperTypes.Stats), config *zipperCfg.Config, ignoreClientTimeout bool, logger *zap.Logger) *zipper {
@@ -50,51 +50,67 @@ func newZipper(sender func(*zipperTypes.Stats), config *zipperCfg.Config, ignore
 	return z
 }
 
-func (z zipper) Find(ctx context.Context, metric string) (pb.GlobResponse, error) {
-	var pbresp pb.GlobResponse
+func (z zipper) Find(ctx context.Context, metric string) (*pb.MultiGlobResponse, error) {
 	newCtx := ctx
 	if z.ignoreClientTimeout {
 		uuid := util.GetUUID(ctx)
 		newCtx = util.SetUUID(context.Background(), uuid)
 	}
 
-	res, stats, err := z.z.FindProtoV2(newCtx, []string{metric})
-	if err != nil {
-		return pbresp, err
+	req := pb.MultiGlobRequest{
+		Metrics: []string{metric},
 	}
 
-	pbresp.Name = res[0].Name
-	pbresp.Matches = res[0].Matches
+	res, stats, err := z.z.FindProtoV3(newCtx, &req)
+	if err != nil {
+		return nil, err
+	}
 
 	z.statsSender(stats)
 
-	return pbresp, err
+	return res, err
 }
 
-func (z zipper) Info(ctx context.Context, metric string) ([]*pb.ZipperInfoResponse, error) {
+func (z zipper) Info(ctx context.Context, metric string) (*pb.ZipperInfoResponse, error) {
 	newCtx := ctx
 	if z.ignoreClientTimeout {
 		uuid := util.GetUUID(ctx)
 		newCtx = util.SetUUID(context.Background(), uuid)
 	}
-	resp, stats, err := z.z.InfoProtoV2(newCtx, []string{metric})
+
+	req := pb.MultiGlobRequest{
+		Metrics: []string{metric},
+	}
+
+	resp, stats, err := z.z.InfoProtoV3(newCtx, &req)
 	if err != nil {
 		return nil, fmt.Errorf("http.Get: %+v", err)
 	}
 
 	z.statsSender(stats)
 
-	return []*pb.ZipperInfoResponse{resp}, nil
+	return resp, nil
 }
 
-func (z zipper) Render(ctx context.Context, metric string, from, until int32) ([]*types.MetricData, error) {
+func (z zipper) Render(ctx context.Context, metric string, from, until uint32) ([]*types.MetricData, error) {
 	var result []*types.MetricData
 	newCtx := ctx
 	if z.ignoreClientTimeout {
 		uuid := util.GetUUID(ctx)
 		newCtx = util.SetUUID(context.Background(), uuid)
 	}
-	pbresp, stats, err := z.z.FetchProtoV2(newCtx, []string{metric}, from, until)
+
+	req := pb.MultiFetchRequest{
+		Metrics: []pb.FetchRequest{
+			{
+				Name:      metric,
+				StartTime: from,
+				StopTime:  until,
+			},
+		},
+	}
+
+	pbresp, stats, err := z.z.FetchProtoV3(newCtx, &req)
 	if err != nil {
 		return result, err
 	}

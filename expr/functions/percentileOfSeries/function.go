@@ -26,7 +26,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // percentileOfSeries(seriesList, n, interpolate=False)
-func (f *percentileOfSeries) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *percentileOfSeries) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(dgryski): make sure the arrays are all the same 'size'
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {

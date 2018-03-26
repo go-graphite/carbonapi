@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math"
 	"net"
 	"net/http"
 	"net/url"
@@ -18,7 +17,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	"github.com/go-graphite/carbonzipper/limiter"
-	pb "github.com/go-graphite/protocol/carbonapi_v2_pb"
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -310,9 +309,12 @@ func (t *target) UnmarshalJSON(d []byte) error {
 }
 
 type graphiteMetric struct {
-	Tags       map[string]json.RawMessage
-	Target     target
-	Datapoints [][2]float64
+	Tags              map[string]json.RawMessage
+	Target            target
+	PathExpression    target
+	Datapoints        [][2]float64
+	XFilesFactor      float32
+	ConsolidationFunc string
 }
 
 type graphiteError struct {
@@ -320,7 +322,7 @@ type graphiteError struct {
 	err    error
 }
 
-func (f *graphiteWeb) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *graphiteWeb) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	f.logger.Info("received request",
 		zap.Bool("working", f.working),
 	)
@@ -411,26 +413,22 @@ func (f *graphiteWeb) Do(e parser.Expr, from, until int32, values map[parser.Met
 	res := make([]*types.MetricData, len(tmp))
 
 	for _, m := range tmp {
-		stepTime := int32(60)
+		stepTime := uint32(60)
 		if len(m.Datapoints) > 1 {
-			stepTime = int32(m.Datapoints[1][0] - m.Datapoints[0][0])
+			stepTime = uint32(m.Datapoints[1][0] - m.Datapoints[0][0])
 		}
 		pbResp := pb.FetchResponse{
-			Name:      string(m.Target),
-			StartTime: int32(m.Datapoints[0][0]),
-			StopTime:  int32(m.Datapoints[len(m.Datapoints)-1][0]),
-			StepTime:  stepTime,
-			Values:    make([]float64, len(m.Datapoints)),
-			IsAbsent:  make([]bool, len(m.Datapoints)),
+			Name:              string(m.Target),
+			StartTime:         uint32(m.Datapoints[0][0]),
+			StopTime:          uint32(m.Datapoints[len(m.Datapoints)-1][0]),
+			StepTime:          stepTime,
+			Values:            make([]float64, len(m.Datapoints)),
+			XFilesFactor:      m.XFilesFactor,
+			PathExpression:    string(m.PathExpression),
+			ConsolidationFunc: m.ConsolidationFunc,
 		}
 		for i, v := range m.Datapoints {
-			if math.IsNaN(v[1]) {
-				pbResp.Values[i] = 0
-				pbResp.IsAbsent[i] = true
-			} else {
-				pbResp.Values[i] = v[1]
-				pbResp.IsAbsent[i] = false
-			}
+			pbResp.Values[i] = v[1]
 		}
 		res = append(res, &types.MetricData{
 			FetchResponse: pbResp,

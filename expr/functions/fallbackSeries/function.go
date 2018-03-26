@@ -26,7 +26,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // fallbackSeries( seriesList, fallback )
-func (f *fallbackSeries) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *fallbackSeries) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	/*
 		Takes a wildcard seriesList, and a second fallback metric.
 		If the wildcard does not match any series, draws the fallback metric.

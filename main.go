@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"expvar"
 	"flag"
 	"fmt"
@@ -28,7 +27,6 @@ import (
 	"github.com/go-graphite/carbonzipper/mstats"
 	zipperCfg "github.com/go-graphite/carbonzipper/zipper/config"
 	zipperTypes "github.com/go-graphite/carbonzipper/zipper/types"
-	pb "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	"github.com/gorilla/handlers"
 	"github.com/peterbourgon/g2g"
 	"github.com/spf13/viper"
@@ -152,65 +150,6 @@ func deferredAccessLogging(accessLogger *zap.Logger, accessLogDetails *carbonapi
 		accessLogDetails.HttpCode = http.StatusOK
 		accessLogger.Info("request served", zap.Any("data", *accessLogDetails))
 	}
-}
-
-type treejson struct {
-	AllowChildren int            `json:"allowChildren"`
-	Expandable    int            `json:"expandable"`
-	Leaf          int            `json:"leaf"`
-	ID            string         `json:"id"`
-	Text          string         `json:"text"`
-	Context       map[string]int `json:"context"` // unused
-}
-
-var treejsonContext = make(map[string]int)
-
-func findTreejson(globs pb.GlobResponse) ([]byte, error) {
-	var b bytes.Buffer
-
-	var tree = make([]treejson, 0)
-
-	seen := make(map[string]struct{})
-
-	basepath := globs.Name
-
-	if i := strings.LastIndex(basepath, "."); i != -1 {
-		basepath = basepath[:i+1]
-	} else {
-		basepath = ""
-	}
-
-	for _, g := range globs.Matches {
-
-		name := g.Path
-
-		if i := strings.LastIndex(name, "."); i != -1 {
-			name = name[i+1:]
-		}
-
-		if _, ok := seen[name]; ok {
-			continue
-		}
-		seen[name] = struct{}{}
-
-		t := treejson{
-			ID:      basepath + name,
-			Context: treejsonContext,
-			Text:    name,
-		}
-
-		if g.IsLeaf {
-			t.Leaf = 1
-		} else {
-			t.AllowChildren = 1
-			t.Expandable = 1
-		}
-
-		tree = append(tree, t)
-	}
-
-	err := json.NewEncoder(&b).Encode(tree)
-	return b.Bytes(), err
 }
 
 var defaultLoggerConfig = zapwriter.Config{

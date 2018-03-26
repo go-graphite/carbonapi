@@ -27,7 +27,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // countSeries(seriesList)
-func (f *countSeries) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *countSeries) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(civil): Check that series have equal length
 	args, err := helper.GetSeriesArgsAndRemoveNonExisting(e, from, until, values)
 	if err != nil {
@@ -37,7 +37,6 @@ func (f *countSeries) Do(e parser.Expr, from, until int32, values map[parser.Met
 	r := *args[0]
 	r.Name = fmt.Sprintf("countSeries(%s)", e.RawArgs())
 	r.Values = make([]float64, len(args[0].Values))
-	r.IsAbsent = make([]bool, len(args[0].Values))
 	count := float64(len(args))
 
 	for i := range args[0].Values {

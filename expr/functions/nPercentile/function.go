@@ -2,6 +2,8 @@ package nPercentile
 
 import (
 	"fmt"
+	"math"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -27,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // nPercentile(seriesList, n)
-func (f *nPercentile) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *nPercentile) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -42,12 +44,11 @@ func (f *nPercentile) Do(e parser.Expr, from, until int32, values map[parser.Met
 		r := *a
 		r.Name = fmt.Sprintf("nPercentile(%s,%g)", a.Name, percent)
 		r.Values = make([]float64, len(a.Values))
-		r.IsAbsent = make([]bool, len(a.Values))
 
 		var values []float64
-		for i, v := range a.IsAbsent {
-			if !v {
-				values = append(values, a.Values[i])
+		for _, v := range a.Values {
+			if !math.IsNaN(v) {
+				values = append(values, v)
 			}
 		}
 

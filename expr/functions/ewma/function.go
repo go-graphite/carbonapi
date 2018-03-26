@@ -2,6 +2,8 @@ package ewma
 
 import (
 	"fmt"
+	"math"
+
 	"github.com/dgryski/go-onlinestats"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -28,7 +30,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // ewma(seriesList, alpha)
-func (f *ewma) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *ewma) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -49,13 +51,12 @@ func (f *ewma) Do(e parser.Expr, from, until int32, values map[parser.MetricRequ
 		r := *a
 		r.Name = name
 		r.Values = make([]float64, len(a.Values))
-		r.IsAbsent = make([]bool, len(a.Values))
 
 		ewma := onlinestats.NewExpWeight(alpha)
 
 		for i, v := range a.Values {
-			if a.IsAbsent[i] {
-				r.IsAbsent[i] = true
+			if math.IsNaN(v) {
+				r.Values[i] = math.NaN()
 				continue
 			}
 

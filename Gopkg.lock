@@ -123,8 +123,8 @@
     "zipper/protocols/v3",
     "zipper/types"
   ]
-  revision = "a3d8ba7fd117ce1e9301ded3e7eba4e6d82cb645"
-  version = "1.0.0-alpha.1.1"
+  revision = "6f4be23d20fe9c6416cee3ee44f8d962378beb6d"
+  version = "1.0.0-alpha.3"
 
 [[projects]]
   name = "github.com/go-graphite/protocol"
@@ -133,8 +133,8 @@
     "carbonapi_v3_grpc",
     "carbonapi_v3_pb"
   ]
-  revision = "4c8698b77a13886acd1bd5c8e6c09b8918fb6ab4"
-  version = "v0.1.1"
+  revision = "26af980d03cb8bc3311fc5a3c418b3486a4705a8"
+  version = "v0.1.3"
 
 [[projects]]
   name = "github.com/gogo/protobuf"
@@ -416,6 +416,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0f2d0ede9b07134aff64f1d13933539eab686b1a0cb46ae5a1c027edf7dec3e3"
+  inputs-digest = "c6ad86db9cd4a32afb31bda880abc23c42f3314dd8f8ad5cffcc24aa32c996a5"
   solver-name = "gps-cdcl"
   solver-version = 1
