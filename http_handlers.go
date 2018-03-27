@@ -270,6 +270,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Splitting requets into batches is now done by carbonzipper
+		var req pb.MultiFetchRequest
 		for _, m := range exp.Metrics() {
 			metrics = append(metrics, m.Metric)
 			mfetch := m
@@ -281,65 +283,40 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			var glob *pb.MultiGlobResponse
-			var haveCacheData bool
+			req.Metrics = append(req.Metrics, pb.FetchRequest{
+				Name:      m.Metric,
+				StartTime: from32,
+				StopTime:  until32,
+			})
+		}
 
-			if useCache {
-				tc := time.Now()
-				response, err := config.findCache.Get(m.Metric)
-				td := time.Since(tc).Nanoseconds()
-				apiMetrics.FindCacheOverheadNS.Add(td)
-
-				if err == nil {
-					err := glob.Unmarshal(response)
-					haveCacheData = err == nil
-				}
-			}
-
-			if haveCacheData {
-				apiMetrics.FindCacheHits.Add(1)
-			} else if !config.AlwaysSendGlobsAsIs {
-				apiMetrics.FindCacheMisses.Add(1)
-				var err error
-				apiMetrics.FindRequests.Add(1)
-				accessLogDetails.ZipperRequests++
-
-				glob, err = config.zipper.Find(ctx, m.Metric)
-				if err != nil {
-					logger.Error("find error",
-						zap.String("metric", m.Metric),
-						zap.Error(err),
-					)
-					continue
-				}
-				b, err := glob.Marshal()
-				if err == nil {
-					tc := time.Now()
-					config.findCache.Set(m.Metric, b, 5*60)
-					td := time.Since(tc).Nanoseconds()
-					apiMetrics.FindCacheOverheadNS.Add(td)
-				}
-			}
-
-			// Splitting requets into batches is now done by carbonzipper
-
+		if len(req.Metrics) > 0 {
 			apiMetrics.RenderRequests.Add(1)
 			config.limiter.enter()
 			accessLogDetails.ZipperRequests++
 
-			r, err := config.zipper.Render(ctx, m.Metric, mfetch.From, mfetch.Until)
+			// TODO: Do that in batches
+			r, err := config.zipper.Render(ctx, req)
 			if err != nil {
 				errors[target] = err.Error()
 				config.limiter.leave()
 				continue
 			}
 			config.limiter.leave()
-			metricMap[mfetch] = r
-			for i := range r {
-				size += r[i].Size()
-			}
+			for _, m := range r {
+				mfetch := parser.MetricRequest{
+					Metric: m.Name,
+					From:   from32,
+					Until:  until32,
+				}
 
-			expr.SortMetrics(metricMap[mfetch], mfetch)
+				metricMap[mfetch] = r
+				for i := range r {
+					size += r[i].Size()
+				}
+
+				expr.SortMetrics(metricMap[mfetch], mfetch)
+			}
 		}
 		accessLogDetails.Metrics = metrics
 
@@ -560,7 +537,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	format := r.FormValue("format")
 	jsonp := r.FormValue("jsonp")
 
-	query := r.FormValue("query")
+	query := r.Form["query"]
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
 
 	accessLogger := zapwriter.Logger("access")
@@ -581,7 +558,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		deferredAccessLogging(accessLogger, &accessLogDetails, t0, logAsError)
 	}()
 
-	if query == "" {
+	if len(query) == 0 {
 		http.Error(w, "missing parameter `query`", http.StatusBadRequest)
 		accessLogDetails.HttpCode = http.StatusBadRequest
 		accessLogDetails.Reason = "missing parameter `query`"
@@ -696,8 +673,8 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	var data *pb.ZipperInfoResponse
 	var err error
 
-	query := r.FormValue("target")
-	if query == "" {
+	query := r.Form["target"]
+	if len(query) == 0 {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		accessLogDetails.HttpCode = http.StatusBadRequest
 		accessLogDetails.Reason = "no target specified"

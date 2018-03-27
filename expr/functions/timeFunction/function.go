@@ -55,11 +55,12 @@ func (f *timeFunction) Do(e parser.Expr, from, until int64, values map[parser.Me
 
 	p := types.MetricData{
 		FetchResponse: pb.FetchResponse{
-			Name:      name,
-			StartTime: from,
-			StopTime:  until,
-			StepTime:  step,
-			Values:    newValues,
+			Name:              name,
+			StartTime:         from,
+			StopTime:          until,
+			StepTime:          step,
+			Values:            newValues,
+			ConsolidationFunc: "max",
 		},
 	}
 

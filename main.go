@@ -252,6 +252,9 @@ var config = struct {
 }
 
 func zipperStats(stats *zipperTypes.Stats) {
+	if stats == nil {
+		return
+	}
 	zipperMetrics.Timeouts.Add(stats.Timeouts)
 	zipperMetrics.FindErrors.Add(stats.FindErrors)
 	zipperMetrics.RenderErrors.Add(stats.RenderErrors)
@@ -534,11 +537,13 @@ func setUpConfig(logger *zap.Logger, zipper CarbonZipper) {
 
 		graphite.Register(fmt.Sprintf("%s.zipper.timeouts", pattern), zipperMetrics.Timeouts)
 
-		graphite.Register(fmt.Sprintf("%s.zipper.cache_size", pattern), zipperMetrics.CacheSize)
-		graphite.Register(fmt.Sprintf("%s.zipper.cache_items", pattern), zipperMetrics.CacheItems)
+		/*
+			graphite.Register(fmt.Sprintf("%s.zipper.cache_size", pattern), zipperMetrics.CacheSize)
+			graphite.Register(fmt.Sprintf("%s.zipper.cache_items", pattern), zipperMetrics.CacheItems)
 
-		graphite.Register(fmt.Sprintf("%s.zipper.search_cache_size", pattern), zipperMetrics.SearchCacheSize)
-		graphite.Register(fmt.Sprintf("%s.zipper.search_cache_items", pattern), zipperMetrics.SearchCacheItems)
+			graphite.Register(fmt.Sprintf("%s.zipper.search_cache_size", pattern), zipperMetrics.SearchCacheSize)
+			graphite.Register(fmt.Sprintf("%s.zipper.search_cache_items", pattern), zipperMetrics.SearchCacheItems)
+		*/
 
 		graphite.Register(fmt.Sprintf("%s.zipper.cache_hits", pattern), zipperMetrics.CacheHits)
 		graphite.Register(fmt.Sprintf("%s.zipper.cache_misses", pattern), zipperMetrics.CacheMisses)

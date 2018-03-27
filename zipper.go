@@ -27,9 +27,10 @@ type zipper struct {
 // The CarbonZipper interface exposes access to realZipper
 // Exposes the functionality to find, get info or render metrics.
 type CarbonZipper interface {
-	Find(ctx context.Context, metric string) (*pb.MultiGlobResponse, error)
-	Info(ctx context.Context, metric string) (*pb.ZipperInfoResponse, error)
-	Render(ctx context.Context, metric string, from, until int64) ([]*types.MetricData, error)
+	Find(ctx context.Context, metrics []string) (*pb.MultiGlobResponse, error)
+	Info(ctx context.Context, metrics []string) (*pb.ZipperInfoResponse, error)
+	RenderCompat(ctx context.Context, metrics []string, from, until int64) ([]*types.MetricData, error)
+	Render(ctx context.Context, request pb.MultiFetchRequest) ([]*types.MetricData, error)
 }
 
 func newZipper(sender func(*zipperTypes.Stats), config *zipperCfg.Config, ignoreClientTimeout bool, logger *zap.Logger) *zipper {
@@ -50,7 +51,7 @@ func newZipper(sender func(*zipperTypes.Stats), config *zipperCfg.Config, ignore
 	return z
 }
 
-func (z zipper) Find(ctx context.Context, metric string) (*pb.MultiGlobResponse, error) {
+func (z zipper) Find(ctx context.Context, metrics []string) (*pb.MultiGlobResponse, error) {
 	newCtx := ctx
 	if z.ignoreClientTimeout {
 		uuid := util.GetUUID(ctx)
@@ -58,7 +59,7 @@ func (z zipper) Find(ctx context.Context, metric string) (*pb.MultiGlobResponse,
 	}
 
 	req := pb.MultiGlobRequest{
-		Metrics: []string{metric},
+		Metrics: metrics,
 	}
 
 	res, stats, err := z.z.FindProtoV3(newCtx, &req)
@@ -71,7 +72,7 @@ func (z zipper) Find(ctx context.Context, metric string) (*pb.MultiGlobResponse,
 	return res, err
 }
 
-func (z zipper) Info(ctx context.Context, metric string) (*pb.ZipperInfoResponse, error) {
+func (z zipper) Info(ctx context.Context, metrics []string) (*pb.ZipperInfoResponse, error) {
 	newCtx := ctx
 	if z.ignoreClientTimeout {
 		uuid := util.GetUUID(ctx)
@@ -79,7 +80,7 @@ func (z zipper) Info(ctx context.Context, metric string) (*pb.ZipperInfoResponse
 	}
 
 	req := pb.MultiGlobRequest{
-		Metrics: []string{metric},
+		Metrics: metrics,
 	}
 
 	resp, stats, err := z.z.InfoProtoV3(newCtx, &req)
@@ -92,7 +93,7 @@ func (z zipper) Info(ctx context.Context, metric string) (*pb.ZipperInfoResponse
 	return resp, nil
 }
 
-func (z zipper) Render(ctx context.Context, metric string, from, until int64) ([]*types.MetricData, error) {
+func (z zipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*types.MetricData, error) {
 	var result []*types.MetricData
 	newCtx := ctx
 	if z.ignoreClientTimeout {
@@ -100,14 +101,39 @@ func (z zipper) Render(ctx context.Context, metric string, from, until int64) ([
 		newCtx = util.SetUUID(context.Background(), uuid)
 	}
 
-	req := pb.MultiFetchRequest{
-		Metrics: []pb.FetchRequest{
-			{
-				Name:      metric,
-				StartTime: from,
-				StopTime:  until,
-			},
-		},
+	pbresp, stats, err := z.z.FetchProtoV3(newCtx, &request)
+	if err != nil {
+		return result, err
+	}
+
+	z.statsSender(stats)
+
+	if m := pbresp.Metrics; len(m) == 0 {
+		return result, errNoMetrics
+	}
+
+	for i := range pbresp.Metrics {
+		result = append(result, &types.MetricData{FetchResponse: pbresp.Metrics[i]})
+	}
+
+	return result, nil
+}
+
+func (z zipper) RenderCompat(ctx context.Context, metrics []string, from, until int64) ([]*types.MetricData, error) {
+	var result []*types.MetricData
+	newCtx := ctx
+	if z.ignoreClientTimeout {
+		uuid := util.GetUUID(ctx)
+		newCtx = util.SetUUID(context.Background(), uuid)
+	}
+
+	req := pb.MultiFetchRequest{}
+	for _, metric := range metrics {
+		req.Metrics = append(req.Metrics, pb.FetchRequest{
+			Name:      metric,
+			StartTime: from,
+			StopTime:  until,
+		})
 	}
 
 	pbresp, stats, err := z.z.FetchProtoV3(newCtx, &req)

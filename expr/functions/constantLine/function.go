@@ -34,11 +34,12 @@ func (f *constantLine) Do(e parser.Expr, from, until int64, values map[parser.Me
 	}
 	p := types.MetricData{
 		FetchResponse: pb.FetchResponse{
-			Name:      fmt.Sprintf("%g", value),
-			StartTime: from,
-			StopTime:  until,
-			StepTime:  until - from,
-			Values:    []float64{value, value},
+			Name:              fmt.Sprintf("%g", value),
+			StartTime:         from,
+			StopTime:          until,
+			StepTime:          until - from,
+			Values:            []float64{value, value},
+			ConsolidationFunc: "max",
 		},
 	}
 

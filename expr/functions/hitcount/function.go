@@ -68,11 +68,12 @@ func (f *hitcount) Do(e parser.Expr, from, until int64, values map[parser.Metric
 		name += ")"
 
 		r := types.MetricData{FetchResponse: pb.FetchResponse{
-			Name:      name,
-			Values:    make([]float64, buckets, buckets+1),
-			StepTime:  bucketSize,
-			StartTime: start,
-			StopTime:  stop,
+			Name:              name,
+			Values:            make([]float64, buckets, buckets+1),
+			StepTime:          bucketSize,
+			StartTime:         start,
+			StopTime:          stop,
+			ConsolidationFunc: "max",
 		}}
 
 		bucketEnd := start + bucketSize

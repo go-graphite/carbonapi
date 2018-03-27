@@ -3,7 +3,9 @@ package types
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"math"
+	"runtime/debug"
 	"strconv"
 	"time"
 
@@ -267,7 +269,10 @@ func (r *MetricData) AggregateValues() {
 	}
 
 	if r.AggregateFunction == nil {
-		r.AggregateFunction = ConsolidationToFunc[r.ConsolidationFunc]
+		var ok bool
+		if r.AggregateFunction, ok = ConsolidationToFunc[r.ConsolidationFunc]; !ok {
+			fmt.Printf("\nconsolidateFunc = %+v\n\nstack:\n%v\n\n", r.ConsolidationFunc, string(debug.Stack()))
+		}
 	}
 
 	n := len(r.Values)/r.ValuesPerPoint + 1

@@ -49,6 +49,10 @@ func (f *multiplySeries) Do(e parser.Expr, from, until int64, values map[parser.
 			series = series[1:]
 		}
 
+		if r.ConsolidationFunc == "" {
+			r.ConsolidationFunc = series[0].ConsolidationFunc
+		}
+
 		for _, factor := range series {
 			for i, v := range r.Values {
 				r.Values[i] = v * factor.Values[i]

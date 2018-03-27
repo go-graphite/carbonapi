@@ -845,11 +845,12 @@ func EvalExprGraph(e parser.Expr, from, until int64, values map[parser.MetricReq
 
 		p := types.MetricData{
 			FetchResponse: pb.FetchResponse{
-				Name:      name,
-				StartTime: from,
-				StopTime:  until,
-				StepTime:  until - from,
-				Values:    []float64{value, value},
+				Name:              name,
+				StartTime:         from,
+				StopTime:          until,
+				StepTime:          until - from,
+				Values:            []float64{value, value},
+				ConsolidationFunc: "average",
 			},
 			GraphOptions: types.GraphOptions{Color: color},
 		}

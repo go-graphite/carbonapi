@@ -30,17 +30,21 @@ func newMockCarbonZipper() *mockCarbonZipper {
 	return z
 }
 
-func (z mockCarbonZipper) Find(ctx context.Context, metric string) (*pb.MultiGlobResponse, error) {
+func (z mockCarbonZipper) Find(ctx context.Context, metrics []string) (*pb.MultiGlobResponse, error) {
 	return getGlobResponse(), nil
 }
 
-func (z mockCarbonZipper) Info(ctx context.Context, metric string) (*pb.ZipperInfoResponse, error) {
+func (z mockCarbonZipper) Info(ctx context.Context, metrics []string) (*pb.ZipperInfoResponse, error) {
 	response := getMockInfoResponse()
 
 	return response, nil
 }
 
-func (z mockCarbonZipper) Render(ctx context.Context, metric string, from, until int64) ([]*types.MetricData, error) {
+func (z mockCarbonZipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*types.MetricData, error) {
+	return z.RenderCompat(ctx, []string{""}, 0, 0)
+}
+
+func (z mockCarbonZipper) RenderCompat(ctx context.Context, metrics []string, from, until int64) ([]*types.MetricData, error) {
 	var result []*types.MetricData
 	multiFetchResponse := getMultiFetchResponse()
 	result = append(result, &types.MetricData{FetchResponse: multiFetchResponse.Metrics[0]})
