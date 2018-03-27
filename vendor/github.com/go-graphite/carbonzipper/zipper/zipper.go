@@ -133,7 +133,15 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 			return nil, errors.Fatalf("unknown backend protocol '%v'", backend.Protocol)
 		}
 
-		if backend.LBMethod == types.RoundRobinLB {
+		var lbMethod types.LBMethod
+		err := lbMethod.FromString(backend.LBMethod)
+		if err != nil {
+			logger.Fatal("failed to parse lbMethod",
+				zap.String("lbMethod", backend.LBMethod),
+				zap.Error(err),
+			)
+		}
+		if lbMethod == types.RoundRobinLB {
 			client, ePtr = backendInit(backend)
 			e.Merge(ePtr)
 			if e.HaveFatalErrors {
@@ -178,7 +186,7 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 			Backends: []types.BackendV2{{
 				GroupName:           config.CarbonSearch.Backend,
 				Protocol:            "carbonapi_v2_pb",
-				LBMethod:            types.RoundRobinLB,
+				LBMethod:            "roundrobin",
 				Servers:             []string{config.CarbonSearch.Backend},
 				Timeouts:            &config.Timeouts,
 				ConcurrencyLimit:    &config.ConcurrencyLimitPerServer,
@@ -221,7 +229,7 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 				{
 					GroupName:           "backends",
 					Protocol:            "carbonapi_v2_pb",
-					LBMethod:            types.BroadcastLB,
+					LBMethod:            "broadcast",
 					Servers:             config.Backends,
 					Timeouts:            &config.Timeouts,
 					ConcurrencyLimit:    &config.ConcurrencyLimitPerServer,

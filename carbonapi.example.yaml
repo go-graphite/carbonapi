@@ -26,28 +26,6 @@ cache:
 cpus: 0
 # Timezone, default - local
 tz: ""
-# If 'true', carbonapi will send requests as is, with globs and braces
-# Otherwise for each request it will generate /metrics/find and then /render
-# individual metrics.
-# true --- faster, but will cause carbonzipper to consume much more RAM.
-#
-# For some backends (e.x. graphite-clickhouse) this *MUST* be set to true in order
-# to get reasonable performance
-#
-# For go-carbon --- it depends on how you use it.
-sendGlobsAsIs: false
-# If sendGlobsAsIs is set and resulting response will be larger than maxBatchSize
-# carbonapi will revert to old behavir. This allows you to use benifits of passing
-# globs as is but keep memory usage in sane limits.
-#
-# For go-carbon you might want it to keep in some reasonable limits, 100 is good "safe" defaults
-#
-# For some backends (e.x. graphite-clickhouse) you might want to set it to some insanly high value, like 100000
-
-# If 'true', carbonapi will send requests as is, with globs and braces
-# even without checking maxBatchSize
-# in result it can increase performance for graphite-clickhouse by removing /metric/find request before calling /render
-alwaysSendGlobsAsIs: false
 
 functionsConfig:
     graphiteWeb: ./graphiteWeb.example.yaml
@@ -74,18 +52,16 @@ upstreams:
     buckets: 10
 
     timeouts:
-        # Maximum total backend requesting timeout in ms.
-        # ( How long we may spend making requests. )
-        global: "10s"
-        # Timeout, in ms, once the final backend has been contacted.
-        # ( [Effectively] How long we'll wait for the slowest response. )
-        afterStarted: "2s"
+        # Maximum backend request time for find requests.
+        find: "2s"
+        # Maximum backend request time for render requests. This is total one and doesn't take into account in-flight requests
+        render: "10s"
         # Timeout to connect to the server
         connect: "200ms"
 
     # Number of concurrent requests to any given backend - default is no limit.
     # If set, you likely want >= MaxIdleConnsPerHost
-    concurrencyLimit: 0
+    concurrencyLimitPerServer: 0
 
     # Configures how often keep alive packets will be sent out
     keepAliveInterval: "30s"
@@ -95,15 +71,81 @@ upstreams:
     maxIdleConnsPerHost: 100
 
     # "http://host:port" array of instances of carbonserver stores
-    # This is the *ONLY* config element in this section that MUST be specified.
+    # It MUST be specified.
     backends:
         - "http://127.0.0.2:8080"
         - "http://127.0.0.3:8080"
         - "http://127.0.0.4:8080"
+        - "http://127.0.0.5:8080"
 
+    #backends section will override this one!
+    backendsv2:
+        backends:
+          -
+            groupName: "group1"
+            # supported:
+            #    carbonapi_v2_pb - carbonapi 0.11 or earlier version of protocol.
+            #    carbonapi_v3_pb - new protocol, http interface (native)
+            #    carbonapi_v3_grpc - new protocol, gRPC interface (native)
+            #    protobuf, pb, pb3 - same as carbonapi_v2_pb
+            #
+            #  non-native protocols will be internally converted to new protocol, which will increase memory consumption
+            protocol: "carbonapi_v2_pb"
+            # supported:
+            #    "broadcast" - send request to all backends in group and merge responses. This was default behavior for carbonapi 0.11 or earlier
+            #    "roundrobin" - send request to one backend.
+            #    "all - same as "broadcast"
+            #    "rr" - same as "roundrobin"
+            lbMethod: "broadcast"
+            # amount of retries in case of unsuccessful request
+            maxTries: 3
+            # amount of metrics per fetch request. Default: 0 - unlimited. If not specified, global will be used
+            maxGlobs: 100
+            # interval for keep-alive http packets. If not specified, global will be used
+            keepAliveInterval: "10s"
+            # override for global concurrencyLimit.
+            concurrencyLimit: 0
+            # override for global maxIdleConnsPerHost
+            maxIdleConnsPerHost: 1000
+            # per-group timeout override. If not specified, global will be used.
+            # Please note that ONLY min(global, local) will be used.
+            timeouts:
+                # Maximum backend request time for find requests.
+                find: "2s"
+                # Maximum backend request time for render requests. This is total one and doesn't take into account in-flight requests.
+                render: "50s"
+                # Timeout to connect to the server
+                connect: "200ms"
+            servers:
+                - "http://127.0.0.2:8080"
+                - "http://127.0.0.3:8080"
+          -
+            groupName: "group2"
+            protocol: "carbonapi_v3_pb"
+            lbMethod: "roundrobin"
+            servers:
+                - "http://127.0.0.4:8080"
+                - "http://127.0.0.5:8080"
+
+
+    # carbonsearch is not used if empty
     carbonsearch:
         # Instance of carbonsearch backend
         backend: "http://127.0.0.1:8070"
+        # carbonsearch prefix to reserve/register
+        prefix: "virt.v1.*"
+        # carbonsearch is not used if empty
+    # carbonsearch section will override this one!
+    carbonsearchv2:
+        # Carbonsearch instances. Follows the same syntax as backendsv2
+        backends:
+            -
+              groupName: "group1"
+              protocol: "carbonapi_v2_pb"
+              lbMethod: "broadcast"
+              servers:
+                  - "http://127.0.0.4:8080"
+                  - "http://127.0.0.5:8080"
         # carbonsearch prefix to reserve/register
         prefix: "virt.v1.*"
 

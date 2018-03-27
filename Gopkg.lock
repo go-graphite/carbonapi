@@ -123,8 +123,8 @@
     "zipper/protocols/v3",
     "zipper/types"
   ]
-  revision = "c20affe449379c6258bd78535f814045d1653ba1"
-  version = "1.0.0-alpha.4"
+  revision = "ca0cdfd06101d0637f1f7d0656d114d1a022d6a9"
+  version = "1.0.0-beta.1"
 
 [[projects]]
   name = "github.com/go-graphite/protocol"

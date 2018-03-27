@@ -5,26 +5,26 @@ import (
 )
 
 type BackendsV2 struct {
-	Backends                  []BackendV2   `yaml:"backends"`
-	MaxIdleConnsPerHost       int           `yaml:"maxIdleConnsPerHost"`
-	ConcurrencyLimitPerServer int           `yaml:"concurrencyLimit"`
-	Timeouts                  Timeouts      `yaml:"timeouts"`
-	KeepAliveInterval         time.Duration `yaml:"keepAliveInterval"`
-	MaxTries                  int           `yaml:"maxTries"`
-	MaxGlobs                  int           `yaml:"maxGlobs"`
+	Backends                  []BackendV2   `mapstructure:"backends"`
+	MaxIdleConnsPerHost       int           `mapstructure:"maxIdleConnsPerHost"`
+	ConcurrencyLimitPerServer int           `mapstructure:"concurrencyLimit"`
+	Timeouts                  Timeouts      `mapstructure:"timeouts"`
+	KeepAliveInterval         time.Duration `mapstructure:"keepAliveInterval"`
+	MaxTries                  int           `mapstructure:"maxTries"`
+	MaxGlobs                  int           `mapstructure:"maxGlobs"`
 }
 
 type BackendV2 struct {
-	GroupName           string         `yaml:"groupName"`
-	Protocol            string         `yaml:"protocol"`
-	LBMethod            LBMethod       `yaml:"lbMethod"` // Valid: rr/roundrobin, broadcast/all
-	Servers             []string       `yaml:"servers"`
-	Timeouts            *Timeouts      `yaml:"timeouts"`
-	ConcurrencyLimit    *int           `yaml:"concurrencyLimit"`
-	KeepAliveInterval   *time.Duration `yaml:"keepAliveInterval"`
-	MaxIdleConnsPerHost *int           `yaml:"maxIdleConnsPerHost"`
-	MaxTries            *int           `yaml:"maxTries"`
-	MaxGlobs            int            `yaml:"maxGlobs"`
+	GroupName           string         `mapstructure:"groupName"`
+	Protocol            string         `mapstructure:"protocol"`
+	LBMethod            string         `mapstructure:"lbMethod"` // Valid: rr/roundrobin, broadcast/all
+	Servers             []string       `mapstructure:"servers"`
+	Timeouts            *Timeouts      `mapstructure:"timeouts"`
+	ConcurrencyLimit    *int           `mapstructure:"concurrencyLimit"`
+	KeepAliveInterval   *time.Duration `mapstructure:"keepAliveInterval"`
+	MaxIdleConnsPerHost *int           `mapstructure:"maxIdleConnsPerHost"`
+	MaxTries            *int           `mapstructure:"maxTries"`
+	MaxGlobs            int            `mapstructure:"maxGlobs"`
 }
 
 func (b *BackendV2) FillDefaults() {
@@ -48,11 +48,11 @@ func (b *BackendV2) FillDefaults() {
 
 // CarbonSearch is a structure that contains carbonsearch related configuration bits
 type CarbonSearch struct {
-	Backend string `yaml:"backend"`
-	Prefix  string `yaml:"prefix"`
+	Backend string `mapstructure:"backend"`
+	Prefix  string `mapstructure:"prefix"`
 }
 
 type CarbonSearchV2 struct {
 	BackendsV2
-	Prefix string `yaml:"prefix"`
+	Prefix string `mapstructure:"prefix"`
 }
