@@ -34,6 +34,7 @@ type CarbonZipper interface {
 }
 
 func newZipper(sender func(*zipperTypes.Stats), config *zipperCfg.Config, ignoreClientTimeout bool, logger *zap.Logger) *zipper {
+	logger.Debug("initializing zipper")
 	zz, err := realZipper.NewZipper(sender, config, logger)
 	if err != nil {
 		logger.Fatal("failed to initialize zipper",

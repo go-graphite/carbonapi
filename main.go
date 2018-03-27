@@ -268,7 +268,7 @@ func zipperStats(stats *zipperTypes.Stats) {
 
 var graphTemplates map[string]png.PictureParams
 
-func setUpConfig(logger *zap.Logger, zipper CarbonZipper) {
+func setUpConfig(logger *zap.Logger) {
 	config.Cache.MemcachedServers = viper.GetStringSlice("cache.memcachedServers")
 	if n := viper.GetString("logger.logger"); n != "" {
 		config.Logger[0].Logger = n
@@ -382,7 +382,6 @@ func setUpConfig(logger *zap.Logger, zipper CarbonZipper) {
 	expvar.Publish("config", expvar.Func(func() interface{} { return config }))
 
 	config.limiter = newLimiter(config.Concurency)
-	config.zipper = zipper
 
 	switch config.Cache.Type {
 	case "memcache":
@@ -704,8 +703,9 @@ func main() {
 	flag.Parse()
 	setUpViper(logger, configPath, *envPrefix)
 	setUpConfigUpstreams(logger)
-	zipper := newZipper(zipperStats, &config.Upstreams, config.IgnoreClientTimeout, logger.With(zap.String("handler", "zipper")))
-	setUpConfig(logger, zipper)
+	setUpConfig(logger)
+
+	config.zipper = newZipper(zipperStats, &config.Upstreams, config.IgnoreClientTimeout, zapwriter.Logger("zipper"))
 
 	r := initHandlers()
 	handler := handlers.CompressHandler(r)

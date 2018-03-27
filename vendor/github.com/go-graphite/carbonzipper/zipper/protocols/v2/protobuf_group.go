@@ -16,7 +16,6 @@ import (
 	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
-	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
 )
 
@@ -50,10 +49,8 @@ type ClientProtoV2Group struct {
 	httpQuery *helper.HttpQuery
 }
 
-func NewClientProtoV2GroupWithLimiter(config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
-	logger := zapwriter.Logger("protobufGroup")
-
-	logger = logger.With(zap.String("name", config.GroupName))
+func NewClientProtoV2GroupWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
+	logger = logger.With(zap.String("type", "protobufGroup"), zap.String("name", config.GroupName))
 
 	httpClient := &http.Client{
 		Transport: &http.Transport{
@@ -84,7 +81,7 @@ func NewClientProtoV2GroupWithLimiter(config types.BackendV2, limiter *limiter.S
 	return c, nil
 }
 
-func NewClientProtoV2Group(config types.BackendV2) (types.ServerClient, *errors.Errors) {
+func NewClientProtoV2Group(logger *zap.Logger, config types.BackendV2) (types.ServerClient, *errors.Errors) {
 	if config.ConcurrencyLimit == nil {
 		return nil, errors.Fatal("concurency limit is not set")
 	}
@@ -93,7 +90,7 @@ func NewClientProtoV2Group(config types.BackendV2) (types.ServerClient, *errors.
 	}
 	limiter := limiter.NewServerLimiter([]string{config.GroupName}, *config.ConcurrencyLimit)
 
-	return NewClientProtoV2GroupWithLimiter(config, limiter)
+	return NewClientProtoV2GroupWithLimiter(logger, config, limiter)
 }
 
 func (c ClientProtoV2Group) MaxMetricsPerRequest() int {

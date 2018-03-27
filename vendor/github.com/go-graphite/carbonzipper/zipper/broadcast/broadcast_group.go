@@ -12,7 +12,6 @@ import (
 	"github.com/go-graphite/carbonzipper/zipper/types"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
-	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
 )
 
@@ -32,7 +31,7 @@ type BroadcastGroup struct {
 	probeCache *cache.QueryCache
 }
 
-func NewBroadcastGroup(groupName string, servers []types.ServerClient, expireDelaySec int32, concurencyLimit int, timeout types.Timeouts) (*BroadcastGroup, *errors.Errors) {
+func NewBroadcastGroup(logger *zap.Logger, groupName string, servers []types.ServerClient, expireDelaySec int32, concurencyLimit int, timeout types.Timeouts) (*BroadcastGroup, *errors.Errors) {
 	if len(servers) == 0 {
 		return nil, errors.Fatal("no servers specified")
 	}
@@ -43,10 +42,10 @@ func NewBroadcastGroup(groupName string, servers []types.ServerClient, expireDel
 	pathCache := pathcache.NewPathCache(expireDelaySec)
 	limiter := limiter.NewServerLimiter(serverNames, concurencyLimit)
 
-	return NewBroadcastGroupWithLimiter(groupName, servers, serverNames, pathCache, limiter, timeout)
+	return NewBroadcastGroupWithLimiter(logger, groupName, servers, serverNames, pathCache, limiter, timeout)
 }
 
-func NewBroadcastGroupWithLimiter(groupName string, servers []types.ServerClient, serverNames []string, pathCache pathcache.PathCache, limiter *limiter.ServerLimiter, timeout types.Timeouts) (*BroadcastGroup, *errors.Errors) {
+func NewBroadcastGroupWithLimiter(logger *zap.Logger, groupName string, servers []types.ServerClient, serverNames []string, pathCache pathcache.PathCache, limiter *limiter.ServerLimiter, timeout types.Timeouts) (*BroadcastGroup, *errors.Errors) {
 	b := &BroadcastGroup{
 		timeout:   timeout,
 		groupName: groupName,
@@ -55,7 +54,7 @@ func NewBroadcastGroupWithLimiter(groupName string, servers []types.ServerClient
 		servers:   serverNames,
 
 		pathCache: pathCache,
-		logger:    zapwriter.Logger("broadcastGroup").With(zap.String("groupName", groupName)),
+		logger:    logger.With(zap.String("type", "broadcastGroup"), zap.String("groupName", groupName)),
 
 		// TODO: remove hardcode
 		infoCache:  cache.NewQueryCache(1024, 5),

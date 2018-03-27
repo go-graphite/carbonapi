@@ -16,7 +16,6 @@ import (
 	"github.com/go-graphite/carbonzipper/zipper/types"
 	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
 
 	_ "github.com/go-graphite/carbonzipper/zipper/protocols/grpc"
@@ -142,7 +141,7 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 			)
 		}
 		if lbMethod == types.RoundRobinLB {
-			client, ePtr = backendInit(backend)
+			client, ePtr = backendInit(logger, backend)
 			e.Merge(ePtr)
 			if e.HaveFatalErrors {
 				return nil, &e
@@ -154,7 +153,7 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 			for _, server := range backend.Servers {
 				config.Servers = []string{server}
 				config.GroupName = server
-				client, ePtr = backendInit(config)
+				client, ePtr = backendInit(logger, config)
 				e.Merge(ePtr)
 				if e.HaveFatalErrors {
 					return nil, &e
@@ -162,7 +161,7 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 				backends = append(backends, client)
 			}
 
-			client, ePtr = broadcast.NewBroadcastGroup(backend.GroupName, backends, expireDelaySec, concurencyLimit, timeouts)
+			client, ePtr = broadcast.NewBroadcastGroup(logger, backend.GroupName, backends, expireDelaySec, concurencyLimit, timeouts)
 			e.Merge(ePtr)
 			if e.HaveFatalErrors {
 				return nil, &e
@@ -214,7 +213,7 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 			)
 		}
 
-		searchBackends, err = broadcast.NewBroadcastGroup("search", searchClients, config.ExpireDelaySec, config.ConcurrencyLimitPerServer, config.Timeouts)
+		searchBackends, err = broadcast.NewBroadcastGroup(logger, "search", searchClients, config.ExpireDelaySec, config.ConcurrencyLimitPerServer, config.Timeouts)
 		if err != nil && err.HaveFatalErrors {
 			logger.Fatal("errors while initialing zipper search backends",
 				zap.Any("errors", err.Errors),
@@ -256,7 +255,7 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 	}
 
 	var storeBackends types.ServerClient
-	storeBackends, err = broadcast.NewBroadcastGroup("root", storeClients, config.ExpireDelaySec, config.ConcurrencyLimitPerServer, config.Timeouts)
+	storeBackends, err = broadcast.NewBroadcastGroup(logger, "root", storeClients, config.ExpireDelaySec, config.ConcurrencyLimitPerServer, config.Timeouts)
 	if err != nil && err.HaveFatalErrors {
 		logger.Fatal("errors while initialing zipper store backends",
 			zap.Any("errors", err.Errors),
@@ -303,7 +302,7 @@ func (z *Zipper) doProbe(logger *zap.Logger) {
 }
 
 func (z *Zipper) probeTlds() {
-	logger := zapwriter.Logger("probe")
+	logger := z.logger.With(zap.String("type", "probe"))
 	for {
 		select {
 		case <-z.probeTicker.C:
