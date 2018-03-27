@@ -24,8 +24,8 @@ message AccessLogDetails {
     int64 carbonapi_response_size_bytes = 18;
     string reason = 19;
     bool send_globs = 20;
-    uint32 from = 21;
-    uint32 until = 22;
+    int64 from = 21;
+    int64 until = 22;
     string tz = 23;
     string from_raw = 24;
     string until_raw = 25;

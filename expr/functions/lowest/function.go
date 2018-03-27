@@ -27,7 +27,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // lowestAverage(seriesList, n) , lowestCurrent(seriesList, n)
-func (f *lowest) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *lowest) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err

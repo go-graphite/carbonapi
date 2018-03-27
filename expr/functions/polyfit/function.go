@@ -31,7 +31,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // polyfit(seriesList, degree=1, offset="0d")
-func (f *polyfit) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *polyfit) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// Fitting Nth degree polynom to the dataset
 	// https://en.wikipedia.org/wiki/Polynomial_regression#Matrix_form_and_calculation_of_estimates
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
@@ -68,7 +68,7 @@ func (f *polyfit) Do(e parser.Expr, from, until uint32, values map[parser.Metric
 		}
 		// Extending slice by "offset" so our graph slides into future!
 		r.Values = make([]float64, len(a.Values)+int(offs)/int(r.StepTime))
-		r.StopTime = uint32(int64(a.StopTime) + int64(offs))
+		r.StopTime = int64(int64(a.StopTime) + int64(offs))
 
 		// Removing absent values from original dataset
 		nonNulls := make([]float64, 0)

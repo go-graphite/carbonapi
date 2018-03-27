@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -29,30 +30,34 @@ func newMockCarbonZipper() *mockCarbonZipper {
 	return z
 }
 
-func (z mockCarbonZipper) Find(ctx context.Context, metric string) (pb.GlobResponse, error) {
+func (z mockCarbonZipper) Find(ctx context.Context, metric string) (*pb.MultiGlobResponse, error) {
 	return getGlobResponse(), nil
 }
 
-func (z mockCarbonZipper) Info(ctx context.Context, metric string) ([]*pb.ZipperInfoResponse, error) {
+func (z mockCarbonZipper) Info(ctx context.Context, metric string) (*pb.ZipperInfoResponse, error) {
 	response := getMockInfoResponse()
 
 	return response, nil
 }
 
-func (z mockCarbonZipper) Render(ctx context.Context, metric string, from, until uint32) ([]*types.MetricData, error) {
+func (z mockCarbonZipper) Render(ctx context.Context, metric string, from, until int64) ([]*types.MetricData, error) {
 	var result []*types.MetricData
 	multiFetchResponse := getMultiFetchResponse()
 	result = append(result, &types.MetricData{FetchResponse: multiFetchResponse.Metrics[0]})
 	return result, nil
 }
 
-func getGlobResponse() pb.GlobResponse {
+func getGlobResponse() *pb.MultiGlobResponse {
 	globMtach := pb.GlobMatch{Path: "foo.bar", IsLeaf: true}
 	var matches []pb.GlobMatch
 	matches = append(matches, globMtach)
-	globResponse := pb.GlobResponse{
-		Name:    "foo.bar",
-		Matches: matches,
+	globResponse := &pb.MultiGlobResponse{
+		Metrics: []pb.GlobResponse{
+			{
+				Name:    "foo.bar",
+				Matches: matches,
+			},
+		},
 	}
 	return globResponse
 }
@@ -63,35 +68,33 @@ func getMultiFetchResponse() pb.MultiFetchResponse {
 		StartTime: 1510913280,
 		StopTime:  1510913880,
 		StepTime:  60,
-		Values:    []float64{0, 1510913759, 1510913818},
-		IsAbsent:  []bool{true, false, false},
+		Values:    []float64{math.NaN(), 1510913759, 1510913818},
 	}
 
 	result := pb.MultiFetchResponse{Metrics: []pb.FetchResponse{mfr}}
 	return result
 }
 
-func getMockInfoResponse() []*pb.ZipperInfoResponse {
+func getMockInfoResponse() *pb.ZipperInfoResponse {
 	r := pb.Retention{
 		SecondsPerPoint: 60,
 		NumberOfPoints:  43200,
 	}
 	decoded := &pb.ZipperInfoResponse{
-		Responses: []pb.ServerInfoResponse{
-			{
-				Server: "http://127.0.0.1:8080",
-				Info: &pb.InfoResponse{
+		Info: map[string]pb.MultiMetricsInfoResponse{
+			"http://127.0.0.1:8080": {
+				Metrics: []pb.MetricsInfoResponse{{
 					Name:              "foo.bar",
-					AggregationMethod: "Average",
+					ConsolidationFunc: "average",
 					MaxRetention:      157680000,
 					XFilesFactor:      0.5,
 					Retentions:        []pb.Retention{r},
-				},
+				}},
 			},
 		},
 	}
 
-	return []*pb.ZipperInfoResponse{decoded}
+	return decoded
 }
 
 func init() {

@@ -26,7 +26,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *timeFunction) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *timeFunction) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	name, err := e.GetStringArg(0)
 	if err != nil {
 		return nil, err
@@ -39,7 +39,7 @@ func (f *timeFunction) Do(e parser.Expr, from, until uint32, values map[parser.M
 	if stepInt <= 0 {
 		return nil, errors.New("step can't be less than 0")
 	}
-	step := uint32(stepInt)
+	step := int64(stepInt)
 
 	// emulate the behavior of this Python code:
 	//   while when < requestContext["endTime"]:

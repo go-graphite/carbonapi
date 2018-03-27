@@ -30,7 +30,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // movingMedian(seriesList, windowSize)
-func (f *movingMedian) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *movingMedian) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	var n int
 	var err error
 
@@ -59,7 +59,7 @@ func (f *movingMedian) Do(e parser.Expr, from, until uint32, values map[parser.M
 
 	start := from
 	if scaleByStep {
-		start -= uint32(n)
+		start -= int64(n)
 	}
 
 	arg, err := helper.GetSeriesArg(e.Args()[0], start, until, values)

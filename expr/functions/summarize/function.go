@@ -29,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // summarize(seriesList, intervalString, func='sum', alignToFrom=False)
-func (f *summarize) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *summarize) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(dgryski): make sure the arrays are all the same 'size'
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
@@ -44,7 +44,7 @@ func (f *summarize) Do(e parser.Expr, from, until uint32, values map[parser.Metr
 		return nil, err
 	}
 
-	bucketSize := uint32(bucketSizeInt32)
+	bucketSize := int64(bucketSizeInt32)
 
 	summarizeFunction, err := e.GetStringNamedOrPosArgDefault("func", 2, "sum")
 	if err != nil {

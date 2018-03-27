@@ -322,7 +322,7 @@ type graphiteError struct {
 	err    error
 }
 
-func (f *graphiteWeb) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *graphiteWeb) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	f.logger.Info("received request",
 		zap.Bool("working", f.working),
 	)
@@ -413,14 +413,14 @@ func (f *graphiteWeb) Do(e parser.Expr, from, until uint32, values map[parser.Me
 	res := make([]*types.MetricData, len(tmp))
 
 	for _, m := range tmp {
-		stepTime := uint32(60)
+		stepTime := int64(60)
 		if len(m.Datapoints) > 1 {
-			stepTime = uint32(m.Datapoints[1][0] - m.Datapoints[0][0])
+			stepTime = int64(m.Datapoints[1][0] - m.Datapoints[0][0])
 		}
 		pbResp := pb.FetchResponse{
 			Name:              string(m.Target),
-			StartTime:         uint32(m.Datapoints[0][0]),
-			StopTime:          uint32(m.Datapoints[len(m.Datapoints)-1][0]),
+			StartTime:         int64(m.Datapoints[0][0]),
+			StopTime:          int64(m.Datapoints[len(m.Datapoints)-1][0]),
 			StepTime:          stepTime,
 			Values:            make([]float64, len(m.Datapoints)),
 			XFilesFactor:      m.XFilesFactor,

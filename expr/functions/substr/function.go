@@ -28,7 +28,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // aliasSub(seriesList, start, stop)
-func (f *substr) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *substr) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// BUG: affected by the same positional arg issue as 'threshold'.
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {

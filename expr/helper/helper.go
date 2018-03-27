@@ -35,7 +35,7 @@ func SetEvaluator(e interfaces.Evaluator) {
 }
 
 // GetSeriesArg returns argument from series.
-func GetSeriesArg(arg parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func GetSeriesArg(arg parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if !arg.IsName() && !arg.IsFunc() {
 		return nil, parser.ErrMissingTimeseries
 	}
@@ -59,7 +59,7 @@ func RemoveEmptySeriesFromName(args []*types.MetricData) string {
 }
 
 // GetSeriesArgs returns arguments of series
-func GetSeriesArgs(e []parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func GetSeriesArgs(e []parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	var args []*types.MetricData
 
 	for _, arg := range e {
@@ -79,7 +79,7 @@ func GetSeriesArgs(e []parser.Expr, from, until uint32, values map[parser.Metric
 
 // GetSeriesArgsAndRemoveNonExisting will fetch all required arguments, but will also filter out non existing Series
 // This is needed to be graphite-web compatible in cases when you pass non-existing Series to, for example, sumSeries
-func GetSeriesArgsAndRemoveNonExisting(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func GetSeriesArgsAndRemoveNonExisting(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	args, err := GetSeriesArgs(e.Args(), from, until, values)
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func GetSeriesArgsAndRemoveNonExisting(e parser.Expr, from, until uint32, values
 type seriesFunc func(*types.MetricData, *types.MetricData) *types.MetricData
 
 // ForEachSeriesDo do action for each serie in list.
-func ForEachSeriesDo(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData, function seriesFunc) ([]*types.MetricData, error) {
+func ForEachSeriesDo(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData, function seriesFunc) ([]*types.MetricData, error) {
 	arg, err := GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, parser.ErrMissingTimeseries

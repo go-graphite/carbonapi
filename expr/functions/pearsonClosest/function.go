@@ -30,7 +30,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // pearsonClosest(series, seriesList, n, direction=abs)
-func (f *pearsonClosest) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *pearsonClosest) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if len(e.Args()) > 3 {
 		return nil, types.ErrTooManyArguments
 	}

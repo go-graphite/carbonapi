@@ -144,9 +144,9 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 		r.Metrics = append(r.Metrics, protov3.FetchResponse{
 			Name:              m.Name,
 			ConsolidationFunc: "average",
-			StopTime:          uint32(m.StopTime),
-			StartTime:         uint32(m.StartTime),
-			StepTime:          uint32(m.StepTime),
+			StopTime:          int64(m.StopTime),
+			StartTime:         int64(m.StartTime),
+			StepTime:          int64(m.StepTime),
 			Values:            m.Values,
 			XFilesFactor:      0.0,
 		})
@@ -247,13 +247,13 @@ func (c *ClientProtoV2Group) Info(ctx context.Context, request *protov3.MultiMet
 			Name:              info.Name,
 			ConsolidationFunc: info.AggregationMethod,
 			XFilesFactor:      info.XFilesFactor,
-			MaxRetention:      uint32(info.MaxRetention),
+			MaxRetention:      int64(info.MaxRetention),
 		}
 
 		for _, r := range info.Retentions {
 			newR := protov3.Retention{
-				SecondsPerPoint: uint32(r.SecondsPerPoint),
-				NumberOfPoints:  uint32(r.NumberOfPoints),
+				SecondsPerPoint: int64(r.SecondsPerPoint),
+				NumberOfPoints:  int64(r.NumberOfPoints),
 			}
 			infoV3.Retentions = append(infoV3.Retentions, newR)
 		}

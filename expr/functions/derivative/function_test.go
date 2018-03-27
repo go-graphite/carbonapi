@@ -23,7 +23,7 @@ func init() {
 }
 
 func TestDerivative(t *testing.T) {
-	now32 := uint32(time.Now().Unix())
+	now32 := int64(time.Now().Unix())
 
 	tests := []th.EvalTestItem{
 		{

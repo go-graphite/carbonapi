@@ -13,7 +13,7 @@ import (
 type evaluator struct{}
 
 // EvalExpr evalualtes expressions
-func (eval evaluator) EvalExpr(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (eval evaluator) EvalExpr(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	return EvalExpr(e, from, until, values)
 }
 
@@ -25,7 +25,7 @@ func init() {
 }
 
 // EvalExpr is the main expression evaluator
-func EvalExpr(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func EvalExpr(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if e.IsName() {
 		return values[parser.MetricRequest{Metric: e.Target(), From: from, Until: until}], nil
 	} else if e.IsConst() {
@@ -54,7 +54,7 @@ func EvalExpr(e parser.Expr, from, until uint32, values map[parser.MetricRequest
 // applyByNode(foo*, 1, "%") -> (true, ["foo1", "foo2"], nil)
 // sumSeries(foo) -> (false, nil, nil)
 // Assumes that applyByNode only appears as the outermost function.
-func RewriteExpr(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
+func RewriteExpr(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
 	if e.IsFunc() {
 		metadata.FunctionMD.RLock()
 		f, ok := metadata.FunctionMD.RewriteFunctions[e.Target()]

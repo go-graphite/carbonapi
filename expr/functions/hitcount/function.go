@@ -29,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // hitcount(seriesList, intervalString, alignToInterval=False)
-func (f *hitcount) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *hitcount) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(dgryski): make sure the arrays are all the same 'size'
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
@@ -40,7 +40,7 @@ func (f *hitcount) Do(e parser.Expr, from, until uint32, values map[parser.Metri
 	if err != nil {
 		return nil, err
 	}
-	bucketSize := uint32(bucketSizeInt32)
+	bucketSize := int64(bucketSizeInt32)
 
 	alignToInterval, err := e.GetBoolNamedOrPosArgDefault("alignToInterval", 2, false)
 	if err != nil {

@@ -29,7 +29,7 @@ type zipper struct {
 type CarbonZipper interface {
 	Find(ctx context.Context, metric string) (*pb.MultiGlobResponse, error)
 	Info(ctx context.Context, metric string) (*pb.ZipperInfoResponse, error)
-	Render(ctx context.Context, metric string, from, until uint32) ([]*types.MetricData, error)
+	Render(ctx context.Context, metric string, from, until int64) ([]*types.MetricData, error)
 }
 
 func newZipper(sender func(*zipperTypes.Stats), config *zipperCfg.Config, ignoreClientTimeout bool, logger *zap.Logger) *zipper {
@@ -92,7 +92,7 @@ func (z zipper) Info(ctx context.Context, metric string) (*pb.ZipperInfoResponse
 	return resp, nil
 }
 
-func (z zipper) Render(ctx context.Context, metric string, from, until uint32) ([]*types.MetricData, error) {
+func (z zipper) Render(ctx context.Context, metric string, from, until int64) ([]*types.MetricData, error) {
 	var result []*types.MetricData
 	newCtx := ctx
 	if z.ignoreClientTimeout {

@@ -28,7 +28,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // delay(seriesList, steps)
-func (f *delay) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *delay) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	seriesList, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err

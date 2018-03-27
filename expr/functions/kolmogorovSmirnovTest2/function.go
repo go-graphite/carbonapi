@@ -31,7 +31,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // ksTest2(series, series, points|"interval")
 // https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test
-func (f *kolmogorovSmirnovTest2) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *kolmogorovSmirnovTest2) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg1, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err

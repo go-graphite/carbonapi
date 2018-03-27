@@ -29,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // diffSeries(*seriesLists)
-func (f *diffSeries) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *diffSeries) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	minuends, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -69,7 +69,7 @@ func (f *diffSeries) Do(e parser.Expr, from, until uint32, values map[parser.Met
 
 		var sub float64
 		for _, s := range subtrahends {
-			iSubtrahend := (uint32(i) * minuend.StepTime) / s.StepTime
+			iSubtrahend := (int64(i) * minuend.StepTime) / s.StepTime
 
 			if math.IsNaN(s.Values[iSubtrahend]) {
 				continue

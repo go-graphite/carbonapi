@@ -31,7 +31,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 //  alias: max
 // minSeries(*seriesLists)
 //  alias: min
-func (f *minMax) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *minMax) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	args, err := helper.GetSeriesArgsAndRemoveNonExisting(e, from, until, values)
 	if err != nil {
 		return nil, err

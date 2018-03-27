@@ -41,7 +41,7 @@ func TestDateParamToEpoch(t *testing.T) {
 			panic(fmt.Sprintf("error parsing time: %q: %v", tt.output, err))
 		}
 
-		want := uint32(ts.Unix())
+		want := int64(ts.Unix())
 		if got != want {
 			t.Errorf("dateParamToEpoch(%q, 0)=%v, want %v", tt.input, got, want)
 		}

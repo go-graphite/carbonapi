@@ -28,7 +28,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // multiplySeries(factorsSeriesList)
-func (f *multiplySeries) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *multiplySeries) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	r := types.MetricData{
 		FetchResponse: pb.FetchResponse{
 			Name:      fmt.Sprintf("multiplySeries(%s)", e.RawArgs()),

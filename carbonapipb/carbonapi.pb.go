@@ -52,8 +52,8 @@ type AccessLogDetails struct {
 	CarbonapiResponseSizeBytes    int64    `protobuf:"varint,18,opt,name=carbonapi_response_size_bytes,json=carbonapiResponseSizeBytes,proto3" json:"carbonapi_response_size_bytes,omitempty"`
 	Reason                        string   `protobuf:"bytes,19,opt,name=reason,proto3" json:"reason,omitempty"`
 	SendGlobs                     bool     `protobuf:"varint,20,opt,name=send_globs,json=sendGlobs,proto3" json:"send_globs,omitempty"`
-	From                          uint32   `protobuf:"varint,21,opt,name=from,proto3" json:"from,omitempty"`
-	Until                         uint32   `protobuf:"varint,22,opt,name=until,proto3" json:"until,omitempty"`
+	From                          int64   `protobuf:"varint,21,opt,name=from,proto3" json:"from,omitempty"`
+	Until                         int64   `protobuf:"varint,22,opt,name=until,proto3" json:"until,omitempty"`
 	Tz                            string   `protobuf:"bytes,23,opt,name=tz,proto3" json:"tz,omitempty"`
 	FromRaw                       string   `protobuf:"bytes,24,opt,name=from_raw,json=fromRaw,proto3" json:"from_raw,omitempty"`
 	UntilRaw                      string   `protobuf:"bytes,25,opt,name=until_raw,json=untilRaw,proto3" json:"until_raw,omitempty"`
@@ -207,14 +207,14 @@ func (m *AccessLogDetails) GetSendGlobs() bool {
 	return false
 }
 
-func (m *AccessLogDetails) GetFrom() uint32 {
+func (m *AccessLogDetails) GetFrom() int64 {
 	if m != nil {
 		return m.From
 	}
 	return 0
 }
 
-func (m *AccessLogDetails) GetUntil() uint32 {
+func (m *AccessLogDetails) GetUntil() int64 {
 	if m != nil {
 		return m.Until
 	}
@@ -1175,7 +1175,7 @@ func (m *AccessLogDetails) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.From |= (uint32(b) & 0x7F) << shift
+				m.From |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1194,7 +1194,7 @@ func (m *AccessLogDetails) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Until |= (uint32(b) & 0x7F) << shift
+				m.Until |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}

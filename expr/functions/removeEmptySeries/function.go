@@ -28,7 +28,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // removeEmptySeries(seriesLists, n), removeZeroSeries(seriesLists, n)
-func (f *removeEmptySeries) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *removeEmptySeries) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -39,9 +39,9 @@ func (f *removeEmptySeries) Do(e parser.Expr, from, until uint32, values map[par
 	var results []*types.MetricData
 
 	for _, a := range args {
-		for i, v := range a.Values {
-			if math.IsNaN(v) {
-				if e.Target() == "removeEmptySeries" || (a.Values[i] != 0) {
+		for _, v := range a.Values {
+			if !math.IsNaN(v) {
+				if e.Target() == "removeEmptySeries" || (v != 0) {
 					results = append(results, a)
 					break
 				}

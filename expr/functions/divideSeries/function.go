@@ -30,7 +30,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // divideSeries(dividendSeriesList, divisorSeriesList)
-func (f *divideSeries) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *divideSeries) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if len(e.Args()) < 1 {
 		return nil, parser.ErrMissingTimeseries
 	}

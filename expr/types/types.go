@@ -30,8 +30,8 @@ type MetricData struct {
 }
 
 // MakeMetricData creates new metrics data with given metric timeseries
-func MakeMetricData(name string, values []float64, step, start uint32) *MetricData {
-	stop := start + uint32(len(values))*step
+func MakeMetricData(name string, values []float64, step, start int64) *MetricData {
+	stop := start + int64(len(values))*step
 
 	return &MetricData{FetchResponse: pb.FetchResponse{
 		Name:      name,
@@ -242,12 +242,12 @@ func (r *MetricData) SetValuesPerPoint(v int) {
 }
 
 // AggregatedTimeStep aggregates time step
-func (r *MetricData) AggregatedTimeStep() uint32 {
+func (r *MetricData) AggregatedTimeStep() int64 {
 	if r.ValuesPerPoint == 1 || r.ValuesPerPoint == 0 {
 		return r.StepTime
 	}
 
-	return r.StepTime * uint32(r.ValuesPerPoint)
+	return r.StepTime * int64(r.ValuesPerPoint)
 }
 
 // AggregatedValues aggregates values (with cache)

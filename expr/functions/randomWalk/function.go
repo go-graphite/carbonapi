@@ -27,7 +27,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // squareRoot(seriesList)
-func (f *randomWalk) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *randomWalk) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	name, err := e.GetStringArg(0)
 	if err != nil {
 		name = "randomWalk"

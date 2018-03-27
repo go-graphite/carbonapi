@@ -27,7 +27,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // countSeries(seriesList)
-func (f *countSeries) Do(e parser.Expr, from, until uint32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *countSeries) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(civil): Check that series have equal length
 	args, err := helper.GetSeriesArgsAndRemoveNonExisting(e, from, until, values)
 	if err != nil {

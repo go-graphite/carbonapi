@@ -27,7 +27,7 @@ func holtWintersDeviation(gamma, actual, prediction, lastSeasonalDev float64) fl
 }
 
 // HoltWintersAnalysis do Holt-Winters Analysis
-func HoltWintersAnalysis(series []float64, step uint32) ([]float64, []float64) {
+func HoltWintersAnalysis(series []float64, step int64) ([]float64, []float64) {
 	const (
 		alpha = 0.1
 		beta  = 0.0035
@@ -116,7 +116,7 @@ func HoltWintersAnalysis(series []float64, step uint32) ([]float64, []float64) {
 }
 
 // HoltWintersConfidenceBands do Holt-Winters Confidence Bands
-func HoltWintersConfidenceBands(series []float64, step uint32, delta float64) ([]float64, []float64) {
+func HoltWintersConfidenceBands(series []float64, step int64, delta float64) ([]float64, []float64) {
 	var lowerBand, upperBand []float64
 
 	predictions, deviations := HoltWintersAnalysis(series, step)

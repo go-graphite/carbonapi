@@ -123,8 +123,8 @@
     "zipper/protocols/v3",
     "zipper/types"
   ]
-  revision = "6f4be23d20fe9c6416cee3ee44f8d962378beb6d"
-  version = "1.0.0-alpha.3"
+  revision = "c20affe449379c6258bd78535f814045d1653ba1"
+  version = "1.0.0-alpha.4"
 
 [[projects]]
   name = "github.com/go-graphite/protocol"
@@ -133,8 +133,8 @@
     "carbonapi_v3_grpc",
     "carbonapi_v3_pb"
   ]
-  revision = "26af980d03cb8bc3311fc5a3c418b3486a4705a8"
-  version = "v0.1.3"
+  revision = "5d3385516376a1e7131f329d145a58211903e887"
+  version = "v0.2"
 
 [[projects]]
   name = "github.com/gogo/protobuf"
