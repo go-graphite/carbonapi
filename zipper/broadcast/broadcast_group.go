@@ -372,6 +372,10 @@ GATHER:
 		zap.Any("response", result.Response),
 	)
 
+	if result.Response == nil {
+		item.StoreAbort()
+		return &protov3.MultiGlobResponse{}, result.Stats, err.Addf("failed to fetch response from the server %v", bg.groupName)
+	}
 	item.StoreAndUnlock(result, uint64(result.Response.Size()))
 
 	return result.Response, result.Stats, &err
