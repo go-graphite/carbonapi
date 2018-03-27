@@ -15,7 +15,6 @@ import (
 	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/resolver/manual"
 
-	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
 )
 
@@ -43,13 +42,15 @@ type ClientGRPCGroup struct {
 	maxMetricsPerRequest int
 
 	client protov3grpc.CarbonV1Client
+	logger *zap.Logger
 }
 
-func NewClientGRPCGroupWithLimiter(config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
-	return NewClientGRPCGroup(config)
+func NewClientGRPCGroupWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
+	return NewClientGRPCGroup(logger, config)
 }
 
-func NewClientGRPCGroup(config types.BackendV2) (types.ServerClient, *errors.Errors) {
+func NewClientGRPCGroup(logger *zap.Logger, config types.BackendV2) (types.ServerClient, *errors.Errors) {
+	logger = logger.With(zap.String("type", "grpcGroup"), zap.String("name", config.GroupName))
 	// TODO: Implement normal resolver
 	if len(config.Servers) == 0 {
 		return nil, errors.Fatal("no servers specified")
@@ -87,6 +88,7 @@ func NewClientGRPCGroup(config types.BackendV2) (types.ServerClient, *errors.Err
 		conn:    conn,
 		client:  protov3grpc.NewCarbonV1Client(conn),
 		timeout: *config.Timeouts,
+		logger:  logger,
 	}
 
 	return client, nil
@@ -199,7 +201,7 @@ func (c *ClientGRPCGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResp
 }
 
 func (c *ClientGRPCGroup) ProbeTLDs(ctx context.Context) ([]string, *errors.Errors) {
-	logger := zapwriter.Logger("probe").With(zap.String("groupName", c.groupName))
+	logger := c.logger.With(zap.String("type", "probe"))
 
 	ctx, cancel := context.WithTimeout(ctx, c.timeout.Find)
 	defer cancel()

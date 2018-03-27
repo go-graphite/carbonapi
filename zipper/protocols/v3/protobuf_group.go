@@ -14,7 +14,6 @@ import (
 	"github.com/go-graphite/carbonzipper/zipper/types"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
-	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
 )
 
@@ -48,7 +47,7 @@ type ClientProtoV3Group struct {
 	httpQuery *helper.HttpQuery
 }
 
-func New(config types.BackendV2) (types.ServerClient, *errors.Errors) {
+func New(logger *zap.Logger, config types.BackendV2) (types.ServerClient, *errors.Errors) {
 	if config.ConcurrencyLimit == nil {
 		return nil, errors.Fatal("concurency limit is not set")
 	}
@@ -57,10 +56,10 @@ func New(config types.BackendV2) (types.ServerClient, *errors.Errors) {
 	}
 	limiter := limiter.NewServerLimiter([]string{config.GroupName}, *config.ConcurrencyLimit)
 
-	return NewWithLimiter(config, limiter)
+	return NewWithLimiter(logger, config, limiter)
 }
 
-func NewWithLimiter(config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConnsPerHost: *config.MaxIdleConnsPerHost,
@@ -72,7 +71,7 @@ func NewWithLimiter(config types.BackendV2, limiter *limiter.ServerLimiter) (typ
 		},
 	}
 
-	logger := zapwriter.Logger("protobufGroup").With(zap.String("name", config.GroupName))
+	logger = logger.With(zap.String("type", "protobufGroup"), zap.String("name", config.GroupName))
 
 	httpQuery := helper.NewHttpQuery(logger, config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv3PB)
 
