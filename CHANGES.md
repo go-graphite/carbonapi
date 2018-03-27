@@ -14,6 +14,9 @@ Changes
 
 Changes
 -------
+**1.0.0-alpha.4** **It's not recommended to switch to this release until it's marked as stable**
+   - [Code] Convert timestamps to int64
+
 **1.0.0-alpha.3** **It's not recommended to switch to this release until it's marked as stable**
    - [Code] Convert timestamps back to uint32
 

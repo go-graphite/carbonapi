@@ -12,8 +12,8 @@ message FilteringFunction {
 // Fetch Data
 message FetchRequest {
     string name = 1;
-    uint32 startTime = 2;
-    uint32 stopTime = 3;
+    int64 startTime = 2;
+    int64 stopTime = 3;
     repeated FilteringFunction filterFunctions = 4;
 }
 
@@ -26,9 +26,9 @@ message FetchResponse {
     string name = 1;
     string pathExpression = 2;
     string consolidationFunc = 3;
-    uint32 startTime = 4;
-    uint32 stopTime = 5;
-    uint32 stepTime = 6;
+    int64 startTime = 4;
+    int64 stopTime = 5;
+    int64 stepTime = 6;
     float xFilesFactor = 7;
     repeated double values = 8;
     repeated string appliedFunctions = 9;
@@ -68,15 +68,15 @@ message MultiMetricsInfoRequest {
 }
 
 message Retention {
-    uint32 secondsPerPoint = 1;
-    uint32 numberOfPoints = 2;
+    int64 secondsPerPoint = 1;
+    int64 numberOfPoints = 2;
 }
 
 message MetricsInfoResponse {
     string name = 1;
     string consolidationFunc = 2;
     float xFilesFactor = 4;
-    uint32 maxRetention = 3;
+    int64 maxRetention = 3;
     repeated Retention retentions = 5 [(gogoproto.nullable) = false];
 }
 
@@ -84,6 +84,7 @@ message MultiMetricsInfoResponse {
     repeated MetricsInfoResponse metrics = 1 [(gogoproto.nullable) = false];
 }
 
+// key = server, value = metric
 message ZipperInfoResponse {
     map<string, MultiMetricsInfoResponse> info = 1 [(gogoproto.nullable) = false];
 }
