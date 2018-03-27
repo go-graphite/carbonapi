@@ -59,6 +59,12 @@
   revision = "1b76add642e42c6ffba7211ad7b3939ce654526e"
 
 [[projects]]
+  name = "github.com/fsnotify/fsnotify"
+  packages = ["."]
+  revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
+  version = "v1.4.7"
+
+[[projects]]
   name = "github.com/go-graphite/protocol"
   packages = [
     "carbonapi_v2_pb",
@@ -94,6 +100,23 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/hashicorp/hcl"
+  packages = [
+    ".",
+    "hcl/ast",
+    "hcl/parser",
+    "hcl/printer",
+    "hcl/scanner",
+    "hcl/strconv",
+    "hcl/token",
+    "json/parser",
+    "json/scanner",
+    "json/token"
+  ]
+  revision = "f40e974e75af4e271d97ce0fc917af5898ae7bda"
+
+[[projects]]
+  branch = "master"
   name = "github.com/lestrrat/go-file-rotatelogs"
   packages = ["."]
   revision = "d3151e2a480fdcd05fb97102f5310a47d96274c4"
@@ -117,6 +140,24 @@
   revision = "3b568a1c89582d7059d81f13aa9e3f97aa9af97e"
 
 [[projects]]
+  name = "github.com/magiconair/properties"
+  packages = ["."]
+  revision = "c3beff4c2358b44d0493c7dda585e7db7ff28ae6"
+  version = "v1.7.6"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/mitchellh/mapstructure"
+  packages = ["."]
+  revision = "00c29f56e2386353d58c599509e8dc3801b0d716"
+
+[[projects]]
+  name = "github.com/pelletier/go-toml"
+  packages = ["."]
+  revision = "acdc4509485b587f5e675510c4f2c63e90ff68a8"
+  version = "v1.1.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/peterbourgon/g2g"
   packages = ["."]
@@ -133,6 +174,39 @@
   packages = ["."]
   revision = "f58768cc1a7a7e77a3bd49e98cdd21419399b6a3"
   version = "v1.2.0"
+
+[[projects]]
+  name = "github.com/spf13/afero"
+  packages = [
+    ".",
+    "mem"
+  ]
+  revision = "bb8f1927f2a9d3ab41c9340aa034f6b803f4359c"
+  version = "v1.0.2"
+
+[[projects]]
+  name = "github.com/spf13/cast"
+  packages = ["."]
+  revision = "8965335b8c7107321228e3e3702cab9832751bac"
+  version = "v1.2.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/spf13/jwalterweatherman"
+  packages = ["."]
+  revision = "7c0cea34c8ece3fbeb2b27ab9b59511d360fb394"
+
+[[projects]]
+  name = "github.com/spf13/pflag"
+  packages = ["."]
+  revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
+  version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/spf13/viper"
+  packages = ["."]
+  revision = "b5e8006cbee93ec955a89ab31e0e3ce3204f3736"
+  version = "v1.0.2"
 
 [[projects]]
   name = "go.uber.org/atomic"
@@ -172,6 +246,12 @@
     "trace"
   ]
   revision = "6078986fec03a1dcc236c34816c71b0e05018fda"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/sys"
+  packages = ["unix"]
+  revision = "13d03a9a82fba647c21a0ef8fba44a795d0f0835"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -240,6 +320,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e4c3cf39399fd5d435ef8a7133349c13c243b92965179d0ef785d98a8e5de868"
+  inputs-digest = "23b89ce08f2fa2ad418421df2f3a2a2ea4d0ec1dd64a6c60e68430691e11b9ea"
   solver-name = "gps-cdcl"
   solver-version = 1

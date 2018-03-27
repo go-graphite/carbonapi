@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"expvar"
 	"flag"
@@ -21,6 +22,7 @@ import (
 	"github.com/facebookgo/pidfile"
 	"github.com/go-graphite/carbonzipper/intervalset"
 	"github.com/go-graphite/carbonzipper/mstats"
+	"github.com/spf13/viper"
 	// "github.com/go-graphite/carbonzipper/pathcache"
 	cu "github.com/go-graphite/carbonzipper/util/apictx"
 	util "github.com/go-graphite/carbonzipper/util/zipperctx"
@@ -29,8 +31,6 @@ import (
 	"github.com/go-graphite/carbonzipper/zipper/types"
 	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"gopkg.in/yaml.v2"
-
 	"github.com/lomik/zapwriter"
 
 	pickle "github.com/lomik/og-rek"
@@ -59,27 +59,27 @@ type GraphiteConfig struct {
 
 // config contains necessary information for global
 var config = struct {
-	Backends   []string         `yaml:"backends"`
-	Backendsv2 types.BackendsV2 `yaml:"backendsv2"`
-	MaxProcs   int              `yaml:"maxProcs"`
-	Graphite   GraphiteConfig   `yaml:"graphite"`
-	GRPCListen string           `yaml:"grpcListen"`
-	Listen     string           `yaml:"listen"`
-	Buckets    int              `yaml:"buckets"`
+	Backends   []string         `mapstructure:"backends"`
+	Backendsv2 types.BackendsV2 `mapstructure:"backendsv2"`
+	MaxProcs   int              `mapstructure:"maxProcs"`
+	Graphite   GraphiteConfig   `mapstructure:"graphite"`
+	GRPCListen string           `mapstructure:"grpcListen"`
+	Listen     string           `mapstructure:"listen"`
+	Buckets    int              `mapstructure:"buckets"`
 
-	Timeouts          types.Timeouts `yaml:"timeouts"`
-	KeepAliveInterval time.Duration  `yaml:"keepAliveInterval"`
+	Timeouts          types.Timeouts `mapstructure:"timeouts"`
+	KeepAliveInterval time.Duration  `mapstructure:"keepAliveInterval"`
 
-	CarbonSearch   types.CarbonSearch   `yaml:"carbonsearch"`
-	CarbonSearchV2 types.CarbonSearchV2 `yaml:"carbonsearchv2"`
+	CarbonSearch   types.CarbonSearch   `mapstructure:"carbonsearch"`
+	CarbonSearchV2 types.CarbonSearchV2 `mapstructure:"carbonsearchv2"`
 
-	MaxIdleConnsPerHost int `yaml:"maxIdleConnsPerHost"`
-	MaxGlobs            int `yaml:"maxGlobs"`
+	MaxIdleConnsPerHost int `mapstructure:"maxIdleConnsPerHost"`
+	MaxGlobs            int `mapstructure:"maxGlobs"`
 
-	ConcurrencyLimitPerServer  int                `yaml:"concurrencyLimit"`
-	ExpireDelaySec             int32              `yaml:"expireDelaySec"`
-	Logger                     []zapwriter.Config `yaml:"logger"`
-	GraphiteWeb09Compatibility bool               `yaml:"graphite09compat"`
+	ConcurrencyLimitPerServer  int                `mapstructure:"concurrencyLimit"`
+	ExpireDelaySec             int32              `mapstructure:"expireDelaySec"`
+	Logger                     []zapwriter.Config `mapstructure:"logger"`
+	GraphiteWeb09Compatibility bool               `mapstructure:"graphite09compat"`
 
 	zipper *zipper.Zipper
 }{
@@ -574,6 +574,10 @@ func main() {
 
 	configFile := flag.String("config", "", "config file (yaml)")
 	pidFile := flag.String("pid", "", "pidfile (default: empty, don't create pidfile)")
+	envPrefix := flag.String("envprefix", "CARBONZIPPER_", "Preifx for environment variables override")
+	if *envPrefix == "" {
+		logger.Fatal("empty prefix is not suppoerted due to possible collisions with OS environment variables")
+	}
 
 	flag.Parse()
 
@@ -591,7 +595,32 @@ func main() {
 		)
 	}
 
-	err = yaml.Unmarshal(cfg, &config)
+	if strings.HasSuffix(*configFile, ".toml") {
+		logger.Info("will parse config as toml",
+			zap.String("config_file", *configFile),
+		)
+		viper.SetConfigType("TOML")
+	} else {
+		logger.Info("will parse config as yaml",
+			zap.String("config_file", *configFile),
+		)
+		viper.SetConfigType("YAML")
+	}
+	err = viper.ReadConfig(bytes.NewBuffer(cfg))
+	if err != nil {
+		logger.Fatal("failed to parse config",
+			zap.String("config_path", *configFile),
+			zap.Error(err),
+		)
+	}
+
+	if *envPrefix != "" {
+		viper.SetEnvPrefix(*envPrefix)
+	}
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.AutomaticEnv()
+
+	err = viper.Unmarshal(&config)
 	if err != nil {
 		logger.Fatal("failed to parse config",
 			zap.String("config_path", *configFile),
