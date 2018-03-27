@@ -23,7 +23,7 @@ func init() {
 }
 
 func TestDivideSeriesMultiReturn(t *testing.T) {
-	now32 := int32(time.Now().Unix())
+	now32 := int64(time.Now().Unix())
 
 	tests := []th.MultiReturnEvalTestItem{
 		{
@@ -62,7 +62,7 @@ func TestDivideSeriesMultiReturn(t *testing.T) {
 }
 
 func TestDivideSeries(t *testing.T) {
-	now32 := int32(time.Now().Unix())
+	now32 := int64(time.Now().Unix())
 
 	tests := []th.EvalTestItem{
 		{

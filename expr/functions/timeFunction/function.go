@@ -5,7 +5,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
 type timeFunction struct {
@@ -26,7 +26,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *timeFunction) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *timeFunction) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	name, err := e.GetStringArg(0)
 	if err != nil {
 		return nil, err
@@ -39,7 +39,7 @@ func (f *timeFunction) Do(e parser.Expr, from, until int32, values map[parser.Me
 	if stepInt <= 0 {
 		return nil, errors.New("step can't be less than 0")
 	}
-	step := int32(stepInt)
+	step := int64(stepInt)
 
 	// emulate the behavior of this Python code:
 	//   while when < requestContext["endTime"]:
@@ -60,7 +60,6 @@ func (f *timeFunction) Do(e parser.Expr, from, until int32, values map[parser.Me
 			StopTime:  until,
 			StepTime:  step,
 			Values:    newValues,
-			IsAbsent:  make([]bool, len(newValues)),
 		},
 	}
 

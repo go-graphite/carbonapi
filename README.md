@@ -52,9 +52,9 @@ upstreams:
 That config can be replaced by
 
 ```bash
-CONCURENCY=20
-CACHE_TYPE=mem
-UPSTREAMS_BACKENDS="http://10.0.0.1:8080 http://10.0.0.2:8080"
+CARBONAPI_CONCURENCY=20
+CARBONAPI_CACHE_TYPE=mem
+CARBONAPI_UPSTREAMS_BACKENDS="http://10.0.0.1:8080 http://10.0.0.2:8080"
 ```
 
 You should be only aware of logging: because carbonapi support a list of logger, env variables will replace
@@ -92,6 +92,13 @@ logger:
       encoding: "json"
 ```
 
+Supported protocols
+-------------------
+
+ * `carbonapi_v2_pb`, `pb`, `pb3`, `protobuf` - carbonapi pre-0.12 style protocol. Supoorted by go-carbon, graphite-clickhouse, etc.
+ * `carbonapi_v3_pb` - new carbonapi protocol, that supports passing metadata through. Supported by carbonzipper 1.0.0.alpha.3 or later. Implementing support for that is in-progress for go-carbon and graphite-clickhouse
+ * `carbonapi_v3_grpc` - grpc version of new carbonapi protocol. Currently no known implementation exists.
+
 
 Requirements
 ------------
@@ -100,11 +107,19 @@ You need to have Go >= 1.8 to build carbonapi from sources. Building with Go 1.7
 
 CarbonAPI uses protobuf-based protocol to talk with underlying storages. For current version the compatibility list is:
 
-1. [carbonzipper](https://github.com/go-graphite/carbonzipper) >= 0.50
-2. [go-carbon](https://github.com/lomik/go-carbon) >= 0.9.0 (Note: you need to enable carbonserver in go-carbon).
-3. [carbonserver](https://github.com/grobian/carbonserver)@master (Note: you should probably switch to go-carbon in that case).
-4. [graphite-clickhouse](https://github.com/lomik/graphite-clickhouse) any. That's alternative storage that doesn't use Whisper.
-5. [carbonapi](https://github.com/go-graphite/carbonapi) >= 0.5. Note: starting from carbonapi 3596e9647611e1f833a911d663747271623ec003 (post 0.8) carbonapi can be used as a zipper's replacement
+1. [go-carbon](https://github.com/lomik/go-carbon) >= 0.9.0 (Note: you need to enable carbonserver in go-carbon).
+2. [graphite-clickhouse](https://github.com/lomik/graphite-clickhouse) any. That's alternative storage that doesn't use Whisper.
+3. [carbonapi](https://github.com/go-graphite/carbonapi) >= 0.5. Note: starting from carbonapi 3596e9647611e1f833a911d663747271623ec003 (post 0.8) carbonapi can be used as a zipper's replacement
+4. [carbonserver](https://github.com/grobian/carbonserver)@master (Note: you should probably switch to go-carbon in that case).
+5. [carbonzipper](https://github.com/go-graphite/carbonzipper) >= 0.50. **Please note**, carbonzipper functionality was merged to carbonapi and it's no longer needed to run separate zipper. 
+
+
+Some remarks on different backends
+----------------------------------
+
+For backends that uses normal database (e.x. graphite-clickhouse) you should set `maxGlobs: 0` in your config file for this backend group.
+
+For other backends (e.x. go-carbon) you should set it to some reasonable value. It increases response speed, but the cost is increased memory consumption.
 
 OSX Build Notes
 ---------------

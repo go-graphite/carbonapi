@@ -27,7 +27,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *nonNegativeDerivative) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *nonNegativeDerivative) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -54,23 +54,22 @@ func (f *nonNegativeDerivative) Do(e parser.Expr, from, until int32, values map[
 		r := *a
 		r.Name = name
 		r.Values = make([]float64, len(a.Values))
-		r.IsAbsent = make([]bool, len(a.Values))
 
 		prev := a.Values[0]
 		for i, v := range a.Values {
-			if i == 0 || a.IsAbsent[i] || a.IsAbsent[i-1] {
-				r.IsAbsent[i] = true
+			if i == 0 || math.IsNaN(a.Values[i]) || math.IsNaN(a.Values[i-1]) {
+				r.Values[i] = math.NaN()
 				prev = v
 				continue
 			}
+			// TODO(civil): Figure out if we can optimize this now when we have NaNs
 			diff := v - prev
 			if diff >= 0 {
 				r.Values[i] = diff
 			} else if !math.IsNaN(maxValue) && maxValue >= v {
 				r.Values[i] = ((maxValue - prev) + v + 1)
 			} else {
-				r.Values[i] = 0
-				r.IsAbsent[i] = true
+				r.Values[i] = math.NaN()
 			}
 			prev = v
 		}

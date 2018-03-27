@@ -2,12 +2,13 @@ package removeBelowSeries
 
 import (
 	"fmt"
+	"math"
+	"strings"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"math"
-	"strings"
 )
 
 type removeBelowSeries struct {
@@ -29,7 +30,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // removeBelowValue(seriesLists, n), removeAboveValue(seriesLists, n), removeBelowPercentile(seriesLists, percent), removeAbovePercentile(seriesLists, percent)
-func (f *removeBelowSeries) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *removeBelowSeries) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -56,9 +57,9 @@ func (f *removeBelowSeries) Do(e parser.Expr, from, until int32, values map[pars
 		threshold := number
 		if strings.HasSuffix(e.Target(), "Percentile") {
 			var values []float64
-			for i, v := range a.IsAbsent {
-				if !v {
-					values = append(values, a.Values[i])
+			for _, v := range a.Values {
+				if !math.IsNaN(v) {
+					values = append(values, v)
 				}
 			}
 
@@ -67,13 +68,11 @@ func (f *removeBelowSeries) Do(e parser.Expr, from, until int32, values map[pars
 
 		r := *a
 		r.Name = fmt.Sprintf("%s(%s, %g)", e.Target(), a.Name, number)
-		r.IsAbsent = make([]bool, len(a.Values))
 		r.Values = make([]float64, len(a.Values))
 
 		for i, v := range a.Values {
-			if a.IsAbsent[i] || condition(v, threshold) {
+			if math.IsNaN(v) || condition(v, threshold) {
 				r.Values[i] = math.NaN()
-				r.IsAbsent[i] = true
 				continue
 			}
 

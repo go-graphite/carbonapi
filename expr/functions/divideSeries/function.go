@@ -3,6 +3,8 @@ package divideSeries
 import (
 	"errors"
 	"fmt"
+	"math"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -28,7 +30,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // divideSeries(dividendSeriesList, divisorSeriesList)
-func (f *divideSeries) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *divideSeries) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if len(e.Args()) < 1 {
 		return nil, parser.ErrMissingTimeseries
 	}
@@ -76,12 +78,12 @@ func (f *divideSeries) Do(e parser.Expr, from, until int32, values map[parser.Me
 			r.Name = fmt.Sprintf("divideSeries(%s)", e.RawArgs())
 		}
 		r.Values = make([]float64, len(numerator.Values))
-		r.IsAbsent = make([]bool, len(numerator.Values))
 
 		for i, v := range numerator.Values {
 
-			if numerator.IsAbsent[i] || denominator.IsAbsent[i] || denominator.Values[i] == 0 {
-				r.IsAbsent[i] = true
+			// math.IsNaN(v) || math.IsNaN(denominator.Values[i]) covered by nature of math.NaN
+			if denominator.Values[i] == 0 {
+				r.Values[i] = math.NaN()
 				continue
 			}
 

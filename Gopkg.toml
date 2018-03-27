@@ -58,12 +58,12 @@
   name = "github.com/facebookgo/pidfile"
 
 [[constraint]]
+  branch = "master"
   name = "github.com/go-graphite/carbonzipper"
-  version = "0.74.0"
 
 [[constraint]]
   name = "github.com/gogo/protobuf"
-  version = "0.4.0"
+  version = "1.0.0"
 
 [[constraint]]
   name = "github.com/gorilla/handlers"

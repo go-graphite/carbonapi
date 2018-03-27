@@ -6,6 +6,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
+	"math"
 )
 
 type delay struct {
@@ -27,7 +28,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // delay(seriesList, steps)
-func (f *delay) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *delay) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	seriesList, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -44,32 +45,24 @@ func (f *delay) Do(e parser.Expr, from, until int32, values map[parser.MetricReq
 		length := len(series.Values)
 
 		newValues := make([]float64, length)
-		newIsAbsents := make([]bool, length)
 		var prevValues []float64
-		var prevIsAbsent []bool
 
 		for i, value := range series.Values {
 			if len(prevValues) < steps {
-				newValues[i] = 0
-				newIsAbsents[i] = true
+				newValues[i] = math.NaN()
 			} else {
 				newValue := prevValues[0]
-				newIsAbsent := prevIsAbsent[0]
 				prevValues = prevValues[1:]
-				prevIsAbsent = prevIsAbsent[1:]
 
 				newValues[i] = newValue
-				newIsAbsents[i] = newIsAbsent
 			}
 
 			prevValues = append(prevValues, value)
-			prevIsAbsent = append(prevIsAbsent, series.IsAbsent[i])
 		}
 
 		result := *series
 		result.Name = fmt.Sprintf("delay(%s,%d)", series.Name, steps)
 		result.Values = newValues
-		result.IsAbsent = newIsAbsents
 
 		results = append(results, &result)
 	}

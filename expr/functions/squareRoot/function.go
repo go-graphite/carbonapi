@@ -28,7 +28,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // squareRoot(seriesList)
-func (f *squareRoot) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *squareRoot) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -39,14 +39,8 @@ func (f *squareRoot) Do(e parser.Expr, from, until int32, values map[parser.Metr
 		r := *a
 		r.Name = fmt.Sprintf("squareRoot(%s)", a.Name)
 		r.Values = make([]float64, len(a.Values))
-		r.IsAbsent = make([]bool, len(a.Values))
 
 		for i, v := range a.Values {
-			if a.IsAbsent[i] {
-				r.Values[i] = 0
-				r.IsAbsent[i] = true
-				continue
-			}
 			r.Values[i] = math.Sqrt(v)
 		}
 		results = append(results, &r)

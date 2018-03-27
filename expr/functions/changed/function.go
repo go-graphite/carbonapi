@@ -28,7 +28,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // changed(SeriesList)
-func (f *changed) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *changed) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -39,7 +39,6 @@ func (f *changed) Do(e parser.Expr, from, until int32, values map[parser.MetricR
 		r := *a
 		r.Name = fmt.Sprintf("%s(%s)", e.Target(), a.Name)
 		r.Values = make([]float64, len(a.Values))
-		r.IsAbsent = make([]bool, len(a.Values))
 
 		prev := math.NaN()
 		for i, v := range a.Values {

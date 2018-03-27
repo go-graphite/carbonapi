@@ -1,10 +1,10 @@
 package graphiteWeb
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math"
 	"net"
 	"net/http"
 	"net/url"
@@ -16,8 +16,8 @@ import (
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 	"github.com/go-graphite/carbonzipper/limiter"
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -33,10 +33,11 @@ type graphiteWeb struct {
 	proxy        *http.Client
 
 	supportedFunctions map[string]types.FunctionDescription
-	limiter            limiter.ServerLimiter
+	limiter            *limiter.ServerLimiter
 
 	logger         *zap.Logger
 	requestCounter uint64
+	timeout        time.Duration
 }
 
 func (f *graphiteWeb) pickServer() string {
@@ -132,6 +133,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 		strict:       cfg.Strict,
 		maxTries:     cfg.MaxTries,
 		working:      false,
+		timeout:      cfg.Timeout,
 		logger:       zapwriter.Logger("graphiteWeb"),
 		supportedFunctions: map[string]types.FunctionDescription{
 			"graphiteWeb": {
@@ -307,9 +309,12 @@ func (t *target) UnmarshalJSON(d []byte) error {
 }
 
 type graphiteMetric struct {
-	Tags       map[string]json.RawMessage
-	Target     target
-	Datapoints [][2]float64
+	Tags              map[string]json.RawMessage
+	Target            target
+	PathExpression    target
+	Datapoints        [][2]float64
+	XFilesFactor      float32
+	ConsolidationFunc string
 }
 
 type graphiteError struct {
@@ -317,7 +322,7 @@ type graphiteError struct {
 	err    error
 }
 
-func (f *graphiteWeb) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *graphiteWeb) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	f.logger.Info("received request",
 		zap.Bool("working", f.working),
 	)
@@ -349,16 +354,18 @@ func (f *graphiteWeb) Do(e parser.Expr, from, until int32, values map[parser.Met
 
 		rewrite.RawQuery = v.Encode()
 
-		f.limiter.Enter(srv)
+		ctx, cancel := context.WithTimeout(context.Background(), f.timeout)
+		defer cancel()
+		f.limiter.Enter(context.Background(), srv)
 
 		req, err := http.NewRequest("GET", rewrite.String(), nil)
 		if err != nil {
-			f.limiter.Leave(srv)
+			f.limiter.Leave(ctx, srv)
 			return nil, err
 		}
 
-		resp, err := f.proxy.Do(req)
-		f.limiter.Leave(srv)
+		resp, err := f.proxy.Do(req.WithContext(ctx))
+		f.limiter.Leave(ctx, srv)
 		if err != nil {
 			errors = append(errors, graphiteError{srv, err})
 			resp.Body.Close()
@@ -406,26 +413,22 @@ func (f *graphiteWeb) Do(e parser.Expr, from, until int32, values map[parser.Met
 	res := make([]*types.MetricData, len(tmp))
 
 	for _, m := range tmp {
-		stepTime := int32(60)
+		stepTime := int64(60)
 		if len(m.Datapoints) > 1 {
-			stepTime = int32(m.Datapoints[1][0] - m.Datapoints[0][0])
+			stepTime = int64(m.Datapoints[1][0] - m.Datapoints[0][0])
 		}
 		pbResp := pb.FetchResponse{
-			Name:      string(m.Target),
-			StartTime: int32(m.Datapoints[0][0]),
-			StopTime:  int32(m.Datapoints[len(m.Datapoints)-1][0]),
-			StepTime:  stepTime,
-			Values:    make([]float64, len(m.Datapoints)),
-			IsAbsent:  make([]bool, len(m.Datapoints)),
+			Name:              string(m.Target),
+			StartTime:         int64(m.Datapoints[0][0]),
+			StopTime:          int64(m.Datapoints[len(m.Datapoints)-1][0]),
+			StepTime:          stepTime,
+			Values:            make([]float64, len(m.Datapoints)),
+			XFilesFactor:      m.XFilesFactor,
+			PathExpression:    string(m.PathExpression),
+			ConsolidationFunc: m.ConsolidationFunc,
 		}
 		for i, v := range m.Datapoints {
-			if math.IsNaN(v[1]) {
-				pbResp.Values[i] = 0
-				pbResp.IsAbsent[i] = true
-			} else {
-				pbResp.Values[i] = v[1]
-				pbResp.IsAbsent[i] = false
-			}
+			pbResp.Values[i] = v[1]
 		}
 		res = append(res, &types.MetricData{
 			FetchResponse: pbResp,

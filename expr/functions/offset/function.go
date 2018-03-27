@@ -27,7 +27,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // offset(seriesList,factor)
-func (f *offset) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *offset) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -42,14 +42,8 @@ func (f *offset) Do(e parser.Expr, from, until int32, values map[parser.MetricRe
 		r := *a
 		r.Name = fmt.Sprintf("offset(%s,%g)", a.Name, factor)
 		r.Values = make([]float64, len(a.Values))
-		r.IsAbsent = make([]bool, len(a.Values))
 
 		for i, v := range a.Values {
-			if a.IsAbsent[i] {
-				r.Values[i] = 0
-				r.IsAbsent[i] = true
-				continue
-			}
 			r.Values[i] = v + factor
 		}
 		results = append(results, &r)

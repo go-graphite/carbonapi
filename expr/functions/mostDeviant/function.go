@@ -28,7 +28,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // mostDeviant(seriesList, n) -or- mostDeviant(n, seriesList)
-func (f *mostDeviant) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *mostDeviant) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	var nArg int
 	if !e.Args()[0].IsConst() {
 		// mostDeviant(seriesList, n)
@@ -49,7 +49,7 @@ func (f *mostDeviant) Do(e parser.Expr, from, until int32, values map[parser.Met
 	var mh types.MetricHeap
 
 	for index, arg := range args {
-		variance := helper.VarianceValue(arg.Values, arg.IsAbsent)
+		variance := helper.VarianceValue(arg.Values)
 		if math.IsNaN(variance) {
 			continue
 		}

@@ -17,7 +17,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
 	"bitbucket.org/tebeka/strftime"
 	"github.com/evmar/gocairo/cairo"
@@ -86,11 +86,11 @@ type xAxisStruct struct {
 	minorGridUnit TimeUnit
 	minorGridStep float64
 	majorGridUnit TimeUnit
-	majorGridStep int32
+	majorGridStep int64
 	labelUnit     TimeUnit
-	labelStep     int32
+	labelStep     int64
 	format        string
-	maxInterval   int32
+	maxInterval   int64
 }
 
 var xAxisConfigs = []xAxisStruct{
@@ -403,9 +403,9 @@ type Params struct {
 	vtitle      string
 	vtitleRight string
 	tz          *time.Location
-	timeRange   int32
-	startTime   int32
-	endTime     int32
+	timeRange   int64
+	startTime   int64
+	endTime     int64
 
 	lineMode       LineMode
 	areaMode       AreaMode
@@ -437,9 +437,9 @@ type Params struct {
 	yLabelWidth    float64
 	xScaleFactor   float64
 	xFormat        string
-	xLabelStep     int32
-	xMinorGridStep int32
-	xMajorGridStep int32
+	xLabelStep     int64
+	xMinorGridStep int64
+	xMajorGridStep int64
 
 	minorGridLineColor string
 	majorGridLineColor string
@@ -665,7 +665,7 @@ func Description() map[string]types.FunctionDescription {
 }
 
 // TODO(civil): Split this into several separate functions.
-func EvalExprGraph(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func EvalExprGraph(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 
 	switch e.Target() {
 
@@ -736,19 +736,12 @@ func EvalExprGraph(e parser.Expr, from, until int32, values map[parser.MetricReq
 		upper.Name = name
 
 		vals := make([]float64, len(upper.Values))
-		absent := make([]bool, len(upper.Values))
 
 		for i, v := range upper.Values {
-			if upper.IsAbsent[i] || lower.IsAbsent[i] {
-				absent[i] = true
-				continue
-			}
-
 			vals[i] = v - lower.Values[i]
 		}
 
 		upper.Values = vals
-		upper.IsAbsent = absent
 
 		return []*types.MetricData{&lower, &upper}, nil
 
@@ -857,7 +850,6 @@ func EvalExprGraph(e parser.Expr, from, until int32, values map[parser.MetricReq
 				StopTime:  until,
 				StepTime:  until - from,
 				Values:    []float64{value, value},
-				IsAbsent:  []bool{false, false},
 			},
 			GraphOptions: types.GraphOptions{Color: color},
 		}
@@ -1018,29 +1010,27 @@ func marshalCairo(p PictureParams, results []*types.MetricData, backend cairoBac
 }
 
 func drawGraph(cr *cairoSurfaceContext, params *Params, results []*types.MetricData) {
-	var minNumberOfPoints, maxNumberOfPoints int32
-
 	params.secondYAxis = false
 
-	params.startTime = -1
-	params.endTime = -1
-	minNumberOfPoints = -1
-	maxNumberOfPoints = -1
+	params.startTime = int64(results[0].StartTime)
+	params.endTime = int64(results[0].StopTime)
+	minNumberOfPoints := int64(len(results[0].Values))
+	maxNumberOfPoints := minNumberOfPoints
 	for _, res := range results {
-		tmp := res.StartTime
-		if params.startTime == -1 || params.startTime > tmp {
+		tmp := int64(res.StartTime)
+		if params.startTime > tmp {
 			params.startTime = tmp
 		}
-		tmp = res.StopTime
-		if params.endTime == -1 || params.endTime > tmp {
+		tmp = int64(res.StopTime)
+		if params.endTime > tmp {
 			params.endTime = tmp
 		}
 
-		tmp = int32(len(res.Values))
-		if minNumberOfPoints == -1 || tmp < minNumberOfPoints {
+		tmp = int64(len(res.Values))
+		if tmp < minNumberOfPoints {
 			minNumberOfPoints = tmp
 		}
-		if maxNumberOfPoints == -1 || tmp > maxNumberOfPoints {
+		if tmp > maxNumberOfPoints {
 			maxNumberOfPoints = tmp
 		}
 
@@ -1147,7 +1137,7 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*types.MetricD
 	if !(params.lineMode == LineModeStaircase || ((minNumberOfPoints == maxNumberOfPoints) && (minNumberOfPoints == 2))) {
 		params.endTime = 0
 		for _, res := range results {
-			tmp := res.StopTime - res.StepTime
+			tmp := int64(res.StopTime - res.StepTime)
 			if params.endTime < tmp {
 				params.endTime = tmp
 			}
@@ -1203,7 +1193,6 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*types.MetricD
 				stackName = r.StackName
 			}
 
-			absent := r.AggregatedAbsent()
 			vals := r.AggregatedValues()
 			for i, v := range vals {
 
@@ -1211,7 +1200,7 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*types.MetricD
 					total = append(total, 0)
 				}
 
-				if !absent[i] {
+				if math.IsNaN(v) {
 					vals[i] += total[i]
 					total[i] += v
 				}
@@ -1220,7 +1209,6 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*types.MetricD
 			// since these are now post-aggregation, reset the valuesPerPoint
 			r.ValuesPerPoint = 1
 			r.Values = vals
-			r.IsAbsent = absent
 		}
 	}
 
@@ -1263,7 +1251,7 @@ func consolidateDataPoints(params *Params, results []*types.MetricData) {
 	params.graphWidth = numberOfPixels
 
 	for _, series := range results {
-		numberOfDataPoints := math.Floor(float64(params.timeRange / series.StepTime))
+		numberOfDataPoints := math.Floor(float64(params.timeRange / int64(series.StepTime)))
 		// minXStep := params.minXStep
 		minXStep := 1.0
 		divisor := float64(params.timeRange) / float64(series.StepTime)
@@ -1293,8 +1281,8 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*types.Met
 	Rdata = params.dataRight
 
 	for _, s := range Ldata {
-		for _, v := range s.IsAbsent {
-			if v {
+		for _, v := range s.Values {
+			if math.IsNaN(v) {
 				seriesWithMissingValuesL = append(seriesWithMissingValuesL, s)
 				break
 			}
@@ -1302,8 +1290,8 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*types.Met
 	}
 
 	for _, s := range Rdata {
-		for _, v := range s.IsAbsent {
-			if v {
+		for _, v := range s.Values {
+			if math.IsNaN(v) {
 				seriesWithMissingValuesR = append(seriesWithMissingValuesR, s)
 				break
 			}
@@ -1319,9 +1307,8 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*types.Met
 			if s.DrawAsInfinite {
 				continue
 			}
-			absent := s.AggregatedAbsent()
-			for i, v := range s.AggregatedValues() {
-				if absent[i] {
+			for _, v := range s.AggregatedValues() {
+				if math.IsNaN(v) {
 					continue
 				}
 				if v < yMinValueL {
@@ -1339,9 +1326,8 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*types.Met
 			if s.DrawAsInfinite {
 				continue
 			}
-			absent := s.AggregatedAbsent()
-			for i, v := range s.AggregatedValues() {
-				if absent[i] {
+			for _, v := range s.AggregatedValues() {
+				if math.IsNaN(v) {
 					continue
 				}
 				if v < yMinValueR {
@@ -1354,9 +1340,8 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*types.Met
 	var yMaxValueL, yMaxValueR float64
 	yMaxValueL = math.Inf(-1)
 	for _, s := range Ldata {
-		absent := s.AggregatedAbsent()
-		for i, v := range s.AggregatedValues() {
-			if absent[i] {
+		for _, v := range s.AggregatedValues() {
+			if math.IsNaN(v) {
 				continue
 			}
 
@@ -1368,9 +1353,8 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*types.Met
 
 	yMaxValueR = math.Inf(-1)
 	for _, s := range Rdata {
-		absent := s.AggregatedAbsent()
-		for i, v := range s.AggregatedValues() {
-			if absent[i] {
+		for _, v := range s.AggregatedValues() {
+			if math.IsNaN(v) {
 				continue
 			}
 
@@ -1619,13 +1603,12 @@ func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*types.Metric
 			continue
 		}
 		pushed := false
-		absent := r.AggregatedAbsent()
-		for i, v := range r.AggregatedValues() {
-			if absent[i] && !pushed {
+		for _, v := range r.AggregatedValues() {
+			if math.IsNaN(v) && !pushed {
 				seriesWithMissingValues = append(seriesWithMissingValues, r)
 				pushed = true
 			} else {
-				if absent[i] {
+				if math.IsNaN(v) {
 					continue
 				}
 				if !math.IsInf(v, 0) && (math.IsNaN(yMinValue) || yMinValue > v) {
@@ -1908,9 +1891,9 @@ func setupXAxis(cr *cairoSurfaceContext, params *Params, results []*types.Metric
 		params.xConf = xAxisConfigs[len(xAxisConfigs)-1]
 	}
 
-	params.xLabelStep = int32(params.xConf.labelUnit) * params.xConf.labelStep
-	params.xMinorGridStep = int32(float64(params.xConf.minorGridUnit) * params.xConf.minorGridStep)
-	params.xMajorGridStep = int32(params.xConf.majorGridUnit) * params.xConf.majorGridStep
+	params.xLabelStep = int64(params.xConf.labelUnit) * params.xConf.labelStep
+	params.xMinorGridStep = int64(float64(params.xConf.minorGridUnit) * params.xConf.minorGridStep)
+	params.xMajorGridStep = int64(params.xConf.majorGridUnit) * params.xConf.majorGridStep
 }
 
 func drawLabels(cr *cairoSurfaceContext, params *Params, results []*types.MetricData) {
@@ -1968,7 +1951,7 @@ func drawYAxis(cr *cairoSurfaceContext, params *Params, results []*types.MetricD
 	}
 }
 
-func findXTimes(start int32, unit TimeUnit, step float64) (int32, int32) {
+func findXTimes(start int64, unit TimeUnit, step float64) (int64, int64) {
 
 	t := time.Unix(int64(start), 0)
 
@@ -1994,12 +1977,12 @@ func findXTimes(start int32, unit TimeUnit, step float64) (int32, int32) {
 		t = t.Add(d)
 	}
 
-	return int32(t.Unix()), int32(d / time.Second)
+	return t.Unix(), int64(d / time.Second)
 }
 
 func drawXAxis(cr *cairoSurfaceContext, params *Params, results []*types.MetricData) {
 
-	dt, xDelta := findXTimes(params.startTime, params.xConf.labelUnit, float64(params.xConf.labelStep))
+	dt, xDelta := findXTimes(int64(params.startTime), params.xConf.labelUnit, float64(params.xConf.labelStep))
 
 	xFormat := params.xFormat
 	if xFormat == "" {
@@ -2008,7 +1991,7 @@ func drawXAxis(cr *cairoSurfaceContext, params *Params, results []*types.MetricD
 
 	maxAscent := getFontExtents(cr).Ascent
 
-	for dt < params.endTime {
+	for dt < int64(params.endTime) {
 		label, _ := strftime.Format(xFormat, time.Unix(int64(dt), 0).In(params.tz))
 		x := params.area.xmin + float64(dt-params.startTime)*params.xScaleFactor
 		y := params.area.ymax + maxAscent
@@ -2243,12 +2226,14 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*types.MetricD
 
 				newSeries := types.MetricData{
 					FetchResponse: pb.FetchResponse{
-						Name:      r.Name,
-						StopTime:  r.StopTime,
-						StartTime: r.StartTime,
-						StepTime:  r.AggregatedTimeStep(),
-						Values:    make([]float64, len(r.AggregatedValues())),
-						IsAbsent:  make([]bool, len(r.AggregatedValues())),
+						Name:              r.Name,
+						StopTime:          r.StopTime,
+						StartTime:         r.StartTime,
+						StepTime:          r.AggregatedTimeStep(),
+						Values:            make([]float64, len(r.AggregatedValues())),
+						XFilesFactor:      0,
+						PathExpression:    r.Name,
+						ConsolidationFunc: "average",
 					},
 					ValuesPerPoint: 1,
 					GraphOptions: types.GraphOptions{
@@ -2258,7 +2243,6 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*types.MetricD
 					},
 				}
 				copy(newSeries.Values, r.AggregatedValues())
-				copy(newSeries.IsAbsent, r.AggregatedAbsent())
 				strokeSeries = append(strokeSeries, &newSeries)
 			}
 		}
@@ -2299,21 +2283,16 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*types.MetricD
 			setColor(cr, string2RGBA(series.Color))
 		}
 
-		missingPoints := float64(series.StartTime-params.startTime) / float64(series.StepTime)
+		missingPoints := float64(int64(series.StartTime)-params.startTime) / float64(series.StepTime)
 		startShift := series.XStep * (missingPoints / float64(series.ValuesPerPoint))
 		x := float64(params.area.xmin) + startShift + (params.lineWidth / 2.0)
 		y := float64(params.area.ymin)
 		origX := x
 		startX := x
 
-		absent := series.AggregatedAbsent()
 		consecutiveNones := 0
 		for index, value := range series.AggregatedValues() {
 			x = origX + (float64(index) * series.XStep)
-
-			if absent[index] {
-				value = math.NaN()
-			}
 
 			if params.drawNullAsZero && math.IsNaN(value) {
 				value = 0

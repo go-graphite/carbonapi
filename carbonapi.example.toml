@@ -7,9 +7,7 @@ cpus = 0
 expireDelaySec = 10
 idleConnections = 10
 listen = "localhost:8081"
-maxBatchSize = 100
 pidFile = ""
-sendGlobsAsIs = false
 tz = ""
 graphTemplates = "graphTemplates.example.toml"
 
@@ -20,7 +18,7 @@ size_mb = 0
 type = "mem"
 
 [functionsConfig]
-graphiteWeb = graphiteWeb.example.yaml
+graphiteWeb = "graphiteWeb.example.yaml"
 
 [graphite]
 host = ""
@@ -60,9 +58,63 @@ graphite09compat = false
 keepAliveInterval = "30s"
 maxIdleConnsPerHost = 100
 
+# if upstream.backends specified, it will be used instead
+[[upstreams.backendsv2.backends]]
+groupName = "group1"
+# supported:
+#    carbonapi_v2_pb - carbonapi 0.11 or earlier version of protocol.
+#    carbonapi_v3_pb - new protocol, http interface (native)
+#    carbonapi_v3_grpc - new protocol, gRPC interface (native)
+#    protobuf, pb, pb3 - same as carbonapi_v2_pb
+#
+#  non-native protocols will be internally converted to new protocol, which will increase memory consumption
+protocol = "carbonapi_v2_pb"
+# supported:
+#    "broadcast" - send request to all backends in group and merge responses. This was default behavior for carbonapi 0.11 or earlier
+#    "roundrobin" - send request to one backend.
+#    "all - same as "broadcast"
+#    "rr" - same as "roundrobin"
+lbMethod = "broadcast"
+# amount of retries in case of unsuccessful request
+maxTries = 3
+# amount of metrics per fetch request. Default: 0 - unlimited. If not specified, global will be used
+maxGlobs = 100
+# interval for keep-alive http packets. If not specified, global will be used
+keepAliveInterval = "10s"
+# override for global concurrencyLimit.
+concurrencyLimit = 0
+# override for global maxIdleConnsPerHost
+maxIdleConnsPerHost = 1000
+# per-group timeout override. If not specified, global will be used.
+# Please note that ONLY min(global, local) will be used.
+    [timeouts]
+        # Maximum backend request time for find requests.
+        find = "2s"
+        # Maximum backend request time for render requests. This is total one and doesn't take into account in-flight requests.
+        render = "50s"
+        # Timeout to connect to the server
+        connect = "200ms"
+servers = ["http://127.0.0.2:8080", "http://127.0.0.3:8080"]
+
+[[upstreams.backendsv2.backends]]
+groupName = "group2"
+protocol = "carbonapi_v3_pb"
+lbMethod = "roundrobin"
+servers = ["http://127.0.0.4:8080", "http://127.0.0.5:8080"]
+
 [upstreams.carbonsearch]
 backend = "http://127.0.0.1:8070"
 prefix = "virt.v1.*"
+
+[upstreams.carbonsearchv2]
+# carbonsearch prefix to reserve/register
+prefix = "virt.v1.*"
+# Carbonsearch instances. Follows the same syntax as backendsv2
+    [[backends]]
+        groupName = "group1"
+        protocol = "carbonapi_v2_pb"
+        lbMethod = "broadcast"
+        servers = ["http://127.0.0.4:8080", "http://127.0.0.5:8080"]
 
 [upstreams.timeouts]
 afterStarted = "2s"

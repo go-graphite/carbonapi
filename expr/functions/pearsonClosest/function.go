@@ -30,7 +30,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // pearsonClosest(series, seriesList, n, direction=abs)
-func (f *pearsonClosest) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *pearsonClosest) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if len(e.Args()) > 3 {
 		return nil, types.ErrTooManyArguments
 	}
@@ -66,11 +66,6 @@ func (f *pearsonClosest) Do(e parser.Expr, from, until int32, values map[parser.
 
 	refValues := make([]float64, len(ref[0].Values))
 	copy(refValues, ref[0].Values)
-	for i, v := range ref[0].IsAbsent {
-		if v {
-			refValues[i] = math.NaN()
-		}
-	}
 
 	var mh types.MetricHeap
 
@@ -81,11 +76,7 @@ func (f *pearsonClosest) Do(e parser.Expr, from, until int32, values map[parser.
 			// Pearson will panic if arrays are not equal length; skip
 			continue
 		}
-		for i, v := range a.IsAbsent {
-			if v {
-				compareValues[i] = math.NaN()
-			}
-		}
+
 		value := onlinestats.Pearson(refValues, compareValues)
 		// Standardize the value so sort ASC will have strongest correlation first
 		switch {

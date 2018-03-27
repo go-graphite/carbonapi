@@ -1,6 +1,8 @@
 package invert
 
 import (
+	"math"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -26,15 +28,14 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // invert(seriesList)
-func (f *invert) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *invert) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	return helper.ForEachSeriesDo(e, from, until, values, func(a *types.MetricData, r *types.MetricData) *types.MetricData {
 		for i, v := range a.Values {
-			if a.IsAbsent[i] || v == 0 {
-				r.Values[i] = 0
-				r.IsAbsent[i] = true
-				continue
+			if v == 0 {
+				r.Values[i] = math.NaN()
+			} else {
+				r.Values[i] = 1 / v
 			}
-			r.Values[i] = 1 / v
 		}
 		return r
 	})

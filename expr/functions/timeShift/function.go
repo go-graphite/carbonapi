@@ -27,7 +27,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // timeShift(seriesList, timeShift, resetEnd=True)
-func (f *timeShift) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *timeShift) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// FIXME(dgryski): support resetEnd=true
 	// FIXME(civil): support alignDst
 	offs, err := e.GetIntervalArg(1, -1)
@@ -35,7 +35,9 @@ func (f *timeShift) Do(e parser.Expr, from, until int32, values map[parser.Metri
 		return nil, err
 	}
 
-	arg, err := helper.GetSeriesArg(e.Args()[0], from+offs, until+offs, values)
+	fromNew := int64(int64(from) + int64(offs))
+	untilNew := int64(int64(from) + int64(offs))
+	arg, err := helper.GetSeriesArg(e.Args()[0], fromNew, untilNew, values)
 	if err != nil {
 		return nil, err
 	}
@@ -45,8 +47,8 @@ func (f *timeShift) Do(e parser.Expr, from, until int32, values map[parser.Metri
 	for _, a := range arg {
 		r := *a
 		r.Name = fmt.Sprintf("timeShift(%s,'%d')", a.Name, offs)
-		r.StartTime = a.StartTime - offs
-		r.StopTime = a.StopTime - offs
+		r.StartTime = int64(int64(a.StartTime) - int64(offs))
+		r.StopTime = int64(int64(a.StopTime) - int64(offs))
 		results = append(results, &r)
 	}
 

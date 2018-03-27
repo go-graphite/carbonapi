@@ -23,7 +23,7 @@ func init() {
 }
 
 func TestEWMA(t *testing.T) {
-	now32 := int32(time.Now().Unix())
+	now32 := int64(time.Now().Unix())
 
 	tests := []th.EvalTestItem{
 		{

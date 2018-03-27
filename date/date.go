@@ -46,37 +46,37 @@ func parseTime(s string) (hour, minute int, err error) {
 var TimeFormats = []string{"20060102", "01/02/06"}
 
 // DateParamToEpoch turns a passed string parameter into a unix epoch
-func DateParamToEpoch(s string, qtz string, d int64, defaultTimeZone *time.Location) int32 {
+func DateParamToEpoch(s string, qtz string, d int64, defaultTimeZone *time.Location) int64 {
 
 	if s == "" {
 		// return the default if nothing was passed
-		return int32(d)
+		return int64(d)
 	}
 
 	// relative timestamp
 	if s[0] == '-' {
 		offset, err := parser.IntervalString(s, -1)
 		if err != nil {
-			return int32(d)
+			return int64(d)
 		}
 
-		return int32(timeNow().Add(time.Duration(offset) * time.Second).Unix())
+		return int64(timeNow().Add(time.Duration(offset) * time.Second).Unix())
 	}
 
 	switch s {
 	case "now":
-		return int32(timeNow().Unix())
+		return int64(timeNow().Unix())
 	case "midnight", "noon", "teatime":
 		yy, mm, dd := timeNow().Date()
 		hh, min, _ := parseTime(s) // error ignored, we know it's valid
 		dt := time.Date(yy, mm, dd, hh, min, 0, 0, defaultTimeZone)
-		return int32(dt.Unix())
+		return int64(dt.Unix())
 	}
 
 	sint, err := strconv.Atoi(s)
 	// need to check that len(s) > 8 to avoid turning 20060102 into seconds
 	if err == nil && len(s) > 8 {
-		return int32(sint) // We got a timestamp so returning it
+		return int64(sint) // We got a timestamp so returning it
 	}
 
 	s = strings.Replace(s, "_", " ", 1) // Go can't parse _ in date strings
@@ -90,7 +90,7 @@ func DateParamToEpoch(s string, qtz string, d int64, defaultTimeZone *time.Locat
 	case len(split) == 2:
 		ts, ds = split[0], split[1]
 	case len(split) > 2:
-		return int32(d)
+		return int64(d)
 	}
 
 	var tz = defaultTimeZone
@@ -118,7 +118,7 @@ dateStringSwitch:
 			}
 		}
 
-		return int32(d)
+		return int64(d)
 	}
 
 	var hour, minute int
@@ -130,5 +130,5 @@ dateStringSwitch:
 	yy, mm, dd := t.Date()
 	t = time.Date(yy, mm, dd, hour, minute, 0, 0, defaultTimeZone)
 
-	return int32(t.Unix())
+	return int64(t.Unix())
 }

@@ -135,8 +135,10 @@ func (e *expr) Metrics() []MetricRequest {
 				return nil
 			}
 			for i := range r {
-				r[i].From += offs
-				r[i].Until += offs
+				fromNew := int64(r[i].From) + int64(offs)
+				untilNew := int64(r[i].Until) + int64(offs)
+				r[i].From += int64(fromNew)
+				r[i].Until += int64(untilNew)
 			}
 		case "timeStack":
 			offs, err := e.GetIntervalArg(1, -1)
@@ -156,11 +158,13 @@ func (e *expr) Metrics() []MetricRequest {
 
 			var r2 []MetricRequest
 			for _, v := range r {
-				for i := int32(start); i < int32(end); i++ {
+				for i := int64(start); i < int64(end); i++ {
+					fromNew := int64(v.From) + i*int64(offs)
+					untilNew := int64(v.Until) + i*int64(offs)
 					r2 = append(r2, MetricRequest{
 						Metric: v.Metric,
-						From:   v.From + (i * offs),
-						Until:  v.Until + (i * offs),
+						From:   int64(fromNew),
+						Until:  int64(untilNew),
 					})
 				}
 			}
@@ -178,7 +182,8 @@ func (e *expr) Metrics() []MetricRequest {
 					return nil
 				}
 				for i := range r {
-					r[i].From -= offs
+					fromNew := int64(r[i].From) - int64(offs)
+					r[i].From = int64(fromNew)
 				}
 			}
 		}

@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"expvar"
 	"flag"
 	"fmt"
@@ -25,10 +24,9 @@ import (
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	"github.com/go-graphite/carbonzipper/cache"
-	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 	"github.com/go-graphite/carbonzipper/mstats"
-	"github.com/go-graphite/carbonzipper/pathcache"
-	realZipper "github.com/go-graphite/carbonzipper/zipper"
+	zipperCfg "github.com/go-graphite/carbonzipper/zipper/config"
+	zipperTypes "github.com/go-graphite/carbonzipper/zipper/types"
 	"github.com/gorilla/handlers"
 	"github.com/peterbourgon/g2g"
 	"github.com/spf13/viper"
@@ -154,65 +152,6 @@ func deferredAccessLogging(accessLogger *zap.Logger, accessLogDetails *carbonapi
 	}
 }
 
-type treejson struct {
-	AllowChildren int            `json:"allowChildren"`
-	Expandable    int            `json:"expandable"`
-	Leaf          int            `json:"leaf"`
-	ID            string         `json:"id"`
-	Text          string         `json:"text"`
-	Context       map[string]int `json:"context"` // unused
-}
-
-var treejsonContext = make(map[string]int)
-
-func findTreejson(globs pb.GlobResponse) ([]byte, error) {
-	var b bytes.Buffer
-
-	var tree = make([]treejson, 0)
-
-	seen := make(map[string]struct{})
-
-	basepath := globs.Name
-
-	if i := strings.LastIndex(basepath, "."); i != -1 {
-		basepath = basepath[:i+1]
-	} else {
-		basepath = ""
-	}
-
-	for _, g := range globs.Matches {
-
-		name := g.Path
-
-		if i := strings.LastIndex(name, "."); i != -1 {
-			name = name[i+1:]
-		}
-
-		if _, ok := seen[name]; ok {
-			continue
-		}
-		seen[name] = struct{}{}
-
-		t := treejson{
-			ID:      basepath + name,
-			Context: treejsonContext,
-			Text:    name,
-		}
-
-		if g.IsLeaf {
-			t.Leaf = 1
-		} else {
-			t.AllowChildren = 1
-			t.Expandable = 1
-		}
-
-		tree = append(tree, t)
-	}
-
-	err := json.NewEncoder(&b).Encode(tree)
-	return b.Bytes(), err
-}
-
 var defaultLoggerConfig = zapwriter.Config{
 	Logger:           "",
 	File:             "stdout",
@@ -252,7 +191,7 @@ var config = struct {
 	AlwaysSendGlobsAsIs        bool               `mapstructure:"alwaysSendGlobsAsIs"`
 	MaxBatchSize               int                `mapstructure:"maxBatchSize"`
 	Zipper                     string             `mapstructure:"zipper"`
-	Upstreams                  realZipper.Config  `mapstructure:"upstreams"`
+	Upstreams                  zipperCfg.Config   `mapstructure:"upstreams"`
 	ExpireDelaySec             int32              `mapstructure:"expireDelaySec"`
 	GraphiteWeb09Compatibility bool               `mapstructure:"graphite09compat"`
 	IgnoreClientTimeout        bool               `mapstructure:"ignoreClientTimeout"`
@@ -298,11 +237,11 @@ var config = struct {
 	defaultTimeZone: time.Local,
 	Logger:          []zapwriter.Config{defaultLoggerConfig},
 
-	Upstreams: realZipper.Config{
-		Timeouts: realZipper.Timeouts{
-			Global:       10000 * time.Second,
-			AfterStarted: 2 * time.Second,
-			Connect:      200 * time.Millisecond,
+	Upstreams: zipperCfg.Config{
+		Timeouts: zipperTypes.Timeouts{
+			Render:  10000 * time.Second,
+			Find:    2 * time.Second,
+			Connect: 200 * time.Millisecond,
 		},
 		KeepAliveInterval: 30 * time.Second,
 
@@ -312,7 +251,7 @@ var config = struct {
 	GraphiteWeb09Compatibility: false,
 }
 
-func zipperStats(stats *realZipper.Stats) {
+func zipperStats(stats *zipperTypes.Stats) {
 	zipperMetrics.Timeouts.Add(stats.Timeouts)
 	zipperMetrics.FindErrors.Add(stats.FindErrors)
 	zipperMetrics.RenderErrors.Add(stats.RenderErrors)
@@ -718,10 +657,10 @@ func setUpConfigUpstreams(logger *zap.Logger) {
 		config.Upstreams.MaxIdleConnsPerHost = config.IdleConnections
 		config.Upstreams.KeepAliveInterval = 10 * time.Second
 		// To emulate previous behavior
-		config.Upstreams.Timeouts = realZipper.Timeouts{
-			Connect:      1 * time.Second,
-			AfterStarted: 600 * time.Second,
-			Global:       600 * time.Second,
+		config.Upstreams.Timeouts = zipperTypes.Timeouts{
+			Connect: 1 * time.Second,
+			Render:  600 * time.Second,
+			Find:    600 * time.Second,
 		}
 	}
 	if len(config.Upstreams.Backends) == 0 {
@@ -729,20 +668,20 @@ func setUpConfigUpstreams(logger *zap.Logger) {
 	}
 
 	// Setup in-memory path cache for carbonzipper requests
-	config.Upstreams.PathCache = pathcache.NewPathCache(config.ExpireDelaySec)
-	config.Upstreams.SearchCache = pathcache.NewPathCache(config.ExpireDelaySec)
+	// TODO(civil): Export pathcache metrics
+	/*
+		zipperMetrics.CacheSize = expvar.Func(func() interface{} { return config.Upstreams.PathCache.ECSize() })
+		expvar.Publish("cacheSize", zipperMetrics.CacheSize)
 
-	zipperMetrics.CacheSize = expvar.Func(func() interface{} { return config.Upstreams.PathCache.ECSize() })
-	expvar.Publish("cacheSize", zipperMetrics.CacheSize)
+		zipperMetrics.CacheItems = expvar.Func(func() interface{} { return config.Upstreams.PathCache.ECItems() })
+		expvar.Publish("cacheItems", zipperMetrics.CacheItems)
 
-	zipperMetrics.CacheItems = expvar.Func(func() interface{} { return config.Upstreams.PathCache.ECItems() })
-	expvar.Publish("cacheItems", zipperMetrics.CacheItems)
+		zipperMetrics.SearchCacheSize = expvar.Func(func() interface{} { return config.Upstreams.SearchCache.ECSize() })
+		expvar.Publish("searchCacheSize", zipperMetrics.SearchCacheSize)
 
-	zipperMetrics.SearchCacheSize = expvar.Func(func() interface{} { return config.Upstreams.SearchCache.ECSize() })
-	expvar.Publish("searchCacheSize", zipperMetrics.SearchCacheSize)
-
-	zipperMetrics.SearchCacheItems = expvar.Func(func() interface{} { return config.Upstreams.SearchCache.ECItems() })
-	expvar.Publish("searchCacheItems", zipperMetrics.SearchCacheItems)
+		zipperMetrics.SearchCacheItems = expvar.Func(func() interface{} { return config.Upstreams.SearchCache.ECItems() })
+		expvar.Publish("searchCacheItems", zipperMetrics.SearchCacheItems)
+	*/
 }
 
 func main() {

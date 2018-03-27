@@ -6,6 +6,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
+	"math"
 	"strings"
 )
 
@@ -28,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // diffSeries(*seriesLists)
-func (f *diffSeries) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *diffSeries) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	minuends, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -58,20 +59,19 @@ func (f *diffSeries) Do(e parser.Expr, from, until int32, values map[parser.Metr
 	r := *minuend
 	r.Name = fmt.Sprintf("diffSeries(%s)", e.RawArgs())
 	r.Values = make([]float64, len(minuend.Values))
-	r.IsAbsent = make([]bool, len(minuend.Values))
 
 	for i, v := range minuend.Values {
 
-		if minuend.IsAbsent[i] {
-			r.IsAbsent[i] = true
+		if math.IsNaN(minuend.Values[i]) {
+			r.Values[i] = math.NaN()
 			continue
 		}
 
 		var sub float64
 		for _, s := range subtrahends {
-			iSubtrahend := (int32(i) * minuend.StepTime) / s.StepTime
+			iSubtrahend := (int64(i) * minuend.StepTime) / s.StepTime
 
-			if s.IsAbsent[iSubtrahend] {
+			if math.IsNaN(s.Values[iSubtrahend]) {
 				continue
 			}
 			sub += s.Values[iSubtrahend]

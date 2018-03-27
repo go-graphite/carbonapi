@@ -2,6 +2,8 @@ package linearRegression
 
 import (
 	"fmt"
+	"math"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -28,7 +30,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // linearRegression(seriesList, startSourceAt=None, endSourceAt=None)
-func (f *linearRegression) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *linearRegression) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -49,26 +51,25 @@ func (f *linearRegression) Do(e parser.Expr, from, until int32, values map[parse
 		}
 
 		r.Values = make([]float64, len(a.Values))
-		r.IsAbsent = make([]bool, len(r.Values))
 		r.StopTime = a.GetStopTime()
 
 		// Removing absent values from original dataset
 		nonNulls := make([]float64, 0)
-		for i := range a.Values {
-			if !a.IsAbsent[i] {
+		for i, v := range a.Values {
+			if !math.IsNaN(v) {
 				nonNulls = append(nonNulls, a.Values[i])
 			}
 		}
 		if len(nonNulls) < 2 {
-			for i := range r.IsAbsent {
-				r.IsAbsent[i] = true
+			for i := range r.Values {
+				r.Values[i] = math.NaN()
 			}
 			results = append(results, &r)
 			continue
 		}
 
 		// STEP 1: Creating Vandermonde (X)
-		v := helper.Vandermonde(a.IsAbsent, degree)
+		v := helper.Vandermonde(a.Values, degree)
 		// STEP 2: Creating (X^T * X)**-1
 		var t mat.Dense
 		t.Mul(v.T(), v)

@@ -7,8 +7,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
-	"math"
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
 type holtWintersConfidenceBands struct {
@@ -29,7 +28,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *holtWintersConfidenceBands) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *holtWintersConfidenceBands) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	var results []*types.MetricData
 	args, err := helper.GetSeriesArg(e.Args()[0], from-7*86400, until, values)
 	if err != nil {
@@ -47,36 +46,26 @@ func (f *holtWintersConfidenceBands) Do(e parser.Expr, from, until int32, values
 		lowerBand, upperBand := holtwinters.HoltWintersConfidenceBands(arg.Values, stepTime, delta)
 
 		lowerSeries := types.MetricData{FetchResponse: pb.FetchResponse{
-			Name:      fmt.Sprintf("holtWintersConfidenceLower(%s)", arg.Name),
-			Values:    lowerBand,
-			IsAbsent:  make([]bool, len(lowerBand)),
-			StepTime:  arg.StepTime,
-			StartTime: arg.StartTime + 7*86400,
-			StopTime:  arg.StopTime,
+			Name:              fmt.Sprintf("holtWintersConfidenceLower(%s)", arg.Name),
+			Values:            lowerBand,
+			StepTime:          arg.StepTime,
+			StartTime:         arg.StartTime + 7*86400,
+			StopTime:          arg.StopTime,
+			ConsolidationFunc: arg.ConsolidationFunc,
+			XFilesFactor:      arg.XFilesFactor,
+			PathExpression:    fmt.Sprintf("holtWintersConfidenceLower(%s)", arg.Name),
 		}}
-
-		for i, val := range lowerSeries.Values {
-			if math.IsNaN(val) {
-				lowerSeries.Values[i] = 0
-				lowerSeries.IsAbsent[i] = true
-			}
-		}
 
 		upperSeries := types.MetricData{FetchResponse: pb.FetchResponse{
-			Name:      fmt.Sprintf("holtWintersConfidenceUpper(%s)", arg.Name),
-			Values:    upperBand,
-			IsAbsent:  make([]bool, len(upperBand)),
-			StepTime:  arg.StepTime,
-			StartTime: arg.StartTime + 7*86400,
-			StopTime:  arg.StopTime,
+			Name:              fmt.Sprintf("holtWintersConfidenceUpper(%s)", arg.Name),
+			Values:            upperBand,
+			StepTime:          arg.StepTime,
+			StartTime:         arg.StartTime + 7*86400,
+			StopTime:          arg.StopTime,
+			ConsolidationFunc: arg.ConsolidationFunc,
+			XFilesFactor:      arg.XFilesFactor,
+			PathExpression:    fmt.Sprintf("holtWintersConfidenceLower(%s)", arg.Name),
 		}}
-
-		for i, val := range upperSeries.Values {
-			if math.IsNaN(val) {
-				upperSeries.Values[i] = 0
-				upperSeries.IsAbsent[i] = true
-			}
-		}
 
 		results = append(results, &lowerSeries)
 		results = append(results, &upperSeries)

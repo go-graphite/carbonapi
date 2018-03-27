@@ -2,6 +2,7 @@ package pathcache
 
 import (
 	"github.com/dgryski/go-expirecache"
+	"github.com/go-graphite/carbonzipper/zipper/types"
 
 	"time"
 )
@@ -37,20 +38,20 @@ func (p *PathCache) ECSize() uint64 {
 }
 
 // Set allows to set a key (k) to value (v).
-func (p *PathCache) Set(k string, v []string) {
+func (p *PathCache) Set(k string, v []types.ServerClient) {
 
 	var size uint64
 	for _, vv := range v {
-		size += uint64(len(vv))
+		size += uint64(len(vv.Backends()))
 	}
 
 	p.ec.Set(k, v, size, p.expireDelaySec)
 }
 
 // Get returns an an element by key. If not successful - returns also false in second var.
-func (p *PathCache) Get(k string) ([]string, bool) {
+func (p *PathCache) Get(k string) ([]types.ServerClient, bool) {
 	if v, ok := p.ec.Get(k); ok {
-		return v.([]string), true
+		return v.([]types.ServerClient), true
 	}
 
 	return nil, false

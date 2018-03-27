@@ -14,7 +14,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
-	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
 func init() {
@@ -24,10 +24,10 @@ func init() {
 
 func TestGetBuckets(t *testing.T) {
 	tests := []struct {
-		start       int32
-		stop        int32
-		bucketSize  int32
-		wantBuckets int32
+		start       int64
+		stop        int64
+		bucketSize  int64
+		wantBuckets int64
 	}{
 		{13, 18, 5, 1},
 		{13, 17, 5, 1},
@@ -47,11 +47,11 @@ func TestGetBuckets(t *testing.T) {
 
 func TestAlignToBucketSize(t *testing.T) {
 	tests := []struct {
-		inputStart int32
-		inputStop  int32
-		bucketSize int32
-		wantStart  int32
-		wantStop   int32
+		inputStart int64
+		inputStop  int64
+		bucketSize int64
+		wantStart  int64
+		wantStop   int64
 	}{
 		{
 			13, 18, 5,
@@ -81,10 +81,10 @@ func TestAlignToBucketSize(t *testing.T) {
 
 func TestAlignToInterval(t *testing.T) {
 	tests := []struct {
-		inputStart int32
-		inputStop  int32
-		bucketSize int32
-		wantStart  int32
+		inputStart int64
+		inputStop  int64
+		bucketSize int64
+		wantStart  int64
 	}{
 		{
 			91111, 92222, 5,
@@ -121,9 +121,9 @@ type evalExprTestCase struct {
 	metricRequest parser.MetricRequest
 	values        []float64
 	isAbsent      []bool
-	stepTime      int32
-	from          int32
-	until         int32
+	stepTime      int64
+	from          int64
+	until         int64
 }
 
 func TestEvalExpr(t *testing.T) {
@@ -189,12 +189,13 @@ func TestEvalExpr(t *testing.T) {
 
 			data := types.MetricData{
 				FetchResponse: pb.FetchResponse{
-					Name:      request.Metric,
-					StartTime: request.From,
-					StopTime:  request.Until,
-					StepTime:  test.stepTime,
-					Values:    test.values,
-					IsAbsent:  test.isAbsent,
+					Name:              request.Metric,
+					StartTime:         request.From,
+					StopTime:          request.Until,
+					StepTime:          test.stepTime,
+					Values:            test.values,
+					ConsolidationFunc: "average",
+					PathExpression:    request.Metric,
 				},
 			}
 
@@ -202,14 +203,14 @@ func TestEvalExpr(t *testing.T) {
 				&data,
 			}
 
-			EvalExpr(exp, int32(request.From), int32(request.Until), metricMap)
+			EvalExpr(exp, request.From, request.Until, metricMap)
 		})
 	}
 }
 
 func TestEvalExpression(t *testing.T) {
 
-	now32 := int32(time.Now().Unix())
+	now32 := time.Now().Unix()
 
 	tests := []th.EvalTestItem{
 		{
@@ -1450,7 +1451,7 @@ func TestEvalSummarize(t *testing.T) {
 }
 
 func TestRewriteExpr(t *testing.T) {
-	now32 := int32(time.Now().Unix())
+	now32 := time.Now().Unix()
 
 	tests := []struct {
 		name       string
@@ -1572,7 +1573,7 @@ func TestRewriteExpr(t *testing.T) {
 }
 
 func TestEvalMultipleReturns(t *testing.T) {
-	now32 := int32(time.Now().Unix())
+	now32 := time.Now().Unix()
 
 	tests := []th.MultiReturnEvalTestItem{
 		{
@@ -2119,8 +2120,8 @@ func TestEvalCustomFromUntil(t *testing.T) {
 		m     map[parser.MetricRequest][]*types.MetricData
 		w     []float64
 		name  string
-		from  int32
-		until int32
+		from  int64
+		until int64
 	}{
 		{
 			parser.NewExpr("timeFunction",
@@ -2153,7 +2154,7 @@ func TestEvalCustomFromUntil(t *testing.T) {
 			if g[0].StepTime == 0 {
 				t.Errorf("missing step for %+v", g)
 			}
-			if !th.NearlyEqual(g[0].Values, g[0].IsAbsent, tt.w) {
+			if !th.NearlyEqual(g[0].Values, tt.w) {
 				t.Errorf("failed: %s: got %+v, want %+v", g[0].Name, g[0].Values, tt.w)
 			}
 			if g[0].Name != tt.name {

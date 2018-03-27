@@ -26,7 +26,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // consolidateBy(seriesList, aggregationMethod)
-func (f *consolidateBy) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *consolidateBy) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -41,24 +41,7 @@ func (f *consolidateBy) Do(e parser.Expr, from, until int32, values map[parser.M
 	for _, a := range arg {
 		r := *a
 
-		var f func([]float64, []bool) (float64, bool)
-
-		switch name {
-		case "max":
-			f = types.AggMax
-		case "min":
-			f = types.AggMin
-		case "sum":
-			f = types.AggSum
-		case "average":
-			f = types.AggMean
-		case "first":
-			f = types.AggFirst
-		case "last":
-			f = types.AggLast
-		}
-
-		r.AggregateFunction = f
+		r.AggregateFunction = types.ConsolidationToFunc[name]
 
 		results = append(results, &r)
 	}

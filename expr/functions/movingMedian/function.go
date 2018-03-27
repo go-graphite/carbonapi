@@ -30,7 +30,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // movingMedian(seriesList, windowSize)
-func (f *movingMedian) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *movingMedian) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	var n int
 	var err error
 
@@ -59,7 +59,7 @@ func (f *movingMedian) Do(e parser.Expr, from, until int32, values map[parser.Me
 
 	start := from
 	if scaleByStep {
-		start -= int32(n)
+		start -= int64(n)
 	}
 
 	arg, err := helper.GetSeriesArg(e.Args()[0], start, until, values)
@@ -80,25 +80,18 @@ func (f *movingMedian) Do(e parser.Expr, from, until int32, values map[parser.Me
 		r := *a
 		r.Name = fmt.Sprintf("movingMedian(%s,%s)", a.Name, argstr)
 		r.Values = make([]float64, len(a.Values)-offset)
-		r.IsAbsent = make([]bool, len(a.Values)-offset)
 		r.StartTime = from
 		r.StopTime = until
 
 		data := movingmedian.NewMovingMedian(windowSize)
 
 		for i, v := range a.Values {
-			if a.IsAbsent[i] {
-				data.Push(math.NaN())
-			} else {
-				data.Push(v)
-			}
+			data.Push(v)
+
 			if ridx := i - offset; ridx >= 0 {
 				r.Values[ridx] = math.NaN()
 				if i >= (windowSize - 1) {
 					r.Values[ridx] = data.Median()
-				}
-				if math.IsNaN(r.Values[ridx]) {
-					r.IsAbsent[ridx] = true
 				}
 			}
 		}

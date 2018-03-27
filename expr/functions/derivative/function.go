@@ -28,21 +28,16 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // derivative(seriesList)
-func (f *derivative) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *derivative) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	return helper.ForEachSeriesDo(e, from, until, values, func(a *types.MetricData, r *types.MetricData) *types.MetricData {
 		prev := math.NaN()
 		for i, v := range a.Values {
-			if a.IsAbsent[i] {
-				r.IsAbsent[i] = true
-				continue
-			} else if math.IsNaN(prev) {
-				r.IsAbsent[i] = true
-				prev = v
-				continue
-			}
+			// We don't need to check for special case here. value-NaN == NaN
 
 			r.Values[i] = v - prev
-			prev = v
+			if !math.IsNaN(v) {
+				prev = v
+			}
 		}
 		return r
 	})

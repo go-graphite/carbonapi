@@ -19,8 +19,8 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	"github.com/go-graphite/carbonapi/util"
-	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
 	"github.com/go-graphite/carbonzipper/intervalset"
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/lomik/zapwriter"
@@ -281,7 +281,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			var glob pb.GlobResponse
+			var glob *pb.MultiGlobResponse
 			var haveCacheData bool
 
 			if useCache {
@@ -321,67 +321,22 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			sendGlobs := config.AlwaysSendGlobsAsIs || (config.SendGlobsAsIs && len(glob.Matches) < config.MaxBatchSize)
-			accessLogDetails.SendGlobs = sendGlobs
+			// Splitting requets into batches is now done by carbonzipper
 
-			if sendGlobs {
-				// Request is "small enough" -- send the entire thing as a render request
+			apiMetrics.RenderRequests.Add(1)
+			config.limiter.enter()
+			accessLogDetails.ZipperRequests++
 
-				apiMetrics.RenderRequests.Add(1)
-				config.limiter.enter()
-				accessLogDetails.ZipperRequests++
-
-				r, err := config.zipper.Render(ctx, m.Metric, mfetch.From, mfetch.Until)
-				if err != nil {
-					errors[target] = err.Error()
-					config.limiter.leave()
-					continue
-				}
+			r, err := config.zipper.Render(ctx, m.Metric, mfetch.From, mfetch.Until)
+			if err != nil {
+				errors[target] = err.Error()
 				config.limiter.leave()
-				metricMap[mfetch] = r
-				for i := range r {
-					size += r[i].Size()
-				}
-
-			} else {
-				// Request is "too large"; send render requests individually
-				// TODO(dgryski): group the render requests into batches
-				rch := make(chan renderResponse, len(glob.Matches))
-				var leaves int
-				for _, m := range glob.Matches {
-					if !m.IsLeaf {
-						continue
-					}
-					leaves++
-
-					apiMetrics.RenderRequests.Add(1)
-					config.limiter.enter()
-					accessLogDetails.ZipperRequests++
-
-					go func(path string, from, until int32) {
-						if r, err := config.zipper.Render(ctx, path, from, until); err == nil {
-							rch <- renderResponse{r[0], nil}
-						} else {
-							rch <- renderResponse{nil, err}
-						}
-						config.limiter.leave()
-					}(m.Path, mfetch.From, mfetch.Until)
-				}
-
-				errors := make([]error, 0)
-				for i := 0; i < leaves; i++ {
-					if r := <-rch; r.error == nil {
-						size += r.data.Size()
-						metricMap[mfetch] = append(metricMap[mfetch], r.data)
-					} else {
-						errors = append(errors, r.error)
-					}
-				}
-				if len(errors) != 0 {
-					logger.Error("render error occurred while fetching data",
-						zap.Any("errors", errors),
-					)
-				}
+				continue
+			}
+			config.limiter.leave()
+			metricMap[mfetch] = r
+			for i := range r {
+				size += r[i].Size()
 			}
 
 			expr.SortMetrics(metricMap[mfetch], mfetch)
@@ -469,6 +424,131 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	accessLogDetails.HaveNonFatalErrors = gotErrors
 }
 
+// Find handler and it's helper functions
+
+type treejson struct {
+	AllowChildren int            `json:"allowChildren"`
+	Expandable    int            `json:"expandable"`
+	Leaf          int            `json:"leaf"`
+	ID            string         `json:"id"`
+	Text          string         `json:"text"`
+	Context       map[string]int `json:"context"` // unused
+}
+
+var treejsonContext = make(map[string]int)
+
+func findTreejson(multiGlobs *pb.MultiGlobResponse) ([]byte, error) {
+	var b bytes.Buffer
+
+	var tree = make([]treejson, 0)
+
+	seen := make(map[string]struct{})
+
+	for _, globs := range multiGlobs.Metrics {
+		basepath := globs.Name
+
+		if i := strings.LastIndex(basepath, "."); i != -1 {
+			basepath = basepath[:i+1]
+		} else {
+			basepath = ""
+		}
+
+		for _, g := range globs.Matches {
+
+			name := g.Path
+
+			if i := strings.LastIndex(name, "."); i != -1 {
+				name = name[i+1:]
+			}
+
+			if _, ok := seen[name]; ok {
+				continue
+			}
+			seen[name] = struct{}{}
+
+			t := treejson{
+				ID:      basepath + name,
+				Context: treejsonContext,
+				Text:    name,
+			}
+
+			if g.IsLeaf {
+				t.Leaf = 1
+			} else {
+				t.AllowChildren = 1
+				t.Expandable = 1
+			}
+
+			tree = append(tree, t)
+		}
+	}
+
+	err := json.NewEncoder(&b).Encode(tree)
+	return b.Bytes(), err
+}
+
+type completer struct {
+	Path   string `json:"path"`
+	Name   string `json:"name"`
+	IsLeaf string `json:"is_leaf"`
+}
+
+func findCompleter(multiGlobs *pb.MultiGlobResponse) ([]byte, error) {
+	var b bytes.Buffer
+
+	var complete = make([]completer, 0)
+
+	for _, globs := range multiGlobs.Metrics {
+		for _, g := range globs.Matches {
+			c := completer{
+				Path: g.Path,
+			}
+
+			if g.IsLeaf {
+				c.IsLeaf = "1"
+			} else {
+				c.IsLeaf = "0"
+			}
+
+			i := strings.LastIndex(c.Path, ".")
+
+			if i != -1 {
+				c.Name = c.Path[i+1:]
+			} else {
+				c.Name = g.Path
+			}
+
+			complete = append(complete, c)
+		}
+	}
+
+	err := json.NewEncoder(&b).Encode(struct {
+		Metrics []completer `json:"metrics"`
+	}{
+		Metrics: complete},
+	)
+	return b.Bytes(), err
+}
+
+func findList(multiGlobs *pb.MultiGlobResponse) ([]byte, error) {
+	var b bytes.Buffer
+
+	for _, globs := range multiGlobs.Metrics {
+		for _, g := range globs.Matches {
+
+			var dot string
+			// make sure non-leaves end in one dot
+			if !g.IsLeaf && !strings.HasSuffix(g.Path, ".") {
+				dot = "."
+			}
+
+			fmt.Fprintln(&b, g.Path+dot)
+		}
+	}
+
+	return b.Bytes(), nil
+}
+
 func findHandler(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
 	uuid := uuid.NewV4()
@@ -513,7 +593,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		format = treejsonFormat
 	}
 
-	globs, err := config.zipper.Find(ctx, query)
+	multiGlobs, err := config.zipper.Find(ctx, query)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		accessLogDetails.HttpCode = http.StatusInternalServerError
@@ -525,41 +605,43 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	var b []byte
 	switch format {
 	case treejsonFormat, jsonFormat:
-		b, err = findTreejson(globs)
+		b, err = findTreejson(multiGlobs)
 		format = jsonFormat
 	case "completer":
-		b, err = findCompleter(globs)
+		b, err = findCompleter(multiGlobs)
 		format = jsonFormat
 	case rawFormat:
-		b, err = findList(globs)
+		b, err = findList(multiGlobs)
 		format = rawFormat
 	case protobufFormat, protobuf3Format:
-		b, err = globs.Marshal()
+		b, err = multiGlobs.Marshal()
 		format = protobufFormat
 	case "", pickleFormat:
 		var result []map[string]interface{}
 
 		now := int32(time.Now().Unix() + 60)
-		for _, metric := range globs.Matches {
-			// Tell graphite-web that we have everything
-			var mm map[string]interface{}
-			if config.GraphiteWeb09Compatibility {
-				// graphite-web 0.9.x
-				mm = map[string]interface{}{
+		for _, globs := range multiGlobs.Metrics {
+			for _, metric := range globs.Matches {
+				// Tell graphite-web that we have everything
+				var mm map[string]interface{}
+				if config.GraphiteWeb09Compatibility {
 					// graphite-web 0.9.x
-					"metric_path": metric.Path,
-					"isLeaf":      metric.IsLeaf,
+					mm = map[string]interface{}{
+						// graphite-web 0.9.x
+						"metric_path": metric.Path,
+						"isLeaf":      metric.IsLeaf,
+					}
+				} else {
+					// graphite-web 1.0
+					interval := &intervalset.IntervalSet{Start: 0, End: now}
+					mm = map[string]interface{}{
+						"is_leaf":   metric.IsLeaf,
+						"path":      metric.Path,
+						"intervals": interval,
+					}
 				}
-			} else {
-				// graphite-web 1.0
-				interval := &intervalset.IntervalSet{Start: 0, End: now}
-				mm = map[string]interface{}{
-					"is_leaf":   metric.IsLeaf,
-					"path":      metric.Path,
-					"intervals": interval,
-				}
+				result = append(result, mm)
 			}
-			result = append(result, mm)
 		}
 
 		p := bytes.NewBuffer(b)
@@ -576,64 +658,6 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeResponse(w, b, format, jsonp)
-}
-
-type completer struct {
-	Path   string `json:"path"`
-	Name   string `json:"name"`
-	IsLeaf string `json:"is_leaf"`
-}
-
-func findCompleter(globs pb.GlobResponse) ([]byte, error) {
-	var b bytes.Buffer
-
-	var complete = make([]completer, 0)
-
-	for _, g := range globs.Matches {
-		c := completer{
-			Path: g.Path,
-		}
-
-		if g.IsLeaf {
-			c.IsLeaf = "1"
-		} else {
-			c.IsLeaf = "0"
-		}
-
-		i := strings.LastIndex(c.Path, ".")
-
-		if i != -1 {
-			c.Name = c.Path[i+1:]
-		} else {
-			c.Name = g.Path
-		}
-
-		complete = append(complete, c)
-	}
-
-	err := json.NewEncoder(&b).Encode(struct {
-		Metrics []completer `json:"metrics"`
-	}{
-		Metrics: complete},
-	)
-	return b.Bytes(), err
-}
-
-func findList(globs pb.GlobResponse) ([]byte, error) {
-	var b bytes.Buffer
-
-	for _, g := range globs.Matches {
-
-		var dot string
-		// make sure non-leaves end in one dot
-		if !g.IsLeaf && !strings.HasSuffix(g.Path, ".") {
-			dot = "."
-		}
-
-		fmt.Fprintln(&b, g.Path+dot)
-	}
-
-	return b.Bytes(), nil
 }
 
 func infoHandler(w http.ResponseWriter, r *http.Request) {
@@ -669,7 +693,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 		deferredAccessLogging(accessLogger, &accessLogDetails, t0, logAsError)
 	}()
 
-	var data map[string]pb.InfoResponse
+	var data *pb.ZipperInfoResponse
 	var err error
 
 	query := r.FormValue("target")

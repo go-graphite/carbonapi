@@ -6,8 +6,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
-	"math"
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
 type multiplySeries struct {
@@ -29,7 +28,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // multiplySeries(factorsSeriesList)
-func (f *multiplySeries) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *multiplySeries) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	r := types.MetricData{
 		FetchResponse: pb.FetchResponse{
 			Name:      fmt.Sprintf("multiplySeries(%s)", e.RawArgs()),
@@ -44,22 +43,14 @@ func (f *multiplySeries) Do(e parser.Expr, from, until int32, values map[parser.
 		}
 
 		if r.Values == nil {
-			r.IsAbsent = make([]bool, len(series[0].IsAbsent))
 			r.StepTime = series[0].StepTime
 			r.Values = make([]float64, len(series[0].Values))
-			copy(r.IsAbsent, series[0].IsAbsent)
 			copy(r.Values, series[0].Values)
 			series = series[1:]
 		}
 
 		for _, factor := range series {
 			for i, v := range r.Values {
-				if r.IsAbsent[i] || factor.IsAbsent[i] {
-					r.IsAbsent[i] = true
-					r.Values[i] = math.NaN()
-					continue
-				}
-
 				r.Values[i] = v * factor.Values[i]
 			}
 		}

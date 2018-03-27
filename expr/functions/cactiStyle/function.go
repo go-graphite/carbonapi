@@ -29,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // cactiStyle(seriesList, system=None, units=None)
-func (f *cactiStyle) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *cactiStyle) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// Get the series data
 	original, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
@@ -62,8 +62,8 @@ func (f *cactiStyle) Do(e parser.Expr, from, until int32, values map[parser.Metr
 		minVal := math.Inf(1)
 		currentVal := math.Inf(-1)
 		maxVal := math.Inf(-1)
-		for i, av := range a.Values {
-			if !a.IsAbsent[i] {
+		for _, av := range a.Values {
+			if !math.IsNaN(av) {
 				minVal = math.Min(minVal, av)
 				maxVal = math.Max(maxVal, av)
 				currentVal = av

@@ -11,14 +11,14 @@ import (
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
 type FuncEvaluator struct {
-	eval func(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
+	eval func(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
 }
 
-func (evaluator *FuncEvaluator) EvalExpr(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (evaluator *FuncEvaluator) EvalExpr(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if e.IsName() {
 		return values[parser.MetricRequest{Metric: e.Target(), From: from, Until: until}], nil
 	} else if e.IsConst() {
@@ -45,7 +45,7 @@ func EvaluatorFromFunc(function interfaces.Function) interfaces.Evaluator {
 
 func EvaluatorFromFuncWithMetadata(metadata map[string]interfaces.Function) interfaces.Evaluator {
 	e := &FuncEvaluator{
-		eval: func(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+		eval: func(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 			if f, ok := metadata[e.Target()]; ok {
 				return f.Do(e, from, until, values)
 			}
@@ -67,12 +67,10 @@ func DeepClone(original map[parser.MetricRequest][]*types.MetricData) map[parser
 					StopTime:  originalMetric.StopTime,
 					StepTime:  originalMetric.StepTime,
 					Values:    make([]float64, len(originalMetric.Values)),
-					IsAbsent:  make([]bool, len(originalMetric.IsAbsent)),
 				},
 			}
 
 			copy(copiedMetric.Values, originalMetric.Values)
-			copy(copiedMetric.IsAbsent, originalMetric.IsAbsent)
 			copiedMetrics = append(copiedMetrics, &copiedMetric)
 		}
 
@@ -82,11 +80,93 @@ func DeepClone(original map[parser.MetricRequest][]*types.MetricData) map[parser
 	return clone
 }
 
+func compareFloat64(v1, v2 float64) bool {
+	if math.IsNaN(v1) && math.IsNaN(v2) {
+		return true
+	}
+	if math.IsInf(v1, 1) && math.IsInf(v2, 1) {
+		return true
+	}
+
+	if math.IsInf(v1, 0) && math.IsInf(v2, 0) {
+		return true
+	}
+
+	d := math.Abs(v1 - v2)
+	return d < eps
+}
+
+func deepCompareFields(v1, v2 reflect.Value) bool {
+	if !v1.CanInterface() {
+		return true
+	}
+	t1 := v1.Type()
+	if t1.Comparable() {
+		if t1.Name() == "float64" {
+			return compareFloat64(v1.Interface().(float64), v2.Interface().(float64))
+		}
+		if t1.Name() == "float32" {
+			v1f64 := float64(v1.Interface().(float32))
+			v2f64 := float64(v2.Interface().(float32))
+			return compareFloat64(v1f64, v2f64)
+		}
+		return reflect.DeepEqual(v1.Interface(), v2.Interface())
+	} else {
+		switch v1.Kind() {
+		case reflect.Struct:
+			if v1.NumField() == 0 {
+				// We don't know how to compare that
+				return false
+			}
+			for i := 0; i < v1.NumField(); i++ {
+				r := deepCompareFields(v1.Field(i), v2.Field(i))
+				if !r {
+					return r
+				}
+			}
+		case reflect.Slice, reflect.Array:
+			if v1.Len() != v2.Len() {
+				return false
+			}
+			if v1.Len() == 0 {
+				return true
+			}
+			if v1.Index(0).Kind() != v2.Index(0).Kind() {
+				return false
+			}
+			for i := 0; i < v1.Len(); i++ {
+				e1 := v1.Index(i)
+				e2 := v2.Index(i)
+				return deepCompareFields(e1, e2)
+			}
+		case reflect.Func:
+			return v1.Pointer() == v2.Pointer()
+		default:
+			fmt.Printf("unsupported v1.Kind=%v t1.Name=%v, t1.Value=%v\n\n", v1.Kind(), v1.Type().Name(), v1.String())
+			return false
+		}
+	}
+	return true
+}
+
+func MetricDataIsEqual(d1, d2 *types.MetricData) bool {
+	v1 := reflect.ValueOf(*d1)
+	v2 := reflect.ValueOf(*d2)
+
+	for i := 0; i < v1.NumField(); i++ {
+		r := deepCompareFields(v1.Field(i), v2.Field(i))
+		if !r {
+			return r
+		}
+	}
+	return true
+}
+
 func DeepEqual(t *testing.T, target string, original, modified map[parser.MetricRequest][]*types.MetricData) {
 	for key := range original {
 		if len(original[key]) == len(modified[key]) {
 			for i := range original[key] {
-				if !reflect.DeepEqual(original[key][i], modified[key][i]) {
+				if !MetricDataIsEqual(original[key][i], modified[key][i]) {
 					t.Errorf(
 						"%s: source data was modified key %v index %v original:\n%v\n modified:\n%v",
 						target,
@@ -111,7 +191,7 @@ func DeepEqual(t *testing.T, target string, original, modified map[parser.Metric
 
 const eps = 0.0000000001
 
-func NearlyEqual(a []float64, absent []bool, b []float64) bool {
+func NearlyEqual(a []float64, b []float64) bool {
 
 	if len(a) != len(b) {
 		return false
@@ -119,10 +199,10 @@ func NearlyEqual(a []float64, absent []bool, b []float64) bool {
 
 	for i, v := range a {
 		// "same"
-		if absent[i] && math.IsNaN(b[i]) {
+		if math.IsNaN(a[i]) && math.IsNaN(b[i]) {
 			continue
 		}
-		if absent[i] || math.IsNaN(b[i]) {
+		if math.IsNaN(a[i]) || math.IsNaN(b[i]) {
 			// unexpected NaN
 			return false
 		}
@@ -136,13 +216,8 @@ func NearlyEqual(a []float64, absent []bool, b []float64) bool {
 }
 
 func NearlyEqualMetrics(a, b *types.MetricData) bool {
-
-	if len(a.IsAbsent) != len(b.IsAbsent) {
-		return false
-	}
-
-	for i := range a.IsAbsent {
-		if a.IsAbsent[i] != b.IsAbsent[i] {
+	for i := range a.Values {
+		if (math.IsNaN(a.Values[i]) && !math.IsNaN(b.Values[i])) || (!math.IsNaN(a.Values[i]) && math.IsNaN(b.Values[i])) {
 			return false
 		}
 		// "close enough"
@@ -159,32 +234,32 @@ type SummarizeEvalTestItem struct {
 	M     map[parser.MetricRequest][]*types.MetricData
 	W     []float64
 	Name  string
-	Step  int32
-	Start int32
-	Stop  int32
+	Step  int64
+	Start int64
+	Stop  int64
 }
 
-func InitTestSummarize() (int32, int32, int32) {
+func InitTestSummarize() (int64, int64, int64) {
 	t0, err := time.Parse(time.UnixDate, "Wed Sep 10 10:32:00 CEST 2014")
 	if err != nil {
 		panic(err)
 	}
 
-	tenThirtyTwo := int32(t0.Unix())
+	tenThirtyTwo := t0.Unix()
 
 	t0, err = time.Parse(time.UnixDate, "Wed Sep 10 10:59:00 CEST 2014")
 	if err != nil {
 		panic(err)
 	}
 
-	tenFiftyNine := int32(t0.Unix())
+	tenFiftyNine := t0.Unix()
 
 	t0, err = time.Parse(time.UnixDate, "Wed Sep 10 10:30:00 CEST 2014")
 	if err != nil {
 		panic(err)
 	}
 
-	tenThirty := int32(t0.Unix())
+	tenThirty := t0.Unix()
 
 	return tenThirtyTwo, tenFiftyNine, tenThirty
 }
@@ -210,7 +285,7 @@ func TestSummarizeEvalExpr(t *testing.T, tt *SummarizeEvalTestItem) {
 			t.Errorf("bad Stop for %s: got %s want %s", g[0].Name, time.Unix(int64(g[0].StopTime), 0).Format(time.StampNano), time.Unix(int64(tt.Stop), 0).Format(time.StampNano))
 		}
 
-		if !NearlyEqual(g[0].Values, g[0].IsAbsent, tt.W) {
+		if !NearlyEqual(g[0].Values, tt.W) {
 			t.Errorf("failed: %s:\ngot  %+v,\nwant %+v", g[0].Name, g[0].Values, tt.W)
 		}
 		if g[0].Name != tt.Name {
@@ -259,7 +334,7 @@ func TestMultiReturnEvalExpr(t *testing.T, tt *MultiReturnEvalTestItem) {
 		if r[0].Name != gg.Name {
 			t.Errorf("result Name mismatch, got\n%#v,\nwant\n%#v", gg.Name, r[0].Name)
 		}
-		if !reflect.DeepEqual(r[0].Values, gg.Values) || !reflect.DeepEqual(r[0].IsAbsent, gg.IsAbsent) ||
+		if !reflect.DeepEqual(r[0].Values, gg.Values) ||
 			r[0].StartTime != gg.StartTime ||
 			r[0].StopTime != gg.StopTime ||
 			r[0].StepTime != gg.StepTime {

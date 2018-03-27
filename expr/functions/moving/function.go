@@ -29,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // movingXyz(seriesList, windowSize)
-func (f *moving) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *moving) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	var n int
 	var err error
 
@@ -58,7 +58,7 @@ func (f *moving) Do(e parser.Expr, from, until int32, values map[parser.MetricRe
 
 	start := from
 	if scaleByStep {
-		start -= int32(n)
+		start -= int64(n)
 	}
 
 	arg, err := helper.GetSeriesArg(e.Args()[0], start, until, values)
@@ -81,16 +81,10 @@ func (f *moving) Do(e parser.Expr, from, until int32, values map[parser.MetricRe
 		r := *a
 		r.Name = fmt.Sprintf("%s(%s,%s)", e.Target(), a.Name, argstr)
 		r.Values = make([]float64, len(a.Values)-offset)
-		r.IsAbsent = make([]bool, len(a.Values)-offset)
 		r.StartTime = from
 		r.StopTime = until
 
 		for i, v := range a.Values {
-			if a.IsAbsent[i] {
-				// make sure missing values are ignored
-				v = math.NaN()
-			}
-
 			if ridx := i - offset; ridx >= 0 {
 				switch e.Target() {
 				case "movingAverage":
@@ -105,8 +99,7 @@ func (f *moving) Do(e parser.Expr, from, until int32, values map[parser.MetricRe
 					r.Values[ridx] = w.Max()
 				}
 				if i < windowSize || math.IsNaN(r.Values[ridx]) {
-					r.Values[ridx] = 0
-					r.IsAbsent[ridx] = true
+					r.Values[ridx] = math.NaN()
 				}
 			}
 			w.Push(v)

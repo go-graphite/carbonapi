@@ -27,7 +27,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // lowestAverage(seriesList, n) , lowestCurrent(seriesList, n)
-func (f *lowest) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *lowest) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func (f *lowest) Do(e parser.Expr, from, until int32, values map[parser.MetricRe
 
 	var mh types.MetricHeap
 
-	var compute func([]float64, []bool) float64
+	var compute func([]float64) float64
 
 	switch e.Target() {
 	case "lowestAverage":
@@ -59,7 +59,7 @@ func (f *lowest) Do(e parser.Expr, from, until int32, values map[parser.MetricRe
 	}
 
 	for i, a := range arg {
-		m := compute(a.Values, a.IsAbsent)
+		m := compute(a.Values)
 		heap.Push(&mh, types.MetricHeapElement{Idx: i, Val: m})
 	}
 

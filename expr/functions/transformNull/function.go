@@ -2,6 +2,8 @@ package transformNull
 
 import (
 	"fmt"
+	"math"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -27,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // transformNull(seriesList, default=0)
-func (f *transformNull) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *transformNull) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -58,10 +60,9 @@ func (f *transformNull) Do(e parser.Expr, from, until int32, values map[parser.M
 		r := *a
 		r.Name = name
 		r.Values = make([]float64, len(a.Values))
-		r.IsAbsent = make([]bool, len(a.Values))
 
 		for i, v := range a.Values {
-			if a.IsAbsent[i] {
+			if math.IsNaN(v) {
 				v = defv
 			}
 

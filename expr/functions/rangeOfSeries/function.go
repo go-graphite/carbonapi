@@ -28,7 +28,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // rangeOfSeries(*seriesLists)
-func (f *rangeOfSeries) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *rangeOfSeries) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	series, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -37,13 +37,12 @@ func (f *rangeOfSeries) Do(e parser.Expr, from, until int32, values map[parser.M
 	r := *series[0]
 	r.Name = fmt.Sprintf("%s(%s)", e.Target(), e.RawArgs())
 	r.Values = make([]float64, len(series[0].Values))
-	r.IsAbsent = make([]bool, len(series[0].Values))
 
 	for i := range series[0].Values {
 		var min, max float64
 		count := 0
 		for _, s := range series {
-			if s.IsAbsent[i] {
+			if math.IsNaN(s.Values[i]) {
 				continue
 			}
 
@@ -61,7 +60,7 @@ func (f *rangeOfSeries) Do(e parser.Expr, from, until int32, values map[parser.M
 		if count >= 2 {
 			r.Values[i] = max - min
 		} else {
-			r.IsAbsent[i] = true
+			r.Values[i] = math.NaN()
 		}
 	}
 	return []*types.MetricData{&r}, err

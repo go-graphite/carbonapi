@@ -27,7 +27,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // timeStack(seriesList, timeShiftUnit, timeShiftStart, timeShiftEnd)
-func (f *timeStack) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *timeStack) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	unit, err := e.GetIntervalArg(1, -1)
 	if err != nil {
 		return nil, err
@@ -44,9 +44,11 @@ func (f *timeStack) Do(e parser.Expr, from, until int32, values map[parser.Metri
 	}
 
 	var results []*types.MetricData
-	for i := int32(start); i < int32(end); i++ {
-		offs := i * unit
-		arg, err := helper.GetSeriesArg(e.Args()[0], from+offs, until+offs, values)
+	for i := int64(start); i < int64(end); i++ {
+		offs := i * int64(unit)
+		fromNew := int64(int64(from) + offs)
+		untilNew := int64(int64(until) + offs)
+		arg, err := helper.GetSeriesArg(e.Args()[0], fromNew, untilNew, values)
 		if err != nil {
 			return nil, err
 		}
@@ -54,8 +56,8 @@ func (f *timeStack) Do(e parser.Expr, from, until int32, values map[parser.Metri
 		for _, a := range arg {
 			r := *a
 			r.Name = fmt.Sprintf("timeShift(%s,%d)", a.Name, offs)
-			r.StartTime = a.StartTime - offs
-			r.StopTime = a.StopTime - offs
+			r.StartTime = int64(int64(a.StartTime) - offs)
+			r.StopTime = int64(int64(a.StopTime) - offs)
 			results = append(results, &r)
 		}
 	}

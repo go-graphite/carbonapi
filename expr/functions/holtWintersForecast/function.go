@@ -7,7 +7,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	pb "github.com/go-graphite/carbonzipper/carbonzipperpb3"
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
 type holtWintersForecast struct {
@@ -28,7 +28,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *holtWintersForecast) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *holtWintersForecast) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	var results []*types.MetricData
 	args, err := helper.GetSeriesArgsAndRemoveNonExisting(e, from-7*86400, until, values)
 	if err != nil {
@@ -44,12 +44,14 @@ func (f *holtWintersForecast) Do(e parser.Expr, from, until int32, values map[pa
 		predictionsOfInterest := predictions[windowPoints:]
 
 		r := types.MetricData{FetchResponse: pb.FetchResponse{
-			Name:      fmt.Sprintf("holtWintersForecast(%s)", arg.Name),
-			Values:    predictionsOfInterest,
-			IsAbsent:  make([]bool, len(predictionsOfInterest)),
-			StepTime:  arg.StepTime,
-			StartTime: arg.StartTime + 7*86400,
-			StopTime:  arg.StopTime,
+			Name:              fmt.Sprintf("holtWintersForecast(%s)", arg.Name),
+			Values:            predictionsOfInterest,
+			StepTime:          arg.StepTime,
+			StartTime:         arg.StartTime + 7*86400,
+			StopTime:          arg.StopTime,
+			PathExpression:    fmt.Sprintf("holtWintersForecast(%s)", arg.Name),
+			XFilesFactor:      arg.XFilesFactor,
+			ConsolidationFunc: arg.ConsolidationFunc,
 		}}
 
 		results = append(results, &r)

@@ -160,7 +160,7 @@ func (t Suggestion) MarshalJSON() ([]byte, error) {
 	case SUint:
 		return json.Marshal(t.Value.(uint))
 	case SUint32:
-		return json.Marshal(t.Value.(uint32))
+		return json.Marshal(t.Value.(int64))
 	case SUint64:
 		return json.Marshal(t.Value.(uint64))
 	case SFloat64:

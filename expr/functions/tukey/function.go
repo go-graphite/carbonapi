@@ -3,12 +3,14 @@ package tukey
 import (
 	"container/heap"
 	"errors"
+	"math"
+	"sort"
+	"strings"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"sort"
-	"strings"
 )
 
 type tukey struct {
@@ -30,7 +32,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // tukeyAbove(seriesList,basis,n,interval=0) , tukeyBelow(seriesList,basis,n,interval=0)
-func (f *tukey) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *tukey) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -86,7 +88,7 @@ func (f *tukey) Do(e parser.Expr, from, until int32, values map[parser.MetricReq
 	var points []float64
 	for _, a := range arg {
 		for i, m := range a.Values[beginInterval:endInterval] {
-			if a.IsAbsent[beginInterval+i] {
+			if math.IsNaN(a.Values[beginInterval+i]) {
 				continue
 			}
 			points = append(points, m)
@@ -111,7 +113,7 @@ func (f *tukey) Do(e parser.Expr, from, until int32, values map[parser.MetricReq
 	for i, a := range arg {
 		var outlier int
 		for i, m := range a.Values[beginInterval:endInterval] {
-			if a.IsAbsent[beginInterval+i] {
+			if math.IsNaN(a.Values[beginInterval+i]) {
 				continue
 			}
 			if isAbove {
