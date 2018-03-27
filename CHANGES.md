@@ -13,7 +13,7 @@ Changes
 
 CHANGELOG
 ---------
-**MASTER**
+**MASTER** **Please don't use this version in Production until it's marked as stable**
  - **[Breaking][Code]** Migrate all internal structures to `github.com/go-graphite/protocol/carbonapi_v3_pb`. This removes redundant IsAbsent slice and changes all timestamps to int64 (they are still expected to have uint32 timestamps there)
  - **[Breaking][Improvement]** Migrate to carbonzipper 1.0.0. This introduces better loadbalancing support, but significantly changes config file format. It might behave differently with the same settings.
 
