@@ -9,11 +9,29 @@ message FilteringFunction {
     repeated string arguments = 2;
 }
 
+// Fetch Storage Capabilities
+message CapabilityRequest {
+}
+
+// Storage capability information
+message CapabilityResponse {
+    int64 version = 1;
+    // server name
+    string name = 2;
+    bool highPrecisionTimestamps = 3;
+    bool supportFilteringFunctions = 4;
+    // true if storage will behave normally if request is splitted by maxGlobs
+    bool likeSplittedRequests = 5;
+    bool supportStreaming = 6;
+}
+
 // Fetch Data
 message FetchRequest {
     string name = 1;
     int64 startTime = 2;
     int64 stopTime = 3;
+    // Should be true if our request requires more precision than seconds.
+    bool highPrecisionTimestamps = 5;
     repeated FilteringFunction filterFunctions = 4;
 }
 
@@ -30,8 +48,10 @@ message FetchResponse {
     int64 stopTime = 5;
     int64 stepTime = 6;
     float xFilesFactor = 7;
-    repeated double values = 8;
-    repeated string appliedFunctions = 9;
+    // Should be true if timestamps have better precision than seconds.
+    bool highPrecisionTimestamps = 8;
+    repeated double values = 9;
+    repeated string appliedFunctions = 10;
 }
 
 message MultiFetchResponse {
