@@ -9,6 +9,8 @@
 
 	It has these top-level messages:
 		FilteringFunction
+		CapabilityRequest
+		CapabilityResponse
 		FetchRequest
 		MultiFetchRequest
 		FetchResponse
@@ -77,17 +79,85 @@ func (m *FilteringFunction) GetArguments() []string {
 	return nil
 }
 
+// Fetch Storage Capabilities
+type CapabilityRequest struct {
+}
+
+func (m *CapabilityRequest) Reset()                    { *m = CapabilityRequest{} }
+func (*CapabilityRequest) ProtoMessage()               {}
+func (*CapabilityRequest) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{1} }
+
+// Storage capability information
+type CapabilityResponse struct {
+	Version int64 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
+	// server name
+	Name                      string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	HighPrecisionTimestamps   bool   `protobuf:"varint,3,opt,name=highPrecisionTimestamps,proto3" json:"highPrecisionTimestamps,omitempty"`
+	SupportFilteringFunctions bool   `protobuf:"varint,4,opt,name=supportFilteringFunctions,proto3" json:"supportFilteringFunctions,omitempty"`
+	// true if storage will behave normally if request is splitted by maxGlobs
+	LikeSplittedRequests bool `protobuf:"varint,5,opt,name=likeSplittedRequests,proto3" json:"likeSplittedRequests,omitempty"`
+	SupportStreaming     bool `protobuf:"varint,6,opt,name=supportStreaming,proto3" json:"supportStreaming,omitempty"`
+}
+
+func (m *CapabilityResponse) Reset()                    { *m = CapabilityResponse{} }
+func (*CapabilityResponse) ProtoMessage()               {}
+func (*CapabilityResponse) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{2} }
+
+func (m *CapabilityResponse) GetVersion() int64 {
+	if m != nil {
+		return m.Version
+	}
+	return 0
+}
+
+func (m *CapabilityResponse) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *CapabilityResponse) GetHighPrecisionTimestamps() bool {
+	if m != nil {
+		return m.HighPrecisionTimestamps
+	}
+	return false
+}
+
+func (m *CapabilityResponse) GetSupportFilteringFunctions() bool {
+	if m != nil {
+		return m.SupportFilteringFunctions
+	}
+	return false
+}
+
+func (m *CapabilityResponse) GetLikeSplittedRequests() bool {
+	if m != nil {
+		return m.LikeSplittedRequests
+	}
+	return false
+}
+
+func (m *CapabilityResponse) GetSupportStreaming() bool {
+	if m != nil {
+		return m.SupportStreaming
+	}
+	return false
+}
+
 // Fetch Data
 type FetchRequest struct {
-	Name            string               `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	StartTime       int64                `protobuf:"varint,2,opt,name=startTime,proto3" json:"startTime,omitempty"`
-	StopTime        int64                `protobuf:"varint,3,opt,name=stopTime,proto3" json:"stopTime,omitempty"`
-	FilterFunctions []*FilteringFunction `protobuf:"bytes,4,rep,name=filterFunctions" json:"filterFunctions,omitempty"`
+	Name      string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	StartTime int64  `protobuf:"varint,2,opt,name=startTime,proto3" json:"startTime,omitempty"`
+	StopTime  int64  `protobuf:"varint,3,opt,name=stopTime,proto3" json:"stopTime,omitempty"`
+	// Should be true if our request requires more precision than seconds.
+	HighPrecisionTimestamps bool                 `protobuf:"varint,5,opt,name=highPrecisionTimestamps,proto3" json:"highPrecisionTimestamps,omitempty"`
+	FilterFunctions         []*FilteringFunction `protobuf:"bytes,4,rep,name=filterFunctions" json:"filterFunctions,omitempty"`
 }
 
 func (m *FetchRequest) Reset()                    { *m = FetchRequest{} }
 func (*FetchRequest) ProtoMessage()               {}
-func (*FetchRequest) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{1} }
+func (*FetchRequest) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{3} }
 
 func (m *FetchRequest) GetName() string {
 	if m != nil {
@@ -110,6 +180,13 @@ func (m *FetchRequest) GetStopTime() int64 {
 	return 0
 }
 
+func (m *FetchRequest) GetHighPrecisionTimestamps() bool {
+	if m != nil {
+		return m.HighPrecisionTimestamps
+	}
+	return false
+}
+
 func (m *FetchRequest) GetFilterFunctions() []*FilteringFunction {
 	if m != nil {
 		return m.FilterFunctions
@@ -123,7 +200,7 @@ type MultiFetchRequest struct {
 
 func (m *MultiFetchRequest) Reset()                    { *m = MultiFetchRequest{} }
 func (*MultiFetchRequest) ProtoMessage()               {}
-func (*MultiFetchRequest) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{2} }
+func (*MultiFetchRequest) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{4} }
 
 func (m *MultiFetchRequest) GetMetrics() []FetchRequest {
 	if m != nil {
@@ -134,20 +211,22 @@ func (m *MultiFetchRequest) GetMetrics() []FetchRequest {
 
 // Stop time can be computed by stepTime*len(values)
 type FetchResponse struct {
-	Name              string    `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	PathExpression    string    `protobuf:"bytes,2,opt,name=pathExpression,proto3" json:"pathExpression,omitempty"`
-	ConsolidationFunc string    `protobuf:"bytes,3,opt,name=consolidationFunc,proto3" json:"consolidationFunc,omitempty"`
-	StartTime         int64     `protobuf:"varint,4,opt,name=startTime,proto3" json:"startTime,omitempty"`
-	StopTime          int64     `protobuf:"varint,5,opt,name=stopTime,proto3" json:"stopTime,omitempty"`
-	StepTime          int64     `protobuf:"varint,6,opt,name=stepTime,proto3" json:"stepTime,omitempty"`
-	XFilesFactor      float32   `protobuf:"fixed32,7,opt,name=xFilesFactor,proto3" json:"xFilesFactor,omitempty"`
-	Values            []float64 `protobuf:"fixed64,8,rep,packed,name=values" json:"values,omitempty"`
-	AppliedFunctions  []string  `protobuf:"bytes,9,rep,name=appliedFunctions" json:"appliedFunctions,omitempty"`
+	Name              string  `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	PathExpression    string  `protobuf:"bytes,2,opt,name=pathExpression,proto3" json:"pathExpression,omitempty"`
+	ConsolidationFunc string  `protobuf:"bytes,3,opt,name=consolidationFunc,proto3" json:"consolidationFunc,omitempty"`
+	StartTime         int64   `protobuf:"varint,4,opt,name=startTime,proto3" json:"startTime,omitempty"`
+	StopTime          int64   `protobuf:"varint,5,opt,name=stopTime,proto3" json:"stopTime,omitempty"`
+	StepTime          int64   `protobuf:"varint,6,opt,name=stepTime,proto3" json:"stepTime,omitempty"`
+	XFilesFactor      float32 `protobuf:"fixed32,7,opt,name=xFilesFactor,proto3" json:"xFilesFactor,omitempty"`
+	// Should be true if timestamps have better precision than seconds.
+	HighPrecisionTimestamps bool      `protobuf:"varint,8,opt,name=highPrecisionTimestamps,proto3" json:"highPrecisionTimestamps,omitempty"`
+	Values                  []float64 `protobuf:"fixed64,9,rep,packed,name=values" json:"values,omitempty"`
+	AppliedFunctions        []string  `protobuf:"bytes,10,rep,name=appliedFunctions" json:"appliedFunctions,omitempty"`
 }
 
 func (m *FetchResponse) Reset()                    { *m = FetchResponse{} }
 func (*FetchResponse) ProtoMessage()               {}
-func (*FetchResponse) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{3} }
+func (*FetchResponse) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{5} }
 
 func (m *FetchResponse) GetName() string {
 	if m != nil {
@@ -198,6 +277,13 @@ func (m *FetchResponse) GetXFilesFactor() float32 {
 	return 0
 }
 
+func (m *FetchResponse) GetHighPrecisionTimestamps() bool {
+	if m != nil {
+		return m.HighPrecisionTimestamps
+	}
+	return false
+}
+
 func (m *FetchResponse) GetValues() []float64 {
 	if m != nil {
 		return m.Values
@@ -218,7 +304,7 @@ type MultiFetchResponse struct {
 
 func (m *MultiFetchResponse) Reset()                    { *m = MultiFetchResponse{} }
 func (*MultiFetchResponse) ProtoMessage()               {}
-func (*MultiFetchResponse) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{4} }
+func (*MultiFetchResponse) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{6} }
 
 func (m *MultiFetchResponse) GetMetrics() []FetchResponse {
 	if m != nil {
@@ -234,7 +320,7 @@ type MultiGlobRequest struct {
 
 func (m *MultiGlobRequest) Reset()                    { *m = MultiGlobRequest{} }
 func (*MultiGlobRequest) ProtoMessage()               {}
-func (*MultiGlobRequest) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{5} }
+func (*MultiGlobRequest) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{7} }
 
 func (m *MultiGlobRequest) GetMetrics() []string {
 	if m != nil {
@@ -250,7 +336,7 @@ type GlobMatch struct {
 
 func (m *GlobMatch) Reset()                    { *m = GlobMatch{} }
 func (*GlobMatch) ProtoMessage()               {}
-func (*GlobMatch) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{6} }
+func (*GlobMatch) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{8} }
 
 func (m *GlobMatch) GetPath() string {
 	if m != nil {
@@ -274,7 +360,7 @@ type GlobResponse struct {
 
 func (m *GlobResponse) Reset()                    { *m = GlobResponse{} }
 func (*GlobResponse) ProtoMessage()               {}
-func (*GlobResponse) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{7} }
+func (*GlobResponse) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{9} }
 
 func (m *GlobResponse) GetName() string {
 	if m != nil {
@@ -296,7 +382,7 @@ type MultiGlobResponse struct {
 
 func (m *MultiGlobResponse) Reset()                    { *m = MultiGlobResponse{} }
 func (*MultiGlobResponse) ProtoMessage()               {}
-func (*MultiGlobResponse) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{8} }
+func (*MultiGlobResponse) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{10} }
 
 func (m *MultiGlobResponse) GetMetrics() []GlobResponse {
 	if m != nil {
@@ -312,7 +398,7 @@ type MetricsInfoRequest struct {
 
 func (m *MetricsInfoRequest) Reset()                    { *m = MetricsInfoRequest{} }
 func (*MetricsInfoRequest) ProtoMessage()               {}
-func (*MetricsInfoRequest) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{9} }
+func (*MetricsInfoRequest) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{11} }
 
 func (m *MetricsInfoRequest) GetName() string {
 	if m != nil {
@@ -328,7 +414,7 @@ type MultiMetricsInfoRequest struct {
 func (m *MultiMetricsInfoRequest) Reset()      { *m = MultiMetricsInfoRequest{} }
 func (*MultiMetricsInfoRequest) ProtoMessage() {}
 func (*MultiMetricsInfoRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptorCarbonapiV3Pb, []int{10}
+	return fileDescriptorCarbonapiV3Pb, []int{12}
 }
 
 func (m *MultiMetricsInfoRequest) GetNames() []string {
@@ -345,7 +431,7 @@ type Retention struct {
 
 func (m *Retention) Reset()                    { *m = Retention{} }
 func (*Retention) ProtoMessage()               {}
-func (*Retention) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{11} }
+func (*Retention) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{13} }
 
 func (m *Retention) GetSecondsPerPoint() int64 {
 	if m != nil {
@@ -372,7 +458,7 @@ type MetricsInfoResponse struct {
 func (m *MetricsInfoResponse) Reset()      { *m = MetricsInfoResponse{} }
 func (*MetricsInfoResponse) ProtoMessage() {}
 func (*MetricsInfoResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptorCarbonapiV3Pb, []int{12}
+	return fileDescriptorCarbonapiV3Pb, []int{14}
 }
 
 func (m *MetricsInfoResponse) GetName() string {
@@ -417,7 +503,7 @@ type MultiMetricsInfoResponse struct {
 func (m *MultiMetricsInfoResponse) Reset()      { *m = MultiMetricsInfoResponse{} }
 func (*MultiMetricsInfoResponse) ProtoMessage() {}
 func (*MultiMetricsInfoResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptorCarbonapiV3Pb, []int{13}
+	return fileDescriptorCarbonapiV3Pb, []int{15}
 }
 
 func (m *MultiMetricsInfoResponse) GetMetrics() []MetricsInfoResponse {
@@ -434,7 +520,7 @@ type ZipperInfoResponse struct {
 
 func (m *ZipperInfoResponse) Reset()                    { *m = ZipperInfoResponse{} }
 func (*ZipperInfoResponse) ProtoMessage()               {}
-func (*ZipperInfoResponse) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{14} }
+func (*ZipperInfoResponse) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{16} }
 
 func (m *ZipperInfoResponse) GetInfo() map[string]MultiMetricsInfoResponse {
 	if m != nil {
@@ -451,7 +537,7 @@ type ListMetricsResponse struct {
 func (m *ListMetricsResponse) Reset()      { *m = ListMetricsResponse{} }
 func (*ListMetricsResponse) ProtoMessage() {}
 func (*ListMetricsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptorCarbonapiV3Pb, []int{15}
+	return fileDescriptorCarbonapiV3Pb, []int{17}
 }
 
 func (m *ListMetricsResponse) GetMetrics() []string {
@@ -471,7 +557,7 @@ type MetricDetails struct {
 
 func (m *MetricDetails) Reset()                    { *m = MetricDetails{} }
 func (*MetricDetails) ProtoMessage()               {}
-func (*MetricDetails) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{16} }
+func (*MetricDetails) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV3Pb, []int{18} }
 
 func (m *MetricDetails) GetSize_() int64 {
 	if m != nil {
@@ -510,7 +596,7 @@ type MetricDetailsResponse struct {
 func (m *MetricDetailsResponse) Reset()      { *m = MetricDetailsResponse{} }
 func (*MetricDetailsResponse) ProtoMessage() {}
 func (*MetricDetailsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptorCarbonapiV3Pb, []int{17}
+	return fileDescriptorCarbonapiV3Pb, []int{19}
 }
 
 func (m *MetricDetailsResponse) GetMetrics() map[string]*MetricDetails {
@@ -541,7 +627,7 @@ type MultiDetailsResponse struct {
 func (m *MultiDetailsResponse) Reset()      { *m = MultiDetailsResponse{} }
 func (*MultiDetailsResponse) ProtoMessage() {}
 func (*MultiDetailsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptorCarbonapiV3Pb, []int{18}
+	return fileDescriptorCarbonapiV3Pb, []int{20}
 }
 
 func (m *MultiDetailsResponse) GetMetrics() map[string]*MetricDetailsResponse {
@@ -553,6 +639,8 @@ func (m *MultiDetailsResponse) GetMetrics() map[string]*MetricDetailsResponse {
 
 func init() {
 	proto.RegisterType((*FilteringFunction)(nil), "carbonapi_v3_pb.FilteringFunction")
+	proto.RegisterType((*CapabilityRequest)(nil), "carbonapi_v3_pb.CapabilityRequest")
+	proto.RegisterType((*CapabilityResponse)(nil), "carbonapi_v3_pb.CapabilityResponse")
 	proto.RegisterType((*FetchRequest)(nil), "carbonapi_v3_pb.FetchRequest")
 	proto.RegisterType((*MultiFetchRequest)(nil), "carbonapi_v3_pb.MultiFetchRequest")
 	proto.RegisterType((*FetchResponse)(nil), "carbonapi_v3_pb.FetchResponse")
@@ -604,6 +692,66 @@ func (this *FilteringFunction) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *CapabilityRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*CapabilityRequest)
+	if !ok {
+		that2, ok := that.(CapabilityRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	return true
+}
+func (this *CapabilityResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*CapabilityResponse)
+	if !ok {
+		that2, ok := that.(CapabilityResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Version != that1.Version {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if this.HighPrecisionTimestamps != that1.HighPrecisionTimestamps {
+		return false
+	}
+	if this.SupportFilteringFunctions != that1.SupportFilteringFunctions {
+		return false
+	}
+	if this.LikeSplittedRequests != that1.LikeSplittedRequests {
+		return false
+	}
+	if this.SupportStreaming != that1.SupportStreaming {
+		return false
+	}
+	return true
+}
 func (this *FetchRequest) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -630,6 +778,9 @@ func (this *FetchRequest) Equal(that interface{}) bool {
 		return false
 	}
 	if this.StopTime != that1.StopTime {
+		return false
+	}
+	if this.HighPrecisionTimestamps != that1.HighPrecisionTimestamps {
 		return false
 	}
 	if len(this.FilterFunctions) != len(that1.FilterFunctions) {
@@ -709,6 +860,9 @@ func (this *FetchResponse) Equal(that interface{}) bool {
 		return false
 	}
 	if this.XFilesFactor != that1.XFilesFactor {
+		return false
+	}
+	if this.HighPrecisionTimestamps != that1.HighPrecisionTimestamps {
 		return false
 	}
 	if len(this.Values) != len(that1.Values) {
@@ -1193,15 +1347,40 @@ func (this *FilteringFunction) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *CapabilityRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&carbonapi_v3_pb.CapabilityRequest{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CapabilityResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 10)
+	s = append(s, "&carbonapi_v3_pb.CapabilityResponse{")
+	s = append(s, "Version: "+fmt.Sprintf("%#v", this.Version)+",\n")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	s = append(s, "HighPrecisionTimestamps: "+fmt.Sprintf("%#v", this.HighPrecisionTimestamps)+",\n")
+	s = append(s, "SupportFilteringFunctions: "+fmt.Sprintf("%#v", this.SupportFilteringFunctions)+",\n")
+	s = append(s, "LikeSplittedRequests: "+fmt.Sprintf("%#v", this.LikeSplittedRequests)+",\n")
+	s = append(s, "SupportStreaming: "+fmt.Sprintf("%#v", this.SupportStreaming)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func (this *FetchRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 8)
+	s := make([]string, 0, 9)
 	s = append(s, "&carbonapi_v3_pb.FetchRequest{")
 	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
 	s = append(s, "StartTime: "+fmt.Sprintf("%#v", this.StartTime)+",\n")
 	s = append(s, "StopTime: "+fmt.Sprintf("%#v", this.StopTime)+",\n")
+	s = append(s, "HighPrecisionTimestamps: "+fmt.Sprintf("%#v", this.HighPrecisionTimestamps)+",\n")
 	if this.FilterFunctions != nil {
 		s = append(s, "FilterFunctions: "+fmt.Sprintf("%#v", this.FilterFunctions)+",\n")
 	}
@@ -1228,7 +1407,7 @@ func (this *FetchResponse) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 13)
+	s := make([]string, 0, 14)
 	s = append(s, "&carbonapi_v3_pb.FetchResponse{")
 	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
 	s = append(s, "PathExpression: "+fmt.Sprintf("%#v", this.PathExpression)+",\n")
@@ -1237,6 +1416,7 @@ func (this *FetchResponse) GoString() string {
 	s = append(s, "StopTime: "+fmt.Sprintf("%#v", this.StopTime)+",\n")
 	s = append(s, "StepTime: "+fmt.Sprintf("%#v", this.StepTime)+",\n")
 	s = append(s, "XFilesFactor: "+fmt.Sprintf("%#v", this.XFilesFactor)+",\n")
+	s = append(s, "HighPrecisionTimestamps: "+fmt.Sprintf("%#v", this.HighPrecisionTimestamps)+",\n")
 	s = append(s, "Values: "+fmt.Sprintf("%#v", this.Values)+",\n")
 	s = append(s, "AppliedFunctions: "+fmt.Sprintf("%#v", this.AppliedFunctions)+",\n")
 	s = append(s, "}")
@@ -1517,6 +1697,93 @@ func (m *FilteringFunction) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
+func (m *CapabilityRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *CapabilityRequest) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	return i, nil
+}
+
+func (m *CapabilityResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *CapabilityResponse) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Version != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintCarbonapiV3Pb(dAtA, i, uint64(m.Version))
+	}
+	if len(m.Name) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintCarbonapiV3Pb(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
+	}
+	if m.HighPrecisionTimestamps {
+		dAtA[i] = 0x18
+		i++
+		if m.HighPrecisionTimestamps {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.SupportFilteringFunctions {
+		dAtA[i] = 0x20
+		i++
+		if m.SupportFilteringFunctions {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.LikeSplittedRequests {
+		dAtA[i] = 0x28
+		i++
+		if m.LikeSplittedRequests {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.SupportStreaming {
+		dAtA[i] = 0x30
+		i++
+		if m.SupportStreaming {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	return i, nil
+}
+
 func (m *FetchRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1559,6 +1826,16 @@ func (m *FetchRequest) MarshalTo(dAtA []byte) (int, error) {
 			}
 			i += n
 		}
+	}
+	if m.HighPrecisionTimestamps {
+		dAtA[i] = 0x28
+		i++
+		if m.HighPrecisionTimestamps {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
 	}
 	return i, nil
 }
@@ -1647,8 +1924,18 @@ func (m *FetchResponse) MarshalTo(dAtA []byte) (int, error) {
 		binary.LittleEndian.PutUint32(dAtA[i:], uint32(math.Float32bits(float32(m.XFilesFactor))))
 		i += 4
 	}
+	if m.HighPrecisionTimestamps {
+		dAtA[i] = 0x40
+		i++
+		if m.HighPrecisionTimestamps {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
 	if len(m.Values) > 0 {
-		dAtA[i] = 0x42
+		dAtA[i] = 0x4a
 		i++
 		i = encodeVarintCarbonapiV3Pb(dAtA, i, uint64(len(m.Values)*8))
 		for _, num := range m.Values {
@@ -1659,7 +1946,7 @@ func (m *FetchResponse) MarshalTo(dAtA []byte) (int, error) {
 	}
 	if len(m.AppliedFunctions) > 0 {
 		for _, s := range m.AppliedFunctions {
-			dAtA[i] = 0x4a
+			dAtA[i] = 0x52
 			i++
 			l = len(s)
 			for l >= 1<<7 {
@@ -2248,6 +2535,37 @@ func (m *FilteringFunction) Size() (n int) {
 	return n
 }
 
+func (m *CapabilityRequest) Size() (n int) {
+	var l int
+	_ = l
+	return n
+}
+
+func (m *CapabilityResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.Version != 0 {
+		n += 1 + sovCarbonapiV3Pb(uint64(m.Version))
+	}
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovCarbonapiV3Pb(uint64(l))
+	}
+	if m.HighPrecisionTimestamps {
+		n += 2
+	}
+	if m.SupportFilteringFunctions {
+		n += 2
+	}
+	if m.LikeSplittedRequests {
+		n += 2
+	}
+	if m.SupportStreaming {
+		n += 2
+	}
+	return n
+}
+
 func (m *FetchRequest) Size() (n int) {
 	var l int
 	_ = l
@@ -2266,6 +2584,9 @@ func (m *FetchRequest) Size() (n int) {
 			l = e.Size()
 			n += 1 + l + sovCarbonapiV3Pb(uint64(l))
 		}
+	}
+	if m.HighPrecisionTimestamps {
+		n += 2
 	}
 	return n
 }
@@ -2308,6 +2629,9 @@ func (m *FetchResponse) Size() (n int) {
 	}
 	if m.XFilesFactor != 0 {
 		n += 5
+	}
+	if m.HighPrecisionTimestamps {
+		n += 2
 	}
 	if len(m.Values) > 0 {
 		n += 1 + sovCarbonapiV3Pb(uint64(len(m.Values)*8)) + len(m.Values)*8
@@ -2571,6 +2895,30 @@ func (this *FilteringFunction) String() string {
 	}, "")
 	return s
 }
+func (this *CapabilityRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CapabilityRequest{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CapabilityResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CapabilityResponse{`,
+		`Version:` + fmt.Sprintf("%v", this.Version) + `,`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`HighPrecisionTimestamps:` + fmt.Sprintf("%v", this.HighPrecisionTimestamps) + `,`,
+		`SupportFilteringFunctions:` + fmt.Sprintf("%v", this.SupportFilteringFunctions) + `,`,
+		`LikeSplittedRequests:` + fmt.Sprintf("%v", this.LikeSplittedRequests) + `,`,
+		`SupportStreaming:` + fmt.Sprintf("%v", this.SupportStreaming) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *FetchRequest) String() string {
 	if this == nil {
 		return "nil"
@@ -2580,6 +2928,7 @@ func (this *FetchRequest) String() string {
 		`StartTime:` + fmt.Sprintf("%v", this.StartTime) + `,`,
 		`StopTime:` + fmt.Sprintf("%v", this.StopTime) + `,`,
 		`FilterFunctions:` + strings.Replace(fmt.Sprintf("%v", this.FilterFunctions), "FilteringFunction", "FilteringFunction", 1) + `,`,
+		`HighPrecisionTimestamps:` + fmt.Sprintf("%v", this.HighPrecisionTimestamps) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2606,6 +2955,7 @@ func (this *FetchResponse) String() string {
 		`StopTime:` + fmt.Sprintf("%v", this.StopTime) + `,`,
 		`StepTime:` + fmt.Sprintf("%v", this.StepTime) + `,`,
 		`XFilesFactor:` + fmt.Sprintf("%v", this.XFilesFactor) + `,`,
+		`HighPrecisionTimestamps:` + fmt.Sprintf("%v", this.HighPrecisionTimestamps) + `,`,
 		`Values:` + fmt.Sprintf("%v", this.Values) + `,`,
 		`AppliedFunctions:` + fmt.Sprintf("%v", this.AppliedFunctions) + `,`,
 		`}`,
@@ -2920,6 +3270,234 @@ func (m *FilteringFunction) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *CapabilityRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCarbonapiV3Pb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CapabilityRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CapabilityRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCarbonapiV3Pb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCarbonapiV3Pb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CapabilityResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCarbonapiV3Pb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CapabilityResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CapabilityResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Version", wireType)
+			}
+			m.Version = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCarbonapiV3Pb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Version |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCarbonapiV3Pb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCarbonapiV3Pb
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HighPrecisionTimestamps", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCarbonapiV3Pb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.HighPrecisionTimestamps = bool(v != 0)
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SupportFilteringFunctions", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCarbonapiV3Pb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.SupportFilteringFunctions = bool(v != 0)
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LikeSplittedRequests", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCarbonapiV3Pb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.LikeSplittedRequests = bool(v != 0)
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SupportStreaming", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCarbonapiV3Pb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.SupportStreaming = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCarbonapiV3Pb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCarbonapiV3Pb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *FetchRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -3047,6 +3625,26 @@ func (m *FetchRequest) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HighPrecisionTimestamps", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCarbonapiV3Pb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.HighPrecisionTimestamps = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipCarbonapiV3Pb(dAtA[iNdEx:])
@@ -3334,6 +3932,26 @@ func (m *FetchResponse) Unmarshal(dAtA []byte) error {
 			iNdEx += 4
 			m.XFilesFactor = float32(math.Float32frombits(v))
 		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HighPrecisionTimestamps", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCarbonapiV3Pb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.HighPrecisionTimestamps = bool(v != 0)
+		case 9:
 			if wireType == 1 {
 				var v uint64
 				if (iNdEx + 8) > l {
@@ -3379,7 +3997,7 @@ func (m *FetchResponse) Unmarshal(dAtA []byte) error {
 			} else {
 				return fmt.Errorf("proto: wrong wireType = %d for field Values", wireType)
 			}
-		case 9:
+		case 10:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field AppliedFunctions", wireType)
 			}
@@ -5245,63 +5863,70 @@ var (
 func init() { proto.RegisterFile("carbonapi_v3_pb.proto", fileDescriptorCarbonapiV3Pb) }
 
 var fileDescriptorCarbonapiV3Pb = []byte{
-	// 913 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x56, 0xcd, 0x6e, 0xdb, 0x46,
-	0x10, 0xd6, 0x4a, 0xf2, 0x0f, 0xc7, 0x4a, 0x6d, 0x33, 0x49, 0x4b, 0x08, 0x2d, 0x2b, 0x10, 0x45,
-	0xa0, 0x16, 0x8e, 0x0d, 0xd8, 0x05, 0x5a, 0x04, 0xfd, 0x0d, 0x62, 0x05, 0x05, 0x2c, 0x34, 0xd8,
-	0xf8, 0x14, 0xa0, 0x4d, 0x49, 0x6a, 0x25, 0x2f, 0x42, 0xed, 0xb2, 0xdc, 0x55, 0xe0, 0xf4, 0x94,
-	0x47, 0xe8, 0x63, 0x14, 0x7d, 0x81, 0x9e, 0x7b, 0xf3, 0x31, 0xc7, 0x9e, 0x8a, 0x5a, 0xbd, 0xf4,
-	0x98, 0x47, 0x28, 0x76, 0xf9, 0x23, 0x72, 0x29, 0xd9, 0xbe, 0xed, 0xfc, 0xee, 0xcc, 0xf7, 0xed,
-	0x0c, 0x09, 0x77, 0x43, 0x3f, 0x09, 0x38, 0xf3, 0x63, 0xfa, 0xfc, 0xe5, 0xd1, 0xf3, 0x38, 0xd8,
-	0x8f, 0x13, 0x2e, 0xb9, 0xbd, 0x6d, 0xa8, 0xbb, 0xf7, 0x27, 0x54, 0x9e, 0xcd, 0x82, 0xfd, 0x90,
-	0x4f, 0x0f, 0x26, 0x7c, 0xc2, 0x0f, 0xb4, 0x5f, 0x30, 0x1b, 0x6b, 0x49, 0x0b, 0xfa, 0x94, 0xc6,
-	0x7b, 0xc7, 0xb0, 0x3b, 0xa0, 0x91, 0x24, 0x09, 0x65, 0x93, 0xc1, 0x8c, 0x85, 0x92, 0x72, 0x66,
-	0xdb, 0xd0, 0x66, 0xfe, 0x94, 0x38, 0xa8, 0x87, 0xfa, 0x16, 0xd6, 0x67, 0xfb, 0x7d, 0xb0, 0xfc,
-	0x64, 0x32, 0x9b, 0x12, 0x26, 0x85, 0xd3, 0xec, 0xb5, 0xfa, 0x16, 0x5e, 0x28, 0xbc, 0xdf, 0x11,
-	0x74, 0x06, 0x44, 0x86, 0x67, 0x98, 0xfc, 0x3c, 0x23, 0x42, 0xae, 0x4a, 0x21, 0xa4, 0x9f, 0xc8,
-	0x53, 0x3a, 0x25, 0x4e, 0xb3, 0x87, 0xfa, 0x2d, 0xbc, 0x50, 0xd8, 0x5d, 0xd8, 0x14, 0x92, 0xc7,
-	0xda, 0xd8, 0xd2, 0xc6, 0x42, 0xb6, 0x4f, 0x60, 0x7b, 0xac, 0xab, 0xcc, 0x4b, 0x14, 0x4e, 0xbb,
-	0xd7, 0xea, 0x6f, 0x1d, 0x7a, 0xfb, 0x26, 0x2c, 0xb5, 0x6e, 0xb0, 0x19, 0xea, 0x61, 0xd8, 0x1d,
-	0xce, 0x22, 0x49, 0x2b, 0x05, 0x7f, 0x09, 0x1b, 0x53, 0x22, 0x13, 0x1a, 0x0a, 0x07, 0xe9, 0xd4,
-	0x1f, 0xd4, 0x53, 0x97, 0xfc, 0x1f, 0xb6, 0x2f, 0xfe, 0xfe, 0xb0, 0x81, 0xf3, 0x18, 0xef, 0x8f,
-	0x26, 0xdc, 0xca, 0xec, 0x22, 0xe6, 0x4c, 0x90, 0xa5, 0x08, 0xdc, 0x83, 0x77, 0x62, 0x5f, 0x9e,
-	0x1d, 0x9f, 0xc7, 0x09, 0x11, 0x82, 0x72, 0xa6, 0x61, 0xb0, 0xb0, 0xa1, 0xb5, 0xf7, 0x60, 0x37,
-	0xe4, 0x4c, 0xf0, 0x88, 0x8e, 0x7c, 0x55, 0xb3, 0xaa, 0x5d, 0x83, 0x62, 0xe1, 0xba, 0xa1, 0x8a,
-	0x6b, 0xfb, 0x2a, 0x5c, 0xd7, 0x0c, 0x5c, 0xb5, 0x8d, 0xa4, 0xb6, 0xf5, 0xdc, 0x96, 0xca, 0xb6,
-	0x07, 0x9d, 0xf3, 0x01, 0x8d, 0x88, 0x18, 0xf8, 0xa1, 0xe4, 0x89, 0xb3, 0xd1, 0x43, 0xfd, 0x26,
-	0xae, 0xe8, 0xec, 0x77, 0x61, 0xfd, 0xa5, 0x1f, 0xcd, 0x88, 0x70, 0x36, 0x7b, 0xad, 0x3e, 0xc2,
-	0x99, 0x64, 0x7f, 0x02, 0x3b, 0x7e, 0x1c, 0x47, 0x94, 0x8c, 0x16, 0x84, 0x59, 0xfa, 0xcd, 0xd4,
-	0xf4, 0xde, 0x29, 0xd8, 0x65, 0x36, 0x32, 0xf4, 0xbe, 0x32, 0xe9, 0x70, 0x57, 0xd1, 0x91, 0x06,
-	0x98, 0x7c, 0xec, 0xc1, 0x8e, 0xce, 0xfa, 0x38, 0xe2, 0x41, 0x4e, 0xb1, 0x53, 0xcd, 0x69, 0x2d,
-	0xbc, 0x3f, 0x03, 0x4b, 0x39, 0x0e, 0x7d, 0x19, 0x9e, 0x29, 0xe2, 0x14, 0x1d, 0x39, 0x71, 0xea,
-	0xac, 0x1a, 0xa5, 0xe2, 0x84, 0xf8, 0x63, 0x4d, 0xd8, 0x26, 0xce, 0x24, 0xef, 0x47, 0xe8, 0xa4,
-	0x37, 0x5c, 0x41, 0xfa, 0x03, 0xd8, 0x98, 0xaa, 0xc4, 0x24, 0x9d, 0x9b, 0xad, 0xc3, 0x6e, 0xad,
-	0x95, 0xe2, 0xf2, 0xa2, 0x8d, 0x34, 0xa0, 0x78, 0xaa, 0x95, 0x4b, 0x6e, 0xf0, 0x54, 0xcb, 0xfe,
-	0x26, 0x34, 0x7d, 0xb0, 0x87, 0xe9, 0xf1, 0x3b, 0x36, 0xe6, 0x57, 0x0c, 0xac, 0x77, 0x00, 0xef,
-	0xe9, 0xdb, 0x97, 0xb8, 0xdf, 0x81, 0x35, 0xe5, 0x92, 0x23, 0x99, 0x0a, 0xde, 0x0f, 0x60, 0x61,
-	0x22, 0x09, 0xd3, 0x5b, 0xa4, 0x0f, 0xdb, 0x82, 0x84, 0x9c, 0x8d, 0xc4, 0x13, 0x92, 0x3c, 0xe1,
-	0x94, 0x49, 0x9d, 0xbc, 0x85, 0x4d, 0xb5, 0x1a, 0x0b, 0x36, 0x9b, 0x06, 0x24, 0xf9, 0x7e, 0xac,
-	0x15, 0x22, 0xdb, 0x0e, 0x86, 0xd6, 0xbb, 0x44, 0x70, 0xbb, 0x52, 0xcb, 0x15, 0xa8, 0x2f, 0x1d,
-	0xa1, 0xe6, 0xaa, 0x11, 0xf2, 0xa0, 0x33, 0xf5, 0xcf, 0x8b, 0xda, 0xb3, 0x05, 0x54, 0xd1, 0xd5,
-	0x06, 0xa2, 0xbd, 0x64, 0x20, 0xbe, 0x01, 0x48, 0xf2, 0x00, 0xe1, 0xac, 0xad, 0xa0, 0xbb, 0xc8,
-	0x99, 0x51, 0x53, 0x8a, 0xf1, 0x7e, 0x02, 0xa7, 0x8e, 0x79, 0xd6, 0xe7, 0x23, 0x93, 0xf8, 0x8f,
-	0x6a, 0xa9, 0x97, 0x84, 0x99, 0xfc, 0xff, 0x89, 0xc0, 0x7e, 0x46, 0xe3, 0x98, 0x24, 0x95, 0xe4,
-	0x8f, 0xa1, 0x4d, 0xd9, 0x98, 0x67, 0x99, 0xef, 0xd7, 0x32, 0xd7, 0x43, 0xf6, 0x95, 0x70, 0xcc,
-	0x64, 0xf2, 0x2a, 0xbb, 0x42, 0x27, 0xe8, 0x06, 0x60, 0x15, 0x06, 0x7b, 0x07, 0x5a, 0x2f, 0xc8,
-	0xab, 0x8c, 0x19, 0x75, 0xb4, 0xbf, 0x86, 0x35, 0xbd, 0x25, 0x34, 0x19, 0x5b, 0x87, 0x1f, 0xd7,
-	0x5b, 0x58, 0xd1, 0x3e, 0x4e, 0xe3, 0x1e, 0x34, 0x3f, 0x47, 0xde, 0x01, 0xdc, 0x3e, 0xa1, 0x42,
-	0x66, 0x5e, 0x45, 0x0f, 0x0e, 0x6c, 0x0c, 0xab, 0x13, 0x9e, 0x89, 0xde, 0x0b, 0xb8, 0x95, 0x1e,
-	0x1f, 0x11, 0xe9, 0xd3, 0x48, 0xa8, 0x37, 0xf3, 0x94, 0xfe, 0x92, 0x7f, 0x87, 0xf4, 0x59, 0x87,
-	0xf3, 0x51, 0xe9, 0x0b, 0x94, 0x8b, 0xea, 0xb9, 0x7f, 0x5b, 0x5a, 0xaf, 0xa9, 0xa0, 0xb6, 0x02,
-	0x1e, 0x95, 0x16, 0x6b, 0x26, 0x79, 0xaf, 0x9b, 0x70, 0xb7, 0x72, 0x5b, 0x51, 0xe0, 0xd0, 0x64,
-	0xf0, 0x68, 0x05, 0x83, 0x46, 0x60, 0xce, 0xab, 0x06, 0xb5, 0xa0, 0x52, 0x6d, 0xfe, 0x41, 0x42,
-	0xc8, 0xd3, 0xd8, 0x0f, 0xd3, 0x4e, 0xda, 0x78, 0xa1, 0xb0, 0x5d, 0x80, 0x53, 0x2e, 0xfd, 0x28,
-	0x35, 0xb7, 0xb4, 0xb9, 0xa4, 0xe9, 0x3e, 0x83, 0x4e, 0x39, 0xed, 0x12, 0xae, 0x3e, 0xad, 0x72,
-	0xe5, 0x5e, 0x53, 0x6c, 0x89, 0xa0, 0x0b, 0x04, 0x77, 0x34, 0x91, 0x26, 0x02, 0x27, 0x26, 0x02,
-	0x87, 0xcb, 0x1f, 0xc0, 0x8d, 0x00, 0xe8, 0x06, 0xd7, 0xb6, 0xf0, 0x45, 0xb5, 0x85, 0x7b, 0x37,
-	0xc3, 0xbb, 0xd4, 0xca, 0xc3, 0xbd, 0x37, 0x97, 0x6e, 0xe3, 0xaf, 0x4b, 0xb7, 0xf1, 0xf6, 0xd2,
-	0x45, 0xaf, 0xe7, 0x2e, 0xfa, 0x6d, 0xee, 0xa2, 0x8b, 0xb9, 0x8b, 0xde, 0xcc, 0x5d, 0xf4, 0xcf,
-	0xdc, 0x45, 0xff, 0xcd, 0xdd, 0xc6, 0xdb, 0xb9, 0x8b, 0x7e, 0xfd, 0xd7, 0x6d, 0x04, 0xeb, 0xfa,
-	0xbf, 0xea, 0xe8, 0xff, 0x00, 0x00, 0x00, 0xff, 0xff, 0x92, 0x89, 0xb2, 0x57, 0xb0, 0x09, 0x00,
-	0x00,
+	// 1031 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x56, 0xcb, 0x6e, 0xdb, 0x46,
+	0x14, 0x15, 0xf5, 0xb0, 0xad, 0x1b, 0xa5, 0xb6, 0x69, 0xa7, 0x61, 0x85, 0x96, 0x15, 0x88, 0x22,
+	0x50, 0x0b, 0xc7, 0x06, 0xe4, 0x02, 0x0d, 0x82, 0xf4, 0x95, 0xc6, 0x0a, 0x0a, 0x58, 0xa8, 0x41,
+	0x7b, 0x15, 0xa0, 0x4d, 0x87, 0xd4, 0x48, 0x1a, 0x98, 0xe4, 0xb0, 0x9c, 0x91, 0x61, 0x77, 0x95,
+	0x4f, 0xe8, 0xba, 0x5f, 0xd0, 0xdf, 0xe8, 0xce, 0xcb, 0x2c, 0xbb, 0x2a, 0x6a, 0xb5, 0x8b, 0x2e,
+	0xd3, 0x3f, 0x28, 0x66, 0x38, 0xa4, 0xf8, 0x90, 0x14, 0xef, 0xe6, 0xbe, 0xe7, 0xdc, 0x73, 0xe7,
+	0x92, 0x70, 0xcf, 0x45, 0x91, 0x43, 0x03, 0x14, 0x92, 0x97, 0x17, 0x87, 0x2f, 0x43, 0x67, 0x3f,
+	0x8c, 0x28, 0xa7, 0xfa, 0x66, 0x41, 0xdd, 0x7e, 0x38, 0x26, 0x7c, 0x32, 0x75, 0xf6, 0x5d, 0xea,
+	0x1f, 0x8c, 0xe9, 0x98, 0x1e, 0x48, 0x3f, 0x67, 0x3a, 0x92, 0x92, 0x14, 0xe4, 0x29, 0x8e, 0xb7,
+	0x8e, 0x60, 0xbb, 0x4f, 0x3c, 0x8e, 0x23, 0x12, 0x8c, 0xfb, 0xd3, 0xc0, 0xe5, 0x84, 0x06, 0xba,
+	0x0e, 0xf5, 0x00, 0xf9, 0xd8, 0xd0, 0x3a, 0x5a, 0xb7, 0x69, 0xcb, 0xb3, 0xfe, 0x3e, 0x34, 0x51,
+	0x34, 0x9e, 0xfa, 0x38, 0xe0, 0xcc, 0xa8, 0x76, 0x6a, 0xdd, 0xa6, 0x3d, 0x57, 0x58, 0x3b, 0xb0,
+	0xfd, 0x0d, 0x0a, 0x91, 0x43, 0x3c, 0xc2, 0xaf, 0x6c, 0xfc, 0xd3, 0x14, 0x33, 0x6e, 0xfd, 0x5a,
+	0x05, 0x3d, 0xab, 0x65, 0x21, 0x0d, 0x18, 0xd6, 0x0d, 0x58, 0xbf, 0xc0, 0x11, 0x23, 0x34, 0x90,
+	0x05, 0x6a, 0x76, 0x22, 0xa6, 0x75, 0xab, 0x99, 0xba, 0x8f, 0xe0, 0xfe, 0x84, 0x8c, 0x27, 0x27,
+	0x11, 0x76, 0x89, 0x70, 0x3a, 0x23, 0x3e, 0x66, 0x1c, 0xf9, 0x21, 0x33, 0x6a, 0x1d, 0xad, 0xbb,
+	0x61, 0x2f, 0x33, 0xeb, 0x4f, 0xe0, 0x3d, 0x36, 0x0d, 0x43, 0x1a, 0xf1, 0x12, 0x42, 0x66, 0xd4,
+	0x65, 0xec, 0x72, 0x07, 0xbd, 0x07, 0xbb, 0x1e, 0x39, 0xc7, 0xa7, 0xa1, 0x47, 0x38, 0xc7, 0x43,
+	0x85, 0x89, 0x19, 0x0d, 0x19, 0xb8, 0xd0, 0xa6, 0x7f, 0x02, 0x5b, 0x2a, 0xe1, 0x29, 0x8f, 0x30,
+	0xf2, 0x49, 0x30, 0x36, 0xd6, 0xa4, 0x7f, 0x49, 0x6f, 0xfd, 0xa3, 0x41, 0xab, 0x8f, 0xb9, 0x3b,
+	0x51, 0xd1, 0xcb, 0x9a, 0xce, 0x38, 0x8a, 0xb8, 0x40, 0x25, 0xbb, 0x52, 0xb3, 0xe7, 0x0a, 0xbd,
+	0x0d, 0x1b, 0x8c, 0xd3, 0x50, 0x1a, 0x6b, 0xd2, 0x98, 0xca, 0xfa, 0x31, 0x6c, 0x8e, 0x24, 0xa8,
+	0x2c, 0xe4, 0x5a, 0xf7, 0x4e, 0xcf, 0xda, 0x2f, 0x0e, 0x52, 0x09, 0xbc, 0x5d, 0x0c, 0x5d, 0x45,
+	0x42, 0x63, 0x25, 0x09, 0x96, 0x0d, 0xdb, 0x83, 0xa9, 0xc7, 0x49, 0x0e, 0xea, 0xe7, 0xb0, 0xee,
+	0x63, 0x1e, 0x11, 0x97, 0x19, 0x9a, 0xbc, 0xd4, 0x07, 0xe5, 0x4b, 0x65, 0xfc, 0x9f, 0xd6, 0xaf,
+	0xff, 0xfc, 0xb0, 0x62, 0x27, 0x31, 0xd6, 0x7f, 0x55, 0xb8, 0xab, 0xec, 0x6a, 0xa4, 0x16, 0xf5,
+	0xee, 0x01, 0xbc, 0x13, 0x22, 0x3e, 0x39, 0xba, 0x0c, 0x23, 0xcc, 0xe4, 0xb4, 0xc5, 0x63, 0x55,
+	0xd0, 0xea, 0x7b, 0xb0, 0xed, 0xd2, 0x80, 0x51, 0x8f, 0x0c, 0x91, 0x40, 0x2b, 0x50, 0xcb, 0x76,
+	0x36, 0xed, 0xb2, 0x21, 0xcf, 0x48, 0x7d, 0x15, 0x23, 0x8d, 0x02, 0x23, 0xd2, 0x86, 0x63, 0xdb,
+	0x5a, 0x62, 0x8b, 0x65, 0xdd, 0x82, 0xd6, 0x65, 0x9f, 0x78, 0x98, 0xf5, 0x91, 0xcb, 0x69, 0x64,
+	0xac, 0x77, 0xb4, 0x6e, 0xd5, 0xce, 0xe9, 0x56, 0x71, 0xb0, 0xb1, 0xfa, 0x21, 0xbc, 0x0b, 0x6b,
+	0x17, 0xc8, 0x9b, 0x62, 0x66, 0x34, 0x3b, 0xb5, 0xae, 0x66, 0x2b, 0x49, 0x8c, 0x2b, 0x0a, 0x43,
+	0x8f, 0xe0, 0xe1, 0x7c, 0x48, 0x40, 0xbe, 0xec, 0x92, 0xde, 0x3a, 0x03, 0x3d, 0xcb, 0xa3, 0xea,
+	0xfb, 0x17, 0x45, 0x22, 0xcd, 0x65, 0x44, 0xc6, 0x01, 0x45, 0x26, 0xf7, 0x60, 0x4b, 0x66, 0x7d,
+	0xee, 0x51, 0x27, 0x19, 0x0e, 0x23, 0x9f, 0xb3, 0x39, 0xf7, 0xfe, 0x0c, 0x9a, 0xc2, 0x71, 0x80,
+	0xb8, 0x3b, 0x11, 0x94, 0x0b, 0x22, 0x13, 0xca, 0xc5, 0x59, 0x00, 0x25, 0xec, 0x18, 0xa3, 0x91,
+	0xa4, 0x7a, 0xc3, 0x56, 0x92, 0xf5, 0x03, 0xb4, 0xe2, 0x0a, 0x2b, 0xc6, 0xe5, 0x31, 0xac, 0xfb,
+	0x22, 0x31, 0x8e, 0xb7, 0xdb, 0x9d, 0x5e, 0xbb, 0x04, 0x25, 0x2d, 0x9e, 0xc2, 0x88, 0x03, 0xd2,
+	0x21, 0xcf, 0x15, 0xb9, 0xc5, 0x90, 0x67, 0xfd, 0x8b, 0xad, 0xe9, 0x82, 0x3e, 0x88, 0x8f, 0xdf,
+	0x06, 0x23, 0xba, 0x62, 0x49, 0x58, 0x07, 0x70, 0x5f, 0x56, 0x5f, 0xe0, 0xbe, 0x0b, 0x0d, 0xe1,
+	0x92, 0x74, 0x32, 0x16, 0xac, 0xef, 0xa1, 0x69, 0x63, 0x8e, 0x03, 0xb9, 0xeb, 0xbb, 0xb0, 0xc9,
+	0xb0, 0x4b, 0x83, 0x21, 0x3b, 0xc1, 0xd1, 0x09, 0x25, 0x01, 0x57, 0x5b, 0xb9, 0xa8, 0x16, 0x0f,
+	0x2a, 0x98, 0xfa, 0x0e, 0x8e, 0xbe, 0x1b, 0x49, 0x05, 0x53, 0x1b, 0xa9, 0xa0, 0xb5, 0x6e, 0x34,
+	0xd8, 0xc9, 0xdd, 0x65, 0x45, 0xd7, 0x17, 0x3e, 0xbe, 0xea, 0xb2, 0xc7, 0x67, 0x41, 0xcb, 0x47,
+	0x97, 0xe9, 0xdd, 0xd5, 0xd2, 0xcb, 0xe9, 0x4a, 0x4f, 0xa9, 0xbe, 0xe0, 0x29, 0x7d, 0x05, 0x10,
+	0x25, 0x01, 0x62, 0x83, 0x2d, 0xa6, 0x3b, 0xcd, 0xa9, 0xa8, 0xc9, 0xc4, 0x58, 0x3f, 0x82, 0x51,
+	0xee, 0xb9, 0xc2, 0xf9, 0xac, 0x48, 0xfc, 0x47, 0xa5, 0xd4, 0x0b, 0xc2, 0x8a, 0xfc, 0xff, 0xae,
+	0x81, 0xfe, 0x82, 0x84, 0x21, 0x8e, 0x72, 0xc9, 0x9f, 0x43, 0x9d, 0x04, 0x23, 0xaa, 0x32, 0x3f,
+	0x2c, 0x65, 0x2e, 0x87, 0xec, 0x0b, 0xe1, 0x28, 0xe0, 0xd1, 0x95, 0x2a, 0x21, 0x13, 0xb4, 0x1d,
+	0x68, 0xa6, 0x06, 0x7d, 0x0b, 0x6a, 0xe7, 0xf8, 0x4a, 0x31, 0x23, 0x8e, 0xfa, 0x97, 0xd0, 0x90,
+	0x5b, 0x42, 0x92, 0x71, 0xa7, 0xf7, 0x71, 0x19, 0xc2, 0x12, 0xf8, 0x76, 0x1c, 0xf7, 0xb8, 0xfa,
+	0x48, 0xb3, 0x0e, 0x60, 0xe7, 0x98, 0x30, 0xae, 0xbc, 0xb2, 0x3f, 0x00, 0x83, 0xfc, 0x0b, 0x57,
+	0xa2, 0x75, 0x0e, 0x77, 0xe3, 0xe3, 0x33, 0xcc, 0x11, 0xf1, 0x98, 0x98, 0x99, 0x53, 0xf2, 0x73,
+	0xf2, 0xed, 0x93, 0x67, 0x19, 0x4e, 0x87, 0x99, 0xaf, 0x5e, 0x22, 0x8a, 0x71, 0xff, 0x3a, 0xb3,
+	0x98, 0x63, 0x41, 0x6c, 0x05, 0x7b, 0x98, 0x59, 0xc9, 0x4a, 0xb2, 0x5e, 0x55, 0xe1, 0x5e, 0xae,
+	0x5a, 0x7a, 0xc1, 0x41, 0x91, 0xc1, 0xc3, 0x25, 0x0c, 0x16, 0x02, 0x13, 0x5e, 0x65, 0x53, 0x53,
+	0x2a, 0xc5, 0x37, 0xa3, 0x1f, 0x61, 0x7c, 0x1a, 0x22, 0x37, 0x46, 0x52, 0xb7, 0xe7, 0x0a, 0xdd,
+	0x04, 0x38, 0xa3, 0x1c, 0x79, 0xb1, 0xb9, 0x26, 0xcd, 0x19, 0x4d, 0xfb, 0x05, 0xb4, 0xb2, 0x69,
+	0x17, 0x70, 0xf5, 0x69, 0x9e, 0x2b, 0xf3, 0x2d, 0x97, 0xcd, 0x10, 0x74, 0xad, 0xc1, 0xae, 0x24,
+	0xb2, 0xd8, 0x81, 0xe3, 0x62, 0x07, 0x7a, 0x8b, 0x07, 0xe0, 0x56, 0x0d, 0x68, 0x3b, 0x6f, 0x85,
+	0xf0, 0x24, 0x0f, 0xe1, 0xc1, 0xed, 0xfa, 0x9d, 0x81, 0xf2, 0x74, 0xef, 0xf5, 0x8d, 0x59, 0xf9,
+	0xe3, 0xc6, 0xac, 0xbc, 0xb9, 0x31, 0xb5, 0x57, 0x33, 0x53, 0xfb, 0x6d, 0x66, 0x6a, 0xd7, 0x33,
+	0x53, 0x7b, 0x3d, 0x33, 0xb5, 0xbf, 0x66, 0xa6, 0xf6, 0xef, 0xcc, 0xac, 0xbc, 0x99, 0x99, 0xda,
+	0x2f, 0x7f, 0x9b, 0x15, 0x67, 0x4d, 0xfe, 0xfd, 0x1e, 0xfe, 0x1f, 0x00, 0x00, 0xff, 0xff, 0xa8,
+	0x07, 0x42, 0x65, 0x56, 0x0b, 0x00, 0x00,
 }

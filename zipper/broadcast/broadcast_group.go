@@ -252,7 +252,7 @@ GATHER:
 		zap.Int("response_count", responseCounts),
 		zap.Bool("have_errors", len(err.Errors) != 0),
 		zap.Any("errors", err.Errors),
-		zap.Any("response", result.Response),
+		zap.Int("response_count", len(result.Response.Metrics)),
 	)
 
 	if result == nil || result.Response == nil {

@@ -71,8 +71,8 @@
     "carbonapi_v3_grpc",
     "carbonapi_v3_pb"
   ]
-  revision = "5d3385516376a1e7131f329d145a58211903e887"
-  version = "v0.2"
+  revision = "76bf6fd3ebb246d60f8afa562f75a36c74411dec"
+  version = "v0.2.2"
 
 [[projects]]
   name = "github.com/gogo/protobuf"
@@ -278,7 +278,7 @@
   branch = "master"
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
-  revision = "f8c8703595236ae70fdf8789ecb656ea0bcdcf46"
+  revision = "ab0870e398d5dd054b868c0db1481ab029b9a9f2"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -308,18 +308,18 @@
     "tap",
     "transport"
   ]
-  revision = "8e4536a86ab602859c20df5ebfd0bd4228d08655"
-  version = "v1.10.0"
+  revision = "afc05b9e1d36f289ea16ba294894486a3e458246"
+  version = "v1.11.0"
 
 [[projects]]
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  revision = "7f97868eec74b32b0982dd158a51a446d1da7eb5"
-  version = "v2.1.1"
+  revision = "86f5ed62f8a0ee96bd888d2efdfd6d4fb100a4eb"
+  version = "v2.2.0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "23b89ce08f2fa2ad418421df2f3a2a2ea4d0ec1dd64a6c60e68430691e11b9ea"
+  inputs-digest = "5bcc1ae7f2ada01caf26656da43a43a91155d4f61a6b1215568435ebc0f0cdfc"
   solver-name = "gps-cdcl"
   solver-version = 1

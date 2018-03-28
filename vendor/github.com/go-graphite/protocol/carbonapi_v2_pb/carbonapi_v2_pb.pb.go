@@ -27,6 +27,10 @@ import fmt "fmt"
 import math "math"
 import _ "github.com/gogo/protobuf/gogoproto"
 
+import strings "strings"
+import reflect "reflect"
+import sortkeys "github.com/gogo/protobuf/sortkeys"
+
 import binary "encoding/binary"
 
 import io "io"
@@ -52,7 +56,6 @@ type FetchResponse struct {
 }
 
 func (m *FetchResponse) Reset()                    { *m = FetchResponse{} }
-func (m *FetchResponse) String() string            { return proto.CompactTextString(m) }
 func (*FetchResponse) ProtoMessage()               {}
 func (*FetchResponse) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV2Pb, []int{0} }
 
@@ -103,7 +106,6 @@ type MultiFetchResponse struct {
 }
 
 func (m *MultiFetchResponse) Reset()                    { *m = MultiFetchResponse{} }
-func (m *MultiFetchResponse) String() string            { return proto.CompactTextString(m) }
 func (*MultiFetchResponse) ProtoMessage()               {}
 func (*MultiFetchResponse) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV2Pb, []int{1} }
 
@@ -120,7 +122,6 @@ type GlobMatch struct {
 }
 
 func (m *GlobMatch) Reset()                    { *m = GlobMatch{} }
-func (m *GlobMatch) String() string            { return proto.CompactTextString(m) }
 func (*GlobMatch) ProtoMessage()               {}
 func (*GlobMatch) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV2Pb, []int{2} }
 
@@ -144,7 +145,6 @@ type GlobResponse struct {
 }
 
 func (m *GlobResponse) Reset()                    { *m = GlobResponse{} }
-func (m *GlobResponse) String() string            { return proto.CompactTextString(m) }
 func (*GlobResponse) ProtoMessage()               {}
 func (*GlobResponse) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV2Pb, []int{3} }
 
@@ -168,7 +168,6 @@ type Retention struct {
 }
 
 func (m *Retention) Reset()                    { *m = Retention{} }
-func (m *Retention) String() string            { return proto.CompactTextString(m) }
 func (*Retention) ProtoMessage()               {}
 func (*Retention) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV2Pb, []int{4} }
 
@@ -195,7 +194,6 @@ type InfoResponse struct {
 }
 
 func (m *InfoResponse) Reset()                    { *m = InfoResponse{} }
-func (m *InfoResponse) String() string            { return proto.CompactTextString(m) }
 func (*InfoResponse) ProtoMessage()               {}
 func (*InfoResponse) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV2Pb, []int{5} }
 
@@ -240,7 +238,6 @@ type ServerInfoResponse struct {
 }
 
 func (m *ServerInfoResponse) Reset()                    { *m = ServerInfoResponse{} }
-func (m *ServerInfoResponse) String() string            { return proto.CompactTextString(m) }
 func (*ServerInfoResponse) ProtoMessage()               {}
 func (*ServerInfoResponse) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV2Pb, []int{6} }
 
@@ -263,7 +260,6 @@ type ZipperInfoResponse struct {
 }
 
 func (m *ZipperInfoResponse) Reset()                    { *m = ZipperInfoResponse{} }
-func (m *ZipperInfoResponse) String() string            { return proto.CompactTextString(m) }
 func (*ZipperInfoResponse) ProtoMessage()               {}
 func (*ZipperInfoResponse) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV2Pb, []int{7} }
 
@@ -279,7 +275,6 @@ type ListMetricsResponse struct {
 }
 
 func (m *ListMetricsResponse) Reset()                    { *m = ListMetricsResponse{} }
-func (m *ListMetricsResponse) String() string            { return proto.CompactTextString(m) }
 func (*ListMetricsResponse) ProtoMessage()               {}
 func (*ListMetricsResponse) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV2Pb, []int{8} }
 
@@ -300,7 +295,6 @@ type MetricDetails struct {
 }
 
 func (m *MetricDetails) Reset()                    { *m = MetricDetails{} }
-func (m *MetricDetails) String() string            { return proto.CompactTextString(m) }
 func (*MetricDetails) ProtoMessage()               {}
 func (*MetricDetails) Descriptor() ([]byte, []int) { return fileDescriptorCarbonapiV2Pb, []int{9} }
 
@@ -338,9 +332,8 @@ type MetricDetailsResponse struct {
 	TotalSpace uint64                    `protobuf:"varint,3,opt,name=TotalSpace,proto3" json:"TotalSpace,omitempty"`
 }
 
-func (m *MetricDetailsResponse) Reset()         { *m = MetricDetailsResponse{} }
-func (m *MetricDetailsResponse) String() string { return proto.CompactTextString(m) }
-func (*MetricDetailsResponse) ProtoMessage()    {}
+func (m *MetricDetailsResponse) Reset()      { *m = MetricDetailsResponse{} }
+func (*MetricDetailsResponse) ProtoMessage() {}
 func (*MetricDetailsResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptorCarbonapiV2Pb, []int{10}
 }
@@ -378,6 +371,538 @@ func init() {
 	proto.RegisterType((*ListMetricsResponse)(nil), "carbonapi_v2_pb.ListMetricsResponse")
 	proto.RegisterType((*MetricDetails)(nil), "carbonapi_v2_pb.MetricDetails")
 	proto.RegisterType((*MetricDetailsResponse)(nil), "carbonapi_v2_pb.MetricDetailsResponse")
+}
+func (this *FetchResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*FetchResponse)
+	if !ok {
+		that2, ok := that.(FetchResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if this.StartTime != that1.StartTime {
+		return false
+	}
+	if this.StopTime != that1.StopTime {
+		return false
+	}
+	if this.StepTime != that1.StepTime {
+		return false
+	}
+	if len(this.Values) != len(that1.Values) {
+		return false
+	}
+	for i := range this.Values {
+		if this.Values[i] != that1.Values[i] {
+			return false
+		}
+	}
+	if len(this.IsAbsent) != len(that1.IsAbsent) {
+		return false
+	}
+	for i := range this.IsAbsent {
+		if this.IsAbsent[i] != that1.IsAbsent[i] {
+			return false
+		}
+	}
+	return true
+}
+func (this *MultiFetchResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*MultiFetchResponse)
+	if !ok {
+		that2, ok := that.(MultiFetchResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Metrics) != len(that1.Metrics) {
+		return false
+	}
+	for i := range this.Metrics {
+		if !this.Metrics[i].Equal(&that1.Metrics[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *GlobMatch) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GlobMatch)
+	if !ok {
+		that2, ok := that.(GlobMatch)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Path != that1.Path {
+		return false
+	}
+	if this.IsLeaf != that1.IsLeaf {
+		return false
+	}
+	return true
+}
+func (this *GlobResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GlobResponse)
+	if !ok {
+		that2, ok := that.(GlobResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if len(this.Matches) != len(that1.Matches) {
+		return false
+	}
+	for i := range this.Matches {
+		if !this.Matches[i].Equal(&that1.Matches[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *Retention) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Retention)
+	if !ok {
+		that2, ok := that.(Retention)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.SecondsPerPoint != that1.SecondsPerPoint {
+		return false
+	}
+	if this.NumberOfPoints != that1.NumberOfPoints {
+		return false
+	}
+	return true
+}
+func (this *InfoResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*InfoResponse)
+	if !ok {
+		that2, ok := that.(InfoResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if this.AggregationMethod != that1.AggregationMethod {
+		return false
+	}
+	if this.MaxRetention != that1.MaxRetention {
+		return false
+	}
+	if this.XFilesFactor != that1.XFilesFactor {
+		return false
+	}
+	if len(this.Retentions) != len(that1.Retentions) {
+		return false
+	}
+	for i := range this.Retentions {
+		if !this.Retentions[i].Equal(&that1.Retentions[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *ServerInfoResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ServerInfoResponse)
+	if !ok {
+		that2, ok := that.(ServerInfoResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Server != that1.Server {
+		return false
+	}
+	if !this.Info.Equal(that1.Info) {
+		return false
+	}
+	return true
+}
+func (this *ZipperInfoResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ZipperInfoResponse)
+	if !ok {
+		that2, ok := that.(ZipperInfoResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Responses) != len(that1.Responses) {
+		return false
+	}
+	for i := range this.Responses {
+		if !this.Responses[i].Equal(&that1.Responses[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *ListMetricsResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ListMetricsResponse)
+	if !ok {
+		that2, ok := that.(ListMetricsResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Metrics) != len(that1.Metrics) {
+		return false
+	}
+	for i := range this.Metrics {
+		if this.Metrics[i] != that1.Metrics[i] {
+			return false
+		}
+	}
+	return true
+}
+func (this *MetricDetails) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*MetricDetails)
+	if !ok {
+		that2, ok := that.(MetricDetails)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Size_ != that1.Size_ {
+		return false
+	}
+	if this.ModTime != that1.ModTime {
+		return false
+	}
+	if this.ATime != that1.ATime {
+		return false
+	}
+	if this.RdTime != that1.RdTime {
+		return false
+	}
+	return true
+}
+func (this *MetricDetailsResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*MetricDetailsResponse)
+	if !ok {
+		that2, ok := that.(MetricDetailsResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Metrics) != len(that1.Metrics) {
+		return false
+	}
+	for i := range this.Metrics {
+		if !this.Metrics[i].Equal(that1.Metrics[i]) {
+			return false
+		}
+	}
+	if this.FreeSpace != that1.FreeSpace {
+		return false
+	}
+	if this.TotalSpace != that1.TotalSpace {
+		return false
+	}
+	return true
+}
+func (this *FetchResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 10)
+	s = append(s, "&carbonapi_v2_pb.FetchResponse{")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	s = append(s, "StartTime: "+fmt.Sprintf("%#v", this.StartTime)+",\n")
+	s = append(s, "StopTime: "+fmt.Sprintf("%#v", this.StopTime)+",\n")
+	s = append(s, "StepTime: "+fmt.Sprintf("%#v", this.StepTime)+",\n")
+	s = append(s, "Values: "+fmt.Sprintf("%#v", this.Values)+",\n")
+	s = append(s, "IsAbsent: "+fmt.Sprintf("%#v", this.IsAbsent)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *MultiFetchResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&carbonapi_v2_pb.MultiFetchResponse{")
+	if this.Metrics != nil {
+		vs := make([]*FetchResponse, len(this.Metrics))
+		for i := range vs {
+			vs[i] = &this.Metrics[i]
+		}
+		s = append(s, "Metrics: "+fmt.Sprintf("%#v", vs)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GlobMatch) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&carbonapi_v2_pb.GlobMatch{")
+	s = append(s, "Path: "+fmt.Sprintf("%#v", this.Path)+",\n")
+	s = append(s, "IsLeaf: "+fmt.Sprintf("%#v", this.IsLeaf)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GlobResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&carbonapi_v2_pb.GlobResponse{")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	if this.Matches != nil {
+		vs := make([]*GlobMatch, len(this.Matches))
+		for i := range vs {
+			vs[i] = &this.Matches[i]
+		}
+		s = append(s, "Matches: "+fmt.Sprintf("%#v", vs)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *Retention) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&carbonapi_v2_pb.Retention{")
+	s = append(s, "SecondsPerPoint: "+fmt.Sprintf("%#v", this.SecondsPerPoint)+",\n")
+	s = append(s, "NumberOfPoints: "+fmt.Sprintf("%#v", this.NumberOfPoints)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *InfoResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 9)
+	s = append(s, "&carbonapi_v2_pb.InfoResponse{")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	s = append(s, "AggregationMethod: "+fmt.Sprintf("%#v", this.AggregationMethod)+",\n")
+	s = append(s, "MaxRetention: "+fmt.Sprintf("%#v", this.MaxRetention)+",\n")
+	s = append(s, "XFilesFactor: "+fmt.Sprintf("%#v", this.XFilesFactor)+",\n")
+	if this.Retentions != nil {
+		vs := make([]*Retention, len(this.Retentions))
+		for i := range vs {
+			vs[i] = &this.Retentions[i]
+		}
+		s = append(s, "Retentions: "+fmt.Sprintf("%#v", vs)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ServerInfoResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&carbonapi_v2_pb.ServerInfoResponse{")
+	s = append(s, "Server: "+fmt.Sprintf("%#v", this.Server)+",\n")
+	if this.Info != nil {
+		s = append(s, "Info: "+fmt.Sprintf("%#v", this.Info)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ZipperInfoResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&carbonapi_v2_pb.ZipperInfoResponse{")
+	if this.Responses != nil {
+		vs := make([]*ServerInfoResponse, len(this.Responses))
+		for i := range vs {
+			vs[i] = &this.Responses[i]
+		}
+		s = append(s, "Responses: "+fmt.Sprintf("%#v", vs)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ListMetricsResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&carbonapi_v2_pb.ListMetricsResponse{")
+	s = append(s, "Metrics: "+fmt.Sprintf("%#v", this.Metrics)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *MetricDetails) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 8)
+	s = append(s, "&carbonapi_v2_pb.MetricDetails{")
+	s = append(s, "Size_: "+fmt.Sprintf("%#v", this.Size_)+",\n")
+	s = append(s, "ModTime: "+fmt.Sprintf("%#v", this.ModTime)+",\n")
+	s = append(s, "ATime: "+fmt.Sprintf("%#v", this.ATime)+",\n")
+	s = append(s, "RdTime: "+fmt.Sprintf("%#v", this.RdTime)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *MetricDetailsResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&carbonapi_v2_pb.MetricDetailsResponse{")
+	keysForMetrics := make([]string, 0, len(this.Metrics))
+	for k, _ := range this.Metrics {
+		keysForMetrics = append(keysForMetrics, k)
+	}
+	sortkeys.Strings(keysForMetrics)
+	mapStringForMetrics := "map[string]*MetricDetails{"
+	for _, k := range keysForMetrics {
+		mapStringForMetrics += fmt.Sprintf("%#v: %#v,", k, this.Metrics[k])
+	}
+	mapStringForMetrics += "}"
+	if this.Metrics != nil {
+		s = append(s, "Metrics: "+mapStringForMetrics+",\n")
+	}
+	s = append(s, "FreeSpace: "+fmt.Sprintf("%#v", this.FreeSpace)+",\n")
+	s = append(s, "TotalSpace: "+fmt.Sprintf("%#v", this.TotalSpace)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func valueToGoStringCarbonapiV2Pb(v interface{}, typ string) string {
+	rv := reflect.ValueOf(v)
+	if rv.IsNil() {
+		return "nil"
+	}
+	pv := reflect.Indirect(rv).Interface()
+	return fmt.Sprintf("func(v %v) *%v { return &v } ( %#v )", typ, typ, pv)
 }
 func (m *FetchResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
@@ -1019,6 +1544,152 @@ func sovCarbonapiV2Pb(x uint64) (n int) {
 }
 func sozCarbonapiV2Pb(x uint64) (n int) {
 	return sovCarbonapiV2Pb(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (this *FetchResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&FetchResponse{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`StartTime:` + fmt.Sprintf("%v", this.StartTime) + `,`,
+		`StopTime:` + fmt.Sprintf("%v", this.StopTime) + `,`,
+		`StepTime:` + fmt.Sprintf("%v", this.StepTime) + `,`,
+		`Values:` + fmt.Sprintf("%v", this.Values) + `,`,
+		`IsAbsent:` + fmt.Sprintf("%v", this.IsAbsent) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *MultiFetchResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&MultiFetchResponse{`,
+		`Metrics:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Metrics), "FetchResponse", "FetchResponse", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GlobMatch) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GlobMatch{`,
+		`Path:` + fmt.Sprintf("%v", this.Path) + `,`,
+		`IsLeaf:` + fmt.Sprintf("%v", this.IsLeaf) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GlobResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GlobResponse{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Matches:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Matches), "GlobMatch", "GlobMatch", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Retention) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Retention{`,
+		`SecondsPerPoint:` + fmt.Sprintf("%v", this.SecondsPerPoint) + `,`,
+		`NumberOfPoints:` + fmt.Sprintf("%v", this.NumberOfPoints) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *InfoResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&InfoResponse{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`AggregationMethod:` + fmt.Sprintf("%v", this.AggregationMethod) + `,`,
+		`MaxRetention:` + fmt.Sprintf("%v", this.MaxRetention) + `,`,
+		`XFilesFactor:` + fmt.Sprintf("%v", this.XFilesFactor) + `,`,
+		`Retentions:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Retentions), "Retention", "Retention", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ServerInfoResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ServerInfoResponse{`,
+		`Server:` + fmt.Sprintf("%v", this.Server) + `,`,
+		`Info:` + strings.Replace(fmt.Sprintf("%v", this.Info), "InfoResponse", "InfoResponse", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ZipperInfoResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ZipperInfoResponse{`,
+		`Responses:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Responses), "ServerInfoResponse", "ServerInfoResponse", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ListMetricsResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ListMetricsResponse{`,
+		`Metrics:` + fmt.Sprintf("%v", this.Metrics) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *MetricDetails) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&MetricDetails{`,
+		`Size_:` + fmt.Sprintf("%v", this.Size_) + `,`,
+		`ModTime:` + fmt.Sprintf("%v", this.ModTime) + `,`,
+		`ATime:` + fmt.Sprintf("%v", this.ATime) + `,`,
+		`RdTime:` + fmt.Sprintf("%v", this.RdTime) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *MetricDetailsResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForMetrics := make([]string, 0, len(this.Metrics))
+	for k, _ := range this.Metrics {
+		keysForMetrics = append(keysForMetrics, k)
+	}
+	sortkeys.Strings(keysForMetrics)
+	mapStringForMetrics := "map[string]*MetricDetails{"
+	for _, k := range keysForMetrics {
+		mapStringForMetrics += fmt.Sprintf("%v: %v,", k, this.Metrics[k])
+	}
+	mapStringForMetrics += "}"
+	s := strings.Join([]string{`&MetricDetailsResponse{`,
+		`Metrics:` + mapStringForMetrics + `,`,
+		`FreeSpace:` + fmt.Sprintf("%v", this.FreeSpace) + `,`,
+		`TotalSpace:` + fmt.Sprintf("%v", this.TotalSpace) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func valueToStringCarbonapiV2Pb(v interface{}) string {
+	rv := reflect.ValueOf(v)
+	if rv.IsNil() {
+		return "nil"
+	}
+	pv := reflect.Indirect(rv).Interface()
+	return fmt.Sprintf("*%v", pv)
 }
 func (m *FetchResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -2528,47 +3199,49 @@ var (
 func init() { proto.RegisterFile("carbonapi_v2_pb.proto", fileDescriptorCarbonapiV2Pb) }
 
 var fileDescriptorCarbonapiV2Pb = []byte{
-	// 665 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x54, 0x5f, 0x4f, 0x13, 0x4f,
-	0x14, 0xfd, 0x6d, 0xb7, 0x2d, 0xec, 0xa5, 0xfc, 0xd0, 0x51, 0xc8, 0xa6, 0xd1, 0xda, 0xac, 0x89,
-	0xe9, 0x83, 0x42, 0x04, 0x13, 0x0d, 0x0f, 0x46, 0x88, 0x96, 0x98, 0xd0, 0x48, 0x06, 0x9e, 0x48,
-	0x90, 0xcc, 0x2e, 0xb7, 0xed, 0x84, 0xee, 0xce, 0x66, 0x66, 0x4a, 0xc0, 0x27, 0xbf, 0x90, 0xdf,
-	0x83, 0x47, 0x9f, 0x7d, 0x30, 0x86, 0x4f, 0x62, 0x76, 0x66, 0x77, 0xe9, 0x1f, 0x82, 0x6f, 0xf7,
-	0x9c, 0x3b, 0xe7, 0xce, 0xb9, 0x77, 0xfe, 0xc0, 0x6a, 0xc4, 0x64, 0x28, 0x12, 0x96, 0xf2, 0xd3,
-	0x8b, 0xcd, 0xd3, 0x34, 0x5c, 0x4f, 0xa5, 0xd0, 0x82, 0xac, 0xcc, 0xd0, 0xcd, 0x57, 0x03, 0xae,
-	0x87, 0xe3, 0x70, 0x3d, 0x12, 0xf1, 0xc6, 0x40, 0x0c, 0xc4, 0x86, 0x59, 0x17, 0x8e, 0xfb, 0x06,
-	0x19, 0x60, 0x22, 0xab, 0x0f, 0x7e, 0x38, 0xb0, 0xdc, 0x45, 0x1d, 0x0d, 0x29, 0xaa, 0x54, 0x24,
-	0x0a, 0x09, 0x81, 0x6a, 0xc2, 0x62, 0xf4, 0x9d, 0xb6, 0xd3, 0xf1, 0xa8, 0x89, 0xc9, 0x13, 0xf0,
-	0x94, 0x66, 0x52, 0x1f, 0xf1, 0x18, 0xfd, 0x4a, 0xdb, 0xe9, 0xd4, 0xe8, 0x2d, 0x41, 0x9a, 0xb0,
-	0xa8, 0xb4, 0x48, 0x4d, 0xd2, 0x35, 0xc9, 0x12, 0xdb, 0x1c, 0xda, 0x5c, 0xb5, 0xc8, 0x59, 0x4c,
-	0xd6, 0xa0, 0x7e, 0xc1, 0x46, 0x63, 0x54, 0x7e, 0xad, 0xed, 0x76, 0x1c, 0x9a, 0xa3, 0x4c, 0xc3,
-	0xd5, 0x4e, 0xa8, 0x30, 0xd1, 0x7e, 0xbd, 0xed, 0x76, 0x16, 0x69, 0x89, 0x83, 0x23, 0x20, 0xbd,
-	0xf1, 0x48, 0xf3, 0x69, 0xcf, 0xef, 0x61, 0x21, 0x46, 0x2d, 0x79, 0xa4, 0x7c, 0xa7, 0xed, 0x76,
-	0x96, 0x36, 0x5b, 0xeb, 0xb3, 0xe3, 0x9a, 0x12, 0xec, 0x56, 0xaf, 0x7f, 0x3f, 0xfb, 0x8f, 0x16,
-	0xa2, 0xe0, 0x2d, 0x78, 0x7b, 0x23, 0x11, 0xf6, 0x98, 0x8e, 0x86, 0xd9, 0x00, 0x52, 0xa6, 0x87,
-	0xc5, 0x00, 0xb2, 0x38, 0xb3, 0xca, 0xd5, 0x3e, 0xb2, 0xbe, 0xe9, 0x7e, 0x91, 0xe6, 0x28, 0xf8,
-	0x0a, 0x8d, 0x4c, 0x78, 0xef, 0xf0, 0xb6, 0x61, 0x21, 0xce, 0x0a, 0xa3, 0xf2, 0x2b, 0xc6, 0x5c,
-	0x73, 0xce, 0x5c, 0xb9, 0x79, 0x69, 0xcc, 0x0a, 0x82, 0x13, 0xf0, 0x28, 0x6a, 0x4c, 0x34, 0x17,
-	0x09, 0xe9, 0xc0, 0x8a, 0xc2, 0x48, 0x24, 0x67, 0xea, 0x00, 0xe5, 0x81, 0xe0, 0x89, 0x36, 0xfb,
-	0xd4, 0xe8, 0x2c, 0x4d, 0x5e, 0xc0, 0xff, 0xc9, 0x38, 0x0e, 0x51, 0x7e, 0xe9, 0x1b, 0x42, 0xe5,
-	0x87, 0x36, 0xc3, 0x06, 0xbf, 0x1c, 0x68, 0x7c, 0x4e, 0xfa, 0xe2, 0x5e, 0xff, 0x2f, 0xe1, 0x21,
-	0x1b, 0x0c, 0x24, 0x0e, 0x58, 0xe6, 0xa2, 0x87, 0x7a, 0x28, 0xce, 0x4c, 0x3d, 0x8f, 0xce, 0x27,
-	0x48, 0x00, 0x8d, 0x98, 0x5d, 0x96, 0xa6, 0xf3, 0x0b, 0x31, 0xc5, 0x65, 0x6b, 0x2e, 0xbb, 0x7c,
-	0x84, 0xaa, 0xcb, 0x22, 0x2d, 0xa4, 0xb9, 0x18, 0x15, 0x3a, 0xc5, 0x91, 0x0f, 0x00, 0xb2, 0x10,
-	0xd8, 0x0b, 0x72, 0xd7, 0xe0, 0xca, 0x9a, 0xf9, 0xe0, 0x26, 0x34, 0xc1, 0x29, 0x90, 0x43, 0x94,
-	0x17, 0x28, 0xa7, 0x3a, 0x5c, 0x83, 0xba, 0x32, 0x6c, 0xde, 0x63, 0x8e, 0xc8, 0x6b, 0xa8, 0xf2,
-	0xa4, 0x2f, 0x4c, 0x63, 0x4b, 0x9b, 0x4f, 0xe7, 0x76, 0x9a, 0x2c, 0x42, 0xcd, 0xd2, 0xe0, 0x04,
-	0xc8, 0x31, 0x4f, 0xd3, 0x99, 0x0d, 0xf6, 0xc0, 0x93, 0x79, 0x5c, 0xdc, 0xc6, 0xe7, 0x73, 0xd5,
-	0xe6, 0x8d, 0xe5, 0x0d, 0xdc, 0x6a, 0x83, 0x0d, 0x78, 0xb4, 0xcf, 0x95, 0xee, 0xd9, 0x3b, 0x5a,
-	0xd6, 0xf7, 0x61, 0xa1, 0x37, 0x71, 0xd7, 0x3d, 0x5a, 0xc0, 0xe0, 0x1c, 0x96, 0x6d, 0xf8, 0x11,
-	0x35, 0xe3, 0x23, 0x95, 0x9d, 0xe6, 0x21, 0xff, 0x66, 0x5f, 0xac, 0x4b, 0x4d, 0x6c, 0xe4, 0xe2,
-	0xac, 0x7c, 0xab, 0x2e, 0x2d, 0x20, 0x79, 0x0c, 0xb5, 0x9d, 0xf2, 0x9d, 0xba, 0xd4, 0x82, 0x6c,
-	0x5e, 0xd4, 0x2e, 0xaf, 0x19, 0x3a, 0x47, 0xc1, 0xf7, 0x0a, 0xac, 0x4e, 0xed, 0x56, 0x1a, 0xec,
-	0xcd, 0x3e, 0xc6, 0xad, 0xb9, 0xf6, 0xef, 0x14, 0xe6, 0xac, 0xfa, 0x94, 0x68, 0x79, 0x55, 0xbe,
-	0xcd, 0xec, 0xef, 0xe9, 0x4a, 0xc4, 0xc3, 0x94, 0x45, 0xb6, 0x93, 0x2a, 0xbd, 0x25, 0x48, 0x0b,
-	0xe0, 0x48, 0x68, 0x36, 0xb2, 0x69, 0xd7, 0xa4, 0x27, 0x98, 0xe6, 0x31, 0x34, 0x26, 0xcb, 0x92,
-	0x07, 0xe0, 0x9e, 0xe3, 0x55, 0x7e, 0xf6, 0x59, 0x48, 0xde, 0x40, 0xcd, 0xfc, 0x3b, 0xf9, 0xc9,
-	0xb7, 0xfe, 0x61, 0xd6, 0x2e, 0xde, 0xae, 0xbc, 0x73, 0x76, 0x1b, 0xd7, 0x37, 0x2d, 0xe7, 0xe7,
-	0x4d, 0xcb, 0xf9, 0x73, 0xd3, 0x72, 0xc2, 0xba, 0xf9, 0x50, 0xb7, 0xfe, 0x06, 0x00, 0x00, 0xff,
-	0xff, 0xa2, 0x3b, 0xc5, 0x34, 0xa9, 0x05, 0x00, 0x00,
+	// 703 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x54, 0xcd, 0x4e, 0x1b, 0x3b,
+	0x14, 0x8e, 0x33, 0x49, 0x20, 0x87, 0x70, 0xb9, 0xd7, 0xb7, 0xa0, 0x28, 0x6a, 0xa7, 0xd1, 0x54,
+	0xaa, 0xb2, 0xa0, 0xa0, 0x42, 0xa5, 0x56, 0x2c, 0xaa, 0x82, 0xda, 0xa0, 0x4a, 0x44, 0x45, 0x86,
+	0x15, 0x12, 0x45, 0x9e, 0xc1, 0x49, 0x2c, 0x92, 0xf1, 0xc8, 0x76, 0x10, 0x74, 0xc5, 0x23, 0xf4,
+	0x31, 0xba, 0xe9, 0x7b, 0xb0, 0x64, 0x59, 0x75, 0x51, 0x95, 0x74, 0xd3, 0x25, 0x8f, 0x50, 0x8d,
+	0x3d, 0x33, 0xe4, 0x07, 0xd1, 0xdd, 0xf9, 0xbe, 0xe3, 0xef, 0xf8, 0x3b, 0xc7, 0x3f, 0xb0, 0x18,
+	0x50, 0xe9, 0x8b, 0x90, 0x46, 0xfc, 0xe8, 0x74, 0xed, 0x28, 0xf2, 0x57, 0x22, 0x29, 0xb4, 0xc0,
+	0x0b, 0x13, 0x74, 0xed, 0x59, 0x87, 0xeb, 0xee, 0xc0, 0x5f, 0x09, 0x44, 0x7f, 0xb5, 0x23, 0x3a,
+	0x62, 0xd5, 0xac, 0xf3, 0x07, 0x6d, 0x83, 0x0c, 0x30, 0x91, 0xd5, 0x7b, 0x5f, 0x11, 0xcc, 0x37,
+	0x99, 0x0e, 0xba, 0x84, 0xa9, 0x48, 0x84, 0x8a, 0x61, 0x0c, 0x85, 0x90, 0xf6, 0x59, 0x15, 0xd5,
+	0x51, 0xa3, 0x4c, 0x4c, 0x8c, 0x1f, 0x42, 0x59, 0x69, 0x2a, 0xf5, 0x3e, 0xef, 0xb3, 0x6a, 0xbe,
+	0x8e, 0x1a, 0x45, 0x72, 0x4b, 0xe0, 0x1a, 0xcc, 0x2a, 0x2d, 0x22, 0x93, 0x74, 0x4c, 0x32, 0xc3,
+	0x36, 0xc7, 0x6c, 0xae, 0x90, 0xe6, 0x2c, 0xc6, 0x4b, 0x50, 0x3a, 0xa5, 0xbd, 0x01, 0x53, 0xd5,
+	0x62, 0xdd, 0x69, 0x20, 0x92, 0xa0, 0x58, 0xc3, 0xd5, 0xa6, 0xaf, 0x58, 0xa8, 0xab, 0xa5, 0xba,
+	0xd3, 0x98, 0x25, 0x19, 0xf6, 0xf6, 0x01, 0xb7, 0x06, 0x3d, 0xcd, 0xc7, 0x3d, 0xbf, 0x86, 0x99,
+	0x3e, 0xd3, 0x92, 0x07, 0xaa, 0x8a, 0xea, 0x4e, 0x63, 0x6e, 0xcd, 0x5d, 0x99, 0x1c, 0xd7, 0x98,
+	0x60, 0xab, 0x70, 0xf9, 0xe3, 0x71, 0x8e, 0xa4, 0x22, 0xef, 0x25, 0x94, 0xb7, 0x7b, 0xc2, 0x6f,
+	0x51, 0x1d, 0x74, 0xe3, 0x01, 0x44, 0x54, 0x77, 0xd3, 0x01, 0xc4, 0x71, 0x6c, 0x95, 0xab, 0x1d,
+	0x46, 0xdb, 0xa6, 0xfb, 0x59, 0x92, 0x20, 0xef, 0x23, 0x54, 0x62, 0xe1, 0xbd, 0xc3, 0xdb, 0x80,
+	0x99, 0x7e, 0x5c, 0x98, 0xa9, 0x6a, 0xde, 0x98, 0xab, 0x4d, 0x99, 0xcb, 0x36, 0xcf, 0x8c, 0x59,
+	0x81, 0x77, 0x08, 0x65, 0xc2, 0x34, 0x0b, 0x35, 0x17, 0x21, 0x6e, 0xc0, 0x82, 0x62, 0x81, 0x08,
+	0x8f, 0xd5, 0x2e, 0x93, 0xbb, 0x82, 0x87, 0xda, 0xec, 0x53, 0x24, 0x93, 0x34, 0x7e, 0x0a, 0xff,
+	0x84, 0x83, 0xbe, 0xcf, 0xe4, 0x87, 0xb6, 0x21, 0x54, 0x72, 0x68, 0x13, 0xac, 0xf7, 0x1d, 0x41,
+	0xe5, 0x7d, 0xd8, 0x16, 0xf7, 0xfa, 0x5f, 0x86, 0xff, 0x68, 0xa7, 0x23, 0x59, 0x87, 0xc6, 0x2e,
+	0x5a, 0x4c, 0x77, 0xc5, 0xb1, 0xa9, 0x57, 0x26, 0xd3, 0x09, 0xec, 0x41, 0xa5, 0x4f, 0xcf, 0x32,
+	0xd3, 0xc9, 0x85, 0x18, 0xe3, 0xe2, 0x35, 0x67, 0x4d, 0xde, 0x63, 0xaa, 0x49, 0x03, 0x2d, 0xa4,
+	0xb9, 0x18, 0x79, 0x32, 0xc6, 0xe1, 0x37, 0x00, 0x32, 0x15, 0xd8, 0x0b, 0x72, 0xd7, 0xe0, 0xb2,
+	0x9a, 0xc9, 0xe0, 0x46, 0x34, 0xde, 0x11, 0xe0, 0x3d, 0x26, 0x4f, 0x99, 0x1c, 0xeb, 0x70, 0x09,
+	0x4a, 0xca, 0xb0, 0x49, 0x8f, 0x09, 0xc2, 0xcf, 0xa1, 0xc0, 0xc3, 0xb6, 0x30, 0x8d, 0xcd, 0xad,
+	0x3d, 0x9a, 0xda, 0x69, 0xb4, 0x08, 0x31, 0x4b, 0xbd, 0x43, 0xc0, 0x07, 0x3c, 0x8a, 0x26, 0x36,
+	0xd8, 0x86, 0xb2, 0x4c, 0xe2, 0xf4, 0x36, 0x3e, 0x99, 0xaa, 0x36, 0x6d, 0x2c, 0x69, 0xe0, 0x56,
+	0xeb, 0xad, 0xc2, 0xff, 0x3b, 0x5c, 0xe9, 0x96, 0xbd, 0xa3, 0x59, 0xfd, 0x2a, 0xcc, 0xb4, 0x46,
+	0xee, 0x7a, 0x99, 0xa4, 0xd0, 0x3b, 0x81, 0x79, 0x1b, 0xbe, 0x65, 0x9a, 0xf2, 0x9e, 0x8a, 0x4f,
+	0x73, 0x8f, 0x7f, 0xb2, 0x2f, 0xd6, 0x21, 0x26, 0x36, 0x72, 0x71, 0x9c, 0xbd, 0x55, 0x87, 0xa4,
+	0x10, 0x3f, 0x80, 0xe2, 0x66, 0xf6, 0x4e, 0x1d, 0x62, 0x41, 0x3c, 0x2f, 0x62, 0x97, 0x17, 0x0d,
+	0x9d, 0x20, 0xef, 0x22, 0x0f, 0x8b, 0x63, 0xbb, 0x65, 0x06, 0x5b, 0x93, 0x8f, 0x71, 0x7d, 0xaa,
+	0xfd, 0x3b, 0x85, 0x09, 0xab, 0xde, 0x85, 0x5a, 0x9e, 0x67, 0x6f, 0x33, 0xfe, 0x7b, 0x9a, 0x92,
+	0xb1, 0xbd, 0x88, 0x06, 0xb6, 0x93, 0x02, 0xb9, 0x25, 0xb0, 0x0b, 0xb0, 0x2f, 0x34, 0xed, 0xd9,
+	0xb4, 0x63, 0xd2, 0x23, 0x4c, 0xed, 0x00, 0x2a, 0xa3, 0x65, 0xf1, 0xbf, 0xe0, 0x9c, 0xb0, 0xf3,
+	0xe4, 0xec, 0xe3, 0x10, 0xbf, 0x80, 0xa2, 0xf9, 0x77, 0x92, 0x93, 0x77, 0xff, 0x62, 0xd6, 0x2e,
+	0xde, 0xc8, 0xbf, 0x42, 0x5b, 0xcb, 0x57, 0xd7, 0x6e, 0xee, 0xdb, 0xb5, 0x9b, 0xbb, 0xb9, 0x76,
+	0xd1, 0xc5, 0xd0, 0x45, 0x5f, 0x86, 0x2e, 0xba, 0x1c, 0xba, 0xe8, 0x6a, 0xe8, 0xa2, 0x9f, 0x43,
+	0x17, 0xfd, 0x1e, 0xba, 0xb9, 0x9b, 0xa1, 0x8b, 0x3e, 0xff, 0x72, 0x73, 0x7e, 0xc9, 0x7c, 0xb8,
+	0xeb, 0x7f, 0x02, 0x00, 0x00, 0xff, 0xff, 0x8b, 0xa6, 0x4f, 0xb8, 0xc9, 0x05, 0x00, 0x00,
 }
