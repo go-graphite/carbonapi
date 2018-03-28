@@ -101,6 +101,7 @@
   version = "v1.4.7"
 
 [[projects]]
+  branch = "master"
   name = "github.com/go-graphite/carbonzipper"
   packages = [
     "cache",
@@ -123,8 +124,7 @@
     "zipper/protocols/v3",
     "zipper/types"
   ]
-  revision = "53bd3ef082320cad7ecdfa8e7b5d34a9bc70a0a1"
-  version = "1.0.0-beta.2"
+  revision = "0684481140cb149b570daeae6c6ca2e907c11ac8"
 
 [[projects]]
   name = "github.com/go-graphite/protocol"

@@ -636,7 +636,6 @@ func setUpViper(logger *zap.Logger, configPath *string, viperPrefix string) {
 	viper.SetDefault("upstreams.concurrencyLimit", 0)
 	viper.SetDefault("upstreams.keepAliveInterval", "30s")
 	viper.SetDefault("upstreams.maxIdleConnsPerHost", 100)
-	viper.SetDefault("upstreams.backends", []string{"http://127.0.0.1:8080"})
 	viper.SetDefault("upstreams.carbonsearch.backend", "")
 	viper.SetDefault("upstreams.carbonsearch.prefix", "virt.v1.*")
 	viper.SetDefault("upstreams.graphite09compat", false)
@@ -667,7 +666,7 @@ func setUpConfigUpstreams(logger *zap.Logger) {
 			Find:    600 * time.Second,
 		}
 	}
-	if len(config.Upstreams.Backends) == 0 {
+	if len(config.Upstreams.Backends) == 0 && len(config.Upstreams.BackendsV2.Backends) == 0 {
 		logger.Fatal("no backends specified for upstreams!")
 	}
 
