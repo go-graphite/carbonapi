@@ -49,12 +49,17 @@ func mergeFindRequests(f1, f2 []protov3.GlobMatch) []protov3.GlobMatch {
 */
 
 func (first *ServerFindResponse) Merge(second *ServerFindResponse) *errors.Errors {
-	first.Stats.Merge(second.Stats)
+	if second.Stats != nil {
+		first.Stats.Merge(second.Stats)
+	}
 	if first.Err == nil {
 		first.Err = &errors.Errors{}
 	}
 	first.Err.Merge(second.Err)
 	if first.Err.HaveFatalErrors {
+		return first.Err
+	}
+	if second.Response == nil {
 		return first.Err
 	}
 
@@ -175,12 +180,17 @@ out:
 }
 
 func (first *ServerFetchResponse) Merge(second *ServerFetchResponse) {
-	first.Stats.Merge(second.Stats)
+	if second.Stats != nil {
+		first.Stats.Merge(second.Stats)
+	}
 	if first.Err == nil {
 		first.Err = &errors.Errors{}
 	}
 	first.Err.Merge(second.Err)
 	if first.Err.HaveFatalErrors {
+		return
+	}
+	if second.Response == nil {
 		return
 	}
 
