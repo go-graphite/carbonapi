@@ -123,7 +123,11 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	}
 
 	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), data)
-	if err != nil {
+	if e == nil {
+		e = &errors.Errors{}
+	}
+
+	if e.HaveFatalErrors {
 		return nil, stats, e
 	}
 
@@ -159,6 +163,10 @@ func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlo
 		e = &errors.Errors{}
 	}
 
+	if e.HaveFatalErrors {
+		return nil, stats, e
+	}
+
 	var globs protov3.MultiGlobResponse
 	err = globs.Unmarshal(res.Response)
 	if err != nil {
@@ -185,6 +193,10 @@ func (c *ClientProtoV3Group) Info(ctx context.Context, request *protov3.MultiMet
 	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), data)
 	if e == nil {
 		e = &errors.Errors{}
+	}
+
+	if e.HaveFatalErrors {
+		return nil, stats, e
 	}
 
 	var infos protov3.MultiMetricsInfoResponse

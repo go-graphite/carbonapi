@@ -81,17 +81,14 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 	storeClients := make([]types.ServerClient, 0)
 	var e errors.Errors
 	var ePtr *errors.Errors
+	timeouts := backends.Timeouts
 	for _, backend := range backends.Backends {
 		concurencyLimit := backends.ConcurrencyLimitPerServer
-		timeouts := backends.Timeouts
 		tries := backends.MaxTries
 		maxIdleConnsPerHost := backends.MaxIdleConnsPerHost
 		keepAliveInterval := backends.KeepAliveInterval
 
 		if backend.Timeouts == nil {
-			backend.Timeouts = &timeouts
-		} else {
-			timeouts := sanitizeTimouts(*backend.Timeouts, backends.Timeouts)
 			backend.Timeouts = &timeouts
 		}
 		if backend.ConcurrencyLimit == nil {
@@ -245,6 +242,16 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 			MaxTries:                  config.MaxTries,
 			MaxGlobs:                  config.MaxGlobs,
 		}
+	}
+
+	config.BackendsV2.Timeouts = sanitizeTimouts(config.BackendsV2.Timeouts, config.Timeouts)
+	for i := range config.BackendsV2.Backends {
+		if config.BackendsV2.Backends[i].Timeouts == nil {
+			timeouts := config.BackendsV2.Timeouts
+			config.BackendsV2.Backends[i].Timeouts = &timeouts
+		}
+		timeouts := sanitizeTimouts(*(config.BackendsV2.Backends[i].Timeouts), config.BackendsV2.Timeouts)
+		config.BackendsV2.Backends[i].Timeouts = &timeouts
 	}
 
 	storeClients, err := createBackendsV2(logger, config.BackendsV2, config.ExpireDelaySec)
