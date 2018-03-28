@@ -18,6 +18,7 @@ Changes
    - Fix timeout sanitization logic
    - Fix empty responses for protocol/v3
    - Update vendored deps
+   - Add option to configure internal route cache check interval
 
 **1.0.0-beta.2** **It's not recommended to switch to this release in production, until it's marked as stable**
    - Fix incorrect error handling in Find requests
