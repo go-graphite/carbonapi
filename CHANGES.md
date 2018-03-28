@@ -14,6 +14,9 @@ Changes
 
 Changes
 -------
+**1.0.0-beta.2** **It's not recommended to switch to this release in production, until it's marked as stable**
+   - Fix incorrect error handling in Find requests
+
 **1.0.0-beta.1** **It's not recommended to switch to this release in production, until it's marked as stable**
    - Migrate config parsing to viper. This should give consistent expreience with carbonapi
 

@@ -224,15 +224,13 @@ GATHER:
 			responseCounts++
 			answeredServers[name] = struct{}{}
 		case res := <-resCh:
-			if res.Err != nil && len(res.Err.Errors) > 0 {
+			if res.Err != nil {
 				err.Merge(res.Err)
 			}
-			if res != nil {
-				if result.Response == nil {
-					result = res
-				} else {
-					result.Merge(res)
-				}
+			if result.Response == nil {
+				result = res
+			} else {
+				result.Merge(res)
 			}
 		case <-ctx.Done():
 			noAnswer := make([]string, 0)
@@ -276,13 +274,16 @@ func findRequestToKey(prefix string, request *protov3.MultiGlobRequest) string {
 }
 
 func (bg *BroadcastGroup) doFind(ctx context.Context, logger *zap.Logger, client types.ServerClient, request *protov3.MultiGlobRequest, resCh chan<- *types.ServerFindResponse) {
-	logger.Debug("waiting for a slot",
+	logger = logger.With(
 		zap.String("group_name", bg.groupName),
 		zap.String("client_name", client.Name()),
 	)
+	logger.Debug("waiting for a slot")
+
 	r := &types.ServerFindResponse{
 		Server: client.Name(),
 	}
+
 	err := bg.limiter.Enter(ctx, client.Name())
 	if err != nil {
 		logger.Debug("timeout waiting for a slot")
@@ -295,6 +296,9 @@ func (bg *BroadcastGroup) doFind(ctx context.Context, logger *zap.Logger, client
 	logger.Debug("got a slot")
 
 	r.Response, r.Stats, r.Err = client.Find(ctx, request)
+	logger.Debug("fetched response",
+		zap.Any("response", r),
+	)
 	resCh <- r
 }
 
@@ -336,14 +340,13 @@ GATHER:
 		case r := <-resCh:
 			answeredServers[r.Server] = struct{}{}
 			responseCounts++
-			if r.Err == nil {
-				if result.Response == nil {
-					result = r
-				} else {
-					result.Merge(r)
-				}
-			} else {
+			if r.Err != nil {
 				err.Merge(r.Err)
+			}
+			if result.Response == nil {
+				result = r
+			} else {
+				result.Merge(r)
 			}
 
 			if responseCounts == len(clients) {
@@ -437,19 +440,18 @@ func (bg *BroadcastGroup) Info(ctx context.Context, request *protov3.MultiMetric
 GATHER:
 	for {
 		select {
-		case r := <-resCh:
-			answeredServers[r.Server] = struct{}{}
+		case res := <-resCh:
+			answeredServers[res.Server] = struct{}{}
 			responseCounts++
-			if r.Err == nil {
-				if result.Response == nil {
-					result = r
-				} else {
-					for k, v := range r.Response.Info {
-						result.Response.Info[k] = v
-					}
+			if res.Err != nil {
+				err.Merge(res.Err)
+			}
+			if result.Response == nil {
+				result = res
+			} else if res.Response != nil {
+				for k, v := range res.Response.Info {
+					result.Response.Info[k] = v
 				}
-			} else {
-				err.Merge(r.Err)
 			}
 
 			if responseCounts == len(clients) {
