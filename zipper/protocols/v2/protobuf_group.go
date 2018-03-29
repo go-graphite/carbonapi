@@ -2,6 +2,7 @@ package v2
 
 import (
 	"context"
+	"math"
 	"net"
 	"net/http"
 	"net/url"
@@ -109,14 +110,16 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/render/")
 
+	targetToPathExpr := make(map[string]string)
 	var targets []string
 	for _, m := range request.Metrics {
 		targets = append(targets, m.Name)
+		targetToPathExpr[m.Name] = m.PathExpression
 	}
 
 	v := url.Values{
 		"target": targets,
-		"format": []string{"protobuf"},
+		"format": []string{"protobuf3"},
 		"from":   []string{strconv.Itoa(int(request.Metrics[0].StartTime))},
 		"until":  []string{strconv.Itoa(int(request.Metrics[0].StopTime))},
 	}
@@ -138,9 +141,15 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 
 	var r protov3.MultiFetchResponse
 	for _, m := range metrics.Metrics {
+		for i, v := range m.IsAbsent {
+			if v {
+				m.Values[i] = math.NaN()
+			}
+		}
 		r.Metrics = append(r.Metrics, protov3.FetchResponse{
 			Name:              m.Name,
-			ConsolidationFunc: "average",
+			PathExpression:    targetToPathExpr[m.Name],
+			ConsolidationFunc: "Average",
 			StopTime:          int64(m.StopTime),
 			StartTime:         int64(m.StartTime),
 			StepTime:          int64(m.StepTime),

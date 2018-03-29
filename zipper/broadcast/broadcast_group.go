@@ -153,6 +153,7 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 						Name:            match.Path,
 						StartTime:       metric.StartTime,
 						StopTime:        metric.StopTime,
+						PathExpression:  metric.PathExpression,
 						FilterFunctions: metric.FilterFunctions,
 					})
 					if len(newRequest.Metrics) == maxMetricPerRequest {

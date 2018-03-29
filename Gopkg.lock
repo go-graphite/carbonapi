@@ -71,8 +71,8 @@
     "carbonapi_v3_grpc",
     "carbonapi_v3_pb"
   ]
-  revision = "76bf6fd3ebb246d60f8afa562f75a36c74411dec"
-  version = "v0.2.2"
+  revision = "88203c2cac82ff944b49ec5144d5627c7859618b"
+  version = "v0.3"
 
 [[projects]]
   name = "github.com/gogo/protobuf"
@@ -320,6 +320,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5bcc1ae7f2ada01caf26656da43a43a91155d4f61a6b1215568435ebc0f0cdfc"
+  inputs-digest = "8230bff095720f975379185114e13240208a25a8460d6b55af0b293b9c0c936d"
   solver-name = "gps-cdcl"
   solver-version = 1

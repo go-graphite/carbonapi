@@ -107,11 +107,6 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/render/")
 
-	var targets []string
-	for _, m := range request.Metrics {
-		targets = append(targets, m.Name)
-	}
-
 	v := url.Values{
 		"format": []string{"carbonapi_v3_pb"},
 	}
