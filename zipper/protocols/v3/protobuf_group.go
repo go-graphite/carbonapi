@@ -71,7 +71,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter
 		},
 	}
 
-	logger = logger.With(zap.String("type", "protobufGroup"), zap.String("name", config.GroupName))
+	logger = logger.With(zap.String("type", "protoV3Group"), zap.String("name", config.GroupName))
 
 	httpQuery := helper.NewHttpQuery(logger, config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv3PB)
 

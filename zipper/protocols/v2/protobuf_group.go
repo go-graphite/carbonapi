@@ -25,8 +25,8 @@ func init() {
 	metadata.Metadata.Lock()
 	for _, name := range aliases {
 		metadata.Metadata.SupportedProtocols[name] = struct{}{}
-		metadata.Metadata.ProtocolInits[name] = NewClientProtoV2Group
-		metadata.Metadata.ProtocolInitsWithLimiter[name] = NewClientProtoV2GroupWithLimiter
+		metadata.Metadata.ProtocolInits[name] = New
+		metadata.Metadata.ProtocolInitsWithLimiter[name] = NewWithLimiter
 	}
 	defer metadata.Metadata.Unlock()
 }
@@ -50,8 +50,8 @@ type ClientProtoV2Group struct {
 	httpQuery *helper.HttpQuery
 }
 
-func NewClientProtoV2GroupWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
-	logger = logger.With(zap.String("type", "protobufGroup"), zap.String("name", config.GroupName))
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
+	logger = logger.With(zap.String("type", "protoV2Group"), zap.String("name", config.GroupName))
 
 	httpClient := &http.Client{
 		Transport: &http.Transport{
@@ -82,7 +82,7 @@ func NewClientProtoV2GroupWithLimiter(logger *zap.Logger, config types.BackendV2
 	return c, nil
 }
 
-func NewClientProtoV2Group(logger *zap.Logger, config types.BackendV2) (types.ServerClient, *errors.Errors) {
+func New(logger *zap.Logger, config types.BackendV2) (types.ServerClient, *errors.Errors) {
 	if config.ConcurrencyLimit == nil {
 		return nil, errors.Fatal("concurency limit is not set")
 	}
@@ -91,7 +91,7 @@ func NewClientProtoV2Group(logger *zap.Logger, config types.BackendV2) (types.Se
 	}
 	limiter := limiter.NewServerLimiter([]string{config.GroupName}, *config.ConcurrencyLimit)
 
-	return NewClientProtoV2GroupWithLimiter(logger, config, limiter)
+	return NewWithLimiter(logger, config, limiter)
 }
 
 func (c ClientProtoV2Group) MaxMetricsPerRequest() int {

@@ -18,6 +18,7 @@ import (
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"go.uber.org/zap"
 
+	_ "github.com/go-graphite/carbonzipper/zipper/protocols/auto"
 	_ "github.com/go-graphite/carbonzipper/zipper/protocols/grpc"
 	_ "github.com/go-graphite/carbonzipper/zipper/protocols/v2"
 	_ "github.com/go-graphite/carbonzipper/zipper/protocols/v3"

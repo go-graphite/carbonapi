@@ -16,6 +16,7 @@ Changes
 -------
 **1.0.0-rc.2** (WIP)
    - Fix panic in case no response was received
+   - Add "auto" protocol. In that mode carbonapi will do it's best to guess what to use.
 
 **1.0.0-rc.1**
    - Fix timeout sanitization logic
