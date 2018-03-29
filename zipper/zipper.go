@@ -19,6 +19,7 @@ import (
 	"go.uber.org/zap"
 
 	_ "github.com/go-graphite/carbonzipper/zipper/protocols/auto"
+	_ "github.com/go-graphite/carbonzipper/zipper/protocols/graphite"
 	_ "github.com/go-graphite/carbonzipper/zipper/protocols/grpc"
 	_ "github.com/go-graphite/carbonzipper/zipper/protocols/v2"
 	_ "github.com/go-graphite/carbonzipper/zipper/protocols/v3"
