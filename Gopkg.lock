@@ -121,13 +121,13 @@
     "zipper/metadata",
     "zipper/protocols/auto",
     "zipper/protocols/graphite",
-    "zipper/protocols/graphite/responses",
+    "zipper/protocols/graphite/msgpack",
     "zipper/protocols/grpc",
     "zipper/protocols/v2",
     "zipper/protocols/v3",
     "zipper/types"
   ]
-  revision = "1c9cc0490649b10f061c32c94d406db5126672c3"
+  revision = "1992dde933534e2219169e371af4465fcdfb80b9"
 
 [[projects]]
   name = "github.com/go-graphite/protocol"

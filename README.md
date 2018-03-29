@@ -98,6 +98,7 @@ Supported protocols
  * `carbonapi_v2_pb`, `pb`, `pb3`, `protobuf` - carbonapi pre-0.12 style protocol. Supoorted by go-carbon, graphite-clickhouse, etc.
  * `carbonapi_v3_pb` - new carbonapi protocol, that supports passing metadata through. Supported by carbonzipper 1.0.0.alpha.3 or later. Implementing support for that is in-progress for go-carbon and graphite-clickhouse
  * `carbonapi_v3_grpc` - grpc version of new carbonapi protocol. Currently no known implementation exists.
+ * `msgpack` - messagepack based protocol, used in graphite-web 1.1 and metrictank. It's still experimental and might contain bugs.
 
 
 Requirements
@@ -107,11 +108,12 @@ You need to have Go >= 1.8 to build carbonapi from sources. Building with Go 1.7
 
 CarbonAPI uses protobuf-based protocol to talk with underlying storages. For current version the compatibility list is:
 
-1. [go-carbon](https://github.com/lomik/go-carbon) >= 0.9.0 (Note: you need to enable carbonserver in go-carbon).
+1. [go-carbon](https://github.com/lomik/go-carbon) >= 0.9.0 (Note: you need to enable carbonserver in go-carbon). Recommended to run latest version, that currently supports `carbonapi_v3_pb`
 2. [graphite-clickhouse](https://github.com/lomik/graphite-clickhouse) any. That's alternative storage that doesn't use Whisper.
-3. [carbonapi](https://github.com/go-graphite/carbonapi) >= 0.5. Note: starting from carbonapi 3596e9647611e1f833a911d663747271623ec003 (post 0.8) carbonapi can be used as a zipper's replacement
-4. [carbonserver](https://github.com/grobian/carbonserver)@master (Note: you should probably switch to go-carbon in that case).
-5. [carbonzipper](https://github.com/go-graphite/carbonzipper) >= 0.50. **Please note**, carbonzipper functionality was merged to carbonapi and it's no longer needed to run separate zipper. 
+3. [metrictank](https://github.com/grafana/metrictank) - supported via `msgpack` protocol. Support is not very well tested and might contain bugs. Use with cautions. Tags are not supported.
+4. [carbonapi](https://github.com/go-graphite/carbonapi) >= 0.5. Note: starting from carbonapi 3596e9647611e1f833a911d663747271623ec003 (post 0.8) carbonapi can be used as a zipper's replacement
+5. [carbonserver](https://github.com/grobian/carbonserver)@master (Note: you should probably switch to go-carbon in that case).
+6. [carbonzipper](https://github.com/go-graphite/carbonzipper) >= 0.50. **Please note**, carbonzipper functionality was merged to carbonapi and it's no longer needed to run separate zipper. 
 
 
 Some remarks on different backends
