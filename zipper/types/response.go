@@ -114,7 +114,7 @@ func swapFetchResponses(m1, m2 *protov3.FetchResponse) {
 	m1.StopTime, m2.StopTime = m2.StopTime, m1.StopTime
 }
 
-func mergeFetchResponses(m1, m2 *protov3.FetchResponse) *errors.Errors {
+func MergeFetchResponses(m1, m2 *protov3.FetchResponse) *errors.Errors {
 	logger := zapwriter.Logger("zipper_render")
 
 	if len(m1.Values) != len(m2.Values) {
@@ -124,7 +124,6 @@ func mergeFetchResponses(m1, m2 *protov3.FetchResponse) *errors.Errors {
 		}
 		if m1.StepTime < m2.StepTime {
 			interpolate = true
-
 		} else {
 			if m1.StartTime == m2.StartTime {
 				for i := 0; i < len(m1.Values)-len(m2.Values); i++ {
@@ -201,7 +200,7 @@ func (first *ServerFetchResponse) Merge(second *ServerFetchResponse) {
 
 	for i := range second.Response.Metrics {
 		if j, ok := metrics[second.Response.Metrics[i].Name]; ok {
-			err := mergeFetchResponses(&first.Response.Metrics[i], &second.Response.Metrics[j])
+			err := MergeFetchResponses(&first.Response.Metrics[i], &second.Response.Metrics[j])
 			if err != nil {
 				// TODO: Normal error handling
 				continue

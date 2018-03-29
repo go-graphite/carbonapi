@@ -14,7 +14,7 @@ Changes
 
 Changes
 -------
-**1.0.0-beta.3** (WIP) **It's not recommended to switch to this release in production, until it's marked as stable**
+**1.0.0-rc.1**
    - Fix timeout sanitization logic
    - Fix empty responses for protocol/v3
    - Update vendored deps

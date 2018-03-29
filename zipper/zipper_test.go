@@ -5,15 +5,17 @@ import (
 	"math"
 	"testing"
 
-	pbgrpc "github.com/go-graphite/protocol/carbonapi_v3_pb"
+	"github.com/go-graphite/carbonzipper/zipper/errors"
+	"github.com/go-graphite/carbonzipper/zipper/types"
+	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
 type mergeValuesData struct {
 	name           string
-	m1             pbgrpc.FetchResponse
-	m2             pbgrpc.FetchResponse
-	expectedResult pbgrpc.FetchResponse
-	expectedError  error
+	m1             protov3.FetchResponse
+	m2             protov3.FetchResponse
+	expectedResult protov3.FetchResponse
+	expectedError  errors.Errors
 }
 
 var (
@@ -22,7 +24,7 @@ var (
 	errContentMismatchFmt  = "content mismatch at pos %v, got %v, expected %v"
 )
 
-func fetchResponseEquals(r1, r2 *pbgrpc.FetchResponse) error {
+func fetchResponseEquals(r1, r2 *protov3.FetchResponse) error {
 	if r1.StartTime != r2.StartTime {
 		return fmt.Errorf(errMetadataMismatchFmt, "StartTime", r1.StartTime, r2.StartTime)
 	}
@@ -68,159 +70,171 @@ func TestMergeValues(t *testing.T) {
 		{
 			name: "simple 1",
 			// 60 seconds
-			m1: pbgrpc.FetchResponse{
-				Name:                "foo",
-				StartTime:           60,
-				StepTime:            60,
-				AggregationFunction: "avg",
-				Values:              []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 0},
+			m1: protov3.FetchResponse{
+				Name:              "foo",
+				StartTime:         60,
+				StepTime:          60,
+				ConsolidationFunc: "average",
+				Values:            []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 0},
 			},
 			// 120 seconds
-			m2: pbgrpc.FetchResponse{
-				Name:                "foo",
-				StartTime:           0,
-				StepTime:            120,
-				AggregationFunction: "avg",
-				Values:              []float64{1, 3, 5, 7, 9},
+			m2: protov3.FetchResponse{
+				Name:              "foo",
+				StartTime:         0,
+				StepTime:          120,
+				ConsolidationFunc: "average",
+				Values:            []float64{1, 3, 5, 7, 9},
 			},
 
-			expectedResult: pbgrpc.FetchResponse{
-				Name:                "foo",
-				StartTime:           60,
-				StepTime:            60,
-				AggregationFunction: "avg",
-				Values:              []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 0},
+			expectedResult: protov3.FetchResponse{
+				Name:              "foo",
+				StartTime:         60,
+				StepTime:          60,
+				ConsolidationFunc: "average",
+				Values:            []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 0},
 			},
 
-			expectedError: nil,
+			expectedError: errors.Errors{},
 		},
 		{
 			name: "simple 2",
 			// 60 seconds
-			m1: pbgrpc.FetchResponse{
-				Name:                "foo",
-				StartTime:           0,
-				StepTime:            120,
-				AggregationFunction: "avg",
-				Values:              []float64{1, 3, 5, 7, 9},
+			m1: protov3.FetchResponse{
+				Name:              "foo",
+				StartTime:         0,
+				StepTime:          120,
+				ConsolidationFunc: "average",
+				Values:            []float64{1, 3, 5, 7, 9},
 			},
 			// 120 seconds
-			m2: pbgrpc.FetchResponse{
-				Name:                "foo",
-				StartTime:           60,
-				StepTime:            60,
-				AggregationFunction: "avg",
-				Values:              []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 0},
+			m2: protov3.FetchResponse{
+				Name:              "foo",
+				StartTime:         60,
+				StepTime:          60,
+				ConsolidationFunc: "average",
+				Values:            []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 0},
 			},
 
-			expectedResult: pbgrpc.FetchResponse{
-				Name:                "foo",
-				StartTime:           60,
-				StepTime:            60,
-				AggregationFunction: "avg",
-				Values:              []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 0},
+			expectedResult: protov3.FetchResponse{
+				Name:              "foo",
+				StartTime:         60,
+				StepTime:          60,
+				ConsolidationFunc: "average",
+				Values:            []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 0},
 			},
 
-			expectedError: nil,
+			expectedError: errors.Errors{},
 		},
 		{
 			name: "fill the gaps simple",
 			// 60 seconds
-			m1: pbgrpc.FetchResponse{
-				Name:                "foo",
-				StartTime:           60,
-				StepTime:            60,
-				AggregationFunction: "avg",
-				Values:              []float64{1, 2, 3, 4, math.NaN(), 6, 7, 8, 9, math.NaN(), 11, 12, 13, 14, 15, 16, math.NaN(), math.NaN(), math.NaN(), 20},
+			m1: protov3.FetchResponse{
+				Name:              "foo",
+				StartTime:         60,
+				StepTime:          60,
+				ConsolidationFunc: "average",
+				Values:            []float64{1, 2, 3, 4, math.NaN(), 6, 7, 8, 9, math.NaN(), 11, 12, 13, 14, 15, 16, math.NaN(), math.NaN(), math.NaN(), 20},
 			},
 			// 120 seconds
-			m2: pbgrpc.FetchResponse{
-				Name:                "foo",
-				StartTime:           60,
-				StepTime:            60,
-				AggregationFunction: "avg",
-				Values:              []float64{1, 2, math.NaN(), math.NaN(), 5, 6, 7, 8, 9, math.NaN(), 11, 12, math.NaN(), 14, 15, 16, 17, 18, math.NaN(), 20},
+			m2: protov3.FetchResponse{
+				Name:              "foo",
+				StartTime:         60,
+				StepTime:          60,
+				ConsolidationFunc: "average",
+				Values:            []float64{1, 2, math.NaN(), math.NaN(), 5, 6, 7, 8, 9, math.NaN(), 11, 12, math.NaN(), 14, 15, 16, 17, 18, math.NaN(), 20},
 			},
 
-			expectedResult: pbgrpc.FetchResponse{
-				Name:                "foo",
-				StartTime:           60,
-				StepTime:            60,
-				AggregationFunction: "avg",
-				Values:              []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, math.NaN(), 11, 12, 13, 14, 15, 16, 17, 18, math.NaN(), 20},
+			expectedResult: protov3.FetchResponse{
+				Name:              "foo",
+				StartTime:         60,
+				StepTime:          60,
+				ConsolidationFunc: "average",
+				Values:            []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, math.NaN(), 11, 12, 13, 14, 15, 16, 17, 18, math.NaN(), 20},
 			},
 
-			expectedError: nil,
+			expectedError: errors.Errors{},
 		},
 		{
 			name: "fill the gaps 1",
 			// 60 seconds
-			m1: pbgrpc.FetchResponse{
-				Name:                "foo",
-				StartTime:           0,
-				StepTime:            120,
-				AggregationFunction: "avg",
-				Values:              []float64{1, math.NaN(), 5, 7, 9, 11, 13, 15, 17, 19},
+			m1: protov3.FetchResponse{
+				Name:              "foo",
+				StartTime:         0,
+				StepTime:          120,
+				ConsolidationFunc: "average",
+				Values:            []float64{1, math.NaN(), 5, 7, 9, 11, 13, 15, 17, 19},
 			},
 			// 120 seconds
-			m2: pbgrpc.FetchResponse{
-				Name:                "foo",
-				StartTime:           60,
-				StepTime:            60,
-				AggregationFunction: "avg",
-				Values:              []float64{1, 2, math.NaN(), math.NaN(), 5, 6, 7, 8, 9, math.NaN(), 11, 12, math.NaN(), 14, 15, 16, 17, 18, math.NaN(), 20},
+			m2: protov3.FetchResponse{
+				Name:              "foo",
+				StartTime:         60,
+				StepTime:          60,
+				ConsolidationFunc: "average",
+				Values:            []float64{1, 2, math.NaN(), math.NaN(), 5, 6, 7, 8, 9, math.NaN(), 11, 12, math.NaN(), 14, 15, 16, 17, 18, math.NaN(), 20},
 			},
 
-			expectedResult: pbgrpc.FetchResponse{
-				Name:                "foo",
-				StartTime:           60,
-				StepTime:            60,
-				AggregationFunction: "avg",
-				Values:              []float64{1, 2, math.NaN(), math.NaN(), 5, 6, 7, 8, 9, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
+			expectedResult: protov3.FetchResponse{
+				Name:              "foo",
+				StartTime:         60,
+				StepTime:          60,
+				ConsolidationFunc: "average",
+				Values:            []float64{1, 2, math.NaN(), math.NaN(), 5, 6, 7, 8, 9, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
 			},
 
-			expectedError: nil,
+			expectedError: errors.Errors{},
 		},
 		{
 			name: "fill end of metric",
 			// 60 seconds
-			m1: pbgrpc.FetchResponse{
-				Name:                "foo",
-				StartTime:           60,
-				StepTime:            60,
-				AggregationFunction: "avg",
-				Values:              []float64{1, 2, 3, 4, math.NaN(), 6, 7, 8, 9, math.NaN(), 11, 12, 13, 14, 15, 16, math.NaN(), math.NaN(), math.NaN()},
+			m1: protov3.FetchResponse{
+				Name:              "foo",
+				StartTime:         60,
+				StepTime:          60,
+				ConsolidationFunc: "average",
+				Values:            []float64{1, 2, 3, 4, math.NaN(), 6, 7, 8, 9, math.NaN(), 11, 12, 13, 14, 15, 16, math.NaN(), math.NaN(), math.NaN()},
 			},
 			// 120 seconds
-			m2: pbgrpc.FetchResponse{
-				Name:                "foo",
-				StartTime:           60,
-				StepTime:            60,
-				AggregationFunction: "avg",
-				Values:              []float64{1, 2, math.NaN(), math.NaN(), 5, 6, 7, 8, 9, math.NaN(), 11, 12, math.NaN(), 14, 15, 16, 17, 18, math.NaN(), 20},
+			m2: protov3.FetchResponse{
+				Name:              "foo",
+				StartTime:         60,
+				StepTime:          60,
+				ConsolidationFunc: "average",
+				Values:            []float64{1, 2, math.NaN(), math.NaN(), 5, 6, 7, 8, 9, math.NaN(), 11, 12, math.NaN(), 14, 15, 16, 17, 18, math.NaN(), 20},
 			},
 
-			expectedResult: pbgrpc.FetchResponse{
-				Name:                "foo",
-				StartTime:           60,
-				StepTime:            60,
-				AggregationFunction: "avg",
-				Values:              []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, math.NaN(), 11, 12, 13, 14, 15, 16, 17, 18, math.NaN(), 20},
+			expectedResult: protov3.FetchResponse{
+				Name:              "foo",
+				StartTime:         60,
+				StepTime:          60,
+				ConsolidationFunc: "average",
+				Values:            []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, math.NaN(), 11, 12, 13, 14, 15, 16, 17, 18, math.NaN(), 20},
 			},
 
-			expectedError: nil,
+			expectedError: errors.Errors{},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := mergeFetchResponses(&test.m1, &test.m2)
-			if err != test.expectedError {
+			if test.m1.StopTime <= test.m1.StartTime {
+				test.m1.StopTime = test.m1.StartTime + int64(len(test.m1.Values))*test.m1.StepTime
+			}
+			if test.m2.StopTime <= test.m2.StartTime {
+				test.m2.StopTime = test.m2.StartTime + int64(len(test.m2.Values))*test.m2.StepTime
+			}
+			if test.expectedResult.StopTime <= test.expectedResult.StartTime {
+				test.expectedResult.StopTime = test.expectedResult.StartTime + int64(len(test.expectedResult.Values))*test.expectedResult.StepTime
+			}
+			err := types.MergeFetchResponses(&test.m1, &test.m2)
+			if err == nil {
+				err = &errors.Errors{}
+			}
+			if len(err.Errors) != len(test.expectedError.Errors) && err.HaveFatalErrors != test.expectedError.HaveFatalErrors {
 				t.Fatalf("unexpected error: '%v'", err)
 			}
 
-			err = fetchResponseEquals(&test.m1, &test.expectedResult)
-			if err != nil {
+			err2 := fetchResponseEquals(&test.m1, &test.expectedResult)
+			if err2 != nil {
 				t.Fatalf("unexpected difference: '%v'\n    got     : %+v\n    expected: %+v\n", err, test.m1, test.expectedResult)
 			}
 		})
