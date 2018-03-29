@@ -68,11 +68,12 @@ func getGlobResponse() *pb.MultiGlobResponse {
 
 func getMultiFetchResponse() pb.MultiFetchResponse {
 	mfr := pb.FetchResponse{
-		Name:      "foo.bar",
-		StartTime: 1510913280,
-		StopTime:  1510913880,
-		StepTime:  60,
-		Values:    []float64{math.NaN(), 1510913759, 1510913818},
+		Name:           "foo.bar",
+		PathExpression: "foo.bar",
+		StartTime:      1510913280,
+		StopTime:       1510913880,
+		StepTime:       60,
+		Values:         []float64{math.NaN(), 1510913759, 1510913818},
 	}
 
 	result := pb.MultiFetchResponse{Metrics: []pb.FetchResponse{mfr}}
@@ -109,8 +110,10 @@ func init() {
 
 	cfgFile := ""
 	setUpViper(logger, &cfgFile, "CARBONAPI_")
+	config.Upstreams.Backends = []string{"dummy"}
 	setUpConfigUpstreams(logger)
-	setUpConfig(logger, newMockCarbonZipper())
+	setUpConfig(logger)
+	config.zipper = newMockCarbonZipper()
 	initHandlers()
 }
 

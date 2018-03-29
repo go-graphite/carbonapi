@@ -49,7 +49,7 @@ func (f *multiplySeries) Do(e parser.Expr, from, until int64, values map[parser.
 			series = series[1:]
 		}
 
-		if r.ConsolidationFunc == "" {
+		if r.ConsolidationFunc == "" && len(series) > 0 {
 			r.ConsolidationFunc = series[0].ConsolidationFunc
 		}
 
