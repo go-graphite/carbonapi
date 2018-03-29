@@ -12,7 +12,7 @@ import (
 	"github.com/go-graphite/carbonzipper/zipper/helper"
 	"github.com/go-graphite/carbonzipper/zipper/httpHeaders"
 	"github.com/go-graphite/carbonzipper/zipper/metadata"
-	"github.com/go-graphite/carbonzipper/zipper/protocols/graphite/responses"
+	"github.com/go-graphite/carbonzipper/zipper/protocols/graphite/msgpack"
 	"github.com/go-graphite/carbonzipper/zipper/types"
 	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
@@ -136,7 +136,7 @@ func (c *GraphiteGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRe
 			return nil, stats, err
 		}
 
-		var metrics responses.MultiGraphiteFetchResponse
+		var metrics msgpack.MultiGraphiteFetchResponse
 		_, e := metrics.UnmarshalMsg(res.Response)
 		err.AddFatal(e)
 		if err.HaveFatalErrors {
@@ -179,7 +179,7 @@ func (c *GraphiteGroup) Find(ctx context.Context, request *protov3.MultiGlobRequ
 			e.Merge(err)
 			continue
 		}
-		var globs responses.MultiGraphiteGlobResponse
+		var globs msgpack.MultiGraphiteGlobResponse
 		_, marshalErr := globs.UnmarshalMsg(res.Response)
 		if marshalErr != nil {
 			e.Add(marshalErr)

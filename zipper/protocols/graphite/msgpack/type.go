@@ -1,4 +1,4 @@
-package responses
+package msgpack
 
 //go:generate msgp
 
