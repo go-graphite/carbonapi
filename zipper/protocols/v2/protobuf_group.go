@@ -110,52 +110,53 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/render/")
 
-	targetToPathExpr := make(map[string]string)
-	var targets []string
+	pathExprToTargets := make(map[string][]string)
 	for _, m := range request.Metrics {
-		targets = append(targets, m.Name)
-		targetToPathExpr[m.Name] = m.PathExpression
-	}
-
-	v := url.Values{
-		"target": targets,
-		"format": []string{"protobuf3"},
-		"from":   []string{strconv.Itoa(int(request.Metrics[0].StartTime))},
-		"until":  []string{strconv.Itoa(int(request.Metrics[0].StopTime))},
-	}
-	rewrite.RawQuery = v.Encode()
-	res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
-	if err == nil {
-		err = &errors.Errors{}
-	}
-	if err.HaveFatalErrors {
-		err.HaveFatalErrors = false
-		return nil, stats, err
-	}
-
-	var metrics protov2.MultiFetchResponse
-	err.AddFatal(metrics.Unmarshal(res.Response))
-	if err.HaveFatalErrors {
-		return nil, stats, err
+		targets := pathExprToTargets[m.PathExpression]
+		pathExprToTargets[m.PathExpression] = append(targets, m.Name)
 	}
 
 	var r protov3.MultiFetchResponse
-	for _, m := range metrics.Metrics {
-		for i, v := range m.IsAbsent {
-			if v {
-				m.Values[i] = math.NaN()
-			}
+	for pathExpr, targets := range pathExprToTargets {
+		v := url.Values{
+			"target": targets,
+			"format": []string{"protobuf3"},
+			"from":   []string{strconv.Itoa(int(request.Metrics[0].StartTime))},
+			"until":  []string{strconv.Itoa(int(request.Metrics[0].StopTime))},
 		}
-		r.Metrics = append(r.Metrics, protov3.FetchResponse{
-			Name:              m.Name,
-			PathExpression:    targetToPathExpr[m.Name],
-			ConsolidationFunc: "Average",
-			StopTime:          int64(m.StopTime),
-			StartTime:         int64(m.StartTime),
-			StepTime:          int64(m.StepTime),
-			Values:            m.Values,
-			XFilesFactor:      0.0,
-		})
+		rewrite.RawQuery = v.Encode()
+		res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
+		if err == nil {
+			err = &errors.Errors{}
+		}
+		if err.HaveFatalErrors {
+			err.HaveFatalErrors = false
+			return nil, stats, err
+		}
+
+		var metrics protov2.MultiFetchResponse
+		err.AddFatal(metrics.Unmarshal(res.Response))
+		if err.HaveFatalErrors {
+			return nil, stats, err
+		}
+
+		for _, m := range metrics.Metrics {
+			for i, v := range m.IsAbsent {
+				if v {
+					m.Values[i] = math.NaN()
+				}
+			}
+			r.Metrics = append(r.Metrics, protov3.FetchResponse{
+				Name:              m.Name,
+				PathExpression:    pathExpr,
+				ConsolidationFunc: "Average",
+				StopTime:          int64(m.StopTime),
+				StartTime:         int64(m.StartTime),
+				StepTime:          int64(m.StepTime),
+				Values:            m.Values,
+				XFilesFactor:      0.0,
+			})
+		}
 	}
 
 	return &r, stats, nil
