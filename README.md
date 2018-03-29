@@ -5,6 +5,8 @@ carbonzipper: carbonserver proxy for graphite-web
 
 We are using <a href="https://packagecloud.io/"><img alt="Private Maven, RPM, DEB, PyPi and RubyGem Repository | packagecloud" height="46" src="https://packagecloud.io/images/packagecloud-badge.png" width="158" /></a> to host our packages!
 
+**Please note** that since carbonapi 0.8 it's no longer needed to run separate carbonzipper. This repo still contains a buildable daemon, but it's mostly for compatibility reasons and for those who don't need carbonapi functionality.
+
 CarbonZipper is the central part of a replacement graphite storage stack.  It
 proxies requests from graphite-web to a cluster of carbon storage backends.
 Previous versions (available in the git history) were able to talk to python
