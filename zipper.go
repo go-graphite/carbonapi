@@ -109,12 +109,12 @@ func (z zipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*ty
 
 	z.statsSender(stats)
 
-	if m := pbresp.Metrics; len(m) == 0 {
-		return result, errNoMetrics
-	}
-
 	for i := range pbresp.Metrics {
 		result = append(result, &types.MetricData{FetchResponse: pbresp.Metrics[i]})
+	}
+
+	if len(result) == 0 {
+		return result, errNoMetrics
 	}
 
 	return result, nil

@@ -629,6 +629,7 @@ func setUpViper(logger *zap.Logger, configPath *string, viperPrefix string) {
 	viper.SetDefault("graphite.pattern", "{prefix}.{fqdn}")
 	viper.SetDefault("idleConnections", 10)
 	viper.SetDefault("pidFile", "")
+	viper.SetDefault("upstreams.internalRoutingCache", "600s")
 	viper.SetDefault("upstreams.buckets", 10)
 	viper.SetDefault("upstreams.timeouts.global", "10s")
 	viper.SetDefault("upstreams.timeouts.afterStarted", "2s")
@@ -639,7 +640,7 @@ func setUpViper(logger *zap.Logger, configPath *string, viperPrefix string) {
 	viper.SetDefault("upstreams.carbonsearch.backend", "")
 	viper.SetDefault("upstreams.carbonsearch.prefix", "virt.v1.*")
 	viper.SetDefault("upstreams.graphite09compat", false)
-	viper.SetDefault("expireDelaySec", 10)
+	viper.SetDefault("expireDelaySec", 600)
 	viper.SetDefault("logger", map[string]string{})
 	viper.AutomaticEnv()
 

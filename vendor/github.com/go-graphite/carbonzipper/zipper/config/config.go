@@ -18,7 +18,8 @@ type Config struct {
 	CarbonSearch   types.CarbonSearch
 	CarbonSearchV2 types.CarbonSearchV2
 
-	ExpireDelaySec    int32
-	Timeouts          types.Timeouts
-	KeepAliveInterval time.Duration `yaml:"keepAliveInterval"`
+	ExpireDelaySec       int32
+	InternalRoutingCache time.Duration
+	Timeouts             types.Timeouts
+	KeepAliveInterval    time.Duration `yaml:"keepAliveInterval"`
 }

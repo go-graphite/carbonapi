@@ -7,6 +7,7 @@ import (
 	"math"
 	"runtime/debug"
 	"strconv"
+	"strings"
 	"time"
 
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
@@ -28,7 +29,7 @@ type MetricData struct {
 
 	ValuesPerPoint    int
 	aggregatedValues  []float64
-	AggregateFunction func([]float64) float64
+	AggregateFunction func([]float64) float64 `json:"-"`
 }
 
 // MakeMetricData creates new metrics data with given metric timeseries
@@ -270,7 +271,7 @@ func (r *MetricData) AggregateValues() {
 
 	if r.AggregateFunction == nil {
 		var ok bool
-		if r.AggregateFunction, ok = ConsolidationToFunc[r.ConsolidationFunc]; !ok {
+		if r.AggregateFunction, ok = ConsolidationToFunc[strings.ToLower(r.ConsolidationFunc)]; !ok {
 			fmt.Printf("\nconsolidateFunc = %+v\n\nstack:\n%v\n\n", r.ConsolidationFunc, string(debug.Stack()))
 		}
 	}
@@ -295,6 +296,7 @@ func (r *MetricData) AggregateValues() {
 }
 
 // ConsolidationToFunc contains a map of graphite-compatible consolidation functions definitions to actual functions that can do aggregation
+// TODO(civil): take into account xFilesFactor
 var ConsolidationToFunc = map[string]func([]float64) float64{
 	"average": AggMean,
 	"avg":     AggMean,

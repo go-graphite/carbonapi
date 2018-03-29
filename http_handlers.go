@@ -284,9 +284,10 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			req.Metrics = append(req.Metrics, pb.FetchRequest{
-				Name:      m.Metric,
-				StartTime: from32,
-				StopTime:  until32,
+				Name:           m.Metric,
+				PathExpression: m.Metric,
+				StartTime:      from32,
+				StopTime:       until32,
 			})
 		}
 
@@ -295,26 +296,30 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			config.limiter.enter()
 			accessLogDetails.ZipperRequests++
 
-			// TODO: Do that in batches
 			r, err := config.zipper.Render(ctx, req)
 			if err != nil {
 				errors[target] = err.Error()
 				config.limiter.leave()
 				continue
 			}
+
 			config.limiter.leave()
 			for _, m := range r {
 				mfetch := parser.MetricRequest{
-					Metric: m.Name,
+					Metric: m.PathExpression,
 					From:   from32,
 					Until:  until32,
 				}
 
-				metricMap[mfetch] = r
-				for i := range r {
-					size += r[i].Size()
-				}
+				d := metricMap[mfetch]
+				metricMap[mfetch] = append(d, m)
 
+			}
+			for i := range r {
+				size += r[i].Size()
+			}
+
+			for mfetch := range metricMap {
 				expr.SortMetrics(metricMap[mfetch], mfetch)
 			}
 		}
@@ -322,13 +327,16 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 		var rewritten bool
 		var newTargets []string
+
 		rewritten, newTargets, err = expr.RewriteExpr(exp, from32, until32, metricMap)
 		if err != nil && err != parser.ErrSeriesDoesNotExist {
 			errors[target] = err.Error()
 			accessLogDetails.Reason = err.Error()
 			logAsError = true
 			return
-		} else if rewritten {
+		}
+
+		if rewritten {
 			targets = append(targets, newTargets...)
 		} else {
 			func() {
