@@ -120,12 +120,14 @@
     "zipper/httpHeaders",
     "zipper/metadata",
     "zipper/protocols/auto",
+    "zipper/protocols/graphite",
+    "zipper/protocols/graphite/responses",
     "zipper/protocols/grpc",
     "zipper/protocols/v2",
     "zipper/protocols/v3",
     "zipper/types"
   ]
-  revision = "16ccfba3c727dcd4c6a85688fafafcf4836e00a0"
+  revision = "1c9cc0490649b10f061c32c94d406db5126672c3"
 
 [[projects]]
   name = "github.com/go-graphite/protocol"
@@ -230,6 +232,12 @@
   revision = "0c2bab2b173d2cd9385ea6da5cec7b14b5019f11"
 
 [[projects]]
+  name = "github.com/philhofer/fwd"
+  packages = ["."]
+  revision = "bb6d471dc95d4fe11e432687f8b70ff496cf3136"
+  version = "v1.0.0"
+
+[[projects]]
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
@@ -279,6 +287,12 @@
   packages = ["assert"]
   revision = "12b6f73e6084dad08a7c6e575284b177ecafbc71"
   version = "v1.2.1"
+
+[[projects]]
+  name = "github.com/tinylib/msgp"
+  packages = ["msgp"]
+  revision = "b2b6a672cf1e5b90748f79b8b81fc8c5cf0571a1"
+  version = "1.0.2"
 
 [[projects]]
   branch = "master"

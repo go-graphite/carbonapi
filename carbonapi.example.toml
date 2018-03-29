@@ -66,6 +66,7 @@ groupName = "group1"
 #    carbonapi_v3_pb - new protocol, http interface (native)
 #    carbonapi_v3_grpc - new protocol, gRPC interface (native)
 #    protobuf, pb, pb3 - same as carbonapi_v2_pb
+#    msgpack - protocol used by graphite-web 1.1 and metrictank
 #    auto - carbonapi will do it's best to guess if it's carbonapi_v3_pb or carbonapi_v2_pb
 #
 #  non-native protocols will be internally converted to new protocol, which will increase memory consumption
