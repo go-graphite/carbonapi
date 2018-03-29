@@ -14,6 +14,9 @@ Changes
 
 Changes
 -------
+**1.0.0-rc.2** (WIP)
+   - Fix panic in case no response was received
+
 **1.0.0-rc.1**
    - Fix timeout sanitization logic
    - Fix empty responses for protocol/v3

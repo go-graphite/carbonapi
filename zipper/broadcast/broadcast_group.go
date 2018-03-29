@@ -248,6 +248,13 @@ GATHER:
 		}
 	}
 
+	if result == nil || result.Response == nil {
+		logger.Error("failed to get any response")
+		item.StoreAbort()
+
+		return nil, nil, err.Addf("failed to get any response from backend group: %v", bg.groupName)
+	}
+
 	logger.Debug("got some responses",
 		zap.Int("clients_count", len(bg.clients)),
 		zap.Int("response_count", responseCounts),
@@ -255,13 +262,6 @@ GATHER:
 		zap.Any("errors", err.Errors),
 		zap.Int("response_count", len(result.Response.Metrics)),
 	)
-
-	if result == nil || result.Response == nil {
-		logger.Error("failed to get any response")
-		item.StoreAbort()
-
-		return nil, nil, err.Addf("failed to get any response from backend group: %v", bg.groupName)
-	}
 
 	item.StoreAndUnlock(result, uint64(result.Response.Size()))
 
