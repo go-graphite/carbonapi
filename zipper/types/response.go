@@ -200,7 +200,7 @@ func (first *ServerFetchResponse) Merge(second *ServerFetchResponse) {
 
 	for i := range second.Response.Metrics {
 		if j, ok := metrics[second.Response.Metrics[i].Name]; ok {
-			err := MergeFetchResponses(&first.Response.Metrics[i], &second.Response.Metrics[j])
+			err := MergeFetchResponses(&first.Response.Metrics[j], &second.Response.Metrics[i])
 			if err != nil {
 				// TODO: Normal error handling
 				continue
