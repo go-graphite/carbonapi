@@ -363,6 +363,11 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	var body []byte
 
+	if len(results) == 0 {
+		logger.Error("no servers responded")
+		results = append(results, &types.MetricData{})
+	}
+
 	switch format {
 	case jsonFormat:
 		if maxDataPoints, _ := strconv.Atoi(r.FormValue("maxDataPoints")); maxDataPoints != 0 {
