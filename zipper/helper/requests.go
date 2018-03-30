@@ -76,6 +76,12 @@ func (c *HttpQuery) doRequest(ctx context.Context, uri string, body []byte) (*Se
 		return nil, err
 	}
 
+	logger := c.logger.With(
+		zap.String("server", server),
+		zap.String("name", c.groupName),
+		zap.String("uri", u.String()),
+	)
+
 	var reader io.Reader
 	if body != nil {
 		reader = bytes.NewReader(body)
@@ -87,48 +93,38 @@ func (c *HttpQuery) doRequest(ctx context.Context, uri string, body []byte) (*Se
 	}
 	req = cu.MarshalCtx(ctx, util.MarshalCtx(ctx, req))
 
-	c.logger.Debug("trying to get slot",
-		zap.String("name", c.groupName),
-		zap.String("uri", u.String()),
-	)
+	logger.Debug("trying to get slot")
 
 	err = c.limiter.Enter(ctx, c.groupName)
 	if err != nil {
-		c.logger.Debug("timeout waiting for a slot")
+		logger.Debug("timeout waiting for a slot")
 		return nil, err
 	}
-	c.logger.Debug("got slot")
+	logger.Debug("got slot")
 
 	resp, err := c.client.Do(req.WithContext(ctx))
 	c.limiter.Leave(ctx, server)
 	if err != nil {
-		c.logger.Error("error fetching result",
+		logger.Error("error fetching result",
 			zap.Error(err),
 		)
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusNotFound {
-		c.logger.Error("status not ok, not found",
-			zap.Int("status_code", resp.StatusCode),
-		)
-		return nil, types.ErrNotFound
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		c.logger.Error("status not ok",
-			zap.Int("status_code", resp.StatusCode),
-		)
-		return nil, fmt.Errorf(types.ErrFailedToFetchFmt, c.groupName, resp.StatusCode)
-	}
-
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
-		c.logger.Error("error reading body",
+		logger.Error("error reading body",
 			zap.Error(err),
 		)
 		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		logger.Error("status not ok",
+			zap.Int("status_code", resp.StatusCode),
+		)
+		return nil, fmt.Errorf(types.ErrFailedToFetchFmt, c.groupName, resp.StatusCode, string(body))
 	}
 
 	return &ServerResponse{Server: server, Response: body}, nil
