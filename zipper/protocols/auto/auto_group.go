@@ -36,11 +36,12 @@ type capabilityResponse struct {
 
 //_internal/capabilities/
 func doQuery(ctx context.Context, logger *zap.Logger, groupName string, httpClient *http.Client, limiter *limiter.ServerLimiter, server string, payload []byte, resChan chan<- capabilityResponse) {
-	httpQuery := helper.NewHttpQuery(logger, groupName, []string{server}, 3, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv3PB)
+	httpQuery := helper.NewHttpQuery(logger, groupName, []string{server}, 1, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv3PB)
 	rewrite, _ := url.Parse("http://127.0.0.1/_internal/capabilities/")
 
 	res, e := httpQuery.DoQuery(ctx, rewrite.RequestURI(), payload)
 	if e != nil || res == nil || res.Response == nil || len(res.Response) == 0 {
+		logger.Info("will assume old protocol")
 		resChan <- capabilityResponse{
 			server:   server,
 			protocol: "protobuf",
