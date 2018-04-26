@@ -143,6 +143,7 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 				continue
 			}
 			newRequest := &protov3.MultiFetchRequest{}
+
 			logger.Debug("will split request",
 				zap.Int("metrics", len(f.Metrics)),
 				zap.Int("max_metrics", maxMetricPerRequest),
@@ -162,7 +163,9 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 					}
 				}
 			}
-			requests = append(requests, newRequest)
+			if len(newRequest.Metrics) > 0 {
+				requests = append(requests, newRequest)
+			}
 			logger.Debug("spliited request",
 				zap.Int("amount_of_requests", len(requests)),
 			)
@@ -309,9 +312,11 @@ func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	key := findRequestToKey(bg.groupName, request)
 	item := bg.findCache.GetQueryItem(key)
 	res, ok := item.FetchOrLock(ctx)
-	if ok {
-		logger.Debug("cache hit")
+	if ok && res != nil {
 		result := res.(*types.ServerFindResponse)
+		logger.Debug("cache hit",
+			zap.Any("result", result),
+		)
 		return result.Response, result.Stats, nil
 	}
 	defer item.StoreAbort()
@@ -534,6 +539,7 @@ func (bg *BroadcastGroup) ProbeTLDs(ctx context.Context) ([]string, *errors.Erro
 	var err errors.Errors
 	answeredServers := make(map[string]struct{})
 	cache := make(map[string][]types.ServerClient)
+	tldMap := make(map[string]struct{})
 GATHER:
 	for {
 		if responses == len(bg.clients) {
@@ -547,7 +553,9 @@ GATHER:
 				err.Merge(r.err)
 				continue
 			}
-			tlds = append(tlds, r.tlds...)
+			for _, tld := range r.tlds {
+				tldMap[tld] = struct{}{}
+			}
 			for _, tld := range r.tlds {
 				size += uint64(len(tld))
 				cache[tld] = append(cache[tld], r.server)
@@ -567,6 +575,10 @@ GATHER:
 		}
 	}
 	cancel()
+
+	for tld, _ := range tldMap {
+		tlds = append(tlds, tld)
+	}
 
 	item.StoreAndUnlock(tlds, size)
 
