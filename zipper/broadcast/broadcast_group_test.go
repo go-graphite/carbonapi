@@ -3,6 +3,7 @@ package broadcast
 import (
 	"context"
 	"fmt"
+	"math"
 	"reflect"
 	"sort"
 	"testing"
@@ -175,8 +176,8 @@ func TestProbeTLDs(t *testing.T) {
 type testCaseFetch struct {
 	name           string
 	servers        []types.ServerClient
-	fetchRequest   map[string][]*protov3.MultiFetchRequest
-	fetchResponses map[string][]dummy.FetchResponse
+	fetchRequest   *protov3.MultiFetchRequest
+	fetchResponses map[string]dummy.FetchResponse
 
 	expectedErr      *errors.Errors
 	expectedResponse *protov3.MultiFetchResponse
@@ -198,77 +199,136 @@ func TestFetchRequests(t *testing.T) {
 			name: "two clients different data",
 			servers: []types.ServerClient{
 				dummy.NewDummyClient("client1", []string{"backend1", "backend2"}, 1),
-				dummy.NewDummyClient("client2", []string{"backend1", "backend2"}, 1),
+				dummy.NewDummyClient("client2", []string{"backend3", "backend4"}, 1),
 			},
-			fetchRequest: map[string][]*protov3.MultiFetchRequest{
-				"client1": []*protov3.MultiFetchRequest{
+			fetchRequest: &protov3.MultiFetchRequest{
+				Metrics: []protov3.FetchRequest{
 					{
-						Metrics: []protov3.FetchRequest{
-							{
-								Name:           "foo",
-								StartTime:      0,
-								StopTime:       120,
-								PathExpression: "foo",
-							},
-						},
-					},
-				},
-				"client2": []*protov3.MultiFetchRequest{
-					{
-						Metrics: []protov3.FetchRequest{
-							{
-								Name:           "foo2",
-								StartTime:      0,
-								StopTime:       120,
-								PathExpression: "foo2",
-							},
-						},
+						Name:           "foo*",
+						StartTime:      0,
+						StopTime:       120,
+						PathExpression: "foo*",
 					},
 				},
 			},
-			fetchResponses: map[string][]dummy.FetchResponse{
-				"client1": []dummy.FetchResponse{
-					{
-						Response: &protov3.MultiFetchResponse{
-							Metrics: []protov3.FetchResponse{
-								{
-									Name:              "foo",
-									PathExpression:    "foo",
-									ConsolidationFunc: "avg",
-									StartTime:         0,
-									StopTime:          120,
-									StepTime:          60,
-									XFilesFactor:      0.5,
-									Values:            []float64{0, 1, 2},
-								},
+			fetchResponses: map[string]dummy.FetchResponse{
+				"client1": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
 							},
 						},
-						Stats:  &types.Stats{},
-						Errors: &errors.Errors{},
 					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
 				},
-				"client2": []dummy.FetchResponse{
-					{
-						Response: &protov3.MultiFetchResponse{
-							Metrics: []protov3.FetchResponse{
-								{
-									Name:              "foo2",
-									PathExpression:    "foo2",
-									ConsolidationFunc: "avg",
-									StartTime:         0,
-									StopTime:          120,
-									StepTime:          60,
-									XFilesFactor:      0.5,
-									Values:            []float64{0, 1, 2},
-								},
+				"client2": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo2",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
 							},
 						},
-						Stats:  &types.Stats{},
-						Errors: &errors.Errors{},
 					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
 				},
 			},
 
+			expectedResponse: &protov3.MultiFetchResponse{
+				Metrics: []protov3.FetchResponse{
+					{
+						Name:              "foo",
+						PathExpression:    "foo*",
+						ConsolidationFunc: "avg",
+						StartTime:         0,
+						StopTime:          120,
+						StepTime:          60,
+						XFilesFactor:      0.5,
+						Values:            []float64{0, 1, 2},
+					},
+					{
+						Name:              "foo2",
+						PathExpression:    "foo*",
+						ConsolidationFunc: "avg",
+						StartTime:         0,
+						StopTime:          120,
+						StepTime:          60,
+						XFilesFactor:      0.5,
+						Values:            []float64{0, 1, 2},
+					},
+				},
+			},
+		},
+		{
+			name: "two clients same data",
+			servers: []types.ServerClient{
+				dummy.NewDummyClient("client1", []string{"backend1", "backend2"}, 1),
+				dummy.NewDummyClient("client2", []string{"backend3", "backend4"}, 1),
+			},
+			fetchRequest: &protov3.MultiFetchRequest{
+				Metrics: []protov3.FetchRequest{
+					{
+						Name:           "foo",
+						StartTime:      0,
+						StopTime:       120,
+						PathExpression: "foo",
+					},
+				},
+			},
+			fetchResponses: map[string]dummy.FetchResponse{
+				"client1": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client2": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+			},
 			expectedResponse: &protov3.MultiFetchResponse{
 				Metrics: []protov3.FetchResponse{
 					{
@@ -281,15 +341,812 @@ func TestFetchRequests(t *testing.T) {
 						XFilesFactor:      0.5,
 						Values:            []float64{0, 1, 2},
 					},
+				},
+			},
+		},
+		{
+			name: "two clients merge data",
+			servers: []types.ServerClient{
+				dummy.NewDummyClient("client1", []string{"backend1", "backend2"}, 1),
+				dummy.NewDummyClient("client2", []string{"backend3", "backend4"}, 1),
+			},
+			fetchRequest: &protov3.MultiFetchRequest{
+				Metrics: []protov3.FetchRequest{
 					{
-						Name:              "foo2",
-						PathExpression:    "foo2",
+						Name:           "foo",
+						StartTime:      0,
+						StopTime:       120,
+						PathExpression: "foo",
+					},
+				},
+			},
+			fetchResponses: map[string]dummy.FetchResponse{
+				"client1": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, math.NaN(), 2},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client2": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, math.NaN()},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+			},
+			expectedResponse: &protov3.MultiFetchResponse{
+				Metrics: []protov3.FetchResponse{
+					{
+						Name:              "foo",
+						PathExpression:    "foo",
 						ConsolidationFunc: "avg",
 						StartTime:         0,
 						StopTime:          120,
 						StepTime:          60,
 						XFilesFactor:      0.5,
 						Values:            []float64{0, 1, 2},
+					},
+				},
+			},
+		},
+		{
+			name: "two clients different length data",
+			servers: []types.ServerClient{
+				dummy.NewDummyClient("client1", []string{"backend1", "backend2"}, 1),
+				dummy.NewDummyClient("client2", []string{"backend3", "backend4"}, 1),
+			},
+			fetchRequest: &protov3.MultiFetchRequest{
+				Metrics: []protov3.FetchRequest{
+					{
+						Name:           "foo",
+						StartTime:      0,
+						StopTime:       180,
+						PathExpression: "foo",
+					},
+				},
+			},
+			fetchResponses: map[string]dummy.FetchResponse{
+				"client1": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          180,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2, 3},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client2": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+			},
+			expectedResponse: &protov3.MultiFetchResponse{
+				Metrics: []protov3.FetchResponse{
+					{
+						Name:              "foo",
+						PathExpression:    "foo",
+						ConsolidationFunc: "avg",
+						StartTime:         0,
+						StopTime:          180,
+						StepTime:          60,
+						XFilesFactor:      0.5,
+						Values:            []float64{0, 1, 2, 3},
+					},
+				},
+			},
+		},
+		{
+			name: "many clients, different data",
+			servers: []types.ServerClient{
+				dummy.NewDummyClient("client1", []string{"backend1", "backend2"}, 1),
+				dummy.NewDummyClient("client2", []string{"backend3", "backend4"}, 1),
+				dummy.NewDummyClient("client3", []string{"backend5", "backend6"}, 1),
+				dummy.NewDummyClient("client4", []string{"backend7", "backend8"}, 1),
+				dummy.NewDummyClient("client5", []string{"backend9", "backend10"}, 1),
+				dummy.NewDummyClient("client6", []string{"backend11", "backend12"}, 1),
+				dummy.NewDummyClient("client7", []string{"backend13", "backend14"}, 1),
+				dummy.NewDummyClient("client8", []string{"backend15", "backend16"}, 1),
+				dummy.NewDummyClient("client9", []string{"backend17", "backend18"}, 1),
+				dummy.NewDummyClient("client10", []string{"backend19", "backend20"}, 1),
+				dummy.NewDummyClient("client11", []string{"backend21", "backend22"}, 1),
+				dummy.NewDummyClient("client12", []string{"backend23", "backend24"}, 1),
+				dummy.NewDummyClient("client13", []string{"backend25", "backend26"}, 1),
+				dummy.NewDummyClient("client14", []string{"backend27", "backend28"}, 1),
+				dummy.NewDummyClient("client15", []string{"backend29", "backend30"}, 1),
+				dummy.NewDummyClient("client16", []string{"backend31", "backend32"}, 1),
+				dummy.NewDummyClient("client17", []string{"backend33", "backend34"}, 1),
+				dummy.NewDummyClient("client18", []string{"backend35", "backend36"}, 1),
+				dummy.NewDummyClient("client19", []string{"backend37", "backend38"}, 1),
+				dummy.NewDummyClient("client20", []string{"backend39", "backend40"}, 1),
+				dummy.NewDummyClient("client21", []string{"backend41", "backend42"}, 1),
+				dummy.NewDummyClient("client22", []string{"backend43", "backend44"}, 1),
+			},
+			fetchRequest: &protov3.MultiFetchRequest{
+				Metrics: []protov3.FetchRequest{
+					{
+						Name:           "foo*",
+						StartTime:      0,
+						StopTime:       180,
+						PathExpression: "foo*",
+					},
+				},
+			},
+			fetchResponses: map[string]dummy.FetchResponse{
+				"client1": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          180,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2, 3},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client2": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+							{
+								Name:              "foo2",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          180,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2, 3},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client3": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+							{
+								Name:              "foo2",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          180,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2, 3},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client4": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+							{
+								Name:              "foo2",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          180,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2, 3},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client5": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+							{
+								Name:              "foo2",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          180,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2, 3},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client6": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+							{
+								Name:              "foo2",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          180,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2, 3},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client7": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+							{
+								Name:              "foo2",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          180,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2, 3},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client8": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+							{
+								Name:              "foo2",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          180,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2, 3},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client9": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+							{
+								Name:              "foo2",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          180,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2, 3},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client10": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+							{
+								Name:              "foo2",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          180,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2, 3},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client11": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+							{
+								Name:              "foo2",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          180,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2, 3},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client12": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+							{
+								Name:              "foo2",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          180,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2, 3},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client13": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+							{
+								Name:              "foo2",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          180,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2, 3},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client14": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+							{
+								Name:              "foo2",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          180,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2, 3},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client15": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+							{
+								Name:              "foo2",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          180,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2, 3},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client16": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+							{
+								Name:              "foo2",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          180,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2, 3},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client17": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+							{
+								Name:              "foo2",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          180,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2, 3},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client18": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+							{
+								Name:              "foo2",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          180,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2, 3},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client19": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+							{
+								Name:              "foo2",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          180,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2, 3},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client20": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+							{
+								Name:              "foo2",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          180,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2, 3},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client21": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+							{
+								Name:              "foo2",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          180,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2, 3},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+				"client22": dummy.FetchResponse{
+					Response: &protov3.MultiFetchResponse{
+						Metrics: []protov3.FetchResponse{
+							{
+								Name:              "foo",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          120,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2},
+							},
+							{
+								Name:              "foo2",
+								PathExpression:    "foo*",
+								ConsolidationFunc: "avg",
+								StartTime:         0,
+								StopTime:          180,
+								StepTime:          60,
+								XFilesFactor:      0.5,
+								Values:            []float64{0, 1, 2, 3},
+							},
+						},
+					},
+					Stats:  &types.Stats{},
+					Errors: &errors.Errors{},
+				},
+			},
+			expectedResponse: &protov3.MultiFetchResponse{
+				Metrics: []protov3.FetchResponse{
+					{
+						Name:              "foo",
+						PathExpression:    "foo*",
+						ConsolidationFunc: "avg",
+						StartTime:         0,
+						StopTime:          180,
+						StepTime:          60,
+						XFilesFactor:      0.5,
+						Values:            []float64{0, 1, 2, 3},
+					},
+					{
+						Name:              "foo2",
+						PathExpression:    "foo*",
+						ConsolidationFunc: "avg",
+						StartTime:         0,
+						StopTime:          180,
+						StepTime:          60,
+						XFilesFactor:      0.5,
+						Values:            []float64{0, 1, 2, 3},
 					},
 				},
 			},
@@ -305,21 +1162,16 @@ func TestFetchRequests(t *testing.T) {
 		for i := range tt.servers {
 			name := fmt.Sprintf("client%v", i+1)
 			s := tt.servers[i].(*dummy.DummyClient)
-			for i, r := range tt.fetchRequest[name] {
-				resp := tt.fetchResponses[name][i]
-				s.AddFetchResponse(r, resp.Response, resp.Stats, resp.Errors)
+			resp, ok := tt.fetchResponses[name]
+			if ok {
+				s.AddFetchResponse(tt.fetchRequest, resp.Response, resp.Stats, resp.Errors)
 			}
 		}
 
 		ctx := context.Background()
 
 		t.Run(tt.name, func(t *testing.T) {
-			var requests []*protov3.MultiFetchRequest
-			for _, r := range tt.fetchRequest {
-				requests = append(requests, r...)
-			}
-			request := mergeFetchRequests(requests)
-			res, _, err := b.Fetch(ctx, request)
+			res, _, err := b.Fetch(ctx, tt.fetchRequest)
 			if tt.expectedErr == nil || !tt.expectedErr.HaveFatalErrors {
 				if err != nil && err.HaveFatalErrors {
 					t.Errorf("unexpected error %v, expected %v", err, tt.expectedErr)
@@ -328,6 +1180,10 @@ func TestFetchRequests(t *testing.T) {
 				if !errorsAreEqual(err, tt.expectedErr) {
 					t.Errorf("unexpected error %v, expected %v", err, tt.expectedErr)
 				}
+			}
+
+			if res == nil {
+				t.Fatal("result is nil")
 			}
 
 			if len(res.Metrics) != len(tt.expectedResponse.Metrics) {
