@@ -196,7 +196,7 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	key := fetchRequestToKey(bg.groupName, request)
 	item := bg.fetchCache.GetQueryItem(key)
 	res, ok := item.FetchOrLock(ctx)
-	if ok {
+	if ok && res != nil {
 		logger.Debug("cache hit")
 		result := res.(*types.ServerFetchResponse)
 		return result.Response, result.Stats, nil
@@ -214,7 +214,13 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 		go bg.doSingleFetch(ctx, logger, client, request, doneCh, resCh)
 	}
 
-	result := &types.ServerFetchResponse{}
+	result := &types.ServerFetchResponse{
+		Server:       "",
+		ResponsesMap: make(map[string][]protov3.FetchResponse),
+		Response:     &protov3.MultiFetchResponse{},
+		Stats:        &types.Stats{},
+		Err:          &errors.Errors{},
+	}
 	var err errors.Errors
 	answeredServers := make(map[string]struct{})
 	responseCounts := 0
@@ -231,11 +237,7 @@ GATHER:
 			if res.Err != nil {
 				err.Merge(res.Err)
 			}
-			if result.Response == nil {
-				result = res
-			} else {
-				result.Merge(res)
-			}
+			result.Merge(res)
 		case <-ctx.Done():
 			noAnswer := make([]string, 0)
 			for _, s := range clients {
@@ -251,7 +253,7 @@ GATHER:
 		}
 	}
 
-	if result == nil || result.Response == nil {
+	if len(result.Response.Metrics) == 0 {
 		logger.Error("failed to get any response")
 		item.StoreAbort()
 
