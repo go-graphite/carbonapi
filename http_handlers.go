@@ -27,6 +27,11 @@ import (
 	"go.uber.org/zap"
 )
 
+type requestInterval struct {
+	from  int64
+	until int64
+}
+
 const (
 	jsonFormat      = "json"
 	treejsonFormat  = "treejson"
@@ -271,6 +276,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Splitting requets into batches is now done by carbonzipper
+		pathExprTimeMap := make(map[string]requestInterval)
 		var req pb.MultiFetchRequest
 		for _, m := range exp.Metrics() {
 			metrics = append(metrics, m.Metric)
@@ -286,9 +292,10 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			req.Metrics = append(req.Metrics, pb.FetchRequest{
 				Name:           m.Metric,
 				PathExpression: m.Metric,
-				StartTime:      from32,
-				StopTime:       until32,
+				StartTime:      mfetch.From,
+				StopTime:       mfetch.Until,
 			})
+			pathExprTimeMap[m.Metric] = requestInterval{from: mfetch.From, until: mfetch.Until}
 		}
 
 		if len(req.Metrics) > 0 {
@@ -307,8 +314,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			for _, m := range r {
 				mfetch := parser.MetricRequest{
 					Metric: m.PathExpression,
-					From:   from32,
-					Until:  until32,
+					From:   pathExprTimeMap[m.PathExpression].from,
+					Until:  pathExprTimeMap[m.PathExpression].until,
 				}
 
 				d := metricMap[mfetch]
@@ -364,7 +371,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	var body []byte
 
 	if len(results) == 0 {
-		logger.Error("no servers responded")
+		logger.Info("empty response or no response")
 		results = append(results, &types.MetricData{})
 	}
 
