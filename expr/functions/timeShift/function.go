@@ -35,9 +35,7 @@ func (f *timeShift) Do(e parser.Expr, from, until int64, values map[parser.Metri
 		return nil, err
 	}
 
-	fromNew := int64(int64(from) + int64(offs))
-	untilNew := int64(int64(from) + int64(offs))
-	arg, err := helper.GetSeriesArg(e.Args()[0], fromNew, untilNew, values)
+	arg, err := helper.GetSeriesArg(e.Args()[0], from+int64(offs), until+int64(offs), values)
 	if err != nil {
 		return nil, err
 	}
