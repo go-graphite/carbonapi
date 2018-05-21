@@ -283,8 +283,8 @@ database:
         matchString: ".*"
 ```
 
-..*Examples
-* We have data series:
+Examples:
+We have data series:
 ```
 switches.switchId.CPU1Min
 ```
@@ -295,7 +295,7 @@ switchnameB
 switchnameC
 switchnameD
 ```
-*We have data series:
+We have data series:
 ```
 switches.hostname.interfaceID.scope_of_interface_metrics
 ```
