@@ -117,6 +117,7 @@ aggregateWithWildcards                                                    |  1.1
 alias(seriesList, newName)                                                |  0.9.9  | Supported
 aliasByMetric(seriesList)                                                 |  0.9.10 | Supported
 aliasByNode(seriesList, *nodes)                                           |  0.9.14 | Supported
+aliasByPostgre(seriesList, database, key-string, node[i])                 |  not in graphite  | Experimental
 aliasByTags                                                               |  1.1.0  |
 aliasSub(seriesList, search, replace)                                     |  0.9.10 | Supported
 alpha(seriesList, alpha)                                                  |  0.9.10 | Supported
@@ -259,3 +260,34 @@ verticalLine(ts, label=None, color=None)                                  |  1.0
 weightedAverage(seriesListAvg, seriesListWeight, node)                    |  1.0.0  |
 
 -----
+
+## Features of configuration fuctions
+### aliasByPostgre
+1. Add to main config path to configuration file
+```yaml
+functionsConfigs:
+        aliasByPostgre: /path/to/config.yaml
+```
+2. Make config with pairs key-string - request
+```yaml
+enabled: true
+database:
+  "cloud":
+    urlDB: "localhost:5432"
+    username: "portgres_user"
+    password: "postgres_password"
+    nameDB: "database_name"
+    keyString:
+      "some_resolve_key":
+        varName: "var"
+        queryString: "SELECT field1 FROM some_table1 WHERE otherfield1 like 'var0';"
+        matchString: ".*"
+      "some_resolve_key_2":
+        varName: "var"
+        queryString: "SELECT field2 FROM some_table1 WHERE otherfield2 like 'var0';"
+        matchString: ".*"
+      "some_resolve_key_3":
+        varName: "var"
+        queryString: "SELECT field3 FROM some_table2 WHERE otherfield3 like 'var0';"
+        matchString: ".*"
+```
