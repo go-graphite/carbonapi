@@ -4,6 +4,7 @@ Topics:
 * [Default settings](#default-settings)
 * [URI Parameters](#uri-params)
 * [Functions](#functions)
+* [Features of configuration functions](#functions-features)
 
 <a name="default-settings"></a>
 ## Default Settings
@@ -259,35 +260,57 @@ useSeriesAbove(seriesList, value, search, replace)                        |  0.9
 verticalLine(ts, label=None, color=None)                                  |  1.0.0  |
 weightedAverage(seriesListAvg, seriesListWeight, node)                    |  1.0.0  |
 
------
-
-## Features of configuration fuctions
+<a name="functions-features"></a>
+## Features of configuration functions
 ### aliasByPostgre
-1. Add to main config path to configuration file
-```yaml
-functionsConfigs:
-        aliasByPostgre: /path/to/config.yaml
-```
-2. Make config with pairs key-string - request
+1. Make config for function with pairs key-string - request
 ```yaml
 enabled: true
 database:
-  "cloud":
+  "databaseAlias":
     urlDB: "localhost:5432"
     username: "portgres_user"
     password: "postgres_password"
     nameDB: "database_name"
     keyString:
-      "some_resolve_key":
+      "resolve_switch_name_byId":
         varName: "var"
-        queryString: "SELECT field1 FROM some_table1 WHERE otherfield1 like 'var0';"
+        queryString: "SELECT field_with_switch_name FROM some_table_with_switch_names_id_and_other WHERE field_with_switchID like 'var0';"
         matchString: ".*"
-      "some_resolve_key_2":
+      "resolve_interface_description_from_table":
         varName: "var"
-        queryString: "SELECT field2 FROM some_table1 WHERE otherfield2 like 'var0';"
-        matchString: ".*"
-      "some_resolve_key_3":
-        varName: "var"
-        queryString: "SELECT field3 FROM some_table2 WHERE otherfield3 like 'var0';"
+        queryString: "SELECT interface_desc FROM some_table_with_switch_data WHERE field_with_hostname like 'var0' AND field_with_interface_id like 'var1';"
         matchString: ".*"
 ```
+
+..*Examples
+* We have data series:
+```
+switches.switchId.CPU1Min
+```
+We need to get CPU load resolved by switchname, aliasByPostgre( switches.*.CPU1Min, databaseAlias, resolve_switch_name_byId, 1 ) will return series like this:
+```
+switchnameA
+switchnameB
+switchnameC
+switchnameD
+```
+*We have data series:
+```
+switches.hostname.interfaceID.scope_of_interface_metrics
+```
+We want to see interfaces stats sticked to their descriptions, aliasByPostgre(switches.hostname.*.ifOctets.rx, databaseAlias, resolve_interface_description_from_table, 1, 2 )
+will return series:
+```
+InterfaceADesc
+InterfaceBDesc
+InterfaceCDesc
+InterfaceDDesc
+```
+
+2. Add to main config path to configuration file
+```yaml
+functionsConfigs:
+        aliasByPostgre: /path/to/funcConfig.yaml
+```
+-----
