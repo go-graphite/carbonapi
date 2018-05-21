@@ -283,7 +283,8 @@ database:
         matchString: ".*"
 ```
 
-Examples:
+#### Examples
+
 We have data series:
 ```
 switches.switchId.CPU1Min
