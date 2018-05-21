@@ -41,12 +41,12 @@ type aliasByPostgreConfig struct {
 	Database	map[string]Database
 }
 
-func (f *aliasByPostgre) SQLConnectDB(database_name string) (*sql.DB,error) {
+func (f *aliasByPostgre) SQLConnectDB(databaseName string) (*sql.DB,error) {
 	logger := zapwriter.Logger("functionInit").With(zap.String("function", "aliasByPostgre"))
-	var connect_string string
-	connect_string = fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable",f.Database[database_name].Username,f.Database[database_name].Password,f.Database[database_name].UrlDB,f.Database[database_name].NameDB)
-	fmt.Println(connect_string)
-	db, err := sql.Open("postgres", connect_string)
+	var connectString string
+	connectString = fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable",f.Database[databaseName].Username,f.Database[databaseName].Password,f.Database[databaseName].UrlDB,f.Database[databaseName].NameDB)
+	fmt.Println(connectString)
+	db, err := sql.Open("postgres", connectString)
 	if err != nil {
 	    logger.Error("Error connect to PostgreSQL Database")
 	    return nil,err
@@ -55,10 +55,10 @@ func (f *aliasByPostgre) SQLConnectDB(database_name string) (*sql.DB,error) {
 }
 
 // SQLQueryDB convenience function to query the database
-func (f *aliasByPostgre) SQLQueryDB(query string, database_name string) (res string, err error) {
+func (f *aliasByPostgre) SQLQueryDB(query string, databaseName string) (res string, err error) {
     var result string
     logger := zapwriter.Logger("functionInit").With(zap.String("function", "aliasByPostgre"))
-    db,_ := f.SQLConnectDB(database_name)
+    db,_ := f.SQLConnectDB(databaseName)
     rows, err := db.Query(query)
     if err != nil {
 	logger.Error("Error with query ti database")
@@ -92,7 +92,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
                 )
         }
         key := map[string]KeyString{
-                "key_string": {
+                "keyString": {
             	    VarName: "var",
             	    QueryString: "select * from database.table where \"name\" =~ /^var0$/",
             	    MatchString: ".*",
@@ -103,7 +103,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
             	    UrlDB: "http://localhost:5432",
             	    Username: "User",
             	    Password: "Password",
-            	    NameDB: "db_name",
+            	    NameDB: "databaseName",
             	    KeyString: key,
             	    },
         }
@@ -141,15 +141,15 @@ func (f *aliasByPostgre) Do(e parser.Expr, from, until int32, values map[parser.
 	}
 
 	fields, err := e.GetIntArgs(3)
-	database_name, err := e.GetStringArg(1)
-	key_string, err := e.GetStringArg(2)
+	databaseName, err := e.GetStringArg(1)
+	keyString, err := e.GetStringArg(2)
 	if err != nil {
 		return nil, err
 	}
 
 	var results []*types.MetricData
-	matchString := regexp.MustCompile(f.Database[database_name].KeyString[key_string].MatchString)
-	
+	matchString := regexp.MustCompile(f.Database[databaseName].KeyString[keyString].MatchString)
+
 	for _, a := range args {
 		metric := helper.ExtractMetric(a.Name)
 		fmt.Println(metric)
@@ -167,22 +167,22 @@ func (f *aliasByPostgre) Do(e parser.Expr, from, until int32, values map[parser.
 		}
 		var temp_name string
 		temp_name = strings.Join(name ,".")
-		query := f.Database[database_name].KeyString[key_string].QueryString
-		var_name := regexp.MustCompile(f.Database[database_name].KeyString[key_string].VarName)
-		query_fields := len(var_name.FindAllString(query,-1))
+		query := f.Database[databaseName].KeyString[keyString].QueryString
+		var_name := regexp.MustCompile(f.Database[databaseName].KeyString[keyString].VarName)
+		queryFields := len(var_name.FindAllString(query,-1))
 
-		for i := 0; i < query_fields; i++ {
-			reg := regexp.MustCompile("("+f.Database[database_name].KeyString[key_string].VarName+strings.TrimSpace(strconv.Itoa(i))+")")
+		for i := 0; i < queryFields; i++ {
+			reg := regexp.MustCompile("("+f.Database[databaseName].KeyString[keyString].VarName+strings.TrimSpace(strconv.Itoa(i))+")")
 			query = reg.ReplaceAllString(query, name[i])
 		}
 
-		res, err := f.SQLQueryDB(query,database_name)
+		res, err := f.SQLQueryDB(query,databaseName)
 		if err != nil {
 			logger.Error("failed query to Postgresql DB", zap.Error(err),)
 			return nil, err
 		}
 		for i,_ := range name {
-			if i < query_fields {
+			if i < queryFields {
 				name = append(name[:0],name[0+1:]...)
 			}
 		}
