@@ -165,11 +165,11 @@ func (f *aliasByPostgre) Do(e parser.Expr, from, until int32, values map[parser.
 			}
 			name = append(name, nodes[f])
 		}
-		var temp_name string
-		temp_name = strings.Join(name ,".")
+		var tempName string
+		tempName = strings.Join(name ,".")
 		query := f.Database[databaseName].KeyString[keyString].QueryString
-		var_name := regexp.MustCompile(f.Database[databaseName].KeyString[keyString].VarName)
-		queryFields := len(var_name.FindAllString(query,-1))
+		varName := regexp.MustCompile(f.Database[databaseName].KeyString[keyString].VarName)
+		queryFields := len(varName.FindAllString(query,-1))
 
 		for i := 0; i < queryFields; i++ {
 			reg := regexp.MustCompile("("+f.Database[databaseName].KeyString[keyString].VarName+strings.TrimSpace(strconv.Itoa(i))+")")
@@ -181,7 +181,7 @@ func (f *aliasByPostgre) Do(e parser.Expr, from, until int32, values map[parser.
 			logger.Error("failed query to Postgresql DB", zap.Error(err),)
 			return nil, err
 		}
-		for i,_ := range name {
+		for i := range name {
 			if i < queryFields {
 				name = append(name[:0],name[0+1:]...)
 			}
@@ -200,7 +200,7 @@ func (f *aliasByPostgre) Do(e parser.Expr, from, until int32, values map[parser.
 			}
 		} else {
 			r:= *a
-			r.Name = temp_name
+			r.Name = tempName
 			results = append(results, &r)
 		}
 	}
