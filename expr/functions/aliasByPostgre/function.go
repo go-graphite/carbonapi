@@ -6,12 +6,12 @@ import (
 	"strings"
 	"strconv"
 	"database/sql"
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-        "github.com/lomik/zapwriter"
+  "github.com/lomik/zapwriter"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
@@ -45,7 +45,7 @@ func (f *aliasByPostgre) SQLConnectDB(databaseName string) (*sql.DB,error) {
 	logger := zapwriter.Logger("functionInit").With(zap.String("function", "aliasByPostgre"))
 	var connectString string
 	connectString = fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable",f.Database[databaseName].Username,f.Database[databaseName].Password,f.Database[databaseName].UrlDB,f.Database[databaseName].NameDB)
-	fmt.Println(connectString)
+	logger.Debug(connectString)
 	db, err := sql.Open("postgres", connectString)
 	if err != nil {
 	    logger.Error("Error connect to PostgreSQL Database")
@@ -62,7 +62,7 @@ func (f *aliasByPostgre) SQLQueryDB(query string, databaseName string) (res stri
     rows, err := db.Query(query)
     if err != nil {
 	logger.Error("Error with query ti database")
-	fmt.Println(err)
+	logger.Debug(err)
     }
     defer db.Close()
     for rows.Next(){
@@ -70,7 +70,7 @@ func (f *aliasByPostgre) SQLQueryDB(query string, databaseName string) (res stri
 	if err != nil {
 	    logger.Error("Error with scan response")
 	}
-	fmt.Println(result)
+	logger.Debug(result)
     }
     defer rows.Close()
     return result, nil
@@ -152,7 +152,7 @@ func (f *aliasByPostgre) Do(e parser.Expr, from, until int32, values map[parser.
 
 	for _, a := range args {
 		metric := helper.ExtractMetric(a.Name)
-		fmt.Println(metric)
+		logger.Debug(metric)
 		if metric == "" {continue}
 		nodes := strings.Split(metric, ".")
 		var name []string
@@ -221,6 +221,16 @@ func (f *aliasByPostgre) Description() map[string]types.FunctionDescription {
 					Name:     "seriesList",
 					Required: true,
 					Type:     types.SeriesList,
+				},
+				{
+					Name:     "databaseName",
+					Required: true,
+					Type:     types.String,
+				},
+				{
+					Name:     "keyString",
+					Required: true,
+					Type:     types.String,
 				},
 				{
 					Multiple: true,
