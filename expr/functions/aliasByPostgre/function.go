@@ -22,14 +22,14 @@ type aliasByPostgre struct {
 	Database	map[string]Database
 }
 
-// Structure for KeyString
+// KeyString structure
 type KeyString struct {
 	VarName		string
 	QueryString	string
 	MatchString	string
 }
 
-// Structure for database
+// Database structure
 type Database struct {
 	UrlDB		string
 	Username	string
@@ -78,12 +78,12 @@ func (f *aliasByPostgre) SQLQueryDB(query string, databaseName string) (res stri
     return result, nil
 }
 
-// Standard function
+// GetOrder - standard function
 func GetOrder() interfaces.Order {
 	return interfaces.Any
 }
 
-// Parsing config
+// New - function for parsing config
 func New(configFile string) []interfaces.FunctionMetadata {
 	logger := zapwriter.Logger("functionInit").With(zap.String("function", "aliasByPostgre"))
 	v := viper.New()
