@@ -579,7 +579,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	if format == "completer" {
-		for i, _ := range query {
+		for i := range query {
 			if query[i] == "" || query[i] == "/" || query[i] == "." {
 				query[i] = "*"
 			}
