@@ -497,8 +497,12 @@ func findCompleter(multiGlobs *pb.MultiGlobResponse) ([]byte, error) {
 
 	for _, globs := range multiGlobs.Metrics {
 		for _, g := range globs.Matches {
+			path := g.Path
+			if !g.IsLeaf && path[len(path)-1:] != "." {
+				path = g.Path + "."
+			}
 			c := completer{
-				Path: g.Path,
+				Path: path,
 			}
 
 			if g.IsLeaf {
@@ -579,9 +583,14 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	if format == "completer" {
+		var replacer = strings.NewReplacer("/", ".")
 		for i := range query {
+			query[i] = replacer.Replace(query[i])
 			if query[i] == "" || query[i] == "/" || query[i] == "." {
-				query[i] = "*"
+				query[i] = ".*"
+			}
+			if strings.LastIndex(query[i], ".") == len(query[i])-1 {
+				query[i] += "*"
 			}
 		}
 	}
