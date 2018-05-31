@@ -68,7 +68,7 @@ func (f *polyfit) Do(e parser.Expr, from, until int64, values map[parser.MetricR
 		}
 		// Extending slice by "offset" so our graph slides into future!
 		r.Values = make([]float64, len(a.Values)+int(offs)/int(r.StepTime))
-		r.StopTime = int64(int64(a.StopTime) + int64(offs))
+		r.StopTime = a.StopTime + int64(offs)
 
 		// Removing absent values from original dataset
 		nonNulls := make([]float64, 0)

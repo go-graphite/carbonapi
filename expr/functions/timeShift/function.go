@@ -45,8 +45,8 @@ func (f *timeShift) Do(e parser.Expr, from, until int64, values map[parser.Metri
 	for _, a := range arg {
 		r := *a
 		r.Name = fmt.Sprintf("timeShift(%s,'%d')", a.Name, offs)
-		r.StartTime = int64(int64(a.StartTime) - int64(offs))
-		r.StopTime = int64(int64(a.StopTime) - int64(offs))
+		r.StartTime = a.StartTime - int64(offs)
+		r.StopTime = a.StopTime - int64(offs)
 		results = append(results, &r)
 	}
 
