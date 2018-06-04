@@ -121,8 +121,9 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 		v := url.Values{
 			"target": targets,
 			"format": []string{"protobuf3"},
-			"from":   []string{strconv.Itoa(int(request.Metrics[0].StartTime))},
-			"until":  []string{strconv.Itoa(int(request.Metrics[0].StopTime))},
+			// FIXME(gmagnusson): What if we timeshift one of the metrics in the request?
+			"from":  []string{strconv.Itoa(int(request.Metrics[0].StartTime))},
+			"until": []string{strconv.Itoa(int(request.Metrics[0].StopTime))},
 		}
 		rewrite.RawQuery = v.Encode()
 		res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)

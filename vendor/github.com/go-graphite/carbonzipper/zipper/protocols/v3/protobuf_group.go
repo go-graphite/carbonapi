@@ -128,6 +128,8 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 
 	var metrics protov3.MultiFetchResponse
 	e.AddFatal(metrics.Unmarshal(res.Response))
+
+	// TODO(gmagnusson): Clean this up
 	if e == nil {
 		e = &errors.Errors{}
 	}
