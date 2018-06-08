@@ -46,8 +46,8 @@ func (f *timeStack) Do(e parser.Expr, from, until int64, values map[parser.Metri
 	var results []*types.MetricData
 	for i := int64(start); i < int64(end); i++ {
 		offs := i * int64(unit)
-		fromNew := int64(int64(from) + offs)
-		untilNew := int64(int64(until) + offs)
+		fromNew := from + offs
+		untilNew := until + offs
 		arg, err := helper.GetSeriesArg(e.Args()[0], fromNew, untilNew, values)
 		if err != nil {
 			return nil, err
@@ -56,8 +56,8 @@ func (f *timeStack) Do(e parser.Expr, from, until int64, values map[parser.Metri
 		for _, a := range arg {
 			r := *a
 			r.Name = fmt.Sprintf("timeShift(%s,%d)", a.Name, offs)
-			r.StartTime = int64(int64(a.StartTime) - offs)
-			r.StopTime = int64(int64(a.StopTime) - offs)
+			r.StartTime = a.StartTime - offs
+			r.StopTime = a.StopTime - offs
 			results = append(results, &r)
 		}
 	}

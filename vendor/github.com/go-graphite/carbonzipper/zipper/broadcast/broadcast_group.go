@@ -143,6 +143,7 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 				continue
 			}
 			newRequest := &protov3.MultiFetchRequest{}
+
 			logger.Debug("will split request",
 				zap.Int("metrics", len(f.Metrics)),
 				zap.Int("max_metrics", maxMetricPerRequest),
@@ -162,7 +163,9 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 					}
 				}
 			}
-			requests = append(requests, newRequest)
+			if len(newRequest.Metrics) > 0 {
+				requests = append(requests, newRequest)
+			}
 			logger.Debug("spliited request",
 				zap.Int("amount_of_requests", len(requests)),
 			)
@@ -193,7 +196,7 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	key := fetchRequestToKey(bg.groupName, request)
 	item := bg.fetchCache.GetQueryItem(key)
 	res, ok := item.FetchOrLock(ctx)
-	if ok {
+	if ok && res != nil {
 		logger.Debug("cache hit")
 		result := res.(*types.ServerFetchResponse)
 		return result.Response, result.Stats, nil
@@ -211,7 +214,13 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 		go bg.doSingleFetch(ctx, logger, client, request, doneCh, resCh)
 	}
 
-	result := &types.ServerFetchResponse{}
+	result := &types.ServerFetchResponse{
+		Server:       "",
+		ResponsesMap: make(map[string][]protov3.FetchResponse),
+		Response:     &protov3.MultiFetchResponse{},
+		Stats:        &types.Stats{},
+		Err:          &errors.Errors{},
+	}
 	var err errors.Errors
 	answeredServers := make(map[string]struct{})
 	responseCounts := 0
@@ -228,11 +237,7 @@ GATHER:
 			if res.Err != nil {
 				err.Merge(res.Err)
 			}
-			if result.Response == nil {
-				result = res
-			} else {
-				result.Merge(res)
-			}
+			result.Merge(res)
 		case <-ctx.Done():
 			noAnswer := make([]string, 0)
 			for _, s := range clients {
@@ -248,7 +253,7 @@ GATHER:
 		}
 	}
 
-	if result == nil || result.Response == nil {
+	if len(result.Response.Metrics) == 0 {
 		logger.Error("failed to get any response")
 		item.StoreAbort()
 
@@ -309,9 +314,11 @@ func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	key := findRequestToKey(bg.groupName, request)
 	item := bg.findCache.GetQueryItem(key)
 	res, ok := item.FetchOrLock(ctx)
-	if ok {
-		logger.Debug("cache hit")
+	if ok && res != nil {
 		result := res.(*types.ServerFindResponse)
+		logger.Debug("cache hit",
+			zap.Any("result", result),
+		)
 		return result.Response, result.Stats, nil
 	}
 	defer item.StoreAbort()
@@ -534,6 +541,7 @@ func (bg *BroadcastGroup) ProbeTLDs(ctx context.Context) ([]string, *errors.Erro
 	var err errors.Errors
 	answeredServers := make(map[string]struct{})
 	cache := make(map[string][]types.ServerClient)
+	tldMap := make(map[string]struct{})
 GATHER:
 	for {
 		if responses == len(bg.clients) {
@@ -547,7 +555,9 @@ GATHER:
 				err.Merge(r.err)
 				continue
 			}
-			tlds = append(tlds, r.tlds...)
+			for _, tld := range r.tlds {
+				tldMap[tld] = struct{}{}
+			}
 			for _, tld := range r.tlds {
 				size += uint64(len(tld))
 				cache[tld] = append(cache[tld], r.server)
@@ -567,6 +577,10 @@ GATHER:
 		}
 	}
 	cancel()
+
+	for tld, _ := range tldMap {
+		tlds = append(tlds, tld)
+	}
 
 	item.StoreAndUnlock(tlds, size)
 

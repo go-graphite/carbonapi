@@ -135,10 +135,8 @@ func (e *expr) Metrics() []MetricRequest {
 				return nil
 			}
 			for i := range r {
-				fromNew := int64(r[i].From) + int64(offs)
-				untilNew := int64(r[i].Until) + int64(offs)
-				r[i].From += int64(fromNew)
-				r[i].Until += int64(untilNew)
+				r[i].From += int64(offs)
+				r[i].Until += int64(offs)
 			}
 		case "timeStack":
 			offs, err := e.GetIntervalArg(1, -1)
