@@ -46,8 +46,8 @@
   name = "github.com/facebookgo/pidfile"
 
 [[constraint]]
+  branch = "master"
   name = "github.com/go-graphite/protocol"
-  version = "0.4"
 
 [[constraint]]
   name = "github.com/gogo/protobuf"
