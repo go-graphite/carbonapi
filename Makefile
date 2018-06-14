@@ -10,6 +10,9 @@ GO ?= go
 carbonapi:
 	PKG_CONFIG_PATH="$(EXTRA_PKG_CONFIG_PATH)" $(GO) build -v -tags cairo -ldflags '-X main.BuildVersion=$(VERSION)'
 
+debug:
+	PKG_CONFIG_PATH="$(EXTRA_PKG_CONFIG_PATH)" $(GO) build -v -tags cairo -ldflags '-X main.BuildVersion=$(VERSION)' -gcflags=all='-l -N'
+
 nocairo:
 	$(GO) build -ldflags '-X main.BuildVersion=$(VERSION)'
 

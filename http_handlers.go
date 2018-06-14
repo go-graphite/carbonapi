@@ -312,10 +312,20 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 			config.limiter.leave()
 			for _, m := range r {
+				var f int64
+				var u int64
+				if m.RequestStartTime != 0 && m.RequestStopTime != 0 {
+					f = m.RequestStartTime
+					u = m.RequestStopTime
+				} else {
+					f = pathExprTimeMap[m.PathExpression].from
+					u = pathExprTimeMap[m.PathExpression].until
+				}
+
 				mfetch := parser.MetricRequest{
 					Metric: m.PathExpression,
-					From:   pathExprTimeMap[m.PathExpression].from,
-					Until:  pathExprTimeMap[m.PathExpression].until,
+					From:   f,
+					Until:  u,
 				}
 
 				d := metricMap[mfetch]
@@ -577,6 +587,14 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		deferredAccessLogging(accessLogger, &accessLogDetails, t0, logAsError)
 	}()
+
+	if format == "completer" {
+		for i := range query {
+			if query[i] == "" || query[i] == "/" || query[i] == "." {
+				query[i] = "*"
+			}
+		}
+	}
 
 	if len(query) == 0 {
 		http.Error(w, "missing parameter `query`", http.StatusBadRequest)
