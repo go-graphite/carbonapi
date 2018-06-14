@@ -6,12 +6,12 @@ import (
 	"strings"
 	"strconv"
 	"database/sql"
-	"github.com/lib/pq"
+	_ "github.com/lib/pq"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-  "github.com/lomik/zapwriter"
+	"github.com/lomik/zapwriter"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
@@ -64,7 +64,6 @@ func (f *aliasByPostgre) SQLQueryDB(query string, databaseName string) (res stri
     rows, err := db.Query(query)
     if err != nil {
 	logger.Error("Error with query ti database")
-	logger.Debug(err)
     }
     defer db.Close()
     for rows.Next(){
@@ -136,7 +135,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *aliasByPostgre) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *aliasByPostgre) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	logger := zapwriter.Logger("functionInit").With(zap.String("function", "aliasByPostgre"))
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
