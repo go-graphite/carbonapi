@@ -20,6 +20,10 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	format = "protobuf"
+)
+
 func init() {
 	aliases := []string{"carbonapi_v2_pb", "proto_v2_pb", "v2_pb", "pb", "pb3", "protobuf", "protobuf3"}
 	metadata.Metadata.Lock()
@@ -120,7 +124,7 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	for pathExpr, targets := range pathExprToTargets {
 		v := url.Values{
 			"target": targets,
-			"format": []string{"protobuf3"},
+			"format": []string{format},
 			"from":   []string{strconv.Itoa(int(request.Metrics[0].StartTime))},
 			"until":  []string{strconv.Itoa(int(request.Metrics[0].StopTime))},
 		}
@@ -173,7 +177,7 @@ func (c *ClientProtoV2Group) Find(ctx context.Context, request *protov3.MultiGlo
 	for _, query := range request.Metrics {
 		v := url.Values{
 			"query":  []string{query},
-			"format": []string{"protobuf"},
+			"format": []string{format},
 		}
 		rewrite.RawQuery = v.Encode()
 		res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
@@ -230,7 +234,7 @@ func (c *ClientProtoV2Group) Info(ctx context.Context, request *protov3.MultiMet
 	for _, query := range request.Names {
 		v := url.Values{
 			"target": []string{query},
-			"format": []string{"protobuf"},
+			"format": []string{format},
 		}
 		rewrite.RawQuery = v.Encode()
 		res, e2 := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
