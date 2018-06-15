@@ -1,4 +1,4 @@
-package aliasByPostgre
+package aliasByPostgres
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type aliasByPostgre struct {
+type aliasByPostgres struct {
 	interfaces.FunctionBase
 	Enabled		bool
 	Database	map[string]Database
@@ -38,13 +38,13 @@ type Database struct {
 	KeyString	map[string]KeyString
 }
 
-type aliasByPostgreConfig struct {
+type aliasByPostgresConfig struct {
 	Enabled		bool
 	Database	map[string]Database
 }
 
-func (f *aliasByPostgre) SQLConnectDB(databaseName string) (*sql.DB,error) {
-	logger := zapwriter.Logger("functionInit").With(zap.String("function", "aliasByPostgre"))
+func (f *aliasByPostgres) SQLConnectDB(databaseName string) (*sql.DB,error) {
+	logger := zapwriter.Logger("functionInit").With(zap.String("function", "aliasByPostgres"))
 	var connectString string
 	connectString = fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable",f.Database[databaseName].Username,f.Database[databaseName].Password,f.Database[databaseName].UrlDB,f.Database[databaseName].NameDB)
 	logger.Debug(connectString)
@@ -57,9 +57,9 @@ func (f *aliasByPostgre) SQLConnectDB(databaseName string) (*sql.DB,error) {
 }
 
 // SQLQueryDB convenience function to query the database
-func (f *aliasByPostgre) SQLQueryDB(query string, databaseName string) (res string, err error) {
+func (f *aliasByPostgres) SQLQueryDB(query string, databaseName string) (res string, err error) {
     var result string
-    logger := zapwriter.Logger("functionInit").With(zap.String("function", "aliasByPostgre"))
+    logger := zapwriter.Logger("functionInit").With(zap.String("function", "aliasByPostgres"))
     db,_ := f.SQLConnectDB(databaseName)
     rows, err := db.Query(query)
     if err != nil {
@@ -84,7 +84,7 @@ func GetOrder() interfaces.Order {
 
 // New - function for parsing config
 func New(configFile string) []interfaces.FunctionMetadata {
-	logger := zapwriter.Logger("functionInit").With(zap.String("function", "aliasByPostgre"))
+	logger := zapwriter.Logger("functionInit").With(zap.String("function", "aliasByPostgres"))
 	v := viper.New()
         v.SetConfigFile(configFile)
         err := v.ReadInConfig()
@@ -110,7 +110,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
             	    },
         }
 
-        cfg := aliasByPostgreConfig{
+        cfg := aliasByPostgresConfig{
                 Enabled:     false,
                 Database:    database,
         }
@@ -121,22 +121,22 @@ func New(configFile string) []interfaces.FunctionMetadata {
                 )
         }
         if !cfg.Enabled {
-                logger.Warn("aliasByPostgre config found but aliasByPostgre is disabled")
+                logger.Warn("aliasByPostgres config found but aliasByPostgres is disabled")
                 return nil
         }
-	f := &aliasByPostgre{
+	f := &aliasByPostgres{
 		Enabled: cfg.Enabled,
 		Database: cfg.Database,
 	}
 	res := make([]interfaces.FunctionMetadata, 0)
-	for _, n := range []string{"aliasByPostgre"} {
+	for _, n := range []string{"aliasByPostgres"} {
 		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
 	}
 	return res
 }
 
-func (f *aliasByPostgre) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	logger := zapwriter.Logger("functionInit").With(zap.String("function", "aliasByPostgre"))
+func (f *aliasByPostgres) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	logger := zapwriter.Logger("functionInit").With(zap.String("function", "aliasByPostgres"))
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -210,14 +210,14 @@ func (f *aliasByPostgre) Do(e parser.Expr, from, until int64, values map[parser.
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
-func (f *aliasByPostgre) Description() map[string]types.FunctionDescription {
+func (f *aliasByPostgres) Description() map[string]types.FunctionDescription {
 	return map[string]types.FunctionDescription{
-		"aliasByPostgre": {
-			Description: "Takes a seriesList and applies an alias derived from database for one or more \"node\"\n portion/s of the target name or tags. Node indices are 0 indexed.\n\n.. code-block:: none\n\n  &target=aliasByPostgre(ganglia.*.cpu.load5,'database','key-string',1)\n\nEach node may be an integer referencing a node in the series name or a string identifying a tag.\n\n.. code-block :: none\n\n aliasByPostgre(\"datacenter\", \"server\", 1)\n\n  # will produce output series like\n  # dc1.server1.load5, dc1.server2.load5, dc1.server1.load10, dc1.server2.load10",
-			Function:    "aliasByPostgre(seriesList, *nodes)",
+		"aliasByPostgres": {
+			Description: "Takes a seriesList and applies an alias derived from database for one or more \"node\"\n portion/s of the target name or tags. Node indices are 0 indexed.\n\n.. code-block:: none\n\n  &target=aliasByPostgres(ganglia.*.cpu.load5,'database','key-string',1)\n\nEach node may be an integer referencing a node in the series name or a string identifying a tag.\n\n.. code-block :: none\n\n aliasByPostgres(\"datacenter\", \"server\", 1)\n\n  # will produce output series like\n  # dc1.server1.load5, dc1.server2.load5, dc1.server1.load10, dc1.server2.load10",
+			Function:    "aliasByPostgres(seriesList, *nodes)",
 			Group:       "Alias",
 			Module:      "graphite.render.functions",
-			Name:        "aliasByPostgre",
+			Name:        "aliasByPostgres",
 			Params: []types.FunctionParam{
 				{
 					Name:     "seriesList",
