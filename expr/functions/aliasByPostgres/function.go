@@ -6,7 +6,7 @@ import (
 	"strings"
 	"strconv"
 	"database/sql"
-	_ "github.com/lib/pq"
+	_ "github.com/lib/pq" // Needed for proper work of postgresql requests
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -31,7 +31,7 @@ type KeyString struct {
 
 // Database structure
 type Database struct {
-	UrlDB		string
+	URLDB		string
 	Username	string
 	Password	string
 	NameDB		string
@@ -46,7 +46,7 @@ type aliasByPostgresConfig struct {
 func (f *aliasByPostgres) SQLConnectDB(databaseName string) (*sql.DB,error) {
 	logger := zapwriter.Logger("functionInit").With(zap.String("function", "aliasByPostgres"))
 	var connectString string
-	connectString = fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable",f.Database[databaseName].Username,f.Database[databaseName].Password,f.Database[databaseName].UrlDB,f.Database[databaseName].NameDB)
+	connectString = fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable",f.Database[databaseName].Username,f.Database[databaseName].Password,f.Database[databaseName].URLDB,f.Database[databaseName].NameDB)
 	logger.Debug(connectString)
 	db, err := sql.Open("postgres", connectString)
 	if err != nil {
@@ -102,7 +102,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
         }
         database := map[string]Database{
                 "postgres": {
-            	    UrlDB: "http://localhost:5432",
+            	    URLDB: "http://localhost:5432",
             	    Username: "User",
             	    Password: "Password",
             	    NameDB: "databaseName",
