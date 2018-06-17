@@ -118,7 +118,7 @@ aggregateWithWildcards                                                    |  1.1
 alias(seriesList, newName)                                                |  0.9.9  | Supported
 aliasByMetric(seriesList)                                                 |  0.9.10 | Supported
 aliasByNode(seriesList, *nodes)                                           |  0.9.14 | Supported
-aliasByPostgre(seriesList, database, key-string, node[i])                 |  not in graphite  | Experimental
+aliasByPostgres(seriesList, database, key-string, node[i])                 |  not in graphite  | Experimental
 aliasByTags                                                               |  1.1.0  |
 aliasSub(seriesList, search, replace)                                     |  0.9.10 | Supported
 alpha(seriesList, alpha)                                                  |  0.9.10 | Supported
@@ -262,7 +262,7 @@ weightedAverage(seriesListAvg, seriesListWeight, node)                    |  1.0
 
 <a name="functions-features"></a>
 ## Features of configuration functions
-### aliasByPostgre
+### aliasByPostgres
 1. Make config for function with pairs key-string - request
 ```yaml
 enabled: true
@@ -289,7 +289,7 @@ We have data series:
 ```
 switches.switchId.CPU1Min
 ```
-We need to get CPU load resolved by switchname, aliasByPostgre( switches.*.CPU1Min, databaseAlias, resolve_switch_name_byId, 1 ) will return series like this:
+We need to get CPU load resolved by switchname, aliasByPostgres( switches.*.CPU1Min, databaseAlias, resolve_switch_name_byId, 1 ) will return series like this:
 ```
 switchnameA
 switchnameB
@@ -300,7 +300,7 @@ We have data series:
 ```
 switches.hostname.interfaceID.scope_of_interface_metrics
 ```
-We want to see interfaces stats sticked to their descriptions, aliasByPostgre(switches.hostname.*.ifOctets.rx, databaseAlias, resolve_interface_description_from_table, 1, 2 )
+We want to see interfaces stats sticked to their descriptions, aliasByPostgres(switches.hostname.*.ifOctets.rx, databaseAlias, resolve_interface_description_from_table, 1, 2 )
 will return series:
 ```
 InterfaceADesc
@@ -312,6 +312,6 @@ InterfaceDDesc
 2. Add to main config path to configuration file
 ```yaml
 functionsConfigs:
-        aliasByPostgre: /path/to/funcConfig.yaml
+        aliasByPostgres: /path/to/funcConfig.yaml
 ```
 -----
