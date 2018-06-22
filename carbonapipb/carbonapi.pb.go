@@ -27,6 +27,6 @@ type AccessLogDetails struct {
 	FromRaw                       string   `json:"from_raw,omitempty"`
 	UntilRaw                      string   `json:"until_raw,omitempty"`
 	Uri                           string   `json:"uri,omitempty"`
-	FromCache                     bool     `json:"from_cache,omitempty"`
+	FromCache                     bool     `json:"from_cache"`
 	ZipperRequests                int64    `json:"zipper_requests,omitempty"`
 }
