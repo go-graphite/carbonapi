@@ -17,6 +17,10 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	format = "carbonapi_v3_pb"
+)
+
 func init() {
 	aliases := []string{"carbonapi_v3_pb", "proto_v3_pb", "v3_pb"}
 	metadata.Metadata.Lock()
@@ -108,7 +112,7 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	rewrite, _ := url.Parse("http://127.0.0.1/render/")
 
 	v := url.Values{
-		"format": []string{"carbonapi_v3_pb"},
+		"format": []string{format},
 	}
 	rewrite.RawQuery = v.Encode()
 
@@ -144,7 +148,7 @@ func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlo
 	rewrite, _ := url.Parse("http://127.0.0.1/metrics/find/")
 
 	v := url.Values{
-		"format": []string{"carbonapi_v3_pb"},
+		"format": []string{format},
 	}
 	rewrite.RawQuery = v.Encode()
 
@@ -176,7 +180,7 @@ func (c *ClientProtoV3Group) Info(ctx context.Context, request *protov3.MultiMet
 	rewrite, _ := url.Parse("http://127.0.0.1/metrics/find/")
 
 	v := url.Values{
-		"format": []string{"carbonapi_v3_pb"},
+		"format": []string{format},
 	}
 	rewrite.RawQuery = v.Encode()
 

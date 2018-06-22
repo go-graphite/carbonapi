@@ -20,6 +20,10 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	format = "protobuf"
+)
+
 func init() {
 	aliases := []string{"carbonapi_v2_pb", "proto_v2_pb", "v2_pb", "pb", "pb3", "protobuf", "protobuf3"}
 	metadata.Metadata.Lock()
@@ -106,23 +110,34 @@ func (c ClientProtoV2Group) Backends() []string {
 	return c.servers
 }
 
+type queryBatch struct {
+	pathExpression string
+	from           int64
+	until          int64
+}
+
 func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, *errors.Errors) {
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/render/")
 
-	pathExprToTargets := make(map[string][]string)
+	batches := make(map[queryBatch][]string)
 	for _, m := range request.Metrics {
-		targets := pathExprToTargets[m.PathExpression]
-		pathExprToTargets[m.PathExpression] = append(targets, m.Name)
+		b := queryBatch{
+			pathExpression: m.PathExpression,
+			from:           m.StartTime,
+			until:          m.StopTime,
+		}
+
+		batches[b] = append(batches[b], m.Name)
 	}
 
 	var r protov3.MultiFetchResponse
-	for pathExpr, targets := range pathExprToTargets {
+	for batch, targets := range batches {
 		v := url.Values{
 			"target": targets,
-			"format": []string{"protobuf3"},
-			"from":   []string{strconv.Itoa(int(request.Metrics[0].StartTime))},
-			"until":  []string{strconv.Itoa(int(request.Metrics[0].StopTime))},
+			"format": []string{format},
+			"from":   []string{strconv.Itoa(int(batch.from))},
+			"until":  []string{strconv.Itoa(int(batch.until))},
 		}
 		rewrite.RawQuery = v.Encode()
 		res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
@@ -148,13 +163,15 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 			}
 			r.Metrics = append(r.Metrics, protov3.FetchResponse{
 				Name:              m.Name,
-				PathExpression:    pathExpr,
+				PathExpression:    batch.pathExpression,
 				ConsolidationFunc: "Average",
 				StopTime:          int64(m.StopTime),
 				StartTime:         int64(m.StartTime),
 				StepTime:          int64(m.StepTime),
 				Values:            m.Values,
 				XFilesFactor:      0.0,
+				RequestStartTime:  batch.from,
+				RequestStopTime:   batch.until,
 			})
 		}
 	}
@@ -173,7 +190,7 @@ func (c *ClientProtoV2Group) Find(ctx context.Context, request *protov3.MultiGlo
 	for _, query := range request.Metrics {
 		v := url.Values{
 			"query":  []string{query},
-			"format": []string{"protobuf"},
+			"format": []string{format},
 		}
 		rewrite.RawQuery = v.Encode()
 		res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
@@ -230,7 +247,7 @@ func (c *ClientProtoV2Group) Info(ctx context.Context, request *protov3.MultiMet
 	for _, query := range request.Names {
 		v := url.Values{
 			"target": []string{query},
-			"format": []string{"protobuf"},
+			"format": []string{format},
 		}
 		rewrite.RawQuery = v.Encode()
 		res, e2 := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
