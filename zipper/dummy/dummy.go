@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-graphite/carbonzipper/zipper/errors"
 	"github.com/go-graphite/carbonzipper/zipper/types"
@@ -55,6 +56,7 @@ type DummyClient struct {
 	infoResponses  map[string]InfoResponse
 	statsResponses map[string]StatsResponse
 	probeResponses ProbeResponse
+	alwaysTimeout  time.Duration
 }
 
 func NewDummyClient(name string, backends []string, maxMetricsPerRequest int) *DummyClient {
@@ -67,6 +69,21 @@ func NewDummyClient(name string, backends []string, maxMetricsPerRequest int) *D
 		findResponses:  make(map[string]FindResponse),
 		infoResponses:  make(map[string]InfoResponse),
 		statsResponses: make(map[string]StatsResponse),
+		alwaysTimeout:  0,
+	}
+}
+
+func NewDummyClientWithTimeout(name string, backends []string, maxMetricsPerRequest int, alwaysTimeout time.Duration) *DummyClient {
+	return &DummyClient{
+		name:                 name,
+		backends:             backends,
+		maxMetricsPerRequest: maxMetricsPerRequest,
+
+		fetchResponses: make(map[string]FetchResponse),
+		findResponses:  make(map[string]FindResponse),
+		infoResponses:  make(map[string]InfoResponse),
+		statsResponses: make(map[string]StatsResponse),
+		alwaysTimeout:  alwaysTimeout,
 	}
 }
 
@@ -119,6 +136,16 @@ func (c *DummyClient) AddFetchResponse(request *protov3.MultiFetchRequest, respo
 }
 
 func (c *DummyClient) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, *errors.Errors) {
+	if c.alwaysTimeout > 0 {
+		time.Sleep(c.alwaysTimeout)
+		return nil, nil, errors.Fatalf("timeout fetching response")
+	}
+	select {
+	case <-ctx.Done():
+		return nil, nil, errors.Fatalf("timeout fetching response")
+	default:
+	}
+
 	key := fetchRequestToKey(request)
 	r, ok := c.fetchResponses[key]
 	if ok {
@@ -138,6 +165,16 @@ func (c *DummyClient) AddFindResponse(request *protov3.MultiGlobRequest, respons
 }
 
 func (c *DummyClient) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, *errors.Errors) {
+	if c.alwaysTimeout > 0 {
+		time.Sleep(c.alwaysTimeout)
+		return nil, nil, errors.Fatalf("timeout fetching response")
+	}
+	select {
+	case <-ctx.Done():
+		return nil, nil, errors.Fatalf("timeout fetching response")
+	default:
+	}
+
 	r, ok := c.findResponses[findRequestToKey(request)]
 	if ok {
 		return r.Response, r.Stats, r.Errors

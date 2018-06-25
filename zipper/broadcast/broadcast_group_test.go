@@ -6,6 +6,7 @@ import (
 	"math"
 	"reflect"
 	"sort"
+	"sync"
 	"testing"
 	"time"
 
@@ -1198,6 +1199,150 @@ func TestFetchRequests(t *testing.T) {
 			})
 			if !reflect.DeepEqual(res, tt.expectedResponse) {
 				t.Errorf("got %v, expected %v", res, tt.expectedResponse)
+			}
+		})
+	}
+}
+
+type testCaseFetchParallel struct {
+	testCase   testCaseFetch
+	numThreads int
+	timeout    time.Duration
+}
+
+func TestFetchRequestsWithTimeout(t *testing.T) {
+	tests := []testCaseFetchParallel{
+		{
+			testCase: testCaseFetch{
+				name: "two clients, multiple requests, timeout",
+				servers: []types.ServerClient{
+					dummy.NewDummyClientWithTimeout("client1", []string{"backend1", "backend2"}, 1, 100*time.Millisecond),
+					dummy.NewDummyClientWithTimeout("client2", []string{"backend3", "backend4"}, 1, 100*time.Millisecond),
+				},
+				fetchRequest: &protov3.MultiFetchRequest{
+					Metrics: []protov3.FetchRequest{
+						{
+							Name:           "foo*",
+							StartTime:      0,
+							StopTime:       120,
+							PathExpression: "foo*",
+						},
+					},
+				},
+				fetchResponses: map[string]dummy.FetchResponse{
+					"client1": dummy.FetchResponse{
+						Response: &protov3.MultiFetchResponse{
+							Metrics: []protov3.FetchResponse{
+								{
+									Name:              "foo",
+									PathExpression:    "foo*",
+									ConsolidationFunc: "avg",
+									StartTime:         0,
+									StopTime:          120,
+									StepTime:          60,
+									XFilesFactor:      0.5,
+									Values:            []float64{0, 1, 2},
+								},
+							},
+						},
+						Stats:  &types.Stats{},
+						Errors: &errors.Errors{},
+					},
+					"client2": dummy.FetchResponse{
+						Response: &protov3.MultiFetchResponse{
+							Metrics: []protov3.FetchResponse{
+								{
+									Name:              "foo2",
+									PathExpression:    "foo*",
+									ConsolidationFunc: "avg",
+									StartTime:         0,
+									StopTime:          120,
+									StepTime:          60,
+									XFilesFactor:      0.5,
+									Values:            []float64{0, 1, 2},
+								},
+							},
+						},
+						Stats:  &types.Stats{},
+						Errors: &errors.Errors{},
+					},
+				},
+
+				expectedResponse: nil,
+			},
+			numThreads: 10,
+			timeout:    100 * time.Millisecond,
+		},
+	}
+
+	for _, tt := range tests {
+		b, err := NewBroadcastGroup(logger, tt.testCase.name, tt.testCase.servers, 60, 500, timeouts)
+		if err != nil && (err.HaveFatalErrors || len(err.Errors) > 0) {
+			t.Fatalf("error while initializing group, when it shouldn't be: %v", err)
+		}
+
+		for i := range tt.testCase.servers {
+			name := fmt.Sprintf("client%v", i+1)
+			s := tt.testCase.servers[i].(*dummy.DummyClient)
+			resp, ok := tt.testCase.fetchResponses[name]
+			if ok {
+				s.AddFetchResponse(tt.testCase.fetchRequest, resp.Response, resp.Stats, resp.Errors)
+			}
+		}
+
+		ctx := context.Background()
+
+		t.Run(tt.testCase.name, func(t *testing.T) {
+			wg := sync.WaitGroup{}
+
+			for i := 0; i < tt.numThreads; i++ {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					res, _, err := b.Fetch(ctx, tt.testCase.fetchRequest)
+					if tt.testCase.expectedErr == nil || !tt.testCase.expectedErr.HaveFatalErrors {
+						if err != nil && err.HaveFatalErrors {
+							t.Errorf("unexpected error %v, expected %v", err, tt.testCase.expectedErr)
+						}
+					} else {
+						if !errorsAreEqual(err, tt.testCase.expectedErr) {
+							t.Errorf("unexpected error %v, expected %v", err, tt.testCase.expectedErr)
+						}
+					}
+
+					if tt.testCase.expectedResponse == nil {
+						if res == nil {
+							// We expect nil here
+							return
+						} else {
+							t.Fatalf("result is not nil, but should be: %+v", res)
+						}
+					}
+
+					if res == nil {
+						t.Fatal("result is nil")
+					}
+
+					if tt.testCase.expectedResponse == nil {
+						// We expect nil here
+						return
+					}
+
+					if len(res.Metrics) != len(tt.testCase.expectedResponse.Metrics) {
+						t.Fatalf("different amount of responses %v, expected %v", res, tt.testCase.expectedResponse)
+					}
+
+					sort.Slice(res.Metrics, func(i, j int) bool {
+						return res.Metrics[i].Name < res.Metrics[j].Name
+					})
+					sort.Slice(tt.testCase.expectedResponse.Metrics, func(i, j int) bool {
+						return tt.testCase.expectedResponse.Metrics[i].Name < tt.testCase.expectedResponse.Metrics[j].Name
+					})
+					if !reflect.DeepEqual(res, tt.testCase.expectedResponse) {
+						t.Errorf("got %v, expected %v", res, tt.testCase.expectedResponse)
+					}
+				}()
+				wg.Wait()
 			}
 		})
 	}
