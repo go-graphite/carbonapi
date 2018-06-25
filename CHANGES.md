@@ -20,6 +20,8 @@ Changes
    - Add "msgpack" protocol support. This protocol is used by graphite-web and metrictank.
    - Fix format for protov2
    - Fix race condition while merging requests (@gunnihinn)
+   - Correctly batch metric fetching in protocol v2 (@gunnihinn)
+   - Fix race condition in zipper's query cache (@Civil)
    - Update vendored dependencies
 
 **1.0.0-rc.1**
