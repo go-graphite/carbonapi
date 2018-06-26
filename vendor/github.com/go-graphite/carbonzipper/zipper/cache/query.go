@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"sync"
 	"sync/atomic"
 
 	"github.com/dgryski/go-expirecache"
@@ -14,6 +15,7 @@ const (
 )
 
 type QueryItem struct {
+	sync.RWMutex
 	Key           string
 	Data          atomic.Value
 	Flags         uint64 // DataIsAvailable or QueryIsPending
@@ -39,9 +41,12 @@ func (q *QueryItem) FetchOrLock(ctx context.Context) (interface{}, bool) {
 		return nil, false
 	}
 
+	q.RLock()
+	defer q.RUnlock()
+
 	select {
 	case <-ctx.Done():
-		return nil, false
+		return nil, true
 	case <-q.QueryFinished:
 		break
 	}
@@ -54,10 +59,12 @@ func (q *QueryItem) StoreAbort() {
 	if d != nil {
 		return
 	}
-	oldChan := q.QueryFinished
+	atomic.StoreUint64(&q.Flags, Empty)
+	close(q.QueryFinished)
+
+	q.Lock()
 	q.QueryFinished = make(chan struct{})
-	close(oldChan)
-	atomic.StoreUint64(&q.Flags, 0)
+	q.Unlock()
 }
 
 func (q *QueryItem) StoreAndUnlock(data interface{}, size uint64) {

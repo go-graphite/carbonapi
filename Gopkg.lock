@@ -127,7 +127,7 @@
     "zipper/protocols/v3",
     "zipper/types"
   ]
-  revision = "86c69707e3ae7bf14e8eaaf2c51e48a9679aa47a"
+  revision = "fc5f7798c9145d9afda31eb4f5c94d225a265c3c"
 
 [[projects]]
   branch = "master"
