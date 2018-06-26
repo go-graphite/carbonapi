@@ -198,7 +198,7 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	res, ok := item.FetchOrLock(ctx)
 	if ok {
 		if res == nil {
-			return nil, nil, errors.Fatalf("timeout")
+			return nil, nil, errors.Fatal("timeout")
 		}
 		logger.Debug("cache hit")
 		result := res.(*types.ServerFetchResponse)
@@ -318,7 +318,7 @@ func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	res, ok := item.FetchOrLock(ctx)
 	if ok {
 		if res == nil {
-			return nil, nil, errors.Fatalf("timeout")
+			return nil, nil, errors.Fatal("timeout")
 		}
 		result := res.(*types.ServerFindResponse)
 		logger.Debug("cache hit",
@@ -431,7 +431,7 @@ func (bg *BroadcastGroup) Info(ctx context.Context, request *protov3.MultiMetric
 	res, ok := item.FetchOrLock(ctx)
 	if ok {
 		if res == nil {
-			return nil, nil, errors.Fatalf("timeout")
+			return nil, nil, errors.Fatal("timeout")
 		}
 		logger.Debug("cache hit")
 		result := res.(*types.ServerInfoResponse)
@@ -528,7 +528,7 @@ func (bg *BroadcastGroup) ProbeTLDs(ctx context.Context) ([]string, *errors.Erro
 	res, ok := item.FetchOrLock(ctx)
 	if ok {
 		if res == nil {
-			return nil, errors.Fatalf("timeout")
+			return nil, errors.Fatal("timeout")
 		}
 		logger.Debug("cache hit")
 		result := res.([]string)
