@@ -196,7 +196,10 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	key := fetchRequestToKey(bg.groupName, request)
 	item := bg.fetchCache.GetQueryItem(key)
 	res, ok := item.FetchOrLock(ctx)
-	if ok && res != nil {
+	if ok {
+		if res == nil {
+			return nil, nil, errors.Fatalf("timeout")
+		}
 		logger.Debug("cache hit")
 		result := res.(*types.ServerFetchResponse)
 		return result.Response, result.Stats, nil
@@ -255,7 +258,6 @@ GATHER:
 
 	if len(result.Response.Metrics) == 0 {
 		logger.Error("failed to get any response")
-		item.StoreAbort()
 
 		return nil, nil, err.Addf("failed to get any response from backend group: %v", bg.groupName)
 	}
@@ -314,7 +316,10 @@ func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	key := findRequestToKey(bg.groupName, request)
 	item := bg.findCache.GetQueryItem(key)
 	res, ok := item.FetchOrLock(ctx)
-	if ok && res != nil {
+	if ok {
+		if res == nil {
+			return nil, nil, errors.Fatalf("timeout")
+		}
 		result := res.(*types.ServerFindResponse)
 		logger.Debug("cache hit",
 			zap.Any("result", result),
@@ -383,7 +388,6 @@ GATHER:
 	)
 
 	if result.Response == nil {
-		item.StoreAbort()
 		return &protov3.MultiGlobResponse{}, result.Stats, err.Addf("failed to fetch response from the server %v", bg.groupName)
 	}
 	item.StoreAndUnlock(result, uint64(result.Response.Size()))
@@ -426,6 +430,9 @@ func (bg *BroadcastGroup) Info(ctx context.Context, request *protov3.MultiMetric
 	item := bg.infoCache.GetQueryItem(key)
 	res, ok := item.FetchOrLock(ctx)
 	if ok {
+		if res == nil {
+			return nil, nil, errors.Fatalf("timeout")
+		}
 		logger.Debug("cache hit")
 		result := res.(*types.ServerInfoResponse)
 		return result.Response, result.Stats, nil
@@ -520,6 +527,9 @@ func (bg *BroadcastGroup) ProbeTLDs(ctx context.Context) ([]string, *errors.Erro
 	item := bg.probeCache.GetQueryItem(key)
 	res, ok := item.FetchOrLock(ctx)
 	if ok {
+		if res == nil {
+			return nil, errors.Fatalf("timeout")
+		}
 		logger.Debug("cache hit")
 		result := res.([]string)
 
