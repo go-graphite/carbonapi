@@ -23,6 +23,7 @@ Changes
    - Correctly batch metric fetching in protocol v2 (@gunnihinn)
    - Fix race condition in zipper's query cache (@Civil)
    - Update vendored dependencies
+   - Fix decode for nil messages in msgpack
 
 **1.0.0-rc.1**
    - Fix timeout sanitization logic
