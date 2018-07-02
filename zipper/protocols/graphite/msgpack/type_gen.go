@@ -58,10 +58,10 @@ func (z *GraphiteFetchResponse) DecodeMsg(dc *msgp.Reader) (err error) {
 			if cap(z.Values) >= int(zb0002) {
 				z.Values = (z.Values)[:zb0002]
 			} else {
-				z.Values = make([]float64, zb0002)
+				z.Values = make([]interface{}, zb0002)
 			}
 			for za0001 := range z.Values {
-				z.Values[za0001], err = dc.ReadFloat64()
+				z.Values[za0001], err = dc.ReadIntf()
 				if err != nil {
 					return
 				}
@@ -134,7 +134,7 @@ func (z *GraphiteFetchResponse) EncodeMsg(en *msgp.Writer) (err error) {
 		return
 	}
 	for za0001 := range z.Values {
-		err = en.WriteFloat64(z.Values[za0001])
+		err = en.WriteIntf(z.Values[za0001])
 		if err != nil {
 			return
 		}
@@ -165,7 +165,10 @@ func (z *GraphiteFetchResponse) MarshalMsg(b []byte) (o []byte, err error) {
 	o = append(o, 0xa6, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x73)
 	o = msgp.AppendArrayHeader(o, uint32(len(z.Values)))
 	for za0001 := range z.Values {
-		o = msgp.AppendFloat64(o, z.Values[za0001])
+		o, err = msgp.AppendIntf(o, z.Values[za0001])
+		if err != nil {
+			return
+		}
 	}
 	return
 }
@@ -220,10 +223,10 @@ func (z *GraphiteFetchResponse) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			if cap(z.Values) >= int(zb0002) {
 				z.Values = (z.Values)[:zb0002]
 			} else {
-				z.Values = make([]float64, zb0002)
+				z.Values = make([]interface{}, zb0002)
 			}
 			for za0001 := range z.Values {
-				z.Values[za0001], bts, err = msgp.ReadFloat64Bytes(bts)
+				z.Values[za0001], bts, err = msgp.ReadIntfBytes(bts)
 				if err != nil {
 					return
 				}
@@ -241,7 +244,10 @@ func (z *GraphiteFetchResponse) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *GraphiteFetchResponse) Msgsize() (s int) {
-	s = 1 + 6 + msgp.Uint32Size + 4 + msgp.Uint32Size + 5 + msgp.Uint32Size + 5 + msgp.StringPrefixSize + len(z.Name) + 15 + msgp.StringPrefixSize + len(z.PathExpression) + 7 + msgp.ArrayHeaderSize + (len(z.Values) * (msgp.Float64Size))
+	s = 1 + 6 + msgp.Uint32Size + 4 + msgp.Uint32Size + 5 + msgp.Uint32Size + 5 + msgp.StringPrefixSize + len(z.Name) + 15 + msgp.StringPrefixSize + len(z.PathExpression) + 7 + msgp.ArrayHeaderSize
+	for za0001 := range z.Values {
+		s += msgp.GuessSize(z.Values[za0001])
+	}
 	return
 }
 
