@@ -2,6 +2,7 @@ package v2
 
 import (
 	"context"
+	"math"
 	"net"
 	"net/http"
 	"net/url"
@@ -144,6 +145,14 @@ func (c *GraphiteGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRe
 		}
 
 		for _, m := range metrics {
+			vals := make([]float64, len(m.Values))
+			for i, vIface := range m.Values {
+				if v, ok := vIface.(float64); ok {
+					vals[i] = v
+				} else {
+					vals[i] = math.NaN()
+				}
+			}
 			r.Metrics = append(r.Metrics, protov3.FetchResponse{
 				Name:              m.Name,
 				PathExpression:    pathExpr,
@@ -151,7 +160,7 @@ func (c *GraphiteGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRe
 				StopTime:          int64(m.End),
 				StartTime:         int64(m.Start),
 				StepTime:          int64(m.Step),
-				Values:            m.Values,
+				Values:            vals,
 				XFilesFactor:      0.0,
 			})
 		}
