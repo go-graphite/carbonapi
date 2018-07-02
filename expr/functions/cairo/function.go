@@ -18,7 +18,7 @@ func GetOrder() interfaces.Order {
 func New(configFile string) []interfaces.FunctionMetadata {
 	res := make([]interfaces.FunctionMetadata, 0)
 	f := &cairo{}
-	functions := []string{"example", "examples"}
+	functions := []string{"color", "stacked", "areaBetween", "alpha", "dashed", "drawAsInfinite", "secondYAxis", "lineWidth", "threshold"}
 	for _, n := range functions {
 		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
 	}
