@@ -10,12 +10,12 @@ import (
 )
 
 type Config struct {
-	Logger           string `toml:"logger"`            // handler name, default empty
-	File             string `toml:"file"`              // filename, "stderr", "stdout", "empty" (=="stderr"), "none"
-	Level            string `toml:"level"`             // "debug", "info", "warn", "error", "dpanic", "panic", and "fatal"
-	Encoding         string `toml:"encoding"`          // "json", "console"
-	EncodingTime     string `toml:"encoding-time"`     // "millis", "nanos", "epoch", "iso8601"
-	EncodingDuration string `toml:"encoding-duration"` // "seconds", "nanos", "string"
+	Logger           string `toml:"logger" json:"logger"`                       // handler name, default empty
+	File             string `toml:"file" json:"file"`                           // filename, "stderr", "stdout", "empty" (=="stderr"), "none"
+	Level            string `toml:"level" json:"level"`                         // "debug", "info", "warn", "error", "dpanic", "panic", and "fatal"
+	Encoding         string `toml:"encoding" json:"encoding"`                   // "json", "console"
+	EncodingTime     string `toml:"encoding-time" json:"encoding-time"`         // "millis", "nanos", "epoch", "iso8601"
+	EncodingDuration string `toml:"encoding-duration" json:"encoding-duration"` // "seconds", "nanos", "string"
 }
 
 func NewConfig() Config {
