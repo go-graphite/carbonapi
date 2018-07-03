@@ -8,7 +8,7 @@ type GraphiteFetchResponse struct {
 	Step           uint32    `msg:"step"`
 	Name           string    `msg:"name"`
 	PathExpression string    `msg:"pathExpression"`
-	Values         []float64 `msg:"values"`
+	Values         []interface{} `msg:"values"`
 }
 
 type MultiGraphiteFetchResponse []GraphiteFetchResponse
