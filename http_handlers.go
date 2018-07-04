@@ -127,8 +127,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := util.SetUUID(r.Context(), uuid.String())
 	username, _, _ := r.BasicAuth()
 
-	logger := zapwriter.Logger("render")
-	logger.With(
+	logger := zapwriter.Logger("render").With(
 		zap.String("carbonapi_uuid", uuid.String()),
 		zap.String("username", username),
 	)
