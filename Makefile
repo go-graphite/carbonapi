@@ -3,8 +3,10 @@ VERSION ?= $(shell git describe --abbrev=4 --dirty --always --tags)
 
 GO ?= go
 
+PKG_CARBONZIPPER=github.com/go-graphite/carbonzipper/cmd/carbonzipper
+
 carbonzipper: dep
-	$(GO) build --ldflags '-X main.BuildVersion=$(VERSION)'
+	$(GO) build --ldflags '-X main.BuildVersion=$(VERSION)' $(PKG_CARBONZIPPER)
 
 test: dep
 	$(GO) test -race
