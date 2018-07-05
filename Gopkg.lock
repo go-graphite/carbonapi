@@ -127,7 +127,7 @@
     "zipper/protocols/v3",
     "zipper/types"
   ]
-  revision = "881d7a0473af59cc4140ede2d5c5303f48515031"
+  revision = "f04bb5e35e799f75a01dd7cf1d46e2f6ca0ae9d5"
 
 [[projects]]
   name = "github.com/go-graphite/protocol"
@@ -185,6 +185,15 @@
     "json/token"
   ]
   revision = "ef8a98b0bbce4a65b5aa4c368430a80ddc533168"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/lib/pq"
+  packages = [
+    ".",
+    "oid"
+  ]
+  revision = "90697d60dd844d5ef6ff15135d0203f65d2f53b8"
 
 [[projects]]
   branch = "master"
@@ -337,13 +346,13 @@
     "internal/timeseries",
     "trace"
   ]
-  revision = "87b3feba568e144938625fc5d80ec92566c1a8fe"
+  revision = "ed29d75add3d7c4bf7ca65aac0c6df3d1420216f"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "7138fd3d9dc8335c567ca206f4333fb75eb05d56"
+  revision = "151529c776cdc58ddbe7963ba9af779f3577b419"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -433,6 +442,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c6ad86db9cd4a32afb31bda880abc23c42f3314dd8f8ad5cffcc24aa32c996a5"
+  inputs-digest = "e3e770713fed37dd98dc8060b0d0cad72abea4ea88f8133328f6eabb1e252662"
   solver-name = "gps-cdcl"
   solver-version = 1
