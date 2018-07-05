@@ -10,7 +10,9 @@ before_install:
   - sudo apt-get -qq update
   - sudo apt-get install libcairo2-dev mercurial pkg-config wget -y
   - make test
-  - wget "https://raw.githubusercontent.com/go-graphite/helper-scripts/master/travis-docker-build.sh" && chmod +x ./travis-docker-build.sh && ./travis-docker-build.sh carbonapi
+  - wget "https://raw.githubusercontent.com/go-graphite/helper-scripts/master/travis-docker-build.sh" && chmod +x ./travis-docker-build.sh
+  - ./travis-docker-build.sh carbonapi
+  - ./travis-docker-build.sh carbonzipper
 
 git:
   depth: 200

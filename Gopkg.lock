@@ -45,6 +45,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/dgryski/httputil"
+  packages = ["."]
+  revision = "189c2918cd08517364b3ede5417684ca7a7341fe"
+
+[[projects]]
+  branch = "master"
   name = "github.com/dustin/go-humanize"
   packages = ["."]
   revision = "02af3965c54e8cacf948b97fef38925c4120652c"
@@ -115,6 +121,7 @@
     "zipper/broadcast",
     "zipper/cache",
     "zipper/config",
+    "zipper/dummy",
     "zipper/errors",
     "zipper/helper",
     "zipper/httpHeaders",
@@ -188,6 +195,18 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/lestrrat/go-file-rotatelogs"
+  packages = ["."]
+  revision = "d3151e2a480fdcd05fb97102f5310a47d96274c4"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/lestrrat/go-strftime"
+  packages = ["."]
+  revision = "ba3bf9c1d0421aa146564a632931730344f1f9f1"
+
+[[projects]]
+  branch = "master"
   name = "github.com/lib/pq"
   packages = [
     ".",
@@ -245,6 +264,12 @@
   packages = ["."]
   revision = "bb6d471dc95d4fe11e432687f8b70ff496cf3136"
   version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
 
 [[projects]]
   name = "github.com/pmezard/go-difflib"
@@ -442,6 +467,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2408ca78ad4a3c7e39a6ca91910c685005f7090367353308828cf8148fa26c5b"
+  inputs-digest = "d5624766b7e9c9f2da264b87de2b151e9c3cea48f6dd716b997f7fa1b81066e8"
   solver-name = "gps-cdcl"
   solver-version = 1
