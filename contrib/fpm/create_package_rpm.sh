@@ -1,4 +1,17 @@
-#!/bin/bash -x
+#!/usr/bin/env bash
+VERSION_GIT=$(git describe --abbrev=4 --always --tags | rev | sed 's/-/./' | rev) 
+VERSION=$(cut -d'-' -f 1 <<< ${VERSION_GIT})
+RELEASE=$(cut -d'-' -f 2 <<< ${VERSION_GIT})
+if [[ "${VERSION}" == "${RELEASE}" ]]; then
+       RELEASE="1"
+else
+       REL_VERSION=$(cut -d'.' -f 1 <<< ${RELEASE})
+       REL_COMMIT=$(cut -d'.' -f 2 <<< ${RELEASE})
+       RELEASE="$((REL_VERSION+1)).${REL_COMMIT}"
+fi
+TMPDIR=$(mktemp -d)
+NAME="carbonzipper"
+
 die() {
     if [[ $1 -eq 0 ]]; then
         rm -rf "${TMPDIR}"
@@ -9,42 +22,27 @@ die() {
     exit $1
 }
 
-pwd
-VERSION_GIT=$(git describe --abbrev=6 --always --tags | rev | sed 's/-/./' | rev)
-VERSION=$(cut -d'-' -f 1 <<< ${VERSION_GIT})
-RELEASE=$(cut -d'-' -f 2 <<< ${VERSION_GIT})
-if [[ "${VERSION}" == "${RELEASE}" ]]; then
-       RELEASE="1"
-else
-       REL_VERSION=$(cut -d'.' -f 1 <<< ${RELEASE})
-       REL_COMMIT=$(cut -d'.' -f 2 <<< ${RELEASE})
-       RELEASE="$((REL_VERSION+1)).${REL_COMMIT}"
-fi
-grep '^[0-9]\+\.[0-9]\+\.' <<< ${VERSION} || {
-	echo "Revision: $(git rev-parse HEAD)";
-	echo "Version: $(git describe --abbrev=6 --always --tags)";
-	echo "Known tags: $(git tag)";
-	echo;
-	echo;
-	die 1 "Can't get latest version from git";
-}
-
-TMPDIR=$(mktemp -d)
+MAJOR_DISTRO_VERSION=$(lsb_release -s -r | cut -c 1)
 
 make || die 1 "Can't build package"
 make DESTDIR="${TMPDIR}" install || die 1 "Can't install package"
-mkdir -p "${TMPDIR}"/etc/systemd/system/
 mkdir -p "${TMPDIR}"/etc/sysconfig/
-cp ./contrib/rhel/carbonapi.service "${TMPDIR}"/etc/systemd/system/
-cp ./contrib/common/carbonapi.env "${TMPDIR}"/etc/sysconfig/carbonapi
+cp ./contrib/common/${NAME}.env "${TMPDIR}"/etc/sysconfig/${NAME}
+if [[ "${MAJOR_DISTRO_VERSION}" -le 6 ]]; then
+	mkdir -p "${TMPDIR}"/init.d
+	cp ./contrib/rhel/${NAME}.init "${TMPDIR}"/etc/init.d/${NAME}
+else
+	mkdir -p "${TMPDIR}"/etc/systemd/system/
+	cp ./contrib/rhel/${NAME}.service "${TMPDIR}"/etc/systemd/system/
+fi
 
-fpm -s dir -t rpm -n carbonapi -v ${VERSION} -C ${TMPDIR} \
+
+fpm -s dir -t rpm -n ${NAME} -v ${VERSION} -C ${TMPDIR} \
     --iteration ${RELEASE} \
-    -p carbonapi-VERSION-ITERATION.ARCH.rpm \
-    -d "cairo" \
+    -p ${NAME}_VERSION-ITERATION_ARCH.rpm \
     --after-install contrib/fpm/systemd-reload.sh \
-    --description "carbonapi: replacement graphite API server" \
-    --license BSD-2 \
+    --description "carbonserver proxy for graphite-web and carbonapi" \
+    --license MIT \
     --url "https://github.com/go-graphite/" \
     "${@}" \
     etc usr/bin usr/share || die "Can't create package!"

@@ -45,6 +45,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/dgryski/httputil"
+  packages = ["."]
+  revision = "189c2918cd08517364b3ede5417684ca7a7341fe"
+
+[[projects]]
+  branch = "master"
   name = "github.com/dustin/go-humanize"
   packages = ["."]
   revision = "02af3965c54e8cacf948b97fef38925c4120652c"
@@ -99,35 +105,6 @@
   packages = ["."]
   revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
   version = "v1.4.7"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/go-graphite/carbonzipper"
-  packages = [
-    "cache",
-    "intervalset",
-    "limiter",
-    "mstats",
-    "pathcache",
-    "util/apictx",
-    "util/zipperctx",
-    "zipper",
-    "zipper/broadcast",
-    "zipper/cache",
-    "zipper/config",
-    "zipper/errors",
-    "zipper/helper",
-    "zipper/httpHeaders",
-    "zipper/metadata",
-    "zipper/protocols/auto",
-    "zipper/protocols/graphite",
-    "zipper/protocols/graphite/msgpack",
-    "zipper/protocols/grpc",
-    "zipper/protocols/v2",
-    "zipper/protocols/v3",
-    "zipper/types"
-  ]
-  revision = "881d7a0473af59cc4140ede2d5c5303f48515031"
 
 [[projects]]
   name = "github.com/go-graphite/protocol"
@@ -188,6 +165,27 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/lestrrat/go-file-rotatelogs"
+  packages = ["."]
+  revision = "d3151e2a480fdcd05fb97102f5310a47d96274c4"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/lestrrat/go-strftime"
+  packages = ["."]
+  revision = "ba3bf9c1d0421aa146564a632931730344f1f9f1"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/lib/pq"
+  packages = [
+    ".",
+    "oid"
+  ]
+  revision = "90697d60dd844d5ef6ff15135d0203f65d2f53b8"
+
+[[projects]]
+  branch = "master"
   name = "github.com/lomik/og-rek"
   packages = ["."]
   revision = "628eefeb8d8065e3c4300d3556181a255d1ab4ff"
@@ -236,6 +234,12 @@
   packages = ["."]
   revision = "bb6d471dc95d4fe11e432687f8b70ff496cf3136"
   version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
 
 [[projects]]
   name = "github.com/pmezard/go-difflib"
@@ -337,13 +341,13 @@
     "internal/timeseries",
     "trace"
   ]
-  revision = "87b3feba568e144938625fc5d80ec92566c1a8fe"
+  revision = "ed29d75add3d7c4bf7ca65aac0c6df3d1420216f"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "7138fd3d9dc8335c567ca206f4333fb75eb05d56"
+  revision = "151529c776cdc58ddbe7963ba9af779f3577b419"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -433,6 +437,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c6ad86db9cd4a32afb31bda880abc23c42f3314dd8f8ad5cffcc24aa32c996a5"
+  inputs-digest = "4e4fa1c570cebf3bed6470f494925d5f56f679412f1133e749651741eeb9c089"
   solver-name = "gps-cdcl"
   solver-version = 1

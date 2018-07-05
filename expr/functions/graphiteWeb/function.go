@@ -16,7 +16,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"github.com/go-graphite/carbonzipper/limiter"
+	"github.com/go-graphite/carbonapi/limiter"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
 	"github.com/spf13/viper"

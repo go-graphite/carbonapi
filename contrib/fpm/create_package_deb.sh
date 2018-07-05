@@ -1,4 +1,10 @@
-#!/bin/bash -x
+#!/usr/bin/env bash
+VERSION=$(git describe --abbrev=4 --always --tags)
+TMPDIR=$(mktemp -d)
+
+DISTRO=$(lsb_release -i -s)
+RELEASE=$(lsb_release -r -s)
+NAME="carbonzipper"
 
 die() {
     if [[ $1 -eq 0 ]]; then
@@ -9,23 +15,6 @@ die() {
     echo "$2"
     exit $1
 }
-
-VERSION=$(git describe --abbrev=6 --always --tags)
-echo "version: ${VERSION}"
-grep '^[0-9]\+\.[0-9]\+\.' <<< ${VERSION} || {
-	echo "Revision: $(git rev-parse HEAD)";
-	echo "Version: $(git describe --abbrev=6 --always --tags)";
-	echo "Known tags: $(git tag)";
-	echo;
-	echo;
-	die 1 "Can't get latest version from git";
-}
-
-TMPDIR=$(mktemp -d)
-
-DISTRO=$(lsb_release -i -s)
-RELEASE=$(lsb_release -r -s)
-
 
 make || die 1 "Can't build package"
 make DESTDIR="${TMPDIR}" install || die 1 "Can't install package"
@@ -40,24 +29,19 @@ fi
 if [[ ${is_upstart} -eq 0 ]]; then
        mkdir -p "${TMPDIR}"/etc/systemd/system/
        mkdir -p "${TMPDIR}"/etc/default/
-       cp ./contrib/deb/carbonapi.service "${TMPDIR}"/etc/systemd/system/
-       cp ./contrib/common/carbonapi.env "${TMPDIR}"/etc/default/carbonapi
+       cp ./contrib/deb/${NAME}.service "${TMPDIR}"/etc/systemd/system/
+       cp ./contrib/common/${NAME}.env "${TMPDIR}"/etc/default/${NAME}
 else
        mkdir -p "${TMPDIR}"/etc/init/
-       cp ./contrib/deb/carbonapi.conf "${TMPDIR}"/etc/init/
+       cp ./contrib/deb/${NAME}.conf "${TMPDIR}"/etc/init/
 fi
 
-mkdir -p "${TMPDIR}"/var/log/carbonapi/
-mkdir -p "${TMPDIR}"/etc/logrotate.d/
-cp ./contrib/deb/carbonapi.logrotate "${TMPDIR}"/etc/logrotate.d/carbonapi
-
-fpm -s dir -t deb -n carbonapi -v ${VERSION} -C ${TMPDIR} \
-    -p carbonapi_VERSION_ARCH.deb \
-    -d "libcairo2 > 1.11" \
+fpm -s dir -t deb -n ${NAME} -v ${VERSION} -C ${TMPDIR} \
+    -p ${NAME}_VERSION_ARCH.deb \
     --no-deb-systemd-restart-after-upgrade \
     --after-install contrib/fpm/systemd-reload.sh \
-    --description "carbonapi: replacement graphite API server" \
-    --license BSD-2 \
+    --description "carbonserver proxy for graphite-web and carbonapi" \
+    --license MIT \
     --url "https://github.com/go-graphite/" \
     "${@}" \
     etc usr/bin usr/share || die 1 "Can't create package!"
