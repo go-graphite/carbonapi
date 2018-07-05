@@ -7,11 +7,13 @@ VERSION ?= $(shell git describe --abbrev=4 --dirty --always --tags)
 
 GO ?= go
 
+PKG_CARBONAPI=github.com/go-graphite/carbonapi/cmd/carbonapi
+
 carbonapi:
-	PKG_CONFIG_PATH="$(EXTRA_PKG_CONFIG_PATH)" $(GO) build -v -tags cairo -ldflags '-X main.BuildVersion=$(VERSION)'
+	PKG_CONFIG_PATH="$(EXTRA_PKG_CONFIG_PATH)" $(GO) build -v -tags cairo -ldflags '-X main.BuildVersion=$(VERSION)' $(PKG_CARBONAPI)
 
 debug:
-	PKG_CONFIG_PATH="$(EXTRA_PKG_CONFIG_PATH)" $(GO) build -v -tags cairo -ldflags '-X main.BuildVersion=$(VERSION)' -gcflags=all='-l -N'
+	PKG_CONFIG_PATH="$(EXTRA_PKG_CONFIG_PATH)" $(GO) build -v -tags cairo -ldflags '-X main.BuildVersion=$(VERSION)' -gcflags=all='-l -N' $(PKG_CARBONAPI)
 
 nocairo:
 	$(GO) build -ldflags '-X main.BuildVersion=$(VERSION)'
