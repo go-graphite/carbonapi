@@ -8,12 +8,12 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/go-graphite/carbonzipper/limiter"
-	"github.com/go-graphite/carbonzipper/zipper/errors"
-	"github.com/go-graphite/carbonzipper/zipper/helper"
-	"github.com/go-graphite/carbonzipper/zipper/httpHeaders"
-	"github.com/go-graphite/carbonzipper/zipper/metadata"
-	"github.com/go-graphite/carbonzipper/zipper/types"
+	"github.com/go-graphite/carbonapi/limiter"
+	"github.com/go-graphite/carbonapi/zipper/errors"
+	"github.com/go-graphite/carbonapi/zipper/helper"
+	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
+	"github.com/go-graphite/carbonapi/zipper/metadata"
+	"github.com/go-graphite/carbonapi/zipper/types"
 	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 

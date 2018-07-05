@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/go-graphite/carbonzipper/limiter"
-	"github.com/go-graphite/carbonzipper/zipper/errors"
-	"github.com/go-graphite/carbonzipper/zipper/helper"
-	"github.com/go-graphite/carbonzipper/zipper/httpHeaders"
-	"github.com/go-graphite/carbonzipper/zipper/metadata"
-	"github.com/go-graphite/carbonzipper/zipper/types"
+	"github.com/go-graphite/carbonapi/limiter"
+	"github.com/go-graphite/carbonapi/zipper/errors"
+	"github.com/go-graphite/carbonapi/zipper/helper"
+	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
+	"github.com/go-graphite/carbonapi/zipper/metadata"
+	"github.com/go-graphite/carbonapi/zipper/types"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
 	"go.uber.org/zap"

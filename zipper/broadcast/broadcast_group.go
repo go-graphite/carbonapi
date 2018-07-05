@@ -5,11 +5,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-graphite/carbonzipper/limiter"
-	"github.com/go-graphite/carbonzipper/pathcache"
-	"github.com/go-graphite/carbonzipper/zipper/cache"
-	"github.com/go-graphite/carbonzipper/zipper/errors"
-	"github.com/go-graphite/carbonzipper/zipper/types"
+	"github.com/go-graphite/carbonapi/limiter"
+	"github.com/go-graphite/carbonapi/pathcache"
+	"github.com/go-graphite/carbonapi/zipper/cache"
+	"github.com/go-graphite/carbonapi/zipper/errors"
+	"github.com/go-graphite/carbonapi/zipper/types"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
 	"go.uber.org/zap"

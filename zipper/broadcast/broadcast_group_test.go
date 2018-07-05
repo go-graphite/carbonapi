@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-graphite/carbonzipper/zipper/dummy"
-	"github.com/go-graphite/carbonzipper/zipper/errors"
-	"github.com/go-graphite/carbonzipper/zipper/types"
+	"github.com/go-graphite/carbonapi/zipper/dummy"
+	"github.com/go-graphite/carbonapi/zipper/errors"
+	"github.com/go-graphite/carbonapi/zipper/types"
 
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"

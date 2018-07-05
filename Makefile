@@ -19,7 +19,7 @@ debug:
 nocairo:
 	$(GO) build -ldflags '-X main.BuildVersion=$(VERSION)' $(PKG_CARBONAPI)
 
-carbonzipper: dep
+carbonzipper:
 	$(GO) build --ldflags '-X main.BuildVersion=$(VERSION)' $(PKG_CARBONZIPPER)
 
 test:

@@ -3,7 +3,7 @@ package config
 import (
 	"time"
 
-	"github.com/go-graphite/carbonzipper/zipper/types"
+	"github.com/go-graphite/carbonapi/zipper/types"
 )
 
 // Config is a structure that contains zipper-related configuration bits

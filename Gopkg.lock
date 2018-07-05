@@ -107,36 +107,6 @@
   version = "v1.4.7"
 
 [[projects]]
-  branch = "gmagnusson/repo-merge"
-  name = "github.com/go-graphite/carbonzipper"
-  packages = [
-    "cache",
-    "intervalset",
-    "limiter",
-    "mstats",
-    "pathcache",
-    "util/apictx",
-    "util/zipperctx",
-    "zipper",
-    "zipper/broadcast",
-    "zipper/cache",
-    "zipper/config",
-    "zipper/dummy",
-    "zipper/errors",
-    "zipper/helper",
-    "zipper/httpHeaders",
-    "zipper/metadata",
-    "zipper/protocols/auto",
-    "zipper/protocols/graphite",
-    "zipper/protocols/graphite/msgpack",
-    "zipper/protocols/grpc",
-    "zipper/protocols/v2",
-    "zipper/protocols/v3",
-    "zipper/types"
-  ]
-  revision = "ef88d4c37691b67955d5d7ec79b459026930ff49"
-
-[[projects]]
   name = "github.com/go-graphite/protocol"
   packages = [
     "carbonapi_v2_pb",
@@ -467,6 +437,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d5624766b7e9c9f2da264b87de2b151e9c3cea48f6dd716b997f7fa1b81066e8"
+  inputs-digest = "4e4fa1c570cebf3bed6470f494925d5f56f679412f1133e749651741eeb9c089"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -70,10 +70,6 @@
   name = "github.com/facebookgo/pidfile"
 
 [[constraint]]
-  branch = "gmagnusson/repo-merge"
-  name = "github.com/go-graphite/carbonzipper"
-
-[[constraint]]
   branch = "master"
   name = "github.com/go-graphite/protocol"
 

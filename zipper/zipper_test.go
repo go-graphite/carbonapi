@@ -5,8 +5,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/go-graphite/carbonzipper/zipper/errors"
-	"github.com/go-graphite/carbonzipper/zipper/types"
+	"github.com/go-graphite/carbonapi/zipper/errors"
+	"github.com/go-graphite/carbonapi/zipper/types"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 

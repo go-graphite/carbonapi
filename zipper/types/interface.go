@@ -3,7 +3,7 @@ package types
 import (
 	"context"
 
-	"github.com/go-graphite/carbonzipper/zipper/errors"
+	"github.com/go-graphite/carbonapi/zipper/errors"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 

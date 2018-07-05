@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/go-graphite/carbonapi/expr/types"
-	realZipper "github.com/go-graphite/carbonzipper/zipper"
-	zipperTypes "github.com/go-graphite/carbonzipper/zipper/types"
+	realZipper "github.com/go-graphite/carbonapi/zipper"
+	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
 	"github.com/stretchr/testify/assert"

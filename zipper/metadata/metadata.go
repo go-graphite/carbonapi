@@ -3,9 +3,9 @@ package metadata
 import (
 	"sync"
 
-	"github.com/go-graphite/carbonzipper/limiter"
-	"github.com/go-graphite/carbonzipper/zipper/errors"
-	"github.com/go-graphite/carbonzipper/zipper/types"
+	"github.com/go-graphite/carbonapi/limiter"
+	"github.com/go-graphite/carbonapi/zipper/errors"
+	"github.com/go-graphite/carbonapi/zipper/types"
 	"go.uber.org/zap"
 )
 

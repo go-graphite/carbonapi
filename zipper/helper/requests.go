@@ -10,11 +10,11 @@ import (
 	"net/url"
 	"sync/atomic"
 
-	"github.com/go-graphite/carbonzipper/limiter"
-	cu "github.com/go-graphite/carbonzipper/util/apictx"
-	util "github.com/go-graphite/carbonzipper/util/zipperctx"
-	"github.com/go-graphite/carbonzipper/zipper/errors"
-	"github.com/go-graphite/carbonzipper/zipper/types"
+	"github.com/go-graphite/carbonapi/limiter"
+	cu "github.com/go-graphite/carbonapi/util/apictx"
+	util "github.com/go-graphite/carbonapi/util/zipperctx"
+	"github.com/go-graphite/carbonapi/zipper/errors"
+	"github.com/go-graphite/carbonapi/zipper/types"
 	"go.uber.org/zap"
 )
 
