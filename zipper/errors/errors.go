@@ -41,7 +41,7 @@ func Fatal(err string) *Errors {
 func Fatalf(format string, args ...interface{}) *Errors {
 	return &Errors{
 		HaveFatalErrors: true,
-		Errors:          []error{fmt.Errorf(format, args)},
+		Errors:          []error{fmt.Errorf(format, args...)},
 	}
 }
 
@@ -55,7 +55,7 @@ func Error(err string) *Errors {
 func Errorf(format string, args ...interface{}) *Errors {
 	return &Errors{
 		HaveFatalErrors: false,
-		Errors:          []error{fmt.Errorf(format, args)},
+		Errors:          []error{fmt.Errorf(format, args...)},
 	}
 }
 
@@ -77,7 +77,7 @@ func (e *Errors) Add(err error) *Errors {
 }
 
 func (e *Errors) Addf(format string, args ...interface{}) *Errors {
-	e.Errors = append(e.Errors, fmt.Errorf(format, args))
+	e.Errors = append(e.Errors, fmt.Errorf(format, args...))
 	return e
 }
 
