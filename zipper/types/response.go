@@ -129,7 +129,8 @@ func MergeFetchResponses(m1, m2 *protov3.FetchResponse) *errors.Errors {
 			interpolate = true
 		} else {
 			if m1.StartTime == m2.StartTime {
-				for i := 0; i < len(m1.Values)-len(m2.Values); i++ {
+				d := len(m1.Values) - len(m2.Values)
+				for i := 0; i < d; i++ {
 					m2.Values = append(m2.Values, math.NaN())
 				}
 
