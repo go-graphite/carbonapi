@@ -7,11 +7,11 @@ import (
 
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/pathcache"
-	"github.com/go-graphite/carbonapi/zipper/cache"
 	"github.com/go-graphite/carbonapi/zipper/errors"
 	"github.com/go-graphite/carbonapi/zipper/types"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
+	"github.com/go-graphite/carbonapi/zipper/cache"
 	"go.uber.org/zap"
 )
 
@@ -27,7 +27,6 @@ type BroadcastGroup struct {
 
 	infoCache  *cache.QueryCache
 	findCache  *cache.QueryCache
-	fetchCache *cache.QueryCache
 	probeCache *cache.QueryCache
 }
 
@@ -59,7 +58,6 @@ func NewBroadcastGroupWithLimiter(logger *zap.Logger, groupName string, servers 
 		// TODO: remove hardcode
 		infoCache:  cache.NewQueryCache(1024, 5),
 		findCache:  cache.NewQueryCache(1024, 5),
-		fetchCache: cache.NewQueryCache(25600, 1),
 		probeCache: cache.NewQueryCache(1024, 10),
 	}
 
@@ -193,19 +191,6 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	logger := bg.logger.With(zap.String("type", "fetch"), zap.Strings("request", requestNames))
 	logger.Debug("will try to fetch data")
 
-	key := fetchRequestToKey(bg.groupName, request)
-	item := bg.fetchCache.GetQueryItem(key)
-	res, ok := item.FetchOrLock(ctx)
-	if ok {
-		if res == nil {
-			return nil, nil, errors.Fatal("timeout")
-		}
-		logger.Debug("cache hit")
-		result := res.(*types.ServerFetchResponse)
-		return result.Response, result.Stats, nil
-	}
-	defer item.StoreAbort()
-
 	// Now we have global lock for fetching data for this metric
 	resCh := make(chan *types.ServerFetchResponse, len(bg.clients))
 	doneCh := make(chan string, len(bg.clients))
@@ -272,8 +257,6 @@ GATHER:
 		zap.Any("errors", err.Errors),
 		zap.Int("response_count", len(result.Response.Metrics)),
 	)
-
-	item.StoreAndUnlock(result, uint64(result.Response.Size()))
 
 	return result.Response, result.Stats, &err
 }
