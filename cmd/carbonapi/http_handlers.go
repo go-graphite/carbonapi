@@ -17,9 +17,9 @@ import (
 	"github.com/go-graphite/carbonapi/expr"
 	"github.com/go-graphite/carbonapi/expr/functions/cairo/png"
 	"github.com/go-graphite/carbonapi/expr/types"
+	"github.com/go-graphite/carbonapi/intervalset"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	"github.com/go-graphite/carbonapi/util"
-	"github.com/go-graphite/carbonapi/intervalset"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
 	"github.com/go-graphite/carbonapi/expr/metadata"
@@ -138,13 +138,13 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	var accessLogDetails = carbonapipb.AccessLogDetails{
 		Handler:       "render",
 		Username:      username,
-		CarbonapiUuid: uuid.String(),
-		Url:           r.URL.RequestURI(),
-		PeerIp:        srcIP,
+		CarbonapiUUID: uuid.String(),
+		URL:           r.URL.RequestURI(),
+		PeerIP:        srcIP,
 		PeerPort:      srcPort,
 		Host:          r.Host,
 		Referer:       r.Referer(),
-		Uri:           r.RequestURI,
+		URI:           r.RequestURI,
 	}
 
 	logAsError := false
@@ -158,7 +158,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest)+": "+err.Error(), http.StatusBadRequest)
-		accessLogDetails.HttpCode = http.StatusBadRequest
+		accessLogDetails.HTTPCode = http.StatusBadRequest
 		accessLogDetails.Reason = err.Error()
 		logAsError = true
 		return
@@ -247,7 +247,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	if from32 == until32 {
 		http.Error(w, "Invalid empty time range", http.StatusBadRequest)
-		accessLogDetails.HttpCode = http.StatusBadRequest
+		accessLogDetails.HTTPCode = http.StatusBadRequest
 		accessLogDetails.Reason = "invalid empty time range"
 		logAsError = true
 		return
@@ -269,7 +269,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			msg := buildParseErrorString(target, e, err)
 			http.Error(w, msg, http.StatusBadRequest)
 			accessLogDetails.Reason = msg
-			accessLogDetails.HttpCode = http.StatusBadRequest
+			accessLogDetails.HTTPCode = http.StatusBadRequest
 			logAsError = true
 			return
 		}
@@ -577,13 +577,13 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	var accessLogDetails = carbonapipb.AccessLogDetails{
 		Handler:       "find",
 		Username:      username,
-		CarbonapiUuid: uuid.String(),
-		Url:           r.URL.RequestURI(),
-		PeerIp:        srcIP,
+		CarbonapiUUID: uuid.String(),
+		URL:           r.URL.RequestURI(),
+		PeerIP:        srcIP,
 		PeerPort:      srcPort,
 		Host:          r.Host,
 		Referer:       r.Referer(),
-		Uri:           r.RequestURI,
+		URI:           r.RequestURI,
 	}
 
 	logAsError := false
@@ -605,7 +605,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 
 	if len(query) == 0 {
 		http.Error(w, "missing parameter `query`", http.StatusBadRequest)
-		accessLogDetails.HttpCode = http.StatusBadRequest
+		accessLogDetails.HTTPCode = http.StatusBadRequest
 		accessLogDetails.Reason = "missing parameter `query`"
 		logAsError = true
 		return
@@ -618,7 +618,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	multiGlobs, err := config.zipper.Find(ctx, query)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		accessLogDetails.HttpCode = http.StatusInternalServerError
+		accessLogDetails.HTTPCode = http.StatusInternalServerError
 		accessLogDetails.Reason = err.Error()
 		logAsError = true
 		return
@@ -673,7 +673,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		accessLogDetails.HttpCode = http.StatusInternalServerError
+		accessLogDetails.HTTPCode = http.StatusInternalServerError
 		accessLogDetails.Reason = err.Error()
 		logAsError = true
 		return
@@ -700,14 +700,14 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	var accessLogDetails = carbonapipb.AccessLogDetails{
 		Handler:       "info",
 		Username:      username,
-		CarbonapiUuid: uuid.String(),
-		Url:           r.URL.RequestURI(),
-		PeerIp:        srcIP,
+		CarbonapiUUID: uuid.String(),
+		URL:           r.URL.RequestURI(),
+		PeerIP:        srcIP,
 		PeerPort:      srcPort,
 		Host:          r.Host,
 		Referer:       r.Referer(),
 		Format:        format,
-		Uri:           r.RequestURI,
+		URI:           r.RequestURI,
 	}
 
 	logAsError := false
@@ -721,7 +721,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.Form["target"]
 	if len(query) == 0 {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		accessLogDetails.HttpCode = http.StatusBadRequest
+		accessLogDetails.HTTPCode = http.StatusBadRequest
 		accessLogDetails.Reason = "no target specified"
 		logAsError = true
 		return
@@ -729,7 +729,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 
 	if data, err = config.zipper.Info(ctx, query); err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		accessLogDetails.HttpCode = http.StatusInternalServerError
+		accessLogDetails.HTTPCode = http.StatusInternalServerError
 		accessLogDetails.Reason = err.Error()
 		logAsError = true
 		return
@@ -747,7 +747,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		accessLogDetails.HttpCode = http.StatusInternalServerError
+		accessLogDetails.HTTPCode = http.StatusInternalServerError
 		accessLogDetails.Reason = err.Error()
 		logAsError = true
 		return
@@ -755,7 +755,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Write(b)
 	accessLogDetails.Runtime = time.Since(t0).Seconds()
-	accessLogDetails.HttpCode = http.StatusOK
+	accessLogDetails.HTTPCode = http.StatusOK
 }
 
 func lbcheckHandler(w http.ResponseWriter, r *http.Request) {
@@ -768,14 +768,14 @@ func lbcheckHandler(w http.ResponseWriter, r *http.Request) {
 
 	var accessLogDetails = carbonapipb.AccessLogDetails{
 		Handler:  "lbcheck",
-		Url:      r.URL.RequestURI(),
-		PeerIp:   srcIP,
+		URL:      r.URL.RequestURI(),
+		PeerIP:   srcIP,
 		PeerPort: srcPort,
 		Host:     r.Host,
 		Referer:  r.Referer(),
 		Runtime:  time.Since(t0).Seconds(),
-		HttpCode: http.StatusOK,
-		Uri:      r.RequestURI,
+		HTTPCode: http.StatusOK,
+		URI:      r.RequestURI,
 	}
 	accessLogger.Info("request served", zap.Any("data", accessLogDetails))
 }
@@ -793,14 +793,14 @@ func versionHandler(w http.ResponseWriter, r *http.Request) {
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
 	var accessLogDetails = carbonapipb.AccessLogDetails{
 		Handler:  "version",
-		Url:      r.URL.RequestURI(),
-		PeerIp:   srcIP,
+		URL:      r.URL.RequestURI(),
+		PeerIP:   srcIP,
 		PeerPort: srcPort,
 		Host:     r.Host,
 		Referer:  r.Referer(),
 		Runtime:  time.Since(t0).Seconds(),
-		HttpCode: http.StatusOK,
-		Uri:      r.RequestURI,
+		HTTPCode: http.StatusOK,
+		URI:      r.RequestURI,
 	}
 	accessLogger.Info("request served", zap.Any("data", accessLogDetails))
 }
@@ -816,12 +816,12 @@ func functionsHandler(w http.ResponseWriter, r *http.Request) {
 	var accessLogDetails = carbonapipb.AccessLogDetails{
 		Handler:  "functions",
 		Username: username,
-		Url:      r.URL.RequestURI(),
-		PeerIp:   srcIP,
+		URL:      r.URL.RequestURI(),
+		PeerIP:   srcIP,
 		PeerPort: srcPort,
 		Host:     r.Host,
 		Referer:  r.Referer(),
-		Uri:      r.RequestURI,
+		URI:      r.RequestURI,
 	}
 
 	logAsError := false
@@ -834,7 +834,7 @@ func functionsHandler(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusBadRequest)+": "+err.Error(), http.StatusBadRequest)
-		accessLogDetails.HttpCode = http.StatusBadRequest
+		accessLogDetails.HTTPCode = http.StatusBadRequest
 		accessLogDetails.Reason = err.Error()
 		logAsError = true
 		return
@@ -918,7 +918,7 @@ func functionsHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		accessLogDetails.HttpCode = http.StatusInternalServerError
+		accessLogDetails.HTTPCode = http.StatusInternalServerError
 		accessLogDetails.Reason = err.Error()
 		logAsError = true
 		return
@@ -926,7 +926,7 @@ func functionsHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Write(b)
 	accessLogDetails.Runtime = time.Since(t0).Seconds()
-	accessLogDetails.HttpCode = http.StatusOK
+	accessLogDetails.HTTPCode = http.StatusOK
 
 	accessLogger.Info("request served", zap.Any("data", accessLogDetails))
 }
