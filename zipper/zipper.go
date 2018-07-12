@@ -199,14 +199,12 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 				KeepAliveInterval:   &config.KeepAliveInterval,
 				MaxIdleConnsPerHost: &config.MaxIdleConnsPerHost,
 				MaxTries:            &config.MaxTries,
-				MaxGlobs:            0,
 			}},
 			MaxIdleConnsPerHost:       config.MaxIdleConnsPerHost,
 			ConcurrencyLimitPerServer: config.ConcurrencyLimitPerServer,
 			Timeouts:                  config.Timeouts,
 			KeepAliveInterval:         config.KeepAliveInterval,
 			MaxTries:                  config.MaxTries,
-			MaxGlobs:                  config.MaxGlobs,
 		}
 		config.CarbonSearchV2.Prefix = config.CarbonSearch.Prefix
 	}
@@ -242,7 +240,7 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 					KeepAliveInterval:   &config.KeepAliveInterval,
 					MaxIdleConnsPerHost: &config.MaxIdleConnsPerHost,
 					MaxTries:            &config.MaxTries,
-					MaxGlobs:            config.MaxGlobs,
+					MaxBatchSize:        config.MaxBatchSize,
 				},
 			},
 			MaxIdleConnsPerHost:       config.MaxIdleConnsPerHost,
@@ -250,7 +248,7 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 			Timeouts:                  config.Timeouts,
 			KeepAliveInterval:         config.KeepAliveInterval,
 			MaxTries:                  config.MaxTries,
-			MaxGlobs:                  config.MaxGlobs,
+			MaxBatchSize:              config.MaxBatchSize,
 		}
 	}
 

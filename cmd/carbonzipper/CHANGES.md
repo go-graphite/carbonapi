@@ -24,6 +24,7 @@ Changes
    - Fix race condition in zipper's query cache (@Civil)
    - Update vendored dependencies
    - Fix decode for nil messages in msgpack
+   - Use maxBatchSize to control maxMetricsPerRequest instead of using maxGlobs. This is a breaking change in config.
 
 **1.0.0-rc.1**
    - Fix timeout sanitization logic

@@ -81,7 +81,7 @@ func NewClientGRPCGroup(logger *zap.Logger, config types.BackendV2) (types.Serve
 	client := &ClientGRPCGroup{
 		groupName:            config.GroupName,
 		servers:              config.Servers,
-		maxMetricsPerRequest: config.MaxGlobs,
+		maxMetricsPerRequest: config.MaxBatchSize,
 
 		r:       r,
 		cleanup: cleanup,

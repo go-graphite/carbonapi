@@ -659,6 +659,7 @@ func setUpConfigUpstreams(logger *zap.Logger) {
 		config.Upstreams.Backends = []string{config.Zipper}
 		config.Upstreams.ConcurrencyLimitPerServer = config.Concurency
 		config.Upstreams.MaxIdleConnsPerHost = config.IdleConnections
+		config.Upstreams.MaxBatchSize = config.MaxBatchSize
 		config.Upstreams.KeepAliveInterval = 10 * time.Second
 		// To emulate previous behavior
 		config.Upstreams.Timeouts = zipperTypes.Timeouts{

@@ -74,7 +74,6 @@ var config = struct {
 	CarbonSearchV2 types.CarbonSearchV2 `mapstructure:"carbonsearchv2"`
 
 	MaxIdleConnsPerHost int `mapstructure:"maxIdleConnsPerHost"`
-	MaxGlobs            int `mapstructure:"maxGlobs"`
 
 	ConcurrencyLimitPerServer  int                `mapstructure:"concurrencyLimit"`
 	ExpireDelaySec             int32              `mapstructure:"expireDelaySec"`
@@ -677,7 +676,6 @@ func main() {
 		Backends:                  config.Backends,
 		BackendsV2:                config.Backendsv2,
 		ExpireDelaySec:            config.ExpireDelaySec,
-		MaxGlobs:                  config.MaxGlobs,
 
 		CarbonSearch:      config.CarbonSearch,
 		CarbonSearchV2:    config.CarbonSearchV2,
