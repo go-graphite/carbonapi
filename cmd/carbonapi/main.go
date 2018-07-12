@@ -147,7 +147,7 @@ func deferredAccessLogging(accessLogger *zap.Logger, accessLogDetails *carbonapi
 	if logAsError {
 		accessLogger.Error("request failed", zap.Any("data", *accessLogDetails))
 	} else {
-		accessLogDetails.HttpCode = http.StatusOK
+		accessLogDetails.HTTPCode = http.StatusOK
 		accessLogger.Info("request served", zap.Any("data", *accessLogDetails))
 	}
 }
