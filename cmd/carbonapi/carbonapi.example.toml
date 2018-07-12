@@ -80,7 +80,6 @@ lbMethod = "broadcast"
 # amount of retries in case of unsuccessful request
 maxTries = 3
 # amount of metrics per fetch request. Default: 0 - unlimited. If not specified, global will be used
-maxGlobs = 100
 # interval for keep-alive http packets. If not specified, global will be used
 keepAliveInterval = "10s"
 # override for global concurrencyLimit.

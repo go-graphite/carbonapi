@@ -12,7 +12,6 @@ type Config struct {
 	MaxIdleConnsPerHost       int              `mapstructure:"maxIdleConnsPerHost"`
 	Backends                  []string         `mapstructure:"backends"`
 	BackendsV2                types.BackendsV2 `mapstructure:"backendsv2"`
-	MaxGlobs                  int              `mapstructure:"maxGlobs"`
 	MaxBatchSize              int              `mapstructure:"maxBatchSize"`
 	MaxTries                  int              `mapstructure:"maxTries"`
 

@@ -11,7 +11,6 @@ type BackendsV2 struct {
 	Timeouts                  Timeouts      `mapstructure:"timeouts"`
 	KeepAliveInterval         time.Duration `mapstructure:"keepAliveInterval"`
 	MaxTries                  int           `mapstructure:"maxTries"`
-	MaxGlobs                  int           `mapstructure:"maxGlobs"`
 	MaxBatchSize              int           `mapstructure:"maxBatchSize"`
 }
 
@@ -25,7 +24,6 @@ type BackendV2 struct {
 	KeepAliveInterval   *time.Duration `mapstructure:"keepAliveInterval"`
 	MaxIdleConnsPerHost *int           `mapstructure:"maxIdleConnsPerHost"`
 	MaxTries            *int           `mapstructure:"maxTries"`
-	MaxGlobs            int            `mapstructure:"maxGlobs"`
 	MaxBatchSize        int            `mapstructure:"maxBatchSize"`
 }
 
