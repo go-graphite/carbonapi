@@ -257,8 +257,11 @@ GATHER:
 	}
 
 	if len(result.Response.Metrics) == 0 {
-		logger.Error("failed to get any response")
+		logger.Debug("failed to get any response")
 
+		// TODO(gmagnusson): For this message to be useful, we need to be able
+		// to tell if we expected to get a response at all. As is, this message
+		// is too spammy.
 		return nil, nil, err.Addf("failed to get any response from backend group: %v", bg.groupName)
 	}
 

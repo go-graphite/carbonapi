@@ -19,12 +19,12 @@ import (
 
 	"github.com/facebookgo/grace/gracehttp"
 	"github.com/facebookgo/pidfile"
+	"github.com/go-graphite/carbonapi/cache"
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/expr/functions/cairo/png"
 	"github.com/go-graphite/carbonapi/expr/helper"
-	"github.com/go-graphite/carbonapi/pkg/parser"
-	"github.com/go-graphite/carbonapi/cache"
 	"github.com/go-graphite/carbonapi/mstats"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 	zipperCfg "github.com/go-graphite/carbonapi/zipper/config"
 	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 	"github.com/gorilla/handlers"
@@ -147,7 +147,7 @@ func deferredAccessLogging(accessLogger *zap.Logger, accessLogDetails *carbonapi
 	if logAsError {
 		accessLogger.Error("request failed", zap.Any("data", *accessLogDetails))
 	} else {
-		accessLogDetails.HttpCode = http.StatusOK
+		accessLogDetails.HTTPCode = http.StatusOK
 		accessLogger.Info("request served", zap.Any("data", *accessLogDetails))
 	}
 }
