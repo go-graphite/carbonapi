@@ -117,14 +117,16 @@ func swapFetchResponses(m1, m2 *protov3.FetchResponse) {
 	m1.StopTime, m2.StopTime = m2.StopTime, m1.StopTime
 }
 
-func MergeFetchResponses(m1, m2 *protov3.FetchResponse) *errors.Errors {
+func MergeFetchResponses(m1, m2 *protov3.FetchResponse, uuid string) *errors.Errors {
 	logger := zapwriter.Logger("zipper_render")
 
 	if len(m1.Values) != len(m2.Values) {
 		interpolate := false
+
 		if len(m1.Values) < len(m2.Values) {
 			swapFetchResponses(m1, m2)
 		}
+
 		if m1.StepTime < m2.StepTime {
 			interpolate = true
 		} else {
@@ -147,6 +149,7 @@ func MergeFetchResponses(m1, m2 *protov3.FetchResponse) *errors.Errors {
 			logger.Error("unable to merge ovalues",
 				zap.Int("metric_values", len(m2.Values)),
 				zap.Int("response_values", len(m1.Values)),
+				zap.String("carbonapi_uuid", uuid),
 			)
 
 			return errors.FromErr(ErrResponseLengthMismatch)
@@ -182,7 +185,7 @@ out:
 	return nil
 }
 
-func (first *ServerFetchResponse) Merge(second *ServerFetchResponse) {
+func (first *ServerFetchResponse) Merge(second *ServerFetchResponse, uuid string) {
 	if first.Server == "" {
 		first.Server = second.Server
 	}
@@ -211,7 +214,7 @@ func (first *ServerFetchResponse) Merge(second *ServerFetchResponse) {
 
 	for i := range second.Response.Metrics {
 		if j, ok := metrics[second.Response.Metrics[i].Name]; ok {
-			err := MergeFetchResponses(&first.Response.Metrics[j], &second.Response.Metrics[i])
+			err := MergeFetchResponses(&first.Response.Metrics[j], &second.Response.Metrics[i], uuid)
 			if err != nil {
 				// TODO: Normal error handling
 				continue

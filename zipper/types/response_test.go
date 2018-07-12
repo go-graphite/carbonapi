@@ -20,7 +20,7 @@ func TestMergeFetchResponsesWithNanAppending(t *testing.T) {
 		Values: []float64{0, 0, 0, 0, math.NaN()},
 	}
 
-	err := MergeFetchResponses(&m1, &m2)
+	err := MergeFetchResponses(&m1, &m2, "test")
 	if err != nil {
 		t.Error(err)
 		return

@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/pathcache"
+	"github.com/go-graphite/carbonapi/util"
 	"github.com/go-graphite/carbonapi/zipper/errors"
 	"github.com/go-graphite/carbonapi/zipper/types"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
@@ -202,6 +203,8 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	var err errors.Errors
 	answeredServers := make(map[string]struct{})
 	responseCounts := 0
+	uuid := util.GetUUID(ctx)
+
 GATHER:
 	for {
 		if responseCounts == len(clients) && len(resCh) == 0 {
@@ -215,7 +218,7 @@ GATHER:
 			if res.Err != nil {
 				err.Merge(res.Err)
 			}
-			result.Merge(res)
+			result.Merge(res, uuid)
 		case <-ctx.Done():
 			noAnswer := make([]string, 0)
 			for _, s := range clients {

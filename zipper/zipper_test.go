@@ -225,7 +225,7 @@ func TestMergeValues(t *testing.T) {
 			if test.expectedResult.StopTime <= test.expectedResult.StartTime {
 				test.expectedResult.StopTime = test.expectedResult.StartTime + int64(len(test.expectedResult.Values))*test.expectedResult.StepTime
 			}
-			err := types.MergeFetchResponses(&test.m1, &test.m2)
+			err := types.MergeFetchResponses(&test.m1, &test.m2, "test")
 			if err == nil {
 				err = &errors.Errors{}
 			}
