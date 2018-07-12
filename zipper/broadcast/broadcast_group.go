@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/pathcache"
-	"github.com/go-graphite/carbonapi/zipper/cache"
 	"github.com/go-graphite/carbonapi/zipper/errors"
 	"github.com/go-graphite/carbonapi/zipper/types"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
@@ -24,11 +23,6 @@ type BroadcastGroup struct {
 
 	pathCache pathcache.PathCache
 	logger    *zap.Logger
-
-	infoCache  *cache.QueryCache
-	findCache  *cache.QueryCache
-	fetchCache *cache.QueryCache
-	probeCache *cache.QueryCache
 }
 
 func NewBroadcastGroup(logger *zap.Logger, groupName string, servers []types.ServerClient, expireDelaySec int32, concurencyLimit int, timeout types.Timeouts) (*BroadcastGroup, *errors.Errors) {
@@ -55,12 +49,6 @@ func NewBroadcastGroupWithLimiter(logger *zap.Logger, groupName string, servers 
 
 		pathCache: pathCache,
 		logger:    logger.With(zap.String("type", "broadcastGroup"), zap.String("groupName", groupName)),
-
-		// TODO: remove hardcode
-		infoCache:  cache.NewQueryCache(1024, 5),
-		findCache:  cache.NewQueryCache(1024, 5),
-		fetchCache: cache.NewQueryCache(25600, 1),
-		probeCache: cache.NewQueryCache(1024, 10),
 	}
 
 	b.logger.Debug("created broadcast group",
@@ -193,19 +181,6 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	logger := bg.logger.With(zap.String("type", "fetch"), zap.Strings("request", requestNames))
 	logger.Debug("will try to fetch data")
 
-	key := fetchRequestToKey(bg.groupName, request)
-	item := bg.fetchCache.GetQueryItem(key)
-	res, ok := item.FetchOrLock(ctx)
-	if ok {
-		if res == nil {
-			return nil, nil, errors.Fatal("timeout")
-		}
-		logger.Debug("cache hit")
-		result := res.(*types.ServerFetchResponse)
-		return result.Response, result.Stats, nil
-	}
-	defer item.StoreAbort()
-
 	// Now we have global lock for fetching data for this metric
 	resCh := make(chan *types.ServerFetchResponse, len(bg.clients))
 	doneCh := make(chan string, len(bg.clients))
@@ -273,8 +248,6 @@ GATHER:
 		zap.Int("response_count", len(result.Response.Metrics)),
 	)
 
-	item.StoreAndUnlock(result, uint64(result.Response.Size()))
-
 	return result.Response, result.Stats, &err
 }
 
@@ -315,21 +288,6 @@ func (bg *BroadcastGroup) doFind(ctx context.Context, logger *zap.Logger, client
 
 func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, *errors.Errors) {
 	logger := bg.logger.With(zap.String("type", "find"), zap.Strings("request", request.Metrics))
-
-	key := findRequestToKey(bg.groupName, request)
-	item := bg.findCache.GetQueryItem(key)
-	res, ok := item.FetchOrLock(ctx)
-	if ok {
-		if res == nil {
-			return nil, nil, errors.Fatal("timeout")
-		}
-		result := res.(*types.ServerFindResponse)
-		logger.Debug("cache hit",
-			zap.Any("result", result),
-		)
-		return result.Response, result.Stats, nil
-	}
-	defer item.StoreAbort()
 
 	resCh := make(chan *types.ServerFindResponse, len(bg.clients))
 
@@ -393,7 +351,6 @@ GATHER:
 	if result.Response == nil {
 		return &protov3.MultiGlobResponse{}, result.Stats, err.Addf("failed to fetch response from the server %v", bg.groupName)
 	}
-	item.StoreAndUnlock(result, uint64(result.Response.Size()))
 
 	return result.Response, result.Stats, &err
 }
@@ -428,19 +385,6 @@ func (bg *BroadcastGroup) doInfoRequest(ctx context.Context, logger *zap.Logger,
 
 func (bg *BroadcastGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, *errors.Errors) {
 	logger := bg.logger.With(zap.String("type", "info"), zap.Strings("request", request.Names))
-
-	key := infoRequestToKey(bg.groupName, request)
-	item := bg.infoCache.GetQueryItem(key)
-	res, ok := item.FetchOrLock(ctx)
-	if ok {
-		if res == nil {
-			return nil, nil, errors.Fatal("timeout")
-		}
-		logger.Debug("cache hit")
-		result := res.(*types.ServerInfoResponse)
-		return result.Response, result.Stats, nil
-	}
-	defer item.StoreAbort()
 
 	resCh := make(chan *types.ServerInfoResponse, len(bg.clients))
 	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Find)
@@ -495,8 +439,6 @@ GATHER:
 		zap.Bool("have_errors", len(err.Errors) == 0),
 	)
 
-	item.StoreAndUnlock(result, uint64(result.Response.Size()))
-
 	return result.Response, result.Stats, &err
 }
 
@@ -525,20 +467,6 @@ func doProbe(ctx context.Context, client types.ServerClient, resCh chan<- tldRes
 
 func (bg *BroadcastGroup) ProbeTLDs(ctx context.Context) ([]string, *errors.Errors) {
 	logger := bg.logger.With(zap.String("function", "prober"))
-
-	key := "*"
-	item := bg.probeCache.GetQueryItem(key)
-	res, ok := item.FetchOrLock(ctx)
-	if ok {
-		if res == nil {
-			return nil, errors.Fatal("timeout")
-		}
-		logger.Debug("cache hit")
-		result := res.([]string)
-
-		return result, nil
-	}
-	defer item.StoreAbort()
 
 	var tlds []string
 	resCh := make(chan tldResponse, len(bg.clients))
@@ -594,8 +522,6 @@ GATHER:
 	for tld, _ := range tldMap {
 		tlds = append(tlds, tld)
 	}
-
-	item.StoreAndUnlock(tlds, size)
 
 	for k, v := range cache {
 		bg.pathCache.Set(k, v)
