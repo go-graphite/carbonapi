@@ -19,12 +19,12 @@ import (
 
 	"github.com/facebookgo/grace/gracehttp"
 	"github.com/facebookgo/pidfile"
+	"github.com/go-graphite/carbonapi/cache"
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/expr/functions/cairo/png"
 	"github.com/go-graphite/carbonapi/expr/helper"
-	"github.com/go-graphite/carbonapi/pkg/parser"
-	"github.com/go-graphite/carbonapi/cache"
 	"github.com/go-graphite/carbonapi/mstats"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 	zipperCfg "github.com/go-graphite/carbonapi/zipper/config"
 	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 	"github.com/gorilla/handlers"
@@ -659,6 +659,7 @@ func setUpConfigUpstreams(logger *zap.Logger) {
 		config.Upstreams.Backends = []string{config.Zipper}
 		config.Upstreams.ConcurrencyLimitPerServer = config.Concurency
 		config.Upstreams.MaxIdleConnsPerHost = config.IdleConnections
+		config.Upstreams.MaxBatchSize = config.MaxBatchSize
 		config.Upstreams.KeepAliveInterval = 10 * time.Second
 		// To emulate previous behavior
 		config.Upstreams.Timeouts = zipperTypes.Timeouts{

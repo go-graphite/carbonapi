@@ -12,6 +12,7 @@ type BackendsV2 struct {
 	KeepAliveInterval         time.Duration `mapstructure:"keepAliveInterval"`
 	MaxTries                  int           `mapstructure:"maxTries"`
 	MaxGlobs                  int           `mapstructure:"maxGlobs"`
+	MaxBatchSize              int           `mapstructure:"maxBatchSize"`
 }
 
 type BackendV2 struct {
@@ -25,6 +26,7 @@ type BackendV2 struct {
 	MaxIdleConnsPerHost *int           `mapstructure:"maxIdleConnsPerHost"`
 	MaxTries            *int           `mapstructure:"maxTries"`
 	MaxGlobs            int            `mapstructure:"maxGlobs"`
+	MaxBatchSize        int            `mapstructure:"maxBatchSize"`
 }
 
 func (b *BackendV2) FillDefaults() {
