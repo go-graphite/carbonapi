@@ -118,7 +118,7 @@ func swapFetchResponses(m1, m2 *protov3.FetchResponse) {
 }
 
 func mergeFetchResponsesWithEqualStepTimes(m1, m2 *protov3.FetchResponse, uuid string) error {
-	if m1.StartTime != m2.StartTime || m1.RequestStartTime != m2.RequestStopTime {
+	if m1.StartTime != m2.StartTime {
 		return ErrResponseStartTimeMismatch
 	}
 
@@ -135,12 +135,34 @@ func mergeFetchResponsesWithEqualStepTimes(m1, m2 *protov3.FetchResponse, uuid s
 	return nil
 }
 
+func mergeFetchResponsesWithUnequalStepTimes(m1, m2 *protov3.FetchResponse, uuid string) error {
+	if m1.StepTime > m2.StepTime {
+		swapFetchResponses(m1, m2)
+	}
+
+	zapwriter.Logger("zipper_render").Warn("Fetch responses had different step times",
+		zap.Int64("m1_request_start_time", m1.RequestStartTime),
+		zap.Int64("m1_start_time", m1.StartTime),
+		zap.Int64("m1_stop_time", m1.StopTime),
+		zap.Int64("m1_step_time", m1.StepTime),
+		zap.Int64("m2_request_start_time", m2.RequestStartTime),
+		zap.Int64("m2_start_time", m2.StartTime),
+		zap.Int64("m2_stop_time", m2.StopTime),
+		zap.Int64("m2_step_time", m2.StepTime),
+		zap.String("carbonapi_uuid", uuid),
+	)
+
+	return nil
+}
+
 func MergeFetchResponses(m1, m2 *protov3.FetchResponse, uuid string) *errors.Errors {
 	var err error
-	if m1.StepTime == m2.StepTime {
+	if m1.RequestStartTime != m2.RequestStartTime {
+		err = ErrResponseStartTimeMismatch
+	} else if m1.StepTime == m2.StepTime {
 		err = mergeFetchResponsesWithEqualStepTimes(m1, m2, uuid)
 	} else {
-		err = ErrResponseStartTimeMismatch
+		err = mergeFetchResponsesWithUnequalStepTimes(m1, m2, uuid)
 	}
 
 	if err != nil {
