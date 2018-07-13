@@ -117,72 +117,48 @@ func swapFetchResponses(m1, m2 *protov3.FetchResponse) {
 	m1.StopTime, m2.StopTime = m2.StopTime, m1.StopTime
 }
 
-func MergeFetchResponses(m1, m2 *protov3.FetchResponse, uuid string) *errors.Errors {
-	logger := zapwriter.Logger("zipper_render")
-
-	if len(m1.Values) != len(m2.Values) {
-		interpolate := false
-
-		if len(m1.Values) < len(m2.Values) {
-			swapFetchResponses(m1, m2)
-		}
-
-		if m1.StepTime < m2.StepTime {
-			interpolate = true
-		} else {
-			if m1.StartTime == m2.StartTime {
-				d := len(m1.Values) - len(m2.Values)
-				for i := 0; i < d; i++ {
-					m2.Values = append(m2.Values, math.NaN())
-				}
-
-				goto out
-			}
-		}
-
-		// TODO(Civil): we must fix the case of m1.StopTime != m2.StopTime
-		// We should check if m1.StopTime and m2.StopTime actually the same
-		// Also we need to append nans in case StopTimes dramatically differs
-
-		if !interpolate || m1.StopTime-m1.StopTime%m2.StepTime != m2.StopTime {
-			// m1.Step < m2.Step and len(m1) < len(m2) - most probably garbage data
-			logger.Error("unable to merge ovalues",
-				zap.Int("metric_values", len(m2.Values)),
-				zap.Int("response_values", len(m1.Values)),
-				zap.String("carbonapi_uuid", uuid),
-			)
-
-			return errors.FromErr(ErrResponseLengthMismatch)
-		}
-
-		// len(m1) > len(m2)
-		values := make([]float64, 0, len(m1.Values))
-		for ts := m1.StartTime; ts < m1.StopTime; ts += m1.StepTime {
-			idx := (ts - m1.StartTime) / m2.StepTime
-			values = append(values, m2.Values[idx])
-		}
-		m2.Values = values
-		m2.StepTime = m1.StepTime
-		m2.StartTime = m1.StartTime
-		m2.StopTime = m1.StopTime
-	}
-out:
-
-	if m1.StartTime != m2.StartTime {
-		return errors.FromErr(ErrResponseStartTimeMismatch)
+func mergeFetchResponsesWithEqualStepTimes(m1, m2 *protov3.FetchResponse, uuid string) error {
+	if m1.StartTime != m2.StartTime || m1.RequestStartTime != m2.RequestStopTime {
+		return ErrResponseStartTimeMismatch
 	}
 
-	for i := range m1.Values {
-		if !math.IsNaN(m1.Values[i]) {
-			continue
-		}
+	if len(m1.Values) < len(m2.Values) {
+		swapFetchResponses(m1, m2)
+	}
 
-		// found one
-		if !math.IsNaN(m2.Values[i]) {
+	for i := 0; i < len(m2.Values); i++ {
+		if math.IsNaN(m1.Values[i]) {
 			m1.Values[i] = m2.Values[i]
 		}
 	}
+
 	return nil
+}
+
+func MergeFetchResponses(m1, m2 *protov3.FetchResponse, uuid string) *errors.Errors {
+	var err error
+	if m1.StepTime == m2.StepTime {
+		err = mergeFetchResponsesWithEqualStepTimes(m1, m2, uuid)
+	} else {
+		err = ErrResponseStartTimeMismatch
+	}
+
+	if err != nil {
+		zapwriter.Logger("zipper_render").Error("Unable to merge fetch responses",
+			zap.Error(err),
+			zap.Int64("m1_request_start_time", m1.RequestStartTime),
+			zap.Int64("m1_start_time", m1.StartTime),
+			zap.Int64("m1_stop_time", m1.StopTime),
+			zap.Int64("m1_step_time", m1.StepTime),
+			zap.Int64("m2_request_start_time", m2.RequestStartTime),
+			zap.Int64("m2_start_time", m2.StartTime),
+			zap.Int64("m2_stop_time", m2.StopTime),
+			zap.Int64("m2_step_time", m2.StepTime),
+			zap.String("carbonapi_uuid", uuid),
+		)
+	}
+
+	return errors.FromErr(err)
 }
 
 func (first *ServerFetchResponse) Merge(second *ServerFetchResponse, uuid string) {
