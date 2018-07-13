@@ -20,6 +20,8 @@ type ServerClient interface {
 	Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *Stats, *errors.Errors)
 
 	ProbeTLDs(ctx context.Context) ([]string, *errors.Errors)
+
+	Children() []ServerClient
 }
 
 /*

@@ -45,6 +45,10 @@ type ClientGRPCGroup struct {
 	logger *zap.Logger
 }
 
+func (c *ClientGRPCGroup) Children() []types.ServerClient {
+	return []types.ServerClient{c}
+}
+
 func NewClientGRPCGroupWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
 	return NewClientGRPCGroup(logger, config)
 }

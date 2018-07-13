@@ -54,6 +54,10 @@ type ClientProtoV2Group struct {
 	httpQuery *helper.HttpQuery
 }
 
+func (c *ClientProtoV2Group) Children() []types.ServerClient {
+	return []types.ServerClient{c}
+}
+
 func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
 	logger = logger.With(zap.String("type", "protoV2Group"), zap.String("name", config.GroupName))
 

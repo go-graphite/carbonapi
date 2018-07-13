@@ -52,6 +52,10 @@ type GraphiteGroup struct {
 	httpQuery *helper.HttpQuery
 }
 
+func (g *GraphiteGroup) Children() []types.ServerClient {
+	return []types.ServerClient{g}
+}
+
 func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
 	logger = logger.With(zap.String("type", "graphite"), zap.String("protocol", config.Protocol), zap.String("name", config.GroupName))
 

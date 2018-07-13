@@ -27,6 +27,16 @@ type BroadcastGroup struct {
 	logger    *zap.Logger
 }
 
+func (bg *BroadcastGroup) Children() []types.ServerClient {
+	children := make([]types.ServerClient, 0)
+
+	for _, c := range bg.clients {
+		children = append(children, c.Children()...)
+	}
+
+	return children
+}
+
 func NewBroadcastGroup(logger *zap.Logger, groupName string, servers []types.ServerClient, expireDelaySec int32, concurencyLimit int, timeout types.Timeouts) (*BroadcastGroup, *errors.Errors) {
 	if len(servers) == 0 {
 		return nil, errors.Fatal("no servers specified")
@@ -132,35 +142,13 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 	doneCh <- client.Name()
 }
 
-func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, *errors.Errors) {
-	requestNames := make([]string, 0, len(request.Metrics))
-	for i := range request.Metrics {
-		requestNames = append(requestNames, request.Metrics[i].Name)
-	}
-	logger := bg.logger.With(zap.String("type", "fetch"), zap.Strings("request", requestNames))
-	logger.Debug("will try to fetch data")
-
-	// Now we have global lock for fetching data for this metric
-	resCh := make(chan *types.ServerFetchResponse, len(bg.clients))
-	doneCh := make(chan string, len(bg.clients))
-	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Render)
-	defer cancel()
-
+func (bg *BroadcastGroup) SplitRequest(ctx context.Context, request *protov3.MultiFetchRequest) []*protov3.MultiFetchRequest {
 	var requests []*protov3.MultiFetchRequest
 	maxMetricPerRequest := bg.MaxMetricsPerRequest()
+
 	if maxMetricPerRequest == 0 || bg.groupName != "root" {
-		var msg string
-		if maxMetricPerRequest == 0 {
-			msg = "will do a single request, because MaxMetrics is 0"
-		} else {
-			msg = "will do a single request, because we are a leaf"
-		}
-		logger.Debug(msg)
 		requests = []*protov3.MultiFetchRequest{request}
 	} else {
-		logger.Debug("will do my best to split request",
-			zap.Int("max_metrics", maxMetricPerRequest),
-		)
 		for _, metric := range request.Metrics {
 			f, _, e := bg.Find(ctx, &protov3.MultiGlobRequest{Metrics: []string{metric.Name}})
 			if (e != nil && e.HaveFatalErrors && len(e.Errors) > 0) || f == nil || len(f.Metrics) == 0 {
@@ -168,10 +156,6 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 			}
 			newRequest := &protov3.MultiFetchRequest{}
 
-			logger.Debug("will split request",
-				zap.Int("metrics", len(f.Metrics)),
-				zap.Int("max_metrics", maxMetricPerRequest),
-			)
 			for _, m := range f.Metrics {
 				for _, match := range m.Matches {
 					newRequest.Metrics = append(newRequest.Metrics, protov3.FetchRequest{
@@ -181,22 +165,40 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 						PathExpression:  metric.PathExpression,
 						FilterFunctions: metric.FilterFunctions,
 					})
+
 					if len(newRequest.Metrics) == maxMetricPerRequest {
 						requests = append(requests, newRequest)
 						newRequest = &protov3.MultiFetchRequest{}
 					}
 				}
 			}
+
 			if len(newRequest.Metrics) > 0 {
 				requests = append(requests, newRequest)
 			}
-			logger.Debug("spliited request",
-				zap.Int("amount_of_requests", len(requests)),
-			)
 		}
 	}
 
-	clients := bg.chooseServers(requestNames)
+	return requests
+}
+
+func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, *errors.Errors) {
+	requestNames := make([]string, 0, len(request.Metrics))
+	for i := range request.Metrics {
+		requestNames = append(requestNames, request.Metrics[i].Name)
+	}
+	logger := bg.logger.With(zap.String("type", "fetch"), zap.Strings("request", requestNames))
+	logger.Debug("will try to fetch data")
+
+	clients := bg.Children()
+	requests := bg.SplitRequest(ctx, request)
+
+	// Now we have global lock for fetching data for this metric
+	resCh := make(chan *types.ServerFetchResponse, len(clients)*len(requests))
+	doneCh := make(chan string, len(bg.clients))
+	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Render)
+	defer cancel()
+
 	for _, client := range clients {
 		go bg.doSingleFetch(ctx, logger, client, requests, doneCh, resCh)
 	}
@@ -210,17 +212,17 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	}
 	var err errors.Errors
 	answeredServers := make(map[string]struct{})
-	responseCounts := 0
+	clientDoneCount := 0
 	uuid := util.GetUUID(ctx)
 
 GATHER:
 	for {
-		if responseCounts == len(clients) && len(resCh) == 0 {
+		if clientDoneCount == len(clients) && len(resCh) == 0 {
 			break GATHER
 		}
 		select {
 		case name := <-doneCh:
-			responseCounts++
+			clientDoneCount++
 			answeredServers[name] = struct{}{}
 		case res := <-resCh:
 			if res.Err != nil {
@@ -253,7 +255,7 @@ GATHER:
 
 	logger.Debug("got some responses",
 		zap.Int("clients_count", len(bg.clients)),
-		zap.Int("response_count", responseCounts),
+		zap.Int("response_count", clientDoneCount),
 		zap.Bool("have_errors", len(err.Errors) != 0),
 		zap.Any("errors", err.Errors),
 		zap.Int("response_count", len(result.Response.Metrics)),

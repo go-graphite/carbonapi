@@ -51,6 +51,10 @@ type ClientProtoV3Group struct {
 	httpQuery *helper.HttpQuery
 }
 
+func (c *ClientProtoV3Group) Children() []types.ServerClient {
+	return []types.ServerClient{c}
+}
+
 func New(logger *zap.Logger, config types.BackendV2) (types.ServerClient, *errors.Errors) {
 	if config.ConcurrencyLimit == nil {
 		return nil, errors.Fatal("concurency limit is not set")
