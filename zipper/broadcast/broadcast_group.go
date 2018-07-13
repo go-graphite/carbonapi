@@ -16,11 +16,12 @@ import (
 )
 
 type BroadcastGroup struct {
-	limiter   *limiter.ServerLimiter
-	groupName string
-	timeout   types.Timeouts
-	clients   []types.ServerClient
-	servers   []string
+	limiter              *limiter.ServerLimiter
+	groupName            string
+	timeout              types.Timeouts
+	clients              []types.ServerClient
+	servers              []string
+	maxMetricsPerRequest int
 
 	pathCache pathcache.PathCache
 	logger    *zap.Logger
@@ -42,11 +43,12 @@ func NewBroadcastGroup(logger *zap.Logger, groupName string, servers []types.Ser
 
 func NewBroadcastGroupWithLimiter(logger *zap.Logger, groupName string, servers []types.ServerClient, serverNames []string, pathCache pathcache.PathCache, limiter *limiter.ServerLimiter, timeout types.Timeouts) (*BroadcastGroup, *errors.Errors) {
 	b := &BroadcastGroup{
-		timeout:   timeout,
-		groupName: groupName,
-		clients:   servers,
-		limiter:   limiter,
-		servers:   serverNames,
+		timeout:              timeout,
+		groupName:            groupName,
+		clients:              servers,
+		limiter:              limiter,
+		servers:              serverNames,
+		maxMetricsPerRequest: 100, //TODO remove this hardcoded value
 
 		pathCache: pathCache,
 		logger:    logger.With(zap.String("type", "broadcastGroup"), zap.String("groupName", groupName)),
@@ -88,7 +90,7 @@ func (bg *BroadcastGroup) chooseServers(requests []string) []types.ServerClient 
 }
 
 func (bg BroadcastGroup) MaxMetricsPerRequest() int {
-	return 0
+	return bg.maxMetricsPerRequest
 }
 
 func fetchRequestToKey(prefix string, request *protov3.MultiFetchRequest) string {
