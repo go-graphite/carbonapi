@@ -199,13 +199,13 @@ func (first *ServerFetchResponse) Merge(second *ServerFetchResponse, uuid string
 		return
 	}
 
-	metrics := make(map[string]int)
+	metrics := make(map[fetchResponseCoordinates]int)
 	for i := range first.Response.Metrics {
-		metrics[first.Response.Metrics[i].Name] = i
+		metrics[coordinates(&first.Response.Metrics[i])] = i
 	}
 
 	for i := range second.Response.Metrics {
-		if j, ok := metrics[second.Response.Metrics[i].Name]; ok {
+		if j, ok := metrics[coordinates(&second.Response.Metrics[i])]; ok {
 			err := MergeFetchResponses(&first.Response.Metrics[j], &second.Response.Metrics[i], uuid)
 			if err != nil {
 				// TODO: Normal error handling
@@ -221,4 +221,18 @@ func (first *ServerFetchResponse) Merge(second *ServerFetchResponse, uuid string
 	}
 
 	return
+}
+
+type fetchResponseCoordinates struct {
+	name  string
+	from  int64
+	until int64
+}
+
+func coordinates(r *protov3.FetchResponse) fetchResponseCoordinates {
+	return fetchResponseCoordinates{
+		name:  r.Name,
+		from:  r.RequestStartTime,
+		until: r.RequestStopTime,
+	}
 }
