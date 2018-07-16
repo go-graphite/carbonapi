@@ -120,8 +120,7 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 	if err != nil {
 		logger.Debug("timeout waiting for a slot")
 		resCh <- &types.ServerFetchResponse{
-			Server: client.Name(),
-			Err:    errors.FromErrNonFatal(err),
+			Err: errors.FromErrNonFatal(err),
 		}
 		doneCh <- client.Name()
 		return
@@ -133,9 +132,7 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 		logger.Debug("sending request",
 			zap.String("client_name", client.Name()),
 		)
-		r := &types.ServerFetchResponse{
-			Server: client.Name(),
-		}
+		r := &types.ServerFetchResponse{}
 		r.Response, r.Stats, r.Err = client.Fetch(ctx, req)
 		resCh <- r
 	}
@@ -204,11 +201,9 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	}
 
 	result := &types.ServerFetchResponse{
-		Server:       "",
-		ResponsesMap: make(map[string][]protov3.FetchResponse),
-		Response:     &protov3.MultiFetchResponse{},
-		Stats:        &types.Stats{},
-		Err:          &errors.Errors{},
+		Response: &protov3.MultiFetchResponse{},
+		Stats:    &types.Stats{},
+		Err:      &errors.Errors{},
 	}
 	var err errors.Errors
 	answeredServers := make(map[string]struct{})

@@ -99,11 +99,9 @@ func (first *ServerFindResponse) Merge(second *ServerFindResponse) *errors.Error
 }
 
 type ServerFetchResponse struct {
-	Server       string
-	ResponsesMap map[string][]protov3.FetchResponse
-	Response     *protov3.MultiFetchResponse
-	Stats        *Stats
-	Err          *errors.Errors
+	Response *protov3.MultiFetchResponse
+	Stats    *Stats
+	Err      *errors.Errors
 }
 
 func swapFetchResponses(m1, m2 *protov3.FetchResponse) {
@@ -184,10 +182,6 @@ func MergeFetchResponses(m1, m2 *protov3.FetchResponse, uuid string) *errors.Err
 }
 
 func (first *ServerFetchResponse) Merge(second *ServerFetchResponse, uuid string) {
-	if first.Server == "" {
-		first.Server = second.Server
-	}
-
 	if second.Stats != nil {
 		first.Stats.Merge(second.Stats)
 	}
