@@ -137,16 +137,13 @@ func fetchRequestToKey(prefix string, request *protov3.MultiFetchRequest) string
 	return string(key)
 }
 
-func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger, client types.ServerClient, requests []*protov3.MultiFetchRequest, doneCh chan<- string, resCh chan<- *types.ServerFetchResponse) {
+func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger, client types.ServerClient, requests []*protov3.MultiFetchRequest, resCh chan<- *types.ServerFetchResponse) {
 	logger.Debug("waiting for slot",
 		zap.Int("maxConns", bg.limiter.Capacity()),
 	)
 
-	defer func(done chan<- string, name string) {
-		done <- name
-	}(doneCh, client.Name())
-
 	response := types.NewServerFetchResponse()
+	response.Server = client.Name()
 
 	if err := bg.limiter.Enter(ctx, client.Name()); err != nil {
 		logger.Debug("timeout waiting for a slot")
@@ -224,34 +221,31 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	}
 
 	requests := bg.SplitRequest(ctx, request)
-	resCh := make(chan *types.ServerFetchResponse, len(filteredClients)*len(requests))
-	doneCh := make(chan string, len(filteredClients))
+	resCh := make(chan *types.ServerFetchResponse, len(filteredClients))
 
 	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Render)
 	defer cancel()
 
 	for _, client := range filteredClients {
-		go bg.doSingleFetch(ctx, logger, client, requests, doneCh, resCh)
+		go bg.doSingleFetch(ctx, logger, client, requests, resCh)
 	}
 
 	result := types.NewServerFetchResponse()
 	answeredServers := make(map[string]struct{})
-	clientDoneCount := 0
+	responseCount := 0
 	uuid := util.GetUUID(ctx)
 
 GATHER:
 	for {
-		if clientDoneCount == len(filteredClients) && len(resCh) == 0 {
-			break GATHER
-		}
-
 		select {
-		case name := <-doneCh:
-			clientDoneCount++
-			answeredServers[name] = struct{}{}
-
 		case res := <-resCh:
+			answeredServers[res.Server] = struct{}{}
 			result.Merge(res, uuid)
+			responseCount++
+
+			if responseCount == len(clients) {
+				break GATHER
+			}
 
 		case <-ctx.Done():
 			noAnswer := make([]string, 0)
@@ -278,7 +272,7 @@ GATHER:
 
 	logger.Debug("got some responses",
 		zap.Int("clients_count", len(filteredClients)),
-		zap.Int("response_count", clientDoneCount),
+		zap.Int("response_count", responseCount),
 		zap.Bool("have_errors", len(result.Err.Errors) != 0),
 		zap.Any("errors", result.Err.Errors),
 		zap.Int("response_count", len(result.Response.Metrics)),
