@@ -392,12 +392,13 @@ func (bg *BroadcastGroup) doInfoRequest(ctx context.Context, logger *zap.Logger,
 	r := &types.ServerInfoResponse{
 		Server: client.Name(),
 	}
+
 	logger.Debug("waiting for a slot",
 		zap.String("group_name", bg.groupName),
 		zap.String("client_name", client.Name()),
 	)
-	err := bg.limiter.Enter(ctx, client.Name())
-	if err != nil {
+
+	if err := bg.limiter.Enter(ctx, client.Name()); err != nil {
 		logger.Debug("timeout waiting for a slot")
 		r.Err = errors.FromErrNonFatal(err)
 		resCh <- r
@@ -413,17 +414,16 @@ func (bg *BroadcastGroup) doInfoRequest(ctx context.Context, logger *zap.Logger,
 func (bg *BroadcastGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, *errors.Errors) {
 	logger := bg.logger.With(zap.String("type", "info"), zap.Strings("request", request.Names))
 
-	resCh := make(chan *types.ServerInfoResponse, len(bg.clients))
 	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Find)
 	defer cancel()
 
-	clients := bg.chooseServers(request.Names)
+	clients := bg.Children()
+	resCh := make(chan *types.ServerInfoResponse, len(clients))
 	for _, client := range clients {
 		go bg.doInfoRequest(ctx, logger, request, client, resCh)
 	}
 
 	result := &types.ServerInfoResponse{}
-	var err errors.Errors
 	responseCounts := 0
 	answeredServers := make(map[string]struct{})
 GATHER:
@@ -432,20 +432,12 @@ GATHER:
 		case res := <-resCh:
 			answeredServers[res.Server] = struct{}{}
 			responseCounts++
-			if res.Err != nil {
-				err.Merge(res.Err)
-			}
-			if result.Response == nil {
-				result = res
-			} else if res.Response != nil {
-				for k, v := range res.Response.Info {
-					result.Response.Info[k] = v
-				}
-			}
+			result.Merge(res)
 
 			if responseCounts == len(clients) {
 				break GATHER
 			}
+
 		case <-ctx.Done():
 			noAnswer := make([]string, 0)
 			for _, s := range clients {
@@ -456,17 +448,18 @@ GATHER:
 			logger.Warn("timeout waiting for more responses",
 				zap.Strings("no_answers_from", noAnswer),
 			)
-			err.Add(types.ErrTimeoutExceeded)
+			result.Err.Add(types.ErrTimeoutExceeded)
 			break GATHER
 		}
 	}
+
 	logger.Debug("got some responses",
 		zap.Int("clients_count", len(bg.clients)),
 		zap.Int("response_count", responseCounts),
-		zap.Bool("have_errors", len(err.Errors) == 0),
+		zap.Bool("have_errors", len(result.Err.Errors) == 0),
 	)
 
-	return result.Response, result.Stats, &err
+	return result.Response, result.Stats, result.Err
 }
 
 func (bg *BroadcastGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, *errors.Errors) {

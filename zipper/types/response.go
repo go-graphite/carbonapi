@@ -21,6 +21,39 @@ type ServerInfoResponse struct {
 	Err      *errors.Errors
 }
 
+func NewServerInfoResponse() *ServerInfoResponse {
+	return &ServerInfoResponse{
+		Response: new(protov3.ZipperInfoResponse),
+		Stats:    new(Stats),
+		Err:      new(errors.Errors),
+	}
+}
+
+func (first *ServerInfoResponse) Merge(second *ServerInfoResponse) *errors.Errors {
+	if second.Stats != nil {
+		first.Stats.Merge(second.Stats)
+	}
+
+	if first.Err == nil {
+		first.Err = &errors.Errors{}
+	}
+	first.Err.Merge(second.Err)
+
+	if first.Err.HaveFatalErrors {
+		return first.Err
+	}
+
+	if second.Response == nil {
+		return first.Err
+	}
+
+	for k, v := range second.Response.Info {
+		first.Response.Info[k] = v
+	}
+
+	return nil
+}
+
 type ServerFindResponse struct {
 	Server   string
 	Response *protov3.MultiGlobResponse
