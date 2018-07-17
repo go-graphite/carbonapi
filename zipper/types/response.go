@@ -28,26 +28,6 @@ type ServerFindResponse struct {
 	Err      *errors.Errors
 }
 
-/*
-func mergeFindRequests(f1, f2 []protov3.GlobMatch) []protov3.GlobMatch {
-	uniqList := make(map[string]protov3.GlobMatch)
-
-	for _, v := range f1 {
-		uniqList[v.Path] = v
-	}
-	for _, v := range f2 {
-		uniqList[v.Path] = v
-	}
-
-	res := make([]protov3.GlobMatch, 0, len(uniqList))
-	for _, v := range uniqList {
-		res = append(res, v)
-	}
-
-	return res
-}
-*/
-
 func (first *ServerFindResponse) Merge(second *ServerFindResponse) *errors.Errors {
 	if second.Stats != nil {
 		first.Stats.Merge(second.Stats)
@@ -82,6 +62,7 @@ func (first *ServerFindResponse) Merge(second *ServerFindResponse) *errors.Error
 			first.Response.Metrics = append(first.Response.Metrics, m)
 			continue
 		}
+
 		for _, mm := range m.Matches {
 			key := first.Response.Metrics[i].Name + "." + mm.Path
 			if _, ok := seenMatches[key]; !ok {
@@ -102,6 +83,19 @@ type ServerFetchResponse struct {
 	Response *protov3.MultiFetchResponse
 	Stats    *Stats
 	Err      *errors.Errors
+}
+
+func NewServerFetchResponse() *ServerFetchResponse {
+	return &ServerFetchResponse{
+		Response: new(protov3.MultiFetchResponse),
+		Stats:    new(Stats),
+		Err:      new(errors.Errors),
+	}
+}
+
+func (s *ServerFetchResponse) NonFatalError(err error) *ServerFetchResponse {
+	s.Err.Add(err)
+	return s
 }
 
 func swapFetchResponses(m1, m2 *protov3.FetchResponse) {

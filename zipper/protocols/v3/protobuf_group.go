@@ -139,6 +139,7 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	if e == nil {
 		e = &errors.Errors{}
 	}
+
 	if e.HaveFatalErrors {
 		e.HaveFatalErrors = false
 		return nil, stats, e

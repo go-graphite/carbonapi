@@ -141,63 +141,68 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 	logger.Debug("waiting for slot",
 		zap.Int("maxConns", bg.limiter.Capacity()),
 	)
-	err := bg.limiter.Enter(ctx, client.Name())
-	if err != nil {
+
+	defer func(done chan<- string, name string) {
+		done <- name
+	}(doneCh, client.Name())
+
+	response := types.NewServerFetchResponse()
+
+	if err := bg.limiter.Enter(ctx, client.Name()); err != nil {
 		logger.Debug("timeout waiting for a slot")
-		resCh <- &types.ServerFetchResponse{
-			Err: errors.FromErrNonFatal(err),
-		}
-		doneCh <- client.Name()
+		resCh <- response.NonFatalError(err)
 		return
 	}
+
 	logger.Debug("got slot")
 	defer bg.limiter.Leave(ctx, client.Name())
 
+	uuid := util.GetUUID(ctx)
 	for _, req := range requests {
 		logger.Debug("sending request",
 			zap.String("client_name", client.Name()),
 		)
-		r := &types.ServerFetchResponse{}
+		r := types.NewServerFetchResponse()
 		r.Response, r.Stats, r.Err = client.Fetch(ctx, req)
-		resCh <- r
+		response.Merge(r, uuid)
 	}
-	doneCh <- client.Name()
+
+	resCh <- response
 }
 
 func (bg *BroadcastGroup) SplitRequest(ctx context.Context, request *protov3.MultiFetchRequest) []*protov3.MultiFetchRequest {
+	if bg.MaxMetricsPerRequest() == 0 {
+		return []*protov3.MultiFetchRequest{request}
+	}
+
 	var requests []*protov3.MultiFetchRequest
-	maxMetricPerRequest := bg.MaxMetricsPerRequest()
+	for _, metric := range request.Metrics {
+		f, _, e := bg.Find(ctx, &protov3.MultiGlobRequest{Metrics: []string{metric.Name}})
+		if (e != nil && e.HaveFatalErrors && len(e.Errors) > 0) || f == nil || len(f.Metrics) == 0 {
+			continue
+		}
 
-	if maxMetricPerRequest == 0 || bg.groupName != "root" {
-		requests = []*protov3.MultiFetchRequest{request}
-	} else {
-		for _, metric := range request.Metrics {
-			f, _, e := bg.Find(ctx, &protov3.MultiGlobRequest{Metrics: []string{metric.Name}})
-			if (e != nil && e.HaveFatalErrors && len(e.Errors) > 0) || f == nil || len(f.Metrics) == 0 {
-				continue
-			}
-			newRequest := &protov3.MultiFetchRequest{}
+		newRequest := &protov3.MultiFetchRequest{}
 
-			for _, m := range f.Metrics {
-				for _, match := range m.Matches {
-					newRequest.Metrics = append(newRequest.Metrics, protov3.FetchRequest{
-						Name:            match.Path,
-						StartTime:       metric.StartTime,
-						StopTime:        metric.StopTime,
-						PathExpression:  metric.PathExpression,
-						FilterFunctions: metric.FilterFunctions,
-					})
+		for _, m := range f.Metrics {
+			for _, match := range m.Matches {
+				newRequest.Metrics = append(newRequest.Metrics, protov3.FetchRequest{
+					Name:            match.Path,
+					StartTime:       metric.StartTime,
+					StopTime:        metric.StopTime,
+					PathExpression:  metric.PathExpression,
+					FilterFunctions: metric.FilterFunctions,
+				})
 
-					if len(newRequest.Metrics) == maxMetricPerRequest {
-						requests = append(requests, newRequest)
-						newRequest = &protov3.MultiFetchRequest{}
-					}
+				if len(newRequest.Metrics) == bg.MaxMetricsPerRequest() {
+					requests = append(requests, newRequest)
+					newRequest = &protov3.MultiFetchRequest{}
 				}
 			}
+		}
 
-			if len(newRequest.Metrics) > 0 {
-				requests = append(requests, newRequest)
-			}
+		if len(newRequest.Metrics) > 0 {
+			requests = append(requests, newRequest)
 		}
 	}
 
@@ -213,18 +218,15 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	logger.Debug("will try to fetch data")
 
 	clients := bg.Children()
-	requests := bg.SplitRequest(ctx, request)
-
-	var filteredClients []types.ServerClient
-	if bg.groupName == "root" {
-		filteredClients = bg.filterServersByTLD(requestNames, clients)
-	}
+	filteredClients := bg.filterServersByTLD(requestNames, clients)
 	if len(filteredClients) == 0 {
 		filteredClients = clients
 	}
 
+	requests := bg.SplitRequest(ctx, request)
 	resCh := make(chan *types.ServerFetchResponse, len(filteredClients)*len(requests))
 	doneCh := make(chan string, len(filteredClients))
+
 	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Render)
 	defer cancel()
 
@@ -232,12 +234,7 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 		go bg.doSingleFetch(ctx, logger, client, requests, doneCh, resCh)
 	}
 
-	result := &types.ServerFetchResponse{
-		Response: &protov3.MultiFetchResponse{},
-		Stats:    &types.Stats{},
-		Err:      &errors.Errors{},
-	}
-	var err errors.Errors
+	result := types.NewServerFetchResponse()
 	answeredServers := make(map[string]struct{})
 	clientDoneCount := 0
 	uuid := util.GetUUID(ctx)
@@ -247,15 +244,15 @@ GATHER:
 		if clientDoneCount == len(filteredClients) && len(resCh) == 0 {
 			break GATHER
 		}
+
 		select {
 		case name := <-doneCh:
 			clientDoneCount++
 			answeredServers[name] = struct{}{}
+
 		case res := <-resCh:
-			if res.Err != nil {
-				err.Merge(res.Err)
-			}
 			result.Merge(res, uuid)
+
 		case <-ctx.Done():
 			noAnswer := make([]string, 0)
 			for _, s := range filteredClients {
@@ -263,10 +260,12 @@ GATHER:
 					noAnswer = append(noAnswer, s.Name())
 				}
 			}
+
 			logger.Warn("timeout waiting for more responses",
 				zap.Strings("no_answers_from", noAnswer),
 			)
-			err.Add(types.ErrTimeoutExceeded)
+			result.Err.Add(types.ErrTimeoutExceeded)
+
 			break GATHER
 		}
 	}
@@ -274,21 +273,18 @@ GATHER:
 	if len(result.Response.Metrics) == 0 {
 		logger.Debug("failed to get any response")
 
-		// TODO(gmagnusson): For this message to be useful, we need to be able
-		// to tell if we expected to get a response at all. As is, this message
-		// is too spammy.
-		return nil, nil, err.Addf("failed to get any response from backend group: %v", bg.groupName)
+		return nil, nil, errors.Fatalf("failed to get any response from backend group: %v", bg.groupName)
 	}
 
 	logger.Debug("got some responses",
 		zap.Int("clients_count", len(filteredClients)),
 		zap.Int("response_count", clientDoneCount),
-		zap.Bool("have_errors", len(err.Errors) != 0),
-		zap.Any("errors", err.Errors),
+		zap.Bool("have_errors", len(result.Err.Errors) != 0),
+		zap.Any("errors", result.Err.Errors),
 		zap.Int("response_count", len(result.Response.Metrics)),
 	)
 
-	return result.Response, result.Stats, &err
+	return result.Response, result.Stats, result.Err
 }
 
 // Find request handling
