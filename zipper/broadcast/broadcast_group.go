@@ -99,6 +99,31 @@ func (bg *BroadcastGroup) chooseServers(requests []string) []types.ServerClient 
 	return bg.clients
 }
 
+func (bg *BroadcastGroup) filterServersByTLD(requests []string, clients []types.ServerClient) []types.ServerClient {
+	tldClients := make(map[types.ServerClient]bool)
+	for _, request := range requests {
+		idx := strings.Index(request, ".")
+		if idx > 0 {
+			request = request[:idx]
+		}
+		if cacheClients, ok := bg.pathCache.Get(request); ok && len(clients) > 0 {
+			for _, cacheClient := range cacheClients {
+				tldClients[cacheClient] = true
+			}
+		}
+	}
+
+	var filteredClients []types.ServerClient
+
+	for _, k := range clients {
+		if tldClients[k] {
+			filteredClients = append(filteredClients, k)
+		}
+	}
+
+	return filteredClients
+}
+
 func (bg BroadcastGroup) MaxMetricsPerRequest() int {
 	return bg.maxMetricsPerRequest
 }
@@ -190,13 +215,20 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	clients := bg.Children()
 	requests := bg.SplitRequest(ctx, request)
 
-	// Now we have global lock for fetching data for this metric
-	resCh := make(chan *types.ServerFetchResponse, len(clients)*len(requests))
-	doneCh := make(chan string, len(bg.clients))
+	var filteredClients []types.ServerClient
+	if bg.groupName == "root" {
+		filteredClients = bg.filterServersByTLD(requestNames, clients)
+	}
+	if len(filteredClients) == 0 {
+		filteredClients = clients
+	}
+
+	resCh := make(chan *types.ServerFetchResponse, len(filteredClients)*len(requests))
+	doneCh := make(chan string, len(filteredClients))
 	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Render)
 	defer cancel()
 
-	for _, client := range clients {
+	for _, client := range filteredClients {
 		go bg.doSingleFetch(ctx, logger, client, requests, doneCh, resCh)
 	}
 
@@ -212,7 +244,7 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 
 GATHER:
 	for {
-		if clientDoneCount == len(clients) && len(resCh) == 0 {
+		if clientDoneCount == len(filteredClients) && len(resCh) == 0 {
 			break GATHER
 		}
 		select {
@@ -226,7 +258,7 @@ GATHER:
 			result.Merge(res, uuid)
 		case <-ctx.Done():
 			noAnswer := make([]string, 0)
-			for _, s := range clients {
+			for _, s := range filteredClients {
 				if _, ok := answeredServers[s.Name()]; !ok {
 					noAnswer = append(noAnswer, s.Name())
 				}
@@ -249,7 +281,7 @@ GATHER:
 	}
 
 	logger.Debug("got some responses",
-		zap.Int("clients_count", len(bg.clients)),
+		zap.Int("clients_count", len(filteredClients)),
 		zap.Int("response_count", clientDoneCount),
 		zap.Bool("have_errors", len(err.Errors) != 0),
 		zap.Any("errors", err.Errors),
@@ -481,7 +513,8 @@ func (bg *BroadcastGroup) ProbeTLDs(ctx context.Context) ([]string, *errors.Erro
 	ctx, cancel := context.WithTimeout(context.Background(), bg.timeout.Find)
 	defer cancel()
 
-	for _, client := range bg.clients {
+	clients := bg.Children()
+	for _, client := range clients {
 		go doProbe(ctx, client, resCh)
 	}
 
@@ -493,7 +526,7 @@ func (bg *BroadcastGroup) ProbeTLDs(ctx context.Context) ([]string, *errors.Erro
 	tldMap := make(map[string]struct{})
 GATHER:
 	for {
-		if responses == len(bg.clients) {
+		if responses == len(clients) {
 			break GATHER
 		}
 		select {
@@ -525,14 +558,17 @@ GATHER:
 			break GATHER
 		}
 	}
-	cancel()
 
 	for tld, _ := range tldMap {
 		tlds = append(tlds, tld)
 	}
 
-	for k, v := range cache {
-		bg.pathCache.Set(k, v)
+	if bg.groupName == "root" {
+		for k, v := range cache {
+			bg.pathCache.Set(k, v)
+		}
+	} else {
+		logger.Error("Setting path cache in non root bg group. somethings off!")
 	}
 
 	return tlds, &err
