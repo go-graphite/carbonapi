@@ -28,6 +28,14 @@ type ServerFindResponse struct {
 	Err      *errors.Errors
 }
 
+func NewServerFindResponse() *ServerFindResponse {
+	return &ServerFindResponse{
+		Response: new(protov3.MultiGlobResponse),
+		Stats:    new(Stats),
+		Err:      new(errors.Errors),
+	}
+}
+
 func (first *ServerFindResponse) Merge(second *ServerFindResponse) *errors.Errors {
 	if second.Stats != nil {
 		first.Stats.Merge(second.Stats)
@@ -80,6 +88,7 @@ func (first *ServerFindResponse) Merge(second *ServerFindResponse) *errors.Error
 }
 
 type ServerFetchResponse struct {
+	Server   string
 	Response *protov3.MultiFetchResponse
 	Stats    *Stats
 	Err      *errors.Errors
@@ -176,6 +185,10 @@ func MergeFetchResponses(m1, m2 *protov3.FetchResponse, uuid string) *errors.Err
 }
 
 func (first *ServerFetchResponse) Merge(second *ServerFetchResponse, uuid string) {
+	if first.Server == "" && second.Server != "" {
+		first.Server = second.Server
+	}
+
 	if second.Stats != nil {
 		first.Stats.Merge(second.Stats)
 	}

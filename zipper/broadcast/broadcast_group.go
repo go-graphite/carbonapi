@@ -298,8 +298,7 @@ func (bg *BroadcastGroup) doFind(ctx context.Context, logger *zap.Logger, client
 		Server: client.Name(),
 	}
 
-	err := bg.limiter.Enter(ctx, client.Name())
-	if err != nil {
+	if err := bg.limiter.Enter(ctx, client.Name()); err != nil {
 		logger.Debug("timeout waiting for a slot")
 		r.Err = errors.FromErrNonFatal(types.ErrTimeoutExceeded)
 		resCh <- r
@@ -319,7 +318,8 @@ func (bg *BroadcastGroup) doFind(ctx context.Context, logger *zap.Logger, client
 func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, *errors.Errors) {
 	logger := bg.logger.With(zap.String("type", "find"), zap.Strings("request", request.Metrics))
 
-	resCh := make(chan *types.ServerFindResponse, len(bg.clients))
+	clients := bg.Children()
+	resCh := make(chan *types.ServerFindResponse, len(clients))
 
 	logger.Debug("will do query with timeout",
 		zap.Float64("timeout", bg.timeout.Find.Seconds()),
@@ -329,33 +329,27 @@ func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	defer cancel()
 	ctx = context.Background()
 
-	clients := bg.chooseServers(request.Metrics)
 	for _, client := range clients {
 		go bg.doFind(ctx, logger, client, request, resCh)
 	}
 
-	result := &types.ServerFindResponse{}
-	var err errors.Errors
+	result := types.NewServerFindResponse()
+	result.Server = bg.Name()
 	responseCounts := 0
 	answeredServers := make(map[string]struct{})
+
 GATHER:
 	for {
 		select {
-		case r := <-resCh:
-			answeredServers[r.Server] = struct{}{}
+		case res := <-resCh:
+			answeredServers[res.Server] = struct{}{}
+			result.Merge(res)
 			responseCounts++
-			if r.Err != nil {
-				err.Merge(r.Err)
-			}
-			if result.Response == nil {
-				result = r
-			} else {
-				result.Merge(r)
-			}
 
 			if responseCounts == len(clients) {
 				break GATHER
 			}
+
 		case <-ctx.Done():
 			noAnswer := make([]string, 0)
 			for _, s := range clients {
@@ -363,26 +357,29 @@ GATHER:
 					noAnswer = append(noAnswer, s.Name())
 				}
 			}
+
 			logger.Warn("timeout waiting for more responses",
 				zap.Strings("no_answers_from", noAnswer),
 			)
-			err.Add(types.ErrTimeoutExceeded)
+			result.Err.Add(types.ErrTimeoutExceeded)
+
 			break GATHER
 		}
 	}
+
+	if len(result.Response.Metrics) == 0 {
+		return &protov3.MultiGlobResponse{}, result.Stats, result.Err.Addf("failed to fetch response from the server %v", bg.groupName)
+	}
+
 	logger.Debug("got some responses",
 		zap.Int("clients_count", len(bg.clients)),
 		zap.Int("response_count", responseCounts),
-		zap.Bool("have_errors", len(err.Errors) != 0),
-		zap.Any("errors", err.Errors),
+		zap.Bool("have_errors", len(result.Err.Errors) != 0),
+		zap.Any("errors", result.Err.Errors),
 		zap.Any("response", result.Response),
 	)
 
-	if result.Response == nil {
-		return &protov3.MultiGlobResponse{}, result.Stats, err.Addf("failed to fetch response from the server %v", bg.groupName)
-	}
-
-	return result.Response, result.Stats, &err
+	return result.Response, result.Stats, result.Err
 }
 
 // Info request handling
