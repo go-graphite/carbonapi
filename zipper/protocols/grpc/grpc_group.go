@@ -36,7 +36,6 @@ type ClientGRPCGroup struct {
 
 	r                    *manual.Resolver
 	conn                 *grpc.ClientConn
-	dialerrc             chan error
 	cleanup              func()
 	timeout              types.Timeouts
 	maxMetricsPerRequest int

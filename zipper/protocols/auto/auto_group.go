@@ -143,8 +143,6 @@ GATHER:
 // RoundRobin is used to connect to backends inside clientGroups, implements ServerClient interface
 type AutoGroup struct {
 	groupName string
-
-	httpQuery *helper.HttpQuery
 }
 
 func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {

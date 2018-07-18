@@ -40,9 +40,6 @@ type GraphiteGroup struct {
 
 	client *http.Client
 
-	counter             uint64
-	maxIdleConnsPerHost int
-
 	limiter              *limiter.ServerLimiter
 	logger               *zap.Logger
 	timeout              types.Timeouts
