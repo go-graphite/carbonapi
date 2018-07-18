@@ -137,7 +137,9 @@ func deepCompareFields(v1, v2 reflect.Value) bool {
 			for i := 0; i < v1.Len(); i++ {
 				e1 := v1.Index(i)
 				e2 := v2.Index(i)
-				return deepCompareFields(e1, e2)
+				if !deepCompareFields(e1, e2) {
+					return false
+				}
 			}
 		case reflect.Func:
 			return v1.Pointer() == v2.Pointer()
