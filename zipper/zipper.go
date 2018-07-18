@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-graphite/carbonapi/limiter"
-	"github.com/go-graphite/carbonapi/pathcache"
 	"github.com/go-graphite/carbonapi/zipper/broadcast"
 	"github.com/go-graphite/carbonapi/zipper/config"
 	"github.com/go-graphite/carbonapi/zipper/errors"
@@ -27,22 +25,17 @@ import (
 
 // Zipper provides interface to Zipper-related functions
 type Zipper struct {
-	// Limiter limits our concurrency to a particular server
-	limiter     limiter.ServerLimiter
 	probeTicker *time.Ticker
 	ProbeQuit   chan struct{}
 	ProbeForce  chan int
 
 	timeout           time.Duration
 	timeoutConnect    time.Duration
-	timeoutKeepAlive  time.Duration
 	keepAliveInterval time.Duration
 
 	searchConfigured bool
 	searchBackends   types.ServerClient
 	searchPrefix     string
-
-	searchCache pathcache.PathCache
 
 	// Will broadcast to all servers there
 	storeBackends             types.ServerClient
@@ -51,11 +44,6 @@ type Zipper struct {
 	sendStats func(*types.Stats)
 
 	logger *zap.Logger
-}
-
-type nameLeaf struct {
-	name string
-	leaf bool
 }
 
 var defaultTimeouts = types.Timeouts{
