@@ -183,16 +183,6 @@ type testCaseFetch struct {
 	expectedResponse *protov3.MultiFetchResponse
 }
 
-func mergeFetchRequests(requests []*protov3.MultiFetchRequest) *protov3.MultiFetchRequest {
-	var res protov3.MultiFetchRequest
-
-	for _, r := range requests {
-		res.Metrics = append(res.Metrics, r.Metrics...)
-	}
-
-	return &res
-}
-
 func TestFetchRequests(t *testing.T) {
 	tests := []testCaseFetch{
 		{

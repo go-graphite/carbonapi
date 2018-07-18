@@ -2,7 +2,6 @@ package broadcast
 
 import (
 	"context"
-	"strconv"
 	"strings"
 
 	"github.com/go-graphite/carbonapi/limiter"
@@ -107,15 +106,6 @@ func (bg *BroadcastGroup) filterServersByTLD(requests []string, clients []types.
 
 func (bg BroadcastGroup) MaxMetricsPerRequest() int {
 	return bg.maxMetricsPerRequest
-}
-
-func fetchRequestToKey(prefix string, request *protov3.MultiFetchRequest) string {
-	key := []byte("prefix=" + prefix)
-	for _, r := range request.Metrics {
-		key = append(key, []byte("&"+r.Name+"&start="+strconv.FormatUint(uint64(r.StartTime), 10)+"&stop="+strconv.FormatUint(uint64(r.StopTime), 10)+"\n")...)
-	}
-
-	return string(key)
 }
 
 func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger, client types.ServerClient, requests []*protov3.MultiFetchRequest, resCh chan<- *types.ServerFetchResponse) {
@@ -260,10 +250,6 @@ GATHER:
 
 // Find request handling
 
-func findRequestToKey(prefix string, request *protov3.MultiGlobRequest) string {
-	return "prefix=" + prefix + "&" + strings.Join(request.Metrics, "&")
-}
-
 func (bg *BroadcastGroup) doFind(ctx context.Context, logger *zap.Logger, client types.ServerClient, request *protov3.MultiGlobRequest, resCh chan<- *types.ServerFindResponse) {
 	logger = logger.With(
 		zap.String("group_name", bg.groupName),
@@ -352,10 +338,6 @@ GATHER:
 }
 
 // Info request handling
-
-func infoRequestToKey(prefix string, request *protov3.MultiMetricsInfoRequest) string {
-	return "prefix=" + prefix + "&" + strings.Join(request.Names, "&")
-}
 
 func (bg *BroadcastGroup) doInfoRequest(ctx context.Context, logger *zap.Logger, request *protov3.MultiMetricsInfoRequest, client types.ServerClient, resCh chan<- *types.ServerInfoResponse) {
 	r := &types.ServerInfoResponse{
