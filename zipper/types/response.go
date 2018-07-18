@@ -35,7 +35,7 @@ func (first *ServerInfoResponse) Merge(second *ServerInfoResponse) *errors.Error
 	}
 
 	if first.Err == nil {
-		first.Err = &errors.Errors{}
+		first.Err = new(errors.Errors)
 	}
 	first.Err.Merge(second.Err)
 
@@ -250,10 +250,6 @@ func (first *ServerFetchResponse) Merge(second *ServerFetchResponse, uuid string
 		} else {
 			first.Response.Metrics = append(first.Response.Metrics, second.Response.Metrics[i])
 		}
-	}
-
-	if first.Err != nil && second.Err == nil {
-		first.Err = nil
 	}
 
 	return

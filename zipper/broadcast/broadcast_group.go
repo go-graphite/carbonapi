@@ -80,25 +80,6 @@ func (bg BroadcastGroup) Backends() []string {
 	return bg.servers
 }
 
-func (bg *BroadcastGroup) chooseServers(requests []string) []types.ServerClient {
-	var res []types.ServerClient
-
-	for _, request := range requests {
-		idx := strings.Index(request, ".")
-		if idx > 0 {
-			request = request[:idx]
-		}
-		if clients, ok := bg.pathCache.Get(request); ok && len(clients) > 0 {
-			res = append(res, clients...)
-		}
-	}
-
-	if len(res) != 0 {
-		return res
-	}
-	return bg.clients
-}
-
 func (bg *BroadcastGroup) filterServersByTLD(requests []string, clients []types.ServerClient) []types.ServerClient {
 	tldClients := make(map[types.ServerClient]bool)
 	for _, request := range requests {
@@ -360,7 +341,7 @@ GATHER:
 	}
 
 	logger.Debug("got some responses",
-		zap.Int("clients_count", len(bg.clients)),
+		zap.Int("clients_count", len(clients)),
 		zap.Int("response_count", responseCounts),
 		zap.Bool("have_errors", len(result.Err.Errors) != 0),
 		zap.Any("errors", result.Err.Errors),
@@ -436,7 +417,7 @@ GATHER:
 	}
 
 	logger.Debug("got some responses",
-		zap.Int("clients_count", len(bg.clients)),
+		zap.Int("clients_count", len(clients)),
 		zap.Int("response_count", responseCounts),
 		zap.Bool("have_errors", len(result.Err.Errors) == 0),
 	)
