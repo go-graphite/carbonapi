@@ -248,15 +248,8 @@ GATHER:
 			}
 
 		case <-ctx.Done():
-			noAnswer := make([]string, 0)
-			for _, s := range filteredClients {
-				if _, ok := answeredServers[s.Name()]; !ok {
-					noAnswer = append(noAnswer, s.Name())
-				}
-			}
-
 			logger.Warn("timeout waiting for more responses",
-				zap.Strings("no_answers_from", noAnswer),
+				zap.Strings("no_answers_from", noAnswerClients(clients, answeredServers)),
 			)
 			result.Err.Add(types.ErrTimeoutExceeded)
 
@@ -267,6 +260,9 @@ GATHER:
 	if len(result.Response.Metrics) == 0 {
 		logger.Debug("failed to get any response")
 
+		// TODO(gmagnusson): We'll only see this on the root bg group now.
+		// Let's make this message more useful by logging the request, what
+		// hosts we hit, etc.
 		return nil, nil, errors.Fatalf("failed to get any response from backend group: %v", bg.groupName)
 	}
 
@@ -294,9 +290,8 @@ func (bg *BroadcastGroup) doFind(ctx context.Context, logger *zap.Logger, client
 	)
 	logger.Debug("waiting for a slot")
 
-	r := &types.ServerFindResponse{
-		Server: client.Name(),
-	}
+	r := types.NewServerFindResponse()
+	r.Server = client.Name()
 
 	if err := bg.limiter.Enter(ctx, client.Name()); err != nil {
 		logger.Debug("timeout waiting for a slot")
@@ -351,15 +346,8 @@ GATHER:
 			}
 
 		case <-ctx.Done():
-			noAnswer := make([]string, 0)
-			for _, s := range clients {
-				if _, ok := answeredServers[s.Name()]; !ok {
-					noAnswer = append(noAnswer, s.Name())
-				}
-			}
-
 			logger.Warn("timeout waiting for more responses",
-				zap.Strings("no_answers_from", noAnswer),
+				zap.Strings("no_answers_from", noAnswerClients(clients, answeredServers)),
 			)
 			result.Err.Add(types.ErrTimeoutExceeded)
 
@@ -439,14 +427,8 @@ GATHER:
 			}
 
 		case <-ctx.Done():
-			noAnswer := make([]string, 0)
-			for _, s := range clients {
-				if _, ok := answeredServers[s.Name()]; !ok {
-					noAnswer = append(noAnswer, s.Name())
-				}
-			}
 			logger.Warn("timeout waiting for more responses",
-				zap.Strings("no_answers_from", noAnswer),
+				zap.Strings("no_answers_from", noAnswerClients(clients, answeredServers)),
 			)
 			result.Err.Add(types.ErrTimeoutExceeded)
 			break GATHER
@@ -488,27 +470,27 @@ func doProbe(ctx context.Context, client types.ServerClient, resCh chan<- tldRes
 func (bg *BroadcastGroup) ProbeTLDs(ctx context.Context) ([]string, *errors.Errors) {
 	logger := bg.logger.With(zap.String("function", "prober"))
 
-	var tlds []string
-	resCh := make(chan tldResponse, len(bg.clients))
 	ctx, cancel := context.WithTimeout(context.Background(), bg.timeout.Find)
 	defer cancel()
 
 	clients := bg.Children()
+	resCh := make(chan tldResponse, len(clients))
 	for _, client := range clients {
 		go doProbe(ctx, client, resCh)
 	}
 
 	responses := 0
-	size := uint64(0)
 	var err errors.Errors
 	answeredServers := make(map[string]struct{})
 	cache := make(map[string][]types.ServerClient)
-	tldMap := make(map[string]struct{})
+	tldSet := make(map[string]struct{})
+
 GATHER:
 	for {
 		if responses == len(clients) {
 			break GATHER
 		}
+
 		select {
 		case r := <-resCh:
 			answeredServers[r.server.Name()] = struct{}{}
@@ -518,28 +500,21 @@ GATHER:
 				continue
 			}
 			for _, tld := range r.tlds {
-				tldMap[tld] = struct{}{}
-			}
-			for _, tld := range r.tlds {
-				size += uint64(len(tld))
+				tldSet[tld] = struct{}{}
 				cache[tld] = append(cache[tld], r.server)
 			}
+
 		case <-ctx.Done():
-			noAnswer := make([]string, 0)
-			for _, s := range bg.clients {
-				if _, ok := answeredServers[s.Name()]; !ok {
-					noAnswer = append(noAnswer, s.Name())
-				}
-			}
 			logger.Warn("timeout waiting for more responses",
-				zap.Strings("no_answers_from", noAnswer),
+				zap.Strings("no_answers_from", noAnswerClients(clients, answeredServers)),
 			)
 			err.Add(types.ErrTimeoutExceeded)
 			break GATHER
 		}
 	}
 
-	for tld, _ := range tldMap {
+	var tlds []string
+	for tld, _ := range tldSet {
 		tlds = append(tlds, tld)
 	}
 
@@ -552,4 +527,15 @@ GATHER:
 	}
 
 	return tlds, &err
+}
+
+func noAnswerClients(clients []types.ServerClient, answered map[string]struct{}) []string {
+	noAnswer := make([]string, 0)
+	for _, s := range clients {
+		if _, ok := answered[s.Name()]; !ok {
+			noAnswer = append(noAnswer, s.Name())
+		}
+	}
+
+	return noAnswer
 }

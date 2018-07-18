@@ -75,7 +75,7 @@ func (first *ServerFindResponse) Merge(second *ServerFindResponse) *errors.Error
 	}
 
 	if first.Err == nil {
-		first.Err = &errors.Errors{}
+		first.Err = new(errors.Errors)
 	}
 	first.Err.Merge(second.Err)
 
@@ -111,10 +111,6 @@ func (first *ServerFindResponse) Merge(second *ServerFindResponse) *errors.Error
 				first.Response.Metrics[i].Matches = append(first.Response.Metrics[i].Matches, mm)
 			}
 		}
-	}
-
-	if first.Err != nil && second.Err == nil {
-		first.Err = nil
 	}
 
 	return nil
