@@ -22,8 +22,6 @@ import (
 	"github.com/facebookgo/pidfile"
 	"github.com/go-graphite/carbonapi/intervalset"
 	"github.com/go-graphite/carbonapi/mstats"
-	"github.com/spf13/viper"
-	// "github.com/go-graphite/carbonapi/pathcache"
 	cu "github.com/go-graphite/carbonapi/util/apictx"
 	util "github.com/go-graphite/carbonapi/util/zipperctx"
 	"github.com/go-graphite/carbonapi/zipper"
@@ -32,6 +30,7 @@ import (
 	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
+	"github.com/spf13/viper"
 
 	pickle "github.com/lomik/og-rek"
 	"github.com/peterbourgon/g2g"
