@@ -113,11 +113,6 @@ const (
 	contentTypeSVG        = "image/svg+xml"
 )
 
-type renderResponse struct {
-	data  *types.MetricData
-	error error
-}
-
 func renderHandler(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
 	uuid := uuid.NewV4()
