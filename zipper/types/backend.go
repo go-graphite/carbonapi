@@ -31,18 +31,17 @@ func (b *BackendV2) FillDefaults() {
 	if b.Timeouts == nil {
 		b.Timeouts = &Timeouts{}
 	}
+
 	if b.Timeouts.Render == 0 {
 		b.Timeouts.Render = 10000 * time.Second
 	}
+
 	if b.Timeouts.Find == 0 {
 		b.Timeouts.Find = 10000 * time.Second
 	}
+
 	if b.Timeouts.Connect == 0 {
 		b.Timeouts.Connect = 200 * time.Millisecond
-	}
-
-	if b.ConcurrencyLimit == nil {
-
 	}
 }
 
