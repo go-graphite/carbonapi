@@ -289,7 +289,6 @@ func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 
 	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Render)
 	defer cancel()
-	ctx = context.Background()
 
 	for _, client := range clients {
 		go bg.doFind(ctx, logger, client, request, resCh)
@@ -433,7 +432,7 @@ func doProbe(ctx context.Context, client types.ServerClient, resCh chan<- tldRes
 func (bg *BroadcastGroup) ProbeTLDs(ctx context.Context) ([]string, *errors.Errors) {
 	logger := bg.logger.With(zap.String("function", "prober"))
 
-	ctx, cancel := context.WithTimeout(context.Background(), bg.timeout.Find)
+	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Find)
 	defer cancel()
 
 	clients := bg.Children()
