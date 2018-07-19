@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/go-graphite/carbonapi/expr/types"
-	"github.com/go-graphite/carbonapi/util"
+	util "github.com/go-graphite/carbonapi/util/ctx"
 	realZipper "github.com/go-graphite/carbonapi/zipper"
 	zipperCfg "github.com/go-graphite/carbonapi/zipper/config"
 	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
