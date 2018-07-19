@@ -327,15 +327,11 @@ func setUpConfig(logger *zap.Logger) {
 			sub.Unmarshal(&newStruct)
 			if newStruct.ColorList == nil || len(newStruct.ColorList) == 0 {
 				newStruct.ColorList = make([]string, len(png.DefaultParams.ColorList))
-				for i, v := range png.DefaultParams.ColorList {
-					newStruct.ColorList[i] = v
-				}
+				copy(newStruct.ColorList, png.DefaultParams.ColorList)
 			}
 			if newStruct.YDivisors == nil || len(newStruct.YDivisors) == 0 {
 				newStruct.YDivisors = make([]float64, len(png.DefaultParams.YDivisors))
-				for i, v := range png.DefaultParams.YDivisors {
-					newStruct.YDivisors[i] = v
-				}
+				copy(newStruct.YDivisors, png.DefaultParams.YDivisors)
 			}
 			graphTemplates[k] = newStruct
 		}

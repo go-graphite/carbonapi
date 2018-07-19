@@ -47,8 +47,7 @@ type aliasByPostgresConfig struct {
 
 func (f *aliasByPostgres) SQLConnectDB(databaseName string) (*sql.DB, error) {
 	logger := zapwriter.Logger("functionInit").With(zap.String("function", "aliasByPostgres"))
-	var connectString string
-	connectString = fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", f.Database[databaseName].Username, f.Database[databaseName].Password, f.Database[databaseName].URLDB, f.Database[databaseName].NameDB)
+	connectString := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", f.Database[databaseName].Username, f.Database[databaseName].Password, f.Database[databaseName].URLDB, f.Database[databaseName].NameDB)
 	logger.Debug(connectString)
 	db, err := sql.Open("postgres", connectString)
 	if err != nil {
@@ -179,8 +178,7 @@ func (f *aliasByPostgres) Do(e parser.Expr, from, until int64, values map[parser
 			}
 			name = append(name, nodes[f])
 		}
-		var tempName string
-		tempName = strings.Join(name, ".")
+		tempName := strings.Join(name, ".")
 		query := f.Database[databaseName].KeyString[keyString].QueryString
 		varName := regexp.MustCompile(f.Database[databaseName].KeyString[keyString].VarName)
 		queryFields := len(varName.FindAllString(query, -1))

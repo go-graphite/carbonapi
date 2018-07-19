@@ -86,7 +86,7 @@ func (f *multiplySeriesWithWildcards) Do(e parser.Expr, from, until int64, value
 				}
 
 				atLeastOne[i] = true
-				if hasVal[i] == false {
+				if !hasVal[i] {
 					r.Values[i] = v
 					hasVal[i] = true
 				} else {

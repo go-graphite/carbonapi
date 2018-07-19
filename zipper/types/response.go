@@ -251,8 +251,6 @@ func (first *ServerFetchResponse) Merge(second *ServerFetchResponse, uuid string
 			first.Response.Metrics = append(first.Response.Metrics, second.Response.Metrics[i])
 		}
 	}
-
-	return
 }
 
 type fetchResponseCoordinates struct {

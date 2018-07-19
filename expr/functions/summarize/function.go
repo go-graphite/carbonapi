@@ -108,7 +108,7 @@ func (f *summarize) Do(e parser.Expr, from, until int64, values map[parser.Metri
 
 		r := types.MetricData{FetchResponse: pb.FetchResponse{
 			Name:              name,
-			Values:            make([]float64, buckets, buckets),
+			Values:            make([]float64, buckets),
 			StepTime:          bucketSize,
 			StartTime:         start,
 			StopTime:          stop,

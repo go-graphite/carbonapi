@@ -177,10 +177,11 @@ func (t Suggestion) MarshalJSON() ([]byte, error) {
 }
 
 func (t *Suggestion) UnmarshalJSON(d []byte) error {
-	if d == nil || len(d) == 0 {
+	if len(d) == 0 {
 		t.Type = SNone
 		return nil
 	}
+
 	var res interface{}
 	err := json.Unmarshal(d, &res)
 	if err != nil {

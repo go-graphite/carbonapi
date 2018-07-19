@@ -460,9 +460,7 @@ func (z Zipper) InfoProtoV3(ctx context.Context, request *protov3.MultiGlobReque
 			}
 		}
 	} else {
-		for _, m := range request.Metrics {
-			realRequest.Names = append(realRequest.Names, m)
-		}
+		realRequest.Names = append(realRequest.Names, request.Metrics...)
 	}
 
 	r, stats, e := z.storeBackends.Info(ctx, realRequest)

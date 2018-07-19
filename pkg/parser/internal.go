@@ -60,16 +60,15 @@ func (e *expr) toExpr() interface{} {
 
 func mergeNamedArgs(arg1, arg2 map[string]*expr) map[string]*expr {
 	res := make(map[string]*expr)
-	if arg1 != nil {
-		for k, v := range arg1 {
-			res[k] = v
-		}
+
+	for k, v := range arg1 {
+		res[k] = v
 	}
-	if arg2 != nil {
-		for k, v := range arg2 {
-			res[k] = v
-		}
+
+	for k, v := range arg2 {
+		res[k] = v
 	}
+
 	return res
 }
 
