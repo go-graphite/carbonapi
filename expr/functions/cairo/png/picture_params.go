@@ -16,8 +16,8 @@ var DefaultColorList = []string{"blue", "green", "red", "purple", "brown", "yell
 type YAxisSide int
 
 const (
-	YAxisSideRight YAxisSide = 1
-	YAxisSideLeft            = 2
+	YAxisSideRight YAxisSide = 1 << iota
+	YAxisSideLeft
 )
 
 func getAxisSide(s string, def YAxisSide) YAxisSide {
@@ -33,18 +33,18 @@ func getAxisSide(s string, def YAxisSide) YAxisSide {
 type LineMode int
 
 const (
-	LineModeSlope     LineMode = 1
-	LineModeStaircase          = 2
-	LineModeConnected          = 4
+	LineModeSlope LineMode = 1 << iota
+	LineModeStaircase
+	LineModeConnected
 )
 
 type AreaMode int
 
 const (
-	AreaModeNone    AreaMode = 1
-	AreaModeFirst            = 2
-	AreaModeAll              = 4
-	AreaModeStacked          = 8
+	AreaModeNone AreaMode = 1 << iota
+	AreaModeFirst
+	AreaModeAll
+	AreaModeStacked
 )
 
 func getAreaMode(s string, def AreaMode) AreaMode {
@@ -65,9 +65,9 @@ func getAreaMode(s string, def AreaMode) AreaMode {
 type PieMode int
 
 const (
-	PieModeMaximum PieMode = 1
-	PieModeMinimum         = 2
-	PieModeAverage         = 4
+	PieModeMaximum PieMode = 1 << iota
+	PieModeMinimum
+	PieModeAverage
 )
 
 func getPieMode(s string, def PieMode) PieMode {
