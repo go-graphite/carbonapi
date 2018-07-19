@@ -8,7 +8,7 @@ VERSION ?= $(shell git describe --abbrev=4 --dirty --always --tags)
 GO ?= go
 
 PKG_CARBONAPI=github.com/go-graphite/carbonapi/cmd/carbonapi
-PKG_CARBONZIPPER=github.com/go-graphite/carbonzipper/cmd/carbonzipper
+PKG_CARBONZIPPER=github.com/go-graphite/carbonapi/cmd/carbonzipper
 
 carbonapi: $(shell find . -name '*.go' | grep -v 'vendor')
 	PKG_CONFIG_PATH="$(EXTRA_PKG_CONFIG_PATH)" $(GO) build -v -tags cairo -ldflags '-X main.BuildVersion=$(VERSION)' $(PKG_CARBONAPI)

@@ -22,8 +22,7 @@ import (
 	"github.com/facebookgo/pidfile"
 	"github.com/go-graphite/carbonapi/intervalset"
 	"github.com/go-graphite/carbonapi/mstats"
-	cu "github.com/go-graphite/carbonapi/util/apictx"
-	util "github.com/go-graphite/carbonapi/util/zipperctx"
+	util "github.com/go-graphite/carbonapi/util/ctx"
 	"github.com/go-graphite/carbonapi/zipper"
 	zipperConfig "github.com/go-graphite/carbonapi/zipper/config"
 	"github.com/go-graphite/carbonapi/zipper/types"
@@ -179,7 +178,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	logger := zapwriter.Logger("find").With(
 		zap.String("handler", "find"),
 		zap.String("carbonzipper_uuid", uuid.String()),
-		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
+		zap.String("carbonapi_uuid", util.GetUUID(ctx)),
 	)
 	logger.Debug("got find request",
 		zap.String("request", req.URL.RequestURI()),
@@ -195,7 +194,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		zap.String("format", format),
 		zap.String("target", originalQuery),
 		zap.String("carbonzipper_uuid", uuid.String()),
-		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
+		zap.String("carbonapi_uuid", util.GetUUID(ctx)),
 	)
 
 	metrics, stats, err := config.zipper.FindProtoV2(ctx, []string{originalQuery})
@@ -289,7 +288,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		zap.Int("memory_usage_bytes", memoryUsage),
 		zap.String("handler", "render"),
 		zap.String("carbonzipper_uuid", uuid.String()),
-		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
+		zap.String("carbonapi_uuid", util.GetUUID(ctx)),
 	)
 
 	logger.Debug("got render request",
@@ -301,7 +300,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	accessLogger := zapwriter.Logger("access").With(
 		zap.String("handler", "render"),
 		zap.String("carbonzipper_uuid", uuid.String()),
-		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
+		zap.String("carbonapi_uuid", util.GetUUID(ctx)),
 	)
 
 	err := req.ParseForm()
@@ -446,7 +445,7 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 	logger := zapwriter.Logger("info").With(
 		zap.String("handler", "info"),
 		zap.String("carbonzipper_uuid", uuid.String()),
-		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
+		zap.String("carbonapi_uuid", util.GetUUID(ctx)),
 	)
 
 	logger.Debug("request",
@@ -458,7 +457,7 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 	accessLogger := zapwriter.Logger("access").With(
 		zap.String("handler", "info"),
 		zap.String("carbonzipper_uuid", uuid.String()),
-		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
+		zap.String("carbonapi_uuid", util.GetUUID(ctx)),
 	)
 	err := req.ParseForm()
 	if err != nil {
@@ -719,9 +718,9 @@ func main() {
 		)
 	}
 
-	http.HandleFunc("/metrics/find/", httputil.TrackConnections(httputil.TimeHandler(cu.ParseCtx(findHandler), bucketRequestTimes)))
-	http.HandleFunc("/render/", httputil.TrackConnections(httputil.TimeHandler(cu.ParseCtx(renderHandler), bucketRequestTimes)))
-	http.HandleFunc("/info/", httputil.TrackConnections(httputil.TimeHandler(cu.ParseCtx(infoHandler), bucketRequestTimes)))
+	http.HandleFunc("/metrics/find/", httputil.TrackConnections(httputil.TimeHandler(util.ParseCtx(findHandler, util.HeaderUUIDAPI), bucketRequestTimes)))
+	http.HandleFunc("/render/", httputil.TrackConnections(httputil.TimeHandler(util.ParseCtx(renderHandler, util.HeaderUUIDAPI), bucketRequestTimes)))
+	http.HandleFunc("/info/", httputil.TrackConnections(httputil.TimeHandler(util.ParseCtx(infoHandler, util.HeaderUUIDAPI), bucketRequestTimes)))
 	http.HandleFunc("/lb_check", lbCheckHandler)
 
 	// nothing in the config? check the environment
