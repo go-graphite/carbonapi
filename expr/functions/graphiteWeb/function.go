@@ -15,8 +15,8 @@ import (
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
-	"github.com/go-graphite/carbonapi/pkg/parser"
 	"github.com/go-graphite/carbonapi/limiter"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
 	"github.com/spf13/viper"
@@ -347,8 +347,8 @@ func (f *graphiteWeb) Do(e parser.Expr, from, until int64, values map[parser.Met
 		rewrite, _ := url.Parse(srv + "/render/")
 		v := url.Values{
 			"target": []string{target},
-			"from":   []string{strconv.FormatInt(int64(from), 10)},
-			"until":  []string{strconv.FormatInt(int64(until), 10)},
+			"from":   []string{strconv.FormatInt(from, 10)},
+			"until":  []string{strconv.FormatInt(until, 10)},
 			"format": []string{"json"},
 		}
 

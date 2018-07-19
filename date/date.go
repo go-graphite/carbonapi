@@ -50,27 +50,27 @@ func DateParamToEpoch(s string, qtz string, d int64, defaultTimeZone *time.Locat
 
 	if s == "" {
 		// return the default if nothing was passed
-		return int64(d)
+		return d
 	}
 
 	// relative timestamp
 	if s[0] == '-' {
 		offset, err := parser.IntervalString(s, -1)
 		if err != nil {
-			return int64(d)
+			return d
 		}
 
-		return int64(timeNow().Add(time.Duration(offset) * time.Second).Unix())
+		return timeNow().Add(time.Duration(offset) * time.Second).Unix()
 	}
 
 	switch s {
 	case "now":
-		return int64(timeNow().Unix())
+		return timeNow().Unix()
 	case "midnight", "noon", "teatime":
 		yy, mm, dd := timeNow().Date()
 		hh, min, _ := parseTime(s) // error ignored, we know it's valid
 		dt := time.Date(yy, mm, dd, hh, min, 0, 0, defaultTimeZone)
-		return int64(dt.Unix())
+		return dt.Unix()
 	}
 
 	sint, err := strconv.Atoi(s)
@@ -90,7 +90,7 @@ func DateParamToEpoch(s string, qtz string, d int64, defaultTimeZone *time.Locat
 	case len(split) == 2:
 		ts, ds = split[0], split[1]
 	case len(split) > 2:
-		return int64(d)
+		return d
 	}
 
 	var tz = defaultTimeZone
@@ -118,7 +118,7 @@ dateStringSwitch:
 			}
 		}
 
-		return int64(d)
+		return d
 	}
 
 	var hour, minute int
@@ -130,5 +130,5 @@ dateStringSwitch:
 	yy, mm, dd := t.Date()
 	t = time.Date(yy, mm, dd, hour, minute, 0, 0, defaultTimeZone)
 
-	return int64(t.Unix())
+	return t.Unix()
 }

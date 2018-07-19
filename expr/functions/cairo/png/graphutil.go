@@ -79,7 +79,7 @@ func hexToRGBA(h string) (*color.RGBA, error) {
 	alpha := byte(255)
 
 	if len(h) == 6 {
-		if rgb, err := strconv.ParseUint(string(h), 16, 32); err == nil {
+		if rgb, err := strconv.ParseUint(h, 16, 32); err == nil {
 			r = uint8(rgb >> 16)
 			g = uint8(rgb >> 8)
 			b = uint8(rgb)
@@ -89,7 +89,7 @@ func hexToRGBA(h string) (*color.RGBA, error) {
 	}
 
 	if len(h) == 8 {
-		if rgb, err := strconv.ParseUint(string(h), 16, 32); err == nil {
+		if rgb, err := strconv.ParseUint(h, 16, 32); err == nil {
 			r = uint8(rgb >> 24)
 			g = uint8(rgb >> 16)
 			b = uint8(rgb >> 8)
