@@ -1,16 +1,18 @@
 package aliasByPostgres
 
 import (
+	"database/sql"
 	"fmt"
 	"regexp"
-	"strings"
 	"strconv"
-	"database/sql"
-	_ "github.com/lib/pq" // Needed for proper work of postgresql requests
+	"strings"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
+
+	_ "github.com/lib/pq" // Needed for proper work of postgresql requests
 	"github.com/lomik/zapwriter"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -18,63 +20,63 @@ import (
 
 type aliasByPostgres struct {
 	interfaces.FunctionBase
-	Enabled		bool
-	Database	map[string]Database
+	Enabled  bool
+	Database map[string]Database
 }
 
 // KeyString structure
 type KeyString struct {
-	VarName		string
-	QueryString	string
-	MatchString	string
+	VarName     string
+	QueryString string
+	MatchString string
 }
 
 // Database structure
 type Database struct {
-	URLDB		string
-	Username	string
-	Password	string
-	NameDB		string
-	KeyString	map[string]KeyString
+	URLDB     string
+	Username  string
+	Password  string
+	NameDB    string
+	KeyString map[string]KeyString
 }
 
 type aliasByPostgresConfig struct {
-	Enabled		bool
-	Database	map[string]Database
+	Enabled  bool
+	Database map[string]Database
 }
 
-func (f *aliasByPostgres) SQLConnectDB(databaseName string) (*sql.DB,error) {
+func (f *aliasByPostgres) SQLConnectDB(databaseName string) (*sql.DB, error) {
 	logger := zapwriter.Logger("functionInit").With(zap.String("function", "aliasByPostgres"))
 	var connectString string
-	connectString = fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable",f.Database[databaseName].Username,f.Database[databaseName].Password,f.Database[databaseName].URLDB,f.Database[databaseName].NameDB)
+	connectString = fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", f.Database[databaseName].Username, f.Database[databaseName].Password, f.Database[databaseName].URLDB, f.Database[databaseName].NameDB)
 	logger.Debug(connectString)
 	db, err := sql.Open("postgres", connectString)
 	if err != nil {
-	    logger.Error("Error connect to PostgreSQL Database")
-	    return nil,err
+		logger.Error("Error connect to PostgreSQL Database")
+		return nil, err
 	}
-	return db,nil
+	return db, nil
 }
 
 // SQLQueryDB convenience function to query the database
 func (f *aliasByPostgres) SQLQueryDB(query string, databaseName string) (res string, err error) {
-    var result string
-    logger := zapwriter.Logger("functionInit").With(zap.String("function", "aliasByPostgres"))
-    db,_ := f.SQLConnectDB(databaseName)
-    rows, err := db.Query(query)
-    if err != nil {
-	logger.Error("Error with query ti database")
-    }
-    defer db.Close()
-    for rows.Next(){
-	err := rows.Scan(&result)
+	var result string
+	logger := zapwriter.Logger("functionInit").With(zap.String("function", "aliasByPostgres"))
+	db, _ := f.SQLConnectDB(databaseName)
+	rows, err := db.Query(query)
 	if err != nil {
-	    logger.Error("Error with scan response")
+		logger.Error("Error with query ti database")
 	}
-	logger.Debug(result)
-    }
-    defer rows.Close()
-    return result, nil
+	defer db.Close()
+	for rows.Next() {
+		err := rows.Scan(&result)
+		if err != nil {
+			logger.Error("Error with scan response")
+		}
+		logger.Debug(result)
+	}
+	defer rows.Close()
+	return result, nil
 }
 
 // GetOrder - standard function
@@ -86,46 +88,46 @@ func GetOrder() interfaces.Order {
 func New(configFile string) []interfaces.FunctionMetadata {
 	logger := zapwriter.Logger("functionInit").With(zap.String("function", "aliasByPostgres"))
 	v := viper.New()
-        v.SetConfigFile(configFile)
-        err := v.ReadInConfig()
-        if err != nil {
-                logger.Error("failed to read config file",
-                        zap.Error(err),
-                )
-        }
-        key := map[string]KeyString{
-                "keyString": {
-            	    VarName: "var",
-            	    QueryString: "select * from database.table where \"name\" =~ /^var0$/",
-            	    MatchString: ".*",
-            	    },
-        }
-        database := map[string]Database{
-                "postgres": {
-            	    URLDB: "http://localhost:5432",
-            	    Username: "User",
-            	    Password: "Password",
-            	    NameDB: "databaseName",
-            	    KeyString: key,
-            	    },
-        }
+	v.SetConfigFile(configFile)
+	err := v.ReadInConfig()
+	if err != nil {
+		logger.Error("failed to read config file",
+			zap.Error(err),
+		)
+	}
+	key := map[string]KeyString{
+		"keyString": {
+			VarName:     "var",
+			QueryString: "select * from database.table where \"name\" =~ /^var0$/",
+			MatchString: ".*",
+		},
+	}
+	database := map[string]Database{
+		"postgres": {
+			URLDB:     "http://localhost:5432",
+			Username:  "User",
+			Password:  "Password",
+			NameDB:    "databaseName",
+			KeyString: key,
+		},
+	}
 
-        cfg := aliasByPostgresConfig{
-                Enabled:     false,
-                Database:    database,
-        }
-        err = v.Unmarshal(&cfg)
-        if err != nil {
-                logger.Error("failed to parse config",
-                        zap.Error(err),
-                )
-        }
-        if !cfg.Enabled {
-                logger.Warn("aliasByPostgres config found but aliasByPostgres is disabled")
-                return nil
-        }
+	cfg := aliasByPostgresConfig{
+		Enabled:  false,
+		Database: database,
+	}
+	err = v.Unmarshal(&cfg)
+	if err != nil {
+		logger.Error("failed to parse config",
+			zap.Error(err),
+		)
+	}
+	if !cfg.Enabled {
+		logger.Warn("aliasByPostgres config found but aliasByPostgres is disabled")
+		return nil
+	}
 	f := &aliasByPostgres{
-		Enabled: cfg.Enabled,
+		Enabled:  cfg.Enabled,
 		Database: cfg.Database,
 	}
 	res := make([]interfaces.FunctionMetadata, 0)
@@ -143,7 +145,15 @@ func (f *aliasByPostgres) Do(e parser.Expr, from, until int64, values map[parser
 	}
 
 	fields, err := e.GetIntArgs(3)
+	if err != nil {
+		return nil, err
+	}
+
 	databaseName, err := e.GetStringArg(1)
+	if err != nil {
+		return nil, err
+	}
+
 	keyString, err := e.GetStringArg(2)
 	if err != nil {
 		return nil, err
@@ -155,7 +165,9 @@ func (f *aliasByPostgres) Do(e parser.Expr, from, until int64, values map[parser
 	for _, a := range args {
 		metric := helper.ExtractMetric(a.Name)
 		logger.Debug(metric)
-		if metric == "" {continue}
+		if metric == "" {
+			continue
+		}
 		nodes := strings.Split(metric, ".")
 		var name []string
 		for _, f := range fields {
@@ -168,24 +180,24 @@ func (f *aliasByPostgres) Do(e parser.Expr, from, until int64, values map[parser
 			name = append(name, nodes[f])
 		}
 		var tempName string
-		tempName = strings.Join(name ,".")
+		tempName = strings.Join(name, ".")
 		query := f.Database[databaseName].KeyString[keyString].QueryString
 		varName := regexp.MustCompile(f.Database[databaseName].KeyString[keyString].VarName)
-		queryFields := len(varName.FindAllString(query,-1))
+		queryFields := len(varName.FindAllString(query, -1))
 
 		for i := 0; i < queryFields; i++ {
-			reg := regexp.MustCompile("("+f.Database[databaseName].KeyString[keyString].VarName+strings.TrimSpace(strconv.Itoa(i))+")")
+			reg := regexp.MustCompile("(" + f.Database[databaseName].KeyString[keyString].VarName + strings.TrimSpace(strconv.Itoa(i)) + ")")
 			query = reg.ReplaceAllString(query, name[i])
 		}
 
-		res, err := f.SQLQueryDB(query,databaseName)
+		res, err := f.SQLQueryDB(query, databaseName)
 		if err != nil {
-			logger.Error("failed query to Postgresql DB", zap.Error(err),)
+			logger.Error("failed query to Postgresql DB", zap.Error(err))
 			return nil, err
 		}
 		for i := range name {
 			if i < queryFields {
-				name = append(name[:0],name[0+1:]...)
+				name = append(name[:0], name[0+1:]...)
 			}
 		}
 		if len(res) > 0 {
@@ -193,7 +205,7 @@ func (f *aliasByPostgres) Do(e parser.Expr, from, until int64, values map[parser
 				r := *a
 				r.Name = strings.Join(name, ".")
 				if len(name) > 0 {
-					r.Name = res +"."+ r.Name
+					r.Name = res + "." + r.Name
 					results = append(results, &r)
 				} else {
 					r.Name = res
@@ -201,7 +213,7 @@ func (f *aliasByPostgres) Do(e parser.Expr, from, until int64, values map[parser
 				}
 			}
 		} else {
-			r:= *a
+			r := *a
 			r.Name = tempName
 			results = append(results, &r)
 		}
