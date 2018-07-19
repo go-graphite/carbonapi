@@ -480,7 +480,9 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 	haveNonFatalErrors := false
 	var b []byte
 	if format == "v2" || format == "carbonapi_v2_pb" || format == "protobuf" || format == "protobuf3" {
-		result, stats, err := config.zipper.InfoProtoV2(ctx, targets)
+		var result *protov2.ZipperInfoResponse
+		var stats *types.Stats
+		result, stats, err = config.zipper.InfoProtoV2(ctx, targets)
 		sendStats(stats)
 		if err != nil && err != types.ErrNonFatalErrors {
 			accessLogger.Error("info failed",
@@ -500,7 +502,9 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 		b, err = result.Marshal()
 		_, _ = w.Write(b)
 	} else {
-		result, stats, err := config.zipper.InfoProtoV3(ctx, &protov3.MultiGlobRequest{Metrics: targets})
+		var result *protov3.ZipperInfoResponse
+		var stats *types.Stats
+		result, stats, err = config.zipper.InfoProtoV3(ctx, &protov3.MultiGlobRequest{Metrics: targets})
 		sendStats(stats)
 		if err != nil && err != types.ErrNonFatalErrors {
 			accessLogger.Error("info failed",
