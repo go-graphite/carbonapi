@@ -19,7 +19,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/intervalset"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"github.com/go-graphite/carbonapi/util"
+	util "github.com/go-graphite/carbonapi/util/ctx"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
 	"github.com/go-graphite/carbonapi/expr/metadata"
@@ -112,11 +112,6 @@ const (
 	contentTypeCSV        = "text/csv"
 	contentTypeSVG        = "image/svg+xml"
 )
-
-type renderResponse struct {
-	data  *types.MetricData
-	error error
-}
 
 func renderHandler(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()

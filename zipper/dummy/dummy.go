@@ -59,6 +59,10 @@ type DummyClient struct {
 	alwaysTimeout  time.Duration
 }
 
+func (d *DummyClient) Children() []types.ServerClient {
+	return []types.ServerClient{d}
+}
+
 func NewDummyClient(name string, backends []string, maxMetricsPerRequest int) *DummyClient {
 	return &DummyClient{
 		name:                 name,

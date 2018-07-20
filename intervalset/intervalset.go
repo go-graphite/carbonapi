@@ -48,12 +48,12 @@ func (i *IntervalSet) MarshalPickle() ([]byte, error) {
 	//   172: .    STOP
 	b := []byte("(cgraphite.intervals\nIntervalSet\no}(U\tintervals](cgraphite.intervals\nInterval\no}(U\x05startGA\xd3\xb3]\x8f\x99)\x02U\x04sizeGA\xa2\xcc\x02\xd2K\x8f\x18U\x03endGA\xd6\x0c\xdd\xe9\xe2\x9a\xe5U\x05tupleGA\xd3\xb3]\x8f\x99)\x02GA\xd6\x0c\xdd\xe9\xe2\x9a\xe5\x86ubaU\x04sizeGA\xa2\xcc\x02\xd2K\x8f\x18ub")
 
-	binary.BigEndian.PutUint64(b[89:97], uint64(math.Float64bits(float64(i.Start))))
-	binary.BigEndian.PutUint64(b[104:112], uint64(math.Float64bits(float64(i.End-i.Start))))
-	binary.BigEndian.PutUint64(b[118:126], uint64(math.Float64bits(float64(i.End))))
-	binary.BigEndian.PutUint64(b[134:142], uint64(math.Float64bits(float64(i.Start))))
-	binary.BigEndian.PutUint64(b[143:151], uint64(math.Float64bits(float64(i.End))))
-	binary.BigEndian.PutUint64(b[162:170], uint64(math.Float64bits(float64(i.End-i.Start))))
+	binary.BigEndian.PutUint64(b[89:97], math.Float64bits(float64(i.Start)))
+	binary.BigEndian.PutUint64(b[104:112], math.Float64bits(float64(i.End-i.Start)))
+	binary.BigEndian.PutUint64(b[118:126], math.Float64bits(float64(i.End)))
+	binary.BigEndian.PutUint64(b[134:142], math.Float64bits(float64(i.Start)))
+	binary.BigEndian.PutUint64(b[143:151], math.Float64bits(float64(i.End)))
+	binary.BigEndian.PutUint64(b[162:170], math.Float64bits(float64(i.End-i.Start)))
 
 	return b, nil
 }

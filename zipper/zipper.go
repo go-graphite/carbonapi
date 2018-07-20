@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-graphite/carbonapi/limiter"
-	"github.com/go-graphite/carbonapi/pathcache"
 	"github.com/go-graphite/carbonapi/zipper/broadcast"
 	"github.com/go-graphite/carbonapi/zipper/config"
 	"github.com/go-graphite/carbonapi/zipper/errors"
@@ -27,22 +25,17 @@ import (
 
 // Zipper provides interface to Zipper-related functions
 type Zipper struct {
-	// Limiter limits our concurrency to a particular server
-	limiter     limiter.ServerLimiter
 	probeTicker *time.Ticker
 	ProbeQuit   chan struct{}
 	ProbeForce  chan int
 
 	timeout           time.Duration
 	timeoutConnect    time.Duration
-	timeoutKeepAlive  time.Duration
 	keepAliveInterval time.Duration
 
 	searchConfigured bool
 	searchBackends   types.ServerClient
 	searchPrefix     string
-
-	searchCache pathcache.PathCache
 
 	// Will broadcast to all servers there
 	storeBackends             types.ServerClient
@@ -51,11 +44,6 @@ type Zipper struct {
 	sendStats func(*types.Stats)
 
 	logger *zap.Logger
-}
-
-type nameLeaf struct {
-	name string
-	leaf bool
 }
 
 var defaultTimeouts = types.Timeouts{
@@ -335,28 +323,33 @@ func (z *Zipper) probeTlds() {
 func (z Zipper) FetchProtoV3(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, error) {
 	var statsSearch *types.Stats
 	var e errors.Errors
+
 	if z.searchConfigured {
 		realRequest := &protov3.MultiFetchRequest{
 			Metrics: make([]protov3.FetchRequest, 0, len(request.Metrics)),
 		}
+
 		for _, metric := range request.Metrics {
 			if strings.HasPrefix(metric.Name, z.searchPrefix) {
-				r := &protov3.MultiGlobRequest{
+				res, stat, err := z.searchBackends.Find(ctx, &protov3.MultiGlobRequest{
 					Metrics: []string{metric.Name},
-				}
-				res, stat, err := z.searchBackends.Find(ctx, r)
+				})
+
 				if statsSearch == nil {
 					statsSearch = stat
 				} else {
 					statsSearch.Merge(stat)
 				}
+
 				if err != nil {
 					e.Merge(err)
 					continue
 				}
+
 				if len(res.Metrics) == 0 {
 					continue
 				}
+
 				metricRequests := make([]protov3.FetchRequest, 0, len(res.Metrics))
 				for _, n := range res.Metrics {
 					for _, m := range n.Matches {
@@ -368,13 +361,16 @@ func (z Zipper) FetchProtoV3(ctx context.Context, request *protov3.MultiFetchReq
 						})
 					}
 				}
+
 				if len(metricRequests) > 0 {
 					realRequest.Metrics = append(realRequest.Metrics, metricRequests...)
 				}
+
 			} else {
 				realRequest.Metrics = append(realRequest.Metrics, metric)
 			}
 		}
+
 		if len(realRequest.Metrics) > 0 {
 			request = realRequest
 		}
@@ -421,11 +417,13 @@ func (z Zipper) FindProtoV3(ctx context.Context, request *protov3.MultiGlobReque
 	if err == nil {
 		err = &errors.Errors{}
 	}
+
 	findResponse := &types.ServerFindResponse{
 		Response: res,
 		Stats:    stats,
 		Err:      err,
 	}
+
 	if len(searchRequests.Metrics) > 0 {
 		resSearch, statsSearch, err := z.searchBackends.Find(ctx, request)
 		searchResponse := &types.ServerFindResponse{
@@ -462,9 +460,7 @@ func (z Zipper) InfoProtoV3(ctx context.Context, request *protov3.MultiGlobReque
 			}
 		}
 	} else {
-		for _, m := range request.Metrics {
-			realRequest.Names = append(realRequest.Names, m)
-		}
+		realRequest.Names = append(realRequest.Names, request.Metrics...)
 	}
 
 	r, stats, e := z.storeBackends.Info(ctx, realRequest)

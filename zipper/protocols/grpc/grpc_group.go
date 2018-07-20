@@ -36,13 +36,16 @@ type ClientGRPCGroup struct {
 
 	r                    *manual.Resolver
 	conn                 *grpc.ClientConn
-	dialerrc             chan error
 	cleanup              func()
 	timeout              types.Timeouts
 	maxMetricsPerRequest int
 
 	client protov3grpc.CarbonV1Client
 	logger *zap.Logger
+}
+
+func (c *ClientGRPCGroup) Children() []types.ServerClient {
+	return []types.ServerClient{c}
 }
 
 func NewClientGRPCGroupWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {

@@ -21,6 +21,39 @@ type ServerInfoResponse struct {
 	Err      *errors.Errors
 }
 
+func NewServerInfoResponse() *ServerInfoResponse {
+	return &ServerInfoResponse{
+		Response: new(protov3.ZipperInfoResponse),
+		Stats:    new(Stats),
+		Err:      new(errors.Errors),
+	}
+}
+
+func (first *ServerInfoResponse) Merge(second *ServerInfoResponse) *errors.Errors {
+	if second.Stats != nil {
+		first.Stats.Merge(second.Stats)
+	}
+
+	if first.Err == nil {
+		first.Err = new(errors.Errors)
+	}
+	first.Err.Merge(second.Err)
+
+	if first.Err.HaveFatalErrors {
+		return first.Err
+	}
+
+	if second.Response == nil {
+		return first.Err
+	}
+
+	for k, v := range second.Response.Info {
+		first.Response.Info[k] = v
+	}
+
+	return nil
+}
+
 type ServerFindResponse struct {
 	Server   string
 	Response *protov3.MultiGlobResponse
@@ -28,25 +61,13 @@ type ServerFindResponse struct {
 	Err      *errors.Errors
 }
 
-/*
-func mergeFindRequests(f1, f2 []protov3.GlobMatch) []protov3.GlobMatch {
-	uniqList := make(map[string]protov3.GlobMatch)
-
-	for _, v := range f1 {
-		uniqList[v.Path] = v
+func NewServerFindResponse() *ServerFindResponse {
+	return &ServerFindResponse{
+		Response: new(protov3.MultiGlobResponse),
+		Stats:    new(Stats),
+		Err:      new(errors.Errors),
 	}
-	for _, v := range f2 {
-		uniqList[v.Path] = v
-	}
-
-	res := make([]protov3.GlobMatch, 0, len(uniqList))
-	for _, v := range uniqList {
-		res = append(res, v)
-	}
-
-	return res
 }
-*/
 
 func (first *ServerFindResponse) Merge(second *ServerFindResponse) *errors.Errors {
 	if second.Stats != nil {
@@ -54,7 +75,7 @@ func (first *ServerFindResponse) Merge(second *ServerFindResponse) *errors.Error
 	}
 
 	if first.Err == nil {
-		first.Err = &errors.Errors{}
+		first.Err = new(errors.Errors)
 	}
 	first.Err.Merge(second.Err)
 
@@ -82,6 +103,7 @@ func (first *ServerFindResponse) Merge(second *ServerFindResponse) *errors.Error
 			first.Response.Metrics = append(first.Response.Metrics, m)
 			continue
 		}
+
 		for _, mm := range m.Matches {
 			key := first.Response.Metrics[i].Name + "." + mm.Path
 			if _, ok := seenMatches[key]; !ok {
@@ -91,19 +113,27 @@ func (first *ServerFindResponse) Merge(second *ServerFindResponse) *errors.Error
 		}
 	}
 
-	if first.Err != nil && second.Err == nil {
-		first.Err = nil
-	}
-
 	return nil
 }
 
 type ServerFetchResponse struct {
-	Server       string
-	ResponsesMap map[string][]protov3.FetchResponse
-	Response     *protov3.MultiFetchResponse
-	Stats        *Stats
-	Err          *errors.Errors
+	Server   string
+	Response *protov3.MultiFetchResponse
+	Stats    *Stats
+	Err      *errors.Errors
+}
+
+func NewServerFetchResponse() *ServerFetchResponse {
+	return &ServerFetchResponse{
+		Response: new(protov3.MultiFetchResponse),
+		Stats:    new(Stats),
+		Err:      new(errors.Errors),
+	}
+}
+
+func (s *ServerFetchResponse) NonFatalError(err error) *ServerFetchResponse {
+	s.Err.Add(err)
+	return s
 }
 
 func swapFetchResponses(m1, m2 *protov3.FetchResponse) {
@@ -117,73 +147,74 @@ func swapFetchResponses(m1, m2 *protov3.FetchResponse) {
 	m1.StopTime, m2.StopTime = m2.StopTime, m1.StopTime
 }
 
-func MergeFetchResponses(m1, m2 *protov3.FetchResponse) *errors.Errors {
-	logger := zapwriter.Logger("zipper_render")
-
-	if len(m1.Values) != len(m2.Values) {
-		interpolate := false
-		if len(m1.Values) < len(m2.Values) {
-			swapFetchResponses(m1, m2)
-		}
-		if m1.StepTime < m2.StepTime {
-			interpolate = true
-		} else {
-			if m1.StartTime == m2.StartTime {
-				d := len(m1.Values) - len(m2.Values)
-				for i := 0; i < d; i++ {
-					m2.Values = append(m2.Values, math.NaN())
-				}
-
-				goto out
-			}
-		}
-
-		// TODO(Civil): we must fix the case of m1.StopTime != m2.StopTime
-		// We should check if m1.StopTime and m2.StopTime actually the same
-		// Also we need to append nans in case StopTimes dramatically differs
-
-		if !interpolate || m1.StopTime-m1.StopTime%m2.StepTime != m2.StopTime {
-			// m1.Step < m2.Step and len(m1) < len(m2) - most probably garbage data
-			logger.Error("unable to merge ovalues",
-				zap.Int("metric_values", len(m2.Values)),
-				zap.Int("response_values", len(m1.Values)),
-			)
-
-			return errors.FromErr(ErrResponseLengthMismatch)
-		}
-
-		// len(m1) > len(m2)
-		values := make([]float64, 0, len(m1.Values))
-		for ts := m1.StartTime; ts < m1.StopTime; ts += m1.StepTime {
-			idx := (ts - m1.StartTime) / m2.StepTime
-			values = append(values, m2.Values[idx])
-		}
-		m2.Values = values
-		m2.StepTime = m1.StepTime
-		m2.StartTime = m1.StartTime
-		m2.StopTime = m1.StopTime
-	}
-out:
-
+func mergeFetchResponsesWithEqualStepTimes(m1, m2 *protov3.FetchResponse, uuid string) error {
 	if m1.StartTime != m2.StartTime {
-		return errors.FromErr(ErrResponseStartTimeMismatch)
+		return ErrResponseStartTimeMismatch
 	}
 
-	for i := range m1.Values {
-		if !math.IsNaN(m1.Values[i]) {
-			continue
-		}
+	if len(m1.Values) < len(m2.Values) {
+		swapFetchResponses(m1, m2)
+	}
 
-		// found one
-		if !math.IsNaN(m2.Values[i]) {
+	for i := 0; i < len(m2.Values); i++ {
+		if math.IsNaN(m1.Values[i]) {
 			m1.Values[i] = m2.Values[i]
 		}
 	}
+
 	return nil
 }
 
-func (first *ServerFetchResponse) Merge(second *ServerFetchResponse) {
-	if first.Server == "" {
+func mergeFetchResponsesWithUnequalStepTimes(m1, m2 *protov3.FetchResponse, uuid string) error {
+	if m1.StepTime > m2.StepTime {
+		swapFetchResponses(m1, m2)
+	}
+
+	zapwriter.Logger("zipper_render").Warn("Fetch responses had different step times",
+		zap.Int64("m1_request_start_time", m1.RequestStartTime),
+		zap.Int64("m1_start_time", m1.StartTime),
+		zap.Int64("m1_stop_time", m1.StopTime),
+		zap.Int64("m1_step_time", m1.StepTime),
+		zap.Int64("m2_request_start_time", m2.RequestStartTime),
+		zap.Int64("m2_start_time", m2.StartTime),
+		zap.Int64("m2_stop_time", m2.StopTime),
+		zap.Int64("m2_step_time", m2.StepTime),
+		zap.String("carbonapi_uuid", uuid),
+	)
+
+	return nil
+}
+
+func MergeFetchResponses(m1, m2 *protov3.FetchResponse, uuid string) *errors.Errors {
+	var err error
+	if m1.RequestStartTime != m2.RequestStartTime {
+		err = ErrResponseStartTimeMismatch
+	} else if m1.StepTime == m2.StepTime {
+		err = mergeFetchResponsesWithEqualStepTimes(m1, m2, uuid)
+	} else {
+		err = mergeFetchResponsesWithUnequalStepTimes(m1, m2, uuid)
+	}
+
+	if err != nil {
+		zapwriter.Logger("zipper_render").Error("Unable to merge fetch responses",
+			zap.Error(err),
+			zap.Int64("m1_request_start_time", m1.RequestStartTime),
+			zap.Int64("m1_start_time", m1.StartTime),
+			zap.Int64("m1_stop_time", m1.StopTime),
+			zap.Int64("m1_step_time", m1.StepTime),
+			zap.Int64("m2_request_start_time", m2.RequestStartTime),
+			zap.Int64("m2_start_time", m2.StartTime),
+			zap.Int64("m2_stop_time", m2.StopTime),
+			zap.Int64("m2_step_time", m2.StepTime),
+			zap.String("carbonapi_uuid", uuid),
+		)
+	}
+
+	return errors.FromErr(err)
+}
+
+func (first *ServerFetchResponse) Merge(second *ServerFetchResponse, uuid string) {
+	if first.Server == "" && second.Server != "" {
 		first.Server = second.Server
 	}
 
@@ -204,14 +235,14 @@ func (first *ServerFetchResponse) Merge(second *ServerFetchResponse) {
 		return
 	}
 
-	metrics := make(map[string]int)
+	metrics := make(map[fetchResponseCoordinates]int)
 	for i := range first.Response.Metrics {
-		metrics[first.Response.Metrics[i].Name] = i
+		metrics[coordinates(&first.Response.Metrics[i])] = i
 	}
 
 	for i := range second.Response.Metrics {
-		if j, ok := metrics[second.Response.Metrics[i].Name]; ok {
-			err := MergeFetchResponses(&first.Response.Metrics[j], &second.Response.Metrics[i])
+		if j, ok := metrics[coordinates(&second.Response.Metrics[i])]; ok {
+			err := MergeFetchResponses(&first.Response.Metrics[j], &second.Response.Metrics[i], uuid)
 			if err != nil {
 				// TODO: Normal error handling
 				continue
@@ -220,10 +251,18 @@ func (first *ServerFetchResponse) Merge(second *ServerFetchResponse) {
 			first.Response.Metrics = append(first.Response.Metrics, second.Response.Metrics[i])
 		}
 	}
+}
 
-	if first.Err != nil && second.Err == nil {
-		first.Err = nil
+type fetchResponseCoordinates struct {
+	name  string
+	from  int64
+	until int64
+}
+
+func coordinates(r *protov3.FetchResponse) fetchResponseCoordinates {
+	return fetchResponseCoordinates{
+		name:  r.Name,
+		from:  r.RequestStartTime,
+		until: r.RequestStopTime,
 	}
-
-	return
 }

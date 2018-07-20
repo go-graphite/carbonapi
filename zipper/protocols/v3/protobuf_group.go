@@ -39,9 +39,6 @@ type ClientProtoV3Group struct {
 
 	client *http.Client
 
-	counter             uint64
-	maxIdleConnsPerHost int
-
 	limiter              *limiter.ServerLimiter
 	logger               *zap.Logger
 	timeout              types.Timeouts
@@ -49,6 +46,10 @@ type ClientProtoV3Group struct {
 	maxMetricsPerRequest int
 
 	httpQuery *helper.HttpQuery
+}
+
+func (c *ClientProtoV3Group) Children() []types.ServerClient {
+	return []types.ServerClient{c}
 }
 
 func New(logger *zap.Logger, config types.BackendV2) (types.ServerClient, *errors.Errors) {
@@ -135,6 +136,7 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	if e == nil {
 		e = &errors.Errors{}
 	}
+
 	if e.HaveFatalErrors {
 		e.HaveFatalErrors = false
 		return nil, stats, e

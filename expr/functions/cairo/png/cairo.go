@@ -64,15 +64,20 @@ type unitPrefix struct {
 	size   uint64
 }
 
+const (
+	unitSystemBinary = "binary"
+	unitSystemSI     = "si"
+)
+
 var unitSystems = map[string][]unitPrefix{
-	"binary": {
+	unitSystemBinary: {
 		{"Pi", 1125899906842624}, // 1024^5
 		{"Ti", 1099511627776},    // 1024^4
 		{"Gi", 1073741824},       // 1024^3
 		{"Mi", 1048576},          // 1024^2
 		{"Ki", 1024},
 	},
-	"si": {
+	unitSystemSI: {
 		{"P", 1000000000000000}, // 1000^5
 		{"T", 1000000000000},    // 1000^4
 		{"G", 1000000000},       // 1000^3
@@ -1413,7 +1418,7 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*types.Met
 
 	var orderL float64
 	var orderFactorL float64
-	if params.yUnitSystem == "binary" {
+	if params.yUnitSystem == unitSystemBinary {
 		orderL = math.Log2(yVarianceL)
 		orderFactorL = math.Pow(2, math.Floor(orderL))
 	} else {
@@ -1423,7 +1428,7 @@ func setupTwoYAxes(cr *cairoSurfaceContext, params *Params, results []*types.Met
 
 	var orderR float64
 	var orderFactorR float64
-	if params.yUnitSystem == "binary" {
+	if params.yUnitSystem == unitSystemBinary {
 		orderR = math.Log2(yVarianceR)
 		orderFactorR = math.Pow(2, math.Floor(orderR))
 	} else {
@@ -1653,7 +1658,7 @@ func setupYAxis(cr *cairoSurfaceContext, params *Params, results []*types.Metric
 
 	var order float64
 	var orderFactor float64
-	if params.yUnitSystem == "binary" {
+	if params.yUnitSystem == unitSystemBinary {
 		order = math.Log2(yVariance)
 		orderFactor = math.Pow(2, math.Floor(order))
 	} else {

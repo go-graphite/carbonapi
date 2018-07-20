@@ -24,8 +24,8 @@ func AlignStartToInterval(start, stop, bucketSize int64) int64 {
 
 // AlignToBucketSize aligns start and stop of serie to specified bucket (step) size
 func AlignToBucketSize(start, stop, bucketSize int64) (int64, int64) {
-	start = int64(time.Unix(int64(start), 0).Truncate(time.Duration(bucketSize) * time.Second).Unix())
-	newStop := int64(time.Unix(int64(stop), 0).Truncate(time.Duration(bucketSize) * time.Second).Unix())
+	start = time.Unix(start, 0).Truncate(time.Duration(bucketSize) * time.Second).Unix()
+	newStop := time.Unix(stop, 0).Truncate(time.Duration(bucketSize) * time.Second).Unix()
 
 	// check if a partial bucket is needed
 	if stop != newStop {

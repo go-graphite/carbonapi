@@ -37,7 +37,7 @@ func (f *fallbackSeries) Do(e parser.Expr, from, until int64, values map[parser.
 		return nil, errFallback
 	}
 
-	if seriesList != nil && len(seriesList) > 0 {
+	if len(seriesList) > 0 {
 		return seriesList, nil
 	}
 	return fallback, nil

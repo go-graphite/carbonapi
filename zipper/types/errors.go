@@ -8,6 +8,7 @@ import (
 
 var ErrResponseLengthMismatch = errors.New("response length mismatch")
 var ErrResponseStartTimeMismatch = errors.New("response start time mismatch")
+var ErrResponseStepTimeMismatch = errors.New("response step time mismatch")
 var ErrNotImplementedYet = errors.New("this feature is not implemented yet")
 var ErrTimeoutExceeded = errors.New("timeout while fetching Response")
 var ErrNonFatalErrors = errors.New("response contains non-fatal errors")

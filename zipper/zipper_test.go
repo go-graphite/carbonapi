@@ -155,35 +155,6 @@ func TestMergeValues(t *testing.T) {
 			expectedError: errors.Errors{},
 		},
 		{
-			name: "fill the gaps 1",
-			// 60 seconds
-			m1: protov3.FetchResponse{
-				Name:              "foo",
-				StartTime:         0,
-				StepTime:          120,
-				ConsolidationFunc: "average",
-				Values:            []float64{1, math.NaN(), 5, 7, 9, 11, 13, 15, 17, 19},
-			},
-			// 120 seconds
-			m2: protov3.FetchResponse{
-				Name:              "foo",
-				StartTime:         60,
-				StepTime:          60,
-				ConsolidationFunc: "average",
-				Values:            []float64{1, 2, math.NaN(), math.NaN(), 5, 6, 7, 8, 9, math.NaN(), 11, 12, math.NaN(), 14, 15, 16, 17, 18, math.NaN(), 20},
-			},
-
-			expectedResult: protov3.FetchResponse{
-				Name:              "foo",
-				StartTime:         60,
-				StepTime:          60,
-				ConsolidationFunc: "average",
-				Values:            []float64{1, 2, math.NaN(), math.NaN(), 5, 6, 7, 8, 9, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
-			},
-
-			expectedError: errors.Errors{},
-		},
-		{
 			name: "fill end of metric",
 			// 60 seconds
 			m1: protov3.FetchResponse{
@@ -225,7 +196,7 @@ func TestMergeValues(t *testing.T) {
 			if test.expectedResult.StopTime <= test.expectedResult.StartTime {
 				test.expectedResult.StopTime = test.expectedResult.StartTime + int64(len(test.expectedResult.Values))*test.expectedResult.StepTime
 			}
-			err := types.MergeFetchResponses(&test.m1, &test.m2)
+			err := types.MergeFetchResponses(&test.m1, &test.m2, "test")
 			if err == nil {
 				err = &errors.Errors{}
 			}

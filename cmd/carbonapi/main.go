@@ -82,15 +82,10 @@ var zipperMetrics = struct {
 
 	Timeouts *expvar.Int
 
-	CacheSize        expvar.Func
-	CacheItems       expvar.Func
-	SearchCacheSize  expvar.Func
-	SearchCacheItems expvar.Func
-
-	CacheMisses       *expvar.Int
-	CacheHits         *expvar.Int
-	SearchCacheMisses *expvar.Int
-	SearchCacheHits   *expvar.Int
+	CacheSize   expvar.Func
+	CacheItems  expvar.Func
+	CacheMisses *expvar.Int
+	CacheHits   *expvar.Int
 }{
 	FindRequests: expvar.NewInt("zipper_find_requests"),
 	FindErrors:   expvar.NewInt("zipper_find_errors"),
@@ -105,10 +100,8 @@ var zipperMetrics = struct {
 
 	Timeouts: expvar.NewInt("zipper_timeouts"),
 
-	CacheHits:         expvar.NewInt("zipper_cache_hits"),
-	CacheMisses:       expvar.NewInt("zipper_cache_misses"),
-	SearchCacheHits:   expvar.NewInt("zipper_search_cache_hits"),
-	SearchCacheMisses: expvar.NewInt("zipper_search_cache_misses"),
+	CacheHits:   expvar.NewInt("zipper_cache_hits"),
+	CacheMisses: expvar.NewInt("zipper_cache_misses"),
 }
 
 // BuildVersion is provided to be overridden at build time. Eg. go build -ldflags -X 'main.BuildVersion=...'
@@ -260,8 +253,6 @@ func zipperStats(stats *zipperTypes.Stats) {
 	zipperMetrics.RenderErrors.Add(stats.RenderErrors)
 	zipperMetrics.InfoErrors.Add(stats.InfoErrors)
 	zipperMetrics.SearchRequests.Add(stats.SearchRequests)
-	zipperMetrics.SearchCacheHits.Add(stats.SearchCacheHits)
-	zipperMetrics.SearchCacheMisses.Add(stats.SearchCacheMisses)
 	zipperMetrics.CacheMisses.Add(stats.CacheMisses)
 	zipperMetrics.CacheHits.Add(stats.CacheHits)
 }
@@ -336,15 +327,11 @@ func setUpConfig(logger *zap.Logger) {
 			sub.Unmarshal(&newStruct)
 			if newStruct.ColorList == nil || len(newStruct.ColorList) == 0 {
 				newStruct.ColorList = make([]string, len(png.DefaultParams.ColorList))
-				for i, v := range png.DefaultParams.ColorList {
-					newStruct.ColorList[i] = v
-				}
+				copy(newStruct.ColorList, png.DefaultParams.ColorList)
 			}
 			if newStruct.YDivisors == nil || len(newStruct.YDivisors) == 0 {
 				newStruct.YDivisors = make([]float64, len(png.DefaultParams.YDivisors))
-				for i, v := range png.DefaultParams.YDivisors {
-					newStruct.YDivisors[i] = v
-				}
+				copy(newStruct.YDivisors, png.DefaultParams.YDivisors)
 			}
 			graphTemplates[k] = newStruct
 		}
@@ -536,19 +523,8 @@ func setUpConfig(logger *zap.Logger) {
 
 		graphite.Register(fmt.Sprintf("%s.zipper.timeouts", pattern), zipperMetrics.Timeouts)
 
-		/*
-			graphite.Register(fmt.Sprintf("%s.zipper.cache_size", pattern), zipperMetrics.CacheSize)
-			graphite.Register(fmt.Sprintf("%s.zipper.cache_items", pattern), zipperMetrics.CacheItems)
-
-			graphite.Register(fmt.Sprintf("%s.zipper.search_cache_size", pattern), zipperMetrics.SearchCacheSize)
-			graphite.Register(fmt.Sprintf("%s.zipper.search_cache_items", pattern), zipperMetrics.SearchCacheItems)
-		*/
-
 		graphite.Register(fmt.Sprintf("%s.zipper.cache_hits", pattern), zipperMetrics.CacheHits)
 		graphite.Register(fmt.Sprintf("%s.zipper.cache_misses", pattern), zipperMetrics.CacheMisses)
-
-		graphite.Register(fmt.Sprintf("%s.zipper.search_cache_hits", pattern), zipperMetrics.SearchCacheHits)
-		graphite.Register(fmt.Sprintf("%s.zipper.search_cache_misses", pattern), zipperMetrics.SearchCacheMisses)
 
 		go mstats.Start(config.Graphite.Interval)
 
@@ -672,21 +648,6 @@ func setUpConfigUpstreams(logger *zap.Logger) {
 		logger.Fatal("no backends specified for upstreams!")
 	}
 
-	// Setup in-memory path cache for carbonzipper requests
-	// TODO(civil): Export pathcache metrics
-	/*
-		zipperMetrics.CacheSize = expvar.Func(func() interface{} { return config.Upstreams.PathCache.ECSize() })
-		expvar.Publish("cacheSize", zipperMetrics.CacheSize)
-
-		zipperMetrics.CacheItems = expvar.Func(func() interface{} { return config.Upstreams.PathCache.ECItems() })
-		expvar.Publish("cacheItems", zipperMetrics.CacheItems)
-
-		zipperMetrics.SearchCacheSize = expvar.Func(func() interface{} { return config.Upstreams.SearchCache.ECSize() })
-		expvar.Publish("searchCacheSize", zipperMetrics.SearchCacheSize)
-
-		zipperMetrics.SearchCacheItems = expvar.Func(func() interface{} { return config.Upstreams.SearchCache.ECItems() })
-		expvar.Publish("searchCacheItems", zipperMetrics.SearchCacheItems)
-	*/
 }
 
 func main() {

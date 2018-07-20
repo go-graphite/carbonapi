@@ -65,7 +65,7 @@ func (f *divideSeries) Do(e parser.Expr, from, until int64, values map[parser.Me
 
 	for _, numerator := range numerators {
 		if numerator.StepTime != denominator.StepTime || len(numerator.Values) != len(denominator.Values) {
-			return nil, errors.New(fmt.Sprintf("series %s must have the same length as %s", numerator.Name, denominator.Name))
+			return nil, fmt.Errorf("series %s must have the same length as %s", numerator.Name, denominator.Name)
 		}
 	}
 

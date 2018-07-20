@@ -11,8 +11,7 @@ import (
 	"sync/atomic"
 
 	"github.com/go-graphite/carbonapi/limiter"
-	cu "github.com/go-graphite/carbonapi/util/apictx"
-	util "github.com/go-graphite/carbonapi/util/zipperctx"
+	util "github.com/go-graphite/carbonapi/util/ctx"
 	"github.com/go-graphite/carbonapi/zipper/errors"
 	"github.com/go-graphite/carbonapi/zipper/types"
 	"go.uber.org/zap"
@@ -91,7 +90,7 @@ func (c *HttpQuery) doRequest(ctx context.Context, uri string, body []byte) (*Se
 	if err != nil {
 		return nil, err
 	}
-	req = cu.MarshalCtx(ctx, util.MarshalCtx(ctx, req))
+	req = util.MarshalCtx(ctx, util.MarshalCtx(ctx, req, util.HeaderUUIDZipper), util.HeaderUUIDAPI)
 
 	logger.Debug("trying to get slot")
 

@@ -59,7 +59,7 @@ func MarshalCSV(results []*MetricData) []byte {
 			b = append(b, r.Name...)
 			b = append(b, '"')
 			b = append(b, ',')
-			b = append(b, time.Unix(int64(t), 0).Format("2006-01-02 15:04:05")...)
+			b = append(b, time.Unix(t, 0).Format("2006-01-02 15:04:05")...)
 			b = append(b, ',')
 			if !math.IsNaN(v) {
 				b = strconv.AppendFloat(b, v, 'f', -1, 64)
@@ -93,7 +93,7 @@ func ConsolidateJSON(maxDataPoints int, results []*MetricData) {
 	}
 
 	for _, r := range results {
-		numberOfDataPoints := math.Floor(float64(timeRange / r.StepTime))
+		numberOfDataPoints := math.Floor(float64(timeRange) / float64(r.StepTime))
 		if numberOfDataPoints > float64(maxDataPoints) {
 			valuesPerPoint := math.Ceil(numberOfDataPoints / float64(maxDataPoints))
 			r.SetValuesPerPoint(int(valuesPerPoint))
@@ -139,7 +139,7 @@ func MarshalJSON(results []*MetricData) []byte {
 
 			b = append(b, ',')
 
-			b = strconv.AppendInt(b, int64(t), 10)
+			b = strconv.AppendInt(b, t, 10)
 
 			b = append(b, ']')
 
@@ -213,11 +213,11 @@ func MarshalRaw(results []*MetricData) []byte {
 		b = append(b, r.Name...)
 
 		b = append(b, ',')
-		b = strconv.AppendInt(b, int64(r.StartTime), 10)
+		b = strconv.AppendInt(b, r.StartTime, 10)
 		b = append(b, ',')
-		b = strconv.AppendInt(b, int64(r.StopTime), 10)
+		b = strconv.AppendInt(b, r.StopTime, 10)
 		b = append(b, ',')
-		b = strconv.AppendInt(b, int64(r.StepTime), 10)
+		b = strconv.AppendInt(b, r.StepTime, 10)
 		b = append(b, '|')
 
 		var comma bool

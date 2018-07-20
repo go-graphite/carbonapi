@@ -9,25 +9,15 @@ import (
 	"testing"
 
 	"github.com/go-graphite/carbonapi/expr/types"
-	realZipper "github.com/go-graphite/carbonapi/zipper"
-	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 )
 
-type mockCarbonZipper struct {
-	z *realZipper.Zipper
-
-	logger      *zap.Logger
-	statsSender func(*zipperTypes.Stats)
-}
+type mockCarbonZipper struct{}
 
 func newMockCarbonZipper() *mockCarbonZipper {
-	z := &mockCarbonZipper{}
-
-	return z
+	return new(mockCarbonZipper)
 }
 
 func (z mockCarbonZipper) Find(ctx context.Context, metrics []string) (*pb.MultiGlobResponse, error) {

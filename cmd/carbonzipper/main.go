@@ -22,16 +22,14 @@ import (
 	"github.com/facebookgo/pidfile"
 	"github.com/go-graphite/carbonapi/intervalset"
 	"github.com/go-graphite/carbonapi/mstats"
-	"github.com/spf13/viper"
-	// "github.com/go-graphite/carbonapi/pathcache"
-	cu "github.com/go-graphite/carbonapi/util/apictx"
-	util "github.com/go-graphite/carbonapi/util/zipperctx"
+	util "github.com/go-graphite/carbonapi/util/ctx"
 	"github.com/go-graphite/carbonapi/zipper"
 	zipperConfig "github.com/go-graphite/carbonapi/zipper/config"
 	"github.com/go-graphite/carbonapi/zipper/types"
 	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
+	"github.com/spf13/viper"
 
 	pickle "github.com/lomik/og-rek"
 	"github.com/peterbourgon/g2g"
@@ -162,6 +160,16 @@ const (
 	contentTypeCarbonAPIv3PB = "application/x-carbonapi-v3-pb"
 )
 
+const (
+	formatTypeEmpty         = ""
+	formatTypePickle        = "pickle"
+	formatTypeJSON          = "json"
+	formatTypeProtobuf      = "protobuf"
+	formatTypeProtobuf3     = "protobuf3"
+	formatTypeV2            = "v2"
+	formatTypeCarbonAPIV2PB = "carbonapi_v2_pb"
+)
+
 func findHandler(w http.ResponseWriter, req *http.Request) {
 	t0 := time.Now()
 	uuid := uuid.NewV4()
@@ -170,7 +178,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	logger := zapwriter.Logger("find").With(
 		zap.String("handler", "find"),
 		zap.String("carbonzipper_uuid", uuid.String()),
-		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
+		zap.String("carbonapi_uuid", util.GetUUID(ctx)),
 	)
 	logger.Debug("got find request",
 		zap.String("request", req.URL.RequestURI()),
@@ -186,7 +194,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 		zap.String("format", format),
 		zap.String("target", originalQuery),
 		zap.String("carbonzipper_uuid", uuid.String()),
-		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
+		zap.String("carbonapi_uuid", util.GetUUID(ctx)),
 	)
 
 	metrics, stats, err := config.zipper.FindProtoV2(ctx, []string{originalQuery})
@@ -223,7 +231,7 @@ func EncodeFindResponse(format, query string, w http.ResponseWriter, metrics []p
 	var err error
 	var b []byte
 	switch format {
-	case "protobuf", "protobuf3":
+	case formatTypeProtobuf, formatTypeProtobuf3:
 		w.Header().Set("Content-Type", contentTypeProtobuf)
 		var result protov2.GlobResponse
 		result.Name = query
@@ -231,11 +239,11 @@ func EncodeFindResponse(format, query string, w http.ResponseWriter, metrics []p
 		b, err = result.Marshal()
 		/* #nosec */
 		_, _ = w.Write(b)
-	case "json":
+	case formatTypeJSON:
 		w.Header().Set("Content-Type", contentTypeJSON)
 		jEnc := json.NewEncoder(w)
 		err = jEnc.Encode(metrics)
-	case "", "pickle":
+	case formatTypeEmpty, formatTypePickle:
 		w.Header().Set("Content-Type", contentTypePickle)
 
 		var result []map[string]interface{}
@@ -280,7 +288,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 		zap.Int("memory_usage_bytes", memoryUsage),
 		zap.String("handler", "render"),
 		zap.String("carbonzipper_uuid", uuid.String()),
-		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
+		zap.String("carbonapi_uuid", util.GetUUID(ctx)),
 	)
 
 	logger.Debug("got render request",
@@ -292,7 +300,7 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 	accessLogger := zapwriter.Logger("access").With(
 		zap.String("handler", "render"),
 		zap.String("carbonzipper_uuid", uuid.String()),
-		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
+		zap.String("carbonapi_uuid", util.GetUUID(ctx)),
 	)
 
 	err := req.ParseForm()
@@ -362,24 +370,25 @@ func renderHandler(w http.ResponseWriter, req *http.Request) {
 
 	var b []byte
 	switch format {
-	case "protobuf", "protobuf3":
+	case formatTypeProtobuf, formatTypeProtobuf3:
 		w.Header().Set("Content-Type", contentTypeProtobuf)
 		b, err = metrics.Marshal()
 
 		memoryUsage += len(b)
 		/* #nosec */
 		_, _ = w.Write(b)
-	case "json":
+	case formatTypeJSON:
 		presponse := createRenderResponse(metrics, nil)
 		w.Header().Set("Content-Type", contentTypeJSON)
 		e := json.NewEncoder(w)
 		err = e.Encode(presponse)
-	case "", "pickle":
+	case formatTypeEmpty, formatTypePickle:
 		presponse := createRenderResponse(metrics, pickle.None{})
 		w.Header().Set("Content-Type", contentTypePickle)
 		e := pickle.NewEncoder(w)
 		err = e.Encode(presponse)
 	}
+
 	if err != nil {
 		http.Error(w, "error marshaling data", http.StatusInternalServerError)
 		accessLogger.Error("render failed",
@@ -436,7 +445,7 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 	logger := zapwriter.Logger("info").With(
 		zap.String("handler", "info"),
 		zap.String("carbonzipper_uuid", uuid.String()),
-		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
+		zap.String("carbonapi_uuid", util.GetUUID(ctx)),
 	)
 
 	logger.Debug("request",
@@ -448,7 +457,7 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 	accessLogger := zapwriter.Logger("access").With(
 		zap.String("handler", "info"),
 		zap.String("carbonzipper_uuid", uuid.String()),
-		zap.String("carbonapi_uuid", cu.GetUUID(ctx)),
+		zap.String("carbonapi_uuid", util.GetUUID(ctx)),
 	)
 	err := req.ParseForm()
 	if err != nil {
@@ -480,8 +489,10 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 
 	haveNonFatalErrors := false
 	var b []byte
-	if format == "v2" || format == "carbonapi_v2_pb" || format == "protobuf" || format == "protobuf3" {
-		result, stats, err := config.zipper.InfoProtoV2(ctx, targets)
+	if format == formatTypeV2 || format == formatTypeCarbonAPIV2PB || format == formatTypeProtobuf || format == formatTypeProtobuf3 {
+		var result *protov2.ZipperInfoResponse
+		var stats *types.Stats
+		result, stats, err = config.zipper.InfoProtoV2(ctx, targets)
 		sendStats(stats)
 		if err != nil && err != types.ErrNonFatalErrors {
 			accessLogger.Error("info failed",
@@ -501,7 +512,9 @@ func infoHandler(w http.ResponseWriter, req *http.Request) {
 		b, err = result.Marshal()
 		_, _ = w.Write(b)
 	} else {
-		result, stats, err := config.zipper.InfoProtoV3(ctx, &protov3.MultiGlobRequest{Metrics: targets})
+		var result *protov3.ZipperInfoResponse
+		var stats *types.Stats
+		result, stats, err = config.zipper.InfoProtoV3(ctx, &protov3.MultiGlobRequest{Metrics: targets})
 		sendStats(stats)
 		if err != nil && err != types.ErrNonFatalErrors {
 			accessLogger.Error("info failed",
@@ -705,9 +718,9 @@ func main() {
 		)
 	}
 
-	http.HandleFunc("/metrics/find/", httputil.TrackConnections(httputil.TimeHandler(cu.ParseCtx(findHandler), bucketRequestTimes)))
-	http.HandleFunc("/render/", httputil.TrackConnections(httputil.TimeHandler(cu.ParseCtx(renderHandler), bucketRequestTimes)))
-	http.HandleFunc("/info/", httputil.TrackConnections(httputil.TimeHandler(cu.ParseCtx(infoHandler), bucketRequestTimes)))
+	http.HandleFunc("/metrics/find/", httputil.TrackConnections(httputil.TimeHandler(util.ParseCtx(findHandler, util.HeaderUUIDAPI), bucketRequestTimes)))
+	http.HandleFunc("/render/", httputil.TrackConnections(httputil.TimeHandler(util.ParseCtx(renderHandler, util.HeaderUUIDAPI), bucketRequestTimes)))
+	http.HandleFunc("/info/", httputil.TrackConnections(httputil.TimeHandler(util.ParseCtx(infoHandler, util.HeaderUUIDAPI), bucketRequestTimes)))
 	http.HandleFunc("/lb_check", lbCheckHandler)
 
 	// nothing in the config? check the environment

@@ -42,9 +42,6 @@ type ClientProtoV2Group struct {
 
 	client *http.Client
 
-	counter             uint64
-	maxIdleConnsPerHost int
-
 	limiter              *limiter.ServerLimiter
 	logger               *zap.Logger
 	timeout              types.Timeouts
@@ -52,6 +49,10 @@ type ClientProtoV2Group struct {
 	maxMetricsPerRequest int
 
 	httpQuery *helper.HttpQuery
+}
+
+func (c *ClientProtoV2Group) Children() []types.ServerClient {
+	return []types.ServerClient{c}
 }
 
 func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {

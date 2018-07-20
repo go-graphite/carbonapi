@@ -137,7 +137,9 @@ func deepCompareFields(v1, v2 reflect.Value) bool {
 			for i := 0; i < v1.Len(); i++ {
 				e1 := v1.Index(i)
 				e2 := v2.Index(i)
-				return deepCompareFields(e1, e2)
+				if !deepCompareFields(e1, e2) {
+					return false
+				}
 			}
 		case reflect.Func:
 			return v1.Pointer() == v2.Pointer()
@@ -279,10 +281,10 @@ func TestSummarizeEvalExpr(t *testing.T, tt *SummarizeEvalTestItem) {
 			t.Errorf("bad Step for %s:\ngot  %d\nwant %d", g[0].Name, g[0].StepTime, tt.Step)
 		}
 		if g[0].StartTime != tt.Start {
-			t.Errorf("bad Start for %s: got %s want %s", g[0].Name, time.Unix(int64(g[0].StartTime), 0).Format(time.StampNano), time.Unix(int64(tt.Start), 0).Format(time.StampNano))
+			t.Errorf("bad Start for %s: got %s want %s", g[0].Name, time.Unix(g[0].StartTime, 0).Format(time.StampNano), time.Unix(tt.Start, 0).Format(time.StampNano))
 		}
 		if g[0].StopTime != tt.Stop {
-			t.Errorf("bad Stop for %s: got %s want %s", g[0].Name, time.Unix(int64(g[0].StopTime), 0).Format(time.StampNano), time.Unix(int64(tt.Stop), 0).Format(time.StampNano))
+			t.Errorf("bad Stop for %s: got %s want %s", g[0].Name, time.Unix(g[0].StopTime, 0).Format(time.StampNano), time.Unix(tt.Stop, 0).Format(time.StampNano))
 		}
 
 		if !NearlyEqual(g[0].Values, tt.W) {

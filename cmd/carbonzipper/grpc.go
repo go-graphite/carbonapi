@@ -17,8 +17,6 @@ import (
 
 var errNotImplementedYet = fmt.Errorf("feature not implemented yet")
 var errNoDataInResponse = fmt.Errorf("no data in response")
-var errEmptyRequest = fmt.Errorf("empty request")
-var errUnknownError = fmt.Errorf("unknown error")
 
 type GRPCServer struct {
 	listener net.Listener

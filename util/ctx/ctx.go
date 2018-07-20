@@ -1,4 +1,4 @@
-package util
+package ctx
 
 import (
 	"context"
@@ -8,7 +8,8 @@ import (
 type key int
 
 const (
-	ctxHeaderUUID = "X-CTX-CarbonAPI-UUID"
+	HeaderUUIDAPI    = "X-CTX-CarbonAPI-UUID"
+	HeaderUUIDZipper = "X-CTX-CarbonZipper-UUID"
 
 	uuidKey key = 0
 )
@@ -32,9 +33,9 @@ func SetUUID(ctx context.Context, v string) context.Context {
 	return context.WithValue(ctx, uuidKey, v)
 }
 
-func ParseCtx(h http.HandlerFunc) http.HandlerFunc {
+func ParseCtx(h http.HandlerFunc, uuidKey string) http.HandlerFunc {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		uuid := req.Header.Get(ctxHeaderUUID)
+		uuid := req.Header.Get(uuidKey)
 
 		ctx := req.Context()
 		ctx = SetUUID(ctx, uuid)
@@ -43,8 +44,8 @@ func ParseCtx(h http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-func MarshalCtx(ctx context.Context, response *http.Request) *http.Request {
-	response.Header.Add(ctxHeaderUUID, GetUUID(ctx))
+func MarshalCtx(ctx context.Context, response *http.Request, uuidKey string) *http.Request {
+	response.Header.Add(uuidKey, GetUUID(ctx))
 
 	return response
 }
