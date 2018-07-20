@@ -68,7 +68,7 @@ func (f *substr) Do(e parser.Expr, from, until int64, values map[parser.MetricRe
 			if stopField < 0 {
 				realStopField = len(nodes) + stopField
 				if realStartField > 0 {
-					realStopField += 1
+					realStopField++
 				}
 			}
 			if realStopField < 0 || realStopField <= realStartField || realStopField-realStartField > len(nodes) {
