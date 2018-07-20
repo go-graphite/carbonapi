@@ -50,17 +50,31 @@ func (f *substr) Do(e parser.Expr, from, until int64, values map[parser.MetricRe
 	for _, a := range args {
 		metric := helper.ExtractMetric(a.Name)
 		nodes := strings.Split(metric, ".")
+		realStartField := startField
 		if startField != 0 {
-			if startField < 0 || startField > len(nodes)-1 {
+			if startField < 0 {
+				realStartField = len(nodes) + startField
+				if realStartField < 0 {
+					realStartField = 0
+				}
+			}
+			if realStartField > len(nodes)-1 {
 				return nil, errors.New("start out of range")
 			}
-			nodes = nodes[startField:]
+			nodes = nodes[realStartField:]
 		}
 		if stopField != 0 {
-			if stopField <= startField || stopField-startField > len(nodes) {
+			realStopField := stopField
+			if stopField < 0 {
+				realStopField = len(nodes) + stopField
+				if realStartField > 0 {
+					realStopField += 1
+				}
+			}
+			if realStopField < 0 || realStopField <= realStartField || realStopField-realStartField > len(nodes) {
 				return nil, errors.New("stop out of range")
 			}
-			nodes = nodes[:stopField-startField]
+			nodes = nodes[:realStopField-realStartField]
 		}
 
 		r := *a
@@ -69,7 +83,6 @@ func (f *substr) Do(e parser.Expr, from, until int64, values map[parser.MetricRe
 	}
 
 	return results, nil
-
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
