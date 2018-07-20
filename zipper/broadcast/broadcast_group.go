@@ -145,12 +145,17 @@ func (bg *BroadcastGroup) SplitRequest(ctx context.Context, request *protov3.Mul
 
 	var requests []*protov3.MultiFetchRequest
 	for _, metric := range request.Metrics {
+		newRequest := &protov3.MultiFetchRequest{}
+
 		f, _, e := bg.Find(ctx, &protov3.MultiGlobRequest{Metrics: []string{metric.Name}})
 		if (e != nil && e.HaveFatalErrors && len(e.Errors) > 0) || f == nil || len(f.Metrics) == 0 {
+			bg.logger.Warn("Find request failed when resolving globs",
+				zap.String("metric_name", metric.Name),
+				zap.Any("errors", e.Errors),
+			)
+
 			continue
 		}
-
-		newRequest := &protov3.MultiFetchRequest{}
 
 		for _, m := range f.Metrics {
 			for _, match := range m.Matches {
@@ -192,6 +197,8 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	}
 
 	requests := bg.SplitRequest(ctx, request)
+	// TODO(gmagnusson): WAIT, HOW MANY METRICS WAS THAT
+
 	resCh := make(chan *types.ServerFetchResponse, len(filteredClients))
 
 	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Render)
@@ -207,16 +214,12 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	uuid := util.GetUUID(ctx)
 
 GATHER:
-	for {
+	for responseCount < len(clients) {
 		select {
 		case res := <-resCh:
 			answeredServers[res.Server] = struct{}{}
 			result.Merge(res, uuid)
 			responseCount++
-
-			if responseCount == len(clients) {
-				break GATHER
-			}
 
 		case <-ctx.Done():
 			logger.Warn("timeout waiting for more responses",
