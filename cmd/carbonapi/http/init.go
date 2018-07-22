@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/dgryski/httputil"
+	"github.com/go-graphite/carbonapi/pkg/features"
 	"github.com/go-graphite/carbonapi/util/ctx"
 )
 
@@ -28,6 +29,11 @@ func InitHandlers() *http.ServeMux {
 
 	r.HandleFunc("/tags", tagHandler)
 	r.HandleFunc("/tags/", tagHandler)
+
+	features := features.GetFeaturesInstance()
+	r.HandleFunc("/_internal/flags", features.FlagListHandler)
+	r.HandleFunc("/_internal/flags/id", features.FlagPatchByIDHandler)
+	r.HandleFunc("/_internal/flags/name", features.FlagPatchByNameHandler)
 
 	r.HandleFunc("/", usageHandler)
 	return r

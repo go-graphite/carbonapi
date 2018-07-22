@@ -95,7 +95,7 @@ func TestFeaturesSingleRoutine(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			f := NewFeatures()
+			f := newFeatures()
 			realF := f.(*featuresImpl)
 
 			insertedRuntimeFeatures := 0
@@ -199,7 +199,7 @@ func TestFeaturesMultipleRoutinesReadOnly(t *testing.T) {
 		},
 	}
 
-	f := NewFeatures()
+	f := newFeatures()
 
 	insertedRuntimeFeatures := 0
 	for i := range test.runtimeFeatures {
@@ -286,7 +286,7 @@ func TestFeaturesMultipleRoutinesReadUpdate(t *testing.T) {
 		},
 	}
 
-	f := NewFeatures()
+	f := newFeatures()
 
 	insertedRuntimeFeatures := 0
 	for i := range test.runtimeFeatures {
@@ -411,7 +411,7 @@ func BenchmarkFeaturesSingleThreadOverheadByID(b *testing.B) {
 		},
 	}
 
-	f := NewFeatures()
+	f := newFeatures()
 
 	insertedRuntimeFeatures := 0
 	for i := range test.runtimeFeatures {

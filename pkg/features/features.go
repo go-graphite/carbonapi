@@ -98,8 +98,25 @@ func (f *featuresImpl) SetFlagByName(name string, enabled bool) bool {
 	return false
 }
 
+type featuresSingleton struct {
+	features Features
+}
+
+var featuresInstance *featuresSingleton
+var once sync.Once
+
+// GetFeaturesInstance returns or initialize feature instance
+func GetFeaturesInstance() Features {
+	once.Do(func() {
+		featuresInstance = &featuresSingleton{
+			features: newFeatures(),
+		}
+	})
+	return featuresInstance.features
+}
+
 // NewFeatures creates a new instance of feature flag controller
-func NewFeatures() Features {
+func newFeatures() Features {
 	return &featuresImpl{
 		nameToID:     make(map[string]int64),
 		state:        make(map[int64]bool),
