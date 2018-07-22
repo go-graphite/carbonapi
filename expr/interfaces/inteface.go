@@ -20,11 +20,12 @@ func (b *FunctionBase) GetEvaluator() Evaluator {
 	return b.Evaluator
 }
 
-// Evaluator is a interface for any existing expression parser
+// Evaluator is an interface for any existing expression parser
 type Evaluator interface {
 	EvalExpr(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
 }
 
+// Rewriter is an interface for any existing rewriters (main one and the one used in tests)
 type Rewriter interface {
 	RewriteExpr(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error)
 }

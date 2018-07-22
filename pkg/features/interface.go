@@ -8,6 +8,7 @@ import (
 var (
 	// ErrAlreadyExists is an error when you are trying to register feature that already registered
 	ErrAlreadyExists        = fmt.Errorf("feature flag already registered")
+	// ErrFeatureNotRegistered is an error that's returned when there is no flag registered with specified name
 	ErrFeatureNotRegistered = fmt.Errorf("feature flag not registered")
 )
 

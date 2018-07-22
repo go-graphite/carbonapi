@@ -88,7 +88,7 @@ func SetRewriter(rewriter interfaces.Rewriter) {
 	// For now no rewrite function needs custom rewriter later.
 }
 
-// GetEvaluator returns evaluator
+// GetRewriter returns current rewriter
 func GetRewriter() interfaces.Rewriter {
 	FunctionMD.RLock()
 	defer FunctionMD.RUnlock()

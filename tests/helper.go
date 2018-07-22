@@ -55,14 +55,18 @@ func EvaluatorFromFuncWithMetadata(metadata map[string]interfaces.Function) inte
 	return e
 }
 
+// FuncRewriter is a struct that can evaluate rewrite func
+// It's useful for tests for rewrite functions. See how to initialize it below
 type FuncRewriter struct {
 	eval func(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error)
 }
 
+// RewriteExpr rewrites expressions (see expr/expr.go RewriteExpr for more details
 func (evaluator *FuncRewriter) RewriteExpr(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
 	return evaluator.eval(e, from, until, values)
 }
 
+// RewriterFromFunc creates a struct that interface.Rewriter compatible and only executes specified function
 func RewriterFromFunc(function interfaces.RewriteFunction) interfaces.Rewriter {
 	e := &FuncRewriter{
 		eval: function.Do,
