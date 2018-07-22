@@ -7,7 +7,8 @@ import (
 
 var (
 	// ErrAlreadyExists is an error when you are trying to register feature that already registered
-	ErrAlreadyExists = fmt.Errorf("feature already registered")
+	ErrAlreadyExists        = fmt.Errorf("feature flag already registered")
+	ErrFeatureNotRegistered = fmt.Errorf("feature flag not registered")
 )
 
 // ChangeRequestByID is a type that's used by FlagPatchByIDHandler
@@ -23,7 +24,6 @@ type ChangeRequestByName struct {
 }
 
 // Features - interface to provide a simple feature flag framework
-// For now default state is always "false" - disabled. This is subject to discuss in future
 // Package should declare new feature flags in it's init function.
 type Features interface {
 	// RegisterRuntime registers feature that can be set in runtime
@@ -49,6 +49,11 @@ type Features interface {
 	// SetFlagByName updates flag status by name
 	// returns true on success and false if flag not found
 	SetFlagByName(name string, enabled bool) bool
+
+	// GetIDByName gets id of feature if exists by it's name
+	// Useful to do conditional tests, when you don't know what
+	// ID feature flag got
+	GetIDByName(name string) (int64, error)
 
 	// FlagListHandler is an HTTP Handler that provides current flag state
 	//

@@ -70,6 +70,18 @@ func (f *featuresImpl) IsEnabledName(name string) bool {
 	return false
 }
 
+// GetIDByName gets id of feature if exists by it's name
+// Useful to do conditional tests, when you don't know what
+// ID feature flag got
+func (f *featuresImpl) GetIDByName(name string) (int64, error) {
+	f.RLock()
+	defer f.RUnlock()
+	if id, ok := f.nameToID[name]; ok {
+		return id, nil
+	}
+	return 0, ErrFeatureNotRegistered
+}
+
 // SetFlagByID updates flag status by flag id
 func (f *featuresImpl) SetFlagByID(id int64, enabled bool) bool {
 	if id < 0 {

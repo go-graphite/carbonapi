@@ -181,6 +181,56 @@ func TestFeaturesSingleRoutine(t *testing.T) {
 	}
 }
 
+func TestFeaturesGetByName(t *testing.T) {
+	test := featuresBaseTestCase{
+		name: "some features",
+		runtimeFeatures: []feature{
+			{
+				name:        "test1",
+				value:       false,
+				expectedErr: nil,
+			},
+			{
+				name:        "test2",
+				value:       true,
+				expectedErr: nil,
+			},
+		},
+	}
+
+	f := newFeatures()
+
+	for i := range test.runtimeFeatures {
+		feature := &test.runtimeFeatures[i]
+		id, err := f.RegisterRuntime(feature.name, feature.value)
+		if err != feature.expectedErr {
+			t.Fatalf("unexpected error value, got %v, expected %v", err, feature.expectedErr)
+		}
+		if err == nil {
+			if id < 0 {
+				t.Fatalf("got negative id for runtime flag, but it's reserved for config flags")
+			}
+			feature.assignedID = id
+		}
+	}
+
+	for _, feature := range test.runtimeFeatures {
+		id, err := f.GetIDByName(feature.name)
+		if err != nil {
+			t.Fatalf("unexpected error while getting id by name, name=%v, err=%v", feature.name, err)
+		}
+
+		if id != feature.assignedID {
+			t.Fatalf("got wrong id for name=%v, got %v, expected %v", feature.name, id, feature.assignedID)
+		}
+	}
+
+	id, err := f.GetIDByName("non-existing-id")
+	if err != ErrFeatureNotRegistered {
+		t.Fatalf("got result for non-existing feautre, while shouldn't, err=%v, id=%v", err, id)
+	}
+}
+
 func TestFeaturesMultipleRoutinesReadOnly(t *testing.T) {
 	goRoutines := 1000
 	test := featuresBaseTestCase{
