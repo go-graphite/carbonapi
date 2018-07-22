@@ -25,6 +25,10 @@ type Evaluator interface {
 	EvalExpr(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
 }
 
+type Rewriter interface {
+	RewriteExpr(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error)
+}
+
 type Order int
 
 const (

@@ -55,6 +55,22 @@ func EvaluatorFromFuncWithMetadata(metadata map[string]interfaces.Function) inte
 	return e
 }
 
+type FuncRewriter struct {
+	eval func(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error)
+}
+
+func (evaluator *FuncRewriter) RewriteExpr(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
+	return evaluator.eval(e, from, until, values)
+}
+
+func RewriterFromFunc(function interfaces.RewriteFunction) interfaces.Rewriter {
+	e := &FuncRewriter{
+		eval: function.Do,
+	}
+
+	return e
+}
+
 func DeepClone(original map[parser.MetricRequest][]*types.MetricData) map[parser.MetricRequest][]*types.MetricData {
 	clone := map[parser.MetricRequest][]*types.MetricData{}
 	for key, originalMetrics := range original {

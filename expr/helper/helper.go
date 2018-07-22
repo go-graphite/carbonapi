@@ -18,6 +18,7 @@ import (
 )
 
 var evaluator interfaces.Evaluator
+var rewriter interfaces.Rewriter
 
 // Backref is a pre-compiled expression for backref
 var Backref = regexp.MustCompile(`\\(\d+)`)
@@ -32,6 +33,11 @@ func (e ErrUnknownFunction) Error() string {
 // SetEvaluator sets evaluator for all helper functions
 func SetEvaluator(e interfaces.Evaluator) {
 	evaluator = e
+}
+
+// SetRewriter sets rewriter for all helper functions
+func SetRewriter(e interfaces.Rewriter) {
+	rewriter = e
 }
 
 // GetSeriesArg returns argument from series.

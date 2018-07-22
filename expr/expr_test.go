@@ -1443,68 +1443,6 @@ func TestRewriteExpr(t *testing.T) {
 			false,
 			[]string{},
 		},
-		{
-			"applyByNode",
-			parser.NewExpr("applyByNode",
-
-				"metric*",
-				1,
-				parser.ArgValue("%.count"),
-			),
-			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
-					types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32),
-				},
-				{"metric1", 0, 1}: {
-					types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32),
-				},
-			},
-			true,
-			[]string{"metric1.count"},
-		},
-		{
-			"applyByNode",
-			parser.NewExpr("applyByNode",
-
-				"metric*",
-				1,
-				parser.ArgValue("%.count"),
-				parser.ArgValue("% count"),
-			),
-			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
-					types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32),
-				},
-				{"metric1", 0, 1}: {
-					types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32),
-				},
-			},
-			true,
-			[]string{"alias(metric1.count,\"metric1 count\")"},
-		},
-		{
-			"applyByNode",
-			parser.NewExpr("applyByNode",
-
-				"foo.metric*",
-				2,
-				parser.ArgValue("%.count"),
-			),
-			map[parser.MetricRequest][]*types.MetricData{
-				{"foo.metric*", 0, 1}: {
-					types.MakeMetricData("foo.metric1", []float64{1, 2, 3}, 1, now32),
-					types.MakeMetricData("foo.metric2", []float64{1, 2, 3}, 1, now32),
-				},
-				{"foo.metric1", 0, 1}: {
-					types.MakeMetricData("foo.metric1", []float64{1, 2, 3}, 1, now32),
-				},
-				{"foo.metric2", 0, 1}: {
-					types.MakeMetricData("foo.metric2", []float64{1, 2, 3}, 1, now32),
-				},
-			},
-			true,
-			[]string{"foo.metric1.count", "foo.metric2.count"},
-		},
 	}
 
 	for _, tt := range tests {

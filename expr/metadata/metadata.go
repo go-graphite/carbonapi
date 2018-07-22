@@ -79,6 +79,23 @@ func GetEvaluator() interfaces.Evaluator {
 	return FunctionMD.evaluator
 }
 
+// SetRewriter sets new rewriter function to be default for everything that needs it
+func SetRewriter(rewriter interfaces.Rewriter) {
+	FunctionMD.Lock()
+	defer FunctionMD.Unlock()
+
+	FunctionMD.rewriter = rewriter
+	// For now no rewrite function needs custom rewriter later.
+}
+
+// GetEvaluator returns evaluator
+func GetRewriter() interfaces.Rewriter {
+	FunctionMD.RLock()
+	defer FunctionMD.RUnlock()
+
+	return FunctionMD.rewriter
+}
+
 // Metadata is a type to store global function metadata
 type Metadata struct {
 	sync.RWMutex
@@ -90,6 +107,7 @@ type Metadata struct {
 	FunctionConfigFiles map[string]string
 
 	evaluator interfaces.Evaluator
+	rewriter  interfaces.Rewriter
 }
 
 // FunctionMD is actual global variable that stores metadata

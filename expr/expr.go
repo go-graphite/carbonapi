@@ -19,9 +19,20 @@ func (eval evaluator) EvalExpr(e parser.Expr, from, until int64, values map[pars
 
 var _evaluator = evaluator{}
 
+type rewriter struct{}
+
+// EvalExpr evalualtes expressions
+func (eval rewriter) RewriteExpr(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
+	return RewriteExpr(e, from, until, values)
+}
+
+var _rewriter = rewriter{}
+
 func init() {
 	helper.SetEvaluator(_evaluator)
+	helper.SetRewriter(_rewriter)
 	metadata.SetEvaluator(_evaluator)
+	metadata.SetRewriter(_rewriter)
 }
 
 // EvalExpr is the main expression evaluator
