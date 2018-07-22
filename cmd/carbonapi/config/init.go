@@ -17,6 +17,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/rewrite"
 	"github.com/go-graphite/carbonapi/limiter"
+	"github.com/go-graphite/carbonapi/pkg/features"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 	"github.com/lomik/zapwriter"
@@ -52,6 +53,18 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 			zap.Any("configuration", Config.Logger),
 			zap.Error(err),
 		)
+	}
+
+	flags := features.GetFeaturesInstance()
+	for flag, value := range Config.FeatureFlags {
+		err := flags.SetFlagByNameForced(flag, value)
+		if err != nil {
+			logger.Warn("failed to set feature flag",
+				zap.String("flag", flag),
+				zap.Bool("value", value),
+				zap.Error(err),
+			)
+		}
 	}
 
 	if Config.GraphTemplates != "" {

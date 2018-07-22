@@ -110,6 +110,17 @@ func (f *featuresImpl) SetFlagByName(name string, enabled bool) bool {
 	return false
 }
 
+// SetFlagByNameForced is a function that should be during initialization
+// It's not thread-safe (on purpose) and allows to change even config-time flags
+// returns error if there is no such flag
+func (f *featuresImpl) SetFlagByNameForced(name string, enabled bool) error {
+	if id, ok := f.nameToID[name]; ok {
+		f.state[id] = enabled
+		return nil
+	}
+	return ErrFeatureNotRegistered
+}
+
 type featuresSingleton struct {
 	features Features
 }

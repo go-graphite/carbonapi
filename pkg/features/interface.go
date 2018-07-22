@@ -5,9 +5,16 @@ import (
 	"net/http"
 )
 
+/*
+ * There are two types of flags:
+ *   1. Runtime (mutable) - flags that are safe to change during runtime (via API)
+ *   2. Config (immutable) - flags that shouldn't be changed during runtime, they must be set via config.
+        In code they must be set with SetFlagByNameForced function when config is parsed.
+*/
+
 var (
 	// ErrAlreadyExists is an error when you are trying to register feature that already registered
-	ErrAlreadyExists        = fmt.Errorf("feature flag already registered")
+	ErrAlreadyExists = fmt.Errorf("feature flag already registered")
 	// ErrFeatureNotRegistered is an error that's returned when there is no flag registered with specified name
 	ErrFeatureNotRegistered = fmt.Errorf("feature flag not registered")
 )
@@ -73,6 +80,11 @@ type Features interface {
 	//   If user tries to change flag that can't be change in a runtime
 	//   HTTP 400 error will be produced and no changes will be applied
 	FlagPatchByNameHandler(w http.ResponseWriter, r *http.Request)
+
+	// SetFlagByNameForced is a function that should be during initialization
+	// It's not thread-safe (on purpose) and allows to change even config-time flags
+	// returns error if there is no such flag
+	SetFlagByNameForced(name string, enabled bool) error
 }
 
 /*

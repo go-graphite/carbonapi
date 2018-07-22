@@ -40,6 +40,11 @@ file = "carbonapi.log"
 level = "info"
 logger = ""
 
+# features allows to specify feature flags on a startup time
+#   format: flag-name = value
+[featureFlags]
+applyByNode-count-nodes-from-1 = true
+
 # Uncomment this to get the behavior of graphite-web as proposed in https://github.com/graphite-project/graphite-web/pull/2239
 # Beware this will make darkbackground graphs less readable
 #[defaultColors]
