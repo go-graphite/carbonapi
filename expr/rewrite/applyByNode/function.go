@@ -5,9 +5,22 @@ import (
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
+	"github.com/go-graphite/carbonapi/pkg/features"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	"strings"
 )
+
+var applyByNodeCountNodesFrom1Flag int64
+var flags features.Features
+
+func init() {
+	flags = features.GetFeaturesInstance()
+	var err error
+	applyByNodeCountNodesFrom1Flag, err = flags.RegisterRuntime("applyByNode-count-nodes-from-1", true)
+	if err != nil {
+		panic(err)
+	}
+}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -35,6 +48,12 @@ func (f *applyByNode) Do(e parser.Expr, from, until int64, values map[parser.Met
 	field, err := e.GetIntArg(1)
 	if err != nil {
 		return false, nil, err
+	}
+
+	// This enabled experiment to fix issue #333
+	// If flag is set, we should think that node starts from 1, not from 0
+	if flags.IsEnabledID(applyByNodeCountNodesFrom1Flag) {
+		field--
 	}
 
 	callback, err := e.GetStringArg(2)

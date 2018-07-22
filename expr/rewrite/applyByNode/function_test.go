@@ -7,6 +7,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
+	"github.com/go-graphite/carbonapi/pkg/features"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
 )
@@ -28,11 +29,12 @@ func TestRewriteExpr(t *testing.T) {
 	now32 := time.Now().Unix()
 
 	tests := []struct {
-		name       string
-		e          parser.Expr
-		m          map[parser.MetricRequest][]*types.MetricData
-		rewritten  bool
-		newTargets []string
+		name                           string
+		e                              parser.Expr
+		m                              map[parser.MetricRequest][]*types.MetricData
+		rewritten                      bool
+		newTargets                     []string
+		applyByNodeCountNodesFrom1Flag bool
 	}{
 		{
 			"applyByNode",
@@ -52,6 +54,7 @@ func TestRewriteExpr(t *testing.T) {
 			},
 			true,
 			[]string{"metric1.count"},
+			false,
 		},
 		{
 			"applyByNode",
@@ -72,6 +75,7 @@ func TestRewriteExpr(t *testing.T) {
 			},
 			true,
 			[]string{"alias(metric1.count,\"metric1 count\")"},
+			false,
 		},
 		{
 			"applyByNode",
@@ -95,12 +99,81 @@ func TestRewriteExpr(t *testing.T) {
 			},
 			true,
 			[]string{"foo.metric1.count", "foo.metric2.count"},
+			false,
+		},
+		{
+			"applyByNode",
+			parser.NewExpr("applyByNode",
+
+				"metric*",
+				2,
+				parser.ArgValue("%.count"),
+			),
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric*", 0, 1}: {
+					types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32),
+				},
+				{"metric1", 0, 1}: {
+					types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32),
+				},
+			},
+			true,
+			[]string{"metric1.count"},
+			true,
+		},
+		{
+			"applyByNode",
+			parser.NewExpr("applyByNode",
+
+				"metric*",
+				2,
+				parser.ArgValue("%.count"),
+				parser.ArgValue("% count"),
+			),
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric*", 0, 1}: {
+					types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32),
+				},
+				{"metric1", 0, 1}: {
+					types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32),
+				},
+			},
+			true,
+			[]string{"alias(metric1.count,\"metric1 count\")"},
+			true,
+		},
+		{
+			"applyByNode",
+			parser.NewExpr("applyByNode",
+
+				"foo.metric*",
+				3,
+				parser.ArgValue("%.count"),
+			),
+			map[parser.MetricRequest][]*types.MetricData{
+				{"foo.metric*", 0, 1}: {
+					types.MakeMetricData("foo.metric1", []float64{1, 2, 3}, 1, now32),
+					types.MakeMetricData("foo.metric2", []float64{1, 2, 3}, 1, now32),
+				},
+				{"foo.metric1", 0, 1}: {
+					types.MakeMetricData("foo.metric1", []float64{1, 2, 3}, 1, now32),
+				},
+				{"foo.metric2", 0, 1}: {
+					types.MakeMetricData("foo.metric2", []float64{1, 2, 3}, 1, now32),
+				},
+			},
+			true,
+			[]string{"foo.metric1.count", "foo.metric2.count"},
+			true,
 		},
 	}
 
+	flags := features.GetFeaturesInstance()
 	rewriter := metadata.GetRewriter()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			featureID, _ := flags.GetIDByName("applyByNode-count-nodes-from-1")
+			flags.SetFlagByID(featureID, tt.applyByNodeCountNodesFrom1Flag)
 			rewritten, newTargets, err := rewriter.RewriteExpr(tt.e, 0, 1, tt.m)
 
 			if err != nil {
