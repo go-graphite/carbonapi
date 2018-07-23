@@ -94,11 +94,14 @@ func (bg *BroadcastGroup) filterServersByTLD(requests []string, clients []types.
 	}
 
 	var filteredClients []types.ServerClient
-
 	for _, k := range clients {
 		if tldClients[k] {
 			filteredClients = append(filteredClients, k)
 		}
+	}
+
+	if len(filteredClients) == 0 {
+		return clients
 	}
 
 	return filteredClients
@@ -190,21 +193,17 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	logger := bg.logger.With(zap.String("type", "fetch"), zap.Strings("request", requestNames))
 	logger.Debug("will try to fetch data")
 
-	clients := bg.Children()
-	filteredClients := bg.filterServersByTLD(requestNames, clients)
-	if len(filteredClients) == 0 {
-		filteredClients = clients
-	}
+	clients := bg.filterServersByTLD(requestNames, bg.Children())
 
 	requests := bg.SplitRequest(ctx, request)
 	// TODO(gmagnusson): WAIT, HOW MANY METRICS WAS THAT
 
-	resCh := make(chan *types.ServerFetchResponse, len(filteredClients))
+	resCh := make(chan *types.ServerFetchResponse, len(clients))
 
 	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Render)
 	defer cancel()
 
-	for _, client := range filteredClients {
+	for _, client := range clients {
 		go bg.doSingleFetch(ctx, logger, client, requests, resCh)
 	}
 
@@ -241,7 +240,7 @@ GATHER:
 	}
 
 	logger.Debug("got some responses",
-		zap.Int("clients_count", len(filteredClients)),
+		zap.Int("clients_count", len(clients)),
 		zap.Int("response_count", responseCount),
 		zap.Bool("have_errors", len(result.Err.Errors) != 0),
 		zap.Any("errors", result.Err.Errors),
