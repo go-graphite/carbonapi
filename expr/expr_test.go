@@ -545,16 +545,6 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("substr",
-				"metric1.foo.bar.baz", 1, 3,
-			),
-			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.bar.baz", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
-			},
-			[]*types.MetricData{types.MakeMetricData("foo.bar",
-				[]float64{1, 2, 3, 4, 5}, 1, now32)},
-		},
-		{
 			parser.NewExpr("mapSeries",
 				"servers.*.cpu.*", 1,
 			),
