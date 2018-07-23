@@ -7,6 +7,11 @@ import (
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
+type Request interface {
+	Marshal() ([]byte, error)
+	LogInfo() string
+}
+
 type ServerClient interface {
 	Name() string
 	Backends() []string

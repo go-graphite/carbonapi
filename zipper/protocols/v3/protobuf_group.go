@@ -117,12 +117,7 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	}
 	rewrite.RawQuery = v.Encode()
 
-	data, err := request.Marshal()
-	if err != nil {
-		return nil, nil, errors.FromErrNonFatal(err)
-	}
-
-	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), data)
+	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), types.MultiFetchRequestV3{request})
 	if e == nil {
 		e = &errors.Errors{}
 	}
@@ -154,12 +149,7 @@ func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlo
 	}
 	rewrite.RawQuery = v.Encode()
 
-	data, err := request.Marshal()
-	if err != nil {
-		return nil, nil, errors.FromErrNonFatal(err)
-	}
-
-	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), data)
+	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), types.MultiGlobRequestV3{request})
 	if e == nil {
 		e = &errors.Errors{}
 	}
@@ -169,7 +159,7 @@ func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlo
 	}
 
 	var globs protov3.MultiGlobResponse
-	err = globs.Unmarshal(res.Response)
+	err := globs.Unmarshal(res.Response)
 	if err != nil {
 		return nil, nil, errors.FromErrNonFatal(err)
 	}
@@ -186,12 +176,7 @@ func (c *ClientProtoV3Group) Info(ctx context.Context, request *protov3.MultiMet
 	}
 	rewrite.RawQuery = v.Encode()
 
-	data, err := request.Marshal()
-	if err != nil {
-		return nil, nil, errors.FromErrNonFatal(err)
-	}
-
-	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), data)
+	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), types.MultiMetricsInfoV3{request})
 	if e == nil {
 		e = &errors.Errors{}
 	}
@@ -201,7 +186,7 @@ func (c *ClientProtoV3Group) Info(ctx context.Context, request *protov3.MultiMet
 	}
 
 	var infos protov3.MultiMetricsInfoResponse
-	err = infos.Unmarshal(res.Response)
+	err := infos.Unmarshal(res.Response)
 	if err != nil {
 		return nil, nil, errors.FromErrNonFatal(err)
 	}
