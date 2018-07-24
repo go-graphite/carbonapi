@@ -9,7 +9,7 @@ import (
 
 type Request interface {
 	Marshal() ([]byte, error)
-	LogInfo() string
+	LogInfo() interface{}
 }
 
 type ServerClient interface {

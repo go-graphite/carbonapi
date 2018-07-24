@@ -75,12 +75,9 @@ func (c *HttpQuery) doRequest(ctx context.Context, uri string, r types.Request) 
 		return nil, err
 	}
 
-	var requestString string
 	var reader io.Reader
 	var body []byte
 	if r != nil {
-		requestString = r.LogInfo()
-
 		body, err = r.Marshal()
 		if err != nil {
 			return nil, err
@@ -92,7 +89,7 @@ func (c *HttpQuery) doRequest(ctx context.Context, uri string, r types.Request) 
 	logger := c.logger.With(
 		zap.String("server", server),
 		zap.String("name", c.groupName),
-		zap.String("uri", u.String()+requestString),
+		zap.String("uri", u.String()),
 	)
 
 	req, err := http.NewRequest("GET", u.String(), reader)
@@ -110,6 +107,7 @@ func (c *HttpQuery) doRequest(ctx context.Context, uri string, r types.Request) 
 		return nil, err
 	}
 	logger.Debug("got slot")
+	logger = logger.With(zap.Any("payloadData", r.LogInfo()))
 
 	resp, err := c.client.Do(req.WithContext(ctx))
 	c.limiter.Leave(ctx, server)

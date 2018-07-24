@@ -117,7 +117,7 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	}
 	rewrite.RawQuery = v.Encode()
 
-	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), types.MultiFetchRequestV3{request})
+	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), types.MultiFetchRequestV3{*request})
 	if e == nil {
 		e = &errors.Errors{}
 	}
@@ -149,7 +149,7 @@ func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlo
 	}
 	rewrite.RawQuery = v.Encode()
 
-	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), types.MultiGlobRequestV3{request})
+	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), types.MultiGlobRequestV3{*request})
 	if e == nil {
 		e = &errors.Errors{}
 	}
@@ -176,7 +176,7 @@ func (c *ClientProtoV3Group) Info(ctx context.Context, request *protov3.MultiMet
 	}
 	rewrite.RawQuery = v.Encode()
 
-	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), types.MultiMetricsInfoV3{request})
+	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), types.MultiMetricsInfoV3{*request})
 	if e == nil {
 		e = &errors.Errors{}
 	}
