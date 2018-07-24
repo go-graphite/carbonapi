@@ -107,8 +107,9 @@ func (c *HttpQuery) doRequest(ctx context.Context, uri string, r types.Request) 
 		return nil, err
 	}
 	logger.Debug("got slot")
-	logger = logger.With(zap.Any("payloadData", r.LogInfo()))
-
+	if r != nil {
+		logger = logger.With(zap.Any("payloadData", r.LogInfo()))
+	}
 	resp, err := c.client.Do(req.WithContext(ctx))
 	c.limiter.Leave(ctx, server)
 	if err != nil {
