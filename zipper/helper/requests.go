@@ -64,7 +64,7 @@ func (c *HttpQuery) pickServer() string {
 	return srv
 }
 
-func (c *HttpQuery) doRequest(ctx context.Context, uri string, body []byte) (*ServerResponse, error) {
+func (c *HttpQuery) doRequest(ctx context.Context, uri string, r types.Request) (*ServerResponse, error) {
 	server := c.pickServer()
 	c.logger.Debug("picked server",
 		zap.String("server", server),
@@ -75,16 +75,23 @@ func (c *HttpQuery) doRequest(ctx context.Context, uri string, body []byte) (*Se
 		return nil, err
 	}
 
+	var reader io.Reader
+	var body []byte
+	if r != nil {
+		body, err = r.Marshal()
+		if err != nil {
+			return nil, err
+		}
+		if body != nil {
+			reader = bytes.NewReader(body)
+		}
+	}
 	logger := c.logger.With(
 		zap.String("server", server),
 		zap.String("name", c.groupName),
 		zap.String("uri", u.String()),
 	)
 
-	var reader io.Reader
-	if body != nil {
-		reader = bytes.NewReader(body)
-	}
 	req, err := http.NewRequest("GET", u.String(), reader)
 	req.Header.Set("Accept", c.encoding)
 	if err != nil {
@@ -100,7 +107,9 @@ func (c *HttpQuery) doRequest(ctx context.Context, uri string, body []byte) (*Se
 		return nil, err
 	}
 	logger.Debug("got slot")
-
+	if r != nil {
+		logger = logger.With(zap.Any("payloadData", r.LogInfo()))
+	}
 	resp, err := c.client.Do(req.WithContext(ctx))
 	c.limiter.Leave(ctx, server)
 	if err != nil {
@@ -129,7 +138,7 @@ func (c *HttpQuery) doRequest(ctx context.Context, uri string, body []byte) (*Se
 	return &ServerResponse{Server: server, Response: body}, nil
 }
 
-func (c *HttpQuery) DoQuery(ctx context.Context, uri string, body []byte) (*ServerResponse, *errors.Errors) {
+func (c *HttpQuery) DoQuery(ctx context.Context, uri string, r types.Request) (*ServerResponse, *errors.Errors) {
 	maxTries := c.maxTries
 	if len(c.servers) > maxTries {
 		maxTries = len(c.servers)
@@ -137,7 +146,7 @@ func (c *HttpQuery) DoQuery(ctx context.Context, uri string, body []byte) (*Serv
 
 	var e errors.Errors
 	for try := 0; try < maxTries; try++ {
-		res, err := c.doRequest(ctx, uri, body)
+		res, err := c.doRequest(ctx, uri, r)
 		if err != nil {
 			c.logger.Error("have errors",
 				zap.Error(err),

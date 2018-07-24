@@ -35,11 +35,11 @@ type capabilityResponse struct {
 }
 
 //_internal/capabilities/
-func doQuery(ctx context.Context, logger *zap.Logger, groupName string, httpClient *http.Client, limiter *limiter.ServerLimiter, server string, payload []byte, resChan chan<- capabilityResponse) {
+func doQuery(ctx context.Context, logger *zap.Logger, groupName string, httpClient *http.Client, limiter *limiter.ServerLimiter, server string, request types.Request, resChan chan<- capabilityResponse) {
 	httpQuery := helper.NewHttpQuery(logger, groupName, []string{server}, 1, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv3PB)
 	rewrite, _ := url.Parse("http://127.0.0.1/_internal/capabilities/")
 
-	res, e := httpQuery.DoQuery(ctx, rewrite.RequestURI(), payload)
+	res, e := httpQuery.DoQuery(ctx, rewrite.RequestURI(), request)
 	if e != nil || res == nil || res.Response == nil || len(res.Response) == 0 {
 		logger.Info("will assume old protocol")
 		resChan <- capabilityResponse{
@@ -95,16 +95,11 @@ func getBestSupportedProtocol(logger *zap.Logger, servers []string, concurencyLi
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	request := protov3.CapabilityRequest{}
-	data, err := request.Marshal()
-	if err != nil {
-		return nil
-	}
-
+	request := types.CapabilityRequestV3{}
 	resCh := make(chan capabilityResponse, len(servers))
 
 	for _, srv := range servers {
-		go doQuery(ctx, logger, groupName, httpClient, limiter, srv, data, resCh)
+		go doQuery(ctx, logger, groupName, httpClient, limiter, srv, request, resCh)
 	}
 
 	answeredServers := make(map[string]struct{})
