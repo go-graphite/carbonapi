@@ -47,8 +47,11 @@ pidFile: ""
 upstreams:
     # Number of 100ms buckets to track request distribution in. Used to build
     # 'carbon.zipper.hostname.requests_in_0ms_to_100ms' metric and friends.
-    # Requests beyond the last bucket are logged as slow
-    # (default of 10 implies "slow" is >1 second).
+    # Requests beyond the last bucket are logged as slow (default of 10 implies
+    # "slow" is >1 second).
+    # The last bucket is _not_ called 'requests_in_Xms_to_inf' on purpose, so
+    # we can change our minds about how many buckets we want to have and have
+    # their names remain consistent.
     buckets: 10
 
     timeouts:
