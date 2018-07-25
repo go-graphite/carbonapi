@@ -198,6 +198,10 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	requests := bg.SplitRequest(ctx, request)
 	// TODO(gmagnusson): WAIT, HOW MANY METRICS WAS THAT
 
+	result := types.NewServerFetchResponse()
+	if len(requests) == 0 {
+		return result.Response, result.Stats, result.Err
+	}
 	resCh := make(chan *types.ServerFetchResponse, len(clients))
 
 	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Render)
@@ -207,7 +211,6 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 		go bg.doSingleFetch(ctx, logger, client, requests, resCh)
 	}
 
-	result := types.NewServerFetchResponse()
 	answeredServers := make(map[string]struct{})
 	responseCount := 0
 	uuid := util.GetUUID(ctx)
