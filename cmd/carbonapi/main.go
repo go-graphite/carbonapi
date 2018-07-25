@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 	"unicode"
 
@@ -43,6 +44,7 @@ var apiMetrics = struct {
 	RequestCacheHits      *expvar.Int
 	RequestCacheMisses    *expvar.Int
 	RenderCacheOverheadNS *expvar.Int
+	RequestBuckets        expvar.Func
 
 	FindRequests        *expvar.Int
 	FindCacheHits       *expvar.Int
@@ -172,6 +174,7 @@ var config = struct {
 	ExtrapolateExperiment      bool               `mapstructure:"extrapolateExperiment"`
 	Logger                     []zapwriter.Config `mapstructure:"logger"`
 	Listen                     string             `mapstructure:"listen"`
+	Buckets                    int                `mapstructure:"buckets"`
 	Concurency                 int                `mapstructure:"concurency"`
 	Cache                      cacheConfig        `mapstructure:"cache"`
 	Cpus                       int                `mapstructure:"cpus"`
@@ -205,6 +208,7 @@ var config = struct {
 }{
 	ExtrapolateExperiment: false,
 	Listen:                "[::]:8081",
+	Buckets:               10,
 	Concurency:            20,
 	SendGlobsAsIs:         false,
 	AlwaysSendGlobsAsIs:   false,
@@ -473,6 +477,10 @@ func setUpConfig(logger *zap.Logger) {
 		}
 	}
 
+	// +1 to track every over the number of buckets we track
+	timeBuckets = make([]int64, config.Buckets+1)
+	expvar.Publish("requestBuckets", expvar.Func(renderTimeBuckets))
+
 	logger.Info("starting carbonapi",
 		zap.String("build_version", BuildVersion),
 		zap.Any("config", config),
@@ -495,6 +503,10 @@ func setUpConfig(logger *zap.Logger) {
 		graphite.Register(fmt.Sprintf("%s.request_cache_hits", pattern), apiMetrics.RequestCacheHits)
 		graphite.Register(fmt.Sprintf("%s.request_cache_misses", pattern), apiMetrics.RequestCacheMisses)
 		graphite.Register(fmt.Sprintf("%s.request_cache_overhead_ns", pattern), apiMetrics.RenderCacheOverheadNS)
+
+		for i := 0; i <= config.Buckets; i++ {
+			graphite.Register(fmt.Sprintf("%s.requests_in_%dms_to_%dms", pattern, i*100, (i+1)*100), bucketEntry(i))
+		}
 
 		graphite.Register(fmt.Sprintf("%s.find_requests", pattern), apiMetrics.FindRequests)
 		graphite.Register(fmt.Sprintf("%s.find_cache_hits", pattern), apiMetrics.FindCacheHits)
@@ -648,6 +660,37 @@ func setUpConfigUpstreams(logger *zap.Logger) {
 		logger.Fatal("no backends specified for upstreams!")
 	}
 
+}
+
+var timeBuckets []int64
+
+type bucketEntry int
+
+func (b bucketEntry) String() string {
+	return strconv.Itoa(int(atomic.LoadInt64(&timeBuckets[b])))
+}
+
+func renderTimeBuckets() interface{} {
+	return timeBuckets
+}
+
+func bucketRequestTimes(req *http.Request, t time.Duration) {
+	logger := zapwriter.Logger("slow")
+
+	ms := t.Nanoseconds() / int64(time.Millisecond)
+
+	bucket := int(ms / 100)
+
+	if bucket < config.Buckets {
+		atomic.AddInt64(&timeBuckets[bucket], 1)
+	} else {
+		// Too big? Increment overflow bucket and log
+		atomic.AddInt64(&timeBuckets[config.Buckets], 1)
+		logger.Warn("Slow Request",
+			zap.Duration("time", t),
+			zap.String("url", req.URL.String()),
+		)
+	}
 }
 
 func main() {

@@ -9,21 +9,21 @@ import (
 	"strings"
 	"time"
 
-	pickle "github.com/lomik/og-rek"
-	"github.com/satori/go.uuid"
-
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/date"
 	"github.com/go-graphite/carbonapi/expr"
 	"github.com/go-graphite/carbonapi/expr/functions/cairo/png"
+	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/intervalset"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	util "github.com/go-graphite/carbonapi/util/ctx"
-	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
-	"github.com/go-graphite/carbonapi/expr/metadata"
+	"github.com/dgryski/httputil"
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
+	pickle "github.com/lomik/og-rek"
 	"github.com/lomik/zapwriter"
+	"github.com/satori/go.uuid"
 	"go.uber.org/zap"
 )
 
@@ -46,14 +46,14 @@ const (
 
 func initHandlers() *http.ServeMux {
 	r := http.DefaultServeMux
-	r.HandleFunc("/render/", renderHandler)
-	r.HandleFunc("/render", renderHandler)
+	r.HandleFunc("/render/", httputil.TrackConnections(httputil.TimeHandler(util.ParseCtx(renderHandler, util.HeaderUUIDAPI), bucketRequestTimes)))
+	r.HandleFunc("/render", httputil.TrackConnections(httputil.TimeHandler(util.ParseCtx(renderHandler, util.HeaderUUIDAPI), bucketRequestTimes)))
 
-	r.HandleFunc("/metrics/find/", findHandler)
-	r.HandleFunc("/metrics/find", findHandler)
+	r.HandleFunc("/metrics/find/", httputil.TrackConnections(httputil.TimeHandler(util.ParseCtx(findHandler, util.HeaderUUIDAPI), bucketRequestTimes)))
+	r.HandleFunc("/metrics/find", httputil.TrackConnections(httputil.TimeHandler(util.ParseCtx(findHandler, util.HeaderUUIDAPI), bucketRequestTimes)))
 
-	r.HandleFunc("/info/", infoHandler)
-	r.HandleFunc("/info", infoHandler)
+	r.HandleFunc("/info/", httputil.TrackConnections(httputil.TimeHandler(util.ParseCtx(infoHandler, util.HeaderUUIDAPI), bucketRequestTimes)))
+	r.HandleFunc("/info", httputil.TrackConnections(httputil.TimeHandler(util.ParseCtx(infoHandler, util.HeaderUUIDAPI), bucketRequestTimes)))
 
 	r.HandleFunc("/lb_check", lbcheckHandler)
 

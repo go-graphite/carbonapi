@@ -94,11 +94,14 @@ func (bg *BroadcastGroup) filterServersByTLD(requests []string, clients []types.
 	}
 
 	var filteredClients []types.ServerClient
-
 	for _, k := range clients {
 		if tldClients[k] {
 			filteredClients = append(filteredClients, k)
 		}
+	}
+
+	if len(filteredClients) == 0 {
+		return clients
 	}
 
 	return filteredClients
@@ -145,12 +148,17 @@ func (bg *BroadcastGroup) SplitRequest(ctx context.Context, request *protov3.Mul
 
 	var requests []*protov3.MultiFetchRequest
 	for _, metric := range request.Metrics {
+		newRequest := &protov3.MultiFetchRequest{}
+
 		f, _, e := bg.Find(ctx, &protov3.MultiGlobRequest{Metrics: []string{metric.Name}})
 		if (e != nil && e.HaveFatalErrors && len(e.Errors) > 0) || f == nil || len(f.Metrics) == 0 {
+			bg.logger.Warn("Find request failed when resolving globs",
+				zap.String("metric_name", metric.Name),
+				zap.Any("errors", e.Errors),
+			)
+
 			continue
 		}
-
-		newRequest := &protov3.MultiFetchRequest{}
 
 		for _, m := range f.Metrics {
 			for _, match := range m.Matches {
@@ -185,19 +193,17 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	logger := bg.logger.With(zap.String("type", "fetch"), zap.Strings("request", requestNames))
 	logger.Debug("will try to fetch data")
 
-	clients := bg.Children()
-	filteredClients := bg.filterServersByTLD(requestNames, clients)
-	if len(filteredClients) == 0 {
-		filteredClients = clients
-	}
+	clients := bg.filterServersByTLD(requestNames, bg.Children())
 
 	requests := bg.SplitRequest(ctx, request)
-	resCh := make(chan *types.ServerFetchResponse, len(filteredClients))
+	// TODO(gmagnusson): WAIT, HOW MANY METRICS WAS THAT
+
+	resCh := make(chan *types.ServerFetchResponse, len(clients))
 
 	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Render)
 	defer cancel()
 
-	for _, client := range filteredClients {
+	for _, client := range clients {
 		go bg.doSingleFetch(ctx, logger, client, requests, resCh)
 	}
 
@@ -207,16 +213,12 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	uuid := util.GetUUID(ctx)
 
 GATHER:
-	for {
+	for responseCount < len(clients) {
 		select {
 		case res := <-resCh:
 			answeredServers[res.Server] = struct{}{}
 			result.Merge(res, uuid)
 			responseCount++
-
-			if responseCount == len(clients) {
-				break GATHER
-			}
 
 		case <-ctx.Done():
 			logger.Warn("timeout waiting for more responses",
@@ -238,7 +240,7 @@ GATHER:
 	}
 
 	logger.Debug("got some responses",
-		zap.Int("clients_count", len(filteredClients)),
+		zap.Int("clients_count", len(clients)),
 		zap.Int("response_count", responseCount),
 		zap.Bool("have_errors", len(result.Err.Errors) != 0),
 		zap.Any("errors", result.Err.Errors),
