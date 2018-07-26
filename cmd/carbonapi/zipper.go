@@ -27,10 +27,10 @@ type zipper struct {
 // The CarbonZipper interface exposes access to realZipper
 // Exposes the functionality to find, get info or render metrics.
 type CarbonZipper interface {
-	Find(ctx context.Context, metrics []string) (*pb.MultiGlobResponse, error)
-	Info(ctx context.Context, metrics []string) (*pb.ZipperInfoResponse, error)
-	RenderCompat(ctx context.Context, metrics []string, from, until int64) ([]*types.MetricData, error)
-	Render(ctx context.Context, request pb.MultiFetchRequest) ([]*types.MetricData, error)
+	Find(ctx context.Context, metrics []string) (*pb.MultiGlobResponse, *zipperTypes.Stats, error)
+	Info(ctx context.Context, metrics []string) (*pb.ZipperInfoResponse, *zipperTypes.Stats, error)
+	RenderCompat(ctx context.Context, metrics []string, from, until int64) ([]*types.MetricData, *zipperTypes.Stats, error)
+	Render(ctx context.Context, request pb.MultiFetchRequest) ([]*types.MetricData, *zipperTypes.Stats, error)
 }
 
 func newZipper(sender func(*zipperTypes.Stats), config *zipperCfg.Config, ignoreClientTimeout bool, logger *zap.Logger) *zipper {
@@ -52,7 +52,7 @@ func newZipper(sender func(*zipperTypes.Stats), config *zipperCfg.Config, ignore
 	return z
 }
 
-func (z zipper) Find(ctx context.Context, metrics []string) (*pb.MultiGlobResponse, error) {
+func (z zipper) Find(ctx context.Context, metrics []string) (*pb.MultiGlobResponse, *zipperTypes.Stats, error) {
 	newCtx := ctx
 	if z.ignoreClientTimeout {
 		uuid := util.GetUUID(ctx)
@@ -65,15 +65,15 @@ func (z zipper) Find(ctx context.Context, metrics []string) (*pb.MultiGlobRespon
 
 	res, stats, err := z.z.FindProtoV3(newCtx, &req)
 	if err != nil {
-		return nil, err
+		return nil, stats, err
 	}
 
 	z.statsSender(stats)
 
-	return res, err
+	return res, stats, err
 }
 
-func (z zipper) Info(ctx context.Context, metrics []string) (*pb.ZipperInfoResponse, error) {
+func (z zipper) Info(ctx context.Context, metrics []string) (*pb.ZipperInfoResponse, *zipperTypes.Stats, error) {
 	newCtx := ctx
 	if z.ignoreClientTimeout {
 		uuid := util.GetUUID(ctx)
@@ -86,15 +86,15 @@ func (z zipper) Info(ctx context.Context, metrics []string) (*pb.ZipperInfoRespo
 
 	resp, stats, err := z.z.InfoProtoV3(newCtx, &req)
 	if err != nil {
-		return nil, fmt.Errorf("http.Get: %+v", err)
+		return nil, stats, fmt.Errorf("http.Get: %+v", err)
 	}
 
 	z.statsSender(stats)
 
-	return resp, nil
+	return resp, stats, nil
 }
 
-func (z zipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*types.MetricData, error) {
+func (z zipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*types.MetricData, *zipperTypes.Stats, error) {
 	var result []*types.MetricData
 	newCtx := ctx
 	if z.ignoreClientTimeout {
@@ -104,7 +104,7 @@ func (z zipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*ty
 
 	pbresp, stats, err := z.z.FetchProtoV3(newCtx, &request)
 	if err != nil {
-		return result, err
+		return result, stats, err
 	}
 
 	z.statsSender(stats)
@@ -114,13 +114,13 @@ func (z zipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*ty
 	}
 
 	if len(result) == 0 {
-		return result, errNoMetrics
+		return result, stats, errNoMetrics
 	}
 
-	return result, nil
+	return result, stats, nil
 }
 
-func (z zipper) RenderCompat(ctx context.Context, metrics []string, from, until int64) ([]*types.MetricData, error) {
+func (z zipper) RenderCompat(ctx context.Context, metrics []string, from, until int64) ([]*types.MetricData, *zipperTypes.Stats, error) {
 	var result []*types.MetricData
 	newCtx := ctx
 	if z.ignoreClientTimeout {
@@ -139,18 +139,18 @@ func (z zipper) RenderCompat(ctx context.Context, metrics []string, from, until 
 
 	pbresp, stats, err := z.z.FetchProtoV3(newCtx, &req)
 	if err != nil {
-		return result, err
+		return result, stats, err
 	}
 
 	z.statsSender(stats)
 
 	if m := pbresp.Metrics; len(m) == 0 {
-		return result, errNoMetrics
+		return result, stats, errNoMetrics
 	}
 
 	for i := range pbresp.Metrics {
 		result = append(result, &types.MetricData{FetchResponse: pbresp.Metrics[i]})
 	}
 
-	return result, nil
+	return result, stats, nil
 }
