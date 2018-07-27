@@ -202,7 +202,7 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 		zipperRequests = 1
 	}
 	if len(requests) > 0 {
-		zipperRequests += ((len(requests) - 1) * bg.MaxMetricsPerRequest()) + len(requests[len(requests)-1].Metrics)
+		zipperRequests += len(requests) * len(clients)
 	}
 
 	result := types.NewServerFetchResponse()
