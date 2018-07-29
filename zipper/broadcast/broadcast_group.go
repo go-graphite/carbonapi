@@ -157,7 +157,9 @@ func (bg *BroadcastGroup) SplitRequest(ctx context.Context, request *protov3.Mul
 				zap.Any("errors", e.Errors),
 			)
 
-			continue
+			if f == nil {
+				continue
+			}
 		}
 
 		for _, m := range f.Metrics {

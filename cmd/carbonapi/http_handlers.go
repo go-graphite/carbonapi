@@ -300,8 +300,6 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			r, err := config.zipper.Render(ctx, req)
 			if err != nil {
 				errors[target] = err.Error()
-				config.limiter.leave()
-				continue
 			}
 
 			config.limiter.leave()
