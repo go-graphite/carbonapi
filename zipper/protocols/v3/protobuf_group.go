@@ -126,6 +126,9 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 		return nil, stats, e
 	}
 
+	if res == nil {
+		return nil, stats, errors.FromErrNonFatal(types.ErrNoResponseFetched)
+	}
 	var metrics protov3.MultiFetchResponse
 	e.AddFatal(metrics.Unmarshal(res.Response))
 	if e == nil {
@@ -158,6 +161,9 @@ func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlo
 		return nil, stats, e
 	}
 
+	if res == nil {
+		return nil, stats, errors.FromErrNonFatal(types.ErrNotFound)
+	}
 	var globs protov3.MultiGlobResponse
 	err := globs.Unmarshal(res.Response)
 	if err != nil {
@@ -185,6 +191,9 @@ func (c *ClientProtoV3Group) Info(ctx context.Context, request *protov3.MultiMet
 		return nil, stats, e
 	}
 
+	if res == nil {
+		return nil, stats, errors.FromErrNonFatal(types.ErrNoResponseFetched)
+	}
 	var infos protov3.MultiMetricsInfoResponse
 	err := infos.Unmarshal(res.Response)
 	if err != nil {
@@ -224,6 +233,9 @@ func (c *ClientProtoV3Group) ProbeTLDs(ctx context.Context) ([]string, *errors.E
 		return nil, err
 	}
 
+	if res == nil {
+		return nil, err
+	}
 	var tlds []string
 	for _, m := range res.Metrics {
 		for _, v := range m.Matches {

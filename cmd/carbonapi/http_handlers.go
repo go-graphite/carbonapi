@@ -301,7 +301,6 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				errors[target] = err.Error()
 				config.limiter.leave()
-				continue
 			}
 
 			config.limiter.leave()
