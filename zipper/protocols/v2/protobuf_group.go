@@ -205,7 +205,6 @@ func (c *ClientProtoV2Group) Find(ctx context.Context, request *protov3.MultiGlo
 			e.Add(marshalErr)
 			continue
 		}
-		stats.Servers = append(stats.Servers, res.Server)
 		matches := make([]protov3.GlobMatch, 0, len(globs.Matches))
 		for _, m := range globs.Matches {
 			matches = append(matches, protov3.GlobMatch{
@@ -263,7 +262,6 @@ func (c *ClientProtoV2Group) Info(ctx context.Context, request *protov3.MultiMet
 			e.Add(err)
 			continue
 		}
-		stats.Servers = append(stats.Servers, res.Server)
 
 		if info.AggregationMethod == "" {
 			info.AggregationMethod = "average"

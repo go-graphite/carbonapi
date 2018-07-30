@@ -15,9 +15,6 @@ type Stats struct {
 
 	CacheMisses int64
 	CacheHits   int64
-
-	Servers       []string
-	FailedServers []string
 }
 
 func (s *Stats) Merge(stats *Stats) {
@@ -31,6 +28,4 @@ func (s *Stats) Merge(stats *Stats) {
 	s.MemoryUsage += stats.MemoryUsage
 	s.CacheMisses += stats.CacheMisses
 	s.CacheHits += stats.CacheHits
-	s.Servers = append(s.Servers, stats.Servers...)
-	s.FailedServers = append(s.FailedServers, stats.FailedServers...)
 }

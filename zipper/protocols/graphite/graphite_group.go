@@ -196,7 +196,6 @@ func (c *GraphiteGroup) Find(ctx context.Context, request *protov3.MultiGlobRequ
 			continue
 		}
 
-		stats.Servers = append(stats.Servers, res.Server)
 		matches := make([]protov3.GlobMatch, 0, len(globs))
 		for _, m := range globs {
 			matches = append(matches, protov3.GlobMatch{
@@ -254,7 +253,6 @@ func (c *GraphiteGroup) Info(ctx context.Context, request *protov3.MultiMetricsI
 			e.Add(err)
 			continue
 		}
-		stats.Servers = append(stats.Servers, res.Server)
 
 		if info.AggregationMethod == "" {
 			info.AggregationMethod = "average"
