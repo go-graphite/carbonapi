@@ -114,6 +114,7 @@ func (c *ClientGRPCGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	ctx, cancel := context.WithTimeout(ctx, c.timeout.Render)
 	defer cancel()
 
+	stats.RenderRequests++
 	res, err := c.client.FetchMetrics(ctx, request)
 	if err != nil {
 		stats.RenderErrors++
@@ -127,9 +128,10 @@ func (c *ClientGRPCGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	ctx, cancel := context.WithTimeout(ctx, c.timeout.Find)
 	defer cancel()
 
+	stats.FindRequests++
 	res, err := c.client.FindMetrics(ctx, request)
 	if err != nil {
-		stats.RenderErrors++
+		stats.FindErrors++
 	}
 
 	return res, stats, errors.FromErrNonFatal(err)
@@ -139,6 +141,7 @@ func (c *ClientGRPCGroup) Info(ctx context.Context, request *protov3.MultiMetric
 	ctx, cancel := context.WithTimeout(ctx, c.timeout.Render)
 	defer cancel()
 
+	stats.InfoRequests++
 	res, err := c.client.MetricsInfo(ctx, request)
 	if err != nil {
 		stats.RenderErrors++

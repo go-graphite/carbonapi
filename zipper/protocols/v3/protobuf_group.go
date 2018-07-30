@@ -117,16 +117,19 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	}
 	rewrite.RawQuery = v.Encode()
 
+	stats.RenderRequests++
 	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), types.MultiFetchRequestV3{*request})
 	if e == nil {
 		e = &errors.Errors{}
 	}
 
 	if e.HaveFatalErrors {
+		stats.RenderErrors++
 		return nil, stats, e
 	}
 
 	if res == nil {
+		stats.RenderErrors++
 		return nil, stats, errors.FromErrNonFatal(types.ErrNoResponseFetched)
 	}
 	var metrics protov3.MultiFetchResponse
@@ -136,6 +139,7 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	}
 
 	if e.HaveFatalErrors {
+		stats.RenderErrors++
 		e.HaveFatalErrors = false
 		return nil, stats, e
 	}
@@ -152,16 +156,19 @@ func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlo
 	}
 	rewrite.RawQuery = v.Encode()
 
+	stats.FindRequests++
 	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), types.MultiGlobRequestV3{*request})
 	if e == nil {
 		e = &errors.Errors{}
 	}
 
 	if e.HaveFatalErrors {
+		stats.FindErrors++
 		return nil, stats, e
 	}
 
 	if res == nil {
+		stats.FindErrors++
 		return nil, stats, errors.FromErrNonFatal(types.ErrNotFound)
 	}
 	var globs protov3.MultiGlobResponse
@@ -182,16 +189,19 @@ func (c *ClientProtoV3Group) Info(ctx context.Context, request *protov3.MultiMet
 	}
 	rewrite.RawQuery = v.Encode()
 
+	stats.InfoRequests++
 	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), types.MultiMetricsInfoV3{*request})
 	if e == nil {
 		e = &errors.Errors{}
 	}
 
 	if e.HaveFatalErrors {
+		stats.InfoErrors++
 		return nil, stats, e
 	}
 
 	if res == nil {
+		stats.InfoErrors++
 		return nil, stats, errors.FromErrNonFatal(types.ErrNoResponseFetched)
 	}
 	var infos protov3.MultiMetricsInfoResponse

@@ -141,11 +141,13 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 			"until":  []string{strconv.Itoa(int(batch.until))},
 		}
 		rewrite.RawQuery = v.Encode()
+		stats.RenderRequests++
 		res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
 		if err == nil {
 			err = &errors.Errors{}
 		}
 		if err.HaveFatalErrors {
+			stats.RenderErrors++
 			err.HaveFatalErrors = false
 			return nil, stats, err
 		}
@@ -153,6 +155,7 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 		var metrics protov2.MultiFetchResponse
 		err.AddFatal(metrics.Unmarshal(res.Response))
 		if err.HaveFatalErrors {
+			stats.RenderErrors++
 			return nil, stats, err
 		}
 
@@ -194,14 +197,17 @@ func (c *ClientProtoV2Group) Find(ctx context.Context, request *protov3.MultiGlo
 			"format": []string{format},
 		}
 		rewrite.RawQuery = v.Encode()
+		stats.FindRequests++
 		res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
 		if err != nil {
+			stats.FindErrors++
 			e.Merge(err)
 			continue
 		}
 		var globs protov2.GlobResponse
 		marshalErr := globs.Unmarshal(res.Response)
 		if marshalErr != nil {
+			stats.FindErrors++
 			e.Add(marshalErr)
 			continue
 		}
@@ -250,8 +256,10 @@ func (c *ClientProtoV2Group) Info(ctx context.Context, request *protov3.MultiMet
 			"format": []string{format},
 		}
 		rewrite.RawQuery = v.Encode()
+		stats.InfoRequests++
 		res, e2 := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
 		if e2 != nil {
+			stats.InfoErrors++
 			e.Merge(e2)
 			continue
 		}
@@ -259,6 +267,7 @@ func (c *ClientProtoV2Group) Info(ctx context.Context, request *protov3.MultiMet
 		var info protov2.InfoResponse
 		err := info.Unmarshal(res.Response)
 		if err != nil {
+			stats.InfoErrors++
 			e.Add(err)
 			continue
 		}

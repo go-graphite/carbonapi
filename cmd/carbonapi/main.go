@@ -236,8 +236,11 @@ func zipperStats(stats *zipperTypes.Stats) {
 	if stats == nil {
 		return
 	}
+	zipperMetrics.FindRequests.Add(stats.FindRequests)
 	zipperMetrics.FindErrors.Add(stats.FindErrors)
+	zipperMetrics.RenderRequests.Add(stats.RenderRequests)
 	zipperMetrics.RenderErrors.Add(stats.RenderErrors)
+	zipperMetrics.InfoRequests.Add(stats.InfoRequests)
 	zipperMetrics.InfoErrors.Add(stats.InfoErrors)
 }
 
