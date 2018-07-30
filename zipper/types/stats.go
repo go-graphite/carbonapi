@@ -9,9 +9,6 @@ type Stats struct {
 	ZipperRequests int64
 
 	MemoryUsage int64
-
-	CacheMisses int64
-	CacheHits   int64
 }
 
 func (s *Stats) Merge(stats *Stats) {
@@ -20,6 +17,4 @@ func (s *Stats) Merge(stats *Stats) {
 	s.RenderErrors += stats.RenderErrors
 	s.InfoErrors += stats.InfoErrors
 	s.MemoryUsage += stats.MemoryUsage
-	s.CacheMisses += stats.CacheMisses
-	s.CacheHits += stats.CacheHits
 }

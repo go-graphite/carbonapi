@@ -81,11 +81,6 @@ var zipperMetrics = struct {
 	InfoErrors   *expvar.Int
 
 	Timeouts *expvar.Int
-
-	CacheSize   expvar.Func
-	CacheItems  expvar.Func
-	CacheMisses *expvar.Int
-	CacheHits   *expvar.Int
 }{
 	FindRequests: expvar.NewInt("zipper_find_requests"),
 	FindErrors:   expvar.NewInt("zipper_find_errors"),
@@ -97,9 +92,6 @@ var zipperMetrics = struct {
 	InfoErrors:   expvar.NewInt("zipper_info_errors"),
 
 	Timeouts: expvar.NewInt("zipper_timeouts"),
-
-	CacheHits:   expvar.NewInt("zipper_cache_hits"),
-	CacheMisses: expvar.NewInt("zipper_cache_misses"),
 }
 
 // BuildVersion is provided to be overridden at build time. Eg. go build -ldflags -X 'main.BuildVersion=...'
@@ -252,8 +244,6 @@ func zipperStats(stats *zipperTypes.Stats) {
 	zipperMetrics.FindErrors.Add(stats.FindErrors)
 	zipperMetrics.RenderErrors.Add(stats.RenderErrors)
 	zipperMetrics.InfoErrors.Add(stats.InfoErrors)
-	zipperMetrics.CacheMisses.Add(stats.CacheMisses)
-	zipperMetrics.CacheHits.Add(stats.CacheHits)
 }
 
 var graphTemplates map[string]png.PictureParams
@@ -529,9 +519,6 @@ func setUpConfig(logger *zap.Logger) {
 		graphite.Register(fmt.Sprintf("%s.zipper.info_errors", pattern), zipperMetrics.InfoErrors)
 
 		graphite.Register(fmt.Sprintf("%s.zipper.timeouts", pattern), zipperMetrics.Timeouts)
-
-		graphite.Register(fmt.Sprintf("%s.zipper.cache_hits", pattern), zipperMetrics.CacheHits)
-		graphite.Register(fmt.Sprintf("%s.zipper.cache_misses", pattern), zipperMetrics.CacheMisses)
 
 		go mstats.Start(config.Graphite.Interval)
 
