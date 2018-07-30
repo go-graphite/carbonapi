@@ -79,8 +79,6 @@ var zipperMetrics = struct {
 
 	InfoRequests *expvar.Int
 	InfoErrors   *expvar.Int
-
-	Timeouts *expvar.Int
 }{
 	FindRequests: expvar.NewInt("zipper_find_requests"),
 	FindErrors:   expvar.NewInt("zipper_find_errors"),
@@ -90,8 +88,6 @@ var zipperMetrics = struct {
 
 	InfoRequests: expvar.NewInt("zipper_info_requests"),
 	InfoErrors:   expvar.NewInt("zipper_info_errors"),
-
-	Timeouts: expvar.NewInt("zipper_timeouts"),
 }
 
 // BuildVersion is provided to be overridden at build time. Eg. go build -ldflags -X 'main.BuildVersion=...'
@@ -240,7 +236,6 @@ func zipperStats(stats *zipperTypes.Stats) {
 	if stats == nil {
 		return
 	}
-	zipperMetrics.Timeouts.Add(stats.Timeouts)
 	zipperMetrics.FindErrors.Add(stats.FindErrors)
 	zipperMetrics.RenderErrors.Add(stats.RenderErrors)
 	zipperMetrics.InfoErrors.Add(stats.InfoErrors)
@@ -517,8 +512,6 @@ func setUpConfig(logger *zap.Logger) {
 
 		graphite.Register(fmt.Sprintf("%s.zipper.info_requests", pattern), zipperMetrics.InfoRequests)
 		graphite.Register(fmt.Sprintf("%s.zipper.info_errors", pattern), zipperMetrics.InfoErrors)
-
-		graphite.Register(fmt.Sprintf("%s.zipper.timeouts", pattern), zipperMetrics.Timeouts)
 
 		go mstats.Start(config.Graphite.Interval)
 

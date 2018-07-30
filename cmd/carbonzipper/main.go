@@ -812,7 +812,6 @@ func sendStats(stats *types.Stats) {
 	if stats == nil {
 		return
 	}
-	Metrics.Timeouts.Add(stats.Timeouts)
 	Metrics.FindErrors.Add(stats.FindErrors)
 	Metrics.RenderErrors.Add(stats.RenderErrors)
 	Metrics.InfoErrors.Add(stats.InfoErrors)
