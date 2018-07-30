@@ -118,7 +118,6 @@ func (c *ClientGRPCGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	if err != nil {
 		stats.RenderErrors++
 	}
-	stats.MemoryUsage = int64(res.Size())
 
 	return res, stats, errors.FromErrNonFatal(err)
 }
@@ -132,7 +131,6 @@ func (c *ClientGRPCGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	if err != nil {
 		stats.RenderErrors++
 	}
-	stats.MemoryUsage = int64(res.Size())
 
 	return res, stats, errors.FromErrNonFatal(err)
 }
@@ -145,7 +143,6 @@ func (c *ClientGRPCGroup) Info(ctx context.Context, request *protov3.MultiMetric
 	if err != nil {
 		stats.RenderErrors++
 	}
-	stats.MemoryUsage = int64(res.Size())
 
 	r := &protov3.ZipperInfoResponse{
 		Info: map[string]protov3.MultiMetricsInfoResponse{
@@ -165,7 +162,6 @@ func (c *ClientGRPCGroup) List(ctx context.Context) (*protov3.ListMetricsRespons
 	if err != nil {
 		stats.RenderErrors++
 	}
-	stats.MemoryUsage = int64(res.Size())
 
 	return res, stats, errors.FromErrNonFatal(err)
 }
@@ -178,7 +174,6 @@ func (c *ClientGRPCGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResp
 	if err != nil {
 		stats.RenderErrors++
 	}
-	stats.MemoryUsage = int64(res.Size())
 
 	return res, stats, errors.FromErrNonFatal(err)
 }

@@ -7,12 +7,10 @@ type Stats struct {
 	InfoErrors     int64
 	ZipperRequests int64
 
-	MemoryUsage int64
 }
 
 func (s *Stats) Merge(stats *Stats) {
 	s.FindErrors += stats.FindErrors
 	s.RenderErrors += stats.RenderErrors
 	s.InfoErrors += stats.InfoErrors
-	s.MemoryUsage += stats.MemoryUsage
 }

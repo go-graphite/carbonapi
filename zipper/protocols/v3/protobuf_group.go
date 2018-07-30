@@ -200,8 +200,6 @@ func (c *ClientProtoV3Group) Info(ctx context.Context, request *protov3.MultiMet
 		return nil, nil, errors.FromErrNonFatal(err)
 	}
 
-	stats.MemoryUsage = int64(infos.Size())
-
 	r := &protov3.ZipperInfoResponse{
 		Info: map[string]protov3.MultiMetricsInfoResponse{
 			c.Name(): infos,
