@@ -152,6 +152,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := r.ParseForm()
 	if err != nil {
+		apiMetrics.Errors.Add(1)
 		http.Error(w, http.StatusText(http.StatusBadRequest)+": "+err.Error(), http.StatusBadRequest)
 		accessLogDetails.HTTPCode = http.StatusBadRequest
 		accessLogDetails.Reason = err.Error()
@@ -241,6 +242,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if from32 == until32 {
+		apiMetrics.Errors.Add(1)
 		http.Error(w, "Invalid empty time range", http.StatusBadRequest)
 		accessLogDetails.HTTPCode = http.StatusBadRequest
 		accessLogDetails.Reason = "invalid empty time range"
@@ -261,6 +263,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		exp, e, err := parser.ParseExpr(target)
 
 		if err != nil || e != "" {
+			apiMetrics.Errors.Add(1)
 			msg := buildParseErrorString(target, e, err)
 			http.Error(w, msg, http.StatusBadRequest)
 			accessLogDetails.Reason = msg
@@ -341,6 +344,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 		rewritten, newTargets, err = expr.RewriteExpr(exp, from32, until32, metricMap)
 		if err != nil && err != parser.ErrSeriesDoesNotExist {
+			apiMetrics.Errors.Add(1)
 			errors[target] = err.Error()
 			accessLogDetails.Reason = err.Error()
 			logAsError = true
@@ -353,6 +357,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			func() {
 				defer func() {
 					if r := recover(); r != nil {
+						apiMetrics.Errors.Add(1)
 						logger.Error("panic during eval:",
 							zap.String("cache_key", cacheKey),
 							zap.Any("reason", r),
@@ -389,6 +394,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	case protobufFormat, protobuf3Format:
 		body, err = types.MarshalProtobuf(results)
 		if err != nil {
+			apiMetrics.Errors.Add(1)
 			logger.Info("request failed",
 				zap.Int("http_code", http.StatusInternalServerError),
 				zap.String("reason", err.Error()),
@@ -420,6 +426,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	gotErrors := false
 	if len(errors) > 0 {
+		apiMetrics.Errors.Add(1)
 		gotErrors = true
 	}
 	accessLogDetails.HaveNonFatalErrors = gotErrors
@@ -599,6 +606,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(query) == 0 {
+		apiMetrics.Errors.Add(1)
 		http.Error(w, "missing parameter `query`", http.StatusBadRequest)
 		accessLogDetails.HTTPCode = http.StatusBadRequest
 		accessLogDetails.Reason = "missing parameter `query`"
@@ -615,6 +623,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		accessLogDetails.ZipperRequests = stats.ZipperRequests
 	}
 	if err != nil {
+		apiMetrics.Errors.Add(1)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		accessLogDetails.HTTPCode = http.StatusInternalServerError
 		accessLogDetails.Reason = err.Error()
@@ -670,6 +679,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
+		apiMetrics.Errors.Add(1)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		accessLogDetails.HTTPCode = http.StatusInternalServerError
 		accessLogDetails.Reason = err.Error()
@@ -689,6 +699,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	username, _, _ := r.BasicAuth()
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
 	format := r.FormValue("format")
+	apiMetrics.Requests.Add(1)
 
 	if format == "" {
 		format = jsonFormat
@@ -715,6 +726,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 
 	query := r.Form["target"]
 	if len(query) == 0 {
+		apiMetrics.Errors.Add(1)
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		accessLogDetails.HTTPCode = http.StatusBadRequest
 		accessLogDetails.Reason = "no target specified"
@@ -727,6 +739,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 		accessLogDetails.ZipperRequests = stats.ZipperRequests
 	}
 	if err != nil {
+		apiMetrics.Errors.Add(1)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		accessLogDetails.HTTPCode = http.StatusInternalServerError
 		accessLogDetails.Reason = err.Error()
@@ -745,6 +758,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
+		apiMetrics.Errors.Add(1)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		accessLogDetails.HTTPCode = http.StatusInternalServerError
 		accessLogDetails.Reason = err.Error()
@@ -810,6 +824,7 @@ func functionsHandler(w http.ResponseWriter, r *http.Request) {
 	username, _, _ := r.BasicAuth()
 
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
+	apiMetrics.Requests.Add(1)
 
 	accessLogger := zapwriter.Logger("access")
 	var accessLogDetails = carbonapipb.AccessLogDetails{
@@ -832,6 +847,7 @@ func functionsHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := r.ParseForm()
 	if err != nil {
+		apiMetrics.Errors.Add(1)
 		http.Error(w, http.StatusText(http.StatusBadRequest)+": "+err.Error(), http.StatusBadRequest)
 		accessLogDetails.HTTPCode = http.StatusBadRequest
 		accessLogDetails.Reason = err.Error()
@@ -916,6 +932,7 @@ func functionsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
+		apiMetrics.Errors.Add(1)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		accessLogDetails.HTTPCode = http.StatusInternalServerError
 		accessLogDetails.Reason = err.Error()

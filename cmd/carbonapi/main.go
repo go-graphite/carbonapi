@@ -39,7 +39,9 @@ import (
 )
 
 var apiMetrics = struct {
-	Requests              *expvar.Int
+	Requests *expvar.Int
+	Errors   *expvar.Int
+
 	RenderRequests        *expvar.Int
 	RequestCacheHits      *expvar.Int
 	RequestCacheMisses    *expvar.Int
@@ -57,6 +59,8 @@ var apiMetrics = struct {
 	CacheItems expvar.Func
 }{
 	Requests: expvar.NewInt("requests"),
+	Errors:   expvar.NewInt("errors"),
+
 	// TODO: request_cache -> render_cache
 	RenderRequests:        expvar.NewInt("render_requests"),
 	RequestCacheHits:      expvar.NewInt("request_cache_hits"),
@@ -483,8 +487,10 @@ func setUpConfig(logger *zap.Logger) {
 		pattern = strings.Replace(pattern, "{fqdn}", hostname, -1)
 
 		graphite.Register(fmt.Sprintf("%s.requests", pattern), apiMetrics.Requests)
+		graphite.Register(fmt.Sprintf("%s.errors", pattern), apiMetrics.Errors)
 		graphite.Register(fmt.Sprintf("%s.request_cache_hits", pattern), apiMetrics.RequestCacheHits)
 		graphite.Register(fmt.Sprintf("%s.request_cache_misses", pattern), apiMetrics.RequestCacheMisses)
+
 		graphite.Register(fmt.Sprintf("%s.request_cache_overhead_ns", pattern), apiMetrics.RenderCacheOverheadNS)
 
 		for i := 0; i <= config.Buckets; i++ {
