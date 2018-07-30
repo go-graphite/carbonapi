@@ -199,8 +199,16 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 
 	requests := bg.SplitRequest(ctx, request)
 	// TODO(gmagnusson): WAIT, HOW MANY METRICS WAS THAT
+	var zipperRequests int
+	if bg.MaxMetricsPerRequest() > 0 {
+		zipperRequests = 1
+	}
+	if len(requests) > 0 {
+		zipperRequests += len(requests) * len(clients)
+	}
 
 	result := types.NewServerFetchResponse()
+	result.Stats.ZipperRequests = int64(zipperRequests)
 	if len(requests) == 0 {
 		return result.Response, result.Stats, result.Err
 	}
@@ -303,6 +311,7 @@ func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 
 	result := types.NewServerFindResponse()
 	result.Server = bg.Name()
+	result.Stats.ZipperRequests = int64(len(clients))
 	responseCounts := 0
 	answeredServers := make(map[string]struct{})
 
@@ -381,6 +390,7 @@ func (bg *BroadcastGroup) Info(ctx context.Context, request *protov3.MultiMetric
 	}
 
 	result := &types.ServerInfoResponse{}
+	result.Stats.ZipperRequests = int64(len(clients))
 	responseCounts := 0
 	answeredServers := make(map[string]struct{})
 GATHER:

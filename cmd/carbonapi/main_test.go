@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/go-graphite/carbonapi/expr/types"
+	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
 	"github.com/stretchr/testify/assert"
@@ -20,25 +21,25 @@ func newMockCarbonZipper() *mockCarbonZipper {
 	return new(mockCarbonZipper)
 }
 
-func (z mockCarbonZipper) Find(ctx context.Context, metrics []string) (*pb.MultiGlobResponse, error) {
-	return getGlobResponse(), nil
+func (z mockCarbonZipper) Find(ctx context.Context, metrics []string) (*pb.MultiGlobResponse, *zipperTypes.Stats, error) {
+	return getGlobResponse(), nil, nil
 }
 
-func (z mockCarbonZipper) Info(ctx context.Context, metrics []string) (*pb.ZipperInfoResponse, error) {
+func (z mockCarbonZipper) Info(ctx context.Context, metrics []string) (*pb.ZipperInfoResponse, *zipperTypes.Stats, error) {
 	response := getMockInfoResponse()
 
-	return response, nil
+	return response, nil, nil
 }
 
-func (z mockCarbonZipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*types.MetricData, error) {
+func (z mockCarbonZipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*types.MetricData, *zipperTypes.Stats, error) {
 	return z.RenderCompat(ctx, []string{""}, 0, 0)
 }
 
-func (z mockCarbonZipper) RenderCompat(ctx context.Context, metrics []string, from, until int64) ([]*types.MetricData, error) {
+func (z mockCarbonZipper) RenderCompat(ctx context.Context, metrics []string, from, until int64) ([]*types.MetricData, *zipperTypes.Stats, error) {
 	var result []*types.MetricData
 	multiFetchResponse := getMultiFetchResponse()
 	result = append(result, &types.MetricData{FetchResponse: multiFetchResponse.Metrics[0]})
-	return result, nil
+	return result, nil, nil
 }
 
 func getGlobResponse() *pb.MultiGlobResponse {

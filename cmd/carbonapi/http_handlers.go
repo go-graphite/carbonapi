@@ -295,9 +295,11 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		if len(req.Metrics) > 0 {
 			apiMetrics.RenderRequests.Add(1)
 			config.limiter.enter()
-			accessLogDetails.ZipperRequests++
 
-			r, err := config.zipper.Render(ctx, req)
+			r, stats, err := config.zipper.Render(ctx, req)
+			if stats != nil {
+				accessLogDetails.ZipperRequests += stats.ZipperRequests
+			}
 			if err != nil {
 				errors[target] = err.Error()
 			}
@@ -608,7 +610,10 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		format = treejsonFormat
 	}
 
-	multiGlobs, err := config.zipper.Find(ctx, query)
+	multiGlobs, stats, err := config.zipper.Find(ctx, query)
+	if stats != nil {
+		accessLogDetails.ZipperRequests = stats.ZipperRequests
+	}
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		accessLogDetails.HTTPCode = http.StatusInternalServerError
@@ -708,9 +713,6 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 		deferredAccessLogging(accessLogger, &accessLogDetails, t0, logAsError)
 	}()
 
-	var data *pb.ZipperInfoResponse
-	var err error
-
 	query := r.Form["target"]
 	if len(query) == 0 {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -720,7 +722,11 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if data, err = config.zipper.Info(ctx, query); err != nil {
+	data, stats, err := config.zipper.Info(ctx, query)
+	if stats != nil {
+		accessLogDetails.ZipperRequests = stats.ZipperRequests
+	}
+	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		accessLogDetails.HTTPCode = http.StatusInternalServerError
 		accessLogDetails.Reason = err.Error()
