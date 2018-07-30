@@ -165,18 +165,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/lestrrat/go-file-rotatelogs"
-  packages = ["."]
-  revision = "d3151e2a480fdcd05fb97102f5310a47d96274c4"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/lestrrat/go-strftime"
-  packages = ["."]
-  revision = "ba3bf9c1d0421aa146564a632931730344f1f9f1"
-
-[[projects]]
-  branch = "master"
   name = "github.com/lib/pq"
   packages = [
     ".",
@@ -234,12 +222,6 @@
   packages = ["."]
   revision = "bb6d471dc95d4fe11e432687f8b70ff496cf3136"
   version = "v1.0.0"
-
-[[projects]]
-  name = "github.com/pkg/errors"
-  packages = ["."]
-  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
-  version = "v0.8.0"
 
 [[projects]]
   name = "github.com/pmezard/go-difflib"
@@ -437,6 +419,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4e4fa1c570cebf3bed6470f494925d5f56f679412f1133e749651741eeb9c089"
+  inputs-digest = "a01fa0faaaa16910df06f517f1318d9bcb9c011e9fea96ab26599c8f8b5d3c3c"
   solver-name = "gps-cdcl"
   solver-version = 1
