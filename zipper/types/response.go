@@ -39,10 +39,6 @@ func (first *ServerInfoResponse) Merge(second *ServerInfoResponse) *errors.Error
 	}
 	first.Err.Merge(second.Err)
 
-	if first.Err.HaveFatalErrors {
-		return first.Err
-	}
-
 	if second.Response == nil {
 		return first.Err
 	}
@@ -78,10 +74,6 @@ func (first *ServerFindResponse) Merge(second *ServerFindResponse) *errors.Error
 		first.Err = new(errors.Errors)
 	}
 	first.Err.Merge(second.Err)
-
-	if first.Err.HaveFatalErrors {
-		return first.Err
-	}
 
 	if second.Response == nil {
 		return first.Err

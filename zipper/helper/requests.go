@@ -162,6 +162,6 @@ func (c *HttpQuery) DoQuery(ctx context.Context, uri string, r types.Request) (*
 		return res, nil
 	}
 
-	e.AddFatal(types.ErrMaxTriesExceeded)
+	e.Add(types.ErrMaxTriesExceeded)
 	return nil, &e
 }
