@@ -119,14 +119,10 @@ var Metrics = struct {
 
 	Timeouts *expvar.Int
 
-	CacheSize         expvar.Func
-	CacheItems        expvar.Func
-	CacheMisses       *expvar.Int
-	CacheHits         *expvar.Int
-	SearchCacheSize   expvar.Func
-	SearchCacheItems  expvar.Func
-	SearchCacheMisses *expvar.Int
-	SearchCacheHits   *expvar.Int
+	CacheSize   expvar.Func
+	CacheItems  expvar.Func
+	CacheMisses *expvar.Int
+	CacheHits   *expvar.Int
 }{
 	FindRequests: expvar.NewInt("find_requests"),
 	FindErrors:   expvar.NewInt("find_errors"),
@@ -141,10 +137,8 @@ var Metrics = struct {
 
 	Timeouts: expvar.NewInt("timeouts"),
 
-	CacheHits:         expvar.NewInt("cache_hits"),
-	CacheMisses:       expvar.NewInt("cache_misses"),
-	SearchCacheHits:   expvar.NewInt("search_cache_hits"),
-	SearchCacheMisses: expvar.NewInt("search_cache_misses"),
+	CacheHits:   expvar.NewInt("cache_hits"),
+	CacheMisses: expvar.NewInt("cache_misses"),
 }
 
 // BuildVersion is defined at build and reported at startup and as expvar
@@ -771,16 +765,10 @@ func main() {
 		/* TODO(civil): Find a way to return that data
 		graphite.Register(fmt.Sprintf("%s.cache_size", pattern), Metrics.CacheSize)
 		graphite.Register(fmt.Sprintf("%s.cache_items", pattern), Metrics.CacheItems)
-
-		graphite.Register(fmt.Sprintf("%s.search_cache_size", pattern), Metrics.SearchCacheSize)
-		graphite.Register(fmt.Sprintf("%s.search_cache_items", pattern), Metrics.SearchCacheItems)
 		*/
 
 		graphite.Register(fmt.Sprintf("%s.cache_hits", pattern), Metrics.CacheHits)
 		graphite.Register(fmt.Sprintf("%s.cache_misses", pattern), Metrics.CacheMisses)
-
-		graphite.Register(fmt.Sprintf("%s.search_cache_hits", pattern), Metrics.SearchCacheHits)
-		graphite.Register(fmt.Sprintf("%s.search_cache_misses", pattern), Metrics.SearchCacheMisses)
 
 		go mstats.Start(config.Graphite.Interval)
 
@@ -859,9 +847,6 @@ func sendStats(stats *types.Stats) {
 	Metrics.FindErrors.Add(stats.FindErrors)
 	Metrics.RenderErrors.Add(stats.RenderErrors)
 	Metrics.InfoErrors.Add(stats.InfoErrors)
-	Metrics.SearchRequests.Add(stats.SearchRequests)
-	Metrics.SearchCacheHits.Add(stats.SearchCacheHits)
-	Metrics.SearchCacheMisses.Add(stats.SearchCacheMisses)
 	Metrics.CacheMisses.Add(stats.CacheMisses)
 	Metrics.CacheHits.Add(stats.CacheHits)
 }

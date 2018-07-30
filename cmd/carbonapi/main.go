@@ -74,8 +74,6 @@ var zipperMetrics = struct {
 	FindRequests *expvar.Int
 	FindErrors   *expvar.Int
 
-	SearchRequests *expvar.Int
-
 	RenderRequests *expvar.Int
 	RenderErrors   *expvar.Int
 
@@ -91,8 +89,6 @@ var zipperMetrics = struct {
 }{
 	FindRequests: expvar.NewInt("zipper_find_requests"),
 	FindErrors:   expvar.NewInt("zipper_find_errors"),
-
-	SearchRequests: expvar.NewInt("zipper_search_requests"),
 
 	RenderRequests: expvar.NewInt("zipper_render_requests"),
 	RenderErrors:   expvar.NewInt("zipper_render_errors"),
@@ -256,7 +252,6 @@ func zipperStats(stats *zipperTypes.Stats) {
 	zipperMetrics.FindErrors.Add(stats.FindErrors)
 	zipperMetrics.RenderErrors.Add(stats.RenderErrors)
 	zipperMetrics.InfoErrors.Add(stats.InfoErrors)
-	zipperMetrics.SearchRequests.Add(stats.SearchRequests)
 	zipperMetrics.CacheMisses.Add(stats.CacheMisses)
 	zipperMetrics.CacheHits.Add(stats.CacheHits)
 }
