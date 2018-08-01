@@ -196,19 +196,13 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	logger.Debug("will try to fetch data")
 
 	clients := bg.filterServersByTLD(requestNames, bg.Children())
-
 	requests := bg.SplitRequest(ctx, request)
-	// TODO(gmagnusson): WAIT, HOW MANY METRICS WAS THAT
-	var zipperRequests int
-	if bg.MaxMetricsPerRequest() > 0 {
-		zipperRequests = 1
-	}
-	if len(requests) > 0 {
-		zipperRequests += len(requests) * len(clients)
-	}
+	zipperRequests, totalMetricsCount := getFetchRequestMetricStats(requests, bg, clients)
 
 	result := types.NewServerFetchResponse()
 	result.Stats.ZipperRequests = int64(zipperRequests)
+	result.Stats.TotalMetricsCount = int64(totalMetricsCount)
+
 	if len(requests) == 0 {
 		return result.Response, result.Stats, result.Err
 	}
@@ -252,7 +246,7 @@ GATHER:
 		return nil, nil, errors.Fatalf("failed to get any response from backend group: %v", bg.groupName)
 	}
 
-	logger.Debug("got some responses",
+	logger.Debug("got some fetch responses",
 		zap.Int("clients_count", len(clients)),
 		zap.Int("response_count", responseCount),
 		zap.Bool("have_errors", len(result.Err.Errors) != 0),
@@ -261,6 +255,18 @@ GATHER:
 	)
 
 	return result.Response, result.Stats, result.Err
+}
+
+func getFetchRequestMetricStats(requests []*protov3.MultiFetchRequest, bg *BroadcastGroup, clients []types.ServerClient) (int, int) {
+	totalMetricsCount := (len(requests)-1)*bg.MaxMetricsPerRequest() + len(requests[len(requests)-1].Metrics)
+	var zipperRequests int
+	if bg.MaxMetricsPerRequest() > 0 {
+		zipperRequests = 1
+	}
+	if len(requests) > 0 {
+		zipperRequests += len(requests) * len(clients)
+	}
+	return zipperRequests, totalMetricsCount
 }
 
 // Find request handling
@@ -340,8 +346,11 @@ GATHER:
 	if len(result.Response.Metrics) == 0 {
 		return &protov3.MultiGlobResponse{}, result.Stats, result.Err.Addf("failed to fetch response from the server %v", bg.groupName)
 	}
-
-	logger.Debug("got some responses",
+	result.Stats.TotalMetricsCount = 0
+	for _, x := range result.Response.Metrics {
+		result.Stats.TotalMetricsCount += int64(len(x.Matches))
+	}
+	logger.Debug("got some find responses",
 		zap.Int("clients_count", len(clients)),
 		zap.Int("response_count", responseCounts),
 		zap.Bool("have_errors", len(result.Err.Errors) != 0),
@@ -389,7 +398,7 @@ func (bg *BroadcastGroup) Info(ctx context.Context, request *protov3.MultiMetric
 		go bg.doInfoRequest(ctx, logger, request, client, resCh)
 	}
 
-	result := &types.ServerInfoResponse{}
+	result := types.NewServerInfoResponse()
 	result.Stats.ZipperRequests = int64(len(clients))
 	responseCounts := 0
 	answeredServers := make(map[string]struct{})
