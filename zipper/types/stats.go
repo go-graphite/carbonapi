@@ -10,6 +10,7 @@ type Stats struct {
 	SearchCacheHits   int64
 	SearchCacheMisses int64
 	ZipperRequests    int64
+	TotalMetricsCount int64
 
 	MemoryUsage int64
 

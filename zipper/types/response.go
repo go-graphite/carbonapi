@@ -23,7 +23,7 @@ type ServerInfoResponse struct {
 
 func NewServerInfoResponse() *ServerInfoResponse {
 	return &ServerInfoResponse{
-		Response: new(protov3.ZipperInfoResponse),
+		Response: &protov3.ZipperInfoResponse{Info: make(map[string]protov3.MultiMetricsInfoResponse)},
 		Stats:    new(Stats),
 		Err:      new(errors.Errors),
 	}

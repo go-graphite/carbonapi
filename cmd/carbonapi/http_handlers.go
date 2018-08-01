@@ -299,6 +299,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			r, stats, err := config.zipper.Render(ctx, req)
 			if stats != nil {
 				accessLogDetails.ZipperRequests += stats.ZipperRequests
+				accessLogDetails.TotalMetricsCount += stats.TotalMetricsCount
 			}
 			if err != nil {
 				errors[target] = err.Error()
@@ -613,6 +614,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	multiGlobs, stats, err := config.zipper.Find(ctx, query)
 	if stats != nil {
 		accessLogDetails.ZipperRequests = stats.ZipperRequests
+		accessLogDetails.TotalMetricsCount += stats.TotalMetricsCount
 	}
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -725,6 +727,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	data, stats, err := config.zipper.Info(ctx, query)
 	if stats != nil {
 		accessLogDetails.ZipperRequests = stats.ZipperRequests
+		accessLogDetails.TotalMetricsCount += stats.TotalMetricsCount
 	}
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

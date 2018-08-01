@@ -29,4 +29,5 @@ type AccessLogDetails struct {
 	URI                           string   `json:"uri,omitempty"`
 	FromCache                     bool     `json:"from_cache"`
 	ZipperRequests                int64    `json:"zipper_requests,omitempty"`
+	TotalMetricsCount             int64    `json:"total_metrics_count,omitempty"`
 }
