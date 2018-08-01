@@ -129,11 +129,14 @@ func (c *GraphiteGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRe
 			"until":  []string{strconv.Itoa(int(request.Metrics[0].StopTime))},
 		}
 		rewrite.RawQuery = v.Encode()
+		stats.RenderRequests++
 		res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
 		if err == nil {
 			err = &errors.Errors{}
 		}
+
 		if err.HaveFatalErrors {
+			stats.RenderErrors++
 			err.HaveFatalErrors = false
 			return nil, stats, err
 		}
@@ -142,6 +145,7 @@ func (c *GraphiteGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRe
 		_, e := metrics.UnmarshalMsg(res.Response)
 		err.AddFatal(e)
 		if err.HaveFatalErrors {
+			stats.RenderErrors++
 			return nil, stats, err
 		}
 
@@ -184,19 +188,21 @@ func (c *GraphiteGroup) Find(ctx context.Context, request *protov3.MultiGlobRequ
 			"format": []string{c.protocol},
 		}
 		rewrite.RawQuery = v.Encode()
+		stats.FindRequests++
 		res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
 		if err != nil {
+			stats.FindErrors++
 			e.Merge(err)
 			continue
 		}
 		var globs msgpack.MultiGraphiteGlobResponse
 		_, marshalErr := globs.UnmarshalMsg(res.Response)
 		if marshalErr != nil {
+			stats.FindErrors++
 			e.Add(marshalErr)
 			continue
 		}
 
-		stats.Servers = append(stats.Servers, res.Server)
 		matches := make([]protov3.GlobMatch, 0, len(globs))
 		for _, m := range globs {
 			matches = append(matches, protov3.GlobMatch{
@@ -242,8 +248,10 @@ func (c *GraphiteGroup) Info(ctx context.Context, request *protov3.MultiMetricsI
 			"format": []string{c.protocol},
 		}
 		rewrite.RawQuery = v.Encode()
+		stats.InfoRequests++
 		res, e2 := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
 		if e2 != nil {
+			stats.InfoErrors++
 			e.Merge(e2)
 			continue
 		}
@@ -251,10 +259,10 @@ func (c *GraphiteGroup) Info(ctx context.Context, request *protov3.MultiMetricsI
 		var info protov2.InfoResponse
 		err := info.Unmarshal(res.Response)
 		if err != nil {
+			stats.InfoErrors++
 			e.Add(err)
 			continue
 		}
-		stats.Servers = append(stats.Servers, res.Server)
 
 		if info.AggregationMethod == "" {
 			info.AggregationMethod = "average"

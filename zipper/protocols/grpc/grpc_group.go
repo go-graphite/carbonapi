@@ -110,54 +110,42 @@ func (c ClientGRPCGroup) Backends() []string {
 }
 
 func (c *ClientGRPCGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, *errors.Errors) {
-	stats := &types.Stats{
-		Servers: []string{c.Name()},
-	}
+	stats := &types.Stats{}
 	ctx, cancel := context.WithTimeout(ctx, c.timeout.Render)
 	defer cancel()
 
+	stats.RenderRequests++
 	res, err := c.client.FetchMetrics(ctx, request)
 	if err != nil {
 		stats.RenderErrors++
-		stats.FailedServers = stats.Servers
-		stats.Servers = []string{}
 	}
-	stats.MemoryUsage = int64(res.Size())
 
 	return res, stats, errors.FromErrNonFatal(err)
 }
 
 func (c *ClientGRPCGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, *errors.Errors) {
-	stats := &types.Stats{
-		Servers: []string{c.Name()},
-	}
+	stats := &types.Stats{}
 	ctx, cancel := context.WithTimeout(ctx, c.timeout.Find)
 	defer cancel()
 
+	stats.FindRequests++
 	res, err := c.client.FindMetrics(ctx, request)
 	if err != nil {
-		stats.RenderErrors++
-		stats.FailedServers = stats.Servers
-		stats.Servers = []string{}
+		stats.FindErrors++
 	}
-	stats.MemoryUsage = int64(res.Size())
 
 	return res, stats, errors.FromErrNonFatal(err)
 }
 func (c *ClientGRPCGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, *errors.Errors) {
-	stats := &types.Stats{
-		Servers: []string{c.Name()},
-	}
+	stats := &types.Stats{}
 	ctx, cancel := context.WithTimeout(ctx, c.timeout.Render)
 	defer cancel()
 
+	stats.InfoRequests++
 	res, err := c.client.MetricsInfo(ctx, request)
 	if err != nil {
 		stats.RenderErrors++
-		stats.FailedServers = stats.Servers
-		stats.Servers = []string{}
 	}
-	stats.MemoryUsage = int64(res.Size())
 
 	r := &protov3.ZipperInfoResponse{
 		Info: map[string]protov3.MultiMetricsInfoResponse{
@@ -169,36 +157,26 @@ func (c *ClientGRPCGroup) Info(ctx context.Context, request *protov3.MultiMetric
 }
 
 func (c *ClientGRPCGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, *errors.Errors) {
-	stats := &types.Stats{
-		Servers: []string{c.Name()},
-	}
+	stats := &types.Stats{}
 	ctx, cancel := context.WithTimeout(ctx, c.timeout.Render)
 	defer cancel()
 
 	res, err := c.client.ListMetrics(ctx, types.EmptyMsg)
 	if err != nil {
 		stats.RenderErrors++
-		stats.FailedServers = stats.Servers
-		stats.Servers = []string{}
 	}
-	stats.MemoryUsage = int64(res.Size())
 
 	return res, stats, errors.FromErrNonFatal(err)
 }
 func (c *ClientGRPCGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, *errors.Errors) {
-	stats := &types.Stats{
-		Servers: []string{c.Name()},
-	}
+	stats := &types.Stats{}
 	ctx, cancel := context.WithTimeout(ctx, c.timeout.Render)
 	defer cancel()
 
 	res, err := c.client.Stats(ctx, types.EmptyMsg)
 	if err != nil {
 		stats.RenderErrors++
-		stats.FailedServers = stats.Servers
-		stats.Servers = []string{}
 	}
-	stats.MemoryUsage = int64(res.Size())
 
 	return res, stats, errors.FromErrNonFatal(err)
 }

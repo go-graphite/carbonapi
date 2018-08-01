@@ -39,7 +39,9 @@ import (
 )
 
 var apiMetrics = struct {
-	Requests              *expvar.Int
+	Requests *expvar.Int
+	Errors   *expvar.Int
+
 	RenderRequests        *expvar.Int
 	RequestCacheHits      *expvar.Int
 	RequestCacheMisses    *expvar.Int
@@ -57,6 +59,8 @@ var apiMetrics = struct {
 	CacheItems expvar.Func
 }{
 	Requests: expvar.NewInt("requests"),
+	Errors:   expvar.NewInt("errors"),
+
 	// TODO: request_cache -> render_cache
 	RenderRequests:        expvar.NewInt("render_requests"),
 	RequestCacheHits:      expvar.NewInt("request_cache_hits"),
@@ -74,36 +78,20 @@ var zipperMetrics = struct {
 	FindRequests *expvar.Int
 	FindErrors   *expvar.Int
 
-	SearchRequests *expvar.Int
-
 	RenderRequests *expvar.Int
 	RenderErrors   *expvar.Int
 
 	InfoRequests *expvar.Int
 	InfoErrors   *expvar.Int
-
-	Timeouts *expvar.Int
-
-	CacheSize   expvar.Func
-	CacheItems  expvar.Func
-	CacheMisses *expvar.Int
-	CacheHits   *expvar.Int
 }{
 	FindRequests: expvar.NewInt("zipper_find_requests"),
 	FindErrors:   expvar.NewInt("zipper_find_errors"),
-
-	SearchRequests: expvar.NewInt("zipper_search_requests"),
 
 	RenderRequests: expvar.NewInt("zipper_render_requests"),
 	RenderErrors:   expvar.NewInt("zipper_render_errors"),
 
 	InfoRequests: expvar.NewInt("zipper_info_requests"),
 	InfoErrors:   expvar.NewInt("zipper_info_errors"),
-
-	Timeouts: expvar.NewInt("zipper_timeouts"),
-
-	CacheHits:   expvar.NewInt("zipper_cache_hits"),
-	CacheMisses: expvar.NewInt("zipper_cache_misses"),
 }
 
 // BuildVersion is provided to be overridden at build time. Eg. go build -ldflags -X 'main.BuildVersion=...'
@@ -252,13 +240,12 @@ func zipperStats(stats *zipperTypes.Stats) {
 	if stats == nil {
 		return
 	}
-	zipperMetrics.Timeouts.Add(stats.Timeouts)
+	zipperMetrics.FindRequests.Add(stats.FindRequests)
 	zipperMetrics.FindErrors.Add(stats.FindErrors)
+	zipperMetrics.RenderRequests.Add(stats.RenderRequests)
 	zipperMetrics.RenderErrors.Add(stats.RenderErrors)
+	zipperMetrics.InfoRequests.Add(stats.InfoRequests)
 	zipperMetrics.InfoErrors.Add(stats.InfoErrors)
-	zipperMetrics.SearchRequests.Add(stats.SearchRequests)
-	zipperMetrics.CacheMisses.Add(stats.CacheMisses)
-	zipperMetrics.CacheHits.Add(stats.CacheHits)
 }
 
 var graphTemplates map[string]png.PictureParams
@@ -500,8 +487,10 @@ func setUpConfig(logger *zap.Logger) {
 		pattern = strings.Replace(pattern, "{fqdn}", hostname, -1)
 
 		graphite.Register(fmt.Sprintf("%s.requests", pattern), apiMetrics.Requests)
+		graphite.Register(fmt.Sprintf("%s.errors", pattern), apiMetrics.Errors)
 		graphite.Register(fmt.Sprintf("%s.request_cache_hits", pattern), apiMetrics.RequestCacheHits)
 		graphite.Register(fmt.Sprintf("%s.request_cache_misses", pattern), apiMetrics.RequestCacheMisses)
+
 		graphite.Register(fmt.Sprintf("%s.request_cache_overhead_ns", pattern), apiMetrics.RenderCacheOverheadNS)
 
 		for i := 0; i <= config.Buckets; i++ {
@@ -532,11 +521,6 @@ func setUpConfig(logger *zap.Logger) {
 
 		graphite.Register(fmt.Sprintf("%s.zipper.info_requests", pattern), zipperMetrics.InfoRequests)
 		graphite.Register(fmt.Sprintf("%s.zipper.info_errors", pattern), zipperMetrics.InfoErrors)
-
-		graphite.Register(fmt.Sprintf("%s.zipper.timeouts", pattern), zipperMetrics.Timeouts)
-
-		graphite.Register(fmt.Sprintf("%s.zipper.cache_hits", pattern), zipperMetrics.CacheHits)
-		graphite.Register(fmt.Sprintf("%s.zipper.cache_misses", pattern), zipperMetrics.CacheMisses)
 
 		go mstats.Start(config.Graphite.Interval)
 
