@@ -107,16 +107,17 @@
   version = "v1.4.7"
 
 [[projects]]
+  branch = "master"
   name = "github.com/go-graphite/protocol"
   packages = [
     "carbonapi_v2_pb",
     "carbonapi_v3_grpc",
     "carbonapi_v3_pb"
   ]
-  revision = "1378a7c8b09d54e7d55cd546114b98523ab9cc5f"
-  version = "v0.4.2"
+  revision = "5ae324d480670ee5d15e22eff87e1cabab74069b"
 
 [[projects]]
+  branch = "master"
   name = "github.com/gogo/protobuf"
   packages = [
     "gogoproto",
@@ -124,8 +125,7 @@
     "protoc-gen-gogo/descriptor",
     "sortkeys"
   ]
-  revision = "1adfc126b41513cc696b209667c8656ea7aac67c"
-  version = "v1.0.0"
+  revision = "5440bafee1ae178913104d83f4911bff630d6472"
 
 [[projects]]
   name = "github.com/golang/protobuf"
