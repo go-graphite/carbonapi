@@ -148,7 +148,7 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 				backends = append(backends, client)
 			}
 
-			client, ePtr = broadcast.NewBroadcastGroup(logger, backend.GroupName, backends, expireDelaySec, concurencyLimit, timeouts)
+			client, ePtr = broadcast.NewBroadcastGroup(logger, backend.GroupName, backends, expireDelaySec, *backend.ConcurrencyLimit, timeouts)
 			e.Merge(ePtr)
 			if e.HaveFatalErrors {
 				return nil, &e
