@@ -384,6 +384,7 @@ type Area struct {
 }
 
 type Params struct {
+	pixelRatio float64
 	width      float64
 	height     float64
 	margin     int
@@ -493,10 +494,6 @@ type Params struct {
 	drawAsInfinite bool
 
 	xConf xAxisStruct
-}
-
-type cairoSurfaceContext struct {
-	context *cairo.Context
 }
 
 type cairoBackend int
@@ -885,6 +882,7 @@ func MarshalPNGRequest(r *http.Request, results []*types.MetricData, templateNam
 
 func marshalCairo(p PictureParams, results []*types.MetricData, backend cairoBackend) []byte {
 	var params = Params{
+		pixelRatio:     p.PixelRatio,
 		width:          p.Width,
 		height:         p.Height,
 		margin:         p.Margin,
@@ -961,7 +959,6 @@ func marshalCairo(p PictureParams, results []*types.MetricData, backend cairoBac
 	params.area.ymin = margin
 	params.area.ymax = params.height - margin
 
-	var cr cairoSurfaceContext
 	var surface *cairo.Surface
 	var tmpfile *os.File
 	switch backend {
@@ -972,13 +969,13 @@ func marshalCairo(p PictureParams, results []*types.MetricData, backend cairoBac
 			return nil
 		}
 		defer os.Remove(tmpfile.Name())
-		s := cairo.SVGSurfaceCreate(tmpfile.Name(), params.width, params.height)
+		s := svgSurfaceCreate(tmpfile.Name(), params.width, params.height, params.pixelRatio)
 		surface = s.Surface
 	case cairoPNG:
-		s := cairo.ImageSurfaceCreate(cairo.FormatARGB32, int(params.width), int(params.height))
+		s := imageSurfaceCreate(cairo.FormatARGB32, params.width, params.height, params.pixelRatio)
 		surface = s.Surface
 	}
-	cr.context = cairo.Create(surface)
+	cr := createContext(surface, params.pixelRatio)
 
 	// Setting font parameters
 
@@ -986,10 +983,10 @@ func marshalCairo(p PictureParams, results []*types.MetricData, backend cairoBac
 	fontOpts.SetAntialias(cairo.AntialiasNone)
 	cr.context.SetFontOptions(fontOpts)
 
-	setColor(&cr, params.bgColor)
-	drawRectangle(&cr, &params, 0, 0, params.width, params.height, true)
+	setColor(cr, params.bgColor)
+	drawRectangle(cr, &params, 0, 0, params.width, params.height, true)
 
-	drawGraph(&cr, &params, results)
+	drawGraph(cr, &params, results)
 
 	surface.Flush()
 

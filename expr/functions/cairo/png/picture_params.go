@@ -132,6 +132,7 @@ func getFontItalic(s string, def FontSlant) FontSlant {
 }
 
 type PictureParams struct {
+	PixelRatio float64
 	Width      float64
 	Height     float64
 	Margin     int
@@ -215,6 +216,7 @@ func GetPictureParamsWithTemplate(r *http.Request, template string, metricData [
 		t = templates["default"]
 	}
 	return PictureParams{
+		PixelRatio: getFloat64(r.FormValue("pixelRatio"), 1.0),
 		Width:      getFloat64(r.FormValue("width"), t.Width),
 		Height:     getFloat64(r.FormValue("height"), t.Height),
 		Margin:     getInt(r.FormValue("margin"), t.Margin),

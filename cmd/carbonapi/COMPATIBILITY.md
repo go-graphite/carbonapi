@@ -36,6 +36,7 @@ Reason behind that change is that on dark background it's much nicer to read old
 
 _When `format=png`_ (default if not specified)
 * `width`, `height` : number of pixels (default: width=330 , height=250)
+* `pixelRatio` : (1.0)
 * `margin` : (10)
 * `logBase` : Y-scale should use. Recognizes "e" or a floating point ( >= 1 )
 * `fgcolor` : foreground color
