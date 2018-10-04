@@ -258,12 +258,13 @@ GATHER:
 }
 
 func getFetchRequestMetricStats(requests []*protov3.MultiFetchRequest, bg *BroadcastGroup, clients []types.ServerClient) (int, int) {
-	totalMetricsCount := (len(requests)-1)*bg.MaxMetricsPerRequest() + len(requests[len(requests)-1].Metrics)
+	var totalMetricsCount int
 	var zipperRequests int
 	if bg.MaxMetricsPerRequest() > 0 {
 		zipperRequests = 1
 	}
 	if len(requests) > 0 {
+		totalMetricsCount = (len(requests)-1)*bg.MaxMetricsPerRequest() + len(requests[len(requests)-1].Metrics)
 		zipperRequests += len(requests) * len(clients)
 	}
 	return zipperRequests, totalMetricsCount
