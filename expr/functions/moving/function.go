@@ -66,14 +66,18 @@ func (f *moving) Do(e parser.Expr, from, until int64, values map[parser.MetricRe
 		return nil, err
 	}
 
+	var result []*types.MetricData
+
+	if len(arg) > 0 {
+		return result, nil
+	}
+
 	var offset int
 
 	if scaleByStep {
 		windowSize /= int(arg[0].StepTime)
 		offset = windowSize
 	}
-
-	var result []*types.MetricData
 
 	for _, a := range arg {
 		w := &types.Windowed{Data: make([]float64, windowSize)}
