@@ -23,6 +23,10 @@ type Windowed struct {
 
 // Push pushes data
 func (w *Windowed) Push(n float64) {
+	if len(w.Data) == 0 {
+		return
+	}
+
 	old := w.Data[w.head]
 
 	w.length++
