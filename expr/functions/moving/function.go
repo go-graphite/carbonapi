@@ -80,33 +80,41 @@ func (f *moving) Do(e parser.Expr, from, until int64, values map[parser.MetricRe
 	}
 
 	for _, a := range arg {
-		w := &types.Windowed{Data: make([]float64, windowSize)}
-
 		r := *a
 		r.Name = fmt.Sprintf("%s(%s,%s)", e.Target(), a.Name, argstr)
-		r.Values = make([]float64, len(a.Values)-offset)
 		r.StartTime = from
 		r.StopTime = until
 
-		for i, v := range a.Values {
-			if ridx := i - offset; ridx >= 0 {
-				switch e.Target() {
-				case "movingAverage":
-					r.Values[ridx] = w.Mean()
-				case "movingSum":
-					r.Values[ridx] = w.Sum()
-					//TODO(cldellow): consider a linear time min/max-heap for these,
-					// e.g. http://stackoverflow.com/questions/8905525/computing-a-moving-maximum/8905575#8905575
-				case "movingMin":
-					r.Values[ridx] = w.Min()
-				case "movingMax":
-					r.Values[ridx] = w.Max()
-				}
-				if i < windowSize || math.IsNaN(r.Values[ridx]) {
-					r.Values[ridx] = math.NaN()
-				}
+		if windowSize == 0 {
+			// Fix error on long time ranges (greater than 30 days), sampling to 10 min
+			// https://github.com/go-graphite/carbonapi/issues/371
+			r.Values = make([]float64, len(a.Values))
+			for i := range a.Values {
+				r.Values[i] = math.NaN()
 			}
-			w.Push(v)
+		} else {
+			r.Values = make([]float64, len(a.Values)-offset)
+			w := &types.Windowed{Data: make([]float64, windowSize)}
+			for i, v := range a.Values {
+				if ridx := i - offset; ridx >= 0 {
+					switch e.Target() {
+					case "movingAverage":
+						r.Values[ridx] = w.Mean()
+					case "movingSum":
+						r.Values[ridx] = w.Sum()
+						//TODO(cldellow): consider a linear time min/max-heap for these,
+						// e.g. http://stackoverflow.com/questions/8905525/computing-a-moving-maximum/8905575#8905575
+					case "movingMin":
+						r.Values[ridx] = w.Min()
+					case "movingMax":
+						r.Values[ridx] = w.Max()
+					}
+					if i < windowSize || math.IsNaN(r.Values[ridx]) {
+						r.Values[ridx] = math.NaN()
+					}
+				}
+				w.Push(v)
+			}
 		}
 		result = append(result, &r)
 	}
