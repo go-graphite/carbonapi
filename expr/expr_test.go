@@ -300,7 +300,6 @@ func TestEvalExpression(t *testing.T) {
 			},
 			[]*types.MetricData{types.MakeMetricData("perSecond(metric1,32)", []float64{math.NaN(), math.NaN(), 1, 1, 1, 26, 3, 32, math.NaN()}, 1, now32)},
 		},
-		/*
 		{
 			"perSecond(metric1,minValue=1)",
 			map[parser.MetricRequest][]*types.MetricData{
@@ -308,7 +307,6 @@ func TestEvalExpression(t *testing.T) {
 			},
 			[]*types.MetricData{types.MakeMetricData("perSecond(metric1,minValue=1)", []float64{math.NaN(), math.NaN(), 1, 1, 1, 26, 2, 29, math.NaN()}, 1, now32)},
 		},
-		 */
 		{
 			"movingAverage(metric1,4)",
 			map[parser.MetricRequest][]*types.MetricData{

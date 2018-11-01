@@ -1,6 +1,7 @@
 package perSecond
 
 import (
+	"errors"
 	"fmt"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -35,19 +36,48 @@ func (f *perSecond) Do(e parser.Expr, from, until int64, values map[parser.Metri
 		return nil, err
 	}
 
-	maxValue, err := e.GetFloatArgDefault(1, math.NaN())
+	maxValue, err := e.GetFloatNamedOrPosArgDefault("maxValue", 1, math.NaN())
 	if err != nil {
 		return nil, err
+	}
+	minValue, err := e.GetFloatNamedOrPosArgDefault("minValue", 2, math.NaN())
+	if err != nil {
+		return nil, err
+	}
+	hasMax := !math.IsNaN(maxValue)
+	hasMin := !math.IsNaN(minValue)
+
+	if hasMax && hasMin && maxValue <= minValue {
+		return nil, errors.New("minValue must be lower than maxValue")
+	}
+	if hasMax && !hasMin {
+		minValue = 0
+	}
+
+	argMask := 0
+	if _, ok := e.NamedArgs()["maxValue"]; ok || len(e.Args()) > 1 {
+		argMask |= 1
+	}
+	if _, ok := e.NamedArgs()["minValue"]; ok || len(e.Args()) > 2 {
+		argMask |= 2
 	}
 
 	var result []*types.MetricData
 	for _, a := range args {
-		r := *a
-		if len(e.Args()) == 1 {
-			r.Name = fmt.Sprintf("%s(%s)", e.Target(), a.Name)
-		} else {
-			r.Name = fmt.Sprintf("%s(%s,%g)", e.Target(), a.Name, maxValue)
+		var name string
+		switch argMask {
+		case 3:
+			name = fmt.Sprintf("perSecond(%s,%g,%g)", a.Name, maxValue, minValue)
+		case 2:
+			name = fmt.Sprintf("perSecond(%s,minValue=%g)", a.Name, minValue)
+		case 1:
+			name = fmt.Sprintf("perSecond(%s,%g)", a.Name, maxValue)
+		case 0:
+			name = fmt.Sprintf("perSecond(%s)", a.Name)
 		}
+
+		r := *a
+		r.Name = name
 		r.Values = make([]float64, len(a.Values))
 
 		prev := a.Values[0]
@@ -61,8 +91,10 @@ func (f *perSecond) Do(e parser.Expr, from, until int64, values map[parser.Metri
 			diff := v - prev
 			if diff >= 0 {
 				r.Values[i] = diff / float64(a.StepTime)
-			} else if !math.IsNaN(maxValue) && maxValue >= v {
-				r.Values[i] = (maxValue - prev + v + 1) / float64(a.StepTime)
+			} else if hasMax && maxValue >= v {
+				r.Values[i] = ((maxValue - prev) + (v - minValue) + 1) / float64(a.StepTime)
+			} else if hasMin && minValue <= v {
+				r.Values[i] = ((v - minValue) + 1) / float64(a.StepTime)
 			} else {
 				r.Values[i] = math.NaN()
 			}
@@ -90,6 +122,10 @@ func (f *perSecond) Description() map[string]types.FunctionDescription {
 				},
 				{
 					Name: "maxValue",
+					Type: types.Float,
+				},
+				{
+					Name: "minValue",
 					Type: types.Float,
 				},
 			},

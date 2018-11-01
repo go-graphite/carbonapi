@@ -1,6 +1,7 @@
 package nonNegativeDerivative
 
 import (
+	"errors"
 	"fmt"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -37,17 +38,39 @@ func (f *nonNegativeDerivative) Do(e parser.Expr, from, until int64, values map[
 	if err != nil {
 		return nil, err
 	}
-	_, ok := e.NamedArgs()["maxValue"]
-	if !ok {
-		ok = len(e.Args()) > 1
+	minValue, err := e.GetFloatNamedOrPosArgDefault("minValue", 2, math.NaN())
+	if err != nil {
+		return nil, err
+	}
+	hasMax := !math.IsNaN(maxValue)
+	hasMin := !math.IsNaN(minValue)
+
+	if hasMax && hasMin && maxValue <= minValue {
+		return nil, errors.New("minValue must be lower than maxValue")
+	}
+	if hasMax && !hasMin {
+		minValue = 0
+	}
+
+	argMask := 0
+	if _, ok := e.NamedArgs()["maxValue"]; ok || len(e.Args()) > 1 {
+		argMask |= 1
+	}
+	if _, ok := e.NamedArgs()["minValue"]; ok || len(e.Args()) > 2 {
+		argMask |= 2
 	}
 
 	var result []*types.MetricData
 	for _, a := range args {
 		var name string
-		if ok {
+		switch argMask {
+		case 3:
+			name = fmt.Sprintf("nonNegativeDerivative(%s,%g,%g)", a.Name, maxValue, minValue)
+		case 2:
+			name = fmt.Sprintf("nonNegativeDerivative(%s,minValue=%g)", a.Name, minValue)
+		case 1:
 			name = fmt.Sprintf("nonNegativeDerivative(%s,%g)", a.Name, maxValue)
-		} else {
+		case 0:
 			name = fmt.Sprintf("nonNegativeDerivative(%s)", a.Name)
 		}
 
@@ -66,8 +89,10 @@ func (f *nonNegativeDerivative) Do(e parser.Expr, from, until int64, values map[
 			diff := v - prev
 			if diff >= 0 {
 				r.Values[i] = diff
-			} else if !math.IsNaN(maxValue) && maxValue >= v {
-				r.Values[i] = ((maxValue - prev) + v + 1)
+			} else if hasMax && maxValue >= v {
+				r.Values[i] = ((maxValue - prev) + (v - minValue) + 1)
+			} else if hasMin && minValue <= v {
+				r.Values[i] = ((v - minValue) + 1)
 			} else {
 				r.Values[i] = math.NaN()
 			}
@@ -95,6 +120,10 @@ func (f *nonNegativeDerivative) Description() map[string]types.FunctionDescripti
 				},
 				{
 					Name: "maxValue",
+					Type: types.Float,
+				},
+				{
+					Name: "minValue",
 					Type: types.Float,
 				},
 			},
