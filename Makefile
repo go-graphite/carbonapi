@@ -25,6 +25,9 @@ carbonzipper: $(shell find . -name '*.go' | grep -v 'vendor')
 test:
 	PKG_CONFIG_PATH="$(EXTRA_PKG_CONFIG_PATH)" $(GO) test -tags cairo ./... -race
 
+test_nocairo:
+	$(GO) test  ./... -race
+
 vet:
 	$(GO) vet
 
