@@ -1,3 +1,5 @@
+// +build cairo
+
 package png
 
 import "github.com/evmar/gocairo/cairo"
