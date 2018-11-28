@@ -1,20 +1,20 @@
 package helper
 
 import (
-	"math"
-	"strconv"
-	"unicode"
-
 	"fmt"
+	"math"
+	"regexp"
+	"strconv"
+	"strings"
+	"unicode"
+	"unicode/utf8"
+
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	"gonum.org/v1/gonum/mat"
-	"strings"
-	"unicode/utf8"
 
 	"github.com/wangjohn/quickselect"
-	"regexp"
 )
 
 var evaluator interfaces.Evaluator
@@ -224,7 +224,7 @@ func SummarizeValues(f string, values []float64) float64 {
 			rv += av
 		}
 
-	case "avg":
+	case "avg", "average":
 		for _, av := range values {
 			rv += av
 		}
@@ -244,10 +244,35 @@ func SummarizeValues(f string, values []float64) float64 {
 			}
 		}
 	case "last":
-		if len(values) > 0 {
-			rv = values[len(values)-1]
+		rv = values[len(values)-1]
+	case "range":
+		vMax := math.Inf(-1)
+		vMin := math.Inf(1)
+		for _, av := range values {
+			if av > vMax {
+				vMax = av
+			}
+			if av < vMin {
+				vMin = av
+			}
 		}
-
+		rv = vMax - vMin
+	case "median":
+		rv = Percentile(values, 50, true)
+	case "multiply":
+		rv = values[0]
+		for _, av := range values[1:] {
+			rv *= av
+		}
+	case "diff":
+		rv = values[0]
+		for _, av := range values[1:] {
+			rv -= av
+		}
+	case "count":
+		rv = float64(len(values))
+	case "stddev":
+		rv = math.Sqrt(VarianceValue(values))
 	default:
 		f = strings.Split(f, "p")[1]
 		percent, err := strconv.ParseFloat(f, 64)
