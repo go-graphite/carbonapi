@@ -92,7 +92,7 @@ func (f *nonNegativeDerivative) Do(e parser.Expr, from, until int64, values map[
 			} else if hasMax && maxValue >= v {
 				r.Values[i] = ((maxValue - prev) + (v - minValue) + 1)
 			} else if hasMin && minValue <= v {
-				r.Values[i] = ((v - minValue) + 1)
+				r.Values[i] = (v - minValue)
 			} else {
 				r.Values[i] = math.NaN()
 			}
