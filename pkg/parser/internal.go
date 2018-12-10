@@ -87,10 +87,10 @@ func sliceExpr(args []interface{}) ([]*expr, map[string]*expr) {
 			res = append(res, NewConstExpr(float64(v)).toExpr().(*expr))
 		case string:
 			res = append(res, NewTargetExpr(v).toExpr().(*expr))
-		case Expr:
-			res = append(res, v.toExpr().(*expr))
 		case *expr:
 			res = append(res, v)
+		case Expr:
+			res = append(res, v.toExpr().(*expr))
 		case NamedArgs:
 			nArgsNew := mapExpr(v)
 			nArgs = mergeNamedArgs(nArgs, nArgsNew)
