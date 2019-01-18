@@ -1069,6 +1069,10 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*types.MetricD
 		params.hideGrid = true
 		params.hideAxes = true
 		params.hideYAxis = true
+		params.area.xmin = 0
+		params.area.xmax = params.width
+		params.area.ymin = 0
+		params.area.ymax = params.height
 	}
 
 	if params.yAxisSide == YAxisSideRight {
