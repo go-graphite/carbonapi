@@ -4,6 +4,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/go-graphite/carbonapi/expr/functions/aboveSeries"
 	"github.com/go-graphite/carbonapi/expr/functions/absolute"
 	"github.com/go-graphite/carbonapi/expr/functions/alias"
 	"github.com/go-graphite/carbonapi/expr/functions/aliasByMetric"
@@ -101,6 +102,8 @@ type initFunc struct {
 
 func New(configs map[string]string) {
 	funcs := make([]initFunc, 0, 85)
+
+	funcs = append(funcs, initFunc{name: "aboveSeries", order: aboveSeries.GetOrder(), f: aboveSeries.New})
 
 	funcs = append(funcs, initFunc{name: "absolute", order: absolute.GetOrder(), f: absolute.New})
 
