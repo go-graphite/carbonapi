@@ -183,3 +183,6 @@ logger:
       file: "carbonapi.log"
       level: "info"
       encoding: "json"
+
+tagdb:
+      url: "http://127.0.0.1:9090"
