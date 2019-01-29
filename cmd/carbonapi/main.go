@@ -26,6 +26,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/mstats"
 	"github.com/go-graphite/carbonapi/pkg/parser"
+	"github.com/go-graphite/carbonapi/tagdb"
 	zipperCfg "github.com/go-graphite/carbonapi/zipper/config"
 	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 	"github.com/gorilla/handlers"
@@ -194,6 +195,7 @@ var config = struct {
 	DefaultColors              map[string]string  `mapstructure:"defaultColors"`
 	GraphTemplates             string             `mapstructure:"graphTemplates"`
 	FunctionsConfigs           map[string]string  `mapstructure:"functionsConfig"`
+	TagDB                      tagdb.Config       `mapstructure:"tagDB"`
 
 	queryCache cache.BytesCache
 	findCache  cache.BytesCache
@@ -205,6 +207,8 @@ var config = struct {
 
 	// Limiter limits concurrent zipper requests
 	limiter limiter
+
+	tagDBProxy *tagdb.Http
 }{
 	ExtrapolateExperiment: false,
 	Listen:                "[::]:8081",
@@ -246,6 +250,13 @@ var config = struct {
 	},
 	ExpireDelaySec:             10 * 60,
 	GraphiteWeb09Compatibility: false,
+
+	TagDB: tagdb.Config{
+		MaxConcurrentConnections: 10,
+		MaxTries:                 3,
+		Timeout:                  60 * time.Second,
+		KeepAliveInterval:        30 * time.Second,
+	},
 }
 
 func zipperStats(stats *zipperTypes.Stats) {
@@ -373,6 +384,16 @@ func setUpConfig(logger *zap.Logger) {
 	expvar.Publish("config", expvar.Func(func() interface{} { return config }))
 
 	config.limiter = newLimiter(config.Concurency)
+
+	if config.TagDB.Url != "" {
+		config.tagDBProxy, err = tagdb.NewHttp(&config.TagDB)
+		if err != nil {
+			logger.Warn("failed to initialize http tag db",
+				zap.String("reason", "invalid url"),
+				zap.Error(err),
+			)
+		}
+	}
 
 	switch config.Cache.Type {
 	case "memcache":

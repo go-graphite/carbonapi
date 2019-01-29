@@ -121,3 +121,6 @@ prefix = "virt.v1.*"
 afterStarted = "2s"
 connect = "200ms"
 global = "10s"
+
+[tagdb]
+url= "http://127.0.0.1:9090"

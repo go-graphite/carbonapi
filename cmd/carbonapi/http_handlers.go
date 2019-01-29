@@ -63,6 +63,9 @@ func initHandlers() *http.ServeMux {
 	r.HandleFunc("/functions", functionsHandler)
 	r.HandleFunc("/functions/", functionsHandler)
 
+        r.HandleFunc("/tags", tagHandler)
+        r.HandleFunc("/tags/", tagHandler)
+
 	r.HandleFunc("/", usageHandler)
 	return r
 }
@@ -456,6 +459,9 @@ func findTreejson(multiGlobs *pb.MultiGlobResponse) ([]byte, error) {
 		}
 
 		for _, g := range globs.Matches {
+	                if strings.HasPrefix(g.Path, "_tag") {
+		                continue
+			}
 
 			name := g.Path
 
@@ -502,6 +508,9 @@ func findCompleter(multiGlobs *pb.MultiGlobResponse) ([]byte, error) {
 
 	for _, globs := range multiGlobs.Metrics {
 		for _, g := range globs.Matches {
+			if strings.HasPrefix(g.Path, "_tag") {
+				continue
+			}
 			path := g.Path
 			if !g.IsLeaf && path[len(path)-1:] != "." {
 				path = g.Path + "."
@@ -541,6 +550,9 @@ func findList(multiGlobs *pb.MultiGlobResponse) ([]byte, error) {
 
 	for _, globs := range multiGlobs.Metrics {
 		for _, g := range globs.Matches {
+			if strings.HasPrefix(g.Path, "_tag") {
+				continue
+			}
 
 			var dot string
 			// make sure non-leaves end in one dot
@@ -644,6 +656,9 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		now := int32(time.Now().Unix() + 60)
 		for _, globs := range multiGlobs.Metrics {
 			for _, metric := range globs.Matches {
+	                        if strings.HasPrefix(metric.Path, "_tag") {
+					continue
+			        }
 				// Tell graphite-web that we have everything
 				var mm map[string]interface{}
 				if config.GraphiteWeb09Compatibility {
@@ -933,12 +948,22 @@ func functionsHandler(w http.ResponseWriter, r *http.Request) {
 	accessLogger.Info("request served", zap.Any("data", accessLogDetails))
 }
 
+func tagHandler(w http.ResponseWriter, r *http.Request) {
+        if config.tagDBProxy != nil {
+                config.tagDBProxy.ServeHTTP(w, r)
+        } else {
+                w.Header().Set("Content-Type", contentTypeJSON)
+                w.Write([]byte{'[', ']'})
+        }
+}
+
 var usageMsg = []byte(`
 supported requests:
 	/render/?target=
 	/metrics/find/?query=
 	/info/?target=
 	/functions/
+	/tags/
 `)
 
 func usageHandler(w http.ResponseWriter, r *http.Request) {
