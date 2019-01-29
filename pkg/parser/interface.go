@@ -98,6 +98,8 @@ type Expr interface {
 
 	// GetIntervalArg returns n-th argument as string.
 	GetStringArg(n int) (string, error)
+	// GetIntervalArgs returns n-th argument as slice of strings.
+	GetStringArgs(n int) ([]string, error)
 	// GetIntervalArg returns n-th argument as string. It will replace it with Default value if none present.
 	GetStringArgDefault(n int, s string) (string, error)
 	// GetStringNamedOrPosArgDefault returns specific positioned string-typed argument or replace it with default if none found.

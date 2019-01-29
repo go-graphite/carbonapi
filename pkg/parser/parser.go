@@ -216,6 +216,24 @@ func (e *expr) GetStringArg(n int) (string, error) {
 	return e.args[n].doGetStringArg()
 }
 
+func (e *expr) GetStringArgs(n int) ([]string, error) {
+	if len(e.args) <= n {
+		return nil, ErrMissingArgument
+	}
+
+	var strs []string
+
+	for i := n; i < len(e.args); i++ {
+		a, err := e.GetStringArg(i)
+		if err != nil {
+			return nil, err
+		}
+		strs = append(strs, a)
+	}
+
+	return strs, nil
+}
+
 func (e *expr) GetStringArgDefault(n int, s string) (string, error) {
 	if len(e.args) <= n {
 		return s, nil
