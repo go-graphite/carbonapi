@@ -4,7 +4,6 @@ import (
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-
 	//"strings"
 )
 
@@ -25,7 +24,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *seriesByTag) Do(e parser.Expr, from, until int32, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *seriesByTag) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	var results []*types.MetricData
 	key := parser.MetricRequest{Metric: e.ToString(), From: from, Until: until}
 	data, ok := values[key]
