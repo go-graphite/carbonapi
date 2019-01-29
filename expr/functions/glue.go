@@ -76,7 +76,6 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/removeEmptySeries"
 	"github.com/go-graphite/carbonapi/expr/functions/scale"
 	"github.com/go-graphite/carbonapi/expr/functions/scaleToSeconds"
-	"github.com/go-graphite/carbonapi/expr/functions/seriesByTag"
 	"github.com/go-graphite/carbonapi/expr/functions/seriesList"
 	"github.com/go-graphite/carbonapi/expr/functions/sortBy"
 	"github.com/go-graphite/carbonapi/expr/functions/sortByName"
@@ -104,8 +103,6 @@ type initFunc struct {
 
 func New(configs map[string]string) {
 	funcs := make([]initFunc, 0, 85)
-
-	funcs = append(funcs, initFunc{name: "seriesByTag", order: seriesByTag.GetOrder(), f: seriesByTag.New})
 
 	funcs = append(funcs, initFunc{name: "aliasByTags", order: aliasByTags.GetOrder(), f: aliasByTags.New})
 

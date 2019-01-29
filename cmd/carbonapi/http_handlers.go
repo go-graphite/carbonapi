@@ -63,8 +63,8 @@ func initHandlers() *http.ServeMux {
 	r.HandleFunc("/functions", functionsHandler)
 	r.HandleFunc("/functions/", functionsHandler)
 
-        r.HandleFunc("/tags", tagHandler)
-        r.HandleFunc("/tags/", tagHandler)
+	r.HandleFunc("/tags", tagHandler)
+	r.HandleFunc("/tags/", tagHandler)
 
 	r.HandleFunc("/", usageHandler)
 	return r
@@ -459,8 +459,8 @@ func findTreejson(multiGlobs *pb.MultiGlobResponse) ([]byte, error) {
 		}
 
 		for _, g := range globs.Matches {
-	                if strings.HasPrefix(g.Path, "_tag") {
-		                continue
+			if strings.HasPrefix(g.Path, "_tag") {
+				continue
 			}
 
 			name := g.Path
@@ -656,9 +656,9 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		now := int32(time.Now().Unix() + 60)
 		for _, globs := range multiGlobs.Metrics {
 			for _, metric := range globs.Matches {
-	                        if strings.HasPrefix(metric.Path, "_tag") {
+				if strings.HasPrefix(metric.Path, "_tag") {
 					continue
-			        }
+				}
 				// Tell graphite-web that we have everything
 				var mm map[string]interface{}
 				if config.GraphiteWeb09Compatibility {
@@ -949,12 +949,12 @@ func functionsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func tagHandler(w http.ResponseWriter, r *http.Request) {
-        if config.tagDBProxy != nil {
-                config.tagDBProxy.ServeHTTP(w, r)
-        } else {
-                w.Header().Set("Content-Type", contentTypeJSON)
-                w.Write([]byte{'[', ']'})
-        }
+	if config.tagDBProxy != nil {
+		config.tagDBProxy.ServeHTTP(w, r)
+	} else {
+		w.Header().Set("Content-Type", contentTypeJSON)
+		w.Write([]byte{'[', ']'})
+	}
 }
 
 var usageMsg = []byte(`

@@ -82,6 +82,10 @@ func (bg BroadcastGroup) Backends() []string {
 func (bg *BroadcastGroup) filterServersByTLD(requests []string, clients []types.ServerClient) []types.ServerClient {
 	tldClients := make(map[types.ServerClient]bool)
 	for _, request := range requests {
+		// TODO(Civil): Tags: improve logic
+		if strings.HasPrefix(request, "seriesByTag") {
+			return clients
+		}
 		idx := strings.Index(request, ".")
 		if idx > 0 {
 			request = request[:idx]
@@ -149,6 +153,18 @@ func (bg *BroadcastGroup) SplitRequest(ctx context.Context, request *protov3.Mul
 	var requests []*protov3.MultiFetchRequest
 	for _, metric := range request.Metrics {
 		newRequest := &protov3.MultiFetchRequest{}
+		// TODO(Civil): Tags: improve logic
+		if strings.HasPrefix(metric.Name, "seriesByTag") {
+			newRequest.Metrics = append(newRequest.Metrics, protov3.FetchRequest{
+				Name:            metric.PathExpression,
+				StartTime:       metric.StartTime,
+				StopTime:        metric.StopTime,
+				PathExpression:  metric.PathExpression,
+				FilterFunctions: metric.FilterFunctions,
+			})
+			requests = append(requests, newRequest)
+			continue
+		}
 
 		f, _, e := bg.Find(ctx, &protov3.MultiGlobRequest{Metrics: []string{metric.Name}})
 		if (e != nil && e.HaveFatalErrors && len(e.Errors) > 0) || f == nil || len(f.Metrics) == 0 {
@@ -212,6 +228,9 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	defer cancel()
 
 	for _, client := range clients {
+		logger.Debug("single fetch",
+			zap.Any("client", client),
+		)
 		go bg.doSingleFetch(ctx, logger, client, requests, resCh)
 	}
 
