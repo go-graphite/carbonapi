@@ -18,6 +18,8 @@ CHANGELOG
  - **[Breaking][Improvement]** Migrate to carbonzipper 1.0.0. This introduces better loadbalancing support, but significantly changes config file format. It might behave differently with the same settings.
  - Add experimental support for querying msgpack-compatible backends. This should make carbonapi compatible with graphite-web 1.1 and [grafana/metrictank](https://github.com/grafana/metrictank)
  - Style change: numeration now follows semver 2.0 guidelines.
+ - seriesByTag Support (thx. to Vladimir Kolobaev)
+ - aliasByTag Support (thx. to Vladimir Kolobaev)
 
 **0.11.0**
  - **[Breaking][Fix] Allow to specify prefix for environment variables through `-envprefix` command line parameter. Default now is "CARBONAPI_" which might break some environments**
