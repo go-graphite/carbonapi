@@ -9,12 +9,12 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/go-graphite/carbonapi/util"
+	"github.com/go-graphite/carbonapi/limiter"
 )
 
 type Http struct {
 	proxy   *httputil.ReverseProxy
-	limiter util.SimpleLimiter
+	limiter limiter.SimpleLimiter
 }
 
 type Config struct {
@@ -74,7 +74,7 @@ func NewHttp(cfg *Config) (*Http, error) {
 
 	return &Http{
 		proxy:   proxy,
-		limiter: util.NewSimpleLimiter(cfg.MaxConcurrentConnections),
+		limiter: limiter.NewSimpleLimiter(cfg.MaxConcurrentConnections),
 	}, nil
 }
 

@@ -6,9 +6,9 @@ import (
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/metadata"
-			th "github.com/go-graphite/carbonapi/tests"
-	"github.com/go-graphite/carbonapi/pkg/parser"
 	"github.com/go-graphite/carbonapi/expr/types"
+	"github.com/go-graphite/carbonapi/pkg/parser"
+	th "github.com/go-graphite/carbonapi/tests"
 )
 
 func init() {
@@ -25,19 +25,19 @@ func TestSubstr(t *testing.T) {
 	now32 := int64(time.Now().Unix())
 
 	/*
-	Python's behavior:
-	>>> a = ["metric1", "foo", "bar", "baz"]
-	>>> a[-3:-1]
-	['foo', 'bar']
-	>>> a[-4:-1]
-	['metric1', 'foo', 'bar']
-	>>> a[-65:]
-	['metric1', 'foo', 'bar', 'baz']
-	>>> a[-6:-1]
-	['metric1', 'foo', 'bar']
-	>>> a[0:-1]
-	['metric1', 'foo', 'bar']
-	 */
+		Python's behavior:
+		>>> a = ["metric1", "foo", "bar", "baz"]
+		>>> a[-3:-1]
+		['foo', 'bar']
+		>>> a[-4:-1]
+		['metric1', 'foo', 'bar']
+		>>> a[-65:]
+		['metric1', 'foo', 'bar', 'baz']
+		>>> a[-6:-1]
+		['metric1', 'foo', 'bar']
+		>>> a[0:-1]
+		['metric1', 'foo', 'bar']
+	*/
 	tests := []th.EvalTestItem{
 		{
 			parser.NewExpr("substr",

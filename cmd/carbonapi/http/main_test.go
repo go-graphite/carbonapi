@@ -1,4 +1,4 @@
-package main
+package http
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 	"github.com/go-graphite/carbonapi/expr/types"
 	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
@@ -94,18 +95,18 @@ func getMockInfoResponse() *pb.ZipperInfoResponse {
 }
 
 func init() {
-	cfg := defaultLoggerConfig
+	cfg := config.DefaultLoggerConfig
 	cfg.Level = "debug"
 	zapwriter.ApplyConfig([]zapwriter.Config{cfg})
 	logger := zapwriter.Logger("main")
 
 	cfgFile := ""
-	setUpViper(logger, &cfgFile, "CARBONAPI_")
-	config.Upstreams.Backends = []string{"dummy"}
-	setUpConfigUpstreams(logger)
-	setUpConfig(logger)
-	config.zipper = newMockCarbonZipper()
-	initHandlers()
+	config.SetUpViper(logger, &cfgFile, "CARBONAPI_")
+	config.Config.Upstreams.Backends = []string{"dummy"}
+	config.SetUpConfigUpstreams(logger)
+	config.SetUpConfig(logger, "(test)")
+	config.Config.ZipperInstance = newMockCarbonZipper()
+	InitHandlers()
 }
 
 func setUpRequest(t *testing.T, url string) (*http.Request, *httptest.ResponseRecorder) {

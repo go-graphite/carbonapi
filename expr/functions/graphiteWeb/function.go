@@ -93,8 +93,8 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	}
 
 	cfg := graphiteWebConfig{
-		Enabled: false,
-		Strict:  false,
+		Enabled:                  false,
+		Strict:                   false,
 		MaxConcurrentConnections: 10,
 		Timeout:                  60 * time.Second,
 		KeepAliveInterval:        30 * time.Second,

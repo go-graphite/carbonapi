@@ -24,15 +24,6 @@ type zipper struct {
 	ignoreClientTimeout bool
 }
 
-// The CarbonZipper interface exposes access to realZipper
-// Exposes the functionality to find, get info or render metrics.
-type CarbonZipper interface {
-	Find(ctx context.Context, metrics []string) (*pb.MultiGlobResponse, *zipperTypes.Stats, error)
-	Info(ctx context.Context, metrics []string) (*pb.ZipperInfoResponse, *zipperTypes.Stats, error)
-	RenderCompat(ctx context.Context, metrics []string, from, until int64) ([]*types.MetricData, *zipperTypes.Stats, error)
-	Render(ctx context.Context, request pb.MultiFetchRequest) ([]*types.MetricData, *zipperTypes.Stats, error)
-}
-
 func newZipper(sender func(*zipperTypes.Stats), config *zipperCfg.Config, ignoreClientTimeout bool, logger *zap.Logger) *zipper {
 	logger.Debug("initializing zipper")
 	zz, err := realZipper.NewZipper(sender, config, logger)
