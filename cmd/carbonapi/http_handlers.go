@@ -963,7 +963,7 @@ supported requests:
 	/metrics/find/?query=
 	/info/?target=
 	/functions/
-	/tags/
+	/tags/autoComplete/tags
 `)
 
 func usageHandler(w http.ResponseWriter, r *http.Request) {
