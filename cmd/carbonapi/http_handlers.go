@@ -964,6 +964,7 @@ supported requests:
 	/info/?target=
 	/functions/
 	/tags/autoComplete/tags
+	/tags/autoComplete/values
 `)
 
 func usageHandler(w http.ResponseWriter, r *http.Request) {
