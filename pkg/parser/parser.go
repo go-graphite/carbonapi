@@ -386,7 +386,8 @@ func parseExprWithoutPipe(e string) (Expr, string, error) {
 	if e != "" && e[0] == '(' {
 		// TODO(civil): Tags: make it a proper Expression
 		if name == "seriesByTag" {
-			return &expr{target: name + e, etype: EtName}, "", nil
+			argString, _, _, e, err := parseArgList(e)
+			return &expr{target: name + "(" + argString + ")", etype: EtName}, e, err
 		}
 		exp := &expr{target: name, etype: EtFunc}
 
