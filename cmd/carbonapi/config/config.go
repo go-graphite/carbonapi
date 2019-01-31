@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/go-graphite/carbonapi/cache"
@@ -36,7 +37,7 @@ type GraphiteConfig struct {
 	Prefix   string
 }
 
-var Config = struct {
+type ConfigType struct {
 	ExtrapolateExperiment      bool               `mapstructure:"extrapolateExperiment"`
 	Logger                     []zapwriter.Config `mapstructure:"logger"`
 	Listen                     string             `mapstructure:"listen"`
@@ -62,19 +63,30 @@ var Config = struct {
 	FunctionsConfigs           map[string]string  `mapstructure:"functionsConfig"`
 	TagDB                      tagdb.Config       `mapstructure:"tagDB"`
 
-	QueryCache cache.BytesCache `mapstructure:"-"`
-	FindCache  cache.BytesCache `mapstructure:"-"`
+	QueryCache cache.BytesCache `mapstructure:"-" json:"-"`
+	FindCache  cache.BytesCache `mapstructure:"-" json:"-"`
 
-	DefaultTimeZone *time.Location `mapstructure:"-"`
+	DefaultTimeZone *time.Location `mapstructure:"-" json:"-"`
 
 	// ZipperInstance is API entry to carbonzipper
-	ZipperInstance interfaces.CarbonZipper `mapstructure:"-"`
+	ZipperInstance interfaces.CarbonZipper `mapstructure:"-" json:"-"`
 
 	// Limiter limits concurrent zipper requests
-	Limiter limiter.SimpleLimiter `mapstructure:"-"`
+	Limiter limiter.SimpleLimiter `mapstructure:"-" json:"-"`
 
-	TagDBProxy *tagdb.Http `mapstructure:"-"`
-}{
+	TagDBProxy *tagdb.Http `mapstructure:"-" json:"-"`
+}
+
+func (c ConfigType) String() string {
+	data, err := json.Marshal(c)
+	if err != nil {
+		return "Failed to marshal config: " + err.Error()
+	} else {
+		return string(data)
+	}
+}
+
+var Config = ConfigType{
 	ExtrapolateExperiment: false,
 	Listen:                "[::]:8081",
 	Buckets:               10,

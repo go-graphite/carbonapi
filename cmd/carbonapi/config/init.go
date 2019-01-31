@@ -134,7 +134,7 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 
 	expvar.NewString("GoVersion").Set(runtime.Version())
 	expvar.NewString("BuildVersion").Set(BuildVersion)
-	expvar.Publish("config", expvar.Func(func() interface{} { return Config }))
+	expvar.Publish("config", Config)
 
 	Config.Limiter = limiter.NewSimpleLimiter(Config.Concurency)
 
