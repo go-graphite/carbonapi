@@ -36,7 +36,7 @@ type TriDense struct {
 // Triangular represents a triangular matrix. Triangular matrices are always square.
 type Triangular interface {
 	Matrix
-	// Triangular returns the number of rows/columns in the matrix and its
+	// Triangle returns the number of rows/columns in the matrix and its
 	// orientation.
 	Triangle() (n int, kind TriKind)
 
@@ -45,7 +45,9 @@ type Triangular interface {
 	TTri() Triangular
 }
 
-// A RawTriangular can return a view of itself as a BLAS Triangular matrix.
+// A RawTriangular can return a blas64.Triangular representation of the receiver.
+// Changes to the blas64.Triangular.Data slice will be reflected in the original
+// matrix, changes to the N, Stride, Uplo and Diag fields will not.
 type RawTriangular interface {
 	RawTriangular() blas64.Triangular
 }
@@ -111,12 +113,16 @@ func (t TransposeTri) UntransposeTri() Triangular {
 // a new slice is allocated for the backing slice. If len(data) == n*n, data is
 // used as the backing slice, and changes to the elements of the returned TriDense
 // will be reflected in data. If neither of these is true, NewTriDense will panic.
+// NewTriDense will panic if n is zero.
 //
 // The data must be arranged in row-major order, i.e. the (i*c + j)-th
 // element in the data slice is the {i, j}-th element in the matrix.
 // Only the values in the triangular portion corresponding to kind are used.
 func NewTriDense(n int, kind TriKind, data []float64) *TriDense {
-	if n < 0 {
+	if n <= 0 {
+		if n == 0 {
+			panic(ErrZeroLength)
+		}
 		panic("mat: negative dimension")
 	}
 	if data != nil && len(data) != n*n {
@@ -148,7 +154,7 @@ func (t *TriDense) Dims() (r, c int) {
 // Triangle returns the dimension of t and its orientation. The returned
 // orientation is only valid when n is not zero.
 func (t *TriDense) Triangle() (n int, kind TriKind) {
-	return t.mat.N, TriKind(!t.IsZero()) && t.triKind()
+	return t.mat.N, t.triKind()
 }
 
 func (t *TriDense) isUpper() bool {
@@ -165,6 +171,17 @@ func isUpperUplo(u blas.Uplo) bool {
 		return true
 	case blas.Lower:
 		return false
+	default:
+		panic(badTriangle)
+	}
+}
+
+func uploToTriKind(u blas.Uplo) TriKind {
+	switch u {
+	case blas.Upper:
+		return Upper
+	case blas.Lower:
+		return Lower
 	default:
 		panic(badTriangle)
 	}
@@ -211,6 +228,19 @@ func (t *TriDense) Reset() {
 	// it is set correctly later.
 	t.mat.Uplo = 0
 	t.mat.Data = t.mat.Data[:0]
+}
+
+// Zero sets all of the matrix elements to zero.
+func (t *TriDense) Zero() {
+	if t.isUpper() {
+		for i := 0; i < t.mat.N; i++ {
+			zero(t.mat.Data[i*t.mat.Stride+i : i*t.mat.Stride+t.mat.N])
+		}
+		return
+	}
+	for i := 0; i < t.mat.N; i++ {
+		zero(t.mat.Data[i*t.mat.Stride : i*t.mat.Stride+i+1])
+	}
 }
 
 // IsZero returns whether the receiver is zero-sized. Zero-sized matrices can be the
@@ -276,6 +306,21 @@ func (t *TriDense) isolatedWorkspace(a Triangular) (w *TriDense, restore func())
 	return w, func() {
 		t.Copy(w)
 		putWorkspaceTri(w)
+	}
+}
+
+// DiagView returns the diagonal as a matrix backed by the original data.
+func (t *TriDense) DiagView() Diagonal {
+	if t.mat.Diag == blas.Unit {
+		panic("mat: cannot take view of Unit diagonal")
+	}
+	n := t.mat.N
+	return &DiagDense{
+		mat: blas64.Vector{
+			N:    n,
+			Inc:  t.mat.Stride + 1,
+			Data: t.mat.Data[:(n-1)*t.mat.Stride+n],
+		},
 	}
 }
 

@@ -55,12 +55,16 @@ type MutableSymmetric interface {
 // a new slice is allocated for the backing slice. If len(data) == n*n, data is
 // used as the backing slice, and changes to the elements of the returned SymDense
 // will be reflected in data. If neither of these is true, NewSymDense will panic.
+// NewSymDense will panic if n is zero.
 //
 // The data must be arranged in row-major order, i.e. the (i*c + j)-th
 // element in the data slice is the {i, j}-th element in the matrix.
 // Only the values in the upper triangular portion of the matrix are used.
 func NewSymDense(n int, data []float64) *SymDense {
-	if n < 0 {
+	if n <= 0 {
+		if n == 0 {
+			panic(ErrZeroLength)
+		}
 		panic("mat: negative dimension")
 	}
 	if data != nil && n*n != len(data) {
@@ -127,6 +131,13 @@ func (s *SymDense) Reset() {
 	s.mat.Data = s.mat.Data[:0]
 }
 
+// Zero sets all of the matrix elements to zero.
+func (s *SymDense) Zero() {
+	for i := 0; i < s.mat.N; i++ {
+		zero(s.mat.Data[i*s.mat.Stride+i : i*s.mat.Stride+s.mat.N])
+	}
+}
+
 // IsZero returns whether the receiver is zero-sized. Zero-sized matrices can be the
 // receiver for size-restricted operations. SymDense matrices can be zeroed using Reset.
 func (s *SymDense) IsZero() bool {
@@ -171,6 +182,18 @@ func (s *SymDense) isolatedWorkspace(a Symmetric) (w *SymDense, restore func()) 
 	return w, func() {
 		s.CopySym(w)
 		putWorkspaceSym(w)
+	}
+}
+
+// DiagView returns the diagonal as a matrix backed by the original data.
+func (s *SymDense) DiagView() Diagonal {
+	n := s.mat.N
+	return &DiagDense{
+		mat: blas64.Vector{
+			N:    n,
+			Inc:  s.mat.Stride + 1,
+			Data: s.mat.Data[:(n-1)*s.mat.Stride+n],
+		},
 	}
 }
 
@@ -257,7 +280,7 @@ func (s *SymDense) SymRankOne(a Symmetric, alpha float64, x Vector) {
 	xU, _ := untranspose(x)
 	if rv, ok := xU.(RawVectorer); ok {
 		xmat := rv.RawVector()
-		s.checkOverlap((&VecDense{mat: xmat, n: n}).asGeneral())
+		s.checkOverlap((&VecDense{mat: xmat}).asGeneral())
 		blas64.Syr(alpha, xmat, s.mat)
 		return
 	}
@@ -371,14 +394,14 @@ func (s *SymDense) RankTwo(a Symmetric, alpha float64, x, y Vector) {
 	xU, _ := untranspose(x)
 	if rv, ok := xU.(RawVectorer); ok {
 		xmat = rv.RawVector()
-		s.checkOverlap((&VecDense{mat: xmat, n: x.Len()}).asGeneral())
+		s.checkOverlap((&VecDense{mat: xmat}).asGeneral())
 	} else {
 		fast = false
 	}
 	yU, _ := untranspose(y)
 	if rv, ok := yU.(RawVectorer); ok {
 		ymat = rv.RawVector()
-		s.checkOverlap((&VecDense{mat: ymat, n: y.Len()}).asGeneral())
+		s.checkOverlap((&VecDense{mat: ymat}).asGeneral())
 	} else {
 		fast = false
 	}

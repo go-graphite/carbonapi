@@ -37,6 +37,35 @@ func Potrf(a blas64.Symmetric) (t blas64.Triangular, ok bool) {
 	return
 }
 
+// Potri computes the inverse of a real symmetric positive definite matrix A
+// using its Cholesky factorization.
+//
+// On entry, t contains the triangular factor U or L from the Cholesky
+// factorization A = U^T*U or A = L*L^T, as computed by Potrf.
+//
+// On return, the upper or lower triangle of the (symmetric) inverse of A is
+// stored in t, overwriting the input factor U or L, and also returned in a. The
+// underlying data between a and t is shared.
+//
+// The returned bool indicates whether the inverse was computed successfully.
+func Potri(t blas64.Triangular) (a blas64.Symmetric, ok bool) {
+	ok = lapack64.Dpotri(t.Uplo, t.N, t.Data, t.Stride)
+	a.Uplo = t.Uplo
+	a.N = t.N
+	a.Data = t.Data
+	a.Stride = t.Stride
+	return
+}
+
+// Potrs solves a system of n linear equations A*X = B where A is an n×n
+// symmetric positive definite matrix and B is an n×nrhs matrix, using the
+// Cholesky factorization A = U^T*U or A = L*L^T. t contains the corresponding
+// triangular factor as returned by Potrf. On entry, B contains the right-hand
+// side matrix B, on return it contains the solution matrix X.
+func Potrs(t blas64.Triangular, b blas64.General) {
+	lapack64.Dpotrs(t.Uplo, t.N, b.Cols, t.Data, t.Stride, b.Data, b.Stride)
+}
+
 // Gecon estimates the reciprocal of the condition number of the n×n matrix A
 // given the LU decomposition of the matrix. The condition number computed may
 // be based on the 1-norm or the ∞-norm.
@@ -143,7 +172,7 @@ func Gelqf(a blas64.General, tau, work []float64, lwork int) {
 // jobU and jobVT are options for computing the singular vectors. The behavior
 // is as follows
 //  jobU == lapack.SVDAll       All m columns of U are returned in u
-//  jobU == lapack.SVDInPlace   The first min(m,n) columns are returned in u
+//  jobU == lapack.SVDStore     The first min(m,n) columns are returned in u
 //  jobU == lapack.SVDOverwrite The first min(m,n) columns of U are written into a
 //  jobU == lapack.SVDNone      The columns of U are not computed.
 // The behavior is the same for jobVT and the rows of V^T. At most one of jobU
@@ -157,12 +186,12 @@ func Gelqf(a blas64.General, tau, work []float64, lwork int) {
 // values in decreasing order.
 //
 // u contains the left singular vectors on exit, stored columnwise. If
-// jobU == lapack.SVDAll, u is of size m×m. If jobU == lapack.SVDInPlace u is
+// jobU == lapack.SVDAll, u is of size m×m. If jobU == lapack.SVDStore u is
 // of size m×min(m,n). If jobU == lapack.SVDOverwrite or lapack.SVDNone, u is
 // not used.
 //
 // vt contains the left singular vectors on exit, stored rowwise. If
-// jobV == lapack.SVDAll, vt is of size n×m. If jobVT == lapack.SVDInPlace vt is
+// jobV == lapack.SVDAll, vt is of size n×m. If jobVT == lapack.SVDStore vt is
 // of size min(m,n)×n. If jobVT == lapack.SVDOverwrite or lapack.SVDNone, vt is
 // not used.
 //
@@ -445,9 +474,9 @@ func Pocon(a blas64.Symmetric, anorm float64, work []float64, iwork []int) float
 // at least n, and Syev will panic otherwise.
 //
 // On entry, a contains the elements of the symmetric matrix A in the triangular
-// portion specified by uplo. If jobz == lapack.ComputeEV a contains the
-// orthonormal eigenvectors of A on exit, otherwise on exit the specified
-// triangular region is overwritten.
+// portion specified by uplo. If jobz == lapack.EVCompute, a contains the
+// orthonormal eigenvectors of A on exit, otherwise jobz must be lapack.EVNone
+// and on exit the specified triangular region is overwritten.
 //
 // Work is temporary storage, and lwork specifies the usable memory length. At minimum,
 // lwork >= 3*n-1, and Syev will panic otherwise. The amount of blocking is
@@ -506,10 +535,10 @@ func Trtrs(trans blas.Transpose, a blas64.Triangular, b blas64.General) (ok bool
 // where i is the imaginary unit. The computed eigenvectors are normalized to
 // have Euclidean norm equal to 1 and largest component real.
 //
-// Left eigenvectors will be computed only if jobvl == lapack.ComputeLeftEV,
-// otherwise jobvl must be lapack.None.
-// Right eigenvectors will be computed only if jobvr == lapack.ComputeRightEV,
-// otherwise jobvr must be lapack.None.
+// Left eigenvectors will be computed only if jobvl == lapack.LeftEVCompute,
+// otherwise jobvl must be lapack.LeftEVNone.
+// Right eigenvectors will be computed only if jobvr == lapack.RightEVCompute,
+// otherwise jobvr must be lapack.RightEVNone.
 // For other values of jobvl and jobvr Geev will panic.
 //
 // On return, wr and wi will contain the real and imaginary parts, respectively,
@@ -535,10 +564,10 @@ func Geev(jobvl lapack.LeftEVJob, jobvr lapack.RightEVJob, a blas64.General, wr,
 	if a.Cols != n {
 		panic("lapack64: matrix not square")
 	}
-	if jobvl == lapack.ComputeLeftEV && (vl.Rows != n || vl.Cols != n) {
+	if jobvl == lapack.LeftEVCompute && (vl.Rows != n || vl.Cols != n) {
 		panic("lapack64: bad size of VL")
 	}
-	if jobvr == lapack.ComputeRightEV && (vr.Rows != n || vr.Cols != n) {
+	if jobvr == lapack.RightEVCompute && (vr.Rows != n || vr.Cols != n) {
 		panic("lapack64: bad size of VR")
 	}
 	return lapack64.Dgeev(jobvl, jobvr, n, a.Data, a.Stride, wr, wi, vl.Data, vl.Stride, vr.Data, vr.Stride, work, lwork)

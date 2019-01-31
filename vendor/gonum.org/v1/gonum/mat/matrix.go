@@ -89,6 +89,13 @@ type UntransposeTrier interface {
 	UntransposeTri() Triangular
 }
 
+// UntransposeTriBander is a type that can undo an implicit triangular banded
+// transpose.
+type UntransposeTriBander interface {
+	// Untranspose returns the underlying Triangular stored for the implicit transpose.
+	UntransposeTriBand() TriBanded
+}
+
 // Mutable is a matrix interface type that allows elements to be altered.
 type Mutable interface {
 	// Set alters the matrix element at row i, column j to v.
@@ -226,9 +233,8 @@ func Col(dst []float64, j int, a Matrix) []float64 {
 			copy(dst, m.Data[j*m.Stride:j*m.Stride+m.Cols])
 			return dst
 		}
-		blas64.Copy(r,
-			blas64.Vector{Inc: m.Stride, Data: m.Data[j:]},
-			blas64.Vector{Inc: 1, Data: dst},
+		blas64.Copy(blas64.Vector{N: r, Inc: m.Stride, Data: m.Data[j:]},
+			blas64.Vector{N: r, Inc: 1, Data: dst},
 		)
 		return dst
 	}
@@ -257,9 +263,8 @@ func Row(dst []float64, i int, a Matrix) []float64 {
 	if rm, ok := aU.(RawMatrixer); ok {
 		m := rm.RawMatrix()
 		if aTrans {
-			blas64.Copy(c,
-				blas64.Vector{Inc: m.Stride, Data: m.Data[i:]},
-				blas64.Vector{Inc: 1, Data: dst},
+			blas64.Copy(blas64.Vector{N: c, Inc: m.Stride, Data: m.Data[i:]},
+				blas64.Vector{N: c, Inc: 1, Data: dst},
 			)
 			return dst
 		}
@@ -338,7 +343,7 @@ func Dot(a, b Vector) float64 {
 	}
 	if arv, ok := a.(RawVectorer); ok {
 		if brv, ok := b.(RawVectorer); ok {
-			return blas64.Dot(la, arv.RawVector(), brv.RawVector())
+			return blas64.Dot(arv.RawVector(), brv.RawVector())
 		}
 	}
 	var sum float64
@@ -401,7 +406,7 @@ func Equal(a, b Matrix) bool {
 		if rb, ok := bU.(*VecDense); ok {
 			// If the raw vectors are the same length they must either both be
 			// transposed or both not transposed (or have length 1).
-			for i := 0; i < ra.n; i++ {
+			for i := 0; i < ra.mat.N; i++ {
 				if ra.mat.Data[i*ra.mat.Inc] != rb.mat.Data[i*rb.mat.Inc] {
 					return false
 				}
@@ -473,7 +478,7 @@ func EqualApprox(a, b Matrix, epsilon float64) bool {
 		if rb, ok := bU.(*VecDense); ok {
 			// If the raw vectors are the same length they must either both be
 			// transposed or both not transposed (or have length 1).
-			for i := 0; i < ra.n; i++ {
+			for i := 0; i < ra.mat.N; i++ {
 				if !floats.EqualWithinAbsOrRel(ra.mat.Data[i*ra.mat.Inc], rb.mat.Data[i*rb.mat.Inc], epsilon, epsilon) {
 					return false
 				}
@@ -699,17 +704,17 @@ func Norm(a Matrix, norm float64) float64 {
 			panic("unreachable")
 		case 1:
 			if aTrans {
-				imax := blas64.Iamax(rma.n, rv)
+				imax := blas64.Iamax(rv)
 				return math.Abs(rma.At(imax, 0))
 			}
-			return blas64.Asum(rma.n, rv)
+			return blas64.Asum(rv)
 		case 2:
-			return blas64.Nrm2(rma.n, rv)
+			return blas64.Nrm2(rv)
 		case math.Inf(1):
 			if aTrans {
-				return blas64.Asum(rma.n, rv)
+				return blas64.Asum(rv)
 			}
-			imax := blas64.Iamax(rma.n, rv)
+			imax := blas64.Iamax(rv)
 			return math.Abs(rma.At(imax, 0))
 		}
 	}
@@ -762,7 +767,7 @@ func normLapack(norm float64, aTrans bool) lapack.MatrixNorm {
 		}
 		return n
 	case 2:
-		return lapack.NormFrob
+		return lapack.Frobenius
 	case math.Inf(1):
 		n := lapack.MaxRowSum
 		if aTrans {

@@ -15,12 +15,14 @@ var _ blas.Float64Level2 = Implementation{}
 //  A += alpha * x * y^T
 // where A is an m×n dense matrix, x and y are vectors, and alpha is a scalar.
 func (Implementation) Dger(m, n int, alpha float64, x []float64, incX int, y []float64, incY int, a []float64, lda int) {
-	// Check inputs
 	if m < 0 {
-		panic("m < 0")
+		panic(mLT0)
 	}
 	if n < 0 {
 		panic(nLT0)
+	}
+	if lda < max(1, n) {
+		panic(badLdA)
 	}
 	if incX == 0 {
 		panic(zeroIncX)
@@ -28,21 +30,25 @@ func (Implementation) Dger(m, n int, alpha float64, x []float64, incX int, y []f
 	if incY == 0 {
 		panic(zeroIncY)
 	}
-	if (incX > 0 && (m-1)*incX >= len(x)) || (incX < 0 && (1-m)*incX >= len(x)) {
-		panic(badX)
-	}
-	if (incY > 0 && (n-1)*incY >= len(y)) || (incY < 0 && (1-n)*incY >= len(y)) {
-		panic(badY)
-	}
-	if lda*(m-1)+n > len(a) || lda < max(1, n) {
-		panic(badLdA)
-	}
-	if lda < max(1, n) {
-		panic(badLdA)
+
+	// Quick return if possible.
+	if m == 0 || n == 0 {
+		return
 	}
 
-	// Quick return if possible
-	if m == 0 || n == 0 || alpha == 0 {
+	// For zero matrix size the following slice length checks are trivially satisfied.
+	if (incX > 0 && len(x) <= (m-1)*incX) || (incX < 0 && len(x) <= (1-m)*incX) {
+		panic(shortX)
+	}
+	if (incY > 0 && len(y) <= (n-1)*incY) || (incY < 0 && len(y) <= (1-n)*incY) {
+		panic(shortY)
+	}
+	if len(a) < lda*(m-1)+n {
+		panic(shortA)
+	}
+
+	// Quick return if possible.
+	if alpha == 0 {
 		return
 	}
 	f64.Ger(uintptr(m), uintptr(n),
@@ -70,7 +76,7 @@ func (Implementation) Dgbmv(tA blas.Transpose, m, n, kL, kU int, alpha float64, 
 	if kL < 0 {
 		panic(kLLT0)
 	}
-	if kL < 0 {
+	if kU < 0 {
 		panic(kULT0)
 	}
 	if lda < kL+kU+1 {
@@ -82,25 +88,31 @@ func (Implementation) Dgbmv(tA blas.Transpose, m, n, kL, kU int, alpha float64, 
 	if incY == 0 {
 		panic(zeroIncY)
 	}
-	// Set up indexes
+
+	// Quick return if possible.
+	if m == 0 || n == 0 {
+		return
+	}
+
+	// For zero matrix size the following slice length checks are trivially satisfied.
+	if len(a) < lda*(min(m, n+kL)-1)+kL+kU+1 {
+		panic(shortA)
+	}
 	lenX := m
 	lenY := n
 	if tA == blas.NoTrans {
 		lenX = n
 		lenY = m
 	}
-	if (incX > 0 && (lenX-1)*incX >= len(x)) || (incX < 0 && (1-lenX)*incX >= len(x)) {
-		panic(badX)
+	if (incX > 0 && len(x) <= (lenX-1)*incX) || (incX < 0 && len(x) <= (1-lenX)*incX) {
+		panic(shortX)
 	}
-	if (incY > 0 && (lenY-1)*incY >= len(y)) || (incY < 0 && (1-lenY)*incY >= len(y)) {
-		panic(badY)
-	}
-	if lda*(min(m, n+kL)-1)+kL+kU+1 > len(a) || lda < kL+kU+1 {
-		panic(badLdA)
+	if (incY > 0 && len(y) <= (lenY-1)*incY) || (incY < 0 && len(y) <= (1-lenY)*incY) {
+		panic(shortY)
 	}
 
-	// Quick return if possible
-	if m == 0 || n == 0 || (alpha == 0 && beta == 1) {
+	// Quick return if possible.
+	if alpha == 0 && beta == 1 {
 		return
 	}
 
@@ -208,21 +220,26 @@ func (Implementation) Dtrmv(ul blas.Uplo, tA blas.Transpose, d blas.Diag, n int,
 	if n < 0 {
 		panic(nLT0)
 	}
-	if lda < n {
+	if lda < max(1, n) {
 		panic(badLdA)
 	}
 	if incX == 0 {
 		panic(zeroIncX)
 	}
-	if (incX > 0 && (n-1)*incX >= len(x)) || (incX < 0 && (1-n)*incX >= len(x)) {
-		panic(badX)
-	}
-	if lda*(n-1)+n > len(a) || lda < max(1, n) {
-		panic(badLdA)
-	}
+
+	// Quick return if possible.
 	if n == 0 {
 		return
 	}
+
+	// For zero matrix size the following slice length checks are trivially satisfied.
+	if len(a) < lda*(n-1)+n {
+		panic(shortA)
+	}
+	if (incX > 0 && len(x) <= (n-1)*incX) || (incX < 0 && len(x) <= (1-n)*incX) {
+		panic(shortX)
+	}
+
 	nonUnit := d != blas.Unit
 	if n == 1 {
 		if nonUnit {
@@ -350,8 +367,6 @@ func (Implementation) Dtrmv(ul blas.Uplo, tA blas.Transpose, d blas.Diag, n int,
 // No test for singularity or near-singularity is included in this
 // routine. Such tests must be performed before calling this routine.
 func (Implementation) Dtrsv(ul blas.Uplo, tA blas.Transpose, d blas.Diag, n int, a []float64, lda int, x []float64, incX int) {
-	// Test the input parameters
-	// Verify inputs
 	if ul != blas.Lower && ul != blas.Upper {
 		panic(badUplo)
 	}
@@ -364,19 +379,26 @@ func (Implementation) Dtrsv(ul blas.Uplo, tA blas.Transpose, d blas.Diag, n int,
 	if n < 0 {
 		panic(nLT0)
 	}
-	if lda*(n-1)+n > len(a) || lda < max(1, n) {
+	if lda < max(1, n) {
 		panic(badLdA)
 	}
 	if incX == 0 {
 		panic(zeroIncX)
 	}
-	if (incX > 0 && (n-1)*incX >= len(x)) || (incX < 0 && (1-n)*incX >= len(x)) {
-		panic(badX)
-	}
-	// Quick return if possible
+
+	// Quick return if possible.
 	if n == 0 {
 		return
 	}
+
+	// For zero matrix size the following slice length checks are trivially satisfied.
+	if len(a) < lda*(n-1)+n {
+		panic(shortA)
+	}
+	if (incX > 0 && len(x) <= (n-1)*incX) || (incX < 0 && len(x) <= (1-n)*incX) {
+		panic(shortX)
+	}
+
 	if n == 1 {
 		if d == blas.NonUnit {
 			x[0] /= a[0]
@@ -520,14 +542,13 @@ func (Implementation) Dtrsv(ul blas.Uplo, tA blas.Transpose, d blas.Diag, n int,
 // where A is an n×n symmetric matrix, x and y are vectors, and alpha and
 // beta are scalars.
 func (Implementation) Dsymv(ul blas.Uplo, n int, alpha float64, a []float64, lda int, x []float64, incX int, beta float64, y []float64, incY int) {
-	// Check inputs
 	if ul != blas.Lower && ul != blas.Upper {
 		panic(badUplo)
 	}
 	if n < 0 {
 		panic(nLT0)
 	}
-	if lda > 1 && lda < n {
+	if lda < max(1, n) {
 		panic(badLdA)
 	}
 	if incX == 0 {
@@ -536,17 +557,25 @@ func (Implementation) Dsymv(ul blas.Uplo, n int, alpha float64, a []float64, lda
 	if incY == 0 {
 		panic(zeroIncY)
 	}
-	if (incX > 0 && (n-1)*incX >= len(x)) || (incX < 0 && (1-n)*incX >= len(x)) {
-		panic(badX)
+
+	// Quick return if possible.
+	if n == 0 {
+		return
 	}
-	if (incY > 0 && (n-1)*incY >= len(y)) || (incY < 0 && (1-n)*incY >= len(y)) {
-		panic(badY)
+
+	// For zero matrix size the following slice length checks are trivially satisfied.
+	if len(a) < lda*(n-1)+n {
+		panic(shortA)
 	}
-	if lda*(n-1)+n > len(a) || lda < max(1, n) {
-		panic(badLdA)
+	if (incX > 0 && len(x) <= (n-1)*incX) || (incX < 0 && len(x) <= (1-n)*incX) {
+		panic(shortX)
 	}
-	// Quick return if possible
-	if n == 0 || (alpha == 0 && beta == 1) {
+	if (incY > 0 && len(y) <= (n-1)*incY) || (incY < 0 && len(y) <= (1-n)*incY) {
+		panic(shortY)
+	}
+
+	// Quick return if possible.
+	if alpha == 0 && beta == 1 {
 		return
 	}
 
@@ -678,18 +707,26 @@ func (Implementation) Dtbmv(ul blas.Uplo, tA blas.Transpose, d blas.Diag, n, k i
 	if k < 0 {
 		panic(kLT0)
 	}
-	if lda*(n-1)+k+1 > len(a) || lda < k+1 {
+	if lda < k+1 {
 		panic(badLdA)
 	}
 	if incX == 0 {
 		panic(zeroIncX)
 	}
-	if (incX > 0 && (n-1)*incX >= len(x)) || (incX < 0 && (1-n)*incX >= len(x)) {
-		panic(badX)
-	}
+
+	// Quick return if possible.
 	if n == 0 {
 		return
 	}
+
+	// For zero matrix size the following slice length checks are trivially satisfied.
+	if len(a) < lda*(n-1)+k+1 {
+		panic(shortA)
+	}
+	if (incX > 0 && len(x) <= (n-1)*incX) || (incX < 0 && len(x) <= (1-n)*incX) {
+		panic(shortX)
+	}
+
 	var kx int
 	if incX < 0 {
 		kx = -(n - 1) * incX
@@ -864,7 +901,6 @@ func (Implementation) Dtbmv(ul blas.Uplo, tA blas.Transpose, d blas.Diag, n, k i
 //  x = A^T * x  if tA == blas.Trans or blas.ConjTrans
 // where A is an n×n triangular matrix in packed format, and x is a vector.
 func (Implementation) Dtpmv(ul blas.Uplo, tA blas.Transpose, d blas.Diag, n int, ap []float64, x []float64, incX int) {
-	// Verify inputs
 	if ul != blas.Lower && ul != blas.Upper {
 		panic(badUplo)
 	}
@@ -877,18 +913,23 @@ func (Implementation) Dtpmv(ul blas.Uplo, tA blas.Transpose, d blas.Diag, n int,
 	if n < 0 {
 		panic(nLT0)
 	}
-	if len(ap) < (n*(n+1))/2 {
-		panic(badLdA)
-	}
 	if incX == 0 {
 		panic(zeroIncX)
 	}
-	if (incX > 0 && (n-1)*incX >= len(x)) || (incX < 0 && (1-n)*incX >= len(x)) {
-		panic(badX)
-	}
+
+	// Quick return if possible.
 	if n == 0 {
 		return
 	}
+
+	// For zero matrix size the following slice length checks are trivially satisfied.
+	if len(ap) < n*(n+1)/2 {
+		panic(shortAP)
+	}
+	if (incX > 0 && len(x) <= (n-1)*incX) || (incX < 0 && len(x) <= (1-n)*incX) {
+		panic(shortX)
+	}
+
 	var kx int
 	if incX < 0 {
 		kx = -(n - 1) * incX
@@ -1058,18 +1099,29 @@ func (Implementation) Dtbsv(ul blas.Uplo, tA blas.Transpose, d blas.Diag, n, k i
 	if n < 0 {
 		panic(nLT0)
 	}
-	if lda*(n-1)+k+1 > len(a) || lda < k+1 {
+	if k < 0 {
+		panic(kLT0)
+	}
+	if lda < k+1 {
 		panic(badLdA)
 	}
 	if incX == 0 {
 		panic(zeroIncX)
 	}
-	if (incX > 0 && (n-1)*incX >= len(x)) || (incX < 0 && (1-n)*incX >= len(x)) {
-		panic(badX)
-	}
+
+	// Quick return if possible.
 	if n == 0 {
 		return
 	}
+
+	// For zero matrix size the following slice length checks are trivially satisfied.
+	if len(a) < lda*(n-1)+k+1 {
+		panic(shortA)
+	}
+	if (incX > 0 && len(x) <= (n-1)*incX) || (incX < 0 && len(x) <= (1-n)*incX) {
+		panic(shortX)
+	}
+
 	var kx int
 	if incX < 0 {
 		kx = -(n - 1) * incX
@@ -1256,25 +1308,37 @@ func (Implementation) Dsbmv(ul blas.Uplo, n, k int, alpha float64, a []float64, 
 	if n < 0 {
 		panic(nLT0)
 	}
-
+	if k < 0 {
+		panic(kLT0)
+	}
+	if lda < k+1 {
+		panic(badLdA)
+	}
 	if incX == 0 {
 		panic(zeroIncX)
 	}
 	if incY == 0 {
 		panic(zeroIncY)
 	}
-	if (incX > 0 && (n-1)*incX >= len(x)) || (incX < 0 && (1-n)*incX >= len(x)) {
-		panic(badX)
-	}
-	if (incY > 0 && (n-1)*incY >= len(y)) || (incY < 0 && (1-n)*incY >= len(y)) {
-		panic(badY)
-	}
-	if lda*(n-1)+k+1 > len(a) || lda < k+1 {
-		panic(badLdA)
+
+	// Quick return if possible.
+	if n == 0 {
+		return
 	}
 
-	// Quick return if possible
-	if n == 0 || (alpha == 0 && beta == 1) {
+	// For zero matrix size the following slice length checks are trivially satisfied.
+	if len(a) < lda*(n-1)+k+1 {
+		panic(shortA)
+	}
+	if (incX > 0 && len(x) <= (n-1)*incX) || (incX < 0 && len(x) <= (1-n)*incX) {
+		panic(shortX)
+	}
+	if (incY > 0 && len(y) <= (n-1)*incY) || (incY < 0 && len(y) <= (1-n)*incY) {
+		panic(shortY)
+	}
+
+	// Quick return if possible.
+	if alpha == 0 && beta == 1 {
 		return
 	}
 
@@ -1393,16 +1457,28 @@ func (Implementation) Dsyr(ul blas.Uplo, n int, alpha float64, x []float64, incX
 	if n < 0 {
 		panic(nLT0)
 	}
+	if lda < max(1, n) {
+		panic(badLdA)
+	}
 	if incX == 0 {
 		panic(zeroIncX)
 	}
-	if (incX > 0 && (n-1)*incX >= len(x)) || (incX < 0 && (1-n)*incX >= len(x)) {
-		panic(badX)
+
+	// Quick return if possible.
+	if n == 0 {
+		return
 	}
-	if lda*(n-1)+n > len(a) || lda < max(1, n) {
-		panic(badLdA)
+
+	// For zero matrix size the following slice length checks are trivially satisfied.
+	if (incX > 0 && len(x) <= (n-1)*incX) || (incX < 0 && len(x) <= (1-n)*incX) {
+		panic(shortX)
 	}
-	if alpha == 0 || n == 0 {
+	if len(a) < lda*(n-1)+n {
+		panic(shortA)
+	}
+
+	// Quick return if possible.
+	if alpha == 0 {
 		return
 	}
 
@@ -1479,21 +1555,33 @@ func (Implementation) Dsyr2(ul blas.Uplo, n int, alpha float64, x []float64, inc
 	if n < 0 {
 		panic(nLT0)
 	}
+	if lda < max(1, n) {
+		panic(badLdA)
+	}
 	if incX == 0 {
 		panic(zeroIncX)
 	}
 	if incY == 0 {
 		panic(zeroIncY)
 	}
-	if (incX > 0 && (n-1)*incX >= len(x)) || (incX < 0 && (1-n)*incX >= len(x)) {
-		panic(badX)
+
+	// Quick return if possible.
+	if n == 0 {
+		return
 	}
-	if (incY > 0 && (n-1)*incY >= len(y)) || (incY < 0 && (1-n)*incY >= len(y)) {
-		panic(badY)
+
+	// For zero matrix size the following slice length checks are trivially satisfied.
+	if (incX > 0 && len(x) <= (n-1)*incX) || (incX < 0 && len(x) <= (1-n)*incX) {
+		panic(shortX)
 	}
-	if lda*(n-1)+n > len(a) || lda < max(1, n) {
-		panic(badLdA)
+	if (incY > 0 && len(y) <= (n-1)*incY) || (incY < 0 && len(y) <= (1-n)*incY) {
+		panic(shortY)
 	}
+	if len(a) < lda*(n-1)+n {
+		panic(shortA)
+	}
+
+	// Quick return if possible.
 	if alpha == 0 {
 		return
 	}
@@ -1575,7 +1663,6 @@ func (Implementation) Dsyr2(ul blas.Uplo, n int, alpha float64, x []float64, inc
 // No test for singularity or near-singularity is included in this
 // routine. Such tests must be performed before calling this routine.
 func (Implementation) Dtpsv(ul blas.Uplo, tA blas.Transpose, d blas.Diag, n int, ap []float64, x []float64, incX int) {
-	// Verify inputs
 	if ul != blas.Lower && ul != blas.Upper {
 		panic(badUplo)
 	}
@@ -1588,18 +1675,23 @@ func (Implementation) Dtpsv(ul blas.Uplo, tA blas.Transpose, d blas.Diag, n int,
 	if n < 0 {
 		panic(nLT0)
 	}
-	if len(ap) < (n*(n+1))/2 {
-		panic(badLdA)
-	}
 	if incX == 0 {
 		panic(zeroIncX)
 	}
-	if (incX > 0 && (n-1)*incX >= len(x)) || (incX < 0 && (1-n)*incX >= len(x)) {
-		panic(badX)
-	}
+
+	// Quick return if possible.
 	if n == 0 {
 		return
 	}
+
+	// For zero matrix size the following slice length checks are trivially satisfied.
+	if len(ap) < n*(n+1)/2 {
+		panic(shortAP)
+	}
+	if (incX > 0 && len(x) <= (n-1)*incX) || (incX < 0 && len(x) <= (1-n)*incX) {
+		panic(shortX)
+	}
+
 	var kx int
 	if incX < 0 {
 		kx = -(n - 1) * incX
@@ -1748,16 +1840,12 @@ func (Implementation) Dtpsv(ul blas.Uplo, tA blas.Transpose, d blas.Diag, n int,
 //  y = alpha * A * x + beta * y
 // where A is an n×n symmetric matrix in packed format, x and y are vectors,
 // and alpha and beta are scalars.
-func (Implementation) Dspmv(ul blas.Uplo, n int, alpha float64, a []float64, x []float64, incX int, beta float64, y []float64, incY int) {
-	// Verify inputs
+func (Implementation) Dspmv(ul blas.Uplo, n int, alpha float64, ap []float64, x []float64, incX int, beta float64, y []float64, incY int) {
 	if ul != blas.Lower && ul != blas.Upper {
 		panic(badUplo)
 	}
 	if n < 0 {
 		panic(nLT0)
-	}
-	if len(a) < (n*(n+1))/2 {
-		panic(badLdA)
 	}
 	if incX == 0 {
 		panic(zeroIncX)
@@ -1765,14 +1853,25 @@ func (Implementation) Dspmv(ul blas.Uplo, n int, alpha float64, a []float64, x [
 	if incY == 0 {
 		panic(zeroIncY)
 	}
-	if (incX > 0 && (n-1)*incX >= len(x)) || (incX < 0 && (1-n)*incX >= len(x)) {
-		panic(badX)
+
+	// Quick return if possible.
+	if n == 0 {
+		return
 	}
-	if (incY > 0 && (n-1)*incY >= len(y)) || (incY < 0 && (1-n)*incY >= len(y)) {
-		panic(badY)
+
+	// For zero matrix size the following slice length checks are trivially satisfied.
+	if len(ap) < n*(n+1)/2 {
+		panic(shortAP)
 	}
-	// Quick return if possible
-	if n == 0 || (alpha == 0 && beta == 1) {
+	if (incX > 0 && len(x) <= (n-1)*incX) || (incX < 0 && len(x) <= (1-n)*incX) {
+		panic(shortX)
+	}
+	if (incY > 0 && len(y) <= (n-1)*incY) || (incY < 0 && len(y) <= (1-n)*incY) {
+		panic(shortY)
+	}
+
+	// Quick return if possible.
+	if alpha == 0 && beta == 1 {
 		return
 	}
 
@@ -1799,7 +1898,7 @@ func (Implementation) Dspmv(ul blas.Uplo, n int, alpha float64, a []float64, x [
 	}
 
 	if n == 1 {
-		y[0] += alpha * a[0] * x[0]
+		y[0] += alpha * ap[0] * x[0]
 		return
 	}
 	var offset int // Offset is the index of (i,i).
@@ -1808,8 +1907,8 @@ func (Implementation) Dspmv(ul blas.Uplo, n int, alpha float64, a []float64, x [
 			iy := ky
 			for i := 0; i < n; i++ {
 				xv := x[i] * alpha
-				sum := a[offset] * x[i]
-				atmp := a[offset+1 : offset+n-i]
+				sum := ap[offset] * x[i]
+				atmp := ap[offset+1 : offset+n-i]
 				xtmp := x[i+1:]
 				jy := ky + (i+1)*incY
 				for j, v := range atmp {
@@ -1827,8 +1926,8 @@ func (Implementation) Dspmv(ul blas.Uplo, n int, alpha float64, a []float64, x [
 		iy := ky
 		for i := 0; i < n; i++ {
 			xv := x[ix] * alpha
-			sum := a[offset] * x[ix]
-			atmp := a[offset+1 : offset+n-i]
+			sum := ap[offset] * x[ix]
+			atmp := ap[offset+1 : offset+n-i]
 			jx := kx + (i+1)*incX
 			jy := ky + (i+1)*incY
 			for _, v := range atmp {
@@ -1848,7 +1947,7 @@ func (Implementation) Dspmv(ul blas.Uplo, n int, alpha float64, a []float64, x [
 		iy := ky
 		for i := 0; i < n; i++ {
 			xv := x[i] * alpha
-			atmp := a[offset-i : offset]
+			atmp := ap[offset-i : offset]
 			jy := ky
 			var sum float64
 			for j, v := range atmp {
@@ -1856,7 +1955,7 @@ func (Implementation) Dspmv(ul blas.Uplo, n int, alpha float64, a []float64, x [
 				y[jy] += v * xv
 				jy += incY
 			}
-			sum += a[offset] * x[i]
+			sum += ap[offset] * x[i]
 			y[iy] += alpha * sum
 			iy += incY
 			offset += i + 2
@@ -1867,7 +1966,7 @@ func (Implementation) Dspmv(ul blas.Uplo, n int, alpha float64, a []float64, x [
 	iy := ky
 	for i := 0; i < n; i++ {
 		xv := x[ix] * alpha
-		atmp := a[offset-i : offset]
+		atmp := ap[offset-i : offset]
 		jx := kx
 		jy := ky
 		var sum float64
@@ -1878,7 +1977,7 @@ func (Implementation) Dspmv(ul blas.Uplo, n int, alpha float64, a []float64, x [
 			jy += incY
 		}
 
-		sum += a[offset] * x[ix]
+		sum += ap[offset] * x[ix]
 		y[iy] += alpha * sum
 		ix += incX
 		iy += incY
@@ -1890,7 +1989,7 @@ func (Implementation) Dspmv(ul blas.Uplo, n int, alpha float64, a []float64, x [
 //  A += alpha * x * x^T
 // where A is an n×n symmetric matrix in packed format, x is a vector, and
 // alpha is a scalar.
-func (Implementation) Dspr(ul blas.Uplo, n int, alpha float64, x []float64, incX int, a []float64) {
+func (Implementation) Dspr(ul blas.Uplo, n int, alpha float64, x []float64, incX int, ap []float64) {
 	if ul != blas.Lower && ul != blas.Upper {
 		panic(badUplo)
 	}
@@ -1900,15 +1999,25 @@ func (Implementation) Dspr(ul blas.Uplo, n int, alpha float64, x []float64, incX
 	if incX == 0 {
 		panic(zeroIncX)
 	}
-	if (incX > 0 && (n-1)*incX >= len(x)) || (incX < 0 && (1-n)*incX >= len(x)) {
-		panic(badX)
-	}
-	if len(a) < (n*(n+1))/2 {
-		panic(badLdA)
-	}
-	if alpha == 0 || n == 0 {
+
+	// Quick return if possible.
+	if n == 0 {
 		return
 	}
+
+	// For zero matrix size the following slice length checks are trivially satisfied.
+	if (incX > 0 && len(x) <= (n-1)*incX) || (incX < 0 && len(x) <= (1-n)*incX) {
+		panic(shortX)
+	}
+	if len(ap) < n*(n+1)/2 {
+		panic(shortAP)
+	}
+
+	// Quick return if possible.
+	if alpha == 0 {
+		return
+	}
+
 	lenX := n
 	var kx int
 	if incX < 0 {
@@ -1918,7 +2027,7 @@ func (Implementation) Dspr(ul blas.Uplo, n int, alpha float64, x []float64, incX
 	if ul == blas.Upper {
 		if incX == 1 {
 			for i := 0; i < n; i++ {
-				atmp := a[offset:]
+				atmp := ap[offset:]
 				xv := alpha * x[i]
 				xtmp := x[i:n]
 				for j, v := range xtmp {
@@ -1931,7 +2040,7 @@ func (Implementation) Dspr(ul blas.Uplo, n int, alpha float64, x []float64, incX
 		ix := kx
 		for i := 0; i < n; i++ {
 			jx := kx + i*incX
-			atmp := a[offset:]
+			atmp := ap[offset:]
 			xv := alpha * x[ix]
 			for j := 0; j < n-i; j++ {
 				atmp[j] += xv * x[jx]
@@ -1944,7 +2053,7 @@ func (Implementation) Dspr(ul blas.Uplo, n int, alpha float64, x []float64, incX
 	}
 	if incX == 1 {
 		for i := 0; i < n; i++ {
-			atmp := a[offset-i:]
+			atmp := ap[offset-i:]
 			xv := alpha * x[i]
 			xtmp := x[:i+1]
 			for j, v := range xtmp {
@@ -1957,7 +2066,7 @@ func (Implementation) Dspr(ul blas.Uplo, n int, alpha float64, x []float64, incX
 	ix := kx
 	for i := 0; i < n; i++ {
 		jx := kx
-		atmp := a[offset-i:]
+		atmp := ap[offset-i:]
 		xv := alpha * x[ix]
 		for j := 0; j <= i; j++ {
 			atmp[j] += xv * x[jx]
@@ -1985,18 +2094,28 @@ func (Implementation) Dspr2(ul blas.Uplo, n int, alpha float64, x []float64, inc
 	if incY == 0 {
 		panic(zeroIncY)
 	}
-	if (incX > 0 && (n-1)*incX >= len(x)) || (incX < 0 && (1-n)*incX >= len(x)) {
-		panic(badX)
+
+	// Quick return if possible.
+	if n == 0 {
+		return
 	}
-	if (incY > 0 && (n-1)*incY >= len(y)) || (incY < 0 && (1-n)*incY >= len(y)) {
-		panic(badY)
+
+	// For zero matrix size the following slice length checks are trivially satisfied.
+	if (incX > 0 && len(x) <= (n-1)*incX) || (incX < 0 && len(x) <= (1-n)*incX) {
+		panic(shortX)
 	}
-	if len(ap) < (n*(n+1))/2 {
-		panic(badLdA)
+	if (incY > 0 && len(y) <= (n-1)*incY) || (incY < 0 && len(y) <= (1-n)*incY) {
+		panic(shortY)
 	}
+	if len(ap) < n*(n+1)/2 {
+		panic(shortAP)
+	}
+
+	// Quick return if possible.
 	if alpha == 0 {
 		return
 	}
+
 	var ky, kx int
 	if incY < 0 {
 		ky = -(n - 1) * incY

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//+build !noasm,!appengine
+// +build !noasm,!appengine,!safe
 
 package f64
 
@@ -163,3 +163,10 @@ func ScalInc(alpha float64, x []float64, n, incX uintptr)
 //  	idst += incDst
 //  }
 func ScalIncTo(dst []float64, incDst uintptr, alpha float64, x []float64, n, incX uintptr)
+
+// Sum is
+//  var sum float64
+//  for i := range x {
+//      sum += x[i]
+//  }
+func Sum(x []float64) float64
