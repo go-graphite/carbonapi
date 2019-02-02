@@ -43,6 +43,14 @@ func (z mockCarbonZipper) RenderCompat(ctx context.Context, metrics []string, fr
 	return result, nil, nil
 }
 
+func (z mockCarbonZipper) TagNames(ctx context.Context, query string, limit int64) ([]string, error) {
+	return []string{}, nil
+}
+
+func (z mockCarbonZipper) TagValues(ctx context.Context, query string, limit int64) ([]string, error) {
+	return []string{}, nil
+}
+
 func getGlobResponse() *pb.MultiGlobResponse {
 	globMtach := pb.GlobMatch{Path: "foo.bar", IsLeaf: true}
 	var matches []pb.GlobMatch

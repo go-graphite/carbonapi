@@ -2,6 +2,7 @@ package v2
 
 import (
 	"context"
+	"encoding/json"
 	"math"
 	"net"
 	"net/http"
@@ -300,6 +301,46 @@ func (c *GraphiteGroup) List(ctx context.Context) (*protov3.ListMetricsResponse,
 }
 func (c *GraphiteGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, *errors.Errors) {
 	return nil, nil, errors.FromErr(types.ErrNotImplementedYet)
+}
+
+func (c *GraphiteGroup) doTagQuery(ctx context.Context, isTagName bool, query string, limit int64) ([]string, *errors.Errors) {
+	logger := c.logger
+	var rewrite *url.URL
+	if isTagName {
+		logger = logger.With(zap.String("type", "tagName"))
+		rewrite, _ = url.Parse("http://127.0.0.1/tags/autoComplete/tags")
+	} else {
+		logger = logger.With(zap.String("type", "tagValues"))
+		rewrite, _ = url.Parse("http://127.0.0.1/tags/autoComplete/values")
+	}
+
+	var r []string
+
+	rewrite.RawQuery = query
+	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
+	if e != nil {
+		return r, e
+	}
+
+	err := json.Unmarshal(res.Response, &r)
+	if err != nil {
+		e.Add(err)
+		return r, e
+	}
+
+	logger.Debug("got client response",
+		zap.Any("r", r),
+	)
+
+	return r, nil
+}
+
+func (c *GraphiteGroup) TagNames(ctx context.Context, query string, limit int64) ([]string, *errors.Errors) {
+	return c.doTagQuery(ctx, true, query, limit)
+}
+
+func (c *GraphiteGroup) TagValues(ctx context.Context, query string, limit int64) ([]string, *errors.Errors) {
+	return c.doTagQuery(ctx, false, query, limit)
 }
 
 func (c *GraphiteGroup) ProbeTLDs(ctx context.Context) ([]string, *errors.Errors) {

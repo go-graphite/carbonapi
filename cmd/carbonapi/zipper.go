@@ -145,3 +145,11 @@ func (z zipper) RenderCompat(ctx context.Context, metrics []string, from, until 
 
 	return result, stats, nil
 }
+
+func (z zipper) TagNames(ctx context.Context, query string, limit int64) ([]string, error) {
+	return z.z.TagNames(ctx, query, limit)
+}
+
+func (z zipper) TagValues(ctx context.Context, query string, limit int64) ([]string, error) {
+	return z.z.TagValues(ctx, query, limit)
+}

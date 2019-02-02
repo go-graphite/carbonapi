@@ -7,7 +7,6 @@ import (
 	"github.com/go-graphite/carbonapi/cache"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/interfaces"
 	"github.com/go-graphite/carbonapi/limiter"
-	"github.com/go-graphite/carbonapi/tagdb"
 	zipperCfg "github.com/go-graphite/carbonapi/zipper/config"
 	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 
@@ -61,7 +60,6 @@ type ConfigType struct {
 	DefaultColors              map[string]string  `mapstructure:"defaultColors"`
 	GraphTemplates             string             `mapstructure:"graphTemplates"`
 	FunctionsConfigs           map[string]string  `mapstructure:"functionsConfig"`
-	TagDB                      tagdb.Config       `mapstructure:"tagDB"`
 
 	QueryCache cache.BytesCache `mapstructure:"-" json:"-"`
 	FindCache  cache.BytesCache `mapstructure:"-" json:"-"`
@@ -73,8 +71,6 @@ type ConfigType struct {
 
 	// Limiter limits concurrent zipper requests
 	Limiter limiter.SimpleLimiter `mapstructure:"-" json:"-"`
-
-	TagDBProxy *tagdb.Http `mapstructure:"-" json:"-"`
 }
 
 func (c ConfigType) String() string {
@@ -127,11 +123,4 @@ var Config = ConfigType{
 	},
 	ExpireDelaySec:             10 * 60,
 	GraphiteWeb09Compatibility: false,
-
-	TagDB: tagdb.Config{
-		MaxConcurrentConnections: 10,
-		MaxTries:                 3,
-		Timeout:                  60 * time.Second,
-		KeepAliveInterval:        30 * time.Second,
-	},
 }

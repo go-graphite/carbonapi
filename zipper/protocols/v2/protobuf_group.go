@@ -2,6 +2,7 @@ package v2
 
 import (
 	"context"
+	"encoding/json"
 	"math"
 	"net"
 	"net/http"
@@ -307,6 +308,46 @@ func (c *ClientProtoV2Group) Info(ctx context.Context, request *protov3.MultiMet
 	)
 
 	return &r, stats, nil
+}
+
+func (c *ClientProtoV2Group) doTagQuery(ctx context.Context, isTagName bool, query string, limit int64) ([]string, *errors.Errors) {
+	logger := c.logger
+	var rewrite *url.URL
+	if isTagName {
+		logger = logger.With(zap.String("type", "tagName"))
+		rewrite, _ = url.Parse("http://127.0.0.1/tags/autoComplete/tags")
+	} else {
+		logger = logger.With(zap.String("type", "tagValues"))
+		rewrite, _ = url.Parse("http://127.0.0.1/tags/autoComplete/values")
+	}
+
+	var r []string
+
+	rewrite.RawQuery = query
+	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
+	if e != nil {
+		return r, e
+	}
+
+	err := json.Unmarshal(res.Response, &r)
+	if err != nil {
+		e.Add(err)
+		return r, e
+	}
+
+	logger.Debug("got client response",
+		zap.Any("r", r),
+	)
+
+	return r, nil
+}
+
+func (c *ClientProtoV2Group) TagNames(ctx context.Context, query string, limit int64) ([]string, *errors.Errors) {
+	return c.doTagQuery(ctx, true, query, limit)
+}
+
+func (c *ClientProtoV2Group) TagValues(ctx context.Context, query string, limit int64) ([]string, *errors.Errors) {
+	return c.doTagQuery(ctx, false, query, limit)
 }
 
 func (c *ClientProtoV2Group) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, *errors.Errors) {

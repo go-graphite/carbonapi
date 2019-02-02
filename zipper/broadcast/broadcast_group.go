@@ -2,6 +2,7 @@ package broadcast
 
 import (
 	"context"
+	"sort"
 	"strings"
 
 	"github.com/go-graphite/carbonapi/limiter"
@@ -382,7 +383,6 @@ GATHER:
 }
 
 // Info request handling
-
 func (bg *BroadcastGroup) doInfoRequest(ctx context.Context, logger *zap.Logger, request *protov3.MultiMetricsInfoRequest, client types.ServerClient, resCh chan<- *types.ServerInfoResponse) {
 	r := &types.ServerInfoResponse{
 		Server: client.Name(),
@@ -446,7 +446,7 @@ GATHER:
 	logger.Debug("got some responses",
 		zap.Int("clients_count", len(clients)),
 		zap.Int("response_count", responseCounts),
-		zap.Bool("have_errors", len(result.Err.Errors) == 0),
+		zap.Bool("have_errors", len(result.Err.Errors) != 0),
 	)
 
 	return result.Response, result.Stats, result.Err
@@ -457,6 +457,101 @@ func (bg *BroadcastGroup) List(ctx context.Context) (*protov3.ListMetricsRespons
 }
 func (bg *BroadcastGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, *errors.Errors) {
 	return nil, nil, errors.FromErr(types.ErrNotImplementedYet)
+}
+
+// Info request handling
+func (bg *BroadcastGroup) doTagRequest(ctx context.Context, isName bool, logger *zap.Logger, query string, limit int64, client types.ServerClient, resCh chan<- *types.ServerTagResponse) {
+	res := &types.ServerTagResponse{
+		Server:   client.Name(),
+		Response: []string{},
+	}
+
+	logger.Debug("waiting for a slot",
+		zap.String("group_name", bg.groupName),
+		zap.String("client_name", client.Name()),
+	)
+
+	if err := bg.limiter.Enter(ctx, client.Name()); err != nil {
+		logger.Debug("timeout waiting for a slot")
+		resCh <- res
+		return
+	}
+	defer bg.limiter.Leave(ctx, client.Name())
+
+	logger.Debug("got a slot")
+	if isName {
+		res.Response, res.Err = client.TagNames(ctx, query, limit)
+	} else {
+		res.Response, res.Err = client.TagValues(ctx, query, limit)
+	}
+
+	if res.Response == nil {
+		res.Response = []string{}
+	}
+	resCh <- res
+}
+
+func (bg *BroadcastGroup) tagEverything(ctx context.Context, isTagName bool, query string, limit int64) ([]string, *errors.Errors) {
+	logger := bg.logger.With(zap.String("query", query))
+	if isTagName {
+		logger = logger.With(zap.String("type", "tagName"))
+	} else {
+		logger = logger.With(zap.String("type", "tagValues"))
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Find)
+	defer cancel()
+
+	clients := bg.Children()
+	resCh := make(chan *types.ServerTagResponse, len(clients))
+	for _, client := range clients {
+		go bg.doTagRequest(ctx, isTagName, logger, query, limit, client, resCh)
+	}
+
+	result := types.NewServerTagResponse()
+	responseCounts := 0
+	answeredServers := make(map[string]struct{})
+GATHER:
+	for {
+		select {
+		case res := <-resCh:
+			answeredServers[res.Server] = struct{}{}
+			responseCounts++
+			result.Merge(res)
+
+			if responseCounts == len(clients) {
+				break GATHER
+			}
+
+		case <-ctx.Done():
+			logger.Warn("timeout waiting for more responses",
+				zap.Strings("no_answers_from", noAnswerClients(clients, answeredServers)),
+			)
+			result.Err.Add(types.ErrTimeoutExceeded)
+			break GATHER
+		}
+	}
+
+	if limit != -1 && int64(len(result.Response)) > limit {
+		sort.Strings(result.Response)
+		result.Response = result.Response[:limit-1]
+	}
+
+	logger.Debug("got some responses",
+		zap.Int("clients_count", len(clients)),
+		zap.Int("response_count", responseCounts),
+		zap.Bool("have_errors", len(result.Err.Errors) != 0),
+	)
+
+	return result.Response, result.Err
+}
+
+func (bg *BroadcastGroup) TagNames(ctx context.Context, query string, limit int64) ([]string, *errors.Errors) {
+	return bg.tagEverything(ctx, true, query, limit)
+}
+
+func (bg *BroadcastGroup) TagValues(ctx context.Context, query string, limit int64) ([]string, *errors.Errors) {
+	return bg.tagEverything(ctx, false, query, limit)
 }
 
 type tldResponse struct {

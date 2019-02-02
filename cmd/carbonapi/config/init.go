@@ -18,7 +18,6 @@ import (
 	"github.com/go-graphite/carbonapi/expr/rewrite"
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"github.com/go-graphite/carbonapi/tagdb"
 	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 	"github.com/lomik/zapwriter"
 	"github.com/spf13/viper"
@@ -137,16 +136,6 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 	expvar.Publish("config", Config)
 
 	Config.Limiter = limiter.NewSimpleLimiter(Config.Concurency)
-
-	if Config.TagDB.Url != "" {
-		Config.TagDBProxy, err = tagdb.NewHttp(&Config.TagDB)
-		if err != nil {
-			logger.Warn("failed to initialize http tag db",
-				zap.String("reason", "invalid url"),
-				zap.Error(err),
-			)
-		}
-	}
 
 	switch Config.Cache.Type {
 	case "memcache":

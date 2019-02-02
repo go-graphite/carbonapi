@@ -207,20 +207,28 @@ func (c *AutoGroup) Fetch(ctx context.Context, request *protov3.MultiFetchReques
 }
 
 func (c *AutoGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, *errors.Errors) {
-	return nil, nil, errors.Fatal("auto group doesn't support fetch")
+	return nil, nil, errors.Fatal("auto group doesn't support find")
 }
 
 func (c *AutoGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, *errors.Errors) {
-	return nil, nil, errors.Fatal("auto group doesn't support fetch")
+	return nil, nil, errors.Fatal("auto group doesn't support info")
 }
 
 func (c *AutoGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, *errors.Errors) {
-	return nil, nil, errors.Fatal("auto group doesn't support fetch")
+	return nil, nil, errors.Fatal("auto group doesn't support list")
 }
 func (c *AutoGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, *errors.Errors) {
 	return nil, nil, errors.FromErr(types.ErrNotImplementedYet)
 }
 
+func (bg *AutoGroup) TagNames(ctx context.Context, prefix string, exprs []string, limit int64) ([]string, *errors.Errors) {
+	return nil, errors.Fatal("auto group doesn't support tag names")
+}
+
+func (bg *AutoGroup) TagValues(ctx context.Context, tagName string, prefix string, exprs []string, limit int64) ([]string, *errors.Errors) {
+	return nil, errors.Fatal("auto group doesn't support tag values")
+}
+
 func (c *AutoGroup) ProbeTLDs(ctx context.Context) ([]string, *errors.Errors) {
-	return nil, errors.Fatal("auto group doesn't support fetch")
+	return nil, errors.Fatal("auto group doesn't support probing")
 }

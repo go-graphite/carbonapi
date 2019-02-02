@@ -15,4 +15,6 @@ type CarbonZipper interface {
 	Info(ctx context.Context, metrics []string) (*pb.ZipperInfoResponse, *zipperTypes.Stats, error)
 	RenderCompat(ctx context.Context, metrics []string, from, until int64) ([]*types.MetricData, *zipperTypes.Stats, error)
 	Render(ctx context.Context, request pb.MultiFetchRequest) ([]*types.MetricData, *zipperTypes.Stats, error)
+	TagNames(ctx context.Context, query string, limit int64) ([]string, error)
+	TagValues(ctx context.Context, query string, limit int64) ([]string, error)
 }

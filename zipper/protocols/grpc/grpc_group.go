@@ -203,6 +203,14 @@ func (c *ClientGRPCGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResp
 	return res, stats, errors.FromErrNonFatal(err)
 }
 
+func (c *ClientGRPCGroup) TagNames(ctx context.Context, query string, limit int64) ([]string, *errors.Errors) {
+	return nil, errors.FromErr(types.ErrNotImplementedYet)
+}
+
+func (c *ClientGRPCGroup) TagValues(ctx context.Context, query string, limit int64) ([]string, *errors.Errors) {
+	return nil, errors.FromErr(types.ErrNotImplementedYet)
+}
+
 func (c *ClientGRPCGroup) ProbeTLDs(ctx context.Context) ([]string, *errors.Errors) {
 	logger := c.logger.With(zap.String("type", "probe"))
 

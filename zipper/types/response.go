@@ -9,9 +9,42 @@ import (
 	"go.uber.org/zap"
 )
 
-type ServerResponse struct {
+type ServerTagResponse struct {
 	Server   string
-	Response []byte
+	Response []string
+	Err      *errors.Errors
+}
+
+func NewServerTagResponse() *ServerTagResponse {
+	return &ServerTagResponse{
+		Response: []string{},
+		Err:      new(errors.Errors),
+	}
+}
+
+func (first *ServerTagResponse) Merge(second *ServerTagResponse) *errors.Errors {
+	if first.Err == nil {
+		first.Err = new(errors.Errors)
+	}
+	first.Err.Merge(second.Err)
+
+	if second.Response == nil {
+		return first.Err
+	}
+
+	// We cannot assume in general that results are sorted
+	firstMap := make(map[string]struct{}, len(first.Response))
+	for _, v := range first.Response {
+		firstMap[v] = struct{}{}
+	}
+
+	for _, v := range second.Response {
+		if _, ok := firstMap[v]; !ok {
+			first.Response = append(first.Response, v)
+		}
+	}
+
+	return nil
 }
 
 type ServerInfoResponse struct {
@@ -257,4 +290,9 @@ func coordinates(r *protov3.FetchResponse) fetchResponseCoordinates {
 		from:  r.RequestStartTime,
 		until: r.RequestStopTime,
 	}
+}
+
+type ServerResponse struct {
+	Server   string
+	Response []byte
 }

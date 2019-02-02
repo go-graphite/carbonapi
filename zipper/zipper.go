@@ -648,3 +648,42 @@ func (z Zipper) StatsProtoV2(ctx context.Context) (*protov2.MetricDetailsRespons
 
 	return res, stats, nil
 }
+
+// Tags
+
+func (z Zipper) TagNames(ctx context.Context, query string, limit int64) ([]string, error) {
+	data, e := z.storeBackends.TagNames(ctx, query, limit)
+	if e.HaveFatalErrors {
+		z.logger.Error("had fatal errors during request",
+			zap.Any("errors", e.Errors),
+		)
+
+		return data, types.ErrNoMetricsFetched
+	}
+
+	if len(e.Errors) > 0 {
+		z.logger.Warn("got non-fatal errors during request",
+			zap.Any("errors", e.Errors),
+		)
+	}
+
+	return data, nil
+}
+
+func (z Zipper) TagValues(ctx context.Context, query string, limit int64) ([]string, error) {
+	data, e := z.storeBackends.TagValues(ctx, query, limit)
+	if e.HaveFatalErrors {
+		z.logger.Error("had fatal errors during request",
+			zap.Any("errors", e.Errors),
+		)
+		return data, types.ErrNoMetricsFetched
+	}
+
+	if len(e.Errors) > 0 {
+		z.logger.Warn("got non-fatal errors during request",
+			zap.Any("errors", e.Errors),
+		)
+	}
+
+	return data, nil
+}

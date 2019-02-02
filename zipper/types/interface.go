@@ -26,6 +26,9 @@ type ServerClient interface {
 
 	ProbeTLDs(ctx context.Context) ([]string, *errors.Errors)
 
+	TagNames(ctx context.Context, query string, limit int64) ([]string, *errors.Errors)
+	TagValues(ctx context.Context, query string, limit int64) ([]string, *errors.Errors)
+
 	Children() []ServerClient
 }
 
