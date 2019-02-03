@@ -3,7 +3,8 @@
 Topics:
 * [Default settings](#default-settings)
 * [URI Parameters](#uri-params)
-* [Functions](#functions)
+* [Graphite-web 1.1 Compatibility](#graphite-web-11-compatibility)
+* [Supported Functions](#supported-functions)
 * [Features of configuration functions](#functions-features)
 
 <a name="default-settings"></a>
@@ -104,184 +105,186 @@ _When `format=png`_ (default if not specified)
 
 
 
-## Unsupported functions
+## Graphite-web 1.1 compatibility
+### Unsupported functions
 | Function                                                                  |
 | :------------------------------------------------------------------------ |
-| interpolate |
-| useSeriesAbove |
-| minMax |
-| xFilesFactor |
-| smartSummarize |
-| averageOutsidePercentile |
-| filterSeries |
-| removeBetweenPercentile |
-| identity |
-| powSeries |
-| aggregateWithWildcards |
-| round |
-| sin |
-| setXFilesFactor |
-| timeSlice |
-| groupByTags |
-| aggregateLine |
-| sinFunction |
-| pct |
-| integralByInterval |
-| unique |
-| events |
-| lowest |
-| aliasQuery |
-| exponentialMovingAverage |
-| sortBy |
-| verticalLine |
-| holtWintersConfidenceArea |
 | aggregate |
-| weightedAverage |
+| aggregateLine |
+| aggregateWithWildcards |
+| aliasQuery |
+| averageOutsidePercentile |
+| events |
+| exponentialMovingAverage |
+| filterSeries |
+| groupByTags |
 | highest |
+| holtWintersConfidenceArea |
+| identity |
+| integralByInterval |
+| interpolate |
+| lowest |
+| minMax |
 | movingWindow |
+| pct |
+| powSeries |
+| removeBetweenPercentile |
+| round |
+| setXFilesFactor |
+| sin |
+| sinFunction |
+| smartSummarize |
+| sortBy |
+| timeSlice |
+| unique |
+| verticalLine |
+| weightedAverage |
+| xFilesFactor |
 
 
-## Partly supported functions
+### Partly supported functions
 | Function                 | Incompatibilities                              |
 | :------------------------|:---------------------------------------------- |
-| aliasByTags | nodes: parameter missing |
+| aliasByTags | parameter not supported: nodes |
+| useSeriesAbove | value: type mismatch: got "string", should be "integer" |
 
 ## Supported functions
 | Function      | Carbonapi-only                                            |
 | :-------------|:--------------------------------------------------------- |
-| nPercentile(seriesList, n) | no |
-| averageBelow(seriesList, n) | no |
-| countSeries(*seriesLists) | no |
+| absolute(seriesList) | no |
 | alias(seriesList, newName) | no |
-| cactiStyle(seriesList, system=None, units=None) | no |
-| timeFunction(name, step=60) | no |
-| groupByNode(seriesList, nodeNum, callback='average') | no |
-| sum(*seriesLists) | no |
-| log(seriesList, base=10) | no |
-| offset(seriesList, factor) | no |
+| aliasByMetric(seriesList) | no |
+| aliasByNode(seriesList, *nodes) | no |
+| aliasByTags(seriesList, *tags) | no |
+| aliasSub(seriesList, search, replace) | no |
 | alpha(seriesList, alpha) | no |
-| lineWidth(seriesList, width) | no |
-| groupByNodes(seriesList, callback, *nodes) | no |
-| mapSeries(seriesList, *mapNodes) | no |
-| invert(seriesList) | no |
-| grep(seriesList, pattern) | no |
-| highestMax(seriesList, n) | no |
-| removeBelowPercentile(seriesList, n) | no |
-| map(seriesList, *mapNodes) | no |
-| percentileOfSeries(seriesList, n, interpolate=False) | no |
-| reduceSeries(seriesLists, reduceFunction, reduceNode, *reduceMatchers) | no |
-| nonNegativeDerivative(seriesList, maxValue=None, minValue=None) | no |
-| diffSeries(*seriesLists) | no |
-| derivative(seriesList) | no |
-| drawAsInfinite(seriesList) | no |
-| constantLine(value) | no |
-| holtWintersConfidenceBands(seriesList, delta=3, bootstrapInterval='7d', seasonality='1d') | no |
-| maximumBelow(seriesList, n) | no |
-| minimumAbove(seriesList, n) | no |
-| removeEmptySeries(seriesList, xFilesFactor=None) | no |
+| applyByNode(seriesList, nodeNum, templateFunction, newName=None) | no |
+| areaBetween(seriesList) | no |
+| asPercent(seriesList, total=None, *nodes) | no |
+| averageAbove(seriesList, n) | no |
+| averageBelow(seriesList, n) | no |
+| averageSeries(*seriesLists) | no |
+| averageSeriesWithWildcards(seriesList, *position) | no |
+| avg(*seriesLists) | no |
+| cactiStyle(seriesList, system=None, units=None) | no |
+| changed(seriesList) | no |
 | color(seriesList, theColor) | no |
+| consolidateBy(seriesList, consolidationFunc) | no |
+| constantLine(value) | no |
+| countSeries(*seriesLists) | no |
+| cumulative(seriesList) | no |
+| currentAbove(seriesList, n) | no |
+| currentBelow(seriesList, n) | no |
+| dashed(seriesList, dashLength=5) | no |
+| delay(seriesList, steps) | no |
+| derivative(seriesList) | no |
+| diffSeries(*seriesLists) | no |
+| divideSeries(dividendSeriesList, divisorSeries) | no |
+| divideSeriesLists(dividendSeriesList, divisorSeriesList) | no |
+| drawAsInfinite(seriesList) | no |
+| exclude(seriesList, pattern) | no |
+| fallbackSeries(seriesList, fallback) | no |
+| grep(seriesList, pattern) | no |
+| group(*seriesLists) | no |
+| groupByNode(seriesList, nodeNum, callback='average') | no |
+| groupByNodes(seriesList, callback, *nodes) | no |
+| highestAverage(seriesList, n) | no |
+| highestCurrent(seriesList, n) | no |
+| highestMax(seriesList, n) | no |
+| hitcount(seriesList, intervalString, alignToInterval=False) | no |
+| holtWintersAberration(seriesList, delta=3, bootstrapInterval='7d', seasonality='1d') | no |
+| holtWintersConfidenceBands(seriesList, delta=3, bootstrapInterval='7d', seasonality='1d') | no |
+| holtWintersForecast(seriesList, bootstrapInterval='7d', seasonality='1d') | no |
+| integral(seriesList) | no |
+| invert(seriesList) | no |
 | isNonNull(seriesList) | no |
 | keepLastValue(seriesList, limit=inf) | no |
-| movingAverage(seriesList, windowSize, xFilesFactor=None) | no |
-| lowestAverage(seriesList, n) | no |
-| sortByTotal(seriesList) | no |
-| aliasByNode(seriesList, *nodes) | no |
-| substr(seriesList, start=0, stop=0) | no |
-| minSeries(*seriesLists) | no |
-| delay(seriesList, steps) | no |
-| linearRegression(seriesList, startSourceAt=None, endSourceAt=None) | no |
-| currentBelow(seriesList, n) | no |
-| limit(seriesList, n) | no |
-| rangeOfSeries(*seriesLists) | no |
-| movingMax(seriesList, windowSize, xFilesFactor=None) | no |
-| sortByName(seriesList, natural=False, reverse=False) | no |
-| aliasByMetric(seriesList) | no |
-| holtWintersAberration(seriesList, delta=3, bootstrapInterval='7d', seasonality='1d') | no |
-| removeAboveValue(seriesList, n) | no |
-| fallbackSeries(seriesList, fallback) | no |
-| dashed(seriesList, dashLength=5) | no |
-| maxSeries(*seriesLists) | no |
-| sumSeries(*seriesLists) | no |
-| highestAverage(seriesList, n) | no |
-| mostDeviant(seriesList, n) | no |
-| sortByMinima(seriesList) | no |
-| randomWalk(name, step=60) | no |
-| lowestCurrent(seriesList, n) | no |
-| removeBelowValue(seriesList, n) | no |
-| avg(*seriesLists) | no |
-| consolidateBy(seriesList, consolidationFunc) | no |
-| currentAbove(seriesList, n) | no |
-| secondYAxis(seriesList) | no |
-| threshold(value, label=None, color=None) | no |
-| averageAbove(seriesList, n) | no |
-| averageSeries(*seriesLists) | no |
-| movingSum(seriesList, windowSize, xFilesFactor=None) | no |
-| cumulative(seriesList) | no |
-| hitcount(seriesList, intervalString, alignToInterval=False) | no |
-| randomWalkFunction(name, step=60) | no |
-| pow(seriesList, factor) | no |
-| summarize(seriesList, intervalString, func='sum', alignToFrom=False) | no |
-| stacked(seriesLists, stackName='__DEFAULT__') | no |
-| asPercent(seriesList, total=None, *nodes) | no |
-| multiplySeriesWithWildcards(seriesList, *position) | no |
-| stddevSeries(*seriesLists) | no |
-| transformNull(seriesList, default=0, referenceSeries=None) | no |
-| areaBetween(seriesList) | no |
-| scale(seriesList, factor) | no |
-| highestCurrent(seriesList, n) | no |
-| removeAbovePercentile(seriesList, n) | no |
 | legendValue(seriesList, *valueTypes) | no |
-| changed(seriesList) | no |
-| absolute(seriesList) | no |
-| divideSeriesLists(dividendSeriesList, divisorSeriesList) | no |
-| scaleToSeconds(seriesList, seconds) | no |
-| squareRoot(seriesList) | no |
-| holtWintersForecast(seriesList, bootstrapInterval='7d', seasonality='1d') | no |
-| sortByMaxima(seriesList) | no |
-| multiplySeries(*seriesLists) | no |
-| reduce(seriesLists, reduceFunction, reduceNode, *reduceMatchers) | no |
-| time(name, step=60) | no |
-| divideSeries(dividendSeriesList, divisorSeries) | no |
-| integral(seriesList) | no |
+| limit(seriesList, n) | no |
+| lineWidth(seriesList, width) | no |
+| linearRegression(seriesList, startSourceAt=None, endSourceAt=None) | no |
+| log(seriesList, base=10) | no |
+| lowestAverage(seriesList, n) | no |
+| lowestCurrent(seriesList, n) | no |
+| map(seriesList, *mapNodes) | no |
+| mapSeries(seriesList, *mapNodes) | no |
+| maxSeries(*seriesLists) | no |
+| maximumAbove(seriesList, n) | no |
+| maximumBelow(seriesList, n) | no |
+| minSeries(*seriesLists) | no |
+| minimumAbove(seriesList, n) | no |
+| minimumBelow(seriesList, n) | no |
+| mostDeviant(seriesList, n) | no |
+| movingAverage(seriesList, windowSize, xFilesFactor=None) | no |
+| movingMax(seriesList, windowSize, xFilesFactor=None) | no |
 | movingMedian(seriesList, windowSize, xFilesFactor=None) | no |
 | movingMin(seriesList, windowSize, xFilesFactor=None) | no |
-| stdev(seriesList, points, windowTolerance=0.1) | no |
-| maximumAbove(seriesList, n) | no |
-| seriesByTag(*tagExpressions) | no |
-| applyByNode(seriesList, nodeNum, templateFunction, newName=None) | no |
+| movingSum(seriesList, windowSize, xFilesFactor=None) | no |
+| multiplySeries(*seriesLists) | no |
+| multiplySeriesWithWildcards(seriesList, *position) | no |
+| nPercentile(seriesList, n) | no |
+| nonNegativeDerivative(seriesList, maxValue=None, minValue=None) | no |
+| offset(seriesList, factor) | no |
 | offsetToZero(seriesList) | no |
 | perSecond(seriesList, maxValue=None, minValue=None) | no |
+| percentileOfSeries(seriesList, n, interpolate=False) | no |
+| pow(seriesList, factor) | no |
+| randomWalk(name, step=60) | no |
+| randomWalkFunction(name, step=60) | no |
+| rangeOfSeries(*seriesLists) | no |
+| reduce(seriesLists, reduceFunction, reduceNode, *reduceMatchers) | no |
+| reduceSeries(seriesLists, reduceFunction, reduceNode, *reduceMatchers) | no |
+| removeAbovePercentile(seriesList, n) | no |
+| removeAboveValue(seriesList, n) | no |
+| removeBelowPercentile(seriesList, n) | no |
+| removeBelowValue(seriesList, n) | no |
+| removeEmptySeries(seriesList, xFilesFactor=None) | no |
+| scale(seriesList, factor) | no |
+| scaleToSeconds(seriesList, seconds) | no |
+| secondYAxis(seriesList) | no |
+| seriesByTag(*tagExpressions) | no |
+| sortByMaxima(seriesList) | no |
+| sortByMinima(seriesList) | no |
+| sortByName(seriesList, natural=False, reverse=False) | no |
+| sortByTotal(seriesList) | no |
+| squareRoot(seriesList) | no |
+| stacked(seriesLists, stackName='__DEFAULT__') | no |
+| stddevSeries(*seriesLists) | no |
+| stdev(seriesList, points, windowTolerance=0.1) | no |
+| substr(seriesList, start=0, stop=0) | no |
+| sum(*seriesLists) | no |
+| sumSeries(*seriesLists) | no |
+| sumSeriesWithWildcards(seriesList, *position) | no |
+| summarize(seriesList, intervalString, func='sum', alignToFrom=False) | no |
+| threshold(value, label=None, color=None) | no |
+| time(name, step=60) | no |
+| timeFunction(name, step=60) | no |
 | timeShift(seriesList, timeShift, resetEnd=True, alignDST=False) | no |
 | timeStack(seriesList, timeShiftUnit='1d', timeShiftStart=0, timeShiftEnd=7) | no |
-| exclude(seriesList, pattern) | no |
-| minimumBelow(seriesList, n) | no |
-| aliasSub(seriesList, search, replace) | no |
-| averageSeriesWithWildcards(seriesList, *position) | no |
-| group(*seriesLists) | no |
-| sumSeriesWithWildcards(seriesList, *position) | no |
-| stdev(seriesList, points, windowTolerance=0.1) | yes |
-| maxSeries(*seriesLists) | yes |
-| pearsonClosest(seriesList, seriesList, n, direction) | yes |
-| tukeyBelow(seriesList, basis, n, interval=0) | yes |
-| polyfit(seriesList, degree=1, offset="0d") | yes |
-| powSeriesLists(sourceSeriesList, factorSeriesList) | yes |
-| lpf(seriesList, cutPercent) | yes |
-| minSeries(*seriesLists) | yes |
-| tukeyAbove(seriesList, basis, n, interval=0) | yes |
+| transformNull(seriesList, default=0, referenceSeries=None) | no |
+| useSeriesAbove(seriesList, value, search, replace) | no |
+| diffSeriesLists(firstSeriesList, secondSeriesList) | yes |
 | exponentialWeightedMovingAverage(seriesList, alpha) | yes |
-| multiplySeriesLists(sourceSeriesList, factorSeriesList) | yes |
-| aboveSeries(seriesList, value, search, replace) | yes |
 | exponentialWeightedMovingAverage(seriesList, alpha) | yes |
 | fft(seriesList, mode) | yes |
-| lowPass(seriesList, cutPercent) | yes |
-| ksTest2(seriesList, seriesList, windowSize) | yes |
-| diffSeriesLists(firstSeriesList, secondSeriesList) | yes |
-| kolmogorovSmirnovTest2(seriesList, seriesList, windowSize) | yes |
-| removeZeroSeries(seriesList, xFilesFactor=None) | yes |
 | ifft(seriesList, phaseSeriesList) | yes |
-| log(seriesList, base=10) | yes |
 | isNotNull(seriesList) | yes |
+| kolmogorovSmirnovTest2(seriesList, seriesList, windowSize) | yes |
+| ksTest2(seriesList, seriesList, windowSize) | yes |
+| log(seriesList, base=10) | yes |
+| lowPass(seriesList, cutPercent) | yes |
+| lpf(seriesList, cutPercent) | yes |
+| maxSeries(*seriesLists) | yes |
+| minSeries(*seriesLists) | yes |
+| multiplySeriesLists(sourceSeriesList, factorSeriesList) | yes |
 | pearson(seriesList, seriesList, windowSize) | yes |
+| pearsonClosest(seriesList, seriesList, n, direction) | yes |
+| polyfit(seriesList, degree=1, offset="0d") | yes |
+| powSeriesLists(sourceSeriesList, factorSeriesList) | yes |
+| removeZeroSeries(seriesList, xFilesFactor=None) | yes |
+| stdev(seriesList, points, windowTolerance=0.1) | yes |
+| tukeyAbove(seriesList, basis, n, interval=0) | yes |
+| tukeyBelow(seriesList, basis, n, interval=0) | yes |
 <a name="functions-features"></a>
 ## Features of configuration functions
 ### aliasByPostgres

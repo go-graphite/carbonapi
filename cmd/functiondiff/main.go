@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -35,6 +36,7 @@ func isUnsortedStringSlicesEqual(s1, s2 []string) bool {
 func isFunctionParamEqual(fp1, fp2 types.FunctionParam) []string {
 	var incompatibilities []string
 	if !isUnsortedStringSlicesEqual(fp1.Options, fp2.Options) {
+		// TODO(civil): Distingush and flag supersets (where we support more)
 		if len(fp1.Options) < len(fp2.Options) {
 			incompatibilities = append(incompatibilities, fmt.Sprintf("%v: different amount of parameters, got `%+v`, should be `%+v`", fp1.Name, fp1.Options, fp2.Options))
 		}
@@ -45,32 +47,34 @@ func isFunctionParamEqual(fp1, fp2 types.FunctionParam) []string {
 	}
 
 	if fp1.Multiple != fp2.Multiple {
-		incompatibilities = append(incompatibilities, fmt.Sprintf("%v: value for `multiple` mismatch: got %v, should be %v", fp1.Name, fp1.Multiple, fp2.Multiple))
+		incompatibilities = append(incompatibilities, fmt.Sprintf("%v: attribute `multiple` mismatch: got %v, should be %v", fp1.Name, fp1.Multiple, fp2.Multiple))
 	}
 
 	if fp1.Type != fp2.Type {
-		incompatibilities = append(incompatibilities, fmt.Sprintf("%v: value for `type` mismatch: got %v, should be %v", fp1.Name, fp1.Type, fp2.Type))
+		v1, _ := fp1.Type.MarshalJSON()
+		v2, _ := fp2.Type.MarshalJSON()
+		incompatibilities = append(incompatibilities, fmt.Sprintf("%v: type mismatch: got %v, should be %v", fp1.Name, string(v1), string(v2)))
 	}
 
 	if fp1.Default != nil && fp2.Default != nil {
 		if fp1.Default.Type != fp2.Default.Type {
-			incompatibilities = append(incompatibilities, fmt.Sprintf("%v: type of `default` mismatch: got %v, should be %v", fp1.Name, fp1.Default.Type, fp2.Default.Type))
+			incompatibilities = append(incompatibilities, fmt.Sprintf("%v: default value's type mismatch: got %v, should be %v", fp1.Name, fp1.Default.Type, fp2.Default.Type))
 		}
 		v1, _ := fp1.Default.MarshalJSON()
 		v2, _ := fp2.Default.MarshalJSON()
 		if !bytes.Equal(v1, v2) {
-			incompatibilities = append(incompatibilities, fmt.Sprintf("%v: value for `default` mismatch: got %v, should be %v", fp1.Name, string(v1), string(v2)))
+			incompatibilities = append(incompatibilities, fmt.Sprintf("%v: default value mismatch: got %v, should be %v", fp1.Name, string(v1), string(v2)))
 		}
 	}
 
 	if fp1.Default == nil && fp2.Default != nil {
 		v2, _ := fp2.Default.MarshalJSON()
-		incompatibilities = append(incompatibilities, fmt.Sprintf("%v: value for `default` mismatch: got %v, should be %v", fp1.Name, "(empty)", string(v2)))
+		incompatibilities = append(incompatibilities, fmt.Sprintf("%v: default value mismatch: got %v, should be %v", fp1.Name, "(empty)", string(v2)))
 	}
 
 	if fp1.Default != nil && fp2.Default == nil {
 		v1, _ := fp1.Default.MarshalJSON()
-		incompatibilities = append(incompatibilities, fmt.Sprintf("%v: value for `default` mismatch: got %v, should be %v", fp1.Name, string(v1), "(empty)"))
+		incompatibilities = append(incompatibilities, fmt.Sprintf("%v: default value mismatch: got %v, should be %v", fp1.Name, string(v1), "(empty)"))
 	}
 	return incompatibilities
 }
@@ -95,7 +99,7 @@ func isFunctionParamsEqual(list1, list2 []types.FunctionParam) []string {
 	for _, fp2 := range list2 {
 		fp1, ok := list1ToMap[fp2.Name]
 		if !ok {
-			incompatibilities = append(incompatibilities, fp2.Name+": parameter missing")
+			incompatibilities = append(incompatibilities, fmt.Sprintf("parameter not supported: %v", fp2.Name))
 			continue
 		}
 
@@ -144,36 +148,40 @@ func main() {
 		log.Fatal("failed to Unmarshal second description", err)
 	}
 
-	var onlyFirstServerHave []string
-	var bothHave []string
-	bothHaveIncompatible := make(map[string][]string)
-	var onlySecondServerHave []string
+	var carbonapiFunctions []string
+	var supportedFunctions []string
+	functionsWithIncompatibilities := make(map[string][]string)
+	var unsupportedFunctions []string
 
 	for k, v := range secondDescription {
 		if v2, ok := firstDescription[k]; ok && !v.Proxied {
 			incompatibilities := isFunctionParamsEqual(v.Params, v2.Params)
-			if len(incompatibilities) == 0 {
-				bothHave = append(bothHave, v.Function)
-			} else {
-				bothHaveIncompatible[k] = incompatibilities
+			supportedFunctions = append(supportedFunctions, v.Function)
+			if len(incompatibilities) != 0 {
+				functionsWithIncompatibilities[k] = incompatibilities
 			}
 		} else {
-			onlySecondServerHave = append(onlySecondServerHave, k)
+			unsupportedFunctions = append(unsupportedFunctions, k)
 		}
 	}
 
 	for k, v := range firstDescription {
 		if _, ok := secondDescription[k]; !ok {
-			onlyFirstServerHave = append(onlyFirstServerHave, v.Function)
+			carbonapiFunctions = append(carbonapiFunctions, v.Function)
 		}
 	}
+
+	sort.Strings(carbonapiFunctions)
+	sort.Strings(unsupportedFunctions)
+	sort.Strings(supportedFunctions)
 
 	fmt.Printf(`# CarbonAPI compatibility with Graphite
 
 Topics:
 * [Default settings](#default-settings)
 * [URI Parameters](#uri-params)
-* [Functions](#functions)
+* [Graphite-web 1.1 Compatibility](#graphite-web-11-compatibility)
+* [Supported Functions](#supported-functions)
 * [Features of configuration functions](#functions-features)
 
 <a name="default-settings"></a>
@@ -271,21 +279,27 @@ _When ` + "`format=png`_ (default if not specified)\n" +
 `)
 	fmt.Println(`
 
-## Unsupported functions
+## Graphite-web 1.1 compatibility
+### Unsupported functions
 | Function                                                                  |
 | :------------------------------------------------------------------------ |`)
-	for _, f := range onlySecondServerHave {
+	for _, f := range unsupportedFunctions {
 		fmt.Printf("| %v |\n", f)
 	}
 
 	fmt.Println(`
 
-## Partly supported functions
+### Partly supported functions
 | Function                 | Incompatibilities                              |
 | :------------------------|:---------------------------------------------- |`)
 
-	for f, i := range bothHaveIncompatible {
-		fmt.Printf("| %v | %v |\n", f, strings.Join(i, "\n"))
+	keys := make([]string, 0, len(functionsWithIncompatibilities))
+	for k := range functionsWithIncompatibilities {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, f := range keys {
+		fmt.Printf("| %v | %v |\n", f, strings.Join(functionsWithIncompatibilities[f], "\n"))
 	}
 
 	fmt.Println(`
@@ -293,11 +307,11 @@ _When ` + "`format=png`_ (default if not specified)\n" +
 | Function      | Carbonapi-only                                            |
 | :-------------|:--------------------------------------------------------- |`)
 
-	for _, f := range bothHave {
+	for _, f := range supportedFunctions {
 		fmt.Printf("| %v | no |\n", f)
 	}
 
-	for _, f := range onlyFirstServerHave {
+	for _, f := range carbonapiFunctions {
 		fmt.Printf("| %v | yes |\n", f)
 	}
 
