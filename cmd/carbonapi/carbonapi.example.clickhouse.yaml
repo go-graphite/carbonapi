@@ -1,0 +1,152 @@
+# Need to be URL, http or https
+# This url specifies the backend or a loadbalancer
+#
+# Is you are using carbonzipper you should set it to
+# zipper's url
+#
+# If you are using plain go-carbon or graphite-clickhouse
+# you should set it to URL of go-carbon's carbonserver module
+# or graphite-clickhouse's http url.
+# Listen address, should always include hostname or ip address and a port.
+listen: "localhost:8081"
+# Max concurrent requests to CarbonZipper
+concurency: 20
+cache:
+   # Type of caching. Valid: "mem", "memcache", "null"
+   type: "mem"
+   # Cache limit in megabytes
+   size_mb: 0
+   # Default cache timeout value. Identical to DEFAULT_CACHE_DURATION in graphite-web.
+   defaultTimeoutSec: 60
+   # Only used by memcache type of cache. List of memcache servers.
+   memcachedServers:
+       - "127.0.0.1:1234"
+       - "127.0.0.2:1235"
+# Amount of CPUs to use. 0 - unlimited
+cpus: 0
+# Timezone, default - local
+tz: ""
+
+functionsConfig:
+    graphiteWeb: ./graphiteWeb.example.yaml
+maxBatchSize: 0
+graphite:
+    # Host:port where to send internal metrics
+    # Empty = disabled
+    host: ""
+    interval: "60s"
+    prefix: "carbon.api"
+    # rules on how to construct metric name. For now only {prefix} and {fqdn} is supported.
+    # {prefix} will be replaced with the content of {prefix}
+    # {fqdn} will be repalced with fqdn
+    pattern: "{prefix}.{fqdn}"
+# Maximium idle connections to carbonzipper
+idleConnections: 1000
+pidFile: ""
+# See https://github.com/go-graphite/carbonzipper/blob/master/example.conf#L70-L108 for format explanation
+upstreams:
+    # Number of 100ms buckets to track request distribution in. Used to build
+    # 'carbon.zipper.hostname.requests_in_0ms_to_100ms' metric and friends.
+    # Requests beyond the last bucket are logged as slow (default of 10 implies
+    # "slow" is >1 second).
+    # The last bucket is _not_ called 'requests_in_Xms_to_inf' on purpose, so
+    # we can change our minds about how many buckets we want to have and have
+    # their names remain consistent.
+    buckets: 10
+    timeouts:
+        find: "10s"
+        render: "50s"
+        connect: "200ms"
+    # Number of concurrent requests to any given backend - default is no limit.
+    # If set, you likely want >= MaxIdleConnsPerHost
+    concurrencyLimitPerServer: 1000
+
+    # Configures how often keep alive packets will be sent out
+    keepAliveInterval: "30s"
+
+    # Control http.MaxIdleConnsPerHost. Large values can lead to more idle
+    # connections on the backend servers which may bump into limits; tune with care.
+    maxIdleConnsPerHost: 1000
+    backendsv2:
+        backends:
+          -
+            groupName: "clickhouse-cluster1"
+            # supported:
+            #    carbonapi_v2_pb - carbonapi 0.11 or earlier version of protocol.
+            #    carbonapi_v3_pb - new protocol, http interface (native)
+            #    carbonapi_v3_grpc - new protocol, gRPC interface (native)
+            #    protobuf, pb, pb3 - same as carbonapi_v2_pb
+            #    msgpack - protocol used by graphite-web 1.1 and metrictank
+            #    auto - carbonapi will do it's best to guess if it's carbonapi_v3_pb or carbonapi_v2_pb
+            #
+            #  non-native protocols will be internally converted to new protocol, which will increase memory consumption
+            protocol: "carbonapi_v2_pb"
+            # supported:
+            #    "broadcast" - send request to all backends in group and merge responses. This was default behavior for carbonapi 0.11 or earlier
+            #    "roundrobin" - send request to one backend.
+            #    "all - same as "broadcast"
+            #    "rr" - same as "roundrobin"
+            lbMethod: "rr"
+            # amount of retries in case of unsuccessful request
+            maxTries: 3
+            # amount of metrics per fetch request. Default: 0 - unlimited. If not specified, global will be used
+            maxBatchSize: 0
+            # interval for keep-alive http packets. If not specified, global will be used
+            keepAliveInterval: "30s"
+            # override for global concurrencyLimit.
+            concurrencyLimit: 1000
+            # override for global maxIdleConnsPerHost
+            maxIdleConnsPerHost: 1000
+            # per-group timeout override. If not specified, global will be used.
+            # Please note that ONLY min(global, local) will be used.
+            timeouts:
+                # Maximum backend request time for find requests.
+                find: "10s"
+                # Maximum backend request time for render requests. This is total one and doesn't take into account in-flight requests.
+                render: "50s"
+                # Timeout to connect to the server
+                connect: "200ms"
+            servers:
+                - "http://127.0.0.2:8080"
+                - "http://127.0.0.3:8080"
+          -
+            groupName: "clickhouse-cluster-2"
+            protocol: "carbonapi_v2_pb"
+            lbMethod: "rr"
+            maxTries: 3
+            maxBatchSize: 0
+            keepAliveInterval: "30s"
+            concurrencyLimit: 1000
+            maxIdleConnsPerHost: 1000
+            timeouts:
+                find: "10s"
+                render: "50s"
+                connect: "200ms"
+            servers:
+                - "http://127.0.0.4:8080"
+                - "http://127.0.0.5:8080"
+# If not zero, enabled cache for find requests
+# This parameter controls when it will expire (in seconds)
+# Default: 600 (10 minutes)
+graphTemplates: graphTemplates.example.yaml
+expireDelaySec: 10
+# Uncomment this to get the behavior of graphite-web as proposed in https://github.com/graphite-project/graphite-web/pull/2239
+# Beware this will make darkbackground graphs less readable
+#defaultColors:
+#      "red": "ff0000"
+#      "green": "00ff00"
+#      "blue": "#0000ff"
+#      "darkred": "#c80032"
+#      "darkgreen": "00c800"
+#      "darkblue": "002173"
+logger:
+    - logger: ""
+      file: "stderr"
+      level: "debug"
+      encoding: "console"
+      encodingTime: "iso8601"
+      encodingDuration: "seconds"
+    - logger: ""
+      file: "carbonapi.log"
+      level: "info"
+      encoding: "json"
