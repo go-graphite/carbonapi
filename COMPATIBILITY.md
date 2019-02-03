@@ -144,8 +144,20 @@ _When `format=png`_ (default if not specified)
 ### Partly supported functions
 | Function                 | Incompatibilities                              |
 | :------------------------|:---------------------------------------------- |
-| aliasByTags | parameter not supported: nodes |
-| useSeriesAbove | value: type mismatch: got "string", should be "integer" |
+| consolidateBy | consolidationFunc: different amount of parameters, `[avg_zero]` are missing |
+| groupByNode | callback: different amount of parameters, `[avg_zero]` are missing |
+| groupByNodes | callback: different amount of parameters, `[avg_zero]` are missing |
+| groupByTags | callback: different amount of parameters, `[avg_zero]` are missing |
+| holtWintersAberration | parameter not supported: seasonality |
+| holtWintersConfidenceBands | parameter not supported: seasonality |
+| holtWintersForecast | parameter not supported: seasonality |
+| legendValue | valuesTypes: different amount of parameters, `[avg_zero]` are missing |
+| nonNegativeDerivative | parameter not supported: minValue |
+| perSecond | parameter not supported: minValue |
+| summarize | func: different amount of parameters, `[avg_zero]` are missing |
+| timeShift | parameter not supported: alignDst |
+| transformNull | parameter not supported: referenceSeries |
+| useSeriesAbove | value: type mismatch: got "integer", should be "string" |
 
 ## Supported functions
 | Function      | Carbonapi-only                                            |
@@ -192,9 +204,9 @@ _When `format=png`_ (default if not specified)
 | highestCurrent(seriesList, n) | no |
 | highestMax(seriesList, n) | no |
 | hitcount(seriesList, intervalString, alignToInterval=False) | no |
-| holtWintersAberration(seriesList, delta=3, bootstrapInterval='7d', seasonality='1d') | no |
-| holtWintersConfidenceBands(seriesList, delta=3, bootstrapInterval='7d', seasonality='1d') | no |
-| holtWintersForecast(seriesList, bootstrapInterval='7d', seasonality='1d') | no |
+| holtWintersAberration(seriesList, delta=3, bootstrapInterval='7d') | no |
+| holtWintersConfidenceBands(seriesList, delta=3, bootstrapInterval='7d') | no |
+| holtWintersForecast(seriesList, bootstrapInterval='7d') | no |
 | integral(seriesList) | no |
 | invert(seriesList) | no |
 | isNonNull(seriesList) | no |
@@ -223,10 +235,10 @@ _When `format=png`_ (default if not specified)
 | multiplySeries(*seriesLists) | no |
 | multiplySeriesWithWildcards(seriesList, *position) | no |
 | nPercentile(seriesList, n) | no |
-| nonNegativeDerivative(seriesList, maxValue=None, minValue=None) | no |
+| nonNegativeDerivative(seriesList, maxValue=None) | no |
 | offset(seriesList, factor) | no |
 | offsetToZero(seriesList) | no |
-| perSecond(seriesList, maxValue=None, minValue=None) | no |
+| perSecond(seriesList, maxValue=None) | no |
 | percentileOfSeries(seriesList, n, interpolate=False) | no |
 | pow(seriesList, factor) | no |
 | randomWalk(name, step=60) | no |
