@@ -47,7 +47,7 @@ func (f *aliasByTags) Do(e parser.Expr, from, until int64, values map[parser.Met
 		return nil, err
 	}
 
-	tags, err := e.GetStringArgs(1)
+	tags, err := e.GetNodeOrTagArgs(1)
 	if err != nil {
 		return nil, err
 	}
@@ -56,23 +56,26 @@ func (f *aliasByTags) Do(e parser.Expr, from, until int64, values map[parser.Met
 
 	for _, a := range args {
 		var matched []string
-		var name string
 		metricTags := metricToTagMap(a.Name)
+		nodes := strings.Split(metricTags["name"], ".")
 		for _, tag := range tags {
-			if value, ok := metricTags[tag]; ok {
-				if tag == NAME {
-					name = value
-				} else {
-					matched = append(matched, strings.Join([]string{tag, value}, "="))
+			if tag.IsTag {
+				tagStr := tag.Value.(string)
+				matched = append(matched, metricTags[tagStr])
+			} else {
+				f := tag.Value.(int) - 1
+				if f < 0 {
+					f += len(nodes)
 				}
+				if f >= len(nodes) || f < 0 {
+					continue
+				}
+				matched = append(matched, nodes[f])
 			}
-		}
-		if len(name) > 0 {
-			matched = append([]string{name}, matched...)
 		}
 		r := *a
 		if len(matched) > 0 {
-			r.Name = strings.Join(matched, ";")
+			r.Name = strings.Join(matched, ".")
 		}
 		results = append(results, &r)
 	}
@@ -97,9 +100,9 @@ func (f *aliasByTags) Description() map[string]types.FunctionDescription {
 				},
 				{
 					Multiple: true,
-					Name:     "nodes",
+					Name:     "tags",
 					Required: true,
-					Type:     types.Tag,
+					Type:     types.NodeOrTag,
 				},
 			},
 		},

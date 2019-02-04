@@ -14,31 +14,30 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 )
 
-func isUnsortedStringSlicesEqual(s1, s2 []string) bool {
-	if len(s1) != len(s2) {
-		return false
+// It's ok to ignore values that's only in 'capi' as currently I don't care about superset of features.
+func isUnsortedStringSlicesEqual(capi, grWeb []string) []string {
+	capiMap := make(map[string]struct{})
+	var diff []string
+
+	for _, v := range capi {
+		capiMap[v] = struct{}{}
 	}
 
-	s1Map := make(map[string]struct{})
-
-	for _, v := range s1 {
-		s1Map[v] = struct{}{}
-	}
-
-	for _, v := range s2 {
-		if _, ok := s1Map[v]; !ok {
-			return false
+	for _, v := range grWeb {
+		if _, ok := capiMap[v]; !ok {
+			diff = append(diff, v)
 		}
 	}
-	return true
+	return diff
 }
 
 func isFunctionParamEqual(fp1, fp2 types.FunctionParam) []string {
 	var incompatibilities []string
-	if !isUnsortedStringSlicesEqual(fp1.Options, fp2.Options) {
+	diffParams := isUnsortedStringSlicesEqual(fp1.Options, fp2.Options)
+	if len(diffParams) > 0 {
 		// TODO(civil): Distingush and flag supersets (where we support more)
 		if len(fp1.Options) < len(fp2.Options) {
-			incompatibilities = append(incompatibilities, fmt.Sprintf("%v: different amount of parameters, got `%+v`, should be `%+v`", fp1.Name, fp1.Options, fp2.Options))
+			incompatibilities = append(incompatibilities, fmt.Sprintf("%v: different amount of parameters, `%+v` are missing", fp1.Name, diffParams))
 		}
 	}
 
@@ -88,16 +87,16 @@ func isFunctionParamEqual(fp1, fp2 types.FunctionParam) []string {
 // 	Suggestions []*Suggestion `json:"suggestions,omitempty"`
 // 	Default     *Suggestion   `json:"default,omitempty"`
 // }
-func isFunctionParamsEqual(list1, list2 []types.FunctionParam) []string {
-	list1ToMap := make(map[string]types.FunctionParam)
+func isFunctionParamsEqual(carbonapi, graphiteweb []types.FunctionParam) []string {
+	carbonapiToMap := make(map[string]types.FunctionParam)
 	var incompatibilities []string
 
-	for _, v := range list1 {
-		list1ToMap[v.Name] = v
+	for _, v := range carbonapi {
+		carbonapiToMap[v.Name] = v
 	}
 
-	for _, fp2 := range list2 {
-		fp1, ok := list1ToMap[fp2.Name]
+	for _, fp2 := range graphiteweb {
+		fp1, ok := carbonapiToMap[fp2.Name]
 		if !ok {
 			incompatibilities = append(incompatibilities, fmt.Sprintf("parameter not supported: %v", fp2.Name))
 			continue
@@ -153,10 +152,10 @@ func main() {
 	functionsWithIncompatibilities := make(map[string][]string)
 	var unsupportedFunctions []string
 
-	for k, v := range secondDescription {
-		if v2, ok := firstDescription[k]; ok && !v.Proxied {
-			incompatibilities := isFunctionParamsEqual(v.Params, v2.Params)
-			supportedFunctions = append(supportedFunctions, v.Function)
+	for k, grWeb := range secondDescription {
+		if capi, ok := firstDescription[k]; ok && !capi.Proxied {
+			incompatibilities := isFunctionParamsEqual(capi.Params, grWeb.Params)
+			supportedFunctions = append(supportedFunctions, capi.Function)
 			if len(incompatibilities) != 0 {
 				functionsWithIncompatibilities[k] = incompatibilities
 			}

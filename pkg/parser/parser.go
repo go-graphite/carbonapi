@@ -283,7 +283,6 @@ func (e *expr) GetIntArg(n int) (int, error) {
 }
 
 func (e *expr) GetIntArgs(n int) ([]int, error) {
-
 	if len(e.args) <= n {
 		return nil, ErrMissingArgument
 	}
@@ -335,6 +334,31 @@ func (e *expr) GetBoolArgDefault(n int, b bool) (bool, error) {
 	}
 
 	return e.args[n].doGetBoolArg()
+}
+
+func (e *expr) GetNodeOrTagArgs(n int) ([]NodeOrTag, error) {
+	if len(e.args) <= n {
+		return nil, ErrMissingArgument
+	}
+
+	var nodeTags []NodeOrTag
+
+	var err error
+	for i := n; i < len(e.args); i++ {
+		var nodeTag NodeOrTag
+		nodeTag.Value, err = e.GetIntArg(i)
+		if err != nil {
+			// Try to parse it as String
+			nodeTag.Value, err = e.GetStringArg(i)
+			if err != nil {
+				return nil, err
+			}
+			nodeTag.IsTag = true
+		}
+		nodeTags = append(nodeTags, nodeTag)
+	}
+
+	return nodeTags, nil
 }
 
 func (e *expr) insertFirstArg(exp *expr) error {
