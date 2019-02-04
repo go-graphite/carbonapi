@@ -22,17 +22,17 @@ func init() {
 }
 
 func TestAliasByTags(t *testing.T) {
-	now32 := int32(time.Now().Unix())
+	now32 := int64(time.Now().Unix())
 
 	tests := []th.EvalTestItem{
 		{
 			parser.NewExpr("aliasByTags",
-				"metric1.foo.bar.baz;foo=bar", parser.ArgValue("foo"),
+				"metric1.foo.bar.baz;foo=bar;baz=bam", parser.ArgValue("foo"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.bar.baz;foo=bar", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz;foo=bar", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{"metric1.foo.bar.baz;foo=bar;baz=bam", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz;foo=bar;baz=bam", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{types.MakeMetricData("foo=bar", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("bar", []float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
 			parser.NewExpr("aliasByTags",
@@ -41,7 +41,16 @@ func TestAliasByTags(t *testing.T) {
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1;foo=bar", 0, 1}: {types.MakeMetricData("metric1;foo=bar", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{types.MakeMetricData("metric1;foo=bar", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("bar.metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+		},
+		{
+			parser.NewExpr("aliasByTags",
+				"base.metric1;foo=bar;baz=bam", 2, parser.ArgValue("blah"), parser.ArgValue("foo"), 1,
+			),
+			map[parser.MetricRequest][]*types.MetricData{
+				{"base.metric1;foo=bar;baz=bam", 0, 1}: {types.MakeMetricData("base.metric1;foo=bar;baz=bam", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData("metric1..bar.base", []float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 	}
 
