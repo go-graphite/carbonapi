@@ -150,7 +150,6 @@ _When `format=png`_ (default if not specified)
 | nonNegativeDerivative | parameter not supported: minValue |
 | perSecond | parameter not supported: minValue |
 | timeShift | parameter not supported: alignDst |
-| transformNull | parameter not supported: referenceSeries |
 | useSeriesAbove | value: type mismatch: got "integer", should be "string" |
 
 ## Supported functions
