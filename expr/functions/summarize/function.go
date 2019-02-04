@@ -185,20 +185,8 @@ func (f *summarize) Description() map[string]types.FunctionDescription {
 				{
 					Default: types.NewSuggestion("sum"),
 					Name:    "func",
-					Options: []string{
-						"average",
-						"count",
-						"diff",
-						"last",
-						"max",
-						"median",
-						"min",
-						"multiply",
-						"range",
-						"stddev",
-						"sum",
-					},
-					Type: types.AggFunc,
+					Options: helper.AvailableSummarizers,
+					Type:    types.AggFunc,
 				},
 				{
 					Default: types.NewSuggestion(false),

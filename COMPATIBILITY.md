@@ -144,17 +144,11 @@ _When `format=png`_ (default if not specified)
 ### Partly supported functions
 | Function                 | Incompatibilities                              |
 | :------------------------|:---------------------------------------------- |
-| consolidateBy | consolidationFunc: different amount of parameters, `[avg_zero]` are missing |
-| groupByNode | callback: different amount of parameters, `[avg_zero]` are missing |
-| groupByNodes | callback: different amount of parameters, `[avg_zero]` are missing |
-| groupByTags | callback: different amount of parameters, `[avg_zero]` are missing |
 | holtWintersAberration | parameter not supported: seasonality |
 | holtWintersConfidenceBands | parameter not supported: seasonality |
 | holtWintersForecast | parameter not supported: seasonality |
-| legendValue | valuesTypes: different amount of parameters, `[avg_zero]` are missing |
 | nonNegativeDerivative | parameter not supported: minValue |
 | perSecond | parameter not supported: minValue |
-| summarize | func: different amount of parameters, `[avg_zero]` are missing |
 | timeShift | parameter not supported: alignDst |
 | transformNull | parameter not supported: referenceSeries |
 | useSeriesAbove | value: type mismatch: got "integer", should be "string" |

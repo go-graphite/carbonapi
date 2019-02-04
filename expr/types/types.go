@@ -298,15 +298,28 @@ func (r *MetricData) AggregateValues() {
 // ConsolidationToFunc contains a map of graphite-compatible consolidation functions definitions to actual functions that can do aggregation
 // TODO(civil): take into account xFilesFactor
 var ConsolidationToFunc = map[string]func([]float64) float64{
-	"average": AggMean,
-	"avg":     AggMean,
-	"min":     AggMin,
-	"minimum": AggMin,
-	"max":     AggMax,
-	"maximum": AggMax,
-	"sum":     AggSum,
-	"first":   AggFirst,
-	"last":    AggLast,
+	"average":  AggMean,
+	"avg_zero": AggMeanZero,
+	"avg":      AggMean,
+	"min":      AggMin,
+	"minimum":  AggMin,
+	"max":      AggMax,
+	"maximum":  AggMax,
+	"sum":      AggSum,
+	"first":    AggFirst,
+	"last":     AggLast,
+}
+
+var consolidateFuncs []string
+
+// AvailableConsolidationFuncs lists all available consolidation functions
+func AvailableConsolidationFuncs() []string {
+	if len(consolidateFuncs) == 0 {
+		for name := range ConsolidationToFunc {
+			consolidateFuncs = append(consolidateFuncs, name)
+		}
+	}
+	return consolidateFuncs
 }
 
 // AggMean computes mean (sum(v)/len(v), excluding NaN points) of values
@@ -318,6 +331,22 @@ func AggMean(v []float64) float64 {
 			sum += vv
 			n++
 		}
+	}
+	if n == 0 {
+		return math.NaN()
+	}
+	return sum / float64(n)
+}
+
+// AggMeanZero computes mean (sum(v)/len(v), replacing NaN points with 0
+func AggMeanZero(v []float64) float64 {
+	var sum float64
+	var n int
+	for _, vv := range v {
+		if !math.IsNaN(vv) {
+			sum += vv
+		}
+		n++
 	}
 	if n == 0 {
 		return math.NaN()
