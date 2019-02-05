@@ -63,7 +63,7 @@ func (f *aliasByTags) Do(e parser.Expr, from, until int64, values map[parser.Met
 				tagStr := tag.Value.(string)
 				matched = append(matched, metricTags[tagStr])
 			} else {
-				f := tag.Value.(int) - 1
+				f := tag.Value.(int)
 				if f < 0 {
 					f += len(nodes)
 				}
