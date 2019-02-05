@@ -78,6 +78,7 @@ func (f *legendValue) Description() map[string]types.FunctionDescription {
 					Name:     "valuesTypes",
 					Options: []string{
 						"average",
+						"avg_zero",
 						"count",
 						"diff",
 						"last",

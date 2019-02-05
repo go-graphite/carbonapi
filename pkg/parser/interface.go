@@ -138,6 +138,8 @@ type Expr interface {
 	// GetNodeOrTagArgs returns n-th argument as slice of NodeOrTag structures.
 	GetNodeOrTagArgs(n int) ([]NodeOrTag, error)
 
+	IsInterfaceNil() bool
+
 	toExpr() interface{}
 }
 

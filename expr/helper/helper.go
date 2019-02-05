@@ -210,6 +210,8 @@ func AggregateSeries(e parser.Expr, args []*types.MetricData, function Aggregate
 	return []*types.MetricData{&r}, nil
 }
 
+var AvailableSummarizers = []string{"sum", "total", "avg", "average", "avg_zero", "max", "min", "last", "range", "median", "multiply", "diff", "count", "stddev"}
+
 // SummarizeValues summarizes values
 func SummarizeValues(f string, values []float64) float64 {
 	rv := 0.0
@@ -224,7 +226,7 @@ func SummarizeValues(f string, values []float64) float64 {
 			rv += av
 		}
 
-	case "avg", "average":
+	case "avg", "average", "avg_zero":
 		for _, av := range values {
 			rv += av
 		}

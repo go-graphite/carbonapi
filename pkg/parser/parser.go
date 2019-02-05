@@ -129,6 +129,11 @@ func (e *expr) Metrics() []MetricRequest {
 		}
 
 		switch e.target {
+		case "transformNull":
+			referenceSeriesExpr := e.GetNamedArg("referenceSeries")
+			if !referenceSeriesExpr.IsInterfaceNil() {
+				r = append(r, referenceSeriesExpr.Metrics()...)
+			}
 		case "timeShift":
 			offs, err := e.GetIntervalArg(1, -1)
 			if err != nil {
@@ -359,6 +364,13 @@ func (e *expr) GetNodeOrTagArgs(n int) ([]NodeOrTag, error) {
 	}
 
 	return nodeTags, nil
+}
+
+func (e *expr) IsInterfaceNil() bool {
+	if e == nil {
+		return true
+	}
+	return false
 }
 
 func (e *expr) insertFirstArg(exp *expr) error {

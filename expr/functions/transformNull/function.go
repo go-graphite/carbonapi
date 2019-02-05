@@ -44,7 +44,31 @@ func (f *transformNull) Do(e parser.Expr, from, until int64, values map[parser.M
 		ok = len(e.Args()) > 1
 	}
 
-	// FIXME(civil): support referenceSeries
+	var valMap []bool
+	referenceSeriesExpr := e.GetNamedArg("referenceSeries")
+	if !referenceSeriesExpr.IsInterfaceNil() {
+		referenceSeries, err := helper.GetSeriesArg(referenceSeriesExpr, from, until, values)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(referenceSeries) == 0 {
+			return nil, fmt.Errorf("reference series is not a valid metric")
+		}
+		length := len(referenceSeries[0].Values)
+		if length != len(arg[0].Values) {
+			return nil, fmt.Errorf("length of series and reference series must be the same")
+		}
+		valMap = make([]bool, length)
+
+		for _, a := range referenceSeries {
+			for i, v := range a.Values {
+				if !math.IsNaN(v) {
+					valMap[i] = true
+				}
+			}
+		}
+	}
 
 	var results []*types.MetricData
 
@@ -63,7 +87,11 @@ func (f *transformNull) Do(e parser.Expr, from, until int64, values map[parser.M
 
 		for i, v := range a.Values {
 			if math.IsNaN(v) {
-				v = defv
+				if len(valMap) == 0 {
+					v = defv
+				} else if valMap[i] {
+					v = defv
+				}
 			}
 
 			r.Values[i] = v
@@ -78,11 +106,23 @@ func (f *transformNull) Do(e parser.Expr, from, until int64, values map[parser.M
 func (f *transformNull) Description() map[string]types.FunctionDescription {
 	return map[string]types.FunctionDescription{
 		"transformNull": {
-			Description: "Takes a metric or wildcard seriesList and replaces null values with the value\nspecified by `default`.  The value 0 used if not specified.  The optional\nreferenceSeries, if specified, is a metric or wildcard series list that governs\nwhich time intervals nulls should be replaced.  If specified, nulls are replaced\nonly in intervals where a non-null is found for the same interval in any of\nreferenceSeries.  This method compliments the drawNullAsZero function in\ngraphical mode, but also works in text-only mode.\n\nExample:\n\n.. code-block:: none\n\n  &target=transformNull(webapp.pages.*.views,-1)\n\nThis would take any page that didn't have values and supply negative 1 as a default.\nAny other numeric value may be used as well.",
-			Function:    "transformNull(seriesList, default=0, referenceSeries=None)",
-			Group:       "Transform",
-			Module:      "graphite.render.functions",
-			Name:        "transformNull",
+			Description: `Takes a metric or wildcard seriesList and replaces null values with the value
+  specified by 'default'.  The value 0 used if not specified.  The optional
+  referenceSeries, if specified, is a metric or wildcard series list that governs
+  which time intervals nulls should be replaced.  If specified, nulls are replaced
+  only in intervals where a non-null is found for the same interval in any of
+  referenceSeries.  This method compliments the drawNullAsZero function in
+  graphical mode, but also works in text-only mode.
+  Example:
+  .. code-block:: none
+    &target=transformNull(webapp.pages.*.views,-1)
+  This would take any page that didn't have values and supply negative 1 as a default.
+  Any other numeric value may be used as well.
+`,
+			Function: "transformNull(seriesList, default=0, referenceSeries=None)",
+			Group:    "Transform",
+			Module:   "graphite.render.functions",
+			Name:     "transformNull",
 			Params: []types.FunctionParam{
 				{
 					Name:     "seriesList",
@@ -94,11 +134,10 @@ func (f *transformNull) Description() map[string]types.FunctionDescription {
 					Name:    "default",
 					Type:    types.Float,
 				},
-				/*				{
-									Name: "referenceSeries",
-									Type: types.SeriesList,
-								},
-				*/
+				{
+					Name: "referenceSeries",
+					Type: types.SeriesList,
+				},
 			},
 		},
 	}

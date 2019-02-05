@@ -65,15 +65,8 @@ func (f *consolidateBy) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 				{
-					Name: "consolidationFunc",
-					Options: []string{
-						"max",
-						"min",
-						"sum",
-						"average",
-						"first",
-						"last",
-					},
+					Name:     "consolidationFunc",
+					Options:  types.AvailableConsolidationFuncs(),
 					Required: true,
 					Type:     types.String,
 				},

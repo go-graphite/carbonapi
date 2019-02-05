@@ -686,17 +686,6 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{1, math.NaN(), math.NaN(), 12, 5, 6, 20}, 1, now32)},
 		},
 		{
-			parser.NewExpr("transformNull",
-
-				"metric1",
-			),
-			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
-			},
-			[]*types.MetricData{types.MakeMetricData("transformNull(metric1)",
-				[]float64{1, 0, 0, 3, 4, 12}, 1, now32)},
-		},
-		{
 			parser.NewExpr("reduceSeries",
 				// list of arguments
 				parser.NewExpr("mapSeries",
@@ -735,19 +724,6 @@ func TestEvalExpression(t *testing.T) {
 			[]*types.MetricData{
 				types.MakeMetricData("devops.service.server2.filter.received.reduce.asPercent.count", []float64{25, 100, 400}, 1, now32),
 			},
-		},
-		{
-			parser.NewExpr("transformNull",
-				"metric1",
-				parser.NamedArgs{
-					"default": 5,
-				},
-			),
-			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
-			},
-			[]*types.MetricData{types.MakeMetricData("transformNull(metric1,5)",
-				[]float64{1, 5, 5, 3, 4, 12}, 1, now32)},
 		},
 		{
 			parser.NewExpr("highestMax",
