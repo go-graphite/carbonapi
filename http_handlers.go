@@ -521,7 +521,6 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		logAsError = true
 		return
 	}
-
 	var b []byte
 	switch format {
 	case treejsonFormat, jsonFormat:
@@ -538,7 +537,6 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		format = protobufFormat
 	case "", pickleFormat:
 		var result []map[string]interface{}
-
 		now := int32(time.Now().Unix() + 60)
 		for _, metric := range globs.Matches {
 			// Tell graphite-web that we have everything
@@ -565,6 +563,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		p := bytes.NewBuffer(b)
 		pEnc := pickle.NewEncoder(p)
 		err = pEnc.Encode(result)
+		b = p.Bytes()
 	}
 
 	if err != nil {
