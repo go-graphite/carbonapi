@@ -12,11 +12,10 @@ import (
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 	"github.com/go-graphite/carbonapi/intervalset"
 	"github.com/go-graphite/carbonapi/util/ctx"
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	pickle "github.com/lomik/og-rek"
 	"github.com/lomik/zapwriter"
 	"github.com/satori/go.uuid"
-
-	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
 // Find handler and it's helper functions
@@ -224,7 +223,6 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		logAsError = true
 		return
 	}
-
 	var b []byte
 	switch format {
 	case treejsonFormat, jsonFormat:
@@ -241,7 +239,6 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		format = protobufFormat
 	case "", pickleFormat:
 		var result []map[string]interface{}
-
 		now := int32(time.Now().Unix() + 60)
 		for _, globs := range multiGlobs.Metrics {
 			for _, metric := range globs.Matches {
@@ -273,6 +270,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		p := bytes.NewBuffer(b)
 		pEnc := pickle.NewEncoder(p)
 		err = pEnc.Encode(result)
+		b = p.Bytes()
 	}
 
 	if err != nil {
