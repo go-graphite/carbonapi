@@ -32,6 +32,9 @@ func (b byPartBase) Swap(i, j int) {
 
 func getPart(metric *types.MetricData, part int) string {
 	parts := strings.Split(metric.Name, ".")
+	if part >= len(parts) {
+		return ""
+	}
 	return parts[part]
 }
 

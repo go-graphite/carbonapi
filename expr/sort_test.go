@@ -51,6 +51,26 @@ func TestSortMetrics(t *testing.T) {
 				types.MakeMetricData(silver, []float64{}, 1, 0),
 			},
 		},
+
+		// With tags, it's now possible to have a query that returns metrics of different levels and level be higher
+		// or lower than the level for the metric request
+		{
+			[]*types.MetricData{
+				types.MakeMetricData("a.b.c", []float64{}, 1, 0),
+				types.MakeMetricData("a", []float64{}, 1, 0),
+				types.MakeMetricData("a.d", []float64{}, 1, 0),
+			},
+			parser.MetricRequest{
+				Metric: "seriesByTag(foo=~a.[bcd])",
+				From:   0,
+				Until:  1,
+			},
+			[]*types.MetricData{
+				types.MakeMetricData("a", []float64{}, 1, 0),
+				types.MakeMetricData("a.b.c", []float64{}, 1, 0),
+				types.MakeMetricData("a.d", []float64{}, 1, 0),
+			},
+		},
 	}
 	for i, test := range tests {
 		if len(test.metrics) != len(test.sorted) {
