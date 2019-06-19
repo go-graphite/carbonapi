@@ -40,9 +40,7 @@ func TestSubstr(t *testing.T) {
 	*/
 	tests := []th.EvalTestItem{
 		{
-			parser.NewExpr("substr",
-				"metric1.foo.bar.baz", 1, 3,
-			),
+			"substr(metric1.foo.bar.baz, 1, 3)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.bar.baz", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
@@ -50,9 +48,7 @@ func TestSubstr(t *testing.T) {
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("substr",
-				"metric1.foo.bar.baz", -3, -1,
-			),
+			"substr(metric1.foo.bar.baz, -3, -1)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.bar.baz", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
@@ -60,9 +56,7 @@ func TestSubstr(t *testing.T) {
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("substr",
-				"metric1.foo.bar.baz", -3,
-			),
+			"substr(metric1.foo.bar.baz, -3)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.bar.baz", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
@@ -70,9 +64,7 @@ func TestSubstr(t *testing.T) {
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("substr",
-				"metric1.foo.bar.baz", -6, -1,
-			),
+			"substr(metric1.foo.bar.baz, -6, -1)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.bar.baz", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
@@ -80,9 +72,7 @@ func TestSubstr(t *testing.T) {
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("substr",
-				"metric1.foo.bar.baz", 0, -1,
-			),
+			"substr(metric1.foo.bar.baz,0, -1)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.bar.baz", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
@@ -92,7 +82,7 @@ func TestSubstr(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		testName := tt.E.Target() + "(" + tt.E.RawArgs() + ")"
+		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
 			th.TestEvalExpr(t, &tt)
 		})

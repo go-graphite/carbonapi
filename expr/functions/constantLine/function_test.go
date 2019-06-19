@@ -26,9 +26,7 @@ func TestConstantLine(t *testing.T) {
 
 	tests := []th.EvalTestItem{
 		{
-			parser.NewExpr("constantLine",
-				42.42,
-			),
+			"constantLine(42.42)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"42.42", 0, 1}: {types.MakeMetricData("constantLine", []float64{12.3, 12.3}, 1, now32)},
 			},
@@ -38,7 +36,7 @@ func TestConstantLine(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		testName := tt.E.Target() + "(" + tt.E.RawArgs() + ")"
+		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
 			th.TestEvalExpr(t, &tt)
 		})

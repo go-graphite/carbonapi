@@ -1,6 +1,7 @@
 package ewma
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -9,7 +10,6 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
-	"math"
 )
 
 func init() {
@@ -27,10 +27,7 @@ func TestEWMA(t *testing.T) {
 
 	tests := []th.EvalTestItem{
 		{
-			parser.NewExpr("ewma",
-				"metric1",
-				0.9,
-			),
+			"ewma(metric1,0.9)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{0, 1, 1, 1, math.NaN(), 1, 1}, 1, now32)},
 			},
@@ -39,10 +36,7 @@ func TestEWMA(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("exponentialWeightedMovingAverage",
-				"metric1",
-				0.9,
-			),
+			"exponentialWeightedMovingAverage(metric1,0.9)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{0, 1, 1, 1, math.NaN(), 1, 1}, 1, now32)},
 			},
@@ -53,7 +47,7 @@ func TestEWMA(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		testName := tt.E.Target() + "(" + tt.E.RawArgs() + ")"
+		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
 			th.TestEvalExpr(t, &tt)
 		})

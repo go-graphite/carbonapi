@@ -26,11 +26,7 @@ func TestExclude(t *testing.T) {
 
 	tests := []th.EvalTestItem{
 		{
-			parser.NewExpr("exclude",
-
-				"metric1",
-				parser.ArgValue("(Foo|Baz)"),
-			),
+			"exclude(metric1,\"(Foo|Baz)\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
 					types.MakeMetricData("metricFoo", []float64{1, 1, 1, 1, 1}, 1, now32),
@@ -44,7 +40,7 @@ func TestExclude(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		testName := tt.E.Target() + "(" + tt.E.RawArgs() + ")"
+		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
 			th.TestEvalExpr(t, &tt)
 		})

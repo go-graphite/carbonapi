@@ -27,11 +27,7 @@ func TestAverageSeriesWithWildcards(t *testing.T) {
 
 	tests := []th.MultiReturnEvalTestItem{
 		{
-			parser.NewExpr("averageSeriesWithWildcards",
-				"metric1.foo.*.*",
-				1,
-				2,
-			),
+			"averageSeriesWithWildcards(metric1.foo.*.*,1,2)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.*.*", 0, 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
@@ -49,7 +45,7 @@ func TestAverageSeriesWithWildcards(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		testName := tt.E.Target() + "(" + tt.E.RawArgs() + ")"
+		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
 			th.TestMultiReturnEvalExpr(t, &tt)
 		})

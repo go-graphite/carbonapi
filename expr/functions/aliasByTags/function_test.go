@@ -26,45 +26,37 @@ func TestAliasByTags(t *testing.T) {
 
 	tests := []th.EvalTestItem{
 		{
-			parser.NewExpr("aliasByTags",
-				"metric1.foo.bar.baz;foo=bar;baz=bam", parser.ArgValue("foo"),
-			),
+			`aliasByTags(*, "foo")`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.bar.baz;foo=bar;baz=bam", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz;foo=bar;baz=bam", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{"*", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz;foo=bar;baz=bam", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("bar", []float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("aliasByTags",
-				"metric1;foo=bar", parser.ArgValue("foo"), parser.ArgValue("name"),
-			),
+			`aliasByTags(*, "foo", "name")`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1;foo=bar", 0, 1}: {types.MakeMetricData("metric1;foo=bar", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{"*", 0, 1}: {types.MakeMetricData("metric1;foo=bar", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("bar.metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("aliasByTags",
-				"base.metric1;foo=bar;baz=bam", 2, parser.ArgValue("blah"), parser.ArgValue("foo"), 1,
-			),
+			`aliasByTags(*, 2, "blah", "foo", 1)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"base.metric1;foo=bar;baz=bam", 0, 1}: {types.MakeMetricData("base.metric1;foo=bar;baz=bam", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{"*", 0, 1}: {types.MakeMetricData("base.metric1;foo=bar;baz=bam", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData(".bar.metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("aliasByTags",
-				"base.metric1;foo=bar;baz=bam", 2, parser.ArgValue("baz"), parser.ArgValue("foo"), 1,
-			),
+			`aliasByTags(*, 2, "baz", "foo", 1)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"base.metric1;foo=bar;baz=bam", 0, 1}: {types.MakeMetricData("base.metric1;foo=bar;baz=bam", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{"*", 0, 1}: {types.MakeMetricData("base.metric1;foo=bar;baz=bam", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("bam.bar.metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 	}
 
 	for _, tt := range tests {
-		testName := tt.E.Target() + "(" + tt.E.RawArgs() + ")"
+		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
 			th.TestEvalExpr(t, &tt)
 		})
