@@ -9,7 +9,6 @@ import (
 	"github.com/go-graphite/carbonapi/zipper/helper"
 	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 	"github.com/go-graphite/carbonapi/zipper/metadata"
-	"github.com/go-graphite/carbonapi/zipper/protocols/graphite/msgpack"
 	"github.com/go-graphite/carbonapi/zipper/types"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"net"
@@ -110,6 +109,38 @@ func (c PrometheusGroup) Backends() []string {
 	return c.servers
 }
 
+// Mwdhmsy
+func strToStep(stepStr string) (int64, error) {
+	step, err := strconv.ParseInt(stepStr, 10, 64)
+	if err != nil {
+		modifier := stepStr[len(stepStr)-1]
+		stepStr = stepStr[:len(stepStr)-1]
+		step, err := strconv.ParseInt(stepStr, 10, 64)
+		if err != nil {
+			return -1, err
+		}
+		switch modifier {
+		case 'M':
+			step *= 2628000
+		case 'w':
+			step *= 604800
+		case 'd':
+			step *= 86400
+		case 'h':
+			step *= 3600
+		case 'm':
+			step *= 60
+		case 'y':
+			// 365 days
+			step *= 31536000
+		case 's':
+		default:
+			return -1, fmt.Errorf("unknown modifier: %v", modifier)
+		}
+	}
+	return step, nil
+}
+
 func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, *errors.Errors) {
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/api/v1/query_range")
@@ -130,15 +161,21 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 				zap.Any("target", target),
 			)
 			// rewrite metric for tag
+			stepStr := strconv.FormatInt(step, 10)
 			if strings.HasPrefix(target, "seriesByTag") {
-				target = c.convertGraphiteQueryToProm(target)
+				_, target = c.convertGraphiteQueryToProm(stepStr, target)
 			}
+			/*
+			newStep, err3 := strToStep(stepStr)
+			if err3 == nil {
+				step = newStep
+			}
+			 */
 			c.logger.Debug("will do query",
 				zap.String("query", target),
 				zap.Int64("start", request.Metrics[0].StartTime),
 				zap.Int64("stop", request.Metrics[0].StopTime),
 				)
-			stepStr := strconv.FormatInt(step, 10)
 			v := url.Values{
 				"query": []string{target},
 				"start": []string{strconv.Itoa(int(request.Metrics[0].StartTime))},
@@ -180,8 +217,8 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 					Name:              c.promMetricToGraphite(m.Metric),
 					PathExpression:    pathExpr,
 					ConsolidationFunc: "Average",
-					StopTime:          request.Metrics[0].StopTime,
 					StartTime:         request.Metrics[0].StartTime,
+					StopTime:          request.Metrics[0].StopTime,
 					StepTime:          step,
 					Values:            vals,
 					XFilesFactor:      0.0,
@@ -193,18 +230,114 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	return &r, stats, nil
 }
 
+/*
+logger := c.logger
+	var rewrite *url.URL
+
+	if isTagName {
+		logger = logger.With(zap.String("type", "tagName"))
+	} else {
+		logger = logger.With(zap.String("type", "tagValues"))
+		if _, ok := params["tag"]; !ok {
+			return []string{}, errors.Fatal("no tag specified")
+		}
+	}
+
+	matches := make([]string, 0, len(params["expr"]))
+	for _, e := range params["expr"] {
+		name, t := c.promethizeTagValue(e)
+		matches = append(matches, "{" + name + t.OP + "\"" + t.TagValue + "\"}")
+	}
+
+	rewrite, _ = url.Parse("http://127.0.0.1/api/v1/series")
+	v := url.Values{
+		"match[]": matches,
+	}
+	rewrite.RawQuery = v.Encode()
+
+	result := make([]string, 0)
+	var r prometheusFindResponse
+
+	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
+	if e != nil {
+		return []string{}, e
+	}
+
+	err := json.Unmarshal(res.Response, &r)
+	if err != nil {
+		return []string{}, errors.FromErr(err)
+	}
+
+	if r.Status != "success" {
+		return []string{}, errors.Error(r.Status)
+	}
+
+	var prefix string
+	if isTagName {
+		if prefixArr, ok := params["tagPrefix"]; ok {
+			prefix = prefixArr[0]
+		}
+
+		uniqueTagNames := make(map[string]struct{})
+		for _, d := range r.Data {
+			for k := range d {
+				if strings.HasPrefix(k, prefix) {
+					uniqueTagNames[k] = struct{}{}
+				}
+			}
+		}
+		for k := range uniqueTagNames {
+			result = append(result, k)
+		}
+	} else {
+		if prefixArr, ok := params["valuePrefix"]; ok {
+			prefix = prefixArr[0]
+		}
+
+		uniqueTagValues := make(map[string]struct{})
+		tag := params["tag"][0]
+		for _, d := range r.Data {
+			if v, ok := d[tag]; ok {
+				if strings.HasPrefix(v, prefix) {
+					uniqueTagValues[v] = struct{}{}
+				}
+			}
+		}
+		for v := range uniqueTagValues {
+			result = append(result, v)
+		}
+	}
+
+	if limit > 0 && len(result) > int(limit) {
+		result = result[:int(limit)]
+	}
+
+	logger.Debug("got client response",
+		zap.Any("r", result),
+	)
+
+	return result, nil
+ */
+
 func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, *errors.Errors) {
 	logger := c.logger.With(zap.String("type", "find"), zap.Strings("request", request.Metrics))
 	stats := &types.Stats{}
-	rewrite, _ := url.Parse("http://127.0.0.1/metrics/find/")
+	rewrite, _ := url.Parse("http://127.0.0.1/api/v1/series")
 
 	var r protov3.MultiGlobResponse
 	r.Metrics = make([]protov3.GlobResponse, 0)
 	var e errors.Errors
+	uniqueMetrics := make(map[string]bool)
 	for _, query := range request.Metrics {
+		// Convert query to RE2
+		// reQuery := strings.Replace(query, "*", "[^.]+", -1)
+		// TODO: make proper conversion of '*' to something like '[^.]+'
+		// However currently it seems that it's not trivial
+		reQuery := strings.Replace(query, ".", "\\.", -1)
+		reQuery = strings.Replace(query, "*", ".*", -1)
+		matchQuery := "{__name__=~\"" + reQuery + "\"}"
 		v := url.Values{
-			"query":  []string{query},
-			"format": []string{c.protocol},
+			"match[]": []string{matchQuery},
 		}
 		rewrite.RawQuery = v.Encode()
 		res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
@@ -212,25 +345,46 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 			e.Merge(err)
 			continue
 		}
-		var globs msgpack.MultiGraphiteGlobResponse
-		_, marshalErr := globs.UnmarshalMsg(res.Response)
-		if marshalErr != nil {
-			e.Add(marshalErr)
+
+		var pr prometheusFindResponse
+
+		err2 := json.Unmarshal(res.Response, &pr)
+		if err2 != nil {
+			e.Add(err2)
 			continue
 		}
 
-		stats.Servers = append(stats.Servers, res.Server)
-		matches := make([]protov3.GlobMatch, 0, len(globs))
-		for _, m := range globs {
-			matches = append(matches, protov3.GlobMatch{
-				Path:   m.Path,
-				IsLeaf: m.IsLeaf,
-			})
+		if pr.Status != "success" {
+			e.Addf("%s", pr.Status)
+			continue
 		}
-		r.Metrics = append(r.Metrics, protov3.GlobResponse{
-			Name:    query,
-			Matches: matches,
-		})
+
+		querySplit := strings.Split(query, ".")
+		resp := protov3.GlobResponse{
+			Name: query,
+			Matches: make([]protov3.GlobMatch, 0),
+		}
+		for _, m := range pr.Data {
+			name, ok := m["__name__"]
+			if !ok {
+				continue
+			}
+			nameSplit := strings.Split(name, ".")
+
+			isLeaf := false
+			if len(nameSplit) == len(querySplit) {
+				isLeaf = true
+			}
+			uniqueMetrics[strings.Join(nameSplit[:len(querySplit)], ".")] = isLeaf
+		}
+
+		for k, v := range uniqueMetrics {
+			resp.Matches = append(resp.Matches, protov3.GlobMatch{
+				IsLeaf: v,
+				Path: k,
+			})
+			r.Metrics = append(r.Metrics, resp)
+		}
 	}
 
 	if len(e.Errors) != 0 {
@@ -340,7 +494,7 @@ func (c *PrometheusGroup) doComplexTagQuery(ctx context.Context, isTagName bool,
 		matches = append(matches, "{" + name + t.OP + "\"" + t.TagValue + "\"}")
 	}
 
-	rewrite, _ = url.Parse(fmt.Sprintf("http://127.0.0.1/api/v1/series"))
+	rewrite, _ = url.Parse("http://127.0.0.1/api/v1/series")
 	v := url.Values{
 		"match[]": matches,
 	}

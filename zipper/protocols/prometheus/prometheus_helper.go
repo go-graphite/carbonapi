@@ -15,7 +15,7 @@ type tag struct {
 }
 
 type prometheusValue struct {
-	Timestamp int
+	Timestamp float64
 	Value float64
 }
 
@@ -40,14 +40,16 @@ func (p *prometheusValue) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
+
 	if len(arr) != 2 {
 		return fmt.Errorf("length mismatch, got %v, expected 2", len(arr))
 	}
-	ts, ok := arr[0].(float64)
+
+	var ok bool
+	p.Timestamp, ok = arr[0].(float64)
 	if !ok {
 		return fmt.Errorf("type mismatch for element[0/1], expected 'float64', got '%T', str=%v", arr[0], string(data))
 	}
-	p.Timestamp = int(ts)
 
 	str, ok := arr[1].(string)
 	if !ok {
@@ -144,8 +146,8 @@ func (c *PrometheusGroup) promMetricToGraphite(metric map[string]string) string 
 	return res.String()
 }
 
-
-func (c *PrometheusGroup) convertGraphiteQueryToProm(target string) string {
+// will return step if __step__ is passed
+func (c *PrometheusGroup) convertGraphiteQueryToProm(step, target string) (string, string) {
 	firstTag := true
 	var queryBuilder strings.Builder
 	tagsString := target[len("seriesByTag("):len(target)-1]
@@ -163,6 +165,10 @@ func (c *PrometheusGroup) convertGraphiteQueryToProm(target string) string {
 		delete(tvs, "__name__")
 	}
 	for tagName, t := range tvs {
+		if tagName == "__step__" {
+			step = t.TagValue
+			continue
+		}
 		if firstTag {
 			firstTag = false
 			queryBuilder.WriteByte('{')
@@ -175,5 +181,5 @@ func (c *PrometheusGroup) convertGraphiteQueryToProm(target string) string {
 	if !firstTag {
 		queryBuilder.WriteByte('}')
 	}
-	return queryBuilder.String()
+	return step, queryBuilder.String()
 }
