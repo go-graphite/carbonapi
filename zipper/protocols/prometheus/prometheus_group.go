@@ -11,13 +11,10 @@ import (
 	"github.com/go-graphite/carbonapi/zipper/metadata"
 	"github.com/go-graphite/carbonapi/zipper/protocols/graphite/msgpack"
 	"github.com/go-graphite/carbonapi/zipper/types"
-	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"math"
 	"net"
 	"net/http"
 	"net/url"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -113,157 +110,6 @@ func (c PrometheusGroup) Backends() []string {
 	return c.servers
 }
 
-type tag struct {
-	TagValue string
-	OP string
-}
-
-func (c *PrometheusGroup) splitTagValues(query string) map[string]tag {
-	tags := strings.Split(query, ",")
-	result := make(map[string]tag)
-	for _, tvString := range tags {
-		tvString = strings.TrimSpace(tvString)
-		// Handle = and =~
-		t := tag{}
-		idx := strings.Index(tvString, "=")
-		if idx != -1 {
-			if tvString[idx+1] == '~' {
-				t.OP = "=~"
-				t.TagValue = tvString[idx+2:len(tvString)-1]
-			} else {
-				t.OP = "="
-				t.TagValue = tvString[idx+1:len(tvString)-1]
-			}
-		} else {
-			// Handle != and !=~
-			idx = strings.Index(tvString, "!")
-			if tvString[idx+2] == '~' {
-				t.OP = "!~"
-				t.TagValue = tvString[idx+3:len(tvString)-1]
-			} else {
-				t.OP = "!="
-				t.TagValue = tvString[idx+2:len(tvString)-1]
-			}
-		}
-		// Skip first \" sign
-		result[tvString[1:idx]] = t
-	}
-	return result
-}
-
-func (c *PrometheusGroup) promMetricToGraphite(metric map[string]string) string {
-	var res strings.Builder
-
-	res.WriteString(metric["__name__"])
-	delete(metric, "__name__")
-
-	keys := make([]string, 0, len(metric))
-	for k := range metric {
-		keys = append(keys, k)
-	}
-
-	sort.Strings(keys)
-
-	for _, k := range keys {
-		res.WriteString(";" + k + "=" + metric[k])
-	}
-
-	return res.String()
-}
-
-type prometheusValue struct {
-	Timestamp int
-	Value float64
-}
-
-func (p *prometheusValue) UnmarshalJSON(data []byte) error {
-	arr := make([]interface{}, 0)
-	err := json.Unmarshal(data, &arr)
-	if err != nil {
-		return err
-	}
-	if len(arr) != 2 {
-		return fmt.Errorf("length mismatch, got %v, expected 2", len(arr))
-	}
-	ts, ok := arr[0].(float64)
-	if !ok {
-		return fmt.Errorf("type mismatch for element[0/1], expected 'float64', got '%T', str=%v", arr[0], string(data))
-	}
-	p.Timestamp = int(ts)
-
-	str, ok := arr[1].(string)
-	if !ok {
-		return fmt.Errorf("type mismatch for element[1/1], expected 'string', got '%T', str=%v", arr[1], string(data))
-	}
-
-	switch str {
-	case "NaN":
-		p.Value = math.NaN()
-		return nil
-	case "+Inf":
-		p.Value = math.Inf(1)
-		return nil
-	case "-Inf":
-		p.Value = math.Inf(-1)
-		return nil
-	default:
-		p.Value, err = strconv.ParseFloat(str, 64)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-type prometheusResult struct {
-	Metric map[string]string `json:"metric"`
-	Values []prometheusValue `json:"values"`
-}
-
-type prometheusData struct {
-	Result []prometheusResult `json:"result"`
-	ResultType string `json:"resultType"`
-}
-
-type prometheusResponse struct {
-	Status string `json:"status"`
-	Data prometheusData `json:"data"`
-}
-
-func (c *PrometheusGroup) convertGraphiteQueryToProm(target string) string {
-	firstTag := true
-	var queryBuilder strings.Builder
-	tagsString := target[len("seriesByTag("):len(target)-1]
-	tvs := c.splitTagValues(tagsString)
-	// It's ok to have empty "__name__"
-	if v, ok := tvs["__name__"]; ok {
-		if v.OP == "=" {
-			queryBuilder.WriteString(v.TagValue)
-		} else {
-			firstTag = false
-			queryBuilder.WriteByte('{')
-			queryBuilder.WriteString("__name__"+v.OP+"\""+v.TagValue+"\"")
-		}
-
-		delete(tvs, "__name__")
-	}
-	for tagName, t := range tvs {
-		if firstTag {
-			firstTag = false
-			queryBuilder.WriteByte('{')
-			queryBuilder.WriteString(tagName+t.OP+"\""+t.TagValue+"\"")
-		} else {
-			queryBuilder.WriteString(", " + tagName+t.OP+"\""+t.TagValue+"\"")
-		}
-
-	}
-	if !firstTag {
-		queryBuilder.WriteByte('}')
-	}
-	return queryBuilder.String()
-}
-
 func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, *errors.Errors) {
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/api/v1/query_range")
@@ -316,6 +162,11 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 					zap.Error(err2),
 				)
 				err.Add(err2)
+				continue
+			}
+
+			if response.Status != "success" {
+				err.Addf("query=%s, err=%s", target, response.Status)
 				continue
 			}
 
@@ -395,76 +246,7 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 }
 
 func (c *PrometheusGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, *errors.Errors) {
-	logger := c.logger.With(zap.String("type", "info"))
-	stats := &types.Stats{}
-	rewrite, _ := url.Parse("http://127.0.0.1/info/")
-
-	var r protov3.ZipperInfoResponse
-	var e errors.Errors
-	r.Info = make(map[string]protov3.MultiMetricsInfoResponse)
-	data := protov3.MultiMetricsInfoResponse{}
-	server := c.groupName
-	if len(c.servers) == 1 {
-		server = c.servers[0]
-	}
-
-	for _, query := range request.Names {
-		v := url.Values{
-			"target": []string{query},
-			"format": []string{c.protocol},
-		}
-		rewrite.RawQuery = v.Encode()
-		res, e2 := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
-		if e2 != nil {
-			e.Merge(e2)
-			continue
-		}
-
-		var info protov2.InfoResponse
-		err := info.Unmarshal(res.Response)
-		if err != nil {
-			e.Add(err)
-			continue
-		}
-		stats.Servers = append(stats.Servers, res.Server)
-
-		if info.AggregationMethod == "" {
-			info.AggregationMethod = "average"
-		}
-		infoV3 := protov3.MetricsInfoResponse{
-			Name:              info.Name,
-			ConsolidationFunc: info.AggregationMethod,
-			XFilesFactor:      info.XFilesFactor,
-			MaxRetention:      int64(info.MaxRetention),
-		}
-
-		for _, r := range info.Retentions {
-			newR := protov3.Retention{
-				SecondsPerPoint: int64(r.SecondsPerPoint),
-				NumberOfPoints:  int64(r.NumberOfPoints),
-			}
-			infoV3.Retentions = append(infoV3.Retentions, newR)
-		}
-
-		data.Metrics = append(data.Metrics, infoV3)
-	}
-	r.Info[server] = data
-
-	if len(e.Errors) != 0 {
-		logger.Error("errors occurred while getting results",
-			zap.Any("errors", e.Errors),
-		)
-	}
-
-	if len(r.Info[server].Metrics) == 0 {
-		return nil, stats, errors.FromErr(types.ErrNoResponseFetched)
-	}
-
-	logger.Debug("got client response",
-		zap.Any("r", r),
-	)
-
-	return &r, stats, nil
+	return nil, nil, errors.FromErr(types.ErrNotImplementedYet)
 }
 
 func (c *PrometheusGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, *errors.Errors) {
@@ -474,36 +256,187 @@ func (c *PrometheusGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResp
 	return nil, nil, errors.FromErr(types.ErrNotImplementedYet)
 }
 
-func (c *PrometheusGroup) doTagQuery(ctx context.Context, isTagName bool, query string, limit int64) ([]string, *errors.Errors) {
+func (c *PrometheusGroup) doSimpleTagQuery(ctx context.Context, isTagName bool, params map[string][]string, limit int64) ([]string, *errors.Errors) {
 	logger := c.logger
 	var rewrite *url.URL
+
 	if isTagName {
 		logger = logger.With(zap.String("type", "tagName"))
-		rewrite, _ = url.Parse("http://127.0.0.1/tags/autoComplete/tags")
+		rewrite, _ = url.Parse("http://127.0.0.1/api/v1/labels")
 	} else {
 		logger = logger.With(zap.String("type", "tagValues"))
-		rewrite, _ = url.Parse("http://127.0.0.1/tags/autoComplete/values")
+		if tag, ok := params["tag"]; ok {
+			rewrite, _ = url.Parse(fmt.Sprintf("http://127.0.0.1/api/v1/label/%s/values", tag[0]))
+		} else {
+			return []string{}, errors.Fatal("no tag specified")
+		}
 	}
 
-	var r []string
+	var r prometheusTagResponse
 
-	rewrite.RawQuery = query
 	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
 	if e != nil {
-		return r, e
+		return []string{}, e
 	}
 
 	err := json.Unmarshal(res.Response, &r)
 	if err != nil {
-		e.Add(err)
-		return r, e
+		return []string{}, errors.FromErr(err)
+	}
+
+	if r.Status != "success" {
+		return []string{}, errors.Error(r.Status)
+	}
+
+	if isTagName {
+		if v, ok := params["tagPrefix"]; ok {
+			data := make([]string, 0)
+			for _, t := range r.Data {
+				if strings.HasPrefix(t, v[0]) {
+					data = append(data, t)
+				}
+			}
+			r.Data = data
+		}
+	} else {
+		if v, ok := params["valuePrefix"]; ok {
+			data := make([]string, 0)
+			for _, t := range r.Data {
+				if strings.HasPrefix(t, v[0]) {
+					data = append(data, t)
+				}
+			}
+			r.Data = data
+		}
+	}
+
+	if limit > 0 && len(r.Data) > int(limit) {
+		r.Data = r.Data[:int(limit)]
 	}
 
 	logger.Debug("got client response",
 		zap.Any("r", r),
 	)
 
-	return r, nil
+	return r.Data, nil
+}
+
+func (c *PrometheusGroup) doComplexTagQuery(ctx context.Context, isTagName bool, params map[string][]string, limit int64) ([]string, *errors.Errors) {
+	logger := c.logger
+	var rewrite *url.URL
+
+	if isTagName {
+		logger = logger.With(zap.String("type", "tagName"))
+	} else {
+		logger = logger.With(zap.String("type", "tagValues"))
+		if _, ok := params["tag"]; !ok {
+			return []string{}, errors.Fatal("no tag specified")
+		}
+	}
+
+	matches := make([]string, 0, len(params["expr"]))
+	for _, e := range params["expr"] {
+		name, t := c.promethizeTagValue(e)
+		matches = append(matches, "{" + name + t.OP + "\"" + t.TagValue + "\"}")
+	}
+
+	rewrite, _ = url.Parse(fmt.Sprintf("http://127.0.0.1/api/v1/series"))
+	v := url.Values{
+		"match[]": matches,
+	}
+	rewrite.RawQuery = v.Encode()
+
+	result := make([]string, 0)
+	var r prometheusFindResponse
+
+	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
+	if e != nil {
+		return []string{}, e
+	}
+
+	err := json.Unmarshal(res.Response, &r)
+	if err != nil {
+		return []string{}, errors.FromErr(err)
+	}
+
+	if r.Status != "success" {
+		return []string{}, errors.Error(r.Status)
+	}
+
+	var prefix string
+	if isTagName {
+		if prefixArr, ok := params["tagPrefix"]; ok {
+			prefix = prefixArr[0]
+		}
+
+		uniqueTagNames := make(map[string]struct{})
+		for _, d := range r.Data {
+			for k := range d {
+				if strings.HasPrefix(k, prefix) {
+					uniqueTagNames[k] = struct{}{}
+				}
+			}
+		}
+		for k := range uniqueTagNames {
+			result = append(result, k)
+		}
+	} else {
+		if prefixArr, ok := params["valuePrefix"]; ok {
+			prefix = prefixArr[0]
+		}
+
+		uniqueTagValues := make(map[string]struct{})
+		tag := params["tag"][0]
+		for _, d := range r.Data {
+			if v, ok := d[tag]; ok {
+				if strings.HasPrefix(v, prefix) {
+					uniqueTagValues[v] = struct{}{}
+				}
+			}
+		}
+		for v := range uniqueTagValues {
+			result = append(result, v)
+		}
+	}
+
+	if limit > 0 && len(result) > int(limit) {
+		result = result[:int(limit)]
+	}
+
+	logger.Debug("got client response",
+		zap.Any("r", result),
+	)
+
+	return result, nil
+}
+
+// TODO: Handle 'expr' query as well
+func (c *PrometheusGroup) doTagQuery(ctx context.Context, isTagName bool, query string, limit int64) ([]string, *errors.Errors) {
+	logger := c.logger
+	params := make(map[string][]string)
+	queryDecoded, _ := url.QueryUnescape(query)
+	querySplit := strings.Split(queryDecoded, "&")
+	for _, qvRaw := range querySplit {
+		idx := strings.Index(qvRaw, "=")
+		k := qvRaw[:idx]
+		v := qvRaw[idx+1:]
+		if v2, ok := params[qvRaw[:idx]]; !ok {
+			params[k] = []string{v}
+		} else {
+			v2 = append(v2, v)
+			params[k] = v2
+		}
+	}
+	logger.Debug("doTagQuery",
+		zap.Any("query", queryDecoded),
+		zap.Any("params", params),
+	)
+
+	if _, ok := params["expr"]; !ok {
+		return c.doSimpleTagQuery(ctx, isTagName, params, limit)
+	}
+
+	return c.doComplexTagQuery(ctx, isTagName, params, limit)
 }
 
 func (c *PrometheusGroup) TagNames(ctx context.Context, query string, limit int64) ([]string, *errors.Errors) {
