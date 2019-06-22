@@ -36,10 +36,10 @@ type capabilityResponse struct {
 
 //_internal/capabilities/
 func doQuery(ctx context.Context, logger *zap.Logger, groupName string, httpClient *http.Client, limiter *limiter.ServerLimiter, server string, request types.Request, resChan chan<- capabilityResponse) {
-	httpQuery := helper.NewHttpQuery(logger, groupName, []string{server}, 1, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv3PB)
+	httpQuery := helper.NewHttpQuery(groupName, []string{server}, 1, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv3PB)
 	rewrite, _ := url.Parse("http://127.0.0.1/_internal/capabilities/")
 
-	res, e := httpQuery.DoQuery(ctx, rewrite.RequestURI(), request)
+	res, e := httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), request)
 	if e != nil || res == nil || res.Response == nil || len(res.Response) == 0 {
 		logger.Info("will assume old protocol")
 		resChan <- capabilityResponse{
@@ -187,7 +187,7 @@ func New(logger *zap.Logger, config types.BackendV2) (types.ServerClient, *error
 		broadcastClients = append(broadcastClients, c)
 	}
 
-	return broadcast.NewBroadcastGroup(logger, config.GroupName+"_broadcast", broadcastClients, 600, limit, *config.Timeouts)
+	return broadcast.NewBroadcastGroup(logger, config.GroupName+"_broadcast", broadcastClients, 600, limit, config.MaxBatchSize, *config.Timeouts)
 }
 
 func (c AutoGroup) MaxMetricsPerRequest() int {

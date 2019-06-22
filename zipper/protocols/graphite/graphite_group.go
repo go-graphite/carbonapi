@@ -68,7 +68,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter
 		},
 	}
 
-	httpQuery := helper.NewHttpQuery(logger, config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv2PB)
+	httpQuery := helper.NewHttpQuery(config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv2PB)
 
 	c := &GraphiteGroup{
 		groupName:            config.GroupName,
@@ -112,6 +112,7 @@ func (c GraphiteGroup) Backends() []string {
 }
 
 func (c *GraphiteGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, *errors.Errors) {
+	logger := c.logger.With(zap.String("type", "fetch"), zap.String("request", request.String()))
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/render/")
 
@@ -130,7 +131,7 @@ func (c *GraphiteGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRe
 			"until":  []string{strconv.Itoa(int(request.Metrics[0].StopTime))},
 		}
 		rewrite.RawQuery = v.Encode()
-		res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
+		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if err == nil {
 			err = &errors.Errors{}
 		}
@@ -185,7 +186,7 @@ func (c *GraphiteGroup) Find(ctx context.Context, request *protov3.MultiGlobRequ
 			"format": []string{c.protocol},
 		}
 		rewrite.RawQuery = v.Encode()
-		res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
+		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if err != nil {
 			e.Merge(err)
 			continue
@@ -243,7 +244,7 @@ func (c *GraphiteGroup) Info(ctx context.Context, request *protov3.MultiMetricsI
 			"format": []string{c.protocol},
 		}
 		rewrite.RawQuery = v.Encode()
-		res, e2 := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
+		res, e2 := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if e2 != nil {
 			e.Merge(e2)
 			continue
@@ -317,7 +318,7 @@ func (c *GraphiteGroup) doTagQuery(ctx context.Context, isTagName bool, query st
 	var r []string
 
 	rewrite.RawQuery = query
-	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
+	res, e := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 	if e != nil {
 		return r, e
 	}

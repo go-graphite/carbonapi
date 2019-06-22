@@ -37,7 +37,7 @@ func (bg *BroadcastGroup) Children() []types.ServerClient {
 	return children
 }
 
-func NewBroadcastGroup(logger *zap.Logger, groupName string, servers []types.ServerClient, expireDelaySec int32, concurencyLimit int, timeout types.Timeouts) (*BroadcastGroup, *errors.Errors) {
+func NewBroadcastGroup(logger *zap.Logger, groupName string, servers []types.ServerClient, expireDelaySec int32, concurencyLimit, maxBatchSize int, timeout types.Timeouts) (*BroadcastGroup, *errors.Errors) {
 	if len(servers) == 0 {
 		return nil, errors.Fatal("no servers specified")
 	}
@@ -48,17 +48,17 @@ func NewBroadcastGroup(logger *zap.Logger, groupName string, servers []types.Ser
 	pathCache := pathcache.NewPathCache(expireDelaySec)
 	limiter := limiter.NewServerLimiter(serverNames, concurencyLimit)
 
-	return NewBroadcastGroupWithLimiter(logger, groupName, servers, serverNames, pathCache, limiter, timeout)
+	return NewBroadcastGroupWithLimiter(logger, groupName, servers, serverNames, maxBatchSize, pathCache, limiter, timeout)
 }
 
-func NewBroadcastGroupWithLimiter(logger *zap.Logger, groupName string, servers []types.ServerClient, serverNames []string, pathCache pathcache.PathCache, limiter *limiter.ServerLimiter, timeout types.Timeouts) (*BroadcastGroup, *errors.Errors) {
+func NewBroadcastGroupWithLimiter(logger *zap.Logger, groupName string, servers []types.ServerClient, serverNames []string, maxBatchSize int, pathCache pathcache.PathCache, limiter *limiter.ServerLimiter, timeout types.Timeouts) (*BroadcastGroup, *errors.Errors) {
 	b := &BroadcastGroup{
 		timeout:              timeout,
 		groupName:            groupName,
 		clients:              servers,
 		limiter:              limiter,
 		servers:              serverNames,
-		maxMetricsPerRequest: 100, //TODO remove this hardcoded value
+		maxMetricsPerRequest: maxBatchSize,
 
 		pathCache: pathCache,
 		logger:    logger.With(zap.String("type", "broadcastGroup"), zap.String("groupName", groupName)),
@@ -67,6 +67,7 @@ func NewBroadcastGroupWithLimiter(logger *zap.Logger, groupName string, servers 
 	b.logger.Debug("created broadcast group",
 		zap.String("group_name", b.groupName),
 		zap.Strings("clients", b.servers),
+		zap.Int("max_batch_size", maxBatchSize),
 	)
 
 	return b, nil

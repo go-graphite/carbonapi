@@ -79,7 +79,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter
 
 	logger = logger.With(zap.String("type", "protoV3Group"), zap.String("name", config.GroupName))
 
-	httpQuery := helper.NewHttpQuery(logger, config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv3PB)
+	httpQuery := helper.NewHttpQuery(config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv3PB)
 
 	c := &ClientProtoV3Group{
 		groupName:            config.GroupName,
@@ -112,13 +112,14 @@ func (c ClientProtoV3Group) Backends() []string {
 func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, *errors.Errors) {
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/render/")
+	logger := c.logger.With(zap.String("type", "fetch"), zap.String("request", request.String()))
 
 	v := url.Values{
 		"format": []string{format},
 	}
 	rewrite.RawQuery = v.Encode()
 
-	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), types.MultiFetchRequestV3{*request})
+	res, e := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), types.MultiFetchRequestV3{*request})
 	if e == nil {
 		e = &errors.Errors{}
 	}
@@ -145,6 +146,7 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 }
 
 func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, *errors.Errors) {
+	logger := c.logger.With(zap.String("type", "find"), zap.Strings("request", request.Metrics))
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/metrics/find/")
 
@@ -153,7 +155,7 @@ func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlo
 	}
 	rewrite.RawQuery = v.Encode()
 
-	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), types.MultiGlobRequestV3{*request})
+	res, e := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), types.MultiGlobRequestV3{*request})
 	if e == nil {
 		e = &errors.Errors{}
 	}
@@ -175,6 +177,7 @@ func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlo
 }
 
 func (c *ClientProtoV3Group) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, *errors.Errors) {
+	logger := c.logger.With(zap.String("type", "info"), zap.String("request", request.String()))
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/metrics/find/")
 
@@ -183,7 +186,7 @@ func (c *ClientProtoV3Group) Info(ctx context.Context, request *protov3.MultiMet
 	}
 	rewrite.RawQuery = v.Encode()
 
-	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), types.MultiMetricsInfoV3{*request})
+	res, e := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), types.MultiMetricsInfoV3{*request})
 	if e == nil {
 		e = &errors.Errors{}
 	}
@@ -223,17 +226,17 @@ func (c *ClientProtoV3Group) doTagQuery(ctx context.Context, isTagName bool, que
 	logger := c.logger
 	var rewrite *url.URL
 	if isTagName {
-		logger = logger.With(zap.String("type", "tagName"))
+		logger = logger.With(zap.String("sub_type", "tagName"))
 		rewrite, _ = url.Parse("http://127.0.0.1/tags/autoComplete/tags")
 	} else {
-		logger = logger.With(zap.String("type", "tagValues"))
+		logger = logger.With(zap.String("sub_type", "tagValues"))
 		rewrite, _ = url.Parse("http://127.0.0.1/tags/autoComplete/values")
 	}
 
 	var r []string
 
 	rewrite.RawQuery = query
-	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
+	res, e := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 	if e != nil {
 		return r, e
 	}

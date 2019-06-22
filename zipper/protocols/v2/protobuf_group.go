@@ -70,7 +70,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter
 		},
 	}
 
-	httpQuery := helper.NewHttpQuery(logger, config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv2PB)
+	httpQuery := helper.NewHttpQuery(config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv2PB)
 
 	c := &ClientProtoV2Group{
 		groupName:            config.GroupName,
@@ -90,7 +90,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter
 
 func New(logger *zap.Logger, config types.BackendV2) (types.ServerClient, *errors.Errors) {
 	if config.ConcurrencyLimit == nil {
-		return nil, errors.Fatal("concurency limit is not set")
+		return nil, errors.Fatal("concurrency limit is not set")
 	}
 	if len(config.Servers) == 0 {
 		return nil, errors.Fatal("no servers specified")
@@ -119,6 +119,7 @@ type queryBatch struct {
 }
 
 func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, *errors.Errors) {
+	logger := c.logger.With(zap.String("type", "fetch"), zap.String("request", request.String()))
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/render/")
 
@@ -142,7 +143,7 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 			"until":  []string{strconv.Itoa(int(batch.until))},
 		}
 		rewrite.RawQuery = v.Encode()
-		res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
+		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if err == nil {
 			err = &errors.Errors{}
 		}
@@ -200,7 +201,7 @@ func (c *ClientProtoV2Group) Find(ctx context.Context, request *protov3.MultiGlo
 			"format": []string{format},
 		}
 		rewrite.RawQuery = v.Encode()
-		res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
+		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if err != nil {
 			e.Merge(err)
 			continue
@@ -257,7 +258,7 @@ func (c *ClientProtoV2Group) Info(ctx context.Context, request *protov3.MultiMet
 			"format": []string{format},
 		}
 		rewrite.RawQuery = v.Encode()
-		res, e2 := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
+		res, e2 := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if e2 != nil {
 			e.Merge(e2)
 			continue
@@ -324,7 +325,7 @@ func (c *ClientProtoV2Group) doTagQuery(ctx context.Context, isTagName bool, que
 	var r []string
 
 	rewrite.RawQuery = query
-	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
+	res, e := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 	if e != nil {
 		return r, e
 	}

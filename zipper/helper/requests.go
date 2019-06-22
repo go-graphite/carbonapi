@@ -26,7 +26,6 @@ type HttpQuery struct {
 	groupName string
 	servers   []string
 	maxTries  int
-	logger    *zap.Logger
 	limiter   *limiter.ServerLimiter
 	client    *http.Client
 	encoding  string
@@ -34,24 +33,23 @@ type HttpQuery struct {
 	counter uint64
 }
 
-func NewHttpQuery(logger *zap.Logger, groupName string, servers []string, maxTries int, limiter *limiter.ServerLimiter, client *http.Client, encoding string) *HttpQuery {
+func NewHttpQuery(groupName string, servers []string, maxTries int, limiter *limiter.ServerLimiter, client *http.Client, encoding string) *HttpQuery {
 	return &HttpQuery{
 		groupName: groupName,
 		servers:   servers,
 		maxTries:  maxTries,
-		logger:    logger.With(zap.String("action", "query")),
 		limiter:   limiter,
 		client:    client,
 		encoding:  encoding,
 	}
 }
 
-func (c *HttpQuery) pickServer() string {
+func (c *HttpQuery) pickServer(logger *zap.Logger) string {
 	if len(c.servers) == 1 {
 		// No need to do heavy operations here
 		return c.servers[0]
 	}
-	logger := c.logger.With(zap.String("function", "picker"))
+	logger = logger.With(zap.String("function", "picker"))
 	counter := atomic.AddUint64(&(c.counter), 1)
 	idx := counter % uint64(len(c.servers))
 	srv := c.servers[int(idx)]
@@ -64,9 +62,9 @@ func (c *HttpQuery) pickServer() string {
 	return srv
 }
 
-func (c *HttpQuery) doRequest(ctx context.Context, uri string, r types.Request) (*ServerResponse, error) {
-	server := c.pickServer()
-	c.logger.Debug("picked server",
+func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, uri string, r types.Request) (*ServerResponse, error) {
+	server := c.pickServer(logger)
+	logger.Debug("picked server",
 		zap.String("server", server),
 	)
 
@@ -86,7 +84,7 @@ func (c *HttpQuery) doRequest(ctx context.Context, uri string, r types.Request) 
 			reader = bytes.NewReader(body)
 		}
 	}
-	logger := c.logger.With(
+	logger = logger.With(
 		zap.String("server", server),
 		zap.String("name", c.groupName),
 		zap.String("uri", u.String()),
@@ -138,7 +136,7 @@ func (c *HttpQuery) doRequest(ctx context.Context, uri string, r types.Request) 
 	return &ServerResponse{Server: server, Response: body}, nil
 }
 
-func (c *HttpQuery) DoQuery(ctx context.Context, uri string, r types.Request) (*ServerResponse, *errors.Errors) {
+func (c *HttpQuery) DoQuery(ctx context.Context, logger *zap.Logger, uri string, r types.Request) (*ServerResponse, *errors.Errors) {
 	maxTries := c.maxTries
 	if len(c.servers) > maxTries {
 		maxTries = len(c.servers)
@@ -146,9 +144,9 @@ func (c *HttpQuery) DoQuery(ctx context.Context, uri string, r types.Request) (*
 
 	var e errors.Errors
 	for try := 0; try < maxTries; try++ {
-		res, err := c.doRequest(ctx, uri, r)
+		res, err := c.doRequest(ctx, logger, uri, r)
 		if err != nil {
-			c.logger.Error("have errors",
+			logger.Error("have errors",
 				zap.Error(err),
 			)
 			e.Add(err)
