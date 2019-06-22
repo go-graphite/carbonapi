@@ -25,7 +25,10 @@ func main() {
 	logger := zapwriter.Logger("main")
 
 	configPath := flag.String("config", "", "Path to the `config file`.")
-	envPrefix := flag.String("envprefix", "CARBONAPI_", "Preifx for environment variables override")
+	envPrefix := flag.String("envprefix", "CARBONAPI", "Preifx for environment variables override")
+	if *envPrefix == "(empty)" {
+		*envPrefix = ""
+	}
 	if *envPrefix == "" {
 		logger.Warn("empty prefix is not recommended due to possible collisions with OS environment variables")
 	}
