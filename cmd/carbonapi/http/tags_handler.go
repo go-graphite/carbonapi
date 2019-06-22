@@ -32,7 +32,7 @@ func tagHandler(w http.ResponseWriter, r *http.Request) {
 
 	accessLogger := zapwriter.Logger("access")
 	var accessLogDetails = &carbonapipb.AccessLogDetails{
-		Handler:       "render",
+		Handler:       "tags",
 		Username:      username,
 		CarbonapiUUID: uuid.String(),
 		URL:           r.URL.Path,
@@ -76,9 +76,9 @@ func tagHandler(w http.ResponseWriter, r *http.Request) {
 
 	// TODO(civil): Implement caching
 	var res []string
-	if strings.HasSuffix(r.URL.Path, "tags") {
+	if strings.HasSuffix(r.URL.Path, "tags") || strings.HasSuffix(r.URL.Path, "tags/") {
 		res, err = config.Config.ZipperInstance.TagNames(ctx, rawQuery, limit)
-	} else if strings.HasSuffix(r.URL.Path, "values") {
+	} else if strings.HasSuffix(r.URL.Path, "values") || strings.HasSuffix(r.URL.Path, "values/") {
 		res, err = config.Config.ZipperInstance.TagValues(ctx, rawQuery, limit)
 	} else {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
