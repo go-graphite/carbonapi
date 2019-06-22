@@ -64,7 +64,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter
 		},
 	}
 
-	httpQuery := helper.NewHttpQuery(logger, config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv2PB)
+	httpQuery := helper.NewHttpQuery(config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv2PB)
 
 	c := &PrometheusGroup{
 		groupName:            config.GroupName,
@@ -112,6 +112,7 @@ func (c PrometheusGroup) Backends() []string {
 }
 
 func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, *errors.Errors) {
+	logger := c.logger.With(zap.String("type", "fetch"), zap.String("request", request.String()))
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/api/v1/query_range")
 
@@ -126,7 +127,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	step := int64(15)
 	for pathExpr, targets := range pathExprToTargets {
 		for _, target := range targets {
-			c.logger.Debug("got some target to query",
+			logger.Debug("got some target to query",
 				zap.Any("pathExpr", pathExpr),
 				zap.Any("target", target),
 			)
@@ -153,7 +154,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 				"step":  []string{stepStr},
 			}
 			rewrite.RawQuery = v.Encode()
-			res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
+			res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 			if err == nil {
 				err = &errors.Errors{}
 			}
@@ -219,7 +220,7 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 			"match[]": []string{matchQuery},
 		}
 		rewrite.RawQuery = v.Encode()
-		res, err := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
+		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if err != nil {
 			e.Merge(err)
 			continue
@@ -289,8 +290,7 @@ func (c *PrometheusGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResp
 	return nil, nil, errors.FromErr(types.ErrNotSupportedByBackend)
 }
 
-func (c *PrometheusGroup) doSimpleTagQuery(ctx context.Context, isTagName bool, params map[string][]string, limit int64) ([]string, *errors.Errors) {
-	logger := c.logger
+func (c *PrometheusGroup) doSimpleTagQuery(ctx context.Context, logger *zap.Logger, isTagName bool, params map[string][]string, limit int64) ([]string, *errors.Errors) {
 	var rewrite *url.URL
 
 	if isTagName {
@@ -307,7 +307,7 @@ func (c *PrometheusGroup) doSimpleTagQuery(ctx context.Context, isTagName bool, 
 
 	var r prometheusTagResponse
 
-	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
+	res, e := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 	if e != nil {
 		return []string{}, e
 	}
@@ -348,7 +348,7 @@ func (c *PrometheusGroup) doSimpleTagQuery(ctx context.Context, isTagName bool, 
 	}
 
 	logger.Debug("got client response",
-		zap.Any("r", r),
+		zap.Any("result", r),
 	)
 
 	return r.Data, nil
@@ -382,7 +382,7 @@ func (c *PrometheusGroup) doComplexTagQuery(ctx context.Context, isTagName bool,
 	result := make([]string, 0)
 	var r prometheusFindResponse
 
-	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
+	res, e := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 	if e != nil {
 		return []string{}, e
 	}
@@ -393,7 +393,7 @@ func (c *PrometheusGroup) doComplexTagQuery(ctx context.Context, isTagName bool,
 	}
 
 	if r.Status != "success" {
-		return []string{}, errors.Errorf("status=%s, errorType=%s, error=%s", pr.Status, pr.ErrorType, pr.Error)
+		return []string{}, errors.Errorf("status=%s, errorType=%s, error=%s", r.Status, r.ErrorType, r.Error)
 	}
 
 	var prefix string
@@ -437,7 +437,7 @@ func (c *PrometheusGroup) doComplexTagQuery(ctx context.Context, isTagName bool,
 	}
 
 	logger.Debug("got client response",
-		zap.Any("r", result),
+		zap.Any("result", result),
 	)
 
 	return result, nil
@@ -465,7 +465,7 @@ func (c *PrometheusGroup) doTagQuery(ctx context.Context, isTagName bool, query 
 	)
 
 	if _, ok := params["expr"]; !ok {
-		return c.doSimpleTagQuery(ctx, isTagName, params, limit)
+		return c.doSimpleTagQuery(ctx, logger, isTagName, params, limit)
 	}
 
 	return c.doComplexTagQuery(ctx, isTagName, params, limit)
