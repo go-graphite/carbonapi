@@ -51,7 +51,8 @@ func doQuery(ctx context.Context, logger *zap.Logger, groupName string, httpClie
 
 	response := protov3.CapabilityResponse{}
 	logger.Debug("response",
-		zap.Any("res", res),
+		zap.String("server", res.Server),
+		zap.String("response", string(res.Response)),
 	)
 	err := response.Unmarshal(res.Response)
 

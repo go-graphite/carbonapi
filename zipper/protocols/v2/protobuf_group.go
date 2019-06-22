@@ -207,18 +207,25 @@ func (c *ClientProtoV2Group) Find(ctx context.Context, request *protov3.MultiGlo
 	r.Metrics = make([]protov3.GlobResponse, 0)
 	e := errors.Errors{}
 	for _, query := range request.Metrics {
+		logger.Debug("will do query",
+			zap.String("query", query),
+		)
 		v := url.Values{
 			"query":  []string{query},
 			"format": []string{format},
 		}
 		rewrite.RawQuery = v.Encode()
+		logger.Debug("doing http query")
 		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
+		logger.Debug("done http query")
 		if err != nil {
 			e.Merge(err)
 			continue
 		}
 		var globs protov2.GlobResponse
+		logger.Debug("started to unmarshal response")
 		marshalErr := globs.Unmarshal(res.Response)
+		logger.Debug("done unmarshal response")
 		if marshalErr != nil {
 			e.Add(marshalErr)
 			continue
@@ -313,7 +320,7 @@ func (c *ClientProtoV2Group) Info(ctx context.Context, request *protov3.MultiMet
 	}
 
 	logger.Debug("got client response",
-		zap.Any("r", r),
+		zap.Any("response", r),
 	)
 
 	return &r, stats, nil
@@ -345,7 +352,7 @@ func (c *ClientProtoV2Group) doTagQuery(ctx context.Context, isTagName bool, que
 	}
 
 	logger.Debug("got client response",
-		zap.Any("r", r),
+		zap.Strings("response", r),
 	)
 
 	return r, nil

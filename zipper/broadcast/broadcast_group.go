@@ -118,6 +118,7 @@ func (bg BroadcastGroup) MaxMetricsPerRequest() int {
 }
 
 func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger, client types.ServerClient, requests []*protov3.MultiFetchRequest, resCh chan<- *types.ServerFetchResponse) {
+	logger = logger.With(zap.String("client_name", client.Name()))
 	logger.Debug("waiting for slot",
 		zap.Int("maxConns", bg.limiter.Capacity()),
 	)
@@ -136,11 +137,10 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 
 	uuid := util.GetUUID(ctx)
 	for _, req := range requests {
-		logger.Debug("sending request",
-			zap.String("client_name", client.Name()),
-		)
+		logger.Debug("sending request")
 		r := types.NewServerFetchResponse()
 		r.Response, r.Stats, r.Err = client.Fetch(ctx, req)
+		logger.Debug("got response")
 		response.Merge(r, uuid)
 	}
 
@@ -170,7 +170,7 @@ func (bg *BroadcastGroup) SplitRequest(ctx context.Context, request *protov3.Mul
 
 		f, _, e := bg.Find(ctx, &protov3.MultiGlobRequest{Metrics: []string{metric.Name}})
 		if (e != nil && e.HaveFatalErrors && len(e.Errors) > 0) || f == nil || len(f.Metrics) == 0 {
-			bg.logger.Warn("Find request failed when resolving globs",
+			bg.logger.Warn("find request failed when resolving globs",
 				zap.String("metric_name", metric.Name),
 				zap.Any("errors", e.Errors),
 			)
