@@ -25,6 +25,7 @@ type BackendV2 struct {
 	MaxIdleConnsPerHost *int           `mapstructure:"maxIdleConnsPerHost"`
 	MaxTries            *int           `mapstructure:"maxTries"`
 	MaxBatchSize        int            `mapstructure:"maxBatchSize"`
+	BackendOptions      map[string]interface{} `mapstructure:"backendOptions"`
 }
 
 func (b *BackendV2) FillDefaults() {

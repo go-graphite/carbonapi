@@ -42,6 +42,8 @@ upstreams:
             keepAliveInterval: "10s"
             concurrencyLimit: 0
             maxIdleConnsPerHost: 1000
+            backendOptions:
+                step: 60
             timeouts:
                 find: "2s"
                 render: "50s"

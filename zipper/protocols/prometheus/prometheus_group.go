@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -45,6 +46,8 @@ type PrometheusGroup struct {
 	maxTries             int
 	maxMetricsPerRequest int
 
+	step int64
+
 	httpQuery *helper.HttpQuery
 }
 
@@ -64,6 +67,30 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter
 		},
 	}
 
+	step := int64(15)
+	stepI, ok := config.BackendOptions["step"]
+	if ok {
+		stepNew, ok := stepI.(string)
+		if ok {
+			if stepNew[len(stepNew) - 1] >= '0' && stepNew[len(stepNew) - 1] <= '9' {
+				stepNew += "s"
+			}
+			t, err := time.ParseDuration(stepNew)
+			if err != nil {
+				logger.Fatal("failed to parse option",
+					zap.String("option_name", "step"),
+					zap.Error(err),
+				)
+			}
+			step = int64(t.Seconds())
+		} else {
+			logger.Fatal("failed to parse step",
+				zap.String("type_parsed", fmt.Sprintf("%T", stepI)),
+				zap.String("type_expected", "string"),
+			)
+		}
+	}
+
 	httpQuery := helper.NewHttpQuery(config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv2PB)
 
 	c := &PrometheusGroup{
@@ -73,6 +100,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter
 		timeout:              *config.Timeouts,
 		maxTries:             *config.MaxTries,
 		maxMetricsPerRequest: config.MaxBatchSize,
+		step: step,
 
 		client:  httpClient,
 		limiter: limiter,
@@ -125,7 +153,8 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	var r protov3.MultiFetchResponse
 	e := errors.Errors{}
 	// TODO: Do something clever with "step"
-	step := int64(15)
+	step := c.step
+	stepStr := strconv.FormatInt(step, 10)
 	for pathExpr, targets := range pathExprToTargets {
 		for _, target := range targets {
 			logger.Debug("got some target to query",
@@ -133,10 +162,25 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 				zap.Any("target", target),
 			)
 			// rewrite metric for tag
-			stepStr := strconv.FormatInt(step, 10)
+			// Make local copy
+			stepLocal := step
+			stepLocalStr := stepStr
 			if strings.HasPrefix(target, "seriesByTag") {
-				_, target = c.convertGraphiteQueryToProm(stepStr, target)
+				stepLocalStr, target = c.convertGraphiteQueryToProm(stepLocalStr, target)
 			}
+			if stepLocalStr[len(stepLocalStr) - 1] >= '0' && stepLocalStr[len(stepLocalStr) - 1] <= '9' {
+				stepLocalStr += "s"
+			}
+			t, err := time.ParseDuration(stepLocalStr)
+			if err != nil {
+				logger.Debug("failed to parse step",
+					zap.String("step", stepLocalStr),
+					zap.Error(err),
+					)
+				e.Add(err)
+				continue
+			}
+			stepLocal = int64(t.Seconds())
 			/*
 			newStep, err3 := strToStep(stepStr)
 			if err3 == nil {
@@ -152,23 +196,23 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 				"query": []string{target},
 				"start": []string{strconv.Itoa(int(request.Metrics[0].StartTime))},
 				"stop":  []string{strconv.Itoa(int(request.Metrics[0].StopTime))},
-				"step":  []string{stepStr},
+				"step":  []string{stepLocalStr},
 			}
 			rewrite.RawQuery = v.Encode()
-			res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
-			if err != nil {
-				err.HaveFatalErrors = false
-				e.Merge(err)
+			res, err2 := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
+			if err2 != nil {
+				err2.HaveFatalErrors = false
+				e.Merge(err2)
 				continue
 			}
 
 			var response prometheusResponse
-			err2 := json.Unmarshal(res.Response, &response)
-			if err2 != nil {
+			err = json.Unmarshal(res.Response, &response)
+			if err != nil {
 				c.logger.Debug("failed to unmarshal response",
-					zap.Error(err2),
+					zap.Error(err),
 				)
-				e.Add(err2)
+				e.Add(err)
 				continue
 			}
 
@@ -189,7 +233,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 					ConsolidationFunc: "Average",
 					StartTime:         request.Metrics[0].StartTime,
 					StopTime:          request.Metrics[0].StopTime,
-					StepTime:          step,
+					StepTime:          stepLocal,
 					Values:            vals,
 					XFilesFactor:      0.0,
 				})
@@ -220,6 +264,9 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 		// Convert query to Prometheus-compatible regex
 		reQuery := strings.Replace(query, ".", "\\\\.", -1)
 		reQuery = strings.Replace(query, "*", "[^.][^.]*", -1)
+		if reQuery[len(reQuery) - 1] == '*' {
+			reQuery += ".*"
+		}
 		matchQuery := "{__name__=~\"" + reQuery + "\"}"
 		v := url.Values{
 			"match[]": []string{matchQuery},
@@ -256,10 +303,15 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 			}
 			nameSplit := strings.Split(name, ".")
 
+			if len(querySplit) > len(nameSplit) {
+				continue
+			}
+
 			isLeaf := false
 			if len(nameSplit) == len(querySplit) {
 				isLeaf = true
 			}
+
 			uniqueMetrics[strings.Join(nameSplit[:len(querySplit)], ".")] = isLeaf
 		}
 
