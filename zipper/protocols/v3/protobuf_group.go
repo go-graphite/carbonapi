@@ -120,29 +120,30 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	rewrite.RawQuery = v.Encode()
 
 	res, e := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), types.MultiFetchRequestV3{*request})
-	if e == nil {
-		e = &errors.Errors{}
-	}
-
-	if e.HaveFatalErrors {
+	if e != nil {
 		return nil, stats, e
+
 	}
 
 	if res == nil {
 		return nil, stats, errors.FromErrNonFatal(types.ErrNoResponseFetched)
 	}
-	var metrics protov3.MultiFetchResponse
-	e.AddFatal(metrics.Unmarshal(res.Response))
-	if e == nil {
-		e = &errors.Errors{}
-	}
+	e = &errors.Errors{}
 
-	if e.HaveFatalErrors {
-		e.HaveFatalErrors = false
+	var r protov3.MultiFetchResponse
+	err := r.Unmarshal(res.Response)
+	if err != nil {
+		e.AddFatal(err)
 		return nil, stats, e
 	}
 
-	return &metrics, stats, nil
+	if len(e.Errors) != 0 {
+		logger.Error("errors occurred while getting results",
+			zap.Any("errors", e.Errors),
+		)
+		return &r, stats, e
+	}
+	return &r, stats, nil
 }
 
 func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, *errors.Errors) {

@@ -3,7 +3,6 @@ package v2
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"math"
 	"net"
 	"net/http"
@@ -25,38 +24,6 @@ import (
 const (
 	format = "protobuf"
 )
-
-// Mwdhmsy
-func strToStep(stepStr string) (int64, error) {
-	step, err := strconv.ParseInt(stepStr, 10, 64)
-	if err != nil {
-		modifier := stepStr[len(stepStr)-1]
-		stepStr = stepStr[:len(stepStr)-1]
-		step, err := strconv.ParseInt(stepStr, 10, 64)
-		if err != nil {
-			return -1, err
-		}
-		switch modifier {
-		case 'M':
-			step *= 2628000
-		case 'w':
-			step *= 604800
-		case 'd':
-			step *= 86400
-		case 'h':
-			step *= 3600
-		case 'm':
-			step *= 60
-		case 'y':
-			// 365 days
-			step *= 31536000
-		case 's':
-		default:
-			return -1, fmt.Errorf("unknown modifier: %v", modifier)
-		}
-	}
-	return step, nil
-}
 
 func init() {
 	aliases := []string{"carbonapi_v2_pb", "proto_v2_pb", "v2_pb", "pb", "pb3", "protobuf", "protobuf3"}
@@ -168,6 +135,7 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	}
 
 	var r protov3.MultiFetchResponse
+	e := errors.Errors{}
 	for batch, targets := range batches {
 		v := url.Values{
 			"target": targets,
@@ -177,23 +145,27 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 		}
 		rewrite.RawQuery = v.Encode()
 		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
-		if err == nil {
-			err = &errors.Errors{}
+		if err != nil {
+			e.Merge(err)
+			continue
 		}
-		if err.HaveFatalErrors {
-			err.HaveFatalErrors = false
-			return nil, stats, err
+
+		if e.HaveFatalErrors {
+			e.HaveFatalErrors = false
+			continue
 		}
+
 		if res == nil {
-			// On heavy load may be empty responce (on timeout)
-			err.Add(types.ErrMaxTriesExceeded)
-			return nil, stats, err
+			// On heavy load may be empty response (on timeout)
+			e.Add(types.ErrMaxTriesExceeded)
+			continue
 		}
 
 		var metrics protov2.MultiFetchResponse
-		err.AddFatal(metrics.Unmarshal(res.Response))
-		if err.HaveFatalErrors {
-			return nil, stats, err
+		err2 := metrics.Unmarshal(res.Response)
+		if err2 != nil {
+			e.Add(err2)
+			continue
 		}
 
 		for _, m := range metrics.Metrics {
@@ -217,6 +189,12 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 		}
 	}
 
+	if len(e.Errors) != 0 {
+		logger.Error("errors occurred while getting results",
+			zap.Any("errors", e.Errors),
+		)
+		return &r, stats, &e
+	}
 	return &r, stats, nil
 }
 
@@ -227,7 +205,7 @@ func (c *ClientProtoV2Group) Find(ctx context.Context, request *protov3.MultiGlo
 
 	var r protov3.MultiGlobResponse
 	r.Metrics = make([]protov3.GlobResponse, 0)
-	var e errors.Errors
+	e := errors.Errors{}
 	for _, query := range request.Metrics {
 		v := url.Values{
 			"query":  []string{query},
@@ -263,10 +241,7 @@ func (c *ClientProtoV2Group) Find(ctx context.Context, request *protov3.MultiGlo
 		logger.Error("errors occurred while getting results",
 			zap.Any("errors", e.Errors),
 		)
-	}
-
-	if len(r.Metrics) == 0 {
-		return nil, stats, errors.FromErr(types.ErrNoResponseFetched)
+		return &r, stats, &e
 	}
 	return &r, stats, nil
 }

@@ -123,6 +123,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	}
 
 	var r protov3.MultiFetchResponse
+	e := errors.Errors{}
 	// TODO: Do something clever with "step"
 	step := int64(15)
 	for pathExpr, targets := range pathExprToTargets {
@@ -142,7 +143,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 				step = newStep
 			}
 			 */
-			c.logger.Debug("will do query",
+			logger.Debug("will do query",
 				zap.String("query", target),
 				zap.Int64("start", request.Metrics[0].StartTime),
 				zap.Int64("stop", request.Metrics[0].StopTime),
@@ -155,12 +156,10 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 			}
 			rewrite.RawQuery = v.Encode()
 			res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
-			if err == nil {
-				err = &errors.Errors{}
-			}
-			if err.HaveFatalErrors {
+			if err != nil {
 				err.HaveFatalErrors = false
-				return nil, stats, err
+				e.Merge(err)
+				continue
 			}
 
 			var response prometheusResponse
@@ -169,12 +168,12 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 				c.logger.Debug("failed to unmarshal response",
 					zap.Error(err2),
 				)
-				err.Add(err2)
+				e.Add(err2)
 				continue
 			}
 
 			if response.Status != "success" {
-				err.Addf("query=%s, err=%s", target, response.Status)
+				e.Addf("query=%s, err=%s", target, response.Status)
 				continue
 			}
 
@@ -198,6 +197,12 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 		}
 	}
 
+	if len(e.Errors) != 0 {
+		logger.Error("errors occurred while getting results",
+			zap.Any("errors", e.Errors),
+		)
+		return &r, stats, &e
+	}
 	return &r, stats, nil
 }
 
@@ -267,14 +272,14 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 		}
 	}
 
+	if len(r.Metrics) == 0 {
+		e.Add(types.ErrNoResponseFetched)
+	}
 	if len(e.Errors) != 0 {
 		logger.Error("errors occurred while getting results",
 			zap.Any("errors", e.Errors),
 		)
-	}
-
-	if len(r.Metrics) == 0 {
-		return nil, stats, errors.FromErr(types.ErrNoResponseFetched)
+		return &r, stats, &e
 	}
 	return &r, stats, nil
 }
