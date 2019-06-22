@@ -31,6 +31,8 @@ type prometheusData struct {
 
 type prometheusResponse struct {
 	Status string `json:"status"`
+	ErrorType string `json:"errorType"`
+	Error string `json:"error"`
 	Data prometheusData `json:"data"`
 }
 
@@ -78,11 +80,15 @@ func (p *prometheusValue) UnmarshalJSON(data []byte) error {
 
 type prometheusTagResponse struct {
 	Status string `json:"status"`
+	ErrorType string `json:"errorType"`
+	Error string `json:"error"`
 	Data []string `json:"data"`
 }
 
 type prometheusFindResponse struct {
 	Status string `json:"status"`
+	ErrorType string `json:"errorType"`
+	Error string `json:"error"`
 	Data []map[string]string `json:"data"`
 }
 

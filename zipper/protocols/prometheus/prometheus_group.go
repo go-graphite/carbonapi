@@ -48,12 +48,10 @@ type PrometheusGroup struct {
 	httpQuery *helper.HttpQuery
 }
 
-func (g *PrometheusGroup) Children() []types.ServerClient {
-	return []types.ServerClient{g}
-}
-
 func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
 	logger = logger.With(zap.String("type", "prometheus"), zap.String("protocol", config.Protocol), zap.String("name", config.GroupName))
+
+	logger.Warn("support for this backend protocol is experimental, use with caution")
 
 	httpClient := &http.Client{
 		Transport: &http.Transport{
@@ -92,9 +90,13 @@ func New(logger *zap.Logger, config types.BackendV2) (types.ServerClient, *error
 	if len(config.Servers) == 0 {
 		return nil, errors.Fatal("no servers specified")
 	}
-	limiter := limiter.NewServerLimiter([]string{config.GroupName}, *config.ConcurrencyLimit)
+	l := limiter.NewServerLimiter([]string{config.GroupName}, *config.ConcurrencyLimit)
 
-	return NewWithLimiter(logger, config, limiter)
+	return NewWithLimiter(logger, config, l)
+}
+
+func (c *PrometheusGroup) Children() []types.ServerClient {
+	return []types.ServerClient{c}
 }
 
 func (c PrometheusGroup) MaxMetricsPerRequest() int {
@@ -107,38 +109,6 @@ func (c PrometheusGroup) Name() string {
 
 func (c PrometheusGroup) Backends() []string {
 	return c.servers
-}
-
-// Mwdhmsy
-func strToStep(stepStr string) (int64, error) {
-	step, err := strconv.ParseInt(stepStr, 10, 64)
-	if err != nil {
-		modifier := stepStr[len(stepStr)-1]
-		stepStr = stepStr[:len(stepStr)-1]
-		step, err := strconv.ParseInt(stepStr, 10, 64)
-		if err != nil {
-			return -1, err
-		}
-		switch modifier {
-		case 'M':
-			step *= 2628000
-		case 'w':
-			step *= 604800
-		case 'd':
-			step *= 86400
-		case 'h':
-			step *= 3600
-		case 'm':
-			step *= 60
-		case 'y':
-			// 365 days
-			step *= 31536000
-		case 's':
-		default:
-			return -1, fmt.Errorf("unknown modifier: %v", modifier)
-		}
-	}
-	return step, nil
 }
 
 func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, *errors.Errors) {
@@ -230,111 +200,20 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	return &r, stats, nil
 }
 
-/*
-logger := c.logger
-	var rewrite *url.URL
-
-	if isTagName {
-		logger = logger.With(zap.String("type", "tagName"))
-	} else {
-		logger = logger.With(zap.String("type", "tagValues"))
-		if _, ok := params["tag"]; !ok {
-			return []string{}, errors.Fatal("no tag specified")
-		}
-	}
-
-	matches := make([]string, 0, len(params["expr"]))
-	for _, e := range params["expr"] {
-		name, t := c.promethizeTagValue(e)
-		matches = append(matches, "{" + name + t.OP + "\"" + t.TagValue + "\"}")
-	}
-
-	rewrite, _ = url.Parse("http://127.0.0.1/api/v1/series")
-	v := url.Values{
-		"match[]": matches,
-	}
-	rewrite.RawQuery = v.Encode()
-
-	result := make([]string, 0)
-	var r prometheusFindResponse
-
-	res, e := c.httpQuery.DoQuery(ctx, rewrite.RequestURI(), nil)
-	if e != nil {
-		return []string{}, e
-	}
-
-	err := json.Unmarshal(res.Response, &r)
-	if err != nil {
-		return []string{}, errors.FromErr(err)
-	}
-
-	if r.Status != "success" {
-		return []string{}, errors.Error(r.Status)
-	}
-
-	var prefix string
-	if isTagName {
-		if prefixArr, ok := params["tagPrefix"]; ok {
-			prefix = prefixArr[0]
-		}
-
-		uniqueTagNames := make(map[string]struct{})
-		for _, d := range r.Data {
-			for k := range d {
-				if strings.HasPrefix(k, prefix) {
-					uniqueTagNames[k] = struct{}{}
-				}
-			}
-		}
-		for k := range uniqueTagNames {
-			result = append(result, k)
-		}
-	} else {
-		if prefixArr, ok := params["valuePrefix"]; ok {
-			prefix = prefixArr[0]
-		}
-
-		uniqueTagValues := make(map[string]struct{})
-		tag := params["tag"][0]
-		for _, d := range r.Data {
-			if v, ok := d[tag]; ok {
-				if strings.HasPrefix(v, prefix) {
-					uniqueTagValues[v] = struct{}{}
-				}
-			}
-		}
-		for v := range uniqueTagValues {
-			result = append(result, v)
-		}
-	}
-
-	if limit > 0 && len(result) > int(limit) {
-		result = result[:int(limit)]
-	}
-
-	logger.Debug("got client response",
-		zap.Any("r", result),
-	)
-
-	return result, nil
- */
-
 func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, *errors.Errors) {
 	logger := c.logger.With(zap.String("type", "find"), zap.Strings("request", request.Metrics))
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/api/v1/series")
 
-	var r protov3.MultiGlobResponse
-	r.Metrics = make([]protov3.GlobResponse, 0)
-	var e errors.Errors
+	r := protov3.MultiGlobResponse{
+		Metrics: make([]protov3.GlobResponse, 0),
+	}
+	e := errors.Errors{}
 	uniqueMetrics := make(map[string]bool)
 	for _, query := range request.Metrics {
-		// Convert query to RE2
-		// reQuery := strings.Replace(query, "*", "[^.]+", -1)
-		// TODO: make proper conversion of '*' to something like '[^.]+'
-		// However currently it seems that it's not trivial
-		reQuery := strings.Replace(query, ".", "\\.", -1)
-		reQuery = strings.Replace(query, "*", ".*", -1)
+		// Convert query to Prometheus-compatible regex
+		reQuery := strings.Replace(query, ".", "\\\\.", -1)
+		reQuery = strings.Replace(query, "*", "[^.][^.]*", -1)
 		matchQuery := "{__name__=~\"" + reQuery + "\"}"
 		v := url.Values{
 			"match[]": []string{matchQuery},
@@ -355,7 +234,7 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 		}
 
 		if pr.Status != "success" {
-			e.Addf("%s", pr.Status)
+			e.Addf("status=%s, errorType=%s, error=%s", pr.Status, pr.ErrorType, pr.Error)
 			continue
 		}
 
@@ -400,14 +279,14 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 }
 
 func (c *PrometheusGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, *errors.Errors) {
-	return nil, nil, errors.FromErr(types.ErrNotImplementedYet)
+	return nil, nil, errors.FromErr(types.ErrNotSupportedByBackend)
 }
 
 func (c *PrometheusGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, *errors.Errors) {
 	return nil, nil, errors.FromErr(types.ErrNotImplementedYet)
 }
 func (c *PrometheusGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, *errors.Errors) {
-	return nil, nil, errors.FromErr(types.ErrNotImplementedYet)
+	return nil, nil, errors.FromErr(types.ErrNotSupportedByBackend)
 }
 
 func (c *PrometheusGroup) doSimpleTagQuery(ctx context.Context, isTagName bool, params map[string][]string, limit int64) ([]string, *errors.Errors) {
@@ -439,7 +318,7 @@ func (c *PrometheusGroup) doSimpleTagQuery(ctx context.Context, isTagName bool, 
 	}
 
 	if r.Status != "success" {
-		return []string{}, errors.Error(r.Status)
+		return []string{}, errors.Errorf("status=%s, errorType=%s, error=%s", r.Status, r.ErrorType, r.Error)
 	}
 
 	if isTagName {
@@ -514,7 +393,7 @@ func (c *PrometheusGroup) doComplexTagQuery(ctx context.Context, isTagName bool,
 	}
 
 	if r.Status != "success" {
-		return []string{}, errors.Error(r.Status)
+		return []string{}, errors.Errorf("status=%s, errorType=%s, error=%s", pr.Status, pr.ErrorType, pr.Error)
 	}
 
 	var prefix string
@@ -564,7 +443,6 @@ func (c *PrometheusGroup) doComplexTagQuery(ctx context.Context, isTagName bool,
 	return result, nil
 }
 
-// TODO: Handle 'expr' query as well
 func (c *PrometheusGroup) doTagQuery(ctx context.Context, isTagName bool, query string, limit int64) ([]string, *errors.Errors) {
 	logger := c.logger
 	params := make(map[string][]string)
