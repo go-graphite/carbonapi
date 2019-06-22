@@ -1,4 +1,4 @@
-package v2
+package graphite
 
 import (
 	"context"
@@ -123,6 +123,7 @@ func (c *GraphiteGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRe
 	}
 
 	var r protov3.MultiFetchResponse
+	e := errors.Errors{}
 	for pathExpr, targets := range pathExprToTargets {
 		v := url.Values{
 			"target": targets,
@@ -132,19 +133,19 @@ func (c *GraphiteGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRe
 		}
 		rewrite.RawQuery = v.Encode()
 		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
-		if err == nil {
-			err = &errors.Errors{}
-		}
-		if err.HaveFatalErrors {
-			err.HaveFatalErrors = false
-			return nil, stats, err
+		if err != nil {
+			if e.HaveFatalErrors {
+				err.HaveFatalErrors = false
+			}
+			e.Merge(err)
+			continue
 		}
 
-		var metrics msgpack.MultiGraphiteFetchResponse
-		_, e := metrics.UnmarshalMsg(res.Response)
-		err.AddFatal(e)
-		if err.HaveFatalErrors {
-			return nil, stats, err
+		metrics := msgpack.MultiGraphiteFetchResponse{}
+		_, err2 := metrics.UnmarshalMsg(res.Response)
+		if err2 != nil {
+			e.Add(err2)
+			continue
 		}
 
 		for _, m := range metrics {
@@ -169,6 +170,12 @@ func (c *GraphiteGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRe
 		}
 	}
 
+	if len(e.Errors) != 0 {
+		logger.Error("errors occurred while getting results",
+			zap.Any("errors", e.Errors),
+		)
+		return &r, stats, &e
+	}
 	return &r, stats, nil
 }
 
@@ -212,14 +219,15 @@ func (c *GraphiteGroup) Find(ctx context.Context, request *protov3.MultiGlobRequ
 		})
 	}
 
+	if len(r.Metrics) == 0 {
+		e.Add(types.ErrNoResponseFetched)
+	}
+
 	if len(e.Errors) != 0 {
 		logger.Error("errors occurred while getting results",
 			zap.Any("errors", e.Errors),
 		)
-	}
-
-	if len(r.Metrics) == 0 {
-		return nil, stats, errors.FromErr(types.ErrNoResponseFetched)
+		return &r, stats, &e
 	}
 	return &r, stats, nil
 }
@@ -280,20 +288,20 @@ func (c *GraphiteGroup) Info(ctx context.Context, request *protov3.MultiMetricsI
 	}
 	r.Info[server] = data
 
-	if len(e.Errors) != 0 {
-		logger.Error("errors occurred while getting results",
-			zap.Any("errors", e.Errors),
-		)
-	}
-
 	if len(r.Info[server].Metrics) == 0 {
-		return nil, stats, errors.FromErr(types.ErrNoResponseFetched)
+		e.Add(types.ErrNoResponseFetched)
 	}
 
 	logger.Debug("got client response",
 		zap.Any("r", r),
 	)
 
+	if len(e.Errors) != 0 {
+		logger.Error("errors occurred while getting results",
+			zap.Any("errors", e.Errors),
+		)
+		return &r, stats, &e
+	}
 	return &r, stats, nil
 }
 
@@ -322,6 +330,7 @@ func (c *GraphiteGroup) doTagQuery(ctx context.Context, isTagName bool, query st
 	if e != nil {
 		return r, e
 	}
+	e = &errors.Errors{}
 
 	err := json.Unmarshal(res.Response, &r)
 	if err != nil {
@@ -333,6 +342,12 @@ func (c *GraphiteGroup) doTagQuery(ctx context.Context, isTagName bool, query st
 		zap.Any("r", r),
 	)
 
+	if len(e.Errors) != 0 {
+		logger.Error("errors occurred while getting results",
+			zap.Any("errors", e.Errors),
+		)
+		return r, e
+	}
 	return r, nil
 }
 

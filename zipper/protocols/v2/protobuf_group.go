@@ -135,6 +135,7 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	}
 
 	var r protov3.MultiFetchResponse
+	e := errors.Errors{}
 	for batch, targets := range batches {
 		v := url.Values{
 			"target": targets,
@@ -144,23 +145,27 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 		}
 		rewrite.RawQuery = v.Encode()
 		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
-		if err == nil {
-			err = &errors.Errors{}
+		if err != nil {
+			e.Merge(err)
+			continue
 		}
-		if err.HaveFatalErrors {
-			err.HaveFatalErrors = false
-			return nil, stats, err
+
+		if e.HaveFatalErrors {
+			e.HaveFatalErrors = false
+			continue
 		}
+
 		if res == nil {
-			// On heavy load may be empty responce (on timeout)
-			err.Add(types.ErrMaxTriesExceeded)
-			return nil, stats, err
+			// On heavy load may be empty response (on timeout)
+			e.Add(types.ErrMaxTriesExceeded)
+			continue
 		}
 
 		var metrics protov2.MultiFetchResponse
-		err.AddFatal(metrics.Unmarshal(res.Response))
-		if err.HaveFatalErrors {
-			return nil, stats, err
+		err2 := metrics.Unmarshal(res.Response)
+		if err2 != nil {
+			e.Add(err2)
+			continue
 		}
 
 		for _, m := range metrics.Metrics {
@@ -184,6 +189,12 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 		}
 	}
 
+	if len(e.Errors) != 0 {
+		logger.Error("errors occurred while getting results",
+			zap.Any("errors", e.Errors),
+		)
+		return &r, stats, &e
+	}
 	return &r, stats, nil
 }
 
@@ -194,7 +205,7 @@ func (c *ClientProtoV2Group) Find(ctx context.Context, request *protov3.MultiGlo
 
 	var r protov3.MultiGlobResponse
 	r.Metrics = make([]protov3.GlobResponse, 0)
-	var e errors.Errors
+	e := errors.Errors{}
 	for _, query := range request.Metrics {
 		logger.Debug("will do query",
 			zap.String("query", query),
@@ -237,10 +248,7 @@ func (c *ClientProtoV2Group) Find(ctx context.Context, request *protov3.MultiGlo
 		logger.Error("errors occurred while getting results",
 			zap.Any("errors", e.Errors),
 		)
-	}
-
-	if len(r.Metrics) == 0 {
-		return nil, stats, errors.FromErr(types.ErrNoResponseFetched)
+		return &r, stats, &e
 	}
 	return &r, stats, nil
 }

@@ -13,13 +13,15 @@ Changes
 
 CHANGELOG
 ---------
-**1.0.0-rc.0** (WIP)
+**0.12.0-rc.0** (WIP)
+ - Add experimental support for Prometheus as Backend.
+ - Add experimental support for querying msgpack-compatible backends. This should make carbonapi compatible with graphite-web 1.1 and [grafana/metrictank](https://github.com/grafana/metrictank)
  - **[Breaking][Code]** Migrate all internal structures to `github.com/go-graphite/protocol/carbonapi_v3_pb`. This removes redundant IsAbsent slice and changes all timestamps to int64 (they are still expected to have uint32 timestamps there)
  - **[Breaking][Improvement]** Migrate to carbonzipper 1.0.0. This introduces better loadbalancing support, but significantly changes config file format. It might behave differently with the same settings.
- - Add experimental support for querying msgpack-compatible backends. This should make carbonapi compatible with graphite-web 1.1 and [grafana/metrictank](https://github.com/grafana/metrictank)
- - Style change: numeration now follows semver 2.0 guidelines.
  - seriesByTag Support (thx. to Vladimir Kolobaev)
  - aliasByTag Support (thx. to Vladimir Kolobaev)
+ - Supported functions were updated to be more compatible with graphtie-web 1.1.0+
+ - Added support for more aggregation functions (thx. to Oleg Matrokhin)
 
 **0.11.0**
  - **[Breaking][Fix] Allow to specify prefix for environment variables through `-envprefix` command line parameter. Default now is "CARBONAPI_" which might break some environments**
