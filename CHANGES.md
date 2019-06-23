@@ -13,7 +13,7 @@ Changes
 
 CHANGELOG
 ---------
-**0.12.0-rc.0** (WIP)
+**0.12.0-rc.0**
  - Add experimental support for Prometheus as Backend.
  - Add experimental support for querying msgpack-compatible backends. This should make carbonapi compatible with graphite-web 1.1 and [grafana/metrictank](https://github.com/grafana/metrictank)
  - **[Breaking][Code]** Migrate all internal structures to `github.com/go-graphite/protocol/carbonapi_v3_pb`. This removes redundant IsAbsent slice and changes all timestamps to int64 (they are still expected to have uint32 timestamps there)
