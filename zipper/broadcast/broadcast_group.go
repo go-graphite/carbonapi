@@ -2,12 +2,12 @@ package broadcast
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/pathcache"
-	util "github.com/go-graphite/carbonapi/util/ctx"
 	"github.com/go-graphite/carbonapi/zipper/errors"
 	"github.com/go-graphite/carbonapi/zipper/types"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
@@ -117,7 +117,15 @@ func (bg BroadcastGroup) MaxMetricsPerRequest() int {
 	return bg.maxMetricsPerRequest
 }
 
-func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger, client types.ServerClient, requests []*protov3.MultiFetchRequest, resCh chan<- *types.ServerFetchResponse) {
+func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger, client types.ServerClient, reqs interface{}, resCh chan types.ServerFetcherResponse) {
+	requests, ok := reqs.([]*protov3.MultiFetchRequest)
+	if !ok {
+		logger.Fatal("unhandled error in doSingleFetch",
+			zap.Stack("stack"),
+			zap.String("got_type", fmt.Sprintf("%T", reqs)),
+			zap.String("expected_type", fmt.Sprintf("%T", requests)),
+		)
+	}
 	logger = logger.With(zap.String("client_name", client.Name()))
 	logger.Debug("waiting for slot",
 		zap.Int("maxConns", bg.limiter.Capacity()),
@@ -135,19 +143,19 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 	logger.Debug("got slot")
 	defer bg.limiter.Leave(ctx, client.Name())
 
-	uuid := util.GetUUID(ctx)
+	// uuid := util.GetUUID(ctx)
 	for _, req := range requests {
 		logger.Debug("sending request")
 		r := types.NewServerFetchResponse()
 		r.Response, r.Stats, r.Err = client.Fetch(ctx, req)
 		logger.Debug("got response")
-		response.Merge(r, uuid)
+		response.Merge(r)
 	}
 
 	resCh <- response
 }
 
-func (bg *BroadcastGroup) SplitRequest(ctx context.Context, request *protov3.MultiFetchRequest) []*protov3.MultiFetchRequest {
+func (bg *BroadcastGroup) splitRequest(ctx context.Context, request *protov3.MultiFetchRequest) []*protov3.MultiFetchRequest {
 	if bg.MaxMetricsPerRequest() == 0 {
 		return []*protov3.MultiFetchRequest{request}
 	}
@@ -214,7 +222,7 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	logger.Debug("will try to fetch data")
 
 	clients := bg.filterServersByTLD(requestNames, bg.Children())
-	requests := bg.SplitRequest(ctx, request)
+	requests := bg.splitRequest(ctx, request)
 	zipperRequests, totalMetricsCount := getFetchRequestMetricStats(requests, bg, clients)
 
 	result := types.NewServerFetchResponse()
@@ -224,38 +232,18 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	if len(requests) == 0 {
 		return result.Response, result.Stats, result.Err
 	}
-	resCh := make(chan *types.ServerFetchResponse, len(clients))
-
-	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Render)
+	ctxNew, cancel := context.WithTimeout(ctx, bg.timeout.Render)
 	defer cancel()
 
-	for _, client := range clients {
-		logger.Debug("single fetch",
-			zap.Any("client", client),
+	resultNew, responseCount := types.DoRequest(ctxNew, logger, clients, result, requests, bg.doSingleFetch)
+
+	result, ok := resultNew.Self().(*types.ServerFetchResponse)
+	if !ok {
+		logger.Fatal("unhandled error in Fetch",
+			zap.Stack("stack"),
+			zap.String("got_type", fmt.Sprintf("%T", resultNew.Self())),
+			zap.String("expected_type", fmt.Sprintf("%T", result)),
 		)
-		go bg.doSingleFetch(ctx, logger, client, requests, resCh)
-	}
-
-	answeredServers := make(map[string]struct{})
-	responseCount := 0
-	uuid := util.GetUUID(ctx)
-
-GATHER:
-	for responseCount < len(clients) {
-		select {
-		case res := <-resCh:
-			answeredServers[res.Server] = struct{}{}
-			result.Merge(res, uuid)
-			responseCount++
-
-		case <-ctx.Done():
-			logger.Warn("timeout waiting for more responses",
-				zap.Strings("no_answers_from", noAnswerClients(clients, answeredServers)),
-			)
-			result.Err.Add(types.ErrTimeoutExceeded)
-
-			break GATHER
-		}
 	}
 
 	if len(result.Response.Metrics) == 0 {
@@ -292,8 +280,15 @@ func getFetchRequestMetricStats(requests []*protov3.MultiFetchRequest, bg *Broad
 }
 
 // Find request handling
-
-func (bg *BroadcastGroup) doFind(ctx context.Context, logger *zap.Logger, client types.ServerClient, request *protov3.MultiGlobRequest, resCh chan<- *types.ServerFindResponse) {
+func (bg *BroadcastGroup) doFind(ctx context.Context, logger *zap.Logger, client types.ServerClient, reqs interface{}, resCh chan types.ServerFetcherResponse) {
+	request, ok := reqs.(*protov3.MultiGlobRequest)
+	if !ok {
+		logger.Fatal("unhandled error",
+			zap.Stack("stack"),
+			zap.String("got_type", fmt.Sprintf("%T", reqs)),
+			zap.String("expected_type", fmt.Sprintf("%T", request)),
+		)
+	}
 	logger = logger.With(
 		zap.String("group_name", bg.groupName),
 		zap.String("client_name", client.Name()),
@@ -324,45 +319,26 @@ func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	logger := bg.logger.With(zap.String("type", "find"), zap.Strings("request", request.Metrics))
 
 	clients := bg.Children()
-	resCh := make(chan *types.ServerFindResponse, len(clients))
 
 	logger.Debug("will do query with timeout",
 		zap.Float64("timeout", bg.timeout.Find.Seconds()),
 	)
 
-	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Render)
+	ctxNew, cancel := context.WithTimeout(ctx, bg.timeout.Find)
 	defer cancel()
-
-	for _, client := range clients {
-		go bg.doFind(ctx, logger, client, request, resCh)
-	}
 
 	result := types.NewServerFindResponse()
 	result.Server = bg.Name()
 	result.Stats.ZipperRequests = int64(len(clients))
-	responseCounts := 0
-	answeredServers := make(map[string]struct{})
+	resultNew, responseCount := types.DoRequest(ctxNew, logger, clients, result, request, bg.doFind)
 
-GATHER:
-	for {
-		select {
-		case res := <-resCh:
-			answeredServers[res.Server] = struct{}{}
-			result.Merge(res)
-			responseCounts++
-
-			if responseCounts == len(clients) {
-				break GATHER
-			}
-
-		case <-ctx.Done():
-			logger.Warn("timeout waiting for more responses",
-				zap.Strings("no_answers_from", noAnswerClients(clients, answeredServers)),
-			)
-			result.Err.Add(types.ErrTimeoutExceeded)
-
-			break GATHER
-		}
+	result, ok := resultNew.Self().(*types.ServerFindResponse)
+	if !ok {
+		logger.Fatal("unhandled error in Find",
+			zap.Stack("stack"),
+			zap.String("got_type", fmt.Sprintf("%T", resultNew.Self())),
+			zap.String("expected_type", fmt.Sprintf("%T", result)),
+		)
 	}
 
 	if len(result.Response.Metrics) == 0 {
@@ -374,7 +350,7 @@ GATHER:
 	}
 	logger.Debug("got some find responses",
 		zap.Int("clients_count", len(clients)),
-		zap.Int("response_count", responseCounts),
+		zap.Int("response_count", responseCount),
 		zap.Bool("have_errors", len(result.Err.Errors) != 0),
 		zap.Any("errors", result.Err.Errors),
 		zap.Any("response", result.Response),
@@ -384,7 +360,15 @@ GATHER:
 }
 
 // Info request handling
-func (bg *BroadcastGroup) doInfoRequest(ctx context.Context, logger *zap.Logger, request *protov3.MultiMetricsInfoRequest, client types.ServerClient, resCh chan<- *types.ServerInfoResponse) {
+func (bg *BroadcastGroup) doInfoRequest(ctx context.Context, logger *zap.Logger, client types.ServerClient, reqs interface{}, resCh chan types.ServerFetcherResponse) {
+	request, ok := reqs.(*protov3.MultiMetricsInfoRequest)
+	if !ok {
+		logger.Fatal("unhandled error",
+			zap.Stack("stack"),
+			zap.String("got_type", fmt.Sprintf("%T", reqs)),
+			zap.String("expected_type", fmt.Sprintf("%T", request)),
+		)
+	}
 	r := &types.ServerInfoResponse{
 		Server: client.Name(),
 	}
@@ -410,43 +394,27 @@ func (bg *BroadcastGroup) doInfoRequest(ctx context.Context, logger *zap.Logger,
 func (bg *BroadcastGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, *errors.Errors) {
 	logger := bg.logger.With(zap.String("type", "info"), zap.Strings("request", request.Names))
 
-	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Find)
+	ctxNew, cancel := context.WithTimeout(ctx, bg.timeout.Render)
 	defer cancel()
-
 	clients := bg.Children()
-	resCh := make(chan *types.ServerInfoResponse, len(clients))
-	for _, client := range clients {
-		go bg.doInfoRequest(ctx, logger, request, client, resCh)
-	}
-
 	result := types.NewServerInfoResponse()
+	result.Server = bg.Name()
 	result.Stats.ZipperRequests = int64(len(clients))
-	responseCounts := 0
-	answeredServers := make(map[string]struct{})
-GATHER:
-	for {
-		select {
-		case res := <-resCh:
-			answeredServers[res.Server] = struct{}{}
-			responseCounts++
-			result.Merge(res)
 
-			if responseCounts == len(clients) {
-				break GATHER
-			}
+	resultNew, responseCount := types.DoRequest(ctxNew, logger, clients, result, request, bg.doInfoRequest)
 
-		case <-ctx.Done():
-			logger.Warn("timeout waiting for more responses",
-				zap.Strings("no_answers_from", noAnswerClients(clients, answeredServers)),
-			)
-			result.Err.Add(types.ErrTimeoutExceeded)
-			break GATHER
-		}
+	result, ok := resultNew.Self().(*types.ServerInfoResponse)
+	if !ok {
+		logger.Fatal("unhandled error in Find",
+			zap.Stack("stack"),
+			zap.String("got_type", fmt.Sprintf("%T", resultNew.Self())),
+			zap.String("expected_type", fmt.Sprintf("%T", result)),
+		)
 	}
 
 	logger.Debug("got some responses",
 		zap.Int("clients_count", len(clients)),
-		zap.Int("response_count", responseCounts),
+		zap.Int("response_count", responseCount),
 		zap.Bool("have_errors", len(result.Err.Errors) != 0),
 	)
 
@@ -460,8 +428,22 @@ func (bg *BroadcastGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResp
 	return nil, nil, errors.FromErr(types.ErrNotImplementedYet)
 }
 
+type tagQuery struct {
+	Query string
+	Limit int64
+	IsName bool
+}
+
 // Info request handling
-func (bg *BroadcastGroup) doTagRequest(ctx context.Context, isName bool, logger *zap.Logger, query string, limit int64, client types.ServerClient, resCh chan<- *types.ServerTagResponse) {
+func (bg *BroadcastGroup) doTagRequest(ctx context.Context, logger *zap.Logger, client types.ServerClient, reqs interface{}, resCh chan types.ServerFetcherResponse) {
+	request, ok := reqs.(tagQuery)
+	if !ok {
+		logger.Fatal("unhandled error",
+			zap.Stack("stack"),
+			zap.String("got_type", fmt.Sprintf("%T", reqs)),
+			zap.String("expected_type", fmt.Sprintf("%T", request)),
+		)
+	}
 	res := &types.ServerTagResponse{
 		Server:   client.Name(),
 		Response: []string{},
@@ -480,10 +462,10 @@ func (bg *BroadcastGroup) doTagRequest(ctx context.Context, isName bool, logger 
 	defer bg.limiter.Leave(ctx, client.Name())
 
 	logger.Debug("got a slot")
-	if isName {
-		res.Response, res.Err = client.TagNames(ctx, query, limit)
+	if request.IsName {
+		res.Response, res.Err = client.TagNames(ctx, request.Query, request.Limit)
 	} else {
-		res.Response, res.Err = client.TagValues(ctx, query, limit)
+		res.Response, res.Err = client.TagValues(ctx, request.Query, request.Limit)
 	}
 
 	if res.Response == nil {
@@ -500,37 +482,28 @@ func (bg *BroadcastGroup) tagEverything(ctx context.Context, isTagName bool, que
 		logger = logger.With(zap.String("type", "tagValues"))
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Find)
+	request := tagQuery{
+		Query: query,
+		Limit: limit,
+		IsName: isTagName,
+	}
+
+	ctxNew, cancel := context.WithTimeout(ctx, bg.timeout.Find)
 	defer cancel()
 
 	clients := bg.Children()
-	resCh := make(chan *types.ServerTagResponse, len(clients))
-	for _, client := range clients {
-		go bg.doTagRequest(ctx, isTagName, logger, query, limit, client, resCh)
-	}
-
 	result := types.NewServerTagResponse()
-	responseCounts := 0
-	answeredServers := make(map[string]struct{})
-GATHER:
-	for {
-		select {
-		case res := <-resCh:
-			answeredServers[res.Server] = struct{}{}
-			responseCounts++
-			result.Merge(res)
+	result.Server = bg.Name()
 
-			if responseCounts == len(clients) {
-				break GATHER
-			}
+	resultNew, responseCount := types.DoRequest(ctxNew, logger, clients, result, request, bg.doTagRequest)
 
-		case <-ctx.Done():
-			logger.Warn("timeout waiting for more responses",
-				zap.Strings("no_answers_from", noAnswerClients(clients, answeredServers)),
-			)
-			result.Err.Add(types.ErrTimeoutExceeded)
-			break GATHER
-		}
+	result, ok := resultNew.Self().(*types.ServerTagResponse)
+	if !ok {
+		logger.Fatal("unhandled error in Find",
+			zap.Stack("stack"),
+			zap.String("got_type", fmt.Sprintf("%T", resultNew.Self())),
+			zap.String("expected_type", fmt.Sprintf("%T", result)),
+		)
 	}
 
 	if limit != -1 && int64(len(result.Response)) > limit {
@@ -540,7 +513,7 @@ GATHER:
 
 	logger.Debug("got some responses",
 		zap.Int("clients_count", len(clients)),
-		zap.Int("response_count", responseCounts),
+		zap.Int("response_count", responseCount),
 		zap.Bool("have_errors", len(result.Err.Errors) != 0),
 	)
 
@@ -610,7 +583,7 @@ GATHER:
 
 		case <-ctx.Done():
 			logger.Warn("timeout waiting for more responses",
-				zap.Strings("no_answers_from", noAnswerClients(clients, answeredServers)),
+				zap.Strings("no_answers_from", types.NoAnswerClients(clients, answeredServers)),
 			)
 			err.Add(types.ErrTimeoutExceeded)
 			break GATHER
@@ -631,15 +604,4 @@ GATHER:
 	}
 
 	return tlds, &err
-}
-
-func noAnswerClients(clients []types.ServerClient, answered map[string]struct{}) []string {
-	noAnswer := make([]string, 0)
-	for _, s := range clients {
-		if _, ok := answered[s.Name()]; !ok {
-			noAnswer = append(noAnswer, s.Name())
-		}
-	}
-
-	return noAnswer
 }
