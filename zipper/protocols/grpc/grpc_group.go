@@ -29,7 +29,7 @@ func init() {
 	defer metadata.Metadata.Unlock()
 }
 
-// RoundRobin is used to connect to backends inside clientGRPCGroups, implements ServerClient interface
+// RoundRobin is used to connect to backends inside clientGRPCGroups, implements BackendServer interface
 type ClientGRPCGroup struct {
 	groupName string
 	servers   []string
@@ -44,15 +44,15 @@ type ClientGRPCGroup struct {
 	logger *zap.Logger
 }
 
-func (c *ClientGRPCGroup) Children() []types.ServerClient {
-	return []types.ServerClient{c}
+func (c *ClientGRPCGroup) Children() []types.BackendServer {
+	return []types.BackendServer{c}
 }
 
-func NewClientGRPCGroupWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
+func NewClientGRPCGroupWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.BackendServer, *errors.Errors) {
 	return NewClientGRPCGroup(logger, config)
 }
 
-func NewClientGRPCGroup(logger *zap.Logger, config types.BackendV2) (types.ServerClient, *errors.Errors) {
+func NewClientGRPCGroup(logger *zap.Logger, config types.BackendV2) (types.BackendServer, *errors.Errors) {
 	logger = logger.With(zap.String("type", "grpcGroup"), zap.String("name", config.GroupName))
 	// TODO: Implement normal resolver
 	if len(config.Servers) == 0 {

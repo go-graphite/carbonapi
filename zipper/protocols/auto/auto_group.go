@@ -136,16 +136,16 @@ GATHER:
 	return response
 }
 
-// RoundRobin is used to connect to backends inside clientGroups, implements ServerClient interface
+// RoundRobin is used to connect to backends inside clientGroups, implements BackendServer interface
 type AutoGroup struct {
 	groupName string
 }
 
-func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.BackendServer, *errors.Errors) {
 	return nil, errors.Fatal("auto group doesn't support anything useful except for New")
 }
 
-func New(logger *zap.Logger, config types.BackendV2) (types.ServerClient, *errors.Errors) {
+func New(logger *zap.Logger, config types.BackendV2) (types.BackendServer, *errors.Errors) {
 	logger = logger.With(zap.String("type", "autoGroup"), zap.String("name", config.GroupName))
 
 	limit := 100
@@ -157,7 +157,7 @@ func New(logger *zap.Logger, config types.BackendV2) (types.ServerClient, *error
 		return nil, errors.Fatalf("can't query all backend")
 	}
 
-	var broadcastClients []types.ServerClient
+	var broadcastClients []types.BackendServer
 	for proto, servers := range res.ProtoToServers {
 		metadata.Metadata.RLock()
 		backendInit, ok := metadata.Metadata.ProtocolInits[proto]

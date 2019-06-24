@@ -32,7 +32,7 @@ func init() {
 	defer metadata.Metadata.Unlock()
 }
 
-// RoundRobin is used to connect to backends inside clientGroups, implements ServerClient interface
+// RoundRobin is used to connect to backends inside clientGroups, implements BackendServer interface
 type PrometheusGroup struct {
 	groupName string
 	servers   []string
@@ -51,7 +51,7 @@ type PrometheusGroup struct {
 	httpQuery *helper.HttpQuery
 }
 
-func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.BackendServer, *errors.Errors) {
 	logger = logger.With(zap.String("type", "prometheus"), zap.String("protocol", config.Protocol), zap.String("name", config.GroupName))
 
 	logger.Warn("support for this backend protocol is experimental, use with caution")
@@ -111,7 +111,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter
 	return c, nil
 }
 
-func New(logger *zap.Logger, config types.BackendV2) (types.ServerClient, *errors.Errors) {
+func New(logger *zap.Logger, config types.BackendV2) (types.BackendServer, *errors.Errors) {
 	if config.ConcurrencyLimit == nil {
 		return nil, errors.Fatal("concurency limit is not set")
 	}
@@ -123,8 +123,8 @@ func New(logger *zap.Logger, config types.BackendV2) (types.ServerClient, *error
 	return NewWithLimiter(logger, config, l)
 }
 
-func (c *PrometheusGroup) Children() []types.ServerClient {
-	return []types.ServerClient{c}
+func (c *PrometheusGroup) Children() []types.BackendServer {
+	return []types.BackendServer{c}
 }
 
 func (c PrometheusGroup) MaxMetricsPerRequest() int {

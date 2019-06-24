@@ -35,11 +35,11 @@ type Zipper struct {
 	keepAliveInterval time.Duration
 
 	searchConfigured bool
-	searchBackends   types.ServerClient
+	searchBackends   types.BackendServer
 	searchPrefix     string
 
 	// Will broadcast to all servers there
-	storeBackends             types.ServerClient
+	storeBackends             types.BackendServer
 	concurrencyLimitPerServer int
 
 	sendStats func(*types.Stats)
@@ -68,8 +68,8 @@ func sanitizeTimouts(timeouts, defaultTimeouts types.Timeouts) types.Timeouts {
 	return timeouts
 }
 
-func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelaySec int32) ([]types.ServerClient, *errors.Errors) {
-	storeClients := make([]types.ServerClient, 0)
+func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelaySec int32) ([]types.BackendServer, *errors.Errors) {
+	storeClients := make([]types.BackendServer, 0)
 	var e errors.Errors
 	var ePtr *errors.Errors
 	timeouts := backends.Timeouts
@@ -95,7 +95,7 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 			backend.KeepAliveInterval = &keepAliveInterval
 		}
 
-		var client types.ServerClient
+		var client types.BackendServer
 		logger.Debug("creating lb group",
 			zap.String("name", backend.GroupName),
 			zap.Strings("servers", backend.Servers),
@@ -137,7 +137,7 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 		} else {
 			config := backend
 
-			backends := make([]types.ServerClient, 0, len(backend.Servers))
+			backends := make([]types.BackendServer, 0, len(backend.Servers))
 			for _, server := range backend.Servers {
 				config.Servers = []string{server}
 				config.GroupName = server
@@ -164,7 +164,7 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Logger) (*Zipper, error) {
 	config.Timeouts = sanitizeTimouts(config.Timeouts, defaultTimeouts)
 
-	var searchBackends types.ServerClient
+	var searchBackends types.BackendServer
 	var prefix string
 
 	if config.InternalRoutingCache.Seconds() < 30 {
@@ -258,7 +258,7 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 		)
 	}
 
-	var storeBackends types.ServerClient
+	var storeBackends types.BackendServer
 	storeBackends, err = broadcast.NewBroadcastGroup(logger, "root", storeClients, int32(config.InternalRoutingCache.Seconds()), config.ConcurrencyLimitPerServer, config.MaxBatchSize, config.Timeouts)
 	if err != nil && err.HaveFatalErrors {
 		logger.Fatal("errors while initialing zipper store backends",

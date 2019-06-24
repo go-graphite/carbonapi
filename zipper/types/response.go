@@ -11,9 +11,9 @@ import (
 )
 
 
-// type Fetcher func(ctx context.Context, logger *zap.Logger, client types.ServerClient, reqs interface{}, resCh chan<- types.ServerFetchResponse) {
-//type Fetcher func(ctx context.Context, logger *zap.Logger, client ServerClient, reqs interface{}, resCh chan ServerFetchResponse) {
-type Fetcher func(ctx context.Context, logger *zap.Logger, client ServerClient, reqs interface{}, resCh chan ServerFetcherResponse)
+// type Fetcher func(ctx context.Context, logger *zap.Logger, client types.BackendServer, reqs interface{}, resCh chan<- types.ServerFetchResponse) {
+//type Fetcher func(ctx context.Context, logger *zap.Logger, client BackendServer, reqs interface{}, resCh chan ServerFetchResponse) {
+type Fetcher func(ctx context.Context, logger *zap.Logger, client BackendServer, reqs interface{}, resCh chan ServerFetcherResponse)
 
 type ServerFetcherResponse interface {
 	Self() interface{}
@@ -22,9 +22,9 @@ type ServerFetcherResponse interface {
 	GetServer() string
 }
 
-func NoAnswerClients(clients []ServerClient, answered map[string]struct{}) []string {
+func NoAnswerBackends(backends []BackendServer, answered map[string]struct{}) []string {
 	noAnswer := make([]string, 0)
-	for _, s := range clients {
+	for _, s := range backends {
 		if _, ok := answered[s.Name()]; !ok {
 			noAnswer = append(noAnswer, s.Name())
 		}
@@ -34,7 +34,7 @@ func NoAnswerClients(clients []ServerClient, answered map[string]struct{}) []str
 }
 
 // Helper function
-func DoRequest(ctx context.Context, logger *zap.Logger, clients []ServerClient, result ServerFetcherResponse, requests interface{}, fetcher Fetcher) (ServerFetcherResponse, int) {
+func DoRequest(ctx context.Context, logger *zap.Logger, clients []BackendServer, result ServerFetcherResponse, requests interface{}, fetcher Fetcher) (ServerFetcherResponse, int) {
 	resCh := make(chan ServerFetcherResponse, len(clients))
 
 	for _, client := range clients {
@@ -56,7 +56,7 @@ GATHER:
 
 		case <-ctx.Done():
 			logger.Warn("timeout waiting for more responses",
-				zap.Strings("no_answers_from", NoAnswerClients(clients, answeredServers)),
+				zap.Strings("no_answers_from", NoAnswerBackends(clients, answeredServers)),
 			)
 			result.Errors().Add(ErrTimeoutExceeded)
 

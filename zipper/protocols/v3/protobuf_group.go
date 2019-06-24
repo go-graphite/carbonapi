@@ -33,7 +33,7 @@ func init() {
 	defer metadata.Metadata.Unlock()
 }
 
-// RoundRobin is used to connect to backends inside clientGroups, implements ServerClient interface
+// RoundRobin is used to connect to backends inside clientGroups, implements BackendServer interface
 type ClientProtoV3Group struct {
 	groupName string
 	servers   []string
@@ -49,11 +49,11 @@ type ClientProtoV3Group struct {
 	httpQuery *helper.HttpQuery
 }
 
-func (c *ClientProtoV3Group) Children() []types.ServerClient {
-	return []types.ServerClient{c}
+func (c *ClientProtoV3Group) Children() []types.BackendServer {
+	return []types.BackendServer{c}
 }
 
-func New(logger *zap.Logger, config types.BackendV2) (types.ServerClient, *errors.Errors) {
+func New(logger *zap.Logger, config types.BackendV2) (types.BackendServer, *errors.Errors) {
 	if config.ConcurrencyLimit == nil {
 		return nil, errors.Fatal("concurency limit is not set")
 	}
@@ -65,7 +65,7 @@ func New(logger *zap.Logger, config types.BackendV2) (types.ServerClient, *error
 	return NewWithLimiter(logger, config, limiter)
 }
 
-func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.BackendServer, *errors.Errors) {
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConnsPerHost: *config.MaxIdleConnsPerHost,

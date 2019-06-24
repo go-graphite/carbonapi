@@ -33,7 +33,7 @@ func init() {
 	defer metadata.Metadata.Unlock()
 }
 
-// RoundRobin is used to connect to backends inside clientGroups, implements ServerClient interface
+// RoundRobin is used to connect to backends inside clientGroups, implements BackendServer interface
 type GraphiteGroup struct {
 	groupName string
 	servers   []string
@@ -50,11 +50,11 @@ type GraphiteGroup struct {
 	httpQuery *helper.HttpQuery
 }
 
-func (g *GraphiteGroup) Children() []types.ServerClient {
-	return []types.ServerClient{g}
+func (g *GraphiteGroup) Children() []types.BackendServer {
+	return []types.BackendServer{g}
 }
 
-func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.ServerClient, *errors.Errors) {
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.BackendServer, *errors.Errors) {
 	logger = logger.With(zap.String("type", "graphite"), zap.String("protocol", config.Protocol), zap.String("name", config.GroupName))
 
 	httpClient := &http.Client{
@@ -87,7 +87,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter
 	return c, nil
 }
 
-func New(logger *zap.Logger, config types.BackendV2) (types.ServerClient, *errors.Errors) {
+func New(logger *zap.Logger, config types.BackendV2) (types.BackendServer, *errors.Errors) {
 	if config.ConcurrencyLimit == nil {
 		return nil, errors.Fatal("concurency limit is not set")
 	}

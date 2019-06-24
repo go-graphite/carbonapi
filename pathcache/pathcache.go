@@ -38,7 +38,7 @@ func (p *PathCache) ECSize() uint64 {
 }
 
 // Set allows to set a key (k) to value (v).
-func (p *PathCache) Set(k string, v []types.ServerClient) {
+func (p *PathCache) Set(k string, v []types.BackendServer) {
 
 	var size uint64
 	for _, vv := range v {
@@ -49,9 +49,9 @@ func (p *PathCache) Set(k string, v []types.ServerClient) {
 }
 
 // Get returns an an element by key. If not successful - returns also false in second var.
-func (p *PathCache) Get(k string) ([]types.ServerClient, bool) {
+func (p *PathCache) Get(k string) ([]types.BackendServer, bool) {
 	if v, ok := p.ec.Get(k); ok {
-		return v.([]types.ServerClient), true
+		return v.([]types.BackendServer), true
 	}
 
 	return nil, false

@@ -12,7 +12,7 @@ type Request interface {
 	LogInfo() interface{}
 }
 
-type ServerClient interface {
+type BackendServer interface {
 	Name() string
 	Backends() []string
 	MaxMetricsPerRequest() int
@@ -29,7 +29,7 @@ type ServerClient interface {
 	TagNames(ctx context.Context, query string, limit int64) ([]string, *errors.Errors)
 	TagValues(ctx context.Context, query string, limit int64) ([]string, *errors.Errors)
 
-	Children() []ServerClient
+	Children() []BackendServer
 }
 
 /*

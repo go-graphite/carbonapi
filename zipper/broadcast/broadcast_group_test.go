@@ -80,7 +80,7 @@ func errorsAreEqual(e1, e2 *errors.Errors) bool {
 
 type testCaseNew struct {
 	name        string
-	servers     []types.ServerClient
+	servers     []types.BackendServer
 	expectedErr *errors.Errors
 }
 
@@ -92,7 +92,7 @@ func TestNewBroadcastGroup(t *testing.T) {
 		},
 		{
 			name: "some servers",
-			servers: []types.ServerClient{
+			servers: []types.BackendServer{
 				dummy.NewDummyClient("client1", []string{"backend1", "backend2"}, 0),
 			},
 		},
@@ -111,7 +111,7 @@ func TestNewBroadcastGroup(t *testing.T) {
 
 type testCaseProbe struct {
 	name            string
-	servers         []types.ServerClient
+	servers         []types.BackendServer
 	clientResponses map[string]dummy.ProbeResponse
 	response        []string
 	expectedErr     *errors.Errors
@@ -120,8 +120,8 @@ type testCaseProbe struct {
 func TestProbeTLDs(t *testing.T) {
 	tests := []testCaseProbe{
 		{
-			name: "two clients different data",
-			servers: []types.ServerClient{
+			name: "two backends different data",
+			servers: []types.BackendServer{
 				dummy.NewDummyClient("client1", []string{"backend1", "backend2"}, 1),
 				dummy.NewDummyClient("client2", []string{"backend3", "backend4"}, 1),
 			},
@@ -175,7 +175,7 @@ func TestProbeTLDs(t *testing.T) {
 
 type testCaseFetch struct {
 	name           string
-	servers        []types.ServerClient
+	servers        []types.BackendServer
 	fetchRequest   *protov3.MultiFetchRequest
 	fetchResponses map[string]dummy.FetchResponse
 
@@ -186,8 +186,8 @@ type testCaseFetch struct {
 func TestFetchRequests(t *testing.T) {
 	tests := []testCaseFetch{
 		{
-			name: "two clients different data",
-			servers: []types.ServerClient{
+			name: "two backends different data",
+			servers: []types.BackendServer{
 				dummy.NewDummyClient("client1", []string{"backend1", "backend2"}, 1),
 				dummy.NewDummyClient("client2", []string{"backend3", "backend4"}, 1),
 			},
@@ -266,8 +266,8 @@ func TestFetchRequests(t *testing.T) {
 			},
 		},
 		{
-			name: "two clients same data",
-			servers: []types.ServerClient{
+			name: "two backends same data",
+			servers: []types.BackendServer{
 				dummy.NewDummyClient("client1", []string{"backend1", "backend2"}, 1),
 				dummy.NewDummyClient("client2", []string{"backend3", "backend4"}, 1),
 			},
@@ -335,8 +335,8 @@ func TestFetchRequests(t *testing.T) {
 			},
 		},
 		{
-			name: "two clients merge data",
-			servers: []types.ServerClient{
+			name: "two backends merge data",
+			servers: []types.BackendServer{
 				dummy.NewDummyClient("client1", []string{"backend1", "backend2"}, 1),
 				dummy.NewDummyClient("client2", []string{"backend3", "backend4"}, 1),
 			},
@@ -404,8 +404,8 @@ func TestFetchRequests(t *testing.T) {
 			},
 		},
 		{
-			name: "two clients different length data",
-			servers: []types.ServerClient{
+			name: "two backends different length data",
+			servers: []types.BackendServer{
 				dummy.NewDummyClient("client1", []string{"backend1", "backend2"}, 1),
 				dummy.NewDummyClient("client2", []string{"backend3", "backend4"}, 1),
 			},
@@ -473,8 +473,8 @@ func TestFetchRequests(t *testing.T) {
 			},
 		},
 		{
-			name: "many clients, different data",
-			servers: []types.ServerClient{
+			name: "many backends, different data",
+			servers: []types.BackendServer{
 				dummy.NewDummyClient("client1", []string{"backend1", "backend2"}, 1),
 				dummy.NewDummyClient("client2", []string{"backend3", "backend4"}, 1),
 				dummy.NewDummyClient("client3", []string{"backend5", "backend6"}, 1),
