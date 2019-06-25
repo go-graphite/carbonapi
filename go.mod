@@ -3,6 +3,7 @@ module github.com/go-graphite/carbonapi
 go 1.12
 
 require (
+	bitbucket.org/tebeka/strftime v0.0.0-20140926081919-2194253a23c0
 	github.com/JaderDias/movingmedian v0.0.0-20170611140316-de8c410559fa
 	github.com/aclements/go-moremath v0.0.0-20190506201756-286cc0be6f75 // indirect
 	github.com/bradfitz/gomemcache v0.0.0-20190329173943-551aad21a668

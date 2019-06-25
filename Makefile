@@ -1,7 +1,7 @@
 all: carbonapi
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
-        EXTRA_PKG_CONFIG_PATH=/opt/X11/lib/pkgconfig
+        EXTRA_PKG_CONFIG_PATH ?= /opt/X11/lib/pkgconfig
 endif
 VERSION ?= $(shell git describe --abbrev=4 --dirty --always --tags)
 
