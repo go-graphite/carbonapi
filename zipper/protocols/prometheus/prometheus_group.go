@@ -507,6 +507,10 @@ func (c *PrometheusGroup) doTagQuery(ctx context.Context, isTagName bool, query 
 	querySplit := strings.Split(queryDecoded, "&")
 	for _, qvRaw := range querySplit {
 		idx := strings.Index(qvRaw, "=")
+		//no parameters passed
+		if idx < 1 {
+			continue
+		}
 		k := qvRaw[:idx]
 		v := qvRaw[idx+1:]
 		if v2, ok := params[qvRaw[:idx]]; !ok {
