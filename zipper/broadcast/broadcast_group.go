@@ -590,12 +590,8 @@ GATHER:
 		tlds = append(tlds, tld)
 	}
 
-	if bg.groupName == "root" {
-		for k, v := range cache {
-			bg.pathCache.Set(k, v)
-		}
-	} else {
-		logger.Error("Setting path cache in non root bg group. somethings off!")
+	for k, v := range cache {
+		bg.pathCache.Set(k, v)
 	}
 
 	return tlds, &err
