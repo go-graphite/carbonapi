@@ -13,9 +13,9 @@ Changes
 
 CHANGELOG
 ---------
-**0.12.0-rc.1 (WIP)**
- - Fix long going issue with stuck requests towards backend.
+**0.12.0-rc.1**
  - Fix panic when using Prometheus backend and query /tags/autoComplete/tags without parameters
+ - Fix long going issue with stuck requests towards backend.
 
 **0.12.0-rc.0**
  - Add experimental support for Prometheus as Backend.
