@@ -217,6 +217,18 @@ func (t *TriDense) RawTriangular() blas64.Triangular {
 	return t.mat
 }
 
+// SetRawTriangular sets the underlying blas64.Triangular used by the receiver.
+// Changes to elements in the receiver following the call will be reflected
+// in the input.
+//
+// The supplied Triangular must not use blas.Unit storage format.
+func (t *TriDense) SetRawTriangular(mat blas64.Triangular) {
+	if mat.Diag == blas.Unit {
+		panic("mat: cannot set TriDense with Unit storage format")
+	}
+	t.mat = mat
+}
+
 // Reset zeros the dimensions of the matrix so that it can be reused as the
 // receiver of a dimensionally restricted operation.
 //
@@ -440,15 +452,39 @@ func (t *TriDense) MulTri(a, b Triangular) {
 		defer restore()
 	}
 
-	// TODO(btracey): Improve the set of fast-paths.
+	// Inspect types here, helps keep the loops later clean(er).
+	_, aDiag := aU.(Diagonal)
+	_, bDiag := bU.(Diagonal)
+	// If they are both diagonal only need 1 loop.
+	// All diagonal matrices are Upper.
+	// TODO: Add fast paths for DiagDense.
+	if aDiag && bDiag {
+		t.Zero()
+		for i := 0; i < n; i++ {
+			t.SetTri(i, i, a.At(i, i)*b.At(i, i))
+		}
+		return
+	}
+
+	// Now we know at least one matrix is non-diagonal.
+	// And all diagonal matrices are all Upper.
+	// The both-diagonal case is handled above.
+	// TODO: Add fast paths for Dense variants.
 	if kind == Upper {
 		for i := 0; i < n; i++ {
 			for j := i; j < n; j++ {
-				var v float64
-				for k := i; k <= j; k++ {
-					v += a.At(i, k) * b.At(k, j)
+				switch {
+				case aDiag:
+					t.SetTri(i, j, a.At(i, i)*b.At(i, j))
+				case bDiag:
+					t.SetTri(i, j, a.At(i, j)*b.At(j, j))
+				default:
+					var v float64
+					for k := i; k <= j; k++ {
+						v += a.At(i, k) * b.At(k, j)
+					}
+					t.SetTri(i, j, v)
 				}
-				t.SetTri(i, j, v)
 			}
 		}
 		return
@@ -511,6 +547,16 @@ func (t *TriDense) ScaleTri(f float64, a Triangular) {
 			}
 		}
 	}
+}
+
+// Trace returns the trace of the matrix.
+func (t *TriDense) Trace() float64 {
+	// TODO(btracey): could use internal asm sum routine.
+	var v float64
+	for i := 0; i < t.mat.N; i++ {
+		v += t.mat.Data[i*t.mat.Stride+i]
+	}
+	return v
 }
 
 // copySymIntoTriangle copies a symmetric matrix into a TriDense

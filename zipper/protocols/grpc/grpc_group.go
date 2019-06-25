@@ -64,7 +64,9 @@ func NewClientGRPCGroup(logger *zap.Logger, config types.BackendV2) (types.Backe
 		resolvedAddrs = append(resolvedAddrs, resolver.Address{Addr: addr})
 	}
 
-	r.NewAddress(resolvedAddrs)
+	r.UpdateState(resolver.State{
+		Addresses: resolvedAddrs,
+	})
 
 	opts := []grpc.DialOption{
 		grpc.WithUserAgent("carbonzipper"),

@@ -20,18 +20,25 @@ import (
 // There are no restrictions on work for the other matrix norms.
 func (impl Implementation) Dlange(norm lapack.MatrixNorm, m, n int, a []float64, lda int, work []float64) float64 {
 	// TODO(btracey): These should probably be refactored to use BLAS calls.
-	checkMatrix(m, n, a, lda)
-	switch norm {
-	case lapack.MaxRowSum, lapack.MaxColumnSum, lapack.Frobenius, lapack.MaxAbs:
-	default:
+	switch {
+	case norm != lapack.MaxRowSum && norm != lapack.MaxColumnSum && norm != lapack.Frobenius && norm != lapack.MaxAbs:
 		panic(badNorm)
+	case lda < max(1, n):
+		panic(badLdA)
 	}
-	if norm == lapack.MaxColumnSum && len(work) < n {
-		panic(badWork)
-	}
-	if m == 0 && n == 0 {
+
+	// Quick return if possible.
+	if m == 0 || n == 0 {
 		return 0
 	}
+
+	switch {
+	case len(a) < (m-1)*lda+n:
+		panic(badLdA)
+	case norm == lapack.MaxColumnSum && len(work) < n:
+		panic(shortWork)
+	}
+
 	if norm == lapack.MaxAbs {
 		var value float64
 		for i := 0; i < m; i++ {
@@ -42,9 +49,6 @@ func (impl Implementation) Dlange(norm lapack.MatrixNorm, m, n int, a []float64,
 		return value
 	}
 	if norm == lapack.MaxColumnSum {
-		if len(work) < n {
-			panic(badWork)
-		}
 		for i := 0; i < n; i++ {
 			work[i] = 0
 		}
@@ -70,15 +74,13 @@ func (impl Implementation) Dlange(norm lapack.MatrixNorm, m, n int, a []float64,
 		}
 		return value
 	}
-	if norm == lapack.Frobenius {
-		var value float64
-		scale := 0.0
-		sum := 1.0
-		for i := 0; i < m; i++ {
-			scale, sum = impl.Dlassq(n, a[i*lda:], 1, scale, sum)
-		}
-		value = scale * math.Sqrt(sum)
-		return value
+	// norm == lapack.Frobenius
+	var value float64
+	scale := 0.0
+	sum := 1.0
+	for i := 0; i < m; i++ {
+		scale, sum = impl.Dlassq(n, a[i*lda:], 1, scale, sum)
 	}
-	panic("lapack: bad matrix norm")
+	value = scale * math.Sqrt(sum)
+	return value
 }

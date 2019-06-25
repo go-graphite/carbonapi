@@ -24,6 +24,11 @@ type HOGSVD struct {
 	err error
 }
 
+// succFact returns whether the receiver contains a successful factorization.
+func (gsvd *HOGSVD) succFact() bool {
+	return gsvd.n != 0
+}
+
 // Factorize computes the higher order generalized singular value decomposition (HOGSVD)
 // of the n input r_i×c column tall matrices in m. HOGSV extends the GSVD case from 2 to n
 // input matrices.
@@ -80,13 +85,13 @@ func (gsvd *HOGSVD) Factorize(m ...Matrix) (ok bool) {
 	defer putWorkspace(sij)
 	for i, ai := range a {
 		for _, aj := range a[i+1:] {
-			gsvd.err = ai.SolveChol(sij, &aj)
+			gsvd.err = ai.SolveCholTo(sij, &aj)
 			if gsvd.err != nil {
 				return false
 			}
 			s.Add(s, sij)
 
-			gsvd.err = aj.SolveChol(sij, &ai)
+			gsvd.err = aj.SolveCholTo(sij, &ai)
 			if gsvd.err != nil {
 				return false
 			}
@@ -96,12 +101,23 @@ func (gsvd *HOGSVD) Factorize(m ...Matrix) (ok bool) {
 	s.Scale(1/float64(len(m)*(len(m)-1)), s)
 
 	var eig Eigen
-	ok = eig.Factorize(s.T(), false, true)
+	ok = eig.Factorize(s.T(), EigenRight)
 	if !ok {
 		gsvd.err = errors.New("hogsvd: eigen decomposition failed")
 		return false
 	}
-	v := eig.Vectors()
+	vc := eig.VectorsTo(nil)
+	// vc is guaranteed to have real eigenvalues.
+	rc, cc := vc.Dims()
+	v := NewDense(rc, cc, nil)
+	for i := 0; i < rc; i++ {
+		for j := 0; j < cc; j++ {
+			a := vc.At(i, j)
+			v.set(i, j, real(a))
+		}
+	}
+	// Rescale the columns of v by their Frobenius norms.
+	// Work done in cv is reflected in v.
 	var cv VecDense
 	for j := 0; j < c; j++ {
 		cv.ColViewOf(v, j)
@@ -120,7 +136,7 @@ func (gsvd *HOGSVD) Factorize(m ...Matrix) (ok bool) {
 		if gsvd.err != nil {
 			return false
 		}
-		b[i].Clone(biT.T())
+		b[i].CloneFrom(biT.T())
 	}
 
 	gsvd.n = len(m)
@@ -146,8 +162,8 @@ func (gsvd *HOGSVD) Len() int {
 //
 // UTo will panic if the receiver does not contain a successful factorization.
 func (gsvd *HOGSVD) UTo(dst *Dense, n int) *Dense {
-	if gsvd.n == 0 {
-		panic("hogsvd: unsuccessful factorization")
+	if !gsvd.succFact() {
+		panic(badFact)
 	}
 	if n < 0 || gsvd.n <= n {
 		panic("hogsvd: invalid index")
@@ -176,8 +192,8 @@ func (gsvd *HOGSVD) UTo(dst *Dense, n int) *Dense {
 //
 // Values will panic if the receiver does not contain a successful factorization.
 func (gsvd *HOGSVD) Values(s []float64, n int) []float64 {
-	if gsvd.n == 0 {
-		panic("hogsvd: unsuccessful factorization")
+	if !gsvd.succFact() {
+		panic(badFact)
 	}
 	if n < 0 || gsvd.n <= n {
 		panic("hogsvd: invalid index")
@@ -203,8 +219,8 @@ func (gsvd *HOGSVD) Values(s []float64, n int) []float64 {
 //
 // VTo will panic if the receiver does not contain a successful factorization.
 func (gsvd *HOGSVD) VTo(dst *Dense) *Dense {
-	if gsvd.n == 0 {
-		panic("hogsvd: unsuccessful factorization")
+	if !gsvd.succFact() {
+		panic(badFact)
 	}
 	if dst == nil {
 		r, c := gsvd.v.Dims()

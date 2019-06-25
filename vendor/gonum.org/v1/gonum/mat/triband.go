@@ -321,6 +321,18 @@ func (t *TriBandDense) RawTriBand() blas64.TriangularBand {
 	return t.mat
 }
 
+// SetRawTriBand sets the underlying blas64.TriangularBand used by the receiver.
+// Changes to elements in the receiver following the call will be reflected
+// in the input.
+//
+// The supplied TriangularBand must not use blas.Unit storage format.
+func (t *TriBandDense) SetRawTriBand(mat blas64.TriangularBand) {
+	if mat.Diag == blas.Unit {
+		panic("mat: cannot set TriBand with Unit storage")
+	}
+	t.mat = mat
+}
+
 // DiagView returns the diagonal as a matrix backed by the original data.
 func (t *TriBandDense) DiagView() Diagonal {
 	if t.mat.Diag == blas.Unit {
@@ -338,4 +350,18 @@ func (t *TriBandDense) DiagView() Diagonal {
 			Data: data[:(n-1)*t.mat.Stride+1],
 		},
 	}
+}
+
+// Trace returns the trace.
+func (t *TriBandDense) Trace() float64 {
+	rb := t.RawTriBand()
+	var tr float64
+	var offsetIndex int
+	if rb.Uplo == blas.Lower {
+		offsetIndex = rb.K
+	}
+	for i := 0; i < rb.N; i++ {
+		tr += rb.Data[offsetIndex+i*rb.Stride]
+	}
+	return tr
 }

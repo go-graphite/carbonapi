@@ -15,7 +15,7 @@ var (
 	_ Matrix  = dense
 	_ Mutable = dense
 
-	_ Cloner       = dense
+	_ ClonerFrom   = dense
 	_ RowViewer    = dense
 	_ ColViewer    = dense
 	_ RawRowViewer = dense
@@ -134,16 +134,6 @@ func (m *Dense) Zero() {
 	}
 }
 
-// untranspose untransposes a matrix if applicable. If a is an Untransposer, then
-// untranspose returns the underlying matrix and true. If it is not, then it returns
-// the input matrix and false.
-func untranspose(a Matrix) (Matrix, bool) {
-	if ut, ok := a.(Untransposer); ok {
-		return ut.Untranspose(), true
-	}
-	return a, false
-}
-
 // isolatedWorkspace returns a new dense matrix w with the size of a and
 // returns a callback to defer which performs cleanup at the return of the call.
 // This should be used when a method receiver is the same pointer as an input argument.
@@ -196,7 +186,7 @@ func (m *Dense) asTriDense(n int, diag blas.Diag, uplo blas.Uplo) *TriDense {
 // DenseCopyOf returns a newly allocated copy of the elements of a.
 func DenseCopyOf(a Matrix) *Dense {
 	d := &Dense{}
-	d.Clone(a)
+	d.CloneFrom(a)
 	return d
 }
 
@@ -385,12 +375,12 @@ func (m *Dense) Grow(r, c int) Matrix {
 	return &t
 }
 
-// Clone makes a copy of a into the receiver, overwriting the previous value of
-// the receiver. The clone operation does not make any restriction on shape and
+// CloneFrom makes a copy of a into the receiver, overwriting the previous value of
+// the receiver. The clone from operation does not make any restriction on shape and
 // will not cause shadowing.
 //
-// See the Cloner interface for more information.
-func (m *Dense) Clone(a Matrix) {
+// See the ClonerFrom interface for more information.
+func (m *Dense) CloneFrom(a Matrix) {
 	r, c := a.Dims()
 	mat := blas64.General{
 		Rows:   r,
@@ -551,4 +541,18 @@ func (m *Dense) Augment(a, b Matrix) {
 	m.Copy(a)
 	w := m.Slice(0, br, ac, ac+bc).(*Dense)
 	w.Copy(b)
+}
+
+// Trace returns the trace of the matrix. The matrix must be square or Trace
+// will panic.
+func (m *Dense) Trace() float64 {
+	if m.mat.Rows != m.mat.Cols {
+		panic(ErrSquare)
+	}
+	// TODO(btracey): could use internal asm sum routine.
+	var v float64
+	for i := 0; i < m.mat.Rows; i++ {
+		v += m.mat.Data[i*m.mat.Stride+i]
+	}
+	return v
 }
