@@ -2,6 +2,8 @@ package lowest
 
 import (
 	"container/heap"
+
+	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -53,9 +55,9 @@ func (f *lowest) Do(e parser.Expr, from, until int64, values map[parser.MetricRe
 
 	switch e.Target() {
 	case "lowestAverage":
-		compute = helper.AvgValue
+		compute = consolidations.AvgValue
 	case "lowestCurrent":
-		compute = helper.CurrentValue
+		compute = consolidations.CurrentValue
 	}
 
 	for i, a := range arg {

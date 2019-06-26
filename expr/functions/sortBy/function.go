@@ -1,11 +1,13 @@
 package sortBy
 
 import (
+	"sort"
+
+	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"sort"
 )
 
 type sortBy struct {
@@ -40,11 +42,11 @@ func (f *sortBy) Do(e parser.Expr, from, until int64, values map[parser.MetricRe
 	for i, a := range arg {
 		switch e.Target() {
 		case "sortByTotal":
-			vals[i] = helper.SummarizeValues("sum", a.Values)
+			vals[i] = consolidations.SummarizeValues("sum", a.Values)
 		case "sortByMaxima":
-			vals[i] = helper.SummarizeValues("max", a.Values)
+			vals[i] = consolidations.SummarizeValues("max", a.Values)
 		case "sortByMinima":
-			vals[i] = 1 / helper.SummarizeValues("min", a.Values)
+			vals[i] = 1 / consolidations.SummarizeValues("min", a.Values)
 		}
 	}
 

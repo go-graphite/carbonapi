@@ -2,12 +2,14 @@ package summarize
 
 import (
 	"fmt"
+	"math"
+
+	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"math"
 )
 
 type summarize struct {
@@ -135,7 +137,7 @@ func (f *summarize) Do(e parser.Expr, from, until int64, values map[parser.Metri
 			}
 
 			if t >= bucketEnd {
-				rv := helper.SummarizeValues(summarizeFunction, values)
+				rv := consolidations.SummarizeValues(summarizeFunction, values)
 
 				r.Values[ridx] = rv
 				ridx++
@@ -147,7 +149,7 @@ func (f *summarize) Do(e parser.Expr, from, until int64, values map[parser.Metri
 
 		// last partial bucket
 		if bucketItems > 0 {
-			rv := helper.SummarizeValues(summarizeFunction, values)
+			rv := consolidations.SummarizeValues(summarizeFunction, values)
 			r.Values[ridx] = rv
 		}
 
@@ -185,7 +187,7 @@ func (f *summarize) Description() map[string]types.FunctionDescription {
 				{
 					Default: types.NewSuggestion("sum"),
 					Name:    "func",
-					Options: helper.AvailableSummarizers,
+					Options: consolidations.AvailableSummarizers,
 					Type:    types.AggFunc,
 				},
 				{

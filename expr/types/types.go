@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-graphite/carbonapi/expr/consolidations"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	pickle "github.com/lomik/og-rek"
 )
@@ -271,7 +272,7 @@ func (r *MetricData) AggregateValues() {
 
 	if r.AggregateFunction == nil {
 		var ok bool
-		if r.AggregateFunction, ok = ConsolidationToFunc[strings.ToLower(r.ConsolidationFunc)]; !ok {
+		if r.AggregateFunction, ok = consolidations.ConsolidationToFunc[strings.ToLower(r.ConsolidationFunc)]; !ok {
 			fmt.Printf("\nconsolidateFunc = %+v\n\nstack:\n%v\n\n", r.ConsolidationFunc, string(debug.Stack()))
 		}
 	}
@@ -293,141 +294,4 @@ func (r *MetricData) AggregateValues() {
 	}
 
 	r.aggregatedValues = aggV
-}
-
-// ConsolidationToFunc contains a map of graphite-compatible consolidation functions definitions to actual functions that can do aggregation
-// TODO(civil): take into account xFilesFactor
-var ConsolidationToFunc = map[string]func([]float64) float64{
-	"average":  AggMean,
-	"avg_zero": AggMeanZero,
-	"avg":      AggMean,
-	"min":      AggMin,
-	"minimum":  AggMin,
-	"max":      AggMax,
-	"maximum":  AggMax,
-	"sum":      AggSum,
-	"first":    AggFirst,
-	"last":     AggLast,
-}
-
-var consolidateFuncs []string
-
-// AvailableConsolidationFuncs lists all available consolidation functions
-func AvailableConsolidationFuncs() []string {
-	if len(consolidateFuncs) == 0 {
-		for name := range ConsolidationToFunc {
-			consolidateFuncs = append(consolidateFuncs, name)
-		}
-	}
-	return consolidateFuncs
-}
-
-// AggMean computes mean (sum(v)/len(v), excluding NaN points) of values
-func AggMean(v []float64) float64 {
-	var sum float64
-	var n int
-	for _, vv := range v {
-		if !math.IsNaN(vv) {
-			sum += vv
-			n++
-		}
-	}
-	if n == 0 {
-		return math.NaN()
-	}
-	return sum / float64(n)
-}
-
-// AggMeanZero computes mean (sum(v)/len(v), replacing NaN points with 0
-func AggMeanZero(v []float64) float64 {
-	var sum float64
-	var n int
-	for _, vv := range v {
-		if !math.IsNaN(vv) {
-			sum += vv
-		}
-		n++
-	}
-	if n == 0 {
-		return math.NaN()
-	}
-	return sum / float64(n)
-}
-
-// AggMax computes max of values
-func AggMax(v []float64) float64 {
-	var m = math.Inf(-1)
-	var abs = true
-	for _, vv := range v {
-		if !math.IsNaN(vv) {
-			abs = false
-			if m < vv {
-				m = vv
-			}
-		}
-	}
-	if abs {
-		return math.NaN()
-	}
-	return m
-}
-
-// AggMin computes min of values
-func AggMin(v []float64) float64 {
-	var m = math.Inf(1)
-	var abs = true
-	for _, vv := range v {
-		if !math.IsNaN(vv) {
-			abs = false
-			if m > vv {
-				m = vv
-			}
-		}
-	}
-	if abs {
-		return math.NaN()
-	}
-	return m
-}
-
-// AggSum computes sum of values
-func AggSum(v []float64) float64 {
-	var sum float64
-	var abs = true
-	for _, vv := range v {
-		if !math.IsNaN(vv) {
-			sum += vv
-			abs = false
-		}
-	}
-	if abs {
-		return math.NaN()
-	}
-	return sum
-}
-
-// AggFirst returns first point
-func AggFirst(v []float64) float64 {
-	var m = math.Inf(-1)
-	var abs = true
-	if len(v) > 0 {
-		return v[0]
-	}
-	if abs {
-		return math.NaN()
-	}
-	return m
-}
-
-// AggLast returns last point
-func AggLast(v []float64) float64 {
-	var m = math.Inf(-1)
-	var abs = true
-	if len(v) > 0 {
-		return v[len(v)-1]
-	}
-	if abs {
-		return math.NaN()
-	}
-	return m
 }

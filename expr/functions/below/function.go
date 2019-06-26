@@ -1,11 +1,13 @@
 package below
 
 import (
+	"strings"
+
+	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"strings"
 )
 
 type below struct {
@@ -43,14 +45,14 @@ func (f *below) Do(e parser.Expr, from, until int64, values map[parser.MetricReq
 	var compute func([]float64) float64
 	switch {
 	case strings.HasPrefix(e.Target(), "average"):
-		compute = helper.AvgValue
+		compute = consolidations.AvgValue
 	case strings.HasPrefix(e.Target(), "current"):
-		compute = helper.CurrentValue
+		compute = consolidations.CurrentValue
 	case strings.HasPrefix(e.Target(), "maximum"):
-		compute = helper.MaxValue
+		compute = consolidations.MaxValue
 		isInclusive = false
 	case strings.HasPrefix(e.Target(), "minimum"):
-		compute = helper.MinValue
+		compute = consolidations.MinValue
 		isInclusive = false
 	}
 	var results []*types.MetricData

@@ -2,11 +2,13 @@ package highest
 
 import (
 	"container/heap"
+	"math"
+
+	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"math"
 )
 
 type highest struct {
@@ -56,11 +58,11 @@ func (f *highest) Do(e parser.Expr, from, until int64, values map[parser.MetricR
 
 	switch e.Target() {
 	case "highestMax":
-		compute = helper.MaxValue
+		compute = consolidations.MaxValue
 	case "highestAverage":
-		compute = helper.AvgValue
+		compute = consolidations.AvgValue
 	case "highestCurrent":
-		compute = helper.CurrentValue
+		compute = consolidations.CurrentValue
 	}
 
 	for i, a := range arg {

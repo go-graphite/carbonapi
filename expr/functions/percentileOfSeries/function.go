@@ -1,6 +1,7 @@
 package percentileOfSeries
 
 import (
+	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -44,7 +45,7 @@ func (f *percentileOfSeries) Do(e parser.Expr, from, until int64, values map[par
 	}
 
 	return helper.AggregateSeries(e, args, func(values []float64) float64 {
-		return helper.Percentile(values, percent, interpolate)
+		return consolidations.Percentile(values, percent, interpolate)
 	})
 }
 

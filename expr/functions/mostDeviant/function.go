@@ -2,11 +2,13 @@ package mostDeviant
 
 import (
 	"container/heap"
+	"math"
+
+	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"math"
 )
 
 type mostDeviant struct {
@@ -49,7 +51,7 @@ func (f *mostDeviant) Do(e parser.Expr, from, until int64, values map[parser.Met
 	var mh types.MetricHeap
 
 	for index, arg := range args {
-		variance := helper.VarianceValue(arg.Values)
+		variance := consolidations.VarianceValue(arg.Values)
 		if math.IsNaN(variance) {
 			continue
 		}
