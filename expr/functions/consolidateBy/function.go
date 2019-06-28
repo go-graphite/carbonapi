@@ -1,6 +1,7 @@
 package consolidateBy
 
 import (
+	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -41,7 +42,7 @@ func (f *consolidateBy) Do(e parser.Expr, from, until int64, values map[parser.M
 	for _, a := range arg {
 		r := *a
 
-		r.AggregateFunction = types.ConsolidationToFunc[name]
+		r.AggregateFunction = consolidations.ConsolidationToFunc[name]
 
 		results = append(results, &r)
 	}
@@ -66,7 +67,7 @@ func (f *consolidateBy) Description() map[string]types.FunctionDescription {
 				},
 				{
 					Name:     "consolidationFunc",
-					Options:  types.AvailableConsolidationFuncs(),
+					Options:  consolidations.AvailableConsolidationFuncs(),
 					Required: true,
 					Type:     types.String,
 				},

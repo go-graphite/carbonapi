@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -116,7 +117,7 @@ func (f *groupByTags) Description() map[string]types.FunctionDescription {
 				},
 				{
 					Name:     "callback",
-					Options:  helper.AvailableSummarizers,
+					Options:  consolidations.AvailableSummarizers,
 					Required: true,
 					Type:     types.AggFunc,
 				},

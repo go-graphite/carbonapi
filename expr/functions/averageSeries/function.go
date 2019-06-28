@@ -1,6 +1,7 @@
 package averageSeries
 
 import (
+	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -32,13 +33,7 @@ func (f *averageSeries) Do(e parser.Expr, from, until int64, values map[parser.M
 	}
 
 	e.SetTarget("averageSeries")
-	return helper.AggregateSeries(e, args, func(values []float64) float64 {
-		sum := 0.0
-		for _, value := range values {
-			sum += value
-		}
-		return sum / float64(len(values))
-	})
+	return helper.AggregateSeries(e, args, consolidations.AggMean)
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web

@@ -3,6 +3,7 @@ package legendValue
 import (
 	"fmt"
 
+	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -49,7 +50,7 @@ func (f *legendValue) Do(e parser.Expr, from, until int64, values map[parser.Met
 	for _, a := range arg {
 		r := *a
 		for _, method := range methods {
-			summary := helper.SummarizeValues(method, a.Values)
+			summary := consolidations.SummarizeValues(method, a.Values)
 			r.Name = fmt.Sprintf("%s (%s: %f)", r.Name, method, summary)
 		}
 

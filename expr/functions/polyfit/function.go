@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -86,7 +87,7 @@ func (f *polyfit) Do(e parser.Expr, from, until int64, values map[parser.MetricR
 		}
 
 		// STEP 1: Creating Vandermonde (X)
-		v := helper.Vandermonde(a.Values, degree)
+		v := consolidations.Vandermonde(a.Values, degree)
 		// STEP 2: Creating (X^T * X)**-1
 		var t mat.Dense
 		t.Mul(v.T(), v)
@@ -101,7 +102,7 @@ func (f *polyfit) Do(e parser.Expr, from, until int64, values map[parser.MetricR
 		// END OF STEPS
 
 		for i := range r.Values {
-			r.Values[i] = helper.Poly(float64(i), c.RawMatrix().Data...)
+			r.Values[i] = consolidations.Poly(float64(i), c.RawMatrix().Data...)
 		}
 		results = append(results, &r)
 	}

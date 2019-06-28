@@ -1,11 +1,13 @@
 package aboveSeries
 
 import (
+	"regexp"
+
+	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"regexp"
 )
 
 type aboveSeries struct {
@@ -58,7 +60,7 @@ func (f *aboveSeries) Do(e parser.Expr, from, until int64, values map[parser.Met
 
 	var results []*types.MetricData
 	for _, a := range args {
-		if helper.MaxValue(a.Values) > max {
+		if consolidations.MaxValue(a.Values) > max {
 			r := *a
 			if rename {
 				r.Name = rre.ReplaceAllString(r.Name, replace)

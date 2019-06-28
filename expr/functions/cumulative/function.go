@@ -1,6 +1,7 @@
 package cumulative
 
 import (
+	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -35,7 +36,7 @@ func (f *cumulative) Do(e parser.Expr, from, until int64, values map[parser.Metr
 
 	for _, a := range arg {
 		r := *a
-		r.AggregateFunction = types.AggSum
+		r.AggregateFunction = consolidations.AggSum
 		results = append(results, &r)
 	}
 	return results, nil

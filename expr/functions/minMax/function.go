@@ -2,11 +2,11 @@ package minMax
 
 import (
 	"fmt"
+	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"math"
 )
 
 type minMax struct {
@@ -39,25 +39,9 @@ func (f *minMax) Do(e parser.Expr, from, until int64, values map[parser.MetricRe
 
 	switch e.Target() {
 	case "maxSeries", "max":
-		return helper.AggregateSeries(e, args, func(values []float64) float64 {
-			max := math.Inf(-1)
-			for _, value := range values {
-				if value > max {
-					max = value
-				}
-			}
-			return max
-		})
+		return helper.AggregateSeries(e, args, consolidations.AggMax)
 	case "minSeries", "min":
-		return helper.AggregateSeries(e, args, func(values []float64) float64 {
-			min := math.Inf(1)
-			for _, value := range values {
-				if value < min {
-					min = value
-				}
-			}
-			return min
-		})
+		return helper.AggregateSeries(e, args, consolidations.AggMin)
 	}
 
 	return nil, fmt.Errorf("unsupported target: %v", e.Target())

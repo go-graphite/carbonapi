@@ -1,6 +1,7 @@
 package sum
 
 import (
+	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -34,13 +35,7 @@ func (f *sum) Do(e parser.Expr, from, until int64, values map[parser.MetricReque
 	}
 
 	e.SetTarget("sumSeries")
-	return helper.AggregateSeries(e, args, func(values []float64) float64 {
-		sum := 0.0
-		for _, value := range values {
-			sum += value
-		}
-		return sum
-	})
+	return helper.AggregateSeries(e, args, consolidations.AggSum)
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
