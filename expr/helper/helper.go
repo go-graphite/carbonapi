@@ -196,9 +196,7 @@ func AggregateSeries(e parser.Expr, args []*types.MetricData, function Aggregate
 	for i := range args[0].Values {
 		var values []float64
 		for _, arg := range args {
-			if !math.IsNaN(arg.Values[i]) {
-				values = append(values, arg.Values[i])
-			}
+			values = append(values, arg.Values[i])
 		}
 
 		r.Values[i] = math.NaN()

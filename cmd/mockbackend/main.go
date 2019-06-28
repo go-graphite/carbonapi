@@ -117,7 +117,7 @@ func renderHandler(wr http.ResponseWriter, req *http.Request) {
 			mv := make([]interface{}, len(metric.Values))
 			for i, p := range metric.Values {
 				if metric.IsAbsent[i] {
-					mv[i] = math.NaN()
+					mv[i] = nil
 				} else {
 					mv[i] = p
 				}
