@@ -13,8 +13,19 @@ Changes
 
 CHANGELOG
 ---------
-**0.12.0 (WIP)**
- - Add 'aggregate' function.
+**0.12.0**
+ - Add support for Prometheus as Backend. This allows to use Prometheus-compatible software as carbonapi's backends (e.x. Prometheus and VictoriaMetrics)
+ - Add support for querying msgpack-compatible backends. This should make carbonapi compatible with graphite-web 1.1 and [grafana/metrictank](https://github.com/grafana/metrictank)
+ - **[Breaking][Code]** Migrate all internal structures to `github.com/go-graphite/protocol/carbonapi_v3_pb`. This removes redundant IsAbsent slice and changes all timestamps to int64 (they are still expected to have uint32 timestamps there)
+ - **[Breaking][Improvement]** Integrate carbonzipper 1.0.0. This introduces better loadbalancing support, but significantly changes config file format. It might behave differently with the same settings. It also removes carbonzipper dependency.
+ - [Improvement] seriesByTag Support (thx. to Vladimir Kolobaev)
+ - [Improvement] aliasByTag Support (thx. to Vladimir Kolobaev)
+ - [Improvement] Added support for more aggregation functions (thx. to Oleg Matrokhin)
+ - [Improvement] Add 'aggregate' function.
+ - [Improvement] pixelRatio for png render (thx. to Roman Lomonosov)
+ - [Fix] Supported functions were updated to be more compatible with graphtie-web 1.1.0+
+ - [Fix] fix movingXyz error on intervals greater than 30 days (thx. to Safronov Michail)
+ - [Fix] Fix timeShift function (thx. to Gunnar Þór Magnússon)
 
 **0.12.0-rc.1**
  - Fix panic when using Prometheus backend and query /tags/autoComplete/tags without parameters
