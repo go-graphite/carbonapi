@@ -1640,23 +1640,6 @@ func TestEvalMultipleReturns(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("stddevSeries",
-
-				"metric1",
-				"metric2",
-				"metric3",
-			),
-			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
-				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, 4, 6, 8, 10}, 1, now32)},
-				{"metric3", 0, 1}: {types.MakeMetricData("metric3", []float64{1, 2, 3, 4, 5}, 1, now32)},
-			},
-			"stddevSeries",
-			map[string][]*types.MetricData{
-				"stddevSeries(metric1,metric2,metric3)": {types.MakeMetricData("stddevSeries(metric1,metric2,metric3)", []float64{0.4714045207910317, 0.9428090415820634, 1.4142135623730951, 1.8856180831641267, 2.357022603955158}, 1, now32)},
-			},
-		},
-		{
 			parser.NewExpr("lowestCurrent",
 
 				"metric1",

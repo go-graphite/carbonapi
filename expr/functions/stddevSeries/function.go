@@ -1,11 +1,11 @@
 package stddevSeries
 
 import (
+	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"math"
 )
 
 type stddevSeries struct {
@@ -34,18 +34,7 @@ func (f *stddevSeries) Do(e parser.Expr, from, until int64, values map[parser.Me
 	}
 
 	e.SetTarget("stddevSeries")
-	return helper.AggregateSeries(e, args, func(values []float64) float64 {
-		sum := 0.0
-		diffSqr := 0.0
-		for _, value := range values {
-			sum += value
-		}
-		average := sum / float64(len(values))
-		for _, value := range values {
-			diffSqr += (value - average) * (value - average)
-		}
-		return math.Sqrt(diffSqr / float64(len(values)))
-	})
+	return helper.AggregateSeries(e, args, consolidations.ConsolidationToFunc["stddev"])
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
