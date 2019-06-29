@@ -50,7 +50,16 @@ func TestAliasByTags(t *testing.T) {
 			map[parser.MetricRequest][]*types.MetricData{
 				{"base.metric1;foo=bar;baz=bam", 0, 1}: {types.MakeMetricData("base.metric1;foo=bar;baz=bam", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{types.MakeMetricData("metric1..bar.base", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData(".bar.metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+		},
+		{
+			parser.NewExpr("aliasByTags",
+				"base.metric1;foo=bar;baz=bam", 2, parser.ArgValue("baz"), parser.ArgValue("foo"), 1,
+			),
+			map[parser.MetricRequest][]*types.MetricData{
+				{"base.metric1;foo=bar;baz=bam", 0, 1}: {types.MakeMetricData("base.metric1;foo=bar;baz=bam", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData("bam.bar.metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 	}
 

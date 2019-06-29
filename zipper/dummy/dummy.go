@@ -55,6 +55,8 @@ type DummyClient struct {
 	findResponses  map[string]FindResponse
 	infoResponses  map[string]InfoResponse
 	statsResponses map[string]StatsResponse
+	tagNameResponse []string
+	tagValuesResponse []string
 	probeResponses ProbeResponse
 	alwaysTimeout  time.Duration
 }
@@ -200,6 +202,22 @@ func (c *DummyClient) Stats(ctx context.Context) (*protov3.MetricDetailsResponse
 
 func (c *DummyClient) SetTLDResponse(response ProbeResponse) {
 	c.probeResponses = response
+}
+
+func (c *DummyClient) SetTagNamesResponse(response []string) {
+	c.tagNameResponse = response
+}
+
+func (c *DummyClient) TagNames(ctx context.Context, query string, limit int64) ([]string, *errors.Errors) {
+	return c.tagNameResponse, nil
+}
+
+func (c *DummyClient) SetTagValuesResponse(response []string) {
+	c.tagValuesResponse = response
+}
+
+func (c *DummyClient) TagValues(ctx context.Context, query string, limit int64) ([]string, *errors.Errors) {
+	return c.tagNameResponse, nil
 }
 
 func (c *DummyClient) ProbeTLDs(ctx context.Context) ([]string, *errors.Errors) {
