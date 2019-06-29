@@ -9,6 +9,17 @@
 # or graphite-clickhouse's http url.
 # Listen address, should always include hostname or ip address and a port.
 listen: "localhost:8081"
+# Allow extra charsets in metric names. By default only "Latin" is allowed
+# Please note that each unicodeRangeTables will slow down metric parsing a bit
+#   For list of supported tables, see: https://golang.org/src/unicode/tables.go?#L3437
+#   Special name "all" reserved to append all tables that's currently supported by Go
+#unicodeRangeTables:
+#   - "Latin"
+#   - "Cyrillic"
+#   - "Hiragana"
+#   - "Katakana"
+#   - "Han"
+##   - "all"
 # Max concurrent requests to CarbonZipper
 concurency: 20
 cache:

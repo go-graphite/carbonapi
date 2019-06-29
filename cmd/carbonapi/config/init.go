@@ -196,8 +196,27 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 	}
 
 	if len(Config.UnicodeRangeTables) != 0 {
-		for _, stringRange := range Config.UnicodeRangeTables {
-			parser.RangeTables = append(parser.RangeTables, unicode.Scripts[stringRange])
+		if strings.ToLower(Config.UnicodeRangeTables[0]) == "all" {
+			for _, t := range unicode.Scripts {
+				parser.RangeTables = append(parser.RangeTables, t)
+			}
+		} else {
+			for _, stringRange := range Config.UnicodeRangeTables {
+				t, ok := unicode.Scripts[stringRange]
+				if !ok {
+					supportedTables := make([]string, 0)
+					for tt := range unicode.Scripts {
+						supportedTables = append(supportedTables, tt)
+					}
+					logger.Fatal("unknown unicode table",
+						zap.String("specified_table", stringRange),
+						zap.Strings("supported_tables", supportedTables),
+						zap.String("more_info", "you need to specify the table, by it's alias in unicode"+
+							" 10.0.0, see https://golang.org/src/unicode/tables.go?#L3437"),
+					)
+				}
+				parser.RangeTables = append(parser.RangeTables, t)
+			}
 		}
 	} else {
 		parser.RangeTables = append(parser.RangeTables, unicode.Latin)
