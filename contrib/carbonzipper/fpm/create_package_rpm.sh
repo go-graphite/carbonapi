@@ -27,23 +27,23 @@ MAJOR_DISTRO_VERSION=$(lsb_release -s -r | cut -c 1)
 make || die 1 "Can't build package"
 make DESTDIR="${TMPDIR}" install || die 1 "Can't install package"
 mkdir -p "${TMPDIR}"/etc/sysconfig/
-cp ./contrib/common/${NAME}.env "${TMPDIR}"/etc/sysconfig/${NAME}
+cp ./contrib/carbonzipper/common/${NAME}.env "${TMPDIR}"/etc/sysconfig/${NAME}
 if [[ "${MAJOR_DISTRO_VERSION}" -le 6 ]]; then
 	mkdir -p "${TMPDIR}"/init.d
-	cp ./contrib/rhel/${NAME}.init "${TMPDIR}"/etc/init.d/${NAME}
+	cp ./contrib/carbonzipper/rhel/${NAME}.init "${TMPDIR}"/etc/init.d/${NAME}
 else
 	mkdir -p "${TMPDIR}"/etc/systemd/system/
-	cp ./contrib/rhel/${NAME}.service "${TMPDIR}"/etc/systemd/system/
+	cp ./contrib/carbonzipper/rhel/${NAME}.service "${TMPDIR}"/etc/systemd/system/
 fi
 
 
 fpm -s dir -t rpm -n ${NAME} -v ${VERSION} -C ${TMPDIR} \
     --iteration ${RELEASE} \
     -p ${NAME}_VERSION-ITERATION_ARCH.rpm \
-    --after-install contrib/fpm/systemd-reload.sh \
-    --description "carbonserver proxy for graphite-web and carbonapi" \
+    --after-install contrib/carbonzipper/fpm/systemd-reload.sh \
+    --description "carbonzipper proxy for graphite-web and carbonapi" \
     --license MIT \
-    --url "https://github.com/go-graphite/" \
+    --url "https://github.com/go-graphite/carbonapi" \
     "${@}" \
     etc usr/bin usr/share || die "Can't create package!"
 

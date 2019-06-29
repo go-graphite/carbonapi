@@ -35,17 +35,17 @@ make || die 1 "Can't build package"
 make DESTDIR="${TMPDIR}" install || die 1 "Can't install package"
 mkdir -p "${TMPDIR}"/etc/systemd/system/
 mkdir -p "${TMPDIR}"/etc/sysconfig/
-cp ./contrib/rhel/carbonapi.service "${TMPDIR}"/etc/systemd/system/
-cp ./contrib/common/carbonapi.env "${TMPDIR}"/etc/sysconfig/carbonapi
+cp ./contrib/carbonapi/rhel/carbonapi.service "${TMPDIR}"/etc/systemd/system/
+cp ./contrib/carbonapi/common/carbonapi.env "${TMPDIR}"/etc/sysconfig/carbonapi
 
 fpm -s dir -t rpm -n carbonapi -v ${VERSION} -C ${TMPDIR} \
     --iteration ${RELEASE} \
     -p carbonapi-VERSION-ITERATION.ARCH.rpm \
     -d "cairo" \
-    --after-install contrib/fpm/systemd-reload.sh \
+    --after-install contrib/carbonapi/fpm/systemd-reload.sh \
     --description "carbonapi: replacement graphite API server" \
     --license BSD-2 \
-    --url "https://github.com/go-graphite/" \
+    --url "https://github.com/go-graphite/carbonapi" \
     "${@}" \
     etc usr/bin usr/share || die "Can't create package!"
 

@@ -108,7 +108,7 @@ Supported protocols
 Requirements
 ------------
 
-You need to have Go >= 1.8 to build carbonapi from sources. Building with Go 1.7 is not supported for versions >0.8.0
+You need to have Go >= 1.11 to build carbonapi from sources. Building with Go 1.10 or earlier is not supported since 0.11.0
 
 CarbonAPI uses protobuf-based protocol to talk with underlying storages. For current version the compatibility list is:
 
