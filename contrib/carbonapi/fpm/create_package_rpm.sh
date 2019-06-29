@@ -13,12 +13,35 @@ pwd
 VERSION_GIT=$(git describe --abbrev=6 --always --tags | rev | sed 's/-/./' | rev)
 VERSION=$(cut -d'-' -f 1 <<< ${VERSION_GIT})
 RELEASE=$(cut -d'-' -f 2 <<< ${VERSION_GIT})
+COMMIT=$(cut -d'-' -f 3 <<< ${VERSION_GIT})
+
+REL_VERSION=""
+REL_COMMIT=""
 if [[ "${VERSION}" == "${RELEASE}" ]]; then
        RELEASE="1"
 else
        REL_VERSION=$(cut -d'.' -f 1 <<< ${RELEASE})
        REL_COMMIT=$(cut -d'.' -f 2 <<< ${RELEASE})
-       RELEASE="$((REL_VERSION+1)).${REL_COMMIT}"
+       if [[ ! -z "${COMMIT}" ]]; then
+           REL_COMMIT=${COMMIT}
+       fi
+       case "${REL_VERSION}" in
+           "beta")
+               RELEASE="0.2.${RELEASE/./}"
+               if [[ ! -z "${REL_COMMIT}" ]]; then
+                   RELEASE="${RELEASE}.${REL_COMMIT}"
+               fi
+               ;;
+           "rc")
+               RELEASE="0.3.${RELEASE/./}"
+               if [[ ! -z "${REL_COMMIT}" ]]; then
+                   RELEASE="${RELEASE}.${REL_COMMIT}"
+               fi
+               ;;
+           *)
+               RELEASE="1.0.post$((REL_COMMIT+1))"
+               ;;
+       esac
 fi
 grep '^[0-9]\+\.[0-9]\+\.' <<< ${VERSION} || {
 	echo "Revision: $(git rev-parse HEAD)";
