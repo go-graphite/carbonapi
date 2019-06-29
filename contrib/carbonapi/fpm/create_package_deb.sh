@@ -40,25 +40,25 @@ fi
 if [[ ${is_upstart} -eq 0 ]]; then
        mkdir -p "${TMPDIR}"/etc/systemd/system/
        mkdir -p "${TMPDIR}"/etc/default/
-       cp ./contrib/deb/carbonapi.service "${TMPDIR}"/etc/systemd/system/
-       cp ./contrib/common/carbonapi.env "${TMPDIR}"/etc/default/carbonapi
+       cp ./contrib/carbonapi/deb/carbonapi.service "${TMPDIR}"/etc/systemd/system/
+       cp ./contrib/carbonapi/common/carbonapi.env "${TMPDIR}"/etc/default/carbonapi
 else
        mkdir -p "${TMPDIR}"/etc/init/
-       cp ./contrib/deb/carbonapi.conf "${TMPDIR}"/etc/init/
+       cp ./contrib/carbonapi/deb/carbonapi.conf "${TMPDIR}"/etc/init/
 fi
 
 mkdir -p "${TMPDIR}"/var/log/carbonapi/
 mkdir -p "${TMPDIR}"/etc/logrotate.d/
-cp ./contrib/deb/carbonapi.logrotate "${TMPDIR}"/etc/logrotate.d/carbonapi
+cp ./contrib/carbonapi/deb/carbonapi.logrotate "${TMPDIR}"/etc/logrotate.d/carbonapi
 
 fpm -s dir -t deb -n carbonapi -v ${VERSION} -C ${TMPDIR} \
     -p carbonapi_VERSION_ARCH.deb \
     -d "libcairo2 > 1.11" \
     --no-deb-systemd-restart-after-upgrade \
-    --after-install contrib/fpm/systemd-reload.sh \
+    --after-install contrib/carbonapi/fpm/systemd-reload.sh \
     --description "carbonapi: replacement graphite API server" \
     --license BSD-2 \
-    --url "https://github.com/go-graphite/" \
+    --url "https://github.com/go-graphite/carbonapi" \
     "${@}" \
     etc usr/bin usr/share || die 1 "Can't create package!"
 

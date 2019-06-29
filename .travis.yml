@@ -1,5 +1,5 @@
 language: go
-dist: trusty
+dist: xenial
 
 sudo: required
 
@@ -19,9 +19,7 @@ git:
 
 matrix:
   include:
-    - go: "1.x"
-    - go: "1.9.x"
-    - go: "1.10.x"
-       env:
+    - go: "1.11.x"
+    - go: "1.12.x"
+      env:
         - BUILD_PACKAGES=true
-   - go: "master"

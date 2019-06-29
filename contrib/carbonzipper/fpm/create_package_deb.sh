@@ -29,20 +29,20 @@ fi
 if [[ ${is_upstart} -eq 0 ]]; then
        mkdir -p "${TMPDIR}"/etc/systemd/system/
        mkdir -p "${TMPDIR}"/etc/default/
-       cp ./contrib/deb/${NAME}.service "${TMPDIR}"/etc/systemd/system/
-       cp ./contrib/common/${NAME}.env "${TMPDIR}"/etc/default/${NAME}
+       cp ./contrib/carbonzipper/deb/${NAME}.service "${TMPDIR}"/etc/systemd/system/
+       cp ./contrib/carbonzipper/common/${NAME}.env "${TMPDIR}"/etc/default/${NAME}
 else
        mkdir -p "${TMPDIR}"/etc/init/
-       cp ./contrib/deb/${NAME}.conf "${TMPDIR}"/etc/init/
+       cp ./contrib/carbonzipper/deb/${NAME}.conf "${TMPDIR}"/etc/init/
 fi
 
 fpm -s dir -t deb -n ${NAME} -v ${VERSION} -C ${TMPDIR} \
     -p ${NAME}_VERSION_ARCH.deb \
     --no-deb-systemd-restart-after-upgrade \
-    --after-install contrib/fpm/systemd-reload.sh \
-    --description "carbonserver proxy for graphite-web and carbonapi" \
+    --after-install contrib/carbonzipper/fpm/systemd-reload.sh \
+    --description "carbonzipper proxy for graphite-web and carbonapi" \
     --license MIT \
-    --url "https://github.com/go-graphite/" \
+    --url "https://github.com/go-graphite/carbonapi" \
     "${@}" \
     etc usr/bin usr/share || die 1 "Can't create package!"
 
