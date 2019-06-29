@@ -410,17 +410,22 @@ func (f *graphiteWeb) Do(e parser.Expr, from, until int64, values map[parser.Met
 		return nil, err
 	}
 
-	res := make([]*types.MetricData, len(tmp))
+	res := make([]*types.MetricData, 0, len(tmp))
 
 	for _, m := range tmp {
 		stepTime := int64(60)
 		if len(m.Datapoints) > 1 {
-			stepTime = int64(m.Datapoints[1][0] - m.Datapoints[0][0])
+			stepTime = int64(m.Datapoints[1][1] - m.Datapoints[0][1])
 		}
+
+		if m.ConsolidationFunc == "" {
+			m.ConsolidationFunc = "avg"
+		}
+
 		pbResp := pb.FetchResponse{
 			Name:              string(m.Target),
-			StartTime:         int64(m.Datapoints[0][0]),
-			StopTime:          int64(m.Datapoints[len(m.Datapoints)-1][0]),
+			StartTime:         int64(m.Datapoints[0][1]),
+			StopTime:          int64(m.Datapoints[len(m.Datapoints)-1][1]),
 			StepTime:          stepTime,
 			Values:            make([]float64, len(m.Datapoints)),
 			XFilesFactor:      m.XFilesFactor,
