@@ -35,6 +35,8 @@ or if the GRAPHITEHOST/GRAPHITEPORT environment variables are found.
 
 Request data will be stored in memory (default) or in memcache.
 
+Configuration is described in [docs](https://github.com/go-graphite/carbonapi/blob/master/doc/configuration.md)
+
 ## Configuration by environment variables
 
 Every parameter in config file are mapped to environment variable. I.E.
@@ -100,6 +102,7 @@ Supported protocols
  * `carbonapi_v3_pb` - new carbonapi protocol, that supports passing metadata through. Supported by carbonzipper >=1.0.0.alpha.3. Implementing support for that is in-progress for go-carbon
  * `carbonapi_v3_grpc` - grpc version of new carbonapi protocol. Currently no known implementation exists.
  * `msgpack` - messagepack based protocol, used in graphite-web 1.1 and metrictank. It's still experimental and might contain bugs.
+ * `prometheus` - prometheus HTTP API
 
 
 Requirements

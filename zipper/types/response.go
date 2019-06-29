@@ -336,7 +336,7 @@ func mergeFetchResponsesWithUnequalStepTimes(m1, m2 *protov3.FetchResponse) erro
 		swapFetchResponses(m1, m2)
 	}
 
-	zapwriter.Logger("zipper_render").Warn("Fetch responses had different step times",
+	zapwriter.Logger("zipper").Warn("Fetch responses had different step times",
 		zap.Int64("m1_request_start_time", m1.RequestStartTime),
 		zap.Int64("m1_start_time", m1.StartTime),
 		zap.Int64("m1_stop_time", m1.StopTime),
@@ -361,7 +361,7 @@ func MergeFetchResponses(m1, m2 *protov3.FetchResponse) *errors.Errors {
 	}
 
 	if err != nil {
-		zapwriter.Logger("zipper_render").Error("Unable to merge fetch responses",
+		zapwriter.Logger("zipper").Error("Unable to merge fetch responses",
 			zap.Error(err),
 			zap.Int64("m1_request_start_time", m1.RequestStartTime),
 			zap.Int64("m1_start_time", m1.StartTime),
