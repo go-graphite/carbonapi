@@ -13,6 +13,9 @@ Changes
 
 CHANGELOG
 ---------
+**0.12.0 (WIP)**
+ - Add 'aggregate' function.
+
 **0.12.0-rc.1**
  - Fix panic when using Prometheus backend and query /tags/autoComplete/tags without parameters
  - Fix long going issue with stuck requests towards backend.

@@ -109,7 +109,6 @@ _When `format=png`_ (default if not specified)
 ### Unsupported functions
 | Function                                                                  |
 | :------------------------------------------------------------------------ |
-| aggregate |
 | aggregateLine |
 | aggregateWithWildcards |
 | aliasQuery |
@@ -144,6 +143,7 @@ _When `format=png`_ (default if not specified)
 ### Partly supported functions
 | Function                 | Incompatibilities                              |
 | :------------------------|:---------------------------------------------- |
+| aggregate | parameter not supported: xFilesFactor |
 | holtWintersAberration | parameter not supported: seasonality |
 | holtWintersConfidenceBands | parameter not supported: seasonality |
 | holtWintersForecast | parameter not supported: seasonality |
