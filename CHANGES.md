@@ -13,6 +13,10 @@ Changes
 
 CHANGELOG
 ---------
+**Master**
+ - [Fix] #260 - parsing of bool values as Names.
+ - [Code] Cherry-pick https://github.com/bookingcom/carbonapi/pull/172/commits/9f0b3f611 to simplify tests (author: @gksinghjsr)
+
 **0.12.0**
  - Add support for Prometheus as Backend. This allows to use Prometheus-compatible software as carbonapi's backends (e.x. Prometheus and VictoriaMetrics)
  - Add support for querying msgpack-compatible backends. This should make carbonapi compatible with graphite-web 1.1 and [grafana/metrictank](https://github.com/grafana/metrictank)
