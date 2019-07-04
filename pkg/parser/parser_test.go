@@ -157,7 +157,7 @@ func TestParseExpr(t *testing.T) {
 					{target: "metric"},
 				},
 				namedArgs: map[string]*expr{
-					"key": {etype: EtName, target: "true"},
+					"key": {etype: EtBool, target: "true", valStr: "true"},
 				},
 				argString: "metric, key=true",
 			},
@@ -363,13 +363,18 @@ func TestParseExpr(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		e, _, err := ParseExpr(tt.s)
-		if err != nil {
-			t.Errorf("parse for %+v failed: err=%v", tt.s, err)
+		if tt.s != "func(metric, key=true)" {
 			continue
 		}
-		if !reflect.DeepEqual(e, tt.e) {
-			t.Errorf("parse for %+v failed:\ngot  %+s\nwant %+v", tt.s, spew.Sdump(e), spew.Sdump(tt.e))
-		}
+		t.Run(tt.s, func(t *testing.T) {
+			e, _, err := ParseExpr(tt.s)
+			if err != nil {
+				t.Errorf("parse for %+v failed: err=%v", tt.s, err)
+				return
+			}
+			if !reflect.DeepEqual(e, tt.e) {
+				t.Errorf("parse for %+v failed:\ngot  %+s\nwant %+v", tt.s, spew.Sdump(e), spew.Sdump(tt.e))
+			}
+		})
 	}
 }

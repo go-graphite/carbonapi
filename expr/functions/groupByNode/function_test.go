@@ -32,11 +32,7 @@ func TestGroupByNode(t *testing.T) {
 
 	tests := []th.MultiReturnEvalTestItem{
 		{
-			parser.NewExpr("groupByNode",
-				"metric1.foo.*.*",
-				3,
-				parser.ArgValue("sum"),
-			),
+			"groupByNode(metric1.foo.*.*,3,\"sum\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.*.*", 0, 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
@@ -52,11 +48,7 @@ func TestGroupByNode(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("groupByNode",
-				"metric1.foo.*.*",
-				3,
-				parser.ArgValue("sum"),
-			),
+			"groupByNode(metric1.foo.*.*,3,\"sum\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.*.*", 0, 1}: {
 					types.MakeMetricData("metric1.foo.bar1.01", []float64{1, 2, 3, 4, 5}, 1, now32),
@@ -72,11 +64,7 @@ func TestGroupByNode(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("groupByNode",
-				"metric1.foo.*.*",
-				3,
-				parser.ArgValue("sum"),
-			),
+			"groupByNode(metric1.foo.*.*,3,\"sum\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.*.*", 0, 1}: {
 					types.MakeMetricData("metric1.foo.bar1.127_0_0_1:2003", []float64{1, 2, 3, 4, 5}, 1, now32),
@@ -92,13 +80,7 @@ func TestGroupByNode(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("groupByNodes",
-				"metric1.foo.*.*",
-				parser.ArgValue("sum"),
-				0,
-				1,
-				3,
-			),
+			"groupByNodes(metric1.foo.*.*,\"sum\",0,1,3)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.*.*", 0, 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
@@ -116,7 +98,7 @@ func TestGroupByNode(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		testName := tt.E.Target() + "(" + tt.E.RawArgs() + ")"
+		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
 			th.TestMultiReturnEvalExpr(t, &tt)
 		})

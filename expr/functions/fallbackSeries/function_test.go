@@ -26,10 +26,7 @@ func TestFallbackSeries(t *testing.T) {
 
 	tests := []th.EvalTestItem{
 		{
-			parser.NewExpr("fallbackSeries",
-				"metric*",
-				"fallbackmetric",
-			),
+			"fallbackSeries(metric*,fallbackmetric)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}:        {types.MakeMetricData("metric1", []float64{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, 1, now32)},
 				{"fallbackmetric", 0, 1}: {types.MakeMetricData("fallbackmetric", []float64{0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7}, 1, now32)},
@@ -39,11 +36,7 @@ func TestFallbackSeries(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("fallbackSeries",
-
-				"metric1",
-				"metric2",
-			),
+			"fallbackSeries(metric1,metrc2)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, 1, now32)},
 				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7}, 1, now32)},
@@ -53,10 +46,7 @@ func TestFallbackSeries(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("fallbackSeries",
-				"absentmetric",
-				"fallbackmetric",
-			),
+			"fallbackSeries(absentmetric,fallbackmetric)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}:        {types.MakeMetricData("metric1", []float64{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, 1, now32)},
 				{"fallbackmetric", 0, 1}: {types.MakeMetricData("fallbackmetric", []float64{0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7}, 1, now32)},
@@ -66,10 +56,7 @@ func TestFallbackSeries(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("fallbackSeries",
-				"metric1",
-				"metric2",
-			),
+			"fallbackSeries(metric1,metrc2)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9}, 1, now32)},
 			},
@@ -80,7 +67,7 @@ func TestFallbackSeries(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		testName := tt.E.Target() + "(" + tt.E.RawArgs() + ")"
+		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
 			th.TestEvalExpr(t, &tt)
 		})

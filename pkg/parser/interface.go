@@ -25,6 +25,8 @@ const (
 	EtConst
 	// EtString is a const for 'String' type expression
 	EtString
+	// EtBool is a constant for 'Bool' type expression
+	EtBool
 )
 
 var (
@@ -65,6 +67,8 @@ type Expr interface {
 	IsConst() bool
 	// IsString checks if Expression is 'String' expression
 	IsString() bool
+	// IsBool checks if Expression is 'Bool' expression
+	IsBool() bool
 	// Type returns type of the expression
 	Type() ExprType
 	// Target returns target value for expression

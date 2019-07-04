@@ -27,10 +27,7 @@ func TestAverageSeries(t *testing.T) {
 
 	tests := []th.EvalTestItem{
 		{
-			parser.NewExpr("aggregate",
-				"metric[123]",
-				parser.ArgValue("avg"),
-			),
+			`aggregate(metric[123], "avg")`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[123]", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32),
@@ -42,10 +39,7 @@ func TestAverageSeries(t *testing.T) {
 				[]float64{2, math.NaN(), 3, 4, 5, 5.5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("aggregate",
-				"metric[123]",
-				parser.ArgValue("avg_zero"),
-			),
+			`aggregate(metric[123], "avg_zero")`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[123]", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, math.NaN(), 2, 4, 4, 6}, 1, now32),
@@ -57,10 +51,7 @@ func TestAverageSeries(t *testing.T) {
 				[]float64{2, math.NaN(), 3, 3, 5, 4}, 1, now32)},
 		},
 		{
-			parser.NewExpr("aggregate",
-				"metric[123]",
-				parser.ArgValue("count"),
-			),
+			`aggregate(metric[123], "count")`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[123]", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32),
@@ -72,10 +63,7 @@ func TestAverageSeries(t *testing.T) {
 				[]float64{3, math.NaN(), 3, 2, 3, 2}, 1, now32)},
 		},
 		{
-			parser.NewExpr("aggregate",
-				"metric[123]",
-				parser.ArgValue("diff"),
-			),
+			`aggregate(metric[123], "diff")`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[123]", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32),
@@ -87,10 +75,7 @@ func TestAverageSeries(t *testing.T) {
 				[]float64{-4, math.NaN(), -5, -2, -7, -1}, 1, now32)},
 		},
 		{
-			parser.NewExpr("aggregate",
-				"metric[123]",
-				parser.ArgValue("last"),
-			),
+			`aggregate(metric[123], "last")`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[123]", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32),
@@ -102,10 +87,7 @@ func TestAverageSeries(t *testing.T) {
 				[]float64{3, math.NaN(), 4, 5, 6, 6}, 1, now32)},
 		},
 		{
-			parser.NewExpr("aggregate",
-				"metric[123]",
-				parser.ArgValue("max"),
-			),
+			`aggregate(metric[123], "max")`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[123]", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32),
@@ -117,10 +99,7 @@ func TestAverageSeries(t *testing.T) {
 				[]float64{3, math.NaN(), 4, 5, 6, 6}, 1, now32)},
 		},
 		{
-			parser.NewExpr("aggregate",
-				"metric[123]",
-				parser.ArgValue("min"),
-			),
+			`aggregate(metric[123], "min")`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[123]", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, math.NaN(), 2, 3, 4, 6}, 1, now32),
@@ -132,10 +111,7 @@ func TestAverageSeries(t *testing.T) {
 				[]float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("aggregate",
-				"metric[123]",
-				parser.ArgValue("median"),
-			),
+			`aggregate(metric[123], "median")`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[123]", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, math.NaN(), 2, 3, 4, 6}, 1, now32),
@@ -147,10 +123,7 @@ func TestAverageSeries(t *testing.T) {
 				[]float64{2, math.NaN(), 3, 4, 5, 5.5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("aggregate",
-				"metric[123]",
-				parser.ArgValue("multiply"),
-			),
+			`aggregate(metric[123], "multiply")`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[123]", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, math.NaN(), 2, 3, 4, 6}, 1, now32),
@@ -162,10 +135,7 @@ func TestAverageSeries(t *testing.T) {
 				[]float64{6, math.NaN(), 24, math.NaN(), 120, math.NaN()}, 1, now32)},
 		},
 		{
-			parser.NewExpr("aggregate",
-				"metric[123]",
-				parser.ArgValue("range"),
-			),
+			`aggregate(metric[123], "range")`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[123]", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, math.NaN(), 2, 3, 4, 6}, 1, now32),
@@ -177,10 +147,7 @@ func TestAverageSeries(t *testing.T) {
 				[]float64{2, math.NaN(), 2, 2, 2, 1}, 1, now32)},
 		},
 		{
-			parser.NewExpr("aggregate",
-				"metric[123]",
-				parser.ArgValue("sum"),
-			),
+			`aggregate(metric[123], "sum")`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[123]", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, math.NaN(), 2, 3, 4, 6}, 1, now32),
@@ -192,10 +159,7 @@ func TestAverageSeries(t *testing.T) {
 				[]float64{6, math.NaN(), 9, 8, 15, 11}, 1, now32)},
 		},
 		{
-			parser.NewExpr("aggregate",
-				"metric[123]",
-				parser.ArgValue("stddev"),
-			),
+			`aggregate(metric[123], "stddev")`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[123]", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, math.NaN(), 2, 3, 4, 6}, 1, now32),
@@ -207,10 +171,7 @@ func TestAverageSeries(t *testing.T) {
 				[]float64{0.816496580927726, math.NaN(), 0.816496580927726, 1, 0.816496580927726, 0.5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("aggregate",
-				"metric[123]",
-				parser.ArgValue("stddev"),
-			),
+			`aggregate(metric[123], "stddev")`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[123]", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
@@ -224,7 +185,7 @@ func TestAverageSeries(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		testName := tt.E.Target() + "(" + tt.E.RawArgs() + ")"
+		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
 			th.TestEvalExpr(t, &tt)
 		})

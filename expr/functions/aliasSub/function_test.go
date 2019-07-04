@@ -26,9 +26,7 @@ func TestAliasByNode(t *testing.T) {
 
 	tests := []th.EvalTestItem{
 		{
-			parser.NewExpr("aliasSub",
-				"metric1.foo.bar.baz", parser.ArgValue("foo"), parser.ArgValue("replaced"),
-			),
+			"aliasSub(metric1.foo.bar.baz, \"foo\", \"replaced\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.bar.baz", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
@@ -36,9 +34,7 @@ func TestAliasByNode(t *testing.T) {
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("aliasSub",
-				"metric1.TCP100", parser.ArgValue("^.*TCP(\\d+)"), parser.ArgValue("$1"),
-			),
+			"aliasSub(metric1.TCP100,\"^.*TCP(\\d+)\",\"$1\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.TCP100", 0, 1}: {types.MakeMetricData("metric1.TCP100", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
@@ -46,9 +42,7 @@ func TestAliasByNode(t *testing.T) {
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("aliasSub",
-				"metric1.TCP100", parser.ArgValue("^.*TCP(\\d+)"), parser.ArgValue("\\1"),
-			),
+			"aliasSub(metric1.TCP100,\"^.*TCP(\\d+)\", \"\\1\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.TCP100", 0, 1}: {types.MakeMetricData("metric1.TCP100", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
@@ -58,7 +52,7 @@ func TestAliasByNode(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		testName := tt.E.Target() + "(" + tt.E.RawArgs() + ")"
+		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
 			th.TestEvalExpr(t, &tt)
 		})

@@ -26,9 +26,7 @@ func TestAliasByMetric(t *testing.T) {
 
 	tests := []th.EvalTestItem{
 		{
-			parser.NewExpr("aliasByMetric",
-				"metric1.foo.bar.baz",
-			),
+			"aliasByMetric(metric1.foo.bar.baz)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.bar.baz", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
@@ -37,7 +35,7 @@ func TestAliasByMetric(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		testName := tt.E.Target() + "(" + tt.E.RawArgs() + ")"
+		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
 			th.TestEvalExpr(t, &tt)
 		})

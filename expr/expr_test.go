@@ -214,14 +214,14 @@ func TestEvalExpression(t *testing.T) {
 
 	tests := []th.EvalTestItem{
 		{
-			parser.NewTargetExpr("metric"),
+			"metric",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric", 0, 1}: {types.MakeMetricData("metric", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("metric", []float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
-			parser.NewTargetExpr("metric*"),
+			"metric*",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
@@ -234,9 +234,7 @@ func TestEvalExpression(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("sum",
-				"metric1", "metric2", "metric3",
-			),
+			"sum(metric1,metric2,metric3)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5, math.NaN()}, 1, now32)},
 				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, 3, math.NaN(), 5, 6, math.NaN()}, 1, now32)},
@@ -245,9 +243,7 @@ func TestEvalExpression(t *testing.T) {
 			[]*types.MetricData{types.MakeMetricData("sumSeries(metric1,metric2,metric3)", []float64{6, 9, 8, 15, 11, math.NaN()}, 1, now32)},
 		},
 		{
-			parser.NewExpr("sum",
-				"metric1", "metric2", "metric3", "metric4",
-			),
+			"sum(metric1,metric2,metric3,metric4)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5, math.NaN()}, 1, now32)},
 				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, 3, math.NaN(), 5, 6, math.NaN()}, 1, now32)},
@@ -256,176 +252,114 @@ func TestEvalExpression(t *testing.T) {
 			[]*types.MetricData{types.MakeMetricData("sumSeries(metric1,metric2,metric3)", []float64{6, 9, 8, 15, 11, math.NaN()}, 1, now32)},
 		},
 		{
-			parser.NewExpr("lowPass",
-				"metric1", 40,
-			),
+			"lowPass(metric1,40)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("lowPass(metric1,40)", []float64{0, 1, math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 8, 9}, 1, now32)},
 		},
 		{
-			parser.NewExpr("percentileOfSeries",
-				"metric1", 4,
-			),
-			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, math.NaN()}, 1, now32)},
-			},
-			[]*types.MetricData{types.MakeMetricData("percentileOfSeries(metric1,4)", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, math.NaN()}, 1, now32)},
-		},
-		{
-			parser.NewExpr("percentileOfSeries",
-				"metric1.foo.*.*", 50,
-			),
-			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.*.*", 0, 1}: {
-					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, math.NaN(), math.NaN()}, 1, now32),
-					types.MakeMetricData("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10, math.NaN()}, 1, now32),
-					types.MakeMetricData("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15, math.NaN()}, 1, now32),
-					types.MakeMetricData("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11, math.NaN()}, 1, now32),
-				},
-			},
-			[]*types.MetricData{types.MakeMetricData("percentileOfSeries(metric1.foo.*.*,50)", []float64{7, 8, 9, 10, 11, math.NaN()}, 1, now32)},
-		},
-		{
-			parser.NewExpr("percentileOfSeries",
-				"metric1.foo.*.*", 50,
-				parser.NamedArgs{"interpolate": "true"},
-			),
-			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.*.*", 0, 1}: {
-					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, math.NaN(), math.NaN()}, 1, now32),
-					types.MakeMetricData("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10, math.NaN()}, 1, now32),
-					types.MakeMetricData("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15, math.NaN()}, 1, now32),
-					types.MakeMetricData("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11, math.NaN()}, 1, now32),
-				},
-			},
-			[]*types.MetricData{types.MakeMetricData("percentileOfSeries(metric1.foo.*.*,50,interpolate=true)", []float64{6.5, 7.5, 8.5, 9.5, 11, math.NaN()}, 1, now32)},
-		},
-		{
-			parser.NewExpr("nPercentile",
-				"metric1", 50,
-			),
+			`nPercentile(metric1,50)`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{2, 4, 6, 10, 14, 20, math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("nPercentile(metric1,50)", []float64{8, 8, 8, 8, 8, 8, 8}, 1, now32)},
 		},
 		{
-			parser.NewExpr("nonNegativeDerivative",
-				"metric1",
-			),
+			"nonNegativeDerivative(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{2, 4, 6, 10, 14, 20}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("nonNegativeDerivative(metric1)", []float64{math.NaN(), 2, 2, 4, 4, 6}, 1, now32)},
 		},
 		{
-			parser.NewExpr("nonNegativeDerivative",
-				"metric1",
-			),
+			"nonNegativeDerivative(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{2, 4, 6, 1, 4, math.NaN(), 8}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("nonNegativeDerivative(metric1)", []float64{math.NaN(), 2, 2, math.NaN(), 3, math.NaN(), math.NaN()}, 1, now32)},
 		},
 		{
-			parser.NewExpr("nonNegativeDerivative",
-				"metric1",
-				parser.NamedArgs{
-					"maxValue": 32,
-				},
-			),
+			"nonNegativeDerivative(metric1,32)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{2, 4, 0, 10, 1, math.NaN(), 8, 40, 37}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("nonNegativeDerivative(metric1,32)", []float64{math.NaN(), 2, 29, 10, 24, math.NaN(), math.NaN(), 32, math.NaN()}, 1, now32)},
 		},
 		{
-			parser.NewExpr("perSecond",
-				"metric1",
-			),
+			"perSecond(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{27, 19, math.NaN(), 10, 1, 100, 1.5, 10.20}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("perSecond(metric1)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 99, math.NaN(), 8.7}, 1, now32)},
 		},
 		{
-			parser.NewExpr("perSecond",
-				"metric1", 32,
-			),
+			"perSecond(metric1,32)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), 1, 2, 3, 4, 30, 0, 32, math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("perSecond(metric1,32)", []float64{math.NaN(), math.NaN(), 1, 1, 1, 26, 3, 32, math.NaN()}, 1, now32)},
 		},
+		/*
 		{
-			parser.NewExpr("movingAverage",
-				"metric1", 4,
-			),
+			"perSecond(metric1,minValue=1)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), 1, 2, 3, 4, 30, 3, 32, math.NaN()}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData("perSecond(metric1,minValue=1)", []float64{math.NaN(), math.NaN(), 1, 1, 1, 26, 2, 29, math.NaN()}, 1, now32)},
+		},
+		 */
+		{
+			"movingAverage(metric1,4)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("movingAverage(metric1,4)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), 1, 1.25, 1.5, 1.75, 2.5, 3.5, 4, 5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("movingSum",
-				"metric1", 2,
-			),
+			"movingSum(metric1,2)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5, 6}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("movingSum(metric1,2)", []float64{math.NaN(), math.NaN(), 3, 5, 7, 9}, 1, now32)},
 		},
 		{
-			parser.NewExpr("movingMin",
-				"metric1", 2,
-			),
+			"movingMin(metric1,2)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 2, 1, 0}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("movingMin(metric1,2)", []float64{math.NaN(), math.NaN(), 1, 2, 2, 1}, 1, now32)},
 		},
 		{
-			parser.NewExpr("movingMax",
-				"metric1", 2,
-			),
+			"movingMax(metric1,2)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 2, 1, 0}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("movingMax(metric1,2)", []float64{math.NaN(), math.NaN(), 2, 3, 3, 2}, 1, now32)},
 		},
 		{
-			parser.NewExpr("movingMedian",
-				"metric1", 4,
-			),
+			"movingMedian(metric1,4)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,4)", []float64{math.NaN(), math.NaN(), math.NaN(), 1, 1, 1.5, 2, 2, 3, 4, 5, 6}, 1, now32)},
 		},
 		{
-			parser.NewExpr("movingMedian",
-				"metric1", 5,
-			),
+			"movingMedian(metric1,5)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,5)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), 1, 1, 2, 2, 2, 4, 4, 6, 6, 4, 2}, 1, now32)},
 		},
 		{
-			parser.NewExpr("movingMedian",
-				"metric1", parser.ArgValue("1s"),
-			),
+			"movingMedian(metric1,\"1s\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", -1, 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, 0}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,\"1s\")", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, 0}, 1, now32)},
 		},
 		{
-			parser.NewExpr("movingMedian",
-				"metric1", parser.ArgValue("3s"),
-			),
+			"movingMedian(metric1,\"3s\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", -3, 1}: {types.MakeMetricData("metric1", []float64{0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2}, 1, now32)},
 			},
@@ -433,9 +367,7 @@ func TestEvalExpression(t *testing.T) {
 		},
 		{
 
-			parser.NewExpr("pearson",
-				"metric1", "metric2", 6,
-			),
+			"pearson(metric1,metric2,6)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{43, 21, 25, 42, 57, 59}, 1, now32)},
 				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{99, 65, 79, 75, 87, 81}, 1, now32)},
@@ -443,46 +375,35 @@ func TestEvalExpression(t *testing.T) {
 			[]*types.MetricData{types.MakeMetricData("pearson(metric1,metric2,6)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0.5298089018901744}, 1, now32)},
 		},
 		{
-			parser.NewExpr("scale",
-				"metric1", 2.5,
-			),
+			"scale(metric1,2.5)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, math.NaN(), 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("scale(metric1,2.5)", []float64{2.5, 5.0, math.NaN(), 10.0, 12.5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("scaleToSeconds",
-				"metric1", 5,
-			),
+			"scaleToSeconds(metric1,5)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{60, 120, math.NaN(), 120, 120}, 60, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("scaleToSeconds(metric1,5)", []float64{5, 10, math.NaN(), 10, 10}, 1, now32)},
 		},
 		{
-			parser.NewExpr("pow",
-				"metric1", 3,
-			),
+			"pow(metric1,3)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{5, 1, math.NaN(), 0, 12, 125, 10.4, 1.1}, 60, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("pow(metric1,3)", []float64{125, 1, math.NaN(), 0, 1728, 1953125, 1124.864, 1.331}, 1, now32)},
 		},
 		{
-			parser.NewExpr("keepLastValue",
-				"metric1",
-				parser.NamedArgs{"limit": 3},
-			),
+			"keepLastValue(metric1,3)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("keepLastValue(metric1,3)", []float64{math.NaN(), 2, 2, 2, 2, math.NaN(), 4, 5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("keepLastValue",
-				"metric1",
-			),
+			"keepLastValue(metric1)",
 
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32)},
@@ -490,9 +411,7 @@ func TestEvalExpression(t *testing.T) {
 			[]*types.MetricData{types.MakeMetricData("keepLastValue(metric1)", []float64{math.NaN(), 2, 2, 2, 2, 2, 4, 5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("keepLastValue",
-				"metric*",
-			),
+			"keepLastValue(metric*)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32),
@@ -505,9 +424,7 @@ func TestEvalExpression(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("legendValue",
-				"metric1", parser.ArgValue("avg"),
-			),
+			"legendValue(metric1,\"avg\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
@@ -515,9 +432,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("legendValue",
-				"metric1", parser.ArgValue("sum"),
-			),
+			"legendValue(metric1,\"sum\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
@@ -525,9 +440,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("legendValue",
-				"metric1", parser.ArgValue("total"),
-			),
+			"legendValue(metric1,\"total\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
@@ -535,9 +448,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("legendValue",
-				"metric1", parser.ArgValue("sum"), parser.ArgValue("avg"),
-			),
+			"legendValue(metric1,\"sum\",\"avg\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
@@ -545,9 +456,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("mapSeries",
-				"servers.*.cpu.*", 1,
-			),
+			"mapSeries(servers.*.cpu.*, 1)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"servers.*.cpu.*", 0, 1}: {
 					types.MakeMetricData("servers.server1.cpu.valid", []float64{1, 2, 3}, 1, now32),
@@ -572,9 +481,7 @@ func TestEvalExpression(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("maxSeries",
-				"metric1", "metric2", "metric3",
-			),
+			"maxSeries(metric1,metric2,metric3)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32)},
 				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32)},
@@ -584,9 +491,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{3, math.NaN(), 4, 5, 6, 6}, 1, now32)},
 		},
 		{
-			parser.NewExpr("minSeries",
-				"metric1", "metric2", "metric3",
-			),
+			"minSeries(metric1,metric2,metric3)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32)},
 				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32)},
@@ -596,9 +501,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("divideSeriesLists",
-				"metric1", "metric2",
-			),
+			"divideSeries(metric1,metric2)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
 				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
@@ -607,9 +510,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{0.5, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 2}, 1, now32)},
 		},
 		{
-			parser.NewExpr("multiplySeriesLists",
-				"metric1", "metric2",
-			),
+			"multiplySeries(metric1,metric2)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
 				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
@@ -618,10 +519,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{2, math.NaN(), math.NaN(), math.NaN(), 0, 72}, 1, now32)},
 		},
 		{
-			parser.NewExpr("diffSeriesLists",
-				"metric1",
-				"metric2",
-			),
+			"diffSeriesLists(metric1,metric2)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
 				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
@@ -631,10 +529,7 @@ func TestEvalExpression(t *testing.T) {
 		},
 
 		{
-			parser.NewExpr("multiplySeries",
-				"metric1",
-				"metric2",
-			),
+			"multiplySeries(metric1,metric2)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
 				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
@@ -643,25 +538,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{2, math.NaN(), math.NaN(), math.NaN(), 0, 72}, 1, now32)},
 		},
 		{
-			parser.NewExpr("multiplySeries",
-
-				"metric1",
-				"metric2",
-			).MutateRawArgs("metric[12]"),
-			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
-				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
-			},
-			[]*types.MetricData{types.MakeMetricData("multiplySeries(metric[12])",
-				[]float64{2, math.NaN(), math.NaN(), math.NaN(), 0, 72}, 1, now32)},
-		},
-		{
-			parser.NewExpr("multiplySeries",
-
-				"metric1",
-				"metric2",
-				"metric3",
-			),
+			"multiplySeries(metric1,metric2,metric3)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
 				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
@@ -671,10 +548,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{6, math.NaN(), math.NaN(), math.NaN(), 0, 576}, 1, now32)},
 		},
 		{
-			parser.NewExpr("rangeOfSeries",
-
-				"metric*",
-			),
+			"rangeOfSeries(metric*)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{math.NaN(), math.NaN(), math.NaN(), 3, 4, 12, -10}, 1, now32),
@@ -686,13 +560,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{1, math.NaN(), math.NaN(), 12, 5, 6, 20}, 1, now32)},
 		},
 		{
-			parser.NewExpr("reduceSeries",
-				// list of arguments
-				parser.NewExpr("mapSeries",
-					"devops.service.*.filter.received.*.count", 2,
-				),
-				parser.ArgValue("asPercent"), 5, parser.ArgValue("valid"), parser.ArgValue("total"),
-			),
+			"reduceSeries(mapSeries(devops.service.*.filter.received.*.count,2), \"asPercent\", 5,\"valid\",\"total\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"devops.service.*.filter.received.*.count", 0, 1}: {
 					types.MakeMetricData("devops.service.server1.filter.received.valid.count", []float64{2, 4, 8}, 1, now32),
@@ -707,13 +575,7 @@ func TestEvalExpression(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("reduceSeries",
-				// list of arguments
-				parser.NewExpr("mapSeries",
-					"devops.service.*.filter.received.*.count", 2,
-				),
-				parser.ArgValue("asPercent"), 5, parser.ArgValue("valid"), parser.ArgValue("total"),
-			),
+			"reduceSeries(mapSeries(devops.service.*.filter.received.*.count,2), \"asPercent\", 5,\"valid\",\"total\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"devops.service.*.filter.received.*.count", 0, 1}: {
 					types.MakeMetricData("devops.service.server1.filter.received.total.count", []float64{8, 2, 4}, 1, now32),
@@ -726,11 +588,7 @@ func TestEvalExpression(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("highestMax",
-
-				"metric1",
-				1,
-			),
+			"highestMax(metric1,1)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
 					types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 12, 11}, 1, now32),
@@ -742,11 +600,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{1, 1, 3, 3, 12, 11}, 1, now32)},
 		},
 		{
-			parser.NewExpr("lowestCurrent",
-
-				"metric1",
-				1,
-			),
+			"lowestCurrent(metric1,1)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
 					types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
@@ -758,10 +612,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{1, 1, 3, 3, 4, 1}, 1, now32)},
 		},
 		{
-			parser.NewExpr("logarithm",
-
-				"metric1",
-			),
+			"logarithm(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 10, 100, 1000, 10000}, 1, now32)},
 			},
@@ -769,12 +620,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{0, 1, 2, 3, 4}, 1, now32)},
 		},
 		{
-			parser.NewExpr("logarithm",
-				"metric1",
-				parser.NamedArgs{
-					"base": 2,
-				},
-			),
+			"logarithm(metric1,2)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 4, 8, 16, 32}, 1, now32)},
 			},
@@ -782,10 +628,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{0, 1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
-			parser.NewExpr("isNonNull",
-
-				"metric1",
-			),
+			"isNonNull(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), -1, math.NaN(), -3, 4, 5}, 1, now32)},
 			},
@@ -793,10 +636,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{0, 1, 0, 1, 1, 1}, 1, now32)},
 		},
 		{
-			parser.NewExpr("isNonNull",
-
-				"metric1",
-			),
+			"isNonNull(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
 					types.MakeMetricData("metricFoo", []float64{math.NaN(), -1, math.NaN(), -3, 4, 5}, 1, now32),
@@ -809,12 +649,7 @@ func TestEvalExpression(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("pearsonClosest",
-				"metric1", "metric2", 1,
-				parser.NamedArgs{
-					"direction": parser.ArgValue("abs"),
-				},
-			),
+			"pearsonClosest(metric1,metric2,1,direction=\"abs\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
 					types.MakeMetricData("metricX", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
@@ -829,10 +664,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{3, math.NaN(), 5, 6, 7, 8}, 1, now32)},
 		},
 		{
-			parser.NewExpr("invert",
-
-				"metric1",
-			),
+			"invert(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{-4, -2, -1, 0, 1, 2, 4}, 1, now32)},
 			},
@@ -840,11 +672,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{-0.25, -0.5, -1, math.NaN(), 1, 0.5, 0.25}, 1, now32)},
 		},
 		{
-			parser.NewExpr("offset",
-
-				"metric1",
-				10,
-			),
+			"offset(metric1,10)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{93, 94, 95, math.NaN(), 97, 98, 99, 100, 101}, 1, now32)},
 			},
@@ -852,10 +680,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{103, 104, 105, math.NaN(), 107, 108, 109, 110, 111}, 1, now32)},
 		},
 		{
-			parser.NewExpr("offsetToZero",
-
-				"metric1",
-			),
+			"offsetToZero(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{93, 94, 95, math.NaN(), 97, 98, 99, 100, 101}, 1, now32)},
 			},
@@ -863,10 +688,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{0, 1, 2, math.NaN(), 4, 5, 6, 7, 8}, 1, now32)},
 		},
 		{
-			parser.NewExpr("integral",
-
-				"metric1",
-			),
+			"integral(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 0, 2, 3, 4, 5, math.NaN(), 7, 8}, 1, now32)},
 			},
@@ -874,10 +696,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{1, 1, 3, 6, 10, 15, math.NaN(), 22, 30}, 1, now32)},
 		},
 		{
-			parser.NewExpr("sortByTotal",
-
-				"metric1",
-			),
+			"sortByTotal(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
@@ -892,12 +711,9 @@ func TestEvalExpression(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("sortByMaxima",
-
-				"metric1",
-			),
+			"sortByMaxima(metric*)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {
+				{"metric*", 0, 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{5, 5, 5, 5, 5, 5}, 1, now32),
 					types.MakeMetricData("metricC", []float64{2, 2, 10, 5, 2, 2}, 1, now32),
@@ -910,12 +726,9 @@ func TestEvalExpression(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("sortByMinima",
-
-				"metric1",
-			),
+			"sortByMinima(metric*)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {
+				{"metric*", 0, 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
 					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
@@ -928,12 +741,9 @@ func TestEvalExpression(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("sortByName",
-
-				"metric1",
-			),
+			"sortByName(metric*)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {
+				{"metric*", 0, 1}: {
 					types.MakeMetricData("metricX", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricA", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{0, 0, 2, 0, 0, 0}, 1, now32),
@@ -948,14 +758,9 @@ func TestEvalExpression(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("sortByName",
-				"metric1",
-				parser.NamedArgs{
-					"natural": parser.ArgName("true"),
-				},
-			),
+			"sortByName(metric*,natural=true)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {
+				{"metric*", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metric12", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metric1234567890", []float64{0, 0, 0, 5, 0, 0}, 1, now32),
@@ -974,10 +779,7 @@ func TestEvalExpression(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("squareRoot",
-
-				"metric1",
-			),
+			"squareRoot(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
@@ -985,10 +787,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{1, 1.4142135623730951, 0, 2.6457513110645907, 2.8284271247461903, 4.47213595499958, 5.477225575051661, math.NaN()}, 1, now32)},
 		},
 		{
-			parser.NewExpr("removeEmptySeries",
-
-				"metric*",
-			),
+			"removeEmptySeries(metric*)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32),
@@ -1002,10 +801,7 @@ func TestEvalExpression(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("removeZeroSeries",
-
-				"metric*",
-			),
+			"removeZeroSeries(metric*)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32),
@@ -1018,11 +814,7 @@ func TestEvalExpression(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("removeBelowValue",
-
-				"metric1",
-				0,
-			),
+			"removeBelowValue(metric1, 0)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
@@ -1030,11 +822,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{1, 2, math.NaN(), 7, 8, 20, 30, math.NaN()}, 1, now32)},
 		},
 		{
-			parser.NewExpr("removeAboveValue",
-
-				"metric1",
-				10,
-			),
+			"removeAboveValue(metric1, 10)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
@@ -1042,11 +830,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{1, 2, -1, 7, 8, math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
 		},
 		{
-			parser.NewExpr("removeBelowPercentile",
-
-				"metric1",
-				50,
-			),
+			"removeBelowPercentile(metric1, 50)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
@@ -1054,11 +838,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{math.NaN(), math.NaN(), math.NaN(), 7, 8, 20, 30, math.NaN()}, 1, now32)},
 		},
 		{
-			parser.NewExpr("removeAbovePercentile",
-
-				"metric1",
-				50,
-			),
+			"removeAbovePercentile(metric1, 50)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
@@ -1066,10 +846,7 @@ func TestEvalExpression(t *testing.T) {
 				[]float64{1, 2, -1, 7, math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
 		},
 		{
-			parser.NewExpr("linearRegression",
-
-				"metric1",
-			),
+			"linearRegression(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
 					types.MakeMetricData("metric1",
@@ -1082,11 +859,7 @@ func TestEvalExpression(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("polyfit",
-
-				"metric1",
-				3,
-			),
+			"polyfit(metric1,3)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
 					types.MakeMetricData("metric1",
@@ -1099,10 +872,7 @@ func TestEvalExpression(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("polyfit",
-
-				"metric1",
-			),
+			"polyfit(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
 					types.MakeMetricData("metric1",
@@ -1116,11 +886,7 @@ func TestEvalExpression(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("polyfit",
-
-				"metric1",
-				2,
-			),
+			"polyfit(metric1,2)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
 					types.MakeMetricData("metric1",
@@ -1134,12 +900,7 @@ func TestEvalExpression(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("polyfit",
-
-				"metric1",
-				3,
-				parser.ArgValue("5sec"),
-			),
+			"polyfit(metric1,3,'5sec')",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
 					types.MakeMetricData("metric1",
@@ -1156,7 +917,7 @@ func TestEvalExpression(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		testName := tt.E.Target() + "(" + tt.E.RawArgs() + ")"
+		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
 			th.TestEvalExpr(t, &tt)
 		})
@@ -1169,11 +930,7 @@ func TestEvalSummarize(t *testing.T) {
 
 	tests := []th.SummarizeEvalTestItem{
 		{
-			parser.NewExpr("summarize",
-
-				"metric1",
-				parser.ArgValue("5s"),
-			),
+			"summarize(metric1,'5s')",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{
 					1, 1, 1, 1, 1,
@@ -1192,11 +949,7 @@ func TestEvalSummarize(t *testing.T) {
 			now32 + 35,
 		},
 		{
-			parser.NewExpr("summarize",
-
-				"metric1",
-				parser.ArgValue("5s"),
-			),
+			"summarize(metric1,'5s')",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{
 					1, 2, 3, 4, 5,
@@ -1209,12 +962,7 @@ func TestEvalSummarize(t *testing.T) {
 			now32 + 50,
 		},
 		{
-			parser.NewExpr("summarize",
-				"metric1", parser.ArgValue("5s"),
-				parser.NamedArgs{
-					"func": parser.ArgValue("avg"),
-				},
-			),
+			"summarize(metric1,'5s','avg')",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 1, 2, 3, math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
 			},
@@ -1225,12 +973,7 @@ func TestEvalSummarize(t *testing.T) {
 			now32 + 35,
 		},
 		{
-			parser.NewExpr("summarize",
-				"metric1", parser.ArgValue("5s"),
-				parser.NamedArgs{
-					"func": parser.ArgValue("max"),
-				},
-			),
+			"summarize(metric1,'5s','max')",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
@@ -1241,12 +984,7 @@ func TestEvalSummarize(t *testing.T) {
 			now32 + 25*1,
 		},
 		{
-			parser.NewExpr("summarize",
-				"metric1", parser.ArgValue("5s"),
-				parser.NamedArgs{
-					"func": parser.ArgValue("min"),
-				},
-			),
+			"summarize(metric1,'5s','min')",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
@@ -1257,12 +995,7 @@ func TestEvalSummarize(t *testing.T) {
 			now32 + 25*1,
 		},
 		{
-			parser.NewExpr("summarize",
-				"metric1", parser.ArgValue("5s"),
-				parser.NamedArgs{
-					"func": parser.ArgValue("last"),
-				},
-			),
+			"summarize(metric1,'5s','last')",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
@@ -1273,12 +1006,7 @@ func TestEvalSummarize(t *testing.T) {
 			now32 + 25*1,
 		},
 		{
-			parser.NewExpr("summarize",
-
-				"metric1",
-				parser.ArgValue("5s"),
-				parser.ArgValue("p50"),
-			),
+			"summarize(metric1,'5s','p50')",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
@@ -1289,12 +1017,7 @@ func TestEvalSummarize(t *testing.T) {
 			now32 + 25*1,
 		},
 		{
-			parser.NewExpr("summarize",
-
-				"metric1",
-				parser.ArgValue("5s"),
-				parser.ArgValue("p25"),
-			),
+			"summarize(metric1,'5s','p25')",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
@@ -1305,12 +1028,7 @@ func TestEvalSummarize(t *testing.T) {
 			now32 + 25*1,
 		},
 		{
-			parser.NewExpr("summarize",
-
-				"metric1",
-				parser.ArgValue("5s"),
-				parser.ArgValue("p99.9"),
-			),
+			"summarize(metric1,'5s','p99.9')",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
@@ -1321,12 +1039,7 @@ func TestEvalSummarize(t *testing.T) {
 			now32 + 25*1,
 		},
 		{
-			parser.NewExpr("summarize",
-
-				"metric1",
-				parser.ArgValue("5s"),
-				parser.ArgValue("p100.1"),
-			),
+			"summarize(metric1,'5s','p100.1')",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
@@ -1337,12 +1050,7 @@ func TestEvalSummarize(t *testing.T) {
 			now32 + 25*1,
 		},
 		{
-			parser.NewExpr("summarize",
-
-				"metric1",
-				parser.ArgValue("1s"),
-				parser.ArgValue("p50"),
-			),
+			"summarize(metric1,'1s','p50')",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
@@ -1353,11 +1061,7 @@ func TestEvalSummarize(t *testing.T) {
 			now32 + 25*1,
 		},
 		{
-			parser.NewExpr("summarize",
-
-				"metric1",
-				parser.ArgValue("10min"),
-			),
+			"summarize(metric1,'10min')",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{
 					1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
@@ -1371,13 +1075,7 @@ func TestEvalSummarize(t *testing.T) {
 			tenThirty + 30*60,
 		},
 		{
-			parser.NewExpr("summarize",
-				"metric1", parser.ArgValue("10min"),
-				parser.NamedArgs{
-					"alignToFrom": parser.ArgName("true"),
-					"func":        parser.ArgValue("sum"),
-				},
-			),
+			"summarize(metric1,'10min','sum',true)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{
 					1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
@@ -1391,12 +1089,7 @@ func TestEvalSummarize(t *testing.T) {
 			tenThirtyTwo + 25*60,
 		},
 		{
-			parser.NewExpr("summarize",
-				"metric1", parser.ArgValue("10min"),
-				parser.NamedArgs{
-					"alignToFrom": parser.ArgName("true"),
-				},
-			),
+			"summarize(metric1,'10min','sum',true)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{
 					1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
@@ -1543,11 +1236,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 
 	tests := []th.MultiReturnEvalTestItem{
 		{
-			parser.NewExpr("divideSeriesLists",
-
-				"metric[12]",
-				"metric[12]",
-			),
+			"divideSeriesLists(metric[12],metric[12])",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[12]", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
@@ -1561,11 +1250,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("multiplySeriesLists",
-
-				"metric[12]",
-				"metric[12]",
-			),
+			"multiplySeriesLists(metric[12],metric[12])",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[12]", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
@@ -1579,11 +1264,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("diffSeriesLists",
-
-				"metric[12]",
-				"metric[12]",
-			),
+			"diffSeriesLists(metric[12],metric[12])",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[12]", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
@@ -1597,12 +1278,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("sumSeriesWithWildcards",
-
-				"metric1.foo.*.*",
-				1,
-				2,
-			),
+			"sumSeriesWithWildcards(metric1.foo.*.*,1,2)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.*.*", 0, 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
@@ -1618,12 +1294,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("multiplySeriesWithWildcards",
-
-				"metric1.foo.*.*",
-				1,
-				2,
-			),
+			"multiplySeriesWithWildcards(metric1.foo.*.*,1,2)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.*.*", 0, 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
@@ -1640,11 +1311,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("lowestCurrent",
-
-				"metric1",
-				3,
-			),
+			"lowestCurrent(metric1,3)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
 					types.MakeMetricData("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
@@ -1661,10 +1328,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("lowestCurrent",
-
-				"metric1",
-			),
+			"lowestCurrent(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
 				parser.MetricRequest{"metric1", 0, 1}: {
 					types.MakeMetricData("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
@@ -1679,11 +1343,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("limit",
-
-				"metric1",
-				2,
-			),
+			"limit(metric1,2)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
 					types.MakeMetricData("metricA", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
@@ -1700,11 +1360,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("limit",
-
-				"metric1",
-				20,
-			),
+			"limit(metric1,20)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
 					types.MakeMetricData("metricA", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
@@ -1724,11 +1380,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("mostDeviant",
-
-				2,
-				"metric*",
-			),
+			"mostDeviant(2,metric*)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
@@ -1745,11 +1397,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("mostDeviant",
-
-				"metric*",
-				2,
-			),
+			"mostDeviant(metric*,2)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
@@ -1766,12 +1414,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("pearsonClosest",
-
-				"metricC",
-				"metric*",
-				2,
-			),
+			"pearsonClosest(metricC,metric*,2)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
@@ -1791,12 +1434,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("pearsonClosest",
-
-				"metricC",
-				"metric*",
-				3,
-			),
+			"pearsonClosest(metricC,metric*,3)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
@@ -1817,12 +1455,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("tukeyAbove",
-
-				"metric*",
-				1.5,
-				5,
-			),
+			"tukeyAbove(metric*,1.5,5)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
 					types.MakeMetricData("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32),
@@ -1841,12 +1474,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("tukeyAbove",
-
-				"metric*",
-				3,
-				5,
-			),
+			"tukeyAbove(metric*, 3, 5)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
 					types.MakeMetricData("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32),
@@ -1863,13 +1491,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("tukeyAbove",
-
-				"metric*",
-				1.5,
-				5,
-				6,
-			),
+			"tukeyAbove(metric*, 1.5, 5, 6)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
 					types.MakeMetricData("metricA", []float64{20, 20, 20, 20, 21, 17, 20, 20, 10, 29}, 1, now32),
@@ -1888,13 +1510,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("tukeyAbove",
-
-				"metric*",
-				1.5,
-				5,
-				parser.ArgValue("6s"),
-			),
+			"tukeyAbove(metric*,1.5,5,\"6s\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
 					types.MakeMetricData("metricA", []float64{20, 20, 20, 20, 21, 17, 20, 20, 10, 29}, 1, now32),
@@ -1913,12 +1529,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("tukeyBelow",
-
-				"metric*",
-				1.5,
-				5,
-			),
+			"tukeyBelow(metric*,1.5,5)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
 					types.MakeMetricData("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32),
@@ -1936,13 +1547,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("tukeyBelow",
-
-				"metric*",
-				1.5,
-				5,
-				-4,
-			),
+			"tukeyBelow(metric*,1.5,5,-4)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
 					types.MakeMetricData("metricA", []float64{21, 17, 20, 20, 10, 29, 20, 20, 20, 20}, 1, now32),
@@ -1960,13 +1565,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("tukeyBelow",
-
-				"metric*",
-				1.5,
-				5,
-				parser.ArgValue("-4s"),
-			),
+			"tukeyBelow(metric*,1.5,5,\"-4s\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
 					types.MakeMetricData("metricA", []float64{21, 17, 20, 20, 10, 29, 20, 20, 20, 20}, 1, now32),
@@ -1984,12 +1583,7 @@ func TestEvalMultipleReturns(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("tukeyBelow",
-
-				"metric*",
-				3,
-				5,
-			),
+			"tukeyBelow(metric*,3,5)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
 					types.MakeMetricData("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32),
@@ -2065,7 +1659,7 @@ func TestExtractMetric(t *testing.T) {
 func TestEvalCustomFromUntil(t *testing.T) {
 
 	tests := []struct {
-		e     parser.Expr
+		target string
 		m     map[parser.MetricRequest][]*types.MetricData
 		w     []float64
 		name  string
@@ -2073,10 +1667,7 @@ func TestEvalCustomFromUntil(t *testing.T) {
 		until int64
 	}{
 		{
-			parser.NewExpr("timeFunction",
-
-				parser.ArgValue("footime"),
-			),
+			"timeFunction(\"footime\")",
 			map[parser.MetricRequest][]*types.MetricData{},
 			[]float64{4200.0, 4260.0, 4320.0},
 			"footime",
@@ -2088,17 +1679,18 @@ func TestEvalCustomFromUntil(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			originalMetrics := th.DeepClone(tt.m)
-			g, err := EvalExpr(tt.e, tt.from, tt.until, tt.m)
+			exp, _, _ := parser.ParseExpr(tt.target)
+			g, err := EvalExpr(exp, tt.from, tt.until, tt.m)
 			if err != nil {
 				t.Errorf("failed to eval %v: %s", tt.name, err)
 				return
 			}
 			if g[0] == nil {
-				t.Errorf("returned no value %v", tt.e.RawArgs())
+				t.Errorf("returned no value %v", tt.target)
 				return
 			}
 
-			th.DeepEqual(t, tt.e.Target(), originalMetrics, tt.m)
+			th.DeepEqual(t, tt.target, originalMetrics, tt.m)
 
 			if g[0].StepTime == 0 {
 				t.Errorf("missing step for %+v", g)

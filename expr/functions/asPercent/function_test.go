@@ -27,9 +27,7 @@ func TestAliasByNode(t *testing.T) {
 
 	tests := []th.EvalTestItem{
 		{
-			parser.NewExpr("asPercent",
-				"metric1", "metric2",
-			),
+			"asPercent(metric1,metric2)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
 				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
@@ -38,9 +36,7 @@ func TestAliasByNode(t *testing.T) {
 				[]float64{50, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 200}, 1, now32)},
 		},
 		{
-			parser.NewExpr("asPercent",
-				"metricA*", "metricB*",
-			),
+			"asPercent(metricA*,metricB*)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metricA*", 0, 1}: {
 					types.MakeMetricData("metricA1", []float64{1, 20, 10}, 1, now32),
@@ -57,9 +53,7 @@ func TestAliasByNode(t *testing.T) {
 					[]float64{25, 62.5, 1000}, 1, now32)},
 		},
 		{
-			parser.NewExpr("asPercent",
-				"Server{1,2}.memory.used", "Server{1,3}.memory.total",
-			),
+			"asPercent(Server{1,2}.memory.used,Server{1,3}.memory.total)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"Server{1,2}.memory.used", 0, 1}: {
 					types.MakeMetricData("Server1.memory.used", []float64{1, 20, 10}, 1, now32),
@@ -76,9 +70,7 @@ func TestAliasByNode(t *testing.T) {
 			},
 		},
 		{
-			parser.NewExpr("asPercent",
-				"Server{1,2}.memory.used", "Server{1,3}.memory.total", 0,
-			),
+			"asPercent(Server{1,2}.memory.used,Server{1,3}.memory.total,0)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"Server{1,2}.memory.used", 0, 1}: {
 					types.MakeMetricData("Server1.memory.used", []float64{1, 20, 10}, 1, now32),
@@ -98,7 +90,7 @@ func TestAliasByNode(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		testName := tt.E.Target() + "(" + tt.E.RawArgs() + ")"
+		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
 			th.TestEvalExpr(t, &tt)
 		})

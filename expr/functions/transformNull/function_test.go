@@ -27,10 +27,7 @@ func TestDerivative(t *testing.T) {
 
 	tests := []th.EvalTestItem{
 		{
-			parser.NewExpr("transformNull",
-
-				"metric1",
-			),
+			`transformNull(metric1)`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
 			},
@@ -38,12 +35,7 @@ func TestDerivative(t *testing.T) {
 				[]float64{1, 0, 0, 3, 4, 12}, 1, now32)},
 		},
 		{
-			parser.NewExpr("transformNull",
-				"metric1",
-				parser.NamedArgs{
-					"default": 5,
-				},
-			),
+			`transformNull(metric1, default=5)`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
 			},
@@ -51,15 +43,7 @@ func TestDerivative(t *testing.T) {
 				[]float64{1, 5, 5, 3, 4, 12}, 1, now32)},
 		},
 		{
-			parser.NewExpr("transformNull",
-				"metric1",
-				parser.NamedArgs{
-					"default": 5,
-				},
-				parser.NamedArgs{
-					"referenceSeries": "metric2.*",
-				},
-			),
+			`transformNull(metric1, default=5, referenceSeries=metric2.*)`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), math.NaN(), 4, 12}, 1, now32)},
 				{"metric2.*", 0, 1}: {
@@ -72,7 +56,7 @@ func TestDerivative(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		testName := tt.E.Target() + "(" + tt.E.RawArgs() + ")"
+		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
 			th.TestEvalExpr(t, &tt)
 		})

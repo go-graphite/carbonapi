@@ -37,6 +37,10 @@ func (e *expr) IsString() bool {
 	return e.etype == EtString
 }
 
+func (e *expr) IsBool() bool {
+	return e.etype == EtBool
+}
+
 func (e *expr) Type() ExprType {
 	return e.etype
 }
@@ -52,6 +56,8 @@ func (e *expr) ToString() string {
 		s = strings.Replace(s, `\`, `\\`, -1)
 		s = strings.Replace(s, `'`, `\'`, -1)
 		return "'" + s + "'"
+	case EtBool:
+		return fmt.Sprint(e.val)
 	}
 
 	return e.target
@@ -419,6 +425,11 @@ func parseExprWithoutPipe(e string) (Expr, string, error) {
 		return nil, e, ErrMissingArgument
 	}
 
+	nameLower := strings.ToLower(name)
+	if nameLower == "false" || nameLower == "true" {
+		return &expr{valStr: nameLower, etype: EtBool, target: nameLower}, e, nil
+	}
+
 	if e != "" && e[0] == '(' {
 		// TODO(civil): Tags: make it a proper Expression
 		if name == "seriesByTag" {
@@ -539,7 +550,7 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 				return "", nil, nil, "", ErrMissingComma
 			}
 
-			if !argCont.IsConst() && !argCont.IsName() && !argCont.IsString() {
+			if !argCont.IsConst() && !argCont.IsName() && !argCont.IsString() && !argCont.IsBool() {
 				return "", nil, nil, eCont, ErrBadType
 			}
 
