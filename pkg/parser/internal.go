@@ -24,7 +24,6 @@ func (e *expr) getNamedArg(name string) *expr {
 
 func (e *expr) doGetFloatArg() (float64, error) {
 	if e.etype != EtConst {
-		fmt.Println("doGetFloatArg", e)
 		return 0, ErrBadType
 	}
 
@@ -33,8 +32,6 @@ func (e *expr) doGetFloatArg() (float64, error) {
 
 func (e *expr) doGetStringArg() (string, error) {
 	if e.etype != EtString {
-		fmt.Println("doGetStringArg")
-
 		return "", ErrBadType
 	}
 
@@ -43,7 +40,6 @@ func (e *expr) doGetStringArg() (string, error) {
 
 func (e *expr) doGetBoolArg() (bool, error) {
 	if e.etype != EtBool {
-		fmt.Println("doGetBoolArg", e.etype)
 		return false, ErrBadType
 	}
 
@@ -55,7 +51,6 @@ func (e *expr) doGetBoolArg() (bool, error) {
 		return true, nil
 	}
 
-	fmt.Println("doGetBoolArg", e.target)
 	return false, ErrBadType
 }
 
