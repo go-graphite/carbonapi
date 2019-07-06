@@ -113,6 +113,18 @@ func TestHighest(t *testing.T) {
 			[]*types.MetricData{types.MakeMetricData("metricB", // NOTE(dgryski): not sure if this matches graphite
 				[]float64{1, 5, 5, 5, 5, 5}, 1, now32)},
 		},
+		{
+			"highestMax(metric1,1)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", 0, 1}: {
+					types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 12, 11}, 1, now32),
+					types.MakeMetricData("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 10}, 1, now32),
+				},
+			},
+			[]*types.MetricData{types.MakeMetricData("metricA", // NOTE(dgryski): not sure if this matches graphite
+				[]float64{1, 1, 3, 3, 12, 11}, 1, now32)},
+		},
 	}
 
 	for _, tt := range tests {

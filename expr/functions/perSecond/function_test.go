@@ -22,7 +22,7 @@ func init() {
 	}
 }
 
-func TestAbsolute(t *testing.T) {
+func TestPerSecond(t *testing.T) {
 	now32 := int64(time.Now().Unix())
 
 	tests := []th.EvalTestItem{
