@@ -74,7 +74,7 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 	var ePtr *errors.Errors
 	timeouts := backends.Timeouts
 	for _, backend := range backends.Backends {
-		concurencyLimit := backends.ConcurrencyLimitPerServer
+		concurrencyLimit := backends.ConcurrencyLimitPerServer
 		tries := backends.MaxTries
 		maxIdleConnsPerHost := backends.MaxIdleConnsPerHost
 		keepAliveInterval := backends.KeepAliveInterval
@@ -83,7 +83,7 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 			backend.Timeouts = &timeouts
 		}
 		if backend.ConcurrencyLimit == nil {
-			backend.ConcurrencyLimit = &concurencyLimit
+			backend.ConcurrencyLimit = &concurrencyLimit
 		}
 		if backend.MaxTries == nil {
 			backend.MaxTries = &tries

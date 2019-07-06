@@ -41,7 +41,7 @@ type GraphiteGroup struct {
 
 	client *http.Client
 
-	limiter              *limiter.ServerLimiter
+	limiter              limiter.ServerLimiter
 	logger               *zap.Logger
 	timeout              types.Timeouts
 	maxTries             int
@@ -54,7 +54,7 @@ func (g *GraphiteGroup) Children() []types.BackendServer {
 	return []types.BackendServer{g}
 }
 
-func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.BackendServer, *errors.Errors) {
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter limiter.ServerLimiter) (types.BackendServer, *errors.Errors) {
 	logger = logger.With(zap.String("type", "graphite"), zap.String("protocol", config.Protocol), zap.String("name", config.GroupName))
 
 	httpClient := &http.Client{

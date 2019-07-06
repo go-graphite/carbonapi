@@ -48,7 +48,7 @@ func (c *ClientGRPCGroup) Children() []types.BackendServer {
 	return []types.BackendServer{c}
 }
 
-func NewClientGRPCGroupWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.BackendServer, *errors.Errors) {
+func NewClientGRPCGroupWithLimiter(logger *zap.Logger, config types.BackendV2, limiter limiter.ServerLimiter) (types.BackendServer, *errors.Errors) {
 	return NewClientGRPCGroup(logger, config)
 }
 

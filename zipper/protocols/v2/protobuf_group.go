@@ -43,7 +43,7 @@ type ClientProtoV2Group struct {
 
 	client *http.Client
 
-	limiter              *limiter.ServerLimiter
+	limiter              limiter.ServerLimiter
 	logger               *zap.Logger
 	timeout              types.Timeouts
 	maxTries             int
@@ -56,7 +56,7 @@ func (c *ClientProtoV2Group) Children() []types.BackendServer {
 	return []types.BackendServer{c}
 }
 
-func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.BackendServer, *errors.Errors) {
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, l limiter.ServerLimiter) (types.BackendServer, *errors.Errors) {
 	logger = logger.With(zap.String("type", "protoV2Group"), zap.String("name", config.GroupName))
 
 	httpClient := &http.Client{
@@ -70,7 +70,8 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter
 		},
 	}
 
-	httpQuery := helper.NewHttpQuery(config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv2PB)
+	httpLimiter := limiter.NewServerLimiter(config.Servers, *config.ConcurrencyLimit)
+	httpQuery := helper.NewHttpQuery(config.GroupName, config.Servers, *config.MaxTries, httpLimiter, httpClient, httpHeaders.ContentTypeCarbonAPIv2PB)
 
 	c := &ClientProtoV2Group{
 		groupName:            config.GroupName,
@@ -80,7 +81,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter
 		maxMetricsPerRequest: config.MaxBatchSize,
 
 		client:  httpClient,
-		limiter: limiter,
+		limiter: l,
 		logger:  logger,
 
 		httpQuery: httpQuery,
@@ -95,7 +96,7 @@ func New(logger *zap.Logger, config types.BackendV2) (types.BackendServer, *erro
 	if len(config.Servers) == 0 {
 		return nil, errors.Fatal("no servers specified")
 	}
-	limiter := limiter.NewServerLimiter([]string{config.GroupName}, *config.ConcurrencyLimit)
+	limiter := limiter.NewServerLimiter(config.Servers, *config.ConcurrencyLimit)
 
 	return NewWithLimiter(logger, config, limiter)
 }

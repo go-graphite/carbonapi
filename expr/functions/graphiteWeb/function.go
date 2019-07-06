@@ -33,7 +33,7 @@ type graphiteWeb struct {
 	proxy        *http.Client
 
 	supportedFunctions map[string]types.FunctionDescription
-	limiter            *limiter.ServerLimiter
+	limiter            limiter.ServerLimiter
 
 	logger         *zap.Logger
 	requestCounter uint64

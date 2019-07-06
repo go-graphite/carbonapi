@@ -40,7 +40,7 @@ type ClientProtoV3Group struct {
 
 	client *http.Client
 
-	limiter              *limiter.ServerLimiter
+	limiter              limiter.ServerLimiter
 	logger               *zap.Logger
 	timeout              types.Timeouts
 	maxTries             int
@@ -65,7 +65,7 @@ func New(logger *zap.Logger, config types.BackendV2) (types.BackendServer, *erro
 	return NewWithLimiter(logger, config, limiter)
 }
 
-func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.BackendServer, *errors.Errors) {
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter limiter.ServerLimiter) (types.BackendServer, *errors.Errors) {
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConnsPerHost: *config.MaxIdleConnsPerHost,

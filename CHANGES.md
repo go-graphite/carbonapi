@@ -15,6 +15,7 @@ CHANGELOG
 ---------
 **Master**
  - [Fix] #260 - parsing of bool values as Names.
+ - [Fix] Fix limiter waiting for a wrong server in some cases
  - [Code] Cherry-pick https://github.com/bookingcom/carbonapi/pull/172/commits/9f0b3f611 to simplify tests (author: @gksinghjsr)
 
 **0.12.0**

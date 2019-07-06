@@ -16,7 +16,7 @@ import (
 )
 
 type BroadcastGroup struct {
-	limiter              *limiter.ServerLimiter
+	limiter              limiter.ServerLimiter
 	groupName            string
 	timeout              types.Timeouts
 	backends             []types.BackendServer
@@ -31,7 +31,7 @@ func (bg *BroadcastGroup) Children() []types.BackendServer {
 	return bg.backends
 }
 
-func NewBroadcastGroup(logger *zap.Logger, groupName string, servers []types.BackendServer, expireDelaySec int32, concurencyLimit, maxBatchSize int, timeout types.Timeouts) (*BroadcastGroup, *errors.Errors) {
+func NewBroadcastGroup(logger *zap.Logger, groupName string, servers []types.BackendServer, expireDelaySec int32, concurrencyLimit, maxBatchSize int, timeout types.Timeouts) (*BroadcastGroup, *errors.Errors) {
 	if len(servers) == 0 {
 		return nil, errors.Fatal("no servers specified")
 	}
@@ -40,12 +40,12 @@ func NewBroadcastGroup(logger *zap.Logger, groupName string, servers []types.Bac
 		serverNames = append(serverNames, s.Name())
 	}
 	pathCache := pathcache.NewPathCache(expireDelaySec)
-	limiter := limiter.NewServerLimiter(serverNames, concurencyLimit)
+	limiter := limiter.NewServerLimiter(serverNames, concurrencyLimit)
 
 	return NewBroadcastGroupWithLimiter(logger, groupName, servers, serverNames, maxBatchSize, pathCache, limiter, timeout)
 }
 
-func NewBroadcastGroupWithLimiter(logger *zap.Logger, groupName string, servers []types.BackendServer, serverNames []string, maxBatchSize int, pathCache pathcache.PathCache, limiter *limiter.ServerLimiter, timeout types.Timeouts) (*BroadcastGroup, *errors.Errors) {
+func NewBroadcastGroupWithLimiter(logger *zap.Logger, groupName string, servers []types.BackendServer, serverNames []string, maxBatchSize int, pathCache pathcache.PathCache, limiter limiter.ServerLimiter, timeout types.Timeouts) (*BroadcastGroup, *errors.Errors) {
 	b := &BroadcastGroup{
 		timeout:              timeout,
 		groupName:            groupName,
@@ -298,9 +298,9 @@ func (bg *BroadcastGroup) doFind(ctx context.Context, logger *zap.Logger, backen
 		resCh <- r
 		return
 	}
-	defer bg.limiter.Leave(ctx, backend.Name())
 
-	logger.Debug("got a slot")
+	logger.Debug("got slot")
+	defer bg.limiter.Leave(ctx, backend.Name())
 
 	r.Response, r.Stats, r.Err = backend.Find(ctx, request)
 	logger.Debug("fetched response",
@@ -356,6 +356,10 @@ func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 
 // Info request handling
 func (bg *BroadcastGroup) doInfoRequest(ctx context.Context, logger *zap.Logger, backend types.BackendServer, reqs interface{}, resCh chan types.ServerFetcherResponse) {
+	logger = logger.With(
+		zap.String("group_name", bg.groupName),
+		zap.String("backend_name", backend.Name()),
+	)
 	request, ok := reqs.(*protov3.MultiMetricsInfoRequest)
 	if !ok {
 		logger.Fatal("unhandled error",
@@ -367,11 +371,6 @@ func (bg *BroadcastGroup) doInfoRequest(ctx context.Context, logger *zap.Logger,
 	r := &types.ServerInfoResponse{
 		Server: backend.Name(),
 	}
-
-	logger.Debug("waiting for a slot",
-		zap.String("group_name", bg.groupName),
-		zap.String("backend_name", backend.Name()),
-	)
 
 	if err := bg.limiter.Enter(ctx, backend.Name()); err != nil {
 		logger.Debug("timeout waiting for a slot")
@@ -432,6 +431,10 @@ type tagQuery struct {
 // Info request handling
 func (bg *BroadcastGroup) doTagRequest(ctx context.Context, logger *zap.Logger, backend types.BackendServer, reqs interface{}, resCh chan types.ServerFetcherResponse) {
 	request, ok := reqs.(tagQuery)
+	logger = logger.With(
+		zap.String("group_name", bg.groupName),
+		zap.String("backend_name", backend.Name()),
+	)
 	if !ok {
 		logger.Fatal("unhandled error",
 			zap.Stack("stack"),
@@ -444,10 +447,7 @@ func (bg *BroadcastGroup) doTagRequest(ctx context.Context, logger *zap.Logger, 
 		Response: []string{},
 	}
 
-	logger.Debug("waiting for a slot",
-		zap.String("group_name", bg.groupName),
-		zap.String("backend_name", backend.Name()),
-	)
+	logger.Debug("waiting for a slot")
 
 	if err := bg.limiter.Enter(ctx, backend.Name()); err != nil {
 		logger.Debug("timeout waiting for a slot")

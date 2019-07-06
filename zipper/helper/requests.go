@@ -26,14 +26,14 @@ type HttpQuery struct {
 	groupName string
 	servers   []string
 	maxTries  int
-	limiter   *limiter.ServerLimiter
+	limiter   limiter.ServerLimiter
 	client    *http.Client
 	encoding  string
 
 	counter uint64
 }
 
-func NewHttpQuery(groupName string, servers []string, maxTries int, limiter *limiter.ServerLimiter, client *http.Client, encoding string) *HttpQuery {
+func NewHttpQuery(groupName string, servers []string, maxTries int, limiter limiter.ServerLimiter, client *http.Client, encoding string) *HttpQuery {
 	return &HttpQuery{
 		groupName: groupName,
 		servers:   servers,
@@ -56,17 +56,17 @@ func (c *HttpQuery) pickServer(logger *zap.Logger) string {
 	logger.Debug("picked",
 		zap.Uint64("counter", counter),
 		zap.Uint64("idx", idx),
-		zap.String("Server", srv),
+		zap.String("server", srv),
 	)
 
 	return srv
 }
 
 func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, uri string, r types.Request) (*ServerResponse, error) {
-	server := c.pickServer(logger)
-	logger.Debug("picked server",
-		zap.String("server", server),
+	logger = logger.With(
+		zap.String("function", "HttpQuery.doRequest"),
 	)
+	server := c.pickServer(logger)
 
 	u, err := url.Parse(server + uri)
 	if err != nil {
@@ -97,19 +97,25 @@ func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, uri strin
 	}
 	req = util.MarshalCtx(ctx, util.MarshalCtx(ctx, req, util.HeaderUUIDZipper), util.HeaderUUIDAPI)
 
-	logger.Debug("trying to get slot")
-
-	err = c.limiter.Enter(ctx, c.groupName)
+	logger.Debug("trying to get slot",
+		zap.String("name", server),
+	)
+	err = c.limiter.Enter(ctx, server)
 	if err != nil {
 		logger.Debug("timeout waiting for a slot")
 		return nil, err
 	}
-	logger.Debug("got slot")
+
+	defer c.limiter.Leave(ctx, server)
+
+	logger.Debug("got slot for server",
+		zap.String("name", server),
+	)
+
 	if r != nil {
 		logger = logger.With(zap.Any("payloadData", r.LogInfo()))
 	}
 	resp, err := c.client.Do(req.WithContext(ctx))
-	c.limiter.Leave(ctx, server)
 	if err != nil {
 		logger.Error("error fetching result",
 			zap.Error(err),
@@ -132,6 +138,7 @@ func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, uri strin
 		)
 		return nil, fmt.Errorf(types.ErrFailedToFetchFmt, c.groupName, resp.StatusCode, string(body))
 	}
+	logger.Debug("got response")
 
 	return &ServerResponse{Server: server, Response: body}, nil
 }

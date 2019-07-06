@@ -6,15 +6,15 @@ import (
 )
 
 // ServerLimiter provides interface to limit amount of requests
-type ServerLimiter struct {
+type RealLimiter struct {
 	m   map[string]chan struct{}
 	cap int
 }
 
 // NewServerLimiter creates a limiter for specific servers list.
-func NewServerLimiter(servers []string, l int) *ServerLimiter {
-	if l == 0 {
-		return &ServerLimiter{}
+func NewServerLimiter(servers []string, l int) ServerLimiter {
+	if l <= 0 {
+		return &NoopLimiter{}
 	}
 
 	sl := make(map[string]chan struct{})
@@ -23,18 +23,19 @@ func NewServerLimiter(servers []string, l int) *ServerLimiter {
 		sl[s] = make(chan struct{}, l)
 	}
 
-	return &ServerLimiter{
+	limiter := &RealLimiter{
 		m:   sl,
 		cap: l,
 	}
+	return limiter
 }
 
-func (sl ServerLimiter) Capacity() int {
+func (sl RealLimiter) Capacity() int {
 	return sl.cap
 }
 
 // Enter claims one of free slots or blocks until there is one.
-func (sl ServerLimiter) Enter(ctx context.Context, s string) error {
+func (sl RealLimiter) Enter(ctx context.Context, s string) error {
 	if sl.m == nil {
 		return nil
 	}
@@ -48,7 +49,7 @@ func (sl ServerLimiter) Enter(ctx context.Context, s string) error {
 }
 
 // Frees a slot in limiter
-func (sl ServerLimiter) Leave(ctx context.Context, s string) {
+func (sl RealLimiter) Leave(ctx context.Context, s string) {
 	if sl.m == nil {
 		return
 	}

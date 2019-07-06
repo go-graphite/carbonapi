@@ -35,7 +35,7 @@ type capabilityResponse struct {
 }
 
 //_internal/capabilities/
-func doQuery(ctx context.Context, logger *zap.Logger, groupName string, httpClient *http.Client, limiter *limiter.ServerLimiter, server string, request types.Request, resChan chan<- capabilityResponse) {
+func doQuery(ctx context.Context, logger *zap.Logger, groupName string, httpClient *http.Client, limiter limiter.ServerLimiter, server string, request types.Request, resChan chan<- capabilityResponse) {
 	httpQuery := helper.NewHttpQuery(groupName, []string{server}, 1, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv3PB)
 	rewrite, _ := url.Parse("http://127.0.0.1/_internal/capabilities/")
 
@@ -75,12 +75,12 @@ type CapabilityResponse struct {
 	ProtoToServers map[string][]string
 }
 
-func getBestSupportedProtocol(logger *zap.Logger, servers []string, concurencyLimit int) *CapabilityResponse {
+func getBestSupportedProtocol(logger *zap.Logger, servers []string, concurrencyLimit int) *CapabilityResponse {
 	response := &CapabilityResponse{
 		ProtoToServers: make(map[string][]string),
 	}
 	groupName := "capability query"
-	limiter := limiter.NewServerLimiter([]string{groupName}, concurencyLimit)
+	limiter := limiter.NewServerLimiter([]string{groupName}, concurrencyLimit)
 
 	httpClient := &http.Client{
 		Transport: &http.Transport{
@@ -141,7 +141,7 @@ type AutoGroup struct {
 	groupName string
 }
 
-func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter *limiter.ServerLimiter) (types.BackendServer, *errors.Errors) {
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter limiter.ServerLimiter) (types.BackendServer, *errors.Errors) {
 	return nil, errors.Fatal("auto group doesn't support anything useful except for New")
 }
 
