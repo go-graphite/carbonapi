@@ -147,8 +147,6 @@ _When `format=png`_ (default if not specified)
 | holtWintersAberration | parameter not supported: seasonality |
 | holtWintersConfidenceBands | parameter not supported: seasonality |
 | holtWintersForecast | parameter not supported: seasonality |
-| nonNegativeDerivative | parameter not supported: minValue |
-| perSecond | parameter not supported: minValue |
 | timeShift | parameter not supported: alignDst |
 | useSeriesAbove | value: type mismatch: got "integer", should be "string" |
 
@@ -156,6 +154,7 @@ _When `format=png`_ (default if not specified)
 | Function      | Carbonapi-only                                            |
 | :-------------|:--------------------------------------------------------- |
 | absolute(seriesList) | no |
+| aggregate(seriesList, func, xFilesFactor=None) | no |
 | alias(seriesList, newName) | no |
 | aliasByMetric(seriesList) | no |
 | aliasByNode(seriesList, *nodes) | no |
