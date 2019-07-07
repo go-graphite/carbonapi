@@ -114,7 +114,7 @@ func init() {
 	config.SetUpConfigUpstreams(logger)
 	config.SetUpConfig(logger, "(test)")
 	config.Config.ZipperInstance = newMockCarbonZipper()
-	InitHandlers()
+	InitHandlers([]string{})
 }
 
 func setUpRequest(t *testing.T, url string) (*http.Request, *httptest.ResponseRecorder) {
