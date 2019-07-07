@@ -341,7 +341,7 @@ func AggDiff(v []float64) float64 {
 	}
 	for _, vv := range v[1:] {
 		if !math.IsNaN(vv) {
-			res-=vv
+			res -= vv
 		}
 	}
 

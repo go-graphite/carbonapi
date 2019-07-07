@@ -43,12 +43,12 @@ func strToStep(stepStr string) (int64, error) {
 
 type tag struct {
 	TagValue string
-	OP string
+	OP       string
 }
 
 type prometheusValue struct {
 	Timestamp float64
-	Value float64
+	Value     float64
 }
 
 type prometheusResult struct {
@@ -57,15 +57,15 @@ type prometheusResult struct {
 }
 
 type prometheusData struct {
-	Result []prometheusResult `json:"result"`
-	ResultType string `json:"resultType"`
+	Result     []prometheusResult `json:"result"`
+	ResultType string             `json:"resultType"`
 }
 
 type prometheusResponse struct {
-	Status string `json:"status"`
-	ErrorType string `json:"errorType"`
-	Error string `json:"error"`
-	Data prometheusData `json:"data"`
+	Status    string         `json:"status"`
+	ErrorType string         `json:"errorType"`
+	Error     string         `json:"error"`
+	Data      prometheusData `json:"data"`
 }
 
 func (p *prometheusValue) UnmarshalJSON(data []byte) error {
@@ -111,17 +111,17 @@ func (p *prometheusValue) UnmarshalJSON(data []byte) error {
 }
 
 type prometheusTagResponse struct {
-	Status string `json:"status"`
-	ErrorType string `json:"errorType"`
-	Error string `json:"error"`
-	Data []string `json:"data"`
+	Status    string   `json:"status"`
+	ErrorType string   `json:"errorType"`
+	Error     string   `json:"error"`
+	Data      []string `json:"data"`
 }
 
 type prometheusFindResponse struct {
-	Status string `json:"status"`
-	ErrorType string `json:"errorType"`
-	Error string `json:"error"`
-	Data []map[string]string `json:"data"`
+	Status    string              `json:"status"`
+	ErrorType string              `json:"errorType"`
+	Error     string              `json:"error"`
+	Data      []map[string]string `json:"data"`
 }
 
 // accept 'tag=value' or 'tag=~value' string and return sanitized version of it
@@ -158,7 +158,7 @@ func (c *PrometheusGroup) splitTagValues(query string) map[string]tag {
 	result := make(map[string]tag)
 	for _, tvString := range tags {
 		tvString = strings.TrimSpace(tvString)
-		name, tag := c.promethizeTagValue(tvString[1:len(tvString)-1])
+		name, tag := c.promethizeTagValue(tvString[1 : len(tvString)-1])
 		result[name] = tag
 	}
 	return result
@@ -188,7 +188,7 @@ func (c *PrometheusGroup) promMetricToGraphite(metric map[string]string) string 
 func (c *PrometheusGroup) convertGraphiteQueryToProm(step, target string) (string, string) {
 	firstTag := true
 	var queryBuilder strings.Builder
-	tagsString := target[len("seriesByTag("):len(target)-1]
+	tagsString := target[len("seriesByTag(") : len(target)-1]
 	tvs := c.splitTagValues(tagsString)
 	// It's ok to have empty "__name__"
 	if v, ok := tvs["__name__"]; ok {
@@ -197,7 +197,7 @@ func (c *PrometheusGroup) convertGraphiteQueryToProm(step, target string) (strin
 		} else {
 			firstTag = false
 			queryBuilder.WriteByte('{')
-			queryBuilder.WriteString("__name__"+v.OP+"\""+v.TagValue+"\"")
+			queryBuilder.WriteString("__name__" + v.OP + "\"" + v.TagValue + "\"")
 		}
 
 		delete(tvs, "__name__")
@@ -210,9 +210,9 @@ func (c *PrometheusGroup) convertGraphiteQueryToProm(step, target string) (strin
 		if firstTag {
 			firstTag = false
 			queryBuilder.WriteByte('{')
-			queryBuilder.WriteString(tagName+t.OP+"\""+t.TagValue+"\"")
+			queryBuilder.WriteString(tagName + t.OP + "\"" + t.TagValue + "\"")
 		} else {
-			queryBuilder.WriteString(", " + tagName+t.OP+"\""+t.TagValue+"\"")
+			queryBuilder.WriteString(", " + tagName + t.OP + "\"" + t.TagValue + "\"")
 		}
 
 	}

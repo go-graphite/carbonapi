@@ -69,4 +69,3 @@ func TestFunctionMultiReturn(t *testing.T) {
 	}
 
 }
-

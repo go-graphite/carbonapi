@@ -12,8 +12,8 @@ import (
 
 	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
-	"gopkg.in/yaml.v2"
 	pickle "github.com/lomik/og-rek"
+	"gopkg.in/yaml.v2"
 )
 
 type responseFormat int
@@ -68,9 +68,7 @@ func renderHandler(wr http.ResponseWriter, req *http.Request) {
 	}
 
 	multiv2 := protov2.MultiFetchResponse{
-		Metrics: []protov2.FetchResponse{
-
-		},
+		Metrics: []protov2.FetchResponse{},
 	}
 
 	newCfg := copy(&cfg)
@@ -86,7 +84,7 @@ func renderHandler(wr http.ResponseWriter, req *http.Request) {
 			}
 		}
 		fr := protov2.FetchResponse{
-			Name: m.MetricName,
+			Name:      m.MetricName,
 			StartTime: 1,
 			StopTime:  int32(1 + len(m.Values)),
 			StepTime:  1,
@@ -158,25 +156,25 @@ func renderHandler(wr http.ResponseWriter, req *http.Request) {
 }
 
 type Metric struct {
-	MetricName string `yaml:"metricName"`
-	Values []float64 `yaml:"values"`
+	MetricName string    `yaml:"metricName"`
+	Values     []float64 `yaml:"values"`
 }
 
 type Response struct {
-	PathExpression string `yaml:"pathExpression"`
-	Data []Metric `yaml:"data"`
+	PathExpression string   `yaml:"pathExpression"`
+	Data           []Metric `yaml:"data"`
 }
 
 func copy(src *Response) *Response {
 	dst := &Response{
 		PathExpression: src.PathExpression,
-		Data: make([]Metric, len(src.Data)),
+		Data:           make([]Metric, len(src.Data)),
 	}
 
 	for i := range src.Data {
 		dst.Data[i] = Metric{
 			MetricName: src.Data[i].MetricName,
-			Values: make([]float64, len(src.Data[i].Values)),
+			Values:     make([]float64, len(src.Data[i].Values)),
 		}
 
 		for j := range src.Data[i].Values {
@@ -219,4 +217,3 @@ func main() {
 	err = http.ListenAndServe(*address, nil)
 	fmt.Println(err)
 }
-

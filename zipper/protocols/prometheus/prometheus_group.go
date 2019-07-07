@@ -72,7 +72,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter limiter.
 	if ok {
 		stepNew, ok := stepI.(string)
 		if ok {
-			if stepNew[len(stepNew) - 1] >= '0' && stepNew[len(stepNew) - 1] <= '9' {
+			if stepNew[len(stepNew)-1] >= '0' && stepNew[len(stepNew)-1] <= '9' {
 				stepNew += "s"
 			}
 			t, err := time.ParseDuration(stepNew)
@@ -100,7 +100,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter limiter.
 		timeout:              *config.Timeouts,
 		maxTries:             *config.MaxTries,
 		maxMetricsPerRequest: config.MaxBatchSize,
-		step: step,
+		step:                 step,
 
 		client:  httpClient,
 		limiter: limiter,
@@ -168,7 +168,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 			if strings.HasPrefix(target, "seriesByTag") {
 				stepLocalStr, target = c.convertGraphiteQueryToProm(stepLocalStr, target)
 			}
-			if stepLocalStr[len(stepLocalStr) - 1] >= '0' && stepLocalStr[len(stepLocalStr) - 1] <= '9' {
+			if stepLocalStr[len(stepLocalStr)-1] >= '0' && stepLocalStr[len(stepLocalStr)-1] <= '9' {
 				stepLocalStr += "s"
 			}
 			t, err := time.ParseDuration(stepLocalStr)
@@ -176,22 +176,22 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 				logger.Debug("failed to parse step",
 					zap.String("step", stepLocalStr),
 					zap.Error(err),
-					)
+				)
 				e.Add(err)
 				continue
 			}
 			stepLocal = int64(t.Seconds())
 			/*
-			newStep, err3 := strToStep(stepStr)
-			if err3 == nil {
-				step = newStep
-			}
-			 */
+				newStep, err3 := strToStep(stepStr)
+				if err3 == nil {
+					step = newStep
+				}
+			*/
 			logger.Debug("will do query",
 				zap.String("query", target),
 				zap.Int64("start", request.Metrics[0].StartTime),
 				zap.Int64("stop", request.Metrics[0].StopTime),
-				)
+			)
 			v := url.Values{
 				"query": []string{target},
 				"start": []string{strconv.Itoa(int(request.Metrics[0].StartTime))},
@@ -264,7 +264,7 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 		// Convert query to Prometheus-compatible regex
 		reQuery := strings.Replace(query, ".", "\\\\.", -1)
 		reQuery = strings.Replace(query, "*", "[^.][^.]*", -1)
-		if reQuery[len(reQuery) - 1] == '*' {
+		if reQuery[len(reQuery)-1] == '*' {
 			reQuery += ".*"
 		}
 		matchQuery := "{__name__=~\"" + reQuery + "\"}"
@@ -293,7 +293,7 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 
 		querySplit := strings.Split(query, ".")
 		resp := protov3.GlobResponse{
-			Name: query,
+			Name:    query,
 			Matches: make([]protov3.GlobMatch, 0),
 		}
 		for _, m := range pr.Data {
@@ -318,7 +318,7 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 		for k, v := range uniqueMetrics {
 			resp.Matches = append(resp.Matches, protov3.GlobMatch{
 				IsLeaf: v,
-				Path: k,
+				Path:   k,
 			})
 			r.Metrics = append(r.Metrics, resp)
 		}
@@ -427,7 +427,7 @@ func (c *PrometheusGroup) doComplexTagQuery(ctx context.Context, isTagName bool,
 	matches := make([]string, 0, len(params["expr"]))
 	for _, e := range params["expr"] {
 		name, t := c.promethizeTagValue(e)
-		matches = append(matches, "{" + name + t.OP + "\"" + t.TagValue + "\"}")
+		matches = append(matches, "{"+name+t.OP+"\""+t.TagValue+"\"}")
 	}
 
 	rewrite, _ = url.Parse("http://127.0.0.1/api/v1/series")

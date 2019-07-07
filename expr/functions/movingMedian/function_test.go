@@ -64,4 +64,3 @@ func TestMovingMedian(t *testing.T) {
 	}
 
 }
-

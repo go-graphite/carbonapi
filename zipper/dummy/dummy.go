@@ -51,14 +51,14 @@ type DummyClient struct {
 	backends             []string
 	maxMetricsPerRequest int
 
-	fetchResponses map[string]FetchResponse
-	findResponses  map[string]FindResponse
-	infoResponses  map[string]InfoResponse
-	statsResponses map[string]StatsResponse
-	tagNameResponse []string
+	fetchResponses    map[string]FetchResponse
+	findResponses     map[string]FindResponse
+	infoResponses     map[string]InfoResponse
+	statsResponses    map[string]StatsResponse
+	tagNameResponse   []string
 	tagValuesResponse []string
-	probeResponses ProbeResponse
-	alwaysTimeout  time.Duration
+	probeResponses    ProbeResponse
+	alwaysTimeout     time.Duration
 }
 
 func (d *DummyClient) Children() []types.BackendServer {

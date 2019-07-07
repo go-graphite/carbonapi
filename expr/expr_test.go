@@ -442,11 +442,11 @@ func TestExtractMetric(t *testing.T) {
 func TestEvalCustomFromUntil(t *testing.T) {
 	tests := []struct {
 		target string
-		m     map[parser.MetricRequest][]*types.MetricData
-		w     []float64
-		name  string
-		from  int64
-		until int64
+		m      map[parser.MetricRequest][]*types.MetricData
+		w      []float64
+		name   string
+		from   int64
+		until  int64
 	}{
 		{
 			"timeFunction(\"footime\")",

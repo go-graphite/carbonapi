@@ -43,4 +43,3 @@ func TestLowPass(t *testing.T) {
 	}
 
 }
-

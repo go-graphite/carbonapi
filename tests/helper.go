@@ -233,12 +233,12 @@ func NearlyEqualMetrics(a, b *types.MetricData) bool {
 
 type SummarizeEvalTestItem struct {
 	Target string
-	M     map[parser.MetricRequest][]*types.MetricData
-	W     []float64
-	Name  string
-	Step  int64
-	Start int64
-	Stop  int64
+	M      map[parser.MetricRequest][]*types.MetricData
+	W      []float64
+	Name   string
+	Step   int64
+	Start  int64
+	Stop   int64
 }
 
 func InitTestSummarize() (int64, int64, int64) {

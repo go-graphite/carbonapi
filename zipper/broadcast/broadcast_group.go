@@ -423,8 +423,8 @@ func (bg *BroadcastGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResp
 }
 
 type tagQuery struct {
-	Query string
-	Limit int64
+	Query  string
+	Limit  int64
 	IsName bool
 }
 
@@ -478,8 +478,8 @@ func (bg *BroadcastGroup) tagEverything(ctx context.Context, isTagName bool, que
 	}
 
 	request := tagQuery{
-		Query: query,
-		Limit: limit,
+		Query:  query,
+		Limit:  limit,
 		IsName: isTagName,
 	}
 

@@ -100,7 +100,7 @@ func TestNewBroadcastGroup(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b, err := NewBroadcastGroup(logger, tt.name, tt.servers, 60, 500,  100, timeouts)
+			b, err := NewBroadcastGroup(logger, tt.name, tt.servers, 60, 500, 100, timeouts)
 			if !errorsAreEqual(err, tt.expectedErr) {
 				t.Fatalf("unexpected error %v, expected %v", err, tt.expectedErr)
 			}

@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-type ServerLimiter interface{
+type ServerLimiter interface {
 	Capacity() int
 	Enter(ctx context.Context, s string) error
 	Leave(ctx context.Context, s string)

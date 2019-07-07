@@ -10,7 +10,6 @@ import (
 	"go.uber.org/zap"
 )
 
-
 // type Fetcher func(ctx context.Context, logger *zap.Logger, client types.BackendServer, reqs interface{}, resCh chan<- types.ServerFetchResponse) {
 //type Fetcher func(ctx context.Context, logger *zap.Logger, client BackendServer, reqs interface{}, resCh chan ServerFetchResponse) {
 type Fetcher func(ctx context.Context, logger *zap.Logger, client BackendServer, reqs interface{}, resCh chan ServerFetcherResponse)
@@ -377,7 +376,7 @@ func MergeFetchResponses(m1, m2 *protov3.FetchResponse) *errors.Errors {
 	return errors.FromErr(err)
 }
 
-func (first *ServerFetchResponse) Merge(second *ServerFetchResponse)  *errors.Errors {
+func (first *ServerFetchResponse) Merge(second *ServerFetchResponse) *errors.Errors {
 	if first.Server == "" && second.Server != "" {
 		first.Server = second.Server
 	}

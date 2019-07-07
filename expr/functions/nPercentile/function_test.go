@@ -43,4 +43,3 @@ func TestNPercentile(t *testing.T) {
 	}
 
 }
-
