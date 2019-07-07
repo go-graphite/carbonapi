@@ -11,7 +11,7 @@ import (
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 	"github.com/go-graphite/carbonapi/intervalset"
-	"github.com/go-graphite/carbonapi/util/ctx"
+	utilctx "github.com/go-graphite/carbonapi/util/ctx"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	pickle "github.com/lomik/og-rek"
 	"github.com/lomik/zapwriter"
@@ -160,7 +160,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	uuid := uuid.NewV4()
 	// TODO: Migrate to context.WithTimeout
 	// ctx, _ := context.WithTimeout(context.TODO(), config.Config.ZipperTimeout)
-	ctx := ctx.SetUUID(r.Context(), uuid.String())
+	ctx := utilctx.SetUUID(r.Context(), uuid.String())
 	username, _, _ := r.BasicAuth()
 
 	format := r.FormValue("format")
@@ -171,15 +171,16 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 
 	accessLogger := zapwriter.Logger("access")
 	var accessLogDetails = carbonapipb.AccessLogDetails{
-		Handler:       "find",
-		Username:      username,
-		CarbonapiUUID: uuid.String(),
-		URL:           r.URL.RequestURI(),
-		PeerIP:        srcIP,
-		PeerPort:      srcPort,
-		Host:          r.Host,
-		Referer:       r.Referer(),
-		URI:           r.RequestURI,
+		Handler:        "find",
+		Username:       username,
+		CarbonapiUUID:  uuid.String(),
+		URL:            r.URL.RequestURI(),
+		PeerIP:         srcIP,
+		PeerPort:       srcPort,
+		Host:           r.Host,
+		Referer:        r.Referer(),
+		URI:            r.RequestURI,
+		RequestHeaders: utilctx.GetLogHeaders(ctx),
 	}
 
 	logAsError := false

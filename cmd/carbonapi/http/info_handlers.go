@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
-	"github.com/go-graphite/carbonapi/util/ctx"
+	utilctx "github.com/go-graphite/carbonapi/util/ctx"
 
 	"github.com/lomik/zapwriter"
 	"github.com/satori/go.uuid"
@@ -19,7 +19,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	uuid := uuid.NewV4()
 	// TODO: Migrate to context.WithTimeout
 	// ctx, _ := context.WithTimeout(context.TODO(), config.Config.ZipperTimeout)
-	ctx := ctx.SetUUID(r.Context(), uuid.String())
+	ctx := utilctx.SetUUID(r.Context(), uuid.String())
 	username, _, _ := r.BasicAuth()
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
 	format := r.FormValue("format")
@@ -28,18 +28,21 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 		format = jsonFormat
 	}
 
+	requestHeaders := utilctx.GetLogHeaders(ctx)
+
 	accessLogger := zapwriter.Logger("access")
 	var accessLogDetails = carbonapipb.AccessLogDetails{
-		Handler:       "info",
-		Username:      username,
-		CarbonapiUUID: uuid.String(),
-		URL:           r.URL.RequestURI(),
-		PeerIP:        srcIP,
-		PeerPort:      srcPort,
-		Host:          r.Host,
-		Referer:       r.Referer(),
-		Format:        format,
-		URI:           r.RequestURI,
+		Handler:        "info",
+		Username:       username,
+		CarbonapiUUID:  uuid.String(),
+		URL:            r.URL.RequestURI(),
+		PeerIP:         srcIP,
+		PeerPort:       srcPort,
+		Host:           r.Host,
+		Referer:        r.Referer(),
+		Format:         format,
+		URI:            r.RequestURI,
+		RequestHeaders: requestHeaders,
 	}
 
 	logAsError := false

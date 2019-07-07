@@ -10,6 +10,7 @@ import (
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
+	utilctx "github.com/go-graphite/carbonapi/util/ctx"
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
 )
@@ -23,14 +24,15 @@ func functionsHandler(w http.ResponseWriter, r *http.Request) {
 
 	accessLogger := zapwriter.Logger("access")
 	var accessLogDetails = carbonapipb.AccessLogDetails{
-		Handler:  "functions",
-		Username: username,
-		URL:      r.URL.RequestURI(),
-		PeerIP:   srcIP,
-		PeerPort: srcPort,
-		Host:     r.Host,
-		Referer:  r.Referer(),
-		URI:      r.RequestURI,
+		Handler:        "functions",
+		Username:       username,
+		URL:            r.URL.RequestURI(),
+		PeerIP:         srcIP,
+		PeerPort:       srcPort,
+		Host:           r.Host,
+		Referer:        r.Referer(),
+		URI:            r.RequestURI,
+		RequestHeaders: utilctx.GetLogHeaders(r.Context()),
 	}
 
 	logAsError := false

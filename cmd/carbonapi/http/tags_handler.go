@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
+	utilctx "github.com/go-graphite/carbonapi/util/ctx"
 	"github.com/go-graphite/carbonapi/zipper/types"
 	"github.com/lomik/zapwriter"
 	"github.com/satori/go.uuid"
@@ -21,26 +22,29 @@ func tagHandler(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: Migrate to context.WithTimeout
 	ctx := r.Context()
+	requestHeaders := utilctx.GetLogHeaders(ctx)
 	username, _, _ := r.BasicAuth()
 
 	logger := zapwriter.Logger("tag").With(
 		zap.String("carbonapi_uuid", uuid.String()),
 		zap.String("username", username),
+		zap.Any("request_headers", requestHeaders),
 	)
 
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
 
 	accessLogger := zapwriter.Logger("access")
 	var accessLogDetails = &carbonapipb.AccessLogDetails{
-		Handler:       "tags",
-		Username:      username,
-		CarbonapiUUID: uuid.String(),
-		URL:           r.URL.Path,
-		PeerIP:        srcIP,
-		PeerPort:      srcPort,
-		Host:          r.Host,
-		Referer:       r.Referer(),
-		URI:           r.RequestURI,
+		Handler:        "tags",
+		Username:       username,
+		CarbonapiUUID:  uuid.String(),
+		URL:            r.URL.Path,
+		PeerIP:         srcIP,
+		PeerPort:       srcPort,
+		Host:           r.Host,
+		Referer:        r.Referer(),
+		URI:            r.RequestURI,
+		RequestHeaders: requestHeaders,
 	}
 
 	logAsError := false

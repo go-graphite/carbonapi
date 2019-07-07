@@ -13,9 +13,10 @@ Changes
 
 CHANGELOG
 ---------
-**Master**
+**0.12.1**
  - [Improvement] Port 'minValue' parameter handling for nonNegativeDerivative and perSecond: https://github.com/bookingcom/carbonapi/commit/5bfda0d24 and https://github.com/bookingcom/carbonapi/commit/790c05d8
  - [Improvement] Config option "headersToPass" to control what request headers will be passed to backend (default: none). Fixes #398
+ - [Improvement] Config option "headersToLog" to control what request headers will be logged by carbonapi (default: none).
  - [Fix] Cherry-pick https://github.com/bookingcom/carbonapi/commit/946ca8b (fixes small png render issues)
  - [Fix] #260 - parsing of bool values as Names.
  - [Fix] Fix limiter waiting for a wrong server in some cases

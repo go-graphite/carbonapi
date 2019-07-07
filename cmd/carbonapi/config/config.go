@@ -61,7 +61,7 @@ type ConfigType struct {
 	GraphTemplates             string             `mapstructure:"graphTemplates"`
 	FunctionsConfigs           map[string]string  `mapstructure:"functionsConfig"`
 	HeadersToPass              []string           `mapstructure:"headersToPass"`
-	// HeadersToLog               []string           `mapstructure:"headersToLog"`
+	HeadersToLog               []string           `mapstructure:"headersToLog"`
 
 	QueryCache cache.BytesCache `mapstructure:"-" json:"-"`
 	FindCache  cache.BytesCache `mapstructure:"-" json:"-"`

@@ -12,7 +12,8 @@ const (
 	HeaderUUIDZipper = "X-CTX-CarbonZipper-UUID"
 
 	uuidKey key = iota
-	headersKey
+	headersToPassKey
+	headersToLogKey
 )
 
 func ifaceToString(v interface{}) string {
@@ -38,12 +39,32 @@ func getCtxMapString(ctx context.Context, k key) map[string]string {
 	return map[string]string{}
 }
 
+func getCtxStringList(ctx context.Context, k key) []string {
+	v := ctx.Value(k)
+	if v != nil {
+		vv, ok := v.([]string)
+		if !ok {
+			return []string{}
+		}
+		return vv
+	}
+	return []string{}
+}
+
 func GetPassHeaders(ctx context.Context) map[string]string {
-	return getCtxMapString(ctx, headersKey)
+	return getCtxMapString(ctx, headersToPassKey)
 }
 
 func SetPassHeaders(ctx context.Context, h map[string]string) context.Context {
-	return context.WithValue(ctx, headersKey, h)
+	return context.WithValue(ctx, headersToPassKey, h)
+}
+
+func GetLogHeaders(ctx context.Context) map[string]string {
+	return getCtxMapString(ctx, headersToLogKey)
+}
+
+func SetLogHeaders(ctx context.Context, h map[string]string) context.Context {
+	return context.WithValue(ctx, headersToLogKey, h)
 }
 
 func GetUUID(ctx context.Context) string {

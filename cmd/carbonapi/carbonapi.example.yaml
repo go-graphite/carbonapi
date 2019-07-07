@@ -25,6 +25,10 @@ headersToPass:
   - "X-Dashboard-Id"
   - "X-Grafana-Org-Id"
   - "X-Panel-Id"
+headersToLog:
+  - "X-Dashboard-Id"
+  - "X-Grafana-Org-Id"
+  - "X-Panel-Id"
 # Max concurrent requests to CarbonZipper
 concurency: 20
 cache:

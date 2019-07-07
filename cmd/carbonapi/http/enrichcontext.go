@@ -7,7 +7,7 @@ import (
 )
 
 // TrackConnections exports via expvar a list of all currently executing requests
-func enrichContextWithHeaders(headersToPass []string, fn http.HandlerFunc) http.HandlerFunc {
+func enrichContextWithHeaders(headersToPass, headersToLog []string, fn http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		headersToPassMap := make(map[string]string)
 		for _, name := range headersToPass {
@@ -16,7 +16,17 @@ func enrichContextWithHeaders(headersToPass []string, fn http.HandlerFunc) http.
 				headersToPassMap[name] = h
 			}
 		}
+
+		headersToLogMap := make(map[string]string)
+		for _, name := range headersToLog {
+			h := req.Header.Get(name)
+			if h != "" {
+				headersToLogMap[name] = h
+			}
+		}
+
 		ctx := utilctx.SetPassHeaders(req.Context(), headersToPassMap)
+		ctx = utilctx.SetLogHeaders(ctx, headersToLogMap)
 		req = req.WithContext(ctx)
 
 		fn(w, req)

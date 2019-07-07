@@ -6,38 +6,40 @@ Table of Contents
     * [Example:](#example)
   * [headersToPass](#headerstopass)
     * [Example:](#example-1)
+  * [headersToLog](#headerstolog)
+    * [Example:](#example-2)
   * [unicodeRangeTables](#unicoderangetables)
-    * [Example](#example-2)
-  * [cache](#cache)
     * [Example](#example-3)
-  * [cpus](#cpus)
+  * [cache](#cache)
     * [Example](#example-4)
-  * [tz](#tz)
+  * [cpus](#cpus)
     * [Example](#example-5)
-  * [functionsConfig](#functionsconfig)
+  * [tz](#tz)
     * [Example](#example-6)
-  * [graphite](#graphite)
+  * [functionsConfig](#functionsconfig)
     * [Example](#example-7)
-  * [pidFile](#pidfile)
+  * [graphite](#graphite)
     * [Example](#example-8)
-  * [graphTemplates](#graphtemplates)
+  * [pidFile](#pidfile)
     * [Example](#example-9)
-  * [defaultColors](#defaultcolors)
+  * [graphTemplates](#graphtemplates)
     * [Example](#example-10)
-  * [logger](#logger)
+  * [defaultColors](#defaultcolors)
     * [Example](#example-11)
+  * [logger](#logger)
+    * [Example](#example-12)
 * [Carbonzipper configuration](#carbonzipper-configuration)
   * [concurency](#concurency)
-    * [Example](#example-12)
-  * [maxBatchSize](#maxbatchsize)
     * [Example](#example-13)
+  * [maxBatchSize](#maxbatchsize)
+    * [Example](#example-14)
   * [idleConnections](#idleconnections)
   * [upstreams](#upstreams)
-    * [Example](#example-14)
+    * [Example](#example-15)
       * [For go\-carbon and prometheus](#for-go-carbon-and-prometheus)
       * [For graphite\-clickhouse](#for-graphite-clickhouse)
   * [expireDelaySec](#expiredelaysec)
-    * [Example](#example-15)
+    * [Example](#example-16)
 
 # General configuration for carbonapi
 
@@ -64,7 +66,7 @@ listen: "0.0.0.0:8080"
 ***
 ## headersToPass
 
-This option controls what headers will be passed to backends.
+This option controls what headers (if passed by upstream client) will be passed to backends..
 
 Default: none
 
@@ -72,6 +74,27 @@ Default: none
 This is example to pass all dashboard/panel ids from Grafana
 ```yaml
 headersToPass:
+    - "X-Dashboard-Id"
+    - "X-Grafana-Org-Id"
+    - "X-Panel-Id"
+```
+
+***
+## headersToLog
+
+This option controls what headers will be logged by carbonapi (accessLog).
+
+If header is not present, it won't be logged.
+
+Headers will be appended to access log and to any other carbonapi logs for this handler if there is any used.
+They won't be logged at zipper's level (currently).
+
+Default: none
+
+### Example:
+This is example to log all dashboard/panel ids from Grafana
+```yaml
+headersToLog:
     - "X-Dashboard-Id"
     - "X-Grafana-Org-Id"
     - "X-Panel-Id"
