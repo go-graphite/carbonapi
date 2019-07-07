@@ -47,7 +47,9 @@ func (z zipper) Find(ctx context.Context, metrics []string) (*pb.MultiGlobRespon
 	newCtx := ctx
 	if z.ignoreClientTimeout {
 		uuid := util.GetUUID(ctx)
+		hdrs := util.GetPassHeaders(ctx)
 		newCtx = util.SetUUID(context.Background(), uuid)
+		newCtx = util.SetPassHeaders(newCtx, hdrs)
 	}
 
 	req := pb.MultiGlobRequest{
@@ -68,7 +70,9 @@ func (z zipper) Info(ctx context.Context, metrics []string) (*pb.ZipperInfoRespo
 	newCtx := ctx
 	if z.ignoreClientTimeout {
 		uuid := util.GetUUID(ctx)
+		hdrs := util.GetPassHeaders(ctx)
 		newCtx = util.SetUUID(context.Background(), uuid)
+		newCtx = util.SetPassHeaders(newCtx, hdrs)
 	}
 
 	req := pb.MultiGlobRequest{
@@ -90,7 +94,9 @@ func (z zipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*ty
 	newCtx := ctx
 	if z.ignoreClientTimeout {
 		uuid := util.GetUUID(ctx)
+		hdrs := util.GetPassHeaders(ctx)
 		newCtx = util.SetUUID(context.Background(), uuid)
+		newCtx = util.SetPassHeaders(newCtx, hdrs)
 	}
 
 	pbresp, stats, err := z.z.FetchProtoV3(newCtx, &request)
@@ -116,7 +122,9 @@ func (z zipper) RenderCompat(ctx context.Context, metrics []string, from, until 
 	newCtx := ctx
 	if z.ignoreClientTimeout {
 		uuid := util.GetUUID(ctx)
+		hdrs := util.GetPassHeaders(ctx)
 		newCtx = util.SetUUID(context.Background(), uuid)
+		newCtx = util.SetPassHeaders(newCtx, hdrs)
 	}
 
 	req := pb.MultiFetchRequest{}

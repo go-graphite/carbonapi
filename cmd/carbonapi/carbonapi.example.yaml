@@ -20,6 +20,11 @@ listen: "localhost:8081"
 #   - "Katakana"
 #   - "Han"
 ##   - "all"
+# Controls headers that would be passed to the backend
+headersToPass:
+  - "X-Dashboard-Id"
+  - "X-Grafana-Org-Id"
+  - "X-Panel-Id"
 # Max concurrent requests to CarbonZipper
 concurency: 20
 cache:

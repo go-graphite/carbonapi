@@ -4,38 +4,40 @@ Table of Contents
 * [General configuration for carbonapi](#general-configuration-for-carbonapi)
   * [listen](#listen)
     * [Example:](#example)
+  * [headersToPass](#headerstopass)
+    * [Example:](#example-1)
   * [unicodeRangeTables](#unicoderangetables)
-    * [Example](#example-1)
-  * [cache](#cache)
     * [Example](#example-2)
-  * [cpus](#cpus)
+  * [cache](#cache)
     * [Example](#example-3)
-  * [tz](#tz)
+  * [cpus](#cpus)
     * [Example](#example-4)
-  * [functionsConfig](#functionsconfig)
+  * [tz](#tz)
     * [Example](#example-5)
-  * [graphite](#graphite)
+  * [functionsConfig](#functionsconfig)
     * [Example](#example-6)
-  * [pidFile](#pidfile)
+  * [graphite](#graphite)
     * [Example](#example-7)
-  * [graphTemplates](#graphtemplates)
+  * [pidFile](#pidfile)
     * [Example](#example-8)
-  * [defaultColors](#defaultcolors)
+  * [graphTemplates](#graphtemplates)
     * [Example](#example-9)
-  * [logger](#logger)
+  * [defaultColors](#defaultcolors)
     * [Example](#example-10)
+  * [logger](#logger)
+    * [Example](#example-11)
 * [Carbonzipper configuration](#carbonzipper-configuration)
   * [concurency](#concurency)
-    * [Example](#example-11)
-  * [maxBatchSize](#maxbatchsize)
     * [Example](#example-12)
+  * [maxBatchSize](#maxbatchsize)
+    * [Example](#example-13)
   * [idleConnections](#idleconnections)
   * [upstreams](#upstreams)
-    * [Example](#example-13)
+    * [Example](#example-14)
       * [For go\-carbon and prometheus](#for-go-carbon-and-prometheus)
       * [For graphite\-clickhouse](#for-graphite-clickhouse)
   * [expireDelaySec](#expiredelaysec)
-    * [Example](#example-14)
+    * [Example](#example-15)
 
 # General configuration for carbonapi
 
@@ -57,6 +59,22 @@ listen: ":8080"
 This will make it available on all IPv4 addresses, port 8080:
 ```yaml
 listen: "0.0.0.0:8080"
+```
+
+***
+## headersToPass
+
+This option controls what headers will be passed to backends.
+
+Default: none
+
+### Example:
+This is example to pass all dashboard/panel ids from Grafana
+```yaml
+headersToPass:
+    - "X-Dashboard-Id"
+    - "X-Grafana-Org-Id"
+    - "X-Panel-Id"
 ```
 
 ***

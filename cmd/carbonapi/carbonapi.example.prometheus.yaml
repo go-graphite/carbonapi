@@ -9,7 +9,10 @@ cache:
        - "127.0.0.2:1235"
 cpus: 0
 tz: ""
-
+headersToPass:
+  - "X-Dashboard-Id"
+  - "X-Grafana-Org-Id"
+  - "X-Panel-Id"
 functionsConfig:
     graphiteWeb: ./graphiteWeb.example.yaml
 maxBatchSize: 100

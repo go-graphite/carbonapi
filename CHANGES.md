@@ -15,6 +15,7 @@ CHANGELOG
 ---------
 **Master**
  - [Improvement] Port 'minValue' parameter handling for nonNegativeDerivative and perSecond: https://github.com/bookingcom/carbonapi/commit/5bfda0d24 and https://github.com/bookingcom/carbonapi/commit/790c05d8
+ - [Improvement] Config option "headersToPass" to control what request headers will be passed to backend (default: none). Fixes #398
  - [Fix] #260 - parsing of bool values as Names.
  - [Fix] Fix limiter waiting for a wrong server in some cases
  - [Code] Cherry-pick https://github.com/bookingcom/carbonapi/pull/172/commits/9f0b3f611 to simplify tests (author: @gksinghjsr)

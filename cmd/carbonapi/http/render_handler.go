@@ -12,7 +12,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/cairo/png"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"github.com/go-graphite/carbonapi/util/ctx"
+	utilctx "github.com/go-graphite/carbonapi/util/ctx"
 
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
@@ -77,7 +77,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: Migrate to context.WithTimeout
 	// ctx, _ := context.WithTimeout(context.TODO(), config.Config.ZipperTimeout)
-	ctx := ctx.SetUUID(r.Context(), uuid.String())
+	ctx := utilctx.SetUUID(r.Context(), uuid.String())
 	username, _, _ := r.BasicAuth()
 
 	logger := zapwriter.Logger("render").With(

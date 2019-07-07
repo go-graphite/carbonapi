@@ -95,7 +95,7 @@ func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, uri strin
 	if err != nil {
 		return nil, err
 	}
-	req = util.MarshalCtx(ctx, util.MarshalCtx(ctx, req, util.HeaderUUIDZipper), util.HeaderUUIDAPI)
+	req = util.MarshalPassHeaders(ctx, util.MarshalCtx(ctx, util.MarshalCtx(ctx, req, util.HeaderUUIDZipper), util.HeaderUUIDAPI))
 
 	logger.Debug("trying to get slot",
 		zap.String("name", server),

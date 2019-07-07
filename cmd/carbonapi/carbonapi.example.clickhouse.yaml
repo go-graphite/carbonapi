@@ -9,6 +9,11 @@
 # or graphite-clickhouse's http url.
 # Listen address, should always include hostname or ip address and a port.
 listen: "localhost:8081"
+# Controls headers that would be passed to the backend
+headersToPass:
+  - "X-Dashboard-Id"
+  - "X-Grafana-Org-Id"
+  - "X-Panel-Id"
 # Max concurrent requests to CarbonZipper
 concurency: 20
 cache:

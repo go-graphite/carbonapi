@@ -41,7 +41,7 @@ func main() {
 
 	config.Config.ZipperInstance = newZipper(carbonapiHttp.ZipperStats, &config.Config.Upstreams, config.Config.IgnoreClientTimeout, zapwriter.Logger("zipper"))
 
-	r := carbonapiHttp.InitHandlers()
+	r := carbonapiHttp.InitHandlers(config.Config.HeadersToPass)
 	handler := handlers.CompressHandler(r)
 	handler = handlers.CORS()(handler)
 	handler = handlers.ProxyHeaders(handler)
