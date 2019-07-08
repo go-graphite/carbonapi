@@ -13,6 +13,9 @@ Changes
 
 CHANGELOG
 ---------
+**0.12.2 (WIP)**
+ - [Fix] Fix stacked cairo-based graphs (doesn't affect json or grafana rendering)
+
 **0.12.1**
  - [Improvement] Port 'minValue' parameter handling for nonNegativeDerivative and perSecond: https://github.com/bookingcom/carbonapi/commit/5bfda0d24 and https://github.com/bookingcom/carbonapi/commit/790c05d8
  - [Improvement] Config option "headersToPass" to control what request headers will be passed to backend (default: none). Fixes #398

@@ -1202,16 +1202,16 @@ func drawGraph(cr *cairoSurfaceContext, params *Params, results []*types.MetricD
 
 			vals := r.AggregatedValues()
 			for i, v := range vals {
-
 				if len(total) <= i {
 					total = append(total, 0)
 				}
 
-				if math.IsNaN(v) {
+				if !math.IsNaN(v) {
 					vals[i] += total[i]
 					total[i] += v
 				}
 			}
+
 			// replace the values for the metric with our newly calculated ones
 			// since these are now post-aggregation, reset the valuesPerPoint
 			r.ValuesPerPoint = 1
