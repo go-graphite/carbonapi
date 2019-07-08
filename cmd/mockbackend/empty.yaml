@@ -1,5 +1,5 @@
 emptyBody: true
-httpCode: 500
+httpCode: 200
 pathExpression: "metric[123]"
 data:
     - metricName: "metric1"

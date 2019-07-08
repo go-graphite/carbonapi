@@ -246,7 +246,7 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 		// TODO(gmagnusson): We'll only see this on the root bg group now.
 		// Let's make this message more useful by logging the request, what
 		// hosts we hit, etc.
-		return nil, nil, errors.Fatalf("failed to get any response from backend group: %v, query: %s", bg.groupName, requestNames)
+		return nil, nil, errors.Errorf("failed to get any response from backend group: %v, query: %s", bg.groupName, requestNames)
 	}
 
 	logger.Debug("got some fetch responses",
