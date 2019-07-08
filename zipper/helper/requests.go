@@ -132,8 +132,8 @@ func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, uri strin
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		logger.Error("status not ok",
+	if resp.StatusCode >= http.StatusInternalServerError {
+		logger.Info("status not ok",
 			zap.Int("status_code", resp.StatusCode),
 		)
 		return nil, fmt.Errorf(types.ErrFailedToFetchFmt, c.groupName, resp.StatusCode, string(body))
@@ -153,7 +153,7 @@ func (c *HttpQuery) DoQuery(ctx context.Context, logger *zap.Logger, uri string,
 	for try := 0; try < maxTries; try++ {
 		res, err := c.doRequest(ctx, logger, uri, r)
 		if err != nil {
-			logger.Error("have errors",
+			logger.Debug("have errors",
 				zap.Error(err),
 			)
 			e.Add(err)
