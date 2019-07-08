@@ -1,5 +1,5 @@
 listen: "localhost:8081"
-concurency: 20
+concurency: 1000
 cache:
    type: "mem"
    size_mb: 0

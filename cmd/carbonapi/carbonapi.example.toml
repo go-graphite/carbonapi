@@ -2,7 +2,7 @@
 # Please note, that only 'yaml' example config guaranteed to be up to date
 # And only 'carbonapi.example.yaml' have comments about all available parameters
 # This file is autoconverted from 'yaml'.
-concurency = 20
+concurency = 1000
 cpus = 0
 expireDelaySec = 10
 idleConnections = 10

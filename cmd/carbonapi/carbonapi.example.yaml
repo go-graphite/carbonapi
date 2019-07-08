@@ -30,7 +30,7 @@ headersToLog:
   - "X-Grafana-Org-Id"
   - "X-Panel-Id"
 # Max concurrent requests to CarbonZipper
-concurency: 20
+concurency: 1000
 cache:
    # Type of caching. Valid: "mem", "memcache", "null"
    type: "mem"

@@ -296,13 +296,19 @@ There are two types of configurations supported:
  1. Old-style - this is the one that was used in standalone zipper or in bookingcom's zipper
  2. New-style - supported since carbonapi 0.12.0 and allows you to specify different type of load-balancing algorithms, etc. 
 ## concurency
-(old-style option)
+Specify max metric requests that can be fetched in parallel.
 
-Specify max metric requests that can be fetched in parallel
+Default: 1000
+
+It's overall recommended to set that value to at least `requests_per_second*average_time_per_request`
+
+If you want to have not more than 20 requests per second (any type of them) and on average request takes about 3 seconds, you should set this value to at least 60.
+
+For high-performance setup it's **not** recommended to set this value to lower than default.
 
 ### Example
 ```yaml
-concurency: 20
+concurency: 1000
 ```
 
 ***

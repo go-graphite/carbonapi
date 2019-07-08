@@ -88,7 +88,7 @@ var Config = ConfigType{
 	ExtrapolateExperiment: false,
 	Listen:                "[::]:8081",
 	Buckets:               10,
-	Concurency:            20,
+	Concurency:            1000,
 	SendGlobsAsIs:         false,
 	AlwaysSendGlobsAsIs:   false,
 	MaxBatchSize:          100,
