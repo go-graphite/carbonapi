@@ -60,6 +60,10 @@ func getFormat(req *http.Request) (responseFormat, error) {
 }
 
 func renderHandler(wr http.ResponseWriter, req *http.Request) {
+	if cfg.Code != http.StatusOK {
+		wr.WriteHeader(cfg.Code)
+		return
+	}
 	format, err := getFormat(req)
 	if err != nil {
 		wr.WriteHeader(http.StatusBadRequest)
@@ -98,6 +102,10 @@ func renderHandler(wr http.ResponseWriter, req *http.Request) {
 	var contentType string
 	switch format {
 	case pickleFormat:
+		contentType = httpHeaders.ContentTypePickle
+		if cfg.EmptyBody {
+			break
+		}
 		var response []map[string]interface{}
 
 		for _, metric := range multiv2.GetMetrics() {
@@ -126,7 +134,6 @@ func renderHandler(wr http.ResponseWriter, req *http.Request) {
 			response = append(response, m)
 		}
 
-		contentType = httpHeaders.ContentTypePickle
 		var buf bytes.Buffer
 		log.Printf("request will be served. format=pickle, data=%+v\n", response)
 		pEnc := pickle.NewEncoder(&buf)
@@ -134,6 +141,9 @@ func renderHandler(wr http.ResponseWriter, req *http.Request) {
 		d = buf.Bytes()
 	case protoV2Format:
 		contentType = httpHeaders.ContentTypeCarbonAPIv2PB
+		if cfg.EmptyBody {
+			break
+		}
 		log.Printf("request will be served. format=protov2, data=%+v\n", multiv2)
 		d, err = multiv2.Marshal()
 		if err != nil {
@@ -143,6 +153,9 @@ func renderHandler(wr http.ResponseWriter, req *http.Request) {
 		}
 	case jsonFormat:
 		contentType = "application/json"
+		if cfg.EmptyBody {
+			break
+		}
 		log.Printf("request will be served. format=json, data=%+v\n", multiv2)
 		d, err = json.Marshal(multiv2)
 		if err != nil {
@@ -161,6 +174,8 @@ type Metric struct {
 }
 
 type Response struct {
+	Code 		   int      `yaml:"httpCode"`
+	EmptyBody      bool     `yaml:"emptyBody"`
 	PathExpression string   `yaml:"pathExpression"`
 	Data           []Metric `yaml:"data"`
 }
@@ -207,6 +222,10 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 		return
+	}
+
+	if cfg.Code == 0 {
+		cfg.Code = http.StatusOK
 	}
 
 	log.Printf("started. config=%v\n", cfg)

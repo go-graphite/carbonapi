@@ -157,10 +157,6 @@ func (c *HttpQuery) DoQuery(ctx context.Context, logger *zap.Logger, uri string,
 				zap.Error(err),
 			)
 			e.Add(err)
-			if ctx.Err() != nil {
-				e.HaveFatalErrors = true
-				return nil, &e
-			}
 			continue
 		}
 

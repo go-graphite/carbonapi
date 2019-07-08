@@ -1,0 +1,4 @@
+pathExpression: "test.metric.株式.rate"
+data:
+    - metricName: "test.metric.株式.rate"
+      values: [1.0, .NaN, 2.0, 3.0, 4.0, 5.0]

@@ -1,0 +1,5 @@
+pathExpression: "seriesByTag('__name__=base.metric1')"
+data:
+    - metricName: "base.metric1;foo=bar;baz=bam"
+      values: [1.0, 2.0, 3.0, 4.0, 5.0]
+
