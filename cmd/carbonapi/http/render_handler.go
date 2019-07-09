@@ -208,9 +208,10 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			mFetch.Until += until32
 
 			if _, ok := metricMap[mFetch]; ok {
-				// already fetched this metric for this request
+				// we already have this metric in fetch queue
 				continue
 			}
+			metricMap[mFetch] = make([]*types.MetricData, 0, 1)
 
 			req.Metrics = append(req.Metrics, pb.FetchRequest{
 				Name:           m.Metric,

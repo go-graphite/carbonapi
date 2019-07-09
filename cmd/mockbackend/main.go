@@ -71,6 +71,9 @@ func renderHandler(wr http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	targets := req.Form["target"]
+	log.Printf("request for target=%+v\n", targets)
+
 	multiv2 := protov2.MultiFetchResponse{
 		Metrics: []protov2.FetchResponse{},
 	}

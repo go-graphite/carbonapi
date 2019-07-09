@@ -15,6 +15,7 @@ CHANGELOG
 ---------
 **0.12.2 (WIP)**
  - [Fix] Fix stacked cairo-based graphs (doesn't affect json or grafana rendering)
+ - [Fix] Correctly deduplicate requests for cases where same metric fetched in the same expression and cache is disabled. Fixes #401
 
 **0.12.1**
  - [Improvement] Port 'minValue' parameter handling for nonNegativeDerivative and perSecond: https://github.com/bookingcom/carbonapi/commit/5bfda0d24 and https://github.com/bookingcom/carbonapi/commit/790c05d8
