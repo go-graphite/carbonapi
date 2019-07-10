@@ -433,7 +433,7 @@ func (f *graphiteWeb) Do(e parser.Expr, from, until int64, values map[parser.Met
 			ConsolidationFunc: m.ConsolidationFunc,
 		}
 		for i, v := range m.Datapoints {
-			pbResp.Values[i] = v[1]
+			pbResp.Values[i] = v[0]
 		}
 		res = append(res, &types.MetricData{
 			FetchResponse: pbResp,
