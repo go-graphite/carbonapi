@@ -223,6 +223,10 @@ func (c *PrometheusGroup) seriesByTagToPromQL(step, target string) (string, stri
 }
 
 func convertGraphiteTargetToPromQL(query string) string {
+	// Special case for query for "*", which is used to get top level metric parts
+	if query == "*" {
+		return ".*"
+	}
 	reQuery := strings.Builder{}
 
 	inGroup := 0
