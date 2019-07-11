@@ -347,7 +347,18 @@ Supported options:
      Requests beyond the last bucket are logged as slow (default of 10 implies "slow" is >1 second).
   
      The last bucket is **not** called 'requests_in_Xms_to_inf' on purpose, so we can change our minds about how many buckets we want to have and have their names remain consistent.
-  -  `timeouts` - structure that allow to set timeout for `find`, `render` and `connect` phases
+  - `timeouts` - structure that allow to set timeout for `find`, `render` and `connect` phases
+  - `backendOptions` - extra options to pass for the backend.
+
+    currently only prometheus backend supports options.
+
+    valid options:
+      - `step` - define default step for the request
+      - `start` - define "start" parameter for `/api/v1/series` requests
+
+        supports either unix timestamp or delta from now(). For delta you should specify it in duration format.
+
+        For example `-5m` will mean "5 minutes ago", time will be resolved every time you do find query.
   - `concurrencyLimitPerServer` - limit of max connections per server. Likely should be >= maxIdleConnsPerHost. Default: 0 - unlimited
   - `maxIdleConnsPerHost` - as we use KeepAlive to keep connections opened, this limits amount of connections that will be left opened. Tune with care as some backends might have issues handling larger number of connections.
   - `keepAliveInterval` - KeepAlive interval
@@ -570,6 +581,9 @@ upstreams:
             lbMethod: "rr"
             maxTries: 3
             maxBatchSize: 0
+            backendOptions:
+                step: "60"
+                start: "-5m"
             keepAliveInterval: "10s"
             concurrencyLimit: 0
             maxIdleConnsPerHost: 1000

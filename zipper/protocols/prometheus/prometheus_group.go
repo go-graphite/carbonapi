@@ -32,6 +32,24 @@ func init() {
 	defer metadata.Metadata.Unlock()
 }
 
+type startDelay struct {
+	IsSet      bool
+	IsDuration bool
+	D          time.Duration
+	T          int64
+	S          string
+}
+
+func (s *startDelay) String() string {
+	if s.IsDuration {
+		return strconv.FormatInt(time.Now().Add(s.D).Unix(), 10)
+	}
+	if s.S == "" {
+		s.S = strconv.FormatInt(s.T, 10)
+	}
+	return s.S
+}
+
 // RoundRobin is used to connect to backends inside clientGroups, implements BackendServer interface
 type PrometheusGroup struct {
 	groupName string
@@ -46,7 +64,8 @@ type PrometheusGroup struct {
 	maxTries             int
 	maxMetricsPerRequest int
 
-	step int64
+	step       int64
+	startDelay startDelay
 
 	httpQuery *helper.HttpQuery
 }
@@ -79,6 +98,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter limiter.
 			if err != nil {
 				logger.Fatal("failed to parse option",
 					zap.String("option_name", "step"),
+					zap.String("option_value", stepNew),
 					zap.Error(err),
 				)
 			}
@@ -88,6 +108,34 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter limiter.
 				zap.String("type_parsed", fmt.Sprintf("%T", stepI)),
 				zap.String("type_expected", "string"),
 			)
+		}
+	}
+
+	startDelay := startDelay{
+		IsSet:      false,
+		IsDuration: false,
+		T:          -1,
+	}
+	startI, ok := config.BackendOptions["start"]
+	if ok {
+		startDelay.IsSet = true
+		startNew, ok := startI.(string)
+		if ok {
+			startNewInt, err := strconv.Atoi(startNew)
+			if err != nil {
+				d, err2 := time.ParseDuration(startNew)
+				if err2 != nil {
+					logger.Fatal("failed to parse option",
+						zap.String("option_name", "start"),
+						zap.String("option_value", startNew),
+						zap.Errors("errors", []error{err, err2}),
+					)
+				}
+				startDelay.IsDuration = true
+				startDelay.D = d
+			} else {
+				startDelay.T = int64(startNewInt)
+			}
 		}
 	}
 
@@ -101,6 +149,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter limiter.
 		maxTries:             *config.MaxTries,
 		maxMetricsPerRequest: config.MaxBatchSize,
 		step:                 step,
+		startDelay:           startDelay,
 
 		client:  httpClient,
 		limiter: limiter,
@@ -166,7 +215,9 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 			stepLocal := step
 			stepLocalStr := stepStr
 			if strings.HasPrefix(target, "seriesByTag") {
-				stepLocalStr, target = c.convertGraphiteQueryToProm(stepLocalStr, target)
+				stepLocalStr, target = c.seriesByTagToPromQL(stepLocalStr, target)
+			} else {
+				target = convertGraphiteTargetToPromQL(target)
 			}
 			if stepLocalStr[len(stepLocalStr)-1] >= '0' && stepLocalStr[len(stepLocalStr)-1] <= '9' {
 				stepLocalStr += "s"
@@ -198,6 +249,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 				"stop":  []string{strconv.Itoa(int(request.Metrics[0].StopTime))},
 				"step":  []string{stepLocalStr},
 			}
+
 			rewrite.RawQuery = v.Encode()
 			res, err2 := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 			if err2 != nil {
@@ -262,15 +314,16 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	uniqueMetrics := make(map[string]bool)
 	for _, query := range request.Metrics {
 		// Convert query to Prometheus-compatible regex
-		reQuery := strings.Replace(query, ".", "\\\\.", -1)
-		reQuery = strings.Replace(query, "*", "[^.][^.]*", -1)
-		if reQuery[len(reQuery)-1] == '*' {
-			reQuery += ".*"
-		}
+		reQuery := convertGraphiteTargetToPromQL(query)
 		matchQuery := "{__name__=~\"" + reQuery + "\"}"
 		v := url.Values{
 			"match[]": []string{matchQuery},
 		}
+
+		if c.startDelay.IsSet {
+			v.Add("start", c.startDelay.String())
+		}
+
 		rewrite.RawQuery = v.Encode()
 		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if err != nil {

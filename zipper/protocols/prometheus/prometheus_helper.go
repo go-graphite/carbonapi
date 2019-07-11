@@ -185,7 +185,7 @@ func (c *PrometheusGroup) promMetricToGraphite(metric map[string]string) string 
 }
 
 // will return step if __step__ is passed
-func (c *PrometheusGroup) convertGraphiteQueryToProm(step, target string) (string, string) {
+func (c *PrometheusGroup) seriesByTagToPromQL(step, target string) (string, string) {
 	firstTag := true
 	var queryBuilder strings.Builder
 	tagsString := target[len("seriesByTag(") : len(target)-1]
@@ -220,4 +220,29 @@ func (c *PrometheusGroup) convertGraphiteQueryToProm(step, target string) (strin
 		queryBuilder.WriteByte('}')
 	}
 	return step, queryBuilder.String()
+}
+
+func convertGraphiteTargetToPromQL(query string) string {
+	reQuery := strings.Builder{}
+
+	inGroup := 0
+	for _, c := range query {
+		switch c {
+		case '.':
+			reQuery.WriteString("\\\\.")
+		case '*':
+			reQuery.WriteString("[^.][^.]*")
+		case '{':
+			reQuery.WriteString("(")
+			inGroup++
+		case ',':
+			reQuery.WriteString("|")
+		case '}':
+			reQuery.WriteString(")")
+		default:
+			reQuery.WriteRune(c)
+		}
+	}
+
+	return reQuery.String()
 }
