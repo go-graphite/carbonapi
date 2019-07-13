@@ -49,6 +49,24 @@ func TestAliasByNode(t *testing.T) {
 			[]*types.MetricData{types.MakeMetricData("100",
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
+		{
+			"aliasSub(metric1.foo.bar.baz, \"foo\", \"replaced\")",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1.foo.bar.baz", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData("metric1.replaced.bar.baz",
+				[]float64{1, 2, 3, 4, 5}, 1, now32)},
+		},
+		// #290
+		{
+			//"aliasSub(*, '.dns.([^.]+).zone.', '\\1 diff to sql')",
+				   "aliasSub(*, 'dns.([^.]*).zone.', '\\1 diff to sql ')",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"*", 0, 1}: {types.MakeMetricData("diffSeries(dns.snake.sql_updated, dns.snake.zone_updated)", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData("diffSeries(dns.snake.sql_updated, snake diff to sql updated)",
+				[]float64{1, 2, 3, 4, 5}, 1, now32)},
+		},
 	}
 
 	for _, tt := range tests {

@@ -1,0 +1,6 @@
+expressions:
+  "m":
+    pathExpression: "m"
+    data:
+        - metricName: "m"
+          values: [2693,1953,1642,1747,1775]

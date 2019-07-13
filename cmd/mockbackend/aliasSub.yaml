@@ -1,0 +1,12 @@
+expressions:
+  "dns.snake.sql_updated":
+    pathExpression: "dns.snake.sql_updated"
+    data:
+        - metricName: "dns.snake.sql_updated"
+          values: [1.0, .NaN, 2.0, 3.0, 4.0, 5.0]
+  "dns.snake.zone_updated":
+    pathExpression: "dns.snake.zone_updated"
+    data:
+        - metricName: "dns.snake.zone_updated"
+          values: [2.0, .NaN, 3.0, .NaN, 5.0, 6.0]
+    

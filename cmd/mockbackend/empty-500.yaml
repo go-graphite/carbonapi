@@ -1,3 +1,2 @@
 emptyBody: true
-httpCode: 200
-
+httpCode: 500
