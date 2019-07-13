@@ -13,12 +13,13 @@ Changes
 
 CHANGELOG
 ---------
-**Master**
+**0.12.3**
  - [Fix] Fix graphiteWeb proxy function (thx. to @sylvain-beugin)
  - [Fix] Prometheus Backend: correctly handle groups, fixes #405
  - [Fix] Prometheus Backend: convert target that doesn't contain seriesByTags in a same way that's used for /metrics/find
  - [Fix] change behavior of aliasSub to match graphite-web (fixes #290)
  - [Improvement] Prometheus backend: Allow to specify "start" parameter (via backendOptions)
+
 **0.12.2**
  - [Fix] Fix stacked cairo-based graphs (doesn't affect json or grafana rendering)
  - [Fix] Correctly deduplicate requests for cases where same metric fetched in the same expression and cache is disabled. Fixes #401
