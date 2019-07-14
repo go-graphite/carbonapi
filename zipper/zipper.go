@@ -395,10 +395,10 @@ func (z Zipper) FetchProtoV3(ctx context.Context, request *protov3.MultiFetchReq
 		z.logger.Debug("had errors while fetching result",
 			zap.Any("errors", e),
 		)
-		return nil, nil, e
+		return nil, stats, e
 	}
 
-	return res, stats, nil
+	return res, stats, merry.WithHTTPCode(e, 200)
 }
 
 func (z Zipper) FindProtoV3(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
@@ -455,6 +455,9 @@ func (z Zipper) FindProtoV3(ctx context.Context, request *protov3.MultiGlobReque
 		z.logger.Debug("had errors while fetching result",
 			zap.Any("errors", e),
 		)
+		if findResponse.Response != nil && len(findResponse.Response.Metrics) > 0 {
+			return findResponse.Response, findResponse.Stats, merry.WithHTTPCode(e, 200)
+		}
 		return nil, stats, e
 	}
 

@@ -220,11 +220,13 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		returnCode := merry.HTTPCode(err)
-		http.Error(w, http.StatusText(returnCode), returnCode)
-		accessLogDetails.HTTPCode = int32(returnCode)
-		accessLogDetails.Reason = err.Error()
-		logAsError = true
-		return
+		if returnCode != http.StatusOK || multiGlobs == nil {
+			http.Error(w, http.StatusText(returnCode), returnCode)
+			accessLogDetails.HTTPCode = int32(returnCode)
+			accessLogDetails.Reason = err.Error()
+			logAsError = true
+			return
+		}
 	}
 	var b []byte
 	var err2 error
