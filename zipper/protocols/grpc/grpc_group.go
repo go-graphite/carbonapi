@@ -56,7 +56,7 @@ func NewClientGRPCGroup(logger *zap.Logger, config types.BackendV2) (types.Backe
 	logger = logger.With(zap.String("type", "grpcGroup"), zap.String("name", config.GroupName))
 	// TODO: Implement normal resolver
 	if len(config.Servers) == 0 {
-		return nil, merry.New("no servers specified")
+		return nil, types.ErrNoServersSpecified
 	}
 	r, cleanup := manual.GenerateAndRegisterManualResolver()
 	var resolvedAddrs []resolver.Address

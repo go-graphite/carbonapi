@@ -22,6 +22,8 @@ var ErrMaxTriesExceeded = merry.New("max tries exceeded")
 var ErrFailedToFetch = merry.New("failed to fetch data from server/group")
 var ErrNoRequests = merry.New("no requests to fetch")
 var ErrNoTagSpecified = merry.New("no tag specified")
+var ErrNoServersSpecified = merry.New("no servers specified")
+var ErrConcurrencyLimitNotSet = merry.New("concurrency limit is not set")
 
 func ReturnNonNotFoundError(errors []merry.Error) []merry.Error {
 	var errList []merry.Error

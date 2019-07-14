@@ -33,7 +33,7 @@ func (bg *BroadcastGroup) Children() []types.BackendServer {
 
 func NewBroadcastGroup(logger *zap.Logger, groupName string, servers []types.BackendServer, expireDelaySec int32, concurrencyLimit, maxBatchSize int, timeout types.Timeouts) (*BroadcastGroup, merry.Error) {
 	if len(servers) == 0 {
-		return nil, merry.New("no servers specified")
+		return nil, types.ErrNoServersSpecified
 	}
 	serverNames := make([]string, 0, len(servers))
 	for _, s := range servers {
@@ -267,7 +267,7 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	)
 
 	var err merry.Error
-	if result.Err != nil {
+	if result.Err != nil && len(result.Err) > 0 {
 		err = types.ErrNonFatalErrors
 		for _, e := range result.Err {
 			err = err.WithCause(e)

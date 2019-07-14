@@ -95,9 +95,12 @@ func (first *ServerTagResponse) MergeI(second ServerFetcherResponse) merry.Error
 }
 
 func (s *ServerTagResponse) AddError(err merry.Error) {
+	if err == nil {
+		return
+	}
 	if s.Err == nil {
 		s.Err = []merry.Error{err}
-	} else if err != nil {
+	} else {
 		s.Err = append(s.Err, err)
 	}
 }
@@ -147,7 +150,6 @@ func NewServerInfoResponse() *ServerInfoResponse {
 	return &ServerInfoResponse{
 		Response: &protov3.ZipperInfoResponse{Info: make(map[string]protov3.MultiMetricsInfoResponse)},
 		Stats:    new(Stats),
-		Err:      make([]merry.Error, 0),
 	}
 }
 
@@ -169,9 +171,12 @@ func (first *ServerInfoResponse) MergeI(second ServerFetcherResponse) merry.Erro
 }
 
 func (s *ServerInfoResponse) AddError(err merry.Error) {
+	if err == nil {
+		return
+	}
 	if s.Err == nil {
 		s.Err = []merry.Error{err}
-	} else if err != nil {
+	} else {
 		s.Err = append(s.Err, err)
 	}
 }
@@ -217,7 +222,6 @@ func NewServerFindResponse() *ServerFindResponse {
 	return &ServerFindResponse{
 		Response: new(protov3.MultiGlobResponse),
 		Stats:    new(Stats),
-		Err:      make([]merry.Error, 0),
 	}
 }
 
@@ -239,9 +243,12 @@ func (first *ServerFindResponse) MergeI(second ServerFetcherResponse) merry.Erro
 }
 
 func (s *ServerFindResponse) AddError(err merry.Error) {
+	if err == nil {
+		return
+	}
 	if s.Err == nil {
 		s.Err = []merry.Error{err}
-	} else if err != nil {
+	} else {
 		s.Err = append(s.Err, err)
 	}
 }
@@ -309,7 +316,6 @@ func NewServerFetchResponse() *ServerFetchResponse {
 	return &ServerFetchResponse{
 		Response: new(protov3.MultiFetchResponse),
 		Stats:    new(Stats),
-		Err:      make([]merry.Error, 0),
 	}
 }
 
@@ -369,9 +375,12 @@ func (first *ServerFetchResponse) MergeI(second ServerFetcherResponse) merry.Err
 }
 
 func (s *ServerFetchResponse) AddError(err merry.Error) {
+	if err == nil {
+		return
+	}
 	if s.Err == nil {
 		s.Err = []merry.Error{err}
-	} else if err != nil {
+	} else {
 		s.Err = append(s.Err, err)
 	}
 }

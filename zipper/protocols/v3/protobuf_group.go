@@ -55,10 +55,10 @@ func (c *ClientProtoV3Group) Children() []types.BackendServer {
 
 func New(logger *zap.Logger, config types.BackendV2) (types.BackendServer, merry.Error) {
 	if config.ConcurrencyLimit == nil {
-		return nil, merry.New("concurency limit is not set")
+		return nil, types.ErrConcurrencyLimitNotSet
 	}
 	if len(config.Servers) == 0 {
-		return nil, merry.New("no servers specified")
+		return nil, types.ErrNoServersSpecified
 	}
 	limiter := limiter.NewServerLimiter([]string{config.GroupName}, *config.ConcurrencyLimit)
 
