@@ -378,7 +378,6 @@ func (c *ClientProtoV2Group) TagValues(ctx context.Context, query string, limit 
 	return c.doTagQuery(ctx, false, query, limit)
 }
 
-// TODO: Implement those requests
 func (c *ClientProtoV2Group) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, merry.Error) {
 	return nil, nil, types.ErrNotImplementedYet
 }
