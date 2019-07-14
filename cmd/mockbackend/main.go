@@ -50,9 +50,9 @@ type Response struct {
 }
 
 type Config struct {
-	Code 		   int      `yaml:"httpCode"`
-	EmptyBody      bool     `yaml:"emptyBody"`
-	Expressions    map[string]Response `yaml:"expressions"`
+	Code        int                 `yaml:"httpCode"`
+	EmptyBody   bool                `yaml:"emptyBody"`
+	Expressions map[string]Response `yaml:"expressions"`
 }
 
 func copyResponse(src Response) Response {
@@ -135,12 +135,12 @@ func renderHandler(wr http.ResponseWriter, req *http.Request) {
 	}
 
 	newCfg := Config{
-		Code: cfg.Code,
-		EmptyBody: cfg.EmptyBody,
+		Code:        cfg.Code,
+		EmptyBody:   cfg.EmptyBody,
 		Expressions: copy(cfg.Expressions),
 	}
 
-	for _, target := range targets{
+	for _, target := range targets {
 		response, ok := newCfg.Expressions[target]
 		if !ok {
 			wr.WriteHeader(http.StatusNotFound)
@@ -291,10 +291,9 @@ func main() {
 		return
 	}
 
-		if cfg.Code == 0 {
-			cfg.Code = http.StatusOK
-		}
-
+	if cfg.Code == 0 {
+		cfg.Code = http.StatusOK
+	}
 
 	log.Printf("started. config=%v\n", cfg)
 

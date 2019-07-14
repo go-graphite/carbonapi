@@ -1,0 +1,15 @@
+language: go
+
+env:
+  - GO111MODULE=on
+
+install:
+  - go get -u golang.org/x/lint/golint
+  - go get -t
+
+go:
+  - 1.9
+  - "1.10"
+  - "1.11"
+  - "1.12"
+  - tip

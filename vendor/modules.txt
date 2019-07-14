@@ -4,6 +4,8 @@ bitbucket.org/tebeka/strftime
 github.com/JaderDias/movingmedian
 # github.com/aclements/go-moremath v0.0.0-20190506201756-286cc0be6f75
 github.com/aclements/go-moremath/mathx
+# github.com/ansel1/merry v1.5.0
+github.com/ansel1/merry
 # github.com/bradfitz/gomemcache v0.0.0-20190329173943-551aad21a668
 github.com/bradfitz/gomemcache/memcache
 # github.com/davecgh/go-spew v1.1.1
@@ -130,6 +132,9 @@ golang.org/x/text/transform
 golang.org/x/text/unicode/norm
 golang.org/x/text/secure/bidirule
 golang.org/x/text/unicode/bidi
+# golang.org/x/xerrors v0.0.0-20190513163551-3ee3066db522
+golang.org/x/xerrors
+golang.org/x/xerrors/internal
 # gonum.org/v1/gonum v0.0.0-20190624220246-e34e6b933b2b
 gonum.org/v1/gonum/mat
 gonum.org/v1/gonum/blas

@@ -3,6 +3,8 @@ package config
 import (
 	"bytes"
 	"expvar"
+	"fmt"
+	"github.com/ansel1/merry"
 	"io/ioutil"
 	"runtime"
 	"strconv"
@@ -53,6 +55,16 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 			zap.Error(err),
 		)
 	}
+
+	needStackTrace := false
+	for _, l := range Config.Logger {
+		if strings.ToLower(l.Level) == "debug" {
+			needStackTrace = true
+			break
+		}
+	}
+	fmt.Printf("\n\n\n\n\nneedStackTrace=%v\n\n\n\n", needStackTrace)
+	merry.SetStackCaptureEnabled(needStackTrace)
 
 	if Config.GraphTemplates != "" {
 		graphTemplates = make(map[string]png.PictureParams)

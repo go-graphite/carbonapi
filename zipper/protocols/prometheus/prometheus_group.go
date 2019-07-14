@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/ansel1/merry"
 	"github.com/go-graphite/carbonapi/limiter"
-	"github.com/go-graphite/carbonapi/zipper/errors"
 	"github.com/go-graphite/carbonapi/zipper/helper"
 	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 	"github.com/go-graphite/carbonapi/zipper/metadata"
@@ -70,7 +70,7 @@ type PrometheusGroup struct {
 	httpQuery *helper.HttpQuery
 }
 
-func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter limiter.ServerLimiter) (types.BackendServer, *errors.Errors) {
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter limiter.ServerLimiter) (types.BackendServer, merry.Error) {
 	logger = logger.With(zap.String("type", "prometheus"), zap.String("protocol", config.Protocol), zap.String("name", config.GroupName))
 
 	logger.Warn("support for this backend protocol is experimental, use with caution")
@@ -81,7 +81,6 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter limiter.
 			DialContext: (&net.Dialer{
 				Timeout:   config.Timeouts.Connect,
 				KeepAlive: *config.KeepAliveInterval,
-				DualStack: true,
 			}).DialContext,
 		},
 	}
@@ -160,12 +159,12 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter limiter.
 	return c, nil
 }
 
-func New(logger *zap.Logger, config types.BackendV2) (types.BackendServer, *errors.Errors) {
+func New(logger *zap.Logger, config types.BackendV2) (types.BackendServer, merry.Error) {
 	if config.ConcurrencyLimit == nil {
-		return nil, errors.Fatal("concurency limit is not set")
+		return nil, merry.New("concurency limit is not set")
 	}
 	if len(config.Servers) == 0 {
-		return nil, errors.Fatal("no servers specified")
+		return nil, merry.New("no servers specified")
 	}
 	l := limiter.NewServerLimiter([]string{config.GroupName}, *config.ConcurrencyLimit)
 
@@ -188,7 +187,7 @@ func (c PrometheusGroup) Backends() []string {
 	return c.servers
 }
 
-func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, *errors.Errors) {
+func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, merry.Error) {
 	logger := c.logger.With(zap.String("type", "fetch"), zap.String("request", request.String()))
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/api/v1/query_range")
@@ -200,7 +199,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	}
 
 	var r protov3.MultiFetchResponse
-	e := errors.Errors{}
+	var e merry.Error
 	// TODO: Do something clever with "step"
 	step := c.step
 	stepStr := strconv.FormatInt(step, 10)
@@ -228,7 +227,9 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 					zap.String("step", stepLocalStr),
 					zap.Error(err),
 				)
-				e.Add(err)
+				if e == nil {
+					e = merry.Wrap(err)
+				}
 				continue
 			}
 			stepLocal = int64(t.Seconds())
@@ -253,8 +254,11 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 			rewrite.RawQuery = v.Encode()
 			res, err2 := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 			if err2 != nil {
-				err2.HaveFatalErrors = false
-				e.Merge(err2)
+				if e == nil {
+					e = err2
+				} else {
+					e = e.WithCause(err2)
+				}
 				continue
 			}
 
@@ -264,12 +268,20 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 				c.logger.Debug("failed to unmarshal response",
 					zap.Error(err),
 				)
-				e.Add(err)
+				if e == nil {
+					e = err2
+				} else {
+					e = e.WithCause(err2)
+				}
 				continue
 			}
 
 			if response.Status != "success" {
-				e.Addf("query=%s, err=%s", target, response.Status)
+				if e == nil {
+					e = types.ErrFailedToFetch.WithMessage(response.Status).WithValue("query", target).WithValue("status", response.Status)
+				} else {
+					e = e.WithCause(err2).WithValue("query", target).WithValue("status", response.Status)
+				}
 				continue
 			}
 
@@ -293,16 +305,16 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 		}
 	}
 
-	if len(e.Errors) != 0 {
+	if e != nil {
 		logger.Error("errors occurred while getting results",
-			zap.Any("errors", e.Errors),
+			zap.Any("errors", e),
 		)
-		return &r, stats, &e
+		return &r, stats, e
 	}
 	return &r, stats, nil
 }
 
-func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, *errors.Errors) {
+func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
 	logger := c.logger.With(zap.String("type", "find"), zap.Strings("request", request.Metrics))
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/api/v1/series")
@@ -310,7 +322,7 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	r := protov3.MultiGlobResponse{
 		Metrics: make([]protov3.GlobResponse, 0),
 	}
-	e := errors.Errors{}
+	var e merry.Error
 	uniqueMetrics := make(map[string]bool)
 	for _, query := range request.Metrics {
 		// Convert query to Prometheus-compatible regex
@@ -327,7 +339,11 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 		rewrite.RawQuery = v.Encode()
 		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if err != nil {
-			e.Merge(err)
+			if e == nil {
+				e = err
+			} else {
+				e = e.WithCause(err)
+			}
 			continue
 		}
 
@@ -335,12 +351,20 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 
 		err2 := json.Unmarshal(res.Response, &pr)
 		if err2 != nil {
-			e.Add(err2)
+			if e == nil {
+				e = err
+			} else {
+				e = e.WithCause(err)
+			}
 			continue
 		}
 
 		if pr.Status != "success" {
-			e.Addf("status=%s, errorType=%s, error=%s", pr.Status, pr.ErrorType, pr.Error)
+			if e == nil {
+				e = types.ErrFailedToFetch.WithMessage(pr.Error).WithValue("query", matchQuery).WithValue("error_type", pr.ErrorType).WithValue("error", pr.Error)
+			} else {
+				e = e.WithCause(err2).WithValue("query", matchQuery).WithValue("error_type", pr.ErrorType).WithValue("error", pr.Error)
+			}
 			continue
 		}
 
@@ -377,30 +401,27 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 		}
 	}
 
-	if len(r.Metrics) == 0 {
-		e.Add(types.ErrNoResponseFetched)
-	}
-	if len(e.Errors) != 0 {
+	if e != nil {
 		logger.Error("errors occurred while getting results",
-			zap.Any("errors", e.Errors),
+			zap.Any("errors", e),
 		)
-		return &r, stats, &e
+		return &r, stats, e
 	}
 	return &r, stats, nil
 }
 
-func (c *PrometheusGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, *errors.Errors) {
-	return nil, nil, errors.FromErr(types.ErrNotSupportedByBackend)
+func (c *PrometheusGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, merry.Error) {
+	return nil, nil, types.ErrNotSupportedByBackend
 }
 
-func (c *PrometheusGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, *errors.Errors) {
-	return nil, nil, errors.FromErr(types.ErrNotImplementedYet)
+func (c *PrometheusGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, merry.Error) {
+	return nil, nil, types.ErrNotImplementedYet
 }
-func (c *PrometheusGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, *errors.Errors) {
-	return nil, nil, errors.FromErr(types.ErrNotSupportedByBackend)
+func (c *PrometheusGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, merry.Error) {
+	return nil, nil, types.ErrNotSupportedByBackend
 }
 
-func (c *PrometheusGroup) doSimpleTagQuery(ctx context.Context, logger *zap.Logger, isTagName bool, params map[string][]string, limit int64) ([]string, *errors.Errors) {
+func (c *PrometheusGroup) doSimpleTagQuery(ctx context.Context, logger *zap.Logger, isTagName bool, params map[string][]string, limit int64) ([]string, merry.Error) {
 	var rewrite *url.URL
 
 	if isTagName {
@@ -411,7 +432,7 @@ func (c *PrometheusGroup) doSimpleTagQuery(ctx context.Context, logger *zap.Logg
 		if tag, ok := params["tag"]; ok {
 			rewrite, _ = url.Parse(fmt.Sprintf("http://127.0.0.1/api/v1/label/%s/values", tag[0]))
 		} else {
-			return []string{}, errors.Fatal("no tag specified")
+			return []string{}, types.ErrNoTagSpecified
 		}
 	}
 
@@ -424,11 +445,11 @@ func (c *PrometheusGroup) doSimpleTagQuery(ctx context.Context, logger *zap.Logg
 
 	err := json.Unmarshal(res.Response, &r)
 	if err != nil {
-		return []string{}, errors.FromErr(err)
+		return []string{}, merry.Wrap(err)
 	}
 
 	if r.Status != "success" {
-		return []string{}, errors.Errorf("status=%s, errorType=%s, error=%s", r.Status, r.ErrorType, r.Error)
+		return []string{}, merry.New("request returned an error").WithValue("status", r.Status).WithValue("error_type", r.ErrorType).WithValue("error", r.Error)
 	}
 
 	if isTagName {
@@ -464,7 +485,7 @@ func (c *PrometheusGroup) doSimpleTagQuery(ctx context.Context, logger *zap.Logg
 	return r.Data, nil
 }
 
-func (c *PrometheusGroup) doComplexTagQuery(ctx context.Context, isTagName bool, params map[string][]string, limit int64) ([]string, *errors.Errors) {
+func (c *PrometheusGroup) doComplexTagQuery(ctx context.Context, isTagName bool, params map[string][]string, limit int64) ([]string, merry.Error) {
 	logger := c.logger
 	var rewrite *url.URL
 
@@ -473,7 +494,7 @@ func (c *PrometheusGroup) doComplexTagQuery(ctx context.Context, isTagName bool,
 	} else {
 		logger = logger.With(zap.String("type", "tagValues"))
 		if _, ok := params["tag"]; !ok {
-			return []string{}, errors.Fatal("no tag specified")
+			return []string{}, types.ErrNoTagSpecified
 		}
 	}
 
@@ -499,11 +520,11 @@ func (c *PrometheusGroup) doComplexTagQuery(ctx context.Context, isTagName bool,
 
 	err := json.Unmarshal(res.Response, &r)
 	if err != nil {
-		return []string{}, errors.FromErr(err)
+		return []string{}, merry.Wrap(err)
 	}
 
 	if r.Status != "success" {
-		return []string{}, errors.Errorf("status=%s, errorType=%s, error=%s", r.Status, r.ErrorType, r.Error)
+		return []string{}, merry.New("request returned an error").WithValue("status", r.Status).WithValue("error_type", r.ErrorType).WithValue("error", r.Error)
 	}
 
 	var prefix string
@@ -553,7 +574,7 @@ func (c *PrometheusGroup) doComplexTagQuery(ctx context.Context, isTagName bool,
 	return result, nil
 }
 
-func (c *PrometheusGroup) doTagQuery(ctx context.Context, isTagName bool, query string, limit int64) ([]string, *errors.Errors) {
+func (c *PrometheusGroup) doTagQuery(ctx context.Context, isTagName bool, query string, limit int64) ([]string, merry.Error) {
 	logger := c.logger
 	params := make(map[string][]string)
 	queryDecoded, _ := url.QueryUnescape(query)
@@ -585,15 +606,15 @@ func (c *PrometheusGroup) doTagQuery(ctx context.Context, isTagName bool, query 
 	return c.doComplexTagQuery(ctx, isTagName, params, limit)
 }
 
-func (c *PrometheusGroup) TagNames(ctx context.Context, query string, limit int64) ([]string, *errors.Errors) {
+func (c *PrometheusGroup) TagNames(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
 	return c.doTagQuery(ctx, true, query, limit)
 }
 
-func (c *PrometheusGroup) TagValues(ctx context.Context, query string, limit int64) ([]string, *errors.Errors) {
+func (c *PrometheusGroup) TagValues(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
 	return c.doTagQuery(ctx, false, query, limit)
 }
 
-func (c *PrometheusGroup) ProbeTLDs(ctx context.Context) ([]string, *errors.Errors) {
+func (c *PrometheusGroup) ProbeTLDs(ctx context.Context) ([]string, merry.Error) {
 	logger := c.logger.With(zap.String("function", "prober"))
 	req := &protov3.MultiGlobRequest{
 		Metrics: []string{"*"},

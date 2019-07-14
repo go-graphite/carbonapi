@@ -1,6 +1,7 @@
 package http
 
 import (
+	"github.com/ansel1/merry"
 	"net/http"
 	"strconv"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/cairo/png"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
+	// zipperErrors "github.com/go-graphite/carbonapi/zipper/types"
 	utilctx "github.com/go-graphite/carbonapi/util/ctx"
 
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
@@ -177,17 +179,12 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var results []*types.MetricData
-	errors := make(map[string]string)
+	errors := make(map[string]merry.Error)
 	metricMap := make(map[parser.MetricRequest][]*types.MetricData)
 
 	var metrics []string
 	// Iterate over all targets, check if we need to fetch them
-	// TODO(civil): replace loop with 'for targetIdx := 0; targetIdx < len(targets); targetIdx++'
-	var targetIdx = 0
-	for targetIdx < len(targets) {
-		var target = targets[targetIdx]
-		targetIdx++
-
+	for _, target := range targets {
 		exp, e, err := parser.ParseExpr(target)
 
 		// if expression cannot be parsed return error
@@ -233,7 +230,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 				accessLogDetails.TotalMetricsCount += stats.TotalMetricsCount
 			}
 			if err != nil {
-				errors[target] = err.Error()
+				errors[target] = err
 			}
 
 			config.Config.Limiter.Leave()
@@ -272,8 +269,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		var newTargets []string
 
 		rewritten, newTargets, err = expr.RewriteExpr(exp, from32, until32, metricMap)
-		if err != nil && err != parser.ErrSeriesDoesNotExist {
-			errors[target] = err.Error()
+		if err != nil && !merry.Is(err, parser.ErrSeriesDoesNotExist) {
+			errors[target] = merry.Wrap(err)
 			accessLogDetails.Reason = err.Error()
 			logAsError = true
 			return
@@ -293,8 +290,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 					}
 				}()
 				expressions, err := expr.EvalExpr(exp, from32, until32, metricMap)
-				if err != nil && err != parser.ErrSeriesDoesNotExist {
-					errors[target] = err.Error()
+				if err != nil && !merry.Is(err, parser.ErrSeriesDoesNotExist) {
+					errors[target] = merry.Wrap(err)
 					accessLogDetails.Reason = err.Error()
 					logAsError = true
 					return
@@ -306,9 +303,20 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	var body []byte
 
+	returnCode := http.StatusOK
 	if len(results) == 0 {
-		logger.Info("empty response or no response")
-		results = append(results, &types.MetricData{})
+		// Obtain error code from the errors
+		// In case we have only "Not Found" errors, result should be 404
+		// Otherwise it should be 500
+		for _, err := range errors {
+			if returnCode < 500 {
+				returnCode = merry.HTTPCode(err)
+			}
+		}
+		logger.Debug("empty response or no response")
+		setError(w, accessLogDetails, "empty or no response", returnCode)
+		logAsError = true
+		return
 	}
 
 	switch format {
@@ -337,6 +345,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		body = png.MarshalSVGRequest(r, results, template)
 	}
 
+	w.WriteHeader(returnCode)
 	writeResponse(w, body, format, jsonp)
 
 	if len(results) != 0 {

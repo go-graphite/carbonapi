@@ -78,7 +78,7 @@ func main() {
 				})
 
 				if err != nil {
-					logger.Fatal("gracehttp failed",
+					logger.Fatal("failed to start http server",
 						zap.Error(err),
 					)
 				}

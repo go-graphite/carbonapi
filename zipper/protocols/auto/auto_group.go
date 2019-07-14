@@ -2,6 +2,7 @@ package auto
 
 import (
 	"context"
+	"github.com/ansel1/merry"
 	"net"
 	"net/http"
 	"net/url"
@@ -9,7 +10,6 @@ import (
 
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/zipper/broadcast"
-	"github.com/go-graphite/carbonapi/zipper/errors"
 	"github.com/go-graphite/carbonapi/zipper/helper"
 	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 	"github.com/go-graphite/carbonapi/zipper/metadata"
@@ -141,11 +141,11 @@ type AutoGroup struct {
 	groupName string
 }
 
-func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter limiter.ServerLimiter) (types.BackendServer, *errors.Errors) {
-	return nil, errors.Fatal("auto group doesn't support anything useful except for New")
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter limiter.ServerLimiter) (types.BackendServer, merry.Error) {
+	return nil, merry.New("auto group doesn't support anything useful except for New")
 }
 
-func New(logger *zap.Logger, config types.BackendV2) (types.BackendServer, *errors.Errors) {
+func New(logger *zap.Logger, config types.BackendV2) (types.BackendServer, merry.Error) {
 	logger = logger.With(zap.String("type", "autoGroup"), zap.String("name", config.GroupName))
 
 	limit := 100
@@ -154,7 +154,7 @@ func New(logger *zap.Logger, config types.BackendV2) (types.BackendServer, *erro
 	}
 	res := getBestSupportedProtocol(logger, config.Servers, limit)
 	if res == nil {
-		return nil, errors.Fatalf("can't query all backend")
+		return nil, merry.New("can't query all backend")
 	}
 
 	var broadcastClients []types.BackendServer
@@ -174,14 +174,14 @@ func New(logger *zap.Logger, config types.BackendV2) (types.BackendServer, *erro
 				zap.String("requested_protocol", proto),
 				zap.Strings("supported_backends", protocols),
 			)
-			return nil, errors.Fatalf("unknown backend protocol '%v'", proto)
+			return nil, merry.New("unknown backend protocol").WithValue("protocol", proto)
 		}
 
 		cfg := config
 		cfg.GroupName = config.GroupName + "_" + proto
 		cfg.Servers = servers
 		c, ePtr := backendInit(logger, cfg)
-		if ePtr != nil && ePtr.HaveFatalErrors {
+		if ePtr != nil {
 			return nil, ePtr
 		}
 
@@ -203,33 +203,33 @@ func (c AutoGroup) Backends() []string {
 	return nil
 }
 
-func (c *AutoGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, *errors.Errors) {
-	return nil, nil, errors.Fatal("auto group doesn't support fetch")
+func (c *AutoGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, merry.Error) {
+	return nil, nil, merry.New("auto group doesn't support fetch")
 }
 
-func (c *AutoGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, *errors.Errors) {
-	return nil, nil, errors.Fatal("auto group doesn't support find")
+func (c *AutoGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
+	return nil, nil, merry.New("auto group doesn't support find")
 }
 
-func (c *AutoGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, *errors.Errors) {
-	return nil, nil, errors.Fatal("auto group doesn't support info")
+func (c *AutoGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, merry.Error) {
+	return nil, nil, merry.New("auto group doesn't support info")
 }
 
-func (c *AutoGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, *errors.Errors) {
-	return nil, nil, errors.Fatal("auto group doesn't support list")
+func (c *AutoGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, merry.Error) {
+	return nil, nil, merry.New("auto group doesn't support list")
 }
-func (c *AutoGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, *errors.Errors) {
-	return nil, nil, errors.FromErr(types.ErrNotImplementedYet)
-}
-
-func (bg *AutoGroup) TagNames(ctx context.Context, prefix string, exprs []string, limit int64) ([]string, *errors.Errors) {
-	return nil, errors.Fatal("auto group doesn't support tag names")
+func (c *AutoGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, merry.Error) {
+	return nil, nil, merry.New("auto group doesn't support stats")
 }
 
-func (bg *AutoGroup) TagValues(ctx context.Context, tagName string, prefix string, exprs []string, limit int64) ([]string, *errors.Errors) {
-	return nil, errors.Fatal("auto group doesn't support tag values")
+func (bg *AutoGroup) TagNames(ctx context.Context, prefix string, exprs []string, limit int64) ([]string, merry.Error) {
+	return nil, merry.New("auto group doesn't support tag names")
 }
 
-func (c *AutoGroup) ProbeTLDs(ctx context.Context) ([]string, *errors.Errors) {
-	return nil, errors.Fatal("auto group doesn't support probing")
+func (bg *AutoGroup) TagValues(ctx context.Context, tagName string, prefix string, exprs []string, limit int64) ([]string, merry.Error) {
+	return nil, merry.New("auto group doesn't support tag values")
+}
+
+func (c *AutoGroup) ProbeTLDs(ctx context.Context) ([]string, merry.Error) {
+	return nil, merry.New("auto group doesn't support probing")
 }
