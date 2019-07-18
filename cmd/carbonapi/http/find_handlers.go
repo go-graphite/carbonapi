@@ -221,6 +221,10 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		returnCode := merry.HTTPCode(err)
 		if returnCode != http.StatusOK || multiGlobs == nil {
+			// Allow override status code for 404-not-found replies.
+			if returnCode == 404 {
+				returnCode = config.Config.NotFoundStatusCode
+			}
 			http.Error(w, http.StatusText(returnCode), returnCode)
 			accessLogDetails.HTTPCode = int32(returnCode)
 			accessLogDetails.Reason = err.Error()

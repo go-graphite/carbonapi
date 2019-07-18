@@ -314,6 +314,10 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		logger.Debug("empty response or no response")
+		// Allow override status code for 404-not-found replies.
+		if returnCode == 404 {
+			returnCode = config.Config.NotFoundStatusCode
+		}
 		setError(w, accessLogDetails, "empty or no response", returnCode)
 		logAsError = true
 		return

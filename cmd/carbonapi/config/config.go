@@ -76,6 +76,7 @@ type ConfigType struct {
 	Define                     []Define           `mapstructure:"define"`
 	Prefix                     string             `mapstructure:"prefix"`
 	Expvar                     ExpvarConfig       `mapstructure:"expvar"`
+	NotFoundStatusCode         int                `mapstructure:"notFoundStatusCode"`
 
 	QueryCache cache.BytesCache `mapstructure:"-" json:"-"`
 	FindCache  cache.BytesCache `mapstructure:"-" json:"-"`
@@ -145,4 +146,5 @@ var Config = ConfigType{
 		Enabled:      true,
 		PProfEnabled: false,
 	},
+	NotFoundStatusCode: 404,
 }

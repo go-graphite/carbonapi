@@ -12,40 +12,42 @@ Table of Contents
     * [Example:](#example-3)
   * [headersToLog](#define)
     * [Example:](#example-4)
+  * [notFoundStatusCode](#notfoundstatuscode)
+    * [Example:](#example-5)
   * [unicodeRangeTables](#unicoderangetables)
-    * [Example](#example-5)
-  * [cache](#cache)
     * [Example](#example-6)
-  * [cpus](#cpus)
+  * [cache](#cache)
     * [Example](#example-7)
-  * [tz](#tz)
+  * [cpus](#cpus)
     * [Example](#example-8)
-  * [functionsConfig](#functionsconfig)
+  * [tz](#tz)
     * [Example](#example-9)
-  * [graphite](#graphite)
+  * [functionsConfig](#functionsconfig)
     * [Example](#example-10)
-  * [pidFile](#pidfile)
+  * [graphite](#graphite)
     * [Example](#example-11)
-  * [graphTemplates](#graphtemplates)
+  * [pidFile](#pidfile)
     * [Example](#example-12)
-  * [defaultColors](#defaultcolors)
+  * [graphTemplates](#graphtemplates)
     * [Example](#example-13)
-  * [expvar](#expvar)
+  * [defaultColors](#defaultcolors)
     * [Example](#example-14)
-  * [logger](#logger)
+  * [expvar](#expvar)
     * [Example](#example-15)
+  * [logger](#logger)
+    * [Example](#example-16)
 * [Carbonzipper configuration](#carbonzipper-configuration)
   * [concurency](#concurency)
-    * [Example](#example-16)
-  * [maxBatchSize](#maxbatchsize)
     * [Example](#example-17)
+  * [maxBatchSize](#maxbatchsize)
+    * [Example](#example-18)
   * [idleConnections](#idleconnections)
   * [upstreams](#upstreams)
-    * [Example](#example-18)
+    * [Example](#example-19)
       * [For go\-carbon and prometheus](#for-go-carbon-and-prometheus)
       * [For graphite\-clickhouse](#for-graphite-clickhouse)
   * [expireDelaySec](#expiredelaysec)
-    * [Example](#example-19)
+    * [Example](#example-20)
 
 # General configuration for carbonapi
 
@@ -110,6 +112,25 @@ Headers will be appended to access log and to any other carbonapi logs for this 
 They won't be logged at zipper's level (currently).
 
 Default: none
+
+### Example:
+This is example to log all dashboard/panel ids from Grafana
+```yaml
+headersToLog:
+    - "X-Dashboard-Id"
+    - "X-Grafana-Org-Id"
+    - "X-Panel-Id"
+```
+
+***
+## notFoundStatusCode
+
+This option controls what status code will be returned if `/render` or `/metrics/find` won't return any metrics 
+
+In some cases someone would like to override this to "200". Example use case - when you create a dashboard before
+service starts to send any data out and don't want to have errors from Grafana.
+
+Default: 404
 
 ### Example:
 This is example to log all dashboard/panel ids from Grafana
