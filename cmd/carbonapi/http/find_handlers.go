@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/ansel1/merry"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/ansel1/merry"
 
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
@@ -225,11 +226,15 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 			if returnCode == 404 {
 				returnCode = config.Config.NotFoundStatusCode
 			}
-			http.Error(w, http.StatusText(returnCode), returnCode)
-			accessLogDetails.HTTPCode = int32(returnCode)
-			accessLogDetails.Reason = err.Error()
-			logAsError = true
-			return
+			if returnCode < 300 {
+				multiGlobs = &pb.MultiGlobResponse{Metrics: []pb.GlobResponse{}}
+			} else {
+				http.Error(w, http.StatusText(returnCode), returnCode)
+				accessLogDetails.HTTPCode = int32(returnCode)
+				accessLogDetails.Reason = err.Error()
+				logAsError = true
+				return
+			}
 		}
 	}
 	var b []byte

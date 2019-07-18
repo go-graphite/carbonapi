@@ -317,10 +317,15 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		// Allow override status code for 404-not-found replies.
 		if returnCode == 404 {
 			returnCode = config.Config.NotFoundStatusCode
+
 		}
-		setError(w, accessLogDetails, "empty or no response", returnCode)
-		logAsError = true
-		return
+		if returnCode < 300 {
+			results = append(results, &types.MetricData{})
+		} else {
+			setError(w, accessLogDetails, "empty or no response", returnCode)
+			logAsError = true
+			return
+		}
 	}
 
 	switch format {
