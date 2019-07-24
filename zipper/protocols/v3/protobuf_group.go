@@ -244,6 +244,9 @@ func (c *ClientProtoV3Group) doTagQuery(ctx context.Context, isTagName bool, que
 
 	err := json.Unmarshal(res.Response, &r)
 	if err != nil {
+		if e == nil {
+			e = &errors.Errors{}
+		}
 		e.Add(err)
 		return r, e
 	}
