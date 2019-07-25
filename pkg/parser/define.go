@@ -5,30 +5,28 @@ import (
 	"text/template"
 )
 
-type defineImpl struct {
+type defineStruct struct {
 	tpl *template.Template
 }
 
-type Define interface {
-	Expand(Expr) (Expr, error)
+var defineMap = &defineStruct{tpl: template.New("define")}
+
+// Define new template
+func Define(name string, tmpl string) error {
+	return defineMap.define(name, tmpl)
 }
 
-// NewDefine compiles define templates
-func NewDefine(defineMap map[string]string) (Define, error) {
-	tpl := template.New("define")
-
-	for name, value := range defineMap {
-		t := tpl.New(name)
-		_, err := t.Parse(value)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return &defineImpl{tpl: tpl}, nil
+func defineCleanUp() {
+	defineMap = &defineStruct{tpl: template.New("define")}
 }
 
-func (d *defineImpl) expandExpr(exp *expr) (*expr, error) {
+func (d *defineStruct) define(name string, tmpl string) error {
+	t := d.tpl.New(name)
+	_, err := t.Parse(tmpl)
+	return err
+}
+
+func (d *defineStruct) expandExpr(exp *expr) (*expr, error) {
 	if exp == nil {
 		return exp, nil
 	}
@@ -81,7 +79,7 @@ func (d *defineImpl) expandExpr(exp *expr) (*expr, error) {
 	return exp, nil
 }
 
-func (d *defineImpl) Expand(v Expr) (Expr, error) {
+func (d *defineStruct) Expand(v Expr) (Expr, error) {
 	exp, ok := v.(*expr)
 	if !ok {
 		return v, nil

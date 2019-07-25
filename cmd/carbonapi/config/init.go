@@ -242,6 +242,19 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 			zap.String("reason", "this feature is highly experimental and untested"),
 		)
 	}
+
+	for _, define := range Config.Define {
+		if define.Name == "" {
+			logger.Fatal("empty define name")
+		}
+		err := parser.Define(define.Name, define.Template)
+		if err != nil {
+			logger.Fatal("unable to compile define template",
+				zap.Error(err),
+				zap.String("template", define.Template),
+			)
+		}
+	}
 }
 
 func SetUpViper(logger *zap.Logger, configPath *string, viperPrefix string) {

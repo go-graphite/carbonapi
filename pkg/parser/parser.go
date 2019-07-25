@@ -449,13 +449,22 @@ func parseExprWithoutPipe(e string) (Expr, string, error) {
 	return &expr{target: name}, e, nil
 }
 
-// ParseExpr actually do all the parsing. It returns expression, original string and error (if any)
-func ParseExpr(e string) (Expr, string, error) {
+func parseExprInner(e string) (Expr, string, error) {
 	exp, e, err := parseExprWithoutPipe(e)
 	if err != nil {
 		return exp, e, err
 	}
 	return pipe(exp.(*expr), e)
+}
+
+// ParseExpr actually do all the parsing. It returns expression, original string and error (if any)
+func ParseExpr(e string) (Expr, string, error) {
+	exp, e, err := parseExprInner(e)
+	if err != nil {
+		return exp, e, err
+	}
+	exp, err = defineMap.expandExpr(exp.(*expr))
+	return exp, e, err
 }
 
 func pipe(exp *expr, e string) (*expr, string, error) {
@@ -529,7 +538,7 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 		var err error
 
 		argString := e
-		arg, e, err = ParseExpr(e)
+		arg, e, err = parseExprInner(e)
 		if err != nil {
 			return "", nil, nil, e, err
 		}
@@ -541,7 +550,7 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 		// we now know we're parsing a key-value pair
 		if arg.IsName() && e[0] == '=' {
 			e = e[1:]
-			argCont, eCont, errCont := ParseExpr(e)
+			argCont, eCont, errCont := parseExprInner(e)
 			if errCont != nil {
 				return "", nil, nil, eCont, errCont
 			}

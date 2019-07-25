@@ -9,12 +9,12 @@ import (
 func TestDefineExpand(t *testing.T) {
 	assert := assert.New(t)
 
-	defineMap := map[string]string{
-		"constMetric": "metric.name",
-		"perMinute":   "perSecond({{.argString}})|scale(60)",
-		"funcAlias":   "funcOrig({{index .args 0}},{{index .args 1}})",
-		"funcAlias2":  "funcOrig2({{index .args 0}},{{index .kwargs \"key\"}})",
-	}
+	defer defineCleanUp()
+
+	assert.NoError(Define("constMetric", "metric.name"))
+	assert.NoError(Define("perMinute", "perSecond({{.argString}})|scale(60)"))
+	assert.NoError(Define("funcAlias", "funcOrig({{index .args 0}},{{index .args 1}})"))
+	assert.NoError(Define("funcAlias2", "funcOrig2({{index .args 0}},{{index .kwargs \"key\"}})"))
 
 	tests := []struct {
 		s string
@@ -101,21 +101,10 @@ func TestDefineExpand(t *testing.T) {
 		},
 	}
 
-	d, err := NewDefine(defineMap)
-	if err != nil {
-		t.Errorf("compile defines failed: err=%v", err)
-		return
-	}
-
 	for _, tt := range tests {
 		e, _, err := ParseExpr(tt.s)
 		if err != nil {
 			t.Errorf("parse for %+v failed: err=%v", tt.s, err)
-			continue
-		}
-		e, err = d.Expand(e)
-		if err != nil {
-			t.Errorf("expand for %+v failed: err=%v", tt.s, err)
 			continue
 		}
 

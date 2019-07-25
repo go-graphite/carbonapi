@@ -36,6 +36,11 @@ type GraphiteConfig struct {
 	Prefix   string
 }
 
+type Define struct {
+	Name     string `mapstructure:"name"`
+	Template string `mapstructure:"template"`
+}
+
 type ConfigType struct {
 	ExtrapolateExperiment      bool               `mapstructure:"extrapolateExperiment"`
 	Logger                     []zapwriter.Config `mapstructure:"logger"`
@@ -62,6 +67,7 @@ type ConfigType struct {
 	FunctionsConfigs           map[string]string  `mapstructure:"functionsConfig"`
 	HeadersToPass              []string           `mapstructure:"headersToPass"`
 	HeadersToLog               []string           `mapstructure:"headersToLog"`
+	Define                     []Define           `mapstructure:"define"`
 
 	QueryCache cache.BytesCache `mapstructure:"-" json:"-"`
 	FindCache  cache.BytesCache `mapstructure:"-" json:"-"`
