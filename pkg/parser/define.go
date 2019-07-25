@@ -54,7 +54,7 @@ func (d *defineStruct) expandExpr(exp *expr) (*expr, error) {
 			if err != nil {
 				return exp, err
 			}
-			newExp, _, err := ParseExpr(b.String())
+			newExp, _, err := parseExprInner(b.String())
 			if err != nil {
 				return exp, err
 			}
