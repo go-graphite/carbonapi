@@ -1,14 +1,12 @@
 package parser
 
 import (
-	"reflect"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParseExpr(t *testing.T) {
-
 	tests := []struct {
 		s string
 		e *expr
@@ -63,11 +61,11 @@ func TestParseExpr(t *testing.T) {
 
 		{
 			"3",
-			&expr{val: 3, etype: EtConst},
+			&expr{val: 3, etype: EtConst, valStr: "3"},
 		},
 		{
 			"3.1",
-			&expr{val: 3.1, etype: EtConst},
+			&expr{val: 3.1, etype: EtConst, valStr: "3.1"},
 		},
 		{
 			"func1(metric1, 3, 1e2, 2e-3)",
@@ -76,9 +74,9 @@ func TestParseExpr(t *testing.T) {
 				etype:  EtFunc,
 				args: []*expr{
 					{target: "metric1"},
-					{val: 3, etype: EtConst},
-					{val: 100, etype: EtConst},
-					{val: 0.002, etype: EtConst},
+					{val: 3, etype: EtConst, valStr: "3"},
+					{val: 100, etype: EtConst, valStr: "1e2"},
+					{val: 0.002, etype: EtConst, valStr: "2e-3"},
 				},
 				argString: "metric1, 3, 1e2, 2e-3",
 			},
@@ -114,7 +112,7 @@ func TestParseExpr(t *testing.T) {
 				etype:  EtFunc,
 				args: []*expr{
 					{target: "metric1"},
-					{val: -3, etype: EtConst},
+					{val: -3, etype: EtConst, valStr: "-3"},
 				},
 				argString: "metric1, -3",
 			},
@@ -127,7 +125,7 @@ func TestParseExpr(t *testing.T) {
 				etype:  EtFunc,
 				args: []*expr{
 					{target: "metric1"},
-					{val: -3, etype: EtConst},
+					{val: -3, etype: EtConst, valStr: "-3"},
 					{valStr: "foo", etype: EtString},
 				},
 				argString: "metric1, -3 , 'foo' ",
@@ -171,7 +169,7 @@ func TestParseExpr(t *testing.T) {
 					{target: "metric"},
 				},
 				namedArgs: map[string]*expr{
-					"key": {etype: EtConst, val: 1},
+					"key": {etype: EtConst, val: 1, valStr: "1"},
 				},
 				argString: "metric, key=1",
 			},
@@ -185,7 +183,7 @@ func TestParseExpr(t *testing.T) {
 					{target: "metric"},
 				},
 				namedArgs: map[string]*expr{
-					"key": {etype: EtConst, val: 0.1},
+					"key": {etype: EtConst, val: 0.1, valStr: "0.1"},
 				},
 				argString: "metric, key=0.1",
 			},
@@ -198,7 +196,7 @@ func TestParseExpr(t *testing.T) {
 				etype:  EtFunc,
 				args: []*expr{
 					{target: "metric"},
-					{etype: EtConst, val: 1},
+					{etype: EtConst, val: 1, valStr: "1"},
 				},
 				namedArgs: map[string]*expr{
 					"key": {etype: EtString, valStr: "value"},
@@ -213,7 +211,7 @@ func TestParseExpr(t *testing.T) {
 				etype:  EtFunc,
 				args: []*expr{
 					{target: "metric"},
-					{etype: EtConst, val: 1},
+					{etype: EtConst, val: 1, valStr: "1"},
 				},
 				namedArgs: map[string]*expr{
 					"key": {etype: EtString, valStr: "value"},
@@ -299,7 +297,7 @@ func TestParseExpr(t *testing.T) {
 						etype: EtFunc,
 						args: []*expr{
 							{target: "company.server*.applicationInstance.requestsHandled"},
-							{val: 1, etype: EtConst},
+							{val: 1, etype: EtConst, valStr: "1"},
 						},
 						argString: "company.server*.applicationInstance.requestsHandled,1",
 					},
@@ -318,7 +316,7 @@ func TestParseExpr(t *testing.T) {
 						etype: EtFunc,
 						args: []*expr{
 							{target: "company.server*.applicationInstance.requestsHandled"},
-							{val: 1, etype: EtConst},
+							{val: 1, etype: EtConst, valStr: "1"},
 						},
 						argString: "company.server*.applicationInstance.requestsHandled,1",
 					},
@@ -337,7 +335,7 @@ func TestParseExpr(t *testing.T) {
 						etype: EtFunc,
 						args: []*expr{
 							{target: "company.server*.applicationInstance.requestsHandled"},
-							{val: 1, etype: EtConst},
+							{val: 1, etype: EtConst, valStr: "1"},
 						},
 						argString: "company.server*.applicationInstance.requestsHandled,1",
 					},
@@ -363,17 +361,12 @@ func TestParseExpr(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		if tt.s != "func(metric, key=true)" {
-			continue
-		}
 		t.Run(tt.s, func(t *testing.T) {
+			assert := assert.New(t)
+
 			e, _, err := ParseExpr(tt.s)
-			if err != nil {
-				t.Errorf("parse for %+v failed: err=%v", tt.s, err)
-				return
-			}
-			if !reflect.DeepEqual(e, tt.e) {
-				t.Errorf("parse for %+v failed:\ngot  %+s\nwant %+v", tt.s, spew.Sdump(e), spew.Sdump(tt.e))
+			if assert.NoError(err) {
+				assert.Equal(tt.e, e, tt.s)
 			}
 		})
 	}

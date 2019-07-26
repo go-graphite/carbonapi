@@ -50,7 +50,7 @@ func (e *expr) ToString() string {
 	case EtFunc:
 		return fmt.Sprintf("%s(%s)", e.target, e.argString)
 	case EtConst:
-		return fmt.Sprint(e.val)
+		return e.valStr
 	case EtString:
 		s := e.valStr
 		s = strings.Replace(s, `\`, `\\`, -1)
@@ -407,10 +407,10 @@ func parseExprWithoutPipe(e string) (Expr, string, error) {
 	}
 
 	if '0' <= e[0] && e[0] <= '9' || e[0] == '-' || e[0] == '+' {
-		val, e, err := parseConst(e)
+		val, valStr, e, err := parseConst(e)
 		r, _ := utf8.DecodeRuneInString(e)
 		if !unicode.IsLetter(r) {
-			return &expr{val: val, etype: EtConst}, e, err
+			return &expr{val: val, etype: EtConst, valStr: valStr}, e, err
 		}
 	}
 
@@ -611,7 +611,7 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 	}
 }
 
-func parseConst(s string) (float64, string, error) {
+func parseConst(s string) (float64, string, string, error) {
 
 	var i int
 	// All valid characters for a floating-point constant
@@ -622,10 +622,10 @@ func parseConst(s string) (float64, string, error) {
 
 	v, err := strconv.ParseFloat(s[:i], 64)
 	if err != nil {
-		return 0, "", err
+		return 0, "", "", err
 	}
 
-	return v, s[i:], err
+	return v, s[:i], s[i:], err
 }
 
 // RangeTables is an array of *unicode.RangeTable

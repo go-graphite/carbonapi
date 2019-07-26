@@ -15,6 +15,7 @@ func TestDefineExpand(t *testing.T) {
 	assert.NoError(Define("perMinute", "perSecond({{.argString}})|scale(60)"))
 	assert.NoError(Define("funcAlias", "funcOrig({{index .args 0}},{{index .args 1}})"))
 	assert.NoError(Define("funcAlias2", "funcOrig2({{index .args 0}},{{index .kwargs \"key\"}})"))
+	assert.NoError(Define("object", "object.*.*.{{index .args 0}}"))
 
 	tests := []struct {
 		s string
@@ -66,7 +67,8 @@ func TestDefineExpand(t *testing.T) {
 								argString: "metricA",
 							},
 							{etype: EtConst,
-								val: 60.000000,
+								val:    60.000000,
+								valStr: "60",
 							},
 						},
 						argString: "perSecond(metricA),60",
@@ -97,6 +99,12 @@ func TestDefineExpand(t *testing.T) {
 					{valStr: "42", etype: EtString},
 				},
 				argString: "metricA,'42'",
+			},
+		},
+		{
+			"object(9554433)",
+			&expr{
+				target: "object.*.*.9554433",
 			},
 		},
 	}
