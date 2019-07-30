@@ -30,11 +30,17 @@ type MetricData struct {
 
 	ValuesPerPoint    int
 	aggregatedValues  []float64
+	Tags              map[string]string
 	AggregateFunction func([]float64) float64 `json:"-"`
 }
 
 // MakeMetricData creates new metrics data with given metric timeseries
 func MakeMetricData(name string, values []float64, step, start int64) *MetricData {
+	return MakeMetricDataWithTags(name, values, step, start, map[string]string{})
+}
+
+// MakeMetricDataWithTags creates new metrics data with given metric Time Series (with tags)
+func MakeMetricDataWithTags(name string, values []float64, step, start int64, tags map[string]string) *MetricData {
 	stop := start + int64(len(values))*step
 
 	return &MetricData{FetchResponse: pb.FetchResponse{
@@ -43,7 +49,9 @@ func MakeMetricData(name string, values []float64, step, start int64) *MetricDat
 		StartTime: start,
 		StepTime:  step,
 		StopTime:  stop,
-	}}
+	},
+		Tags: tags,
+	}
 }
 
 // MarshalCSV marshals metric data to CSV
@@ -147,7 +155,19 @@ func MarshalJSON(results []*MetricData) []byte {
 			t += r.AggregatedTimeStep()
 		}
 
-		b = append(b, `]}`...)
+		b = append(b, `],"tags":{`...)
+		notFirstTag := false
+		for k, v := range r.Tags {
+			if notFirstTag {
+				b = append(b, ',')
+			}
+			b = strconv.AppendQuoteToASCII(b, k)
+			b = append(b, ':')
+			b = strconv.AppendQuoteToASCII(b, v)
+			notFirstTag = true
+		}
+
+		b = append(b, `}}`...)
 	}
 
 	b = append(b, ']')
