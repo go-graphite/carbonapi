@@ -60,7 +60,7 @@ func TestAliasByNode(t *testing.T) {
 		// #290
 		{
 			//"aliasSub(*, '.dns.([^.]+).zone.', '\\1 diff to sql')",
-				   "aliasSub(*, 'dns.([^.]*).zone.', '\\1 diff to sql ')",
+			"aliasSub(*, 'dns.([^.]*).zone.', '\\1 diff to sql ')",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"*", 0, 1}: {types.MakeMetricData("diffSeries(dns.snake.sql_updated, dns.snake.zone_updated)", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
