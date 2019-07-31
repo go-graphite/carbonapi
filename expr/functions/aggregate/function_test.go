@@ -1,6 +1,7 @@
 package aggregate
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -9,7 +10,6 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
-	"math"
 )
 
 func init() {

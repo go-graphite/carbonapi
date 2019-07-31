@@ -4,7 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/go-graphite/carbonapi/expr/helper"
+
+	tags2 "github.com/go-graphite/carbonapi/expr/tags"
 
 	"github.com/go-graphite/carbonapi/expr/types"
 	util "github.com/go-graphite/carbonapi/util/ctx"
@@ -108,7 +109,7 @@ func (z zipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*ty
 	z.statsSender(stats)
 
 	for i := range pbresp.Metrics {
-		tags := helper.ExtractTags(pbresp.Metrics[i].Name)
+		tags := tags2.ExtractTags(pbresp.Metrics[i].Name)
 		result = append(result, &types.MetricData{
 			FetchResponse: pbresp.Metrics[i],
 			Tags:          tags,

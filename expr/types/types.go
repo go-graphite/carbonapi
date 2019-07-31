@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
+	"github.com/go-graphite/carbonapi/expr/tags"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	pickle "github.com/lomik/og-rek"
 )
@@ -32,26 +33,6 @@ type MetricData struct {
 	aggregatedValues  []float64
 	Tags              map[string]string
 	AggregateFunction func([]float64) float64 `json:"-"`
-}
-
-// MakeMetricData creates new metrics data with given metric timeseries
-func MakeMetricData(name string, values []float64, step, start int64) *MetricData {
-	return MakeMetricDataWithTags(name, values, step, start, map[string]string{})
-}
-
-// MakeMetricDataWithTags creates new metrics data with given metric Time Series (with tags)
-func MakeMetricDataWithTags(name string, values []float64, step, start int64, tags map[string]string) *MetricData {
-	stop := start + int64(len(values))*step
-
-	return &MetricData{FetchResponse: pb.FetchResponse{
-		Name:      name,
-		Values:    values,
-		StartTime: start,
-		StepTime:  step,
-		StopTime:  stop,
-	},
-		Tags: tags,
-	}
 }
 
 // MarshalCSV marshals metric data to CSV
@@ -314,4 +295,24 @@ func (r *MetricData) AggregateValues() {
 	}
 
 	r.aggregatedValues = aggV
+}
+
+// MakeMetricData creates new metrics data with given metric timeseries
+func MakeMetricData(name string, values []float64, step, start int64) *MetricData {
+	return makeMetricDataWithTags(name, values, step, start, tags.ExtractTags(name))
+}
+
+// MakeMetricDataWithTags creates new metrics data with given metric Time Series (with tags)
+func makeMetricDataWithTags(name string, values []float64, step, start int64, tags map[string]string) *MetricData {
+	stop := start + int64(len(values))*step
+
+	return &MetricData{FetchResponse: pb.FetchResponse{
+		Name:      name,
+		Values:    values,
+		StartTime: start,
+		StepTime:  step,
+		StopTime:  stop,
+	},
+		Tags: tags,
+	}
 }
