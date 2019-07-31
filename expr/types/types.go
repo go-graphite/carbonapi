@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"runtime/debug"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -138,11 +139,17 @@ func MarshalJSON(results []*MetricData) []byte {
 
 		b = append(b, `],"tags":{`...)
 		notFirstTag := false
-		for k, v := range r.Tags {
+		tags := make([]string, 0, len(r.Tags))
+		for tag := range r.Tags {
+			tags = append(tags, tag)
+		}
+		sort.Strings(tags)
+		for _, tag := range tags {
+			v := r.Tags[tag]
 			if notFirstTag {
 				b = append(b, ',')
 			}
-			b = strconv.AppendQuoteToASCII(b, k)
+			b = strconv.AppendQuoteToASCII(b, tag)
 			b = append(b, ':')
 			b = strconv.AppendQuoteToASCII(b, v)
 			notFirstTag = true

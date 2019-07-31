@@ -18,7 +18,7 @@ func TestJSONResponse(t *testing.T) {
 				MakeMetricData("metric1", []float64{1, 1.5, 2.25, math.NaN()}, 100, 100),
 				MakeMetricData("metric2;foo=bar", []float64{2, 2.5, 3.25, 4, 5}, 100, 100),
 			},
-			[]byte(`[{"target":"metric1","datapoints":[[1,100],[1.5,200],[2.25,300],[null,400]],"tags":{"name":"metric1"}},{"target":"metric2;foo=bar","datapoints":[[2,100],[2.5,200],[3.25,300],[4,400],[5,500]],"tags":{"name":"metric2","foo":"bar"}}]`),
+			[]byte(`[{"target":"metric1","datapoints":[[1,100],[1.5,200],[2.25,300],[null,400]],"tags":{"name":"metric1"}},{"target":"metric2;foo=bar","datapoints":[[2,100],[2.5,200],[3.25,300],[4,400],[5,500]],"tags":{"foo":"bar","name":"metric2"}}]`),
 		},
 	}
 
