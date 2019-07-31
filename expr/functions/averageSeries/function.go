@@ -19,7 +19,7 @@ func GetOrder() interfaces.Order {
 func New(configFile string) []interfaces.FunctionMetadata {
 	f := &averageSeries{}
 	res := make([]interfaces.FunctionMetadata, 0)
-	for _, n := range []string{"avg", "averageSeries"} {
+	for _, n := range []string{"avg", "average", "averageSeries"} {
 		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
 	}
 	return res
