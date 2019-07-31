@@ -363,9 +363,6 @@ func TestParseExpr(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		if tt.s != "func(metric, key=true)" {
-			continue
-		}
 		t.Run(tt.s, func(t *testing.T) {
 			e, _, err := ParseExpr(tt.s)
 			if err != nil {
