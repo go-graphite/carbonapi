@@ -50,7 +50,7 @@ func (e *expr) ToString() string {
 	case EtFunc:
 		return fmt.Sprintf("%s(%s)", e.target, e.argString)
 	case EtConst:
-		return fmt.Sprint(e.val)
+		return e.valStr
 	case EtString:
 		s := e.valStr
 		s = strings.Replace(s, `\`, `\\`, -1)
@@ -407,10 +407,10 @@ func parseExprWithoutPipe(e string) (Expr, string, error) {
 	}
 
 	if '0' <= e[0] && e[0] <= '9' || e[0] == '-' || e[0] == '+' {
-		val, e, err := parseConst(e)
+		val, valStr, e, err := parseConst(e)
 		r, _ := utf8.DecodeRuneInString(e)
 		if !unicode.IsLetter(r) {
-			return &expr{val: val, etype: EtConst}, e, err
+			return &expr{val: val, etype: EtConst, valStr: valStr}, e, err
 		}
 	}
 
@@ -449,13 +449,22 @@ func parseExprWithoutPipe(e string) (Expr, string, error) {
 	return &expr{target: name}, e, nil
 }
 
-// ParseExpr actually do all the parsing. It returns expression, original string and error (if any)
-func ParseExpr(e string) (Expr, string, error) {
+func parseExprInner(e string) (Expr, string, error) {
 	exp, e, err := parseExprWithoutPipe(e)
 	if err != nil {
 		return exp, e, err
 	}
 	return pipe(exp.(*expr), e)
+}
+
+// ParseExpr actually do all the parsing. It returns expression, original string and error (if any)
+func ParseExpr(e string) (Expr, string, error) {
+	exp, e, err := parseExprInner(e)
+	if err != nil {
+		return exp, e, err
+	}
+	exp, err = defineMap.expandExpr(exp.(*expr))
+	return exp, e, err
 }
 
 func pipe(exp *expr, e string) (*expr, string, error) {
@@ -529,7 +538,7 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 		var err error
 
 		argString := e
-		arg, e, err = ParseExpr(e)
+		arg, e, err = parseExprInner(e)
 		if err != nil {
 			return "", nil, nil, e, err
 		}
@@ -541,7 +550,7 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 		// we now know we're parsing a key-value pair
 		if arg.IsName() && e[0] == '=' {
 			e = e[1:]
-			argCont, eCont, errCont := ParseExpr(e)
+			argCont, eCont, errCont := parseExprInner(e)
 			if errCont != nil {
 				return "", nil, nil, eCont, errCont
 			}
@@ -602,7 +611,7 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 	}
 }
 
-func parseConst(s string) (float64, string, error) {
+func parseConst(s string) (float64, string, string, error) {
 
 	var i int
 	// All valid characters for a floating-point constant
@@ -613,10 +622,10 @@ func parseConst(s string) (float64, string, error) {
 
 	v, err := strconv.ParseFloat(s[:i], 64)
 	if err != nil {
-		return 0, "", err
+		return 0, "", "", err
 	}
 
-	return v, s[i:], err
+	return v, s[:i], s[i:], err
 }
 
 // RangeTables is an array of *unicode.RangeTable
