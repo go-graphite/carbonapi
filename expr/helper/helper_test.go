@@ -2,6 +2,8 @@ package helper
 
 import (
 	"testing"
+
+	"github.com/go-graphite/carbonapi/expr/tags"
 )
 
 func TestExtractTags(t *testing.T) {
@@ -30,7 +32,7 @@ func TestExtractTags(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := ExtractTags(tt.metric)
+			actual := tags.ExtractTags(tt.metric)
 			if len(actual) != len(tt.expected) {
 				t.Fatalf("amount of tags doesn't match: got %v, expected %v", actual, tt.expected)
 			}

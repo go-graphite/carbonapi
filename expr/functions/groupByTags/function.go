@@ -8,6 +8,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
+	"github.com/go-graphite/carbonapi/expr/tags"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
@@ -42,12 +43,12 @@ func (f *groupByTags) Do(e parser.Expr, from, until int64, values map[parser.Met
 		return nil, err
 	}
 
-	tags, err := e.GetStringArgs(2)
+	tagNames, err := e.GetStringArgs(2)
 	if err != nil {
 		return nil, err
 	}
 
-	sort.Strings(tags)
+	sort.Strings(tagNames)
 
 	var results []*types.MetricData
 
@@ -57,9 +58,9 @@ func (f *groupByTags) Do(e parser.Expr, from, until int64, values map[parser.Met
 
 	// TODO(civil): Think how to optimize it, as it's ugly
 	for _, a := range args {
-		metricTags := helper.ExtractTags(a.Name)
+		metricTags := tags.ExtractTags(a.Name)
 		var keyBuilder strings.Builder
-		for _, tag := range tags {
+		for _, tag := range tagNames {
 			value := metricTags[tag]
 			keyBuilder.WriteString(";" + tag + "=" + value)
 		}
@@ -79,7 +80,13 @@ func (f *groupByTags) Do(e parser.Expr, from, until int64, values map[parser.Met
 		k := k // k's reference is used later, so it's important to make it unique per loop
 		v := v
 
-		expr := fmt.Sprintf("%s(stub)", callback)
+		var expr string
+		_, ok := consolidations.ConsolidationToFunc[callback]
+		if ok {
+			expr = fmt.Sprintf("aggregate(stub, \"%s\")", callback)
+		} else {
+			expr = fmt.Sprintf("%s(stub)", callback)
+		}
 
 		// create a stub context to evaluate the callback in
 		nexpr, _, err := parser.ParseExpr(expr)

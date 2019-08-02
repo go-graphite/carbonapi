@@ -13,6 +13,12 @@ Changes
 
 CHANGELOG
 ---------
+**0.12.4 (WIP)**
+ - [Improvement] `/render` queries now returns tags in json (as graphite-web do)
+ - [Improvement] groupByTags should now support all available aggregation functions (#410)
+ - [Fix] Fix panic when using carbonapi\_proto\_v3 and doing tag-related queries (#407)
+ - [Fix] Add missing alias for averageSeries (thx to @msaf1980)
+
 **0.12.3**
  - [Fix] Fix graphiteWeb proxy function (thx. to @sylvain-beugin)
  - [Fix] Prometheus Backend: correctly handle groups, fixes #405

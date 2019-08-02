@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"math"
 	"runtime/debug"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
+	"github.com/go-graphite/carbonapi/expr/tags"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	pickle "github.com/lomik/og-rek"
 )
@@ -30,20 +32,8 @@ type MetricData struct {
 
 	ValuesPerPoint    int
 	aggregatedValues  []float64
+	Tags              map[string]string
 	AggregateFunction func([]float64) float64 `json:"-"`
-}
-
-// MakeMetricData creates new metrics data with given metric timeseries
-func MakeMetricData(name string, values []float64, step, start int64) *MetricData {
-	stop := start + int64(len(values))*step
-
-	return &MetricData{FetchResponse: pb.FetchResponse{
-		Name:      name,
-		Values:    values,
-		StartTime: start,
-		StepTime:  step,
-		StopTime:  stop,
-	}}
 }
 
 // MarshalCSV marshals metric data to CSV
@@ -147,7 +137,25 @@ func MarshalJSON(results []*MetricData) []byte {
 			t += r.AggregatedTimeStep()
 		}
 
-		b = append(b, `]}`...)
+		b = append(b, `],"tags":{`...)
+		notFirstTag := false
+		tags := make([]string, 0, len(r.Tags))
+		for tag := range r.Tags {
+			tags = append(tags, tag)
+		}
+		sort.Strings(tags)
+		for _, tag := range tags {
+			v := r.Tags[tag]
+			if notFirstTag {
+				b = append(b, ',')
+			}
+			b = strconv.AppendQuoteToASCII(b, tag)
+			b = append(b, ':')
+			b = strconv.AppendQuoteToASCII(b, v)
+			notFirstTag = true
+		}
+
+		b = append(b, `}}`...)
 	}
 
 	b = append(b, ']')
@@ -294,4 +302,24 @@ func (r *MetricData) AggregateValues() {
 	}
 
 	r.aggregatedValues = aggV
+}
+
+// MakeMetricData creates new metrics data with given metric timeseries
+func MakeMetricData(name string, values []float64, step, start int64) *MetricData {
+	return makeMetricDataWithTags(name, values, step, start, tags.ExtractTags(name))
+}
+
+// MakeMetricDataWithTags creates new metrics data with given metric Time Series (with tags)
+func makeMetricDataWithTags(name string, values []float64, step, start int64, tags map[string]string) *MetricData {
+	stop := start + int64(len(values))*step
+
+	return &MetricData{FetchResponse: pb.FetchResponse{
+		Name:      name,
+		Values:    values,
+		StartTime: start,
+		StepTime:  step,
+		StopTime:  stop,
+	},
+		Tags: tags,
+	}
 }

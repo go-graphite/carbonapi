@@ -68,10 +68,14 @@ func DeepClone(original map[parser.MetricRequest][]*types.MetricData) map[parser
 					StepTime:  originalMetric.StepTime,
 					Values:    make([]float64, len(originalMetric.Values)),
 				},
+				Tags: make(map[string]string),
 			}
 
 			copy(copiedMetric.Values, originalMetric.Values)
 			copiedMetrics = append(copiedMetrics, &copiedMetric)
+			for k, v := range originalMetric.Tags {
+				copiedMetric.Tags[k] = v
+			}
 		}
 
 		clone[key] = copiedMetrics
@@ -141,6 +145,23 @@ func deepCompareFields(v1, v2 reflect.Value) bool {
 					return false
 				}
 			}
+		case reflect.Map:
+			if v1.Len() != v2.Len() {
+				return false
+			}
+			if v1.Len() == 0 {
+				return true
+			}
+
+			keys1 := v1.MapKeys()
+			for _, k := range keys1 {
+				val1 := v1.MapIndex(k)
+				val2 := v2.MapIndex(k)
+				if !deepCompareFields(val1, val2) {
+					return false
+				}
+			}
+			return true
 		case reflect.Func:
 			return v1.Pointer() == v2.Pointer()
 		default:

@@ -1,13 +1,14 @@
 package aboveSeries
 
 import (
+	"testing"
+	"time"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
-	"testing"
-	"time"
 )
 
 func init() {
@@ -33,8 +34,9 @@ func TestDiffSeries(t *testing.T) {
 					types.MakeMetricData("metricHomyak", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 				},
 			},
-			[]*types.MetricData{types.MakeMetricData("metricBog",
-				[]float64{3, 4, 5, 6, 7, 8}, 1, now32)},
+			[]*types.MetricData{
+				types.MakeMetricData("metricBog", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+			},
 		},
 		{
 			`aboveSeries(metric1, 7, ".*Ko.ik$", "Bog")`,
