@@ -14,6 +14,7 @@ Changes
 CHANGELOG
 ---------
 **0.12.4 (WIP)**
+ - [Feature] Fuction Defines - allows to do custom metric aliases (thx to @lomik). See [doc/configuration.md](https://github.com/go-graphite/carbonapi/blob/master/doc/configuration.md#define) for config format
  - [Improvement] `/render` queries now returns tags in json (as graphite-web do)
  - [Improvement] groupByTags should now support all available aggregation functions (#410)
  - [Fix] Fix panic when using carbonapi\_proto\_v3 and doing tag-related queries (#407)
