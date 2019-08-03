@@ -116,7 +116,6 @@ _When `format=png`_ (default if not specified)
 | events |
 | exponentialMovingAverage |
 | filterSeries |
-| highest |
 | holtWintersConfidenceArea |
 | identity |
 | integralByInterval |
@@ -192,6 +191,7 @@ _When `format=png`_ (default if not specified)
 | groupByNode(seriesList, nodeNum, callback='average') | no |
 | groupByNodes(seriesList, callback, *nodes) | no |
 | groupByTags(seriesList, callback, *tags) | no |
+| highest(seriesList, n, func) | no |
 | highestAverage(seriesList, n) | no |
 | highestCurrent(seriesList, n) | no |
 | highestMax(seriesList, n) | no |

@@ -13,6 +13,9 @@ Changes
 
 CHANGELOG
 ---------
+**0.12.5 (WIP)**
+ - [Feature] Support 'highest' function
+
 **0.12.4**
  - [Feature] Fuction Defines - allows to do custom metric aliases (thx to @lomik). See [doc/configuration.md](https://github.com/go-graphite/carbonapi/blob/master/doc/configuration.md#define) for config format
  - [Improvement] New config options that allows to prefix all URLs and to enable /debug/vars on a separate address:port. See [docs/configuration.md](https://github.com/go-graphite/carbonapi/blob/master/doc/configuration.md#expvar) for more information

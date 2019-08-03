@@ -55,6 +55,21 @@ func TestHighestMultiReturn(t *testing.T) {
 				"metricC": {types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32)},
 			},
 		},
+		{
+			"highest(metric1, 2, \"max\")",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", 0, 1}: {
+					types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 12, 11}, 1, now32),
+					types.MakeMetricData("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 10}, 1, now32),
+				},
+			},
+			"highest",
+			map[string][]*types.MetricData{
+				"metricA": {types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 12, 11}, 1, now32)},
+				"metricC": {types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 10}, 1, now32)},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -123,6 +138,18 @@ func TestHighest(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("metricA", // NOTE(dgryski): not sure if this matches graphite
+				[]float64{1, 1, 3, 3, 12, 11}, 1, now32)},
+		},
+		{
+			"highest(metric1,\"max\")",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", 0, 1}: {
+					types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 12, 11}, 1, now32),
+					types.MakeMetricData("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 10}, 1, now32),
+				},
+			},
+			[]*types.MetricData{types.MakeMetricData("metricA",
 				[]float64{1, 1, 3, 3, 12, 11}, 1, now32)},
 		},
 	}
