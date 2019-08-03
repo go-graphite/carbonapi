@@ -14,12 +14,15 @@ For requirements see **Requirements** section below.
 Installation
 ------------
 
-At this moment we are building packages for CentOS 6, CentOS 7, Ubuntu 14.04 and Ubuntu 16.04. Installation guides are available on packagecloud (see the links below).
+At this moment we are building packages for CentOS 6, CentOS 7, Debian 9, Debian 10, Ubuntu 14.04, Ubuntu 16.04 and Ubuntu 18.04. Installation guides are available on packagecloud (see the links below).
 
 Stable versions: [Stable repo](https://packagecloud.io/go-graphite/stable/install)
 
 Autobuilds (master, might be unstable): [Autobuild repo](https://packagecloud.io/go-graphite/autobuilds/install)
 
+Configuration guides: [docs/configuration.md](https://github.com/go-graphite/carbonapi/blob/master/doc/configuration.md) and [example config](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.yaml).
+
+There are multiple example configurations available for different backends: [prometheus](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.prometheus.yaml), [graphtie-clickhouse](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.clickhouse.yaml), [go-carbon](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.yaml)
 
 General information
 -------------------

@@ -9,6 +9,14 @@
 # or graphite-clickhouse's http url.
 # Listen address, should always include hostname or ip address and a port.
 listen: "localhost:8081"
+# Specify URL Prefix for all handlers
+prefix: ""
+# Specify if metrics are exported over HTTP and if they are available on the same address or not
+# pprofEnabled controls if extra HTTP Handlers to profile and debug application will be available
+expvar:
+  enabled: true
+  pprofEnabled: false
+  listen: ""
 # Allow extra charsets in metric names. By default only "Latin" is allowed
 # Please note that each unicodeRangeTables will slow down metric parsing a bit
 #   For list of supported tables, see: https://golang.org/src/unicode/tables.go?#L3437
@@ -29,6 +37,12 @@ headersToLog:
   - "X-Dashboard-Id"
   - "X-Grafana-Org-Id"
   - "X-Panel-Id"
+# Specify custom function aliases.
+#  This is example for alias "perMinute(metrics)" that will behave as "perSecond(metric)|scale(60)"
+define:
+  -
+    name: "perMinute"
+    template: "perSecond({{.argString}})|scale(60)"
 # Max concurrent requests to CarbonZipper
 concurency: 1000
 cache:

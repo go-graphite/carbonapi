@@ -41,6 +41,12 @@ type Define struct {
 	Template string `mapstructure:"template"`
 }
 
+type ExpvarConfig struct {
+	Listen       string `mapstructure:"listen"`
+	Enabled      bool   `mapstructure:"enabled"`
+	PProfEnabled bool   `mapstructure:"pprofEnabled"`
+}
+
 type ConfigType struct {
 	ExtrapolateExperiment      bool               `mapstructure:"extrapolateExperiment"`
 	Logger                     []zapwriter.Config `mapstructure:"logger"`
@@ -68,6 +74,8 @@ type ConfigType struct {
 	HeadersToPass              []string           `mapstructure:"headersToPass"`
 	HeadersToLog               []string           `mapstructure:"headersToLog"`
 	Define                     []Define           `mapstructure:"define"`
+	Prefix                     string             `mapstructure:"prefix"`
+	Expvar                     ExpvarConfig       `mapstructure:"expvar"`
 
 	QueryCache cache.BytesCache `mapstructure:"-" json:"-"`
 	FindCache  cache.BytesCache `mapstructure:"-" json:"-"`
@@ -131,4 +139,10 @@ var Config = ConfigType{
 	},
 	ExpireDelaySec:             10 * 60,
 	GraphiteWeb09Compatibility: false,
+	Prefix:                     "",
+	Expvar: ExpvarConfig{
+		Listen:       "",
+		Enabled:      true,
+		PProfEnabled: false,
+	},
 }

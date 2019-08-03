@@ -1,10 +1,13 @@
 package main
 
 import (
+	"expvar"
 	"flag"
 	"log"
 	"net/http"
+	"net/http/pprof"
 	_ "net/http/pprof"
+	"sync"
 
 	"github.com/facebookgo/grace/gracehttp"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
@@ -46,14 +49,60 @@ func main() {
 	handler = handlers.CORS()(handler)
 	handler = handlers.ProxyHeaders(handler)
 
-	err = gracehttp.Serve(&http.Server{
-		Addr:    config.Config.Listen,
-		Handler: handler,
-	})
+	wg := sync.WaitGroup{}
+	if config.Config.Expvar.Enabled {
+		if config.Config.Expvar.Listen != "" || config.Config.Expvar.Listen != config.Config.Listen {
+			r := http.NewServeMux()
+			r.HandleFunc(config.Config.Prefix+"/debug/vars", expvar.Handler().ServeHTTP)
+			if config.Config.Expvar.PProfEnabled {
+				r.HandleFunc(config.Config.Prefix+"/debug/pprof/heap", pprof.Index)
+				r.HandleFunc(config.Config.Prefix+"/debug/pprof/profile", pprof.Profile)
+				r.HandleFunc(config.Config.Prefix+"/debug/pprof/symbol", pprof.Symbol)
+				r.HandleFunc(config.Config.Prefix+"/debug/pprof/trace", pprof.Trace)
+			}
 
-	if err != nil {
-		logger.Fatal("gracehttp failed",
-			zap.Error(err),
-		)
+			handler := handlers.CompressHandler(r)
+			handler = handlers.CORS()(handler)
+			handler = handlers.ProxyHeaders(handler)
+
+			logger.Info("expvar handler will listen on a separate address/port",
+				zap.String("expvar_listen", config.Config.Expvar.Listen),
+				zap.Bool("pprof_enabled", config.Config.Expvar.PProfEnabled),
+			)
+
+			wg.Add(1)
+			go func() {
+				err = gracehttp.Serve(&http.Server{
+					Addr:    config.Config.Expvar.Listen,
+					Handler: handler,
+				})
+
+				if err != nil {
+					logger.Fatal("gracehttp failed",
+						zap.Error(err),
+					)
+				}
+
+				wg.Done()
+			}()
+		}
 	}
+
+	wg.Add(1)
+	go func() {
+		err = gracehttp.Serve(&http.Server{
+			Addr:    config.Config.Listen,
+			Handler: handler,
+		})
+
+		if err != nil {
+			logger.Fatal("gracehttp failed",
+				zap.Error(err),
+			)
+		}
+
+		wg.Done()
+	}()
+
+	wg.Wait()
 }

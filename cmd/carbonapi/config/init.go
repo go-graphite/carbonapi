@@ -91,7 +91,13 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 			newStruct.ColorList = nil
 			newStruct.YDivisors = nil
 			sub := graphTemplatesViper.Sub(k)
-			sub.Unmarshal(&newStruct)
+			err = sub.Unmarshal(&newStruct)
+			if err != nil {
+				logger.Error("failed to parse graphTemplates config, settings will be ignored",
+					zap.String("graphTemplate_path", Config.GraphTemplates),
+					zap.Error(err),
+				)
+			}
 			if newStruct.ColorList == nil || len(newStruct.ColorList) == 0 {
 				newStruct.ColorList = make([]string, len(png.DefaultParams.ColorList))
 				copy(newStruct.ColorList, png.DefaultParams.ColorList)

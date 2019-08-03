@@ -4,44 +4,48 @@ Table of Contents
 * [General configuration for carbonapi](#general-configuration-for-carbonapi)
   * [listen](#listen)
     * [Example:](#example)
-  * [headersToPass](#headerstopass)
+  * [prefix](#prefix)
     * [Example:](#example-1)
-  * [headersToLog](#headerstolog)
+  * [headersToPass](#headerstopass)
     * [Example:](#example-2)
-  * [headersToLog](#define)
+  * [headersToLog](#headerstolog)
     * [Example:](#example-3)
+  * [headersToLog](#define)
+    * [Example:](#example-4)
   * [unicodeRangeTables](#unicoderangetables)
-    * [Example](#example-4)
-  * [cache](#cache)
     * [Example](#example-5)
-  * [cpus](#cpus)
+  * [cache](#cache)
     * [Example](#example-6)
-  * [tz](#tz)
+  * [cpus](#cpus)
     * [Example](#example-7)
-  * [functionsConfig](#functionsconfig)
+  * [tz](#tz)
     * [Example](#example-8)
-  * [graphite](#graphite)
+  * [functionsConfig](#functionsconfig)
     * [Example](#example-9)
-  * [pidFile](#pidfile)
+  * [graphite](#graphite)
     * [Example](#example-10)
-  * [graphTemplates](#graphtemplates)
+  * [pidFile](#pidfile)
     * [Example](#example-11)
-  * [defaultColors](#defaultcolors)
+  * [graphTemplates](#graphtemplates)
     * [Example](#example-12)
-  * [logger](#logger)
+  * [defaultColors](#defaultcolors)
     * [Example](#example-13)
+  * [expvar](#expvar)
+    * [Example](#example-14)
+  * [logger](#logger)
+    * [Example](#example-15)
 * [Carbonzipper configuration](#carbonzipper-configuration)
   * [concurency](#concurency)
-    * [Example](#example-14)
+    * [Example](#example-16)
   * [maxBatchSize](#maxbatchsize)
-    * [Example](#example-15)
+    * [Example](#example-17)
   * [idleConnections](#idleconnections)
   * [upstreams](#upstreams)
-    * [Example](#example-16)
+    * [Example](#example-18)
       * [For go\-carbon and prometheus](#for-go-carbon-and-prometheus)
       * [For graphite\-clickhouse](#for-graphite-clickhouse)
   * [expireDelaySec](#expiredelaysec)
-    * [Example](#example-17)
+    * [Example](#example-19)
 
 # General configuration for carbonapi
 
@@ -63,6 +67,20 @@ listen: ":8080"
 This will make it available on all IPv4 addresses, port 8080:
 ```yaml
 listen: "0.0.0.0:8080"
+```
+
+***
+## prefix
+
+Specify prefix for all URLs. Might be useful when you cannot afford to listen on different port.
+
+Default: None
+
+### Example:
+This will make carbonapi handlers accessible on `/graphite`, e.x. `http://localhost:8080/render` will become `http://localhost:8080/graphite/render` 
+
+```yaml
+prefix: "graphite"
 ```
 
 ***
@@ -111,7 +129,7 @@ Defines are done by templating this custom aliases to known set of functions.
 
 Templating is done by utilizing golang text template language.
 
-Supported values:
+Supported variables:
  - argString - argument as a string. E.x. in query `myDefine(foo, bar, baz)`, argString will be `foo, bar, baz`
  - args - indexed array of arguments. E.x. in case of `myDefine(foo, bar)`, `index .args 0` will be first argument, `index .args 1` will be second
  - kwargs - key-value arguments (map). This is required to support cases like `myDefine(foo, bar=baz)`, in this case `index .args 0` will contain `foo`, and `index .kwargs "bar"` will contain `baz`
@@ -283,6 +301,33 @@ defaultColors:
       "darkred": "#c80032"
       "darkgreen": "00c800"
       "darkblue": "002173"
+```
+
+***
+## expvar
+
+Controls whether expvar (contains internal metrics, config, etc) is enabled and if it's accessible on a separate address:port.
+Also allows to enable pprof handlers (useful for profiling and debugging).
+
+Please note, that exposing pprof handlers to untrusted network is *dangerous* and might lead to data leak.
+
+Exposing expvars to untrusted network is not recommended as it might give 3rd party unnecessary amount of data about your infrastructure.
+
+### Example
+This describes current defaults: expvar enabled, pprof handlers disabled, listen on the same address-port as main application.
+```yaml
+expvar:
+      enabled: true
+      pprofEnabled: false
+      listen: ""
+```
+
+This is useful to enable debugging and to move all related handlers and add exposed only on localhost, port 7070.
+```yaml
+expvar:
+      enabled: true
+      pprofEnabled: true
+      listen: "localhost:7070"
 ```
 
 ***
