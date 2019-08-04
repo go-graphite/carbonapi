@@ -1,9 +1,10 @@
-package highest
+package highestLowest
 
 import (
 	"container/heap"
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -23,7 +24,7 @@ func GetOrder() interfaces.Order {
 func New(configFile string) []interfaces.FunctionMetadata {
 	res := make([]interfaces.FunctionMetadata, 0)
 	f := &highest{}
-	functions := []string{"highestAverage", "highestCurrent", "highestMax", "highest"}
+	functions := []string{"highestAverage", "highestCurrent", "highestMax", "highest", "lowestMax", "lowestAverage", "lowestCurrent", "lowest"}
 	for _, n := range functions {
 		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
 	}
@@ -38,7 +39,7 @@ func (f *highest) Do(e parser.Expr, from, until int64, values map[parser.MetricR
 	}
 
 	n := 1
-	if len(e.Args()) > 1 && e.Target() != "highest" {
+	if len(e.Args()) > 1 && e.Target() != "highest" && e.Target() != "lowest" {
 		n, err = e.GetIntArg(1)
 		if err != nil {
 			return nil, err
@@ -56,8 +57,9 @@ func (f *highest) Do(e parser.Expr, from, until int64, values map[parser.MetricR
 
 	var compute func([]float64) float64
 
+	isHighest := strings.HasPrefix(e.Target(), "highest")
 	switch e.Target() {
-	case "highest":
+	case "highest", "lowest":
 		consolidation := "average"
 		switch len(e.Args()) {
 		case 2:
@@ -87,40 +89,54 @@ func (f *highest) Do(e parser.Expr, from, until int64, values map[parser.MetricR
 		if !ok {
 			return nil, fmt.Errorf("unsupported consolidation function %v", consolidation)
 		}
-	case "highestMax":
+	case "highestMax", "lowestMax":
 		compute = consolidations.MaxValue
-	case "highestAverage":
+	case "highestAverage", "lowestAverage":
 		compute = consolidations.AvgValue
-	case "highestCurrent":
+	case "highestCurrent", "lowestCurrent":
 		compute = consolidations.CurrentValue
 	default:
 		return nil, fmt.Errorf("unsupported function %v", e.Target())
 	}
 
-	for i, a := range arg {
-		m := compute(a.Values)
-		if math.IsNaN(m) {
-			continue
+	if isHighest {
+		for i, a := range arg {
+			m := compute(a.Values)
+			if math.IsNaN(m) {
+				continue
+			}
+
+			if len(mh) < n {
+				heap.Push(&mh, types.MetricHeapElement{Idx: i, Val: m})
+				continue
+			}
+			// m is bigger than smallest max found so far
+			if mh[0].Val < m {
+				mh[0].Val = m
+				mh[0].Idx = i
+				heap.Fix(&mh, 0)
+			}
 		}
 
-		if len(mh) < n {
+		results = make([]*types.MetricData, len(mh))
+
+		// results should be ordered ascending
+		for len(mh) > 0 {
+			v := heap.Pop(&mh).(types.MetricHeapElement)
+			results[len(mh)] = arg[v.Idx]
+		}
+	} else {
+		for i, a := range arg {
+			m := compute(a.Values)
 			heap.Push(&mh, types.MetricHeapElement{Idx: i, Val: m})
-			continue
 		}
-		// m is bigger than smallest max found so far
-		if mh[0].Val < m {
-			mh[0].Val = m
-			mh[0].Idx = i
-			heap.Fix(&mh, 0)
+
+		results = make([]*types.MetricData, n)
+
+		for i := 0; i < n; i++ {
+			v := heap.Pop(&mh).(types.MetricHeapElement)
+			results[i] = arg[v.Idx]
 		}
-	}
-
-	results = make([]*types.MetricData, len(mh))
-
-	// results should be ordered ascending
-	for len(mh) > 0 {
-		v := heap.Pop(&mh).(types.MetricHeapElement)
-		results[len(mh)] = arg[v.Idx]
 	}
 
 	return results, nil
@@ -201,6 +217,91 @@ func (f *highest) Description() map[string]types.FunctionDescription {
 			Group:       "Filter Series",
 			Module:      "graphite.render.functions",
 			Name:        "highestMax",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "n",
+					Required: true,
+					Type:     types.Integer,
+				},
+			},
+		},
+		"lowest": {
+			Name:        "lowest",
+			Function:    "lowest(seriesList, n=1, func='average')",
+			Description: "Takes one metric or a wildcard seriesList followed by an integer N and an aggregation function.\nOut of all metrics passed, draws only the N metrics with the lowest aggregated value over the\ntime period specified.\n\nExample:\n\n.. code-block:: none\n\n  &target=lowest(server*.instance*.threads.busy,5,'min')\n\nDraws the 5 servers with the lowest number of busy threads.",
+			Module:      "graphite.render.functions",
+			Group:       "Filter Series",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Type:     types.SeriesList,
+					Required: true,
+				},
+				{
+					Name:     "n",
+					Type:     types.Integer,
+					Required: true,
+				},
+				{
+					Name: "func",
+					Type: types.String,
+					Default: &types.Suggestion{
+						Type:  types.SString,
+						Value: "average",
+					},
+					Options: consolidations.AvailableConsolidationFuncs(),
+				},
+			},
+		},
+		"lowestCurrent": {
+			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\nOut of all metrics passed, draws only the N metrics with the lowest value at\nthe end of the time period specified.\n\nExample:\n\n.. code-block:: none\n\n  &target=lowestCurrent(server*.instance*.threads.busy,5)\n\nDraws the 5 servers with the least busy threads right now.\n\nThis is an alias for :py:func:`lowest <lowest>` with aggregation ``current``.",
+			Function:    "lowestCurrent(seriesList, n)",
+			Group:       "Filter Series",
+			Module:      "graphite.render.functions",
+			Name:        "lowestCurrent",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "n",
+					Required: true,
+					Type:     types.Integer,
+				},
+			},
+		},
+		"lowestAverage": {
+			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\nOut of all metrics passed, draws only the bottom N metrics with the lowest\naverage value for the time period specified.\n\nExample:\n\n.. code-block:: none\n\n  &target=lowestAverage(server*.instance*.threads.busy,5)\n\nDraws the bottom 5 servers with the lowest average value.\n\nThis is an alias for :py:func:`lowest <lowest>` with aggregation ``average``.",
+			Function:    "lowestAverage(seriesList, n)",
+			Group:       "Filter Series",
+			Module:      "graphite.render.functions",
+			Name:        "lowestAverage",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "n",
+					Required: true,
+					Type:     types.Integer,
+				},
+			},
+		},
+		"lowestMax": {
+			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\nOut of all metrics passed, draws only the bottom N metrics with the lowest\nmaximum value for the time period specified.\n\nExample:\n\n.. code-block:: none\n\n  &target=lowestMax(server*.instance*.threads.busy,5)\n\nDraws the bottom 5 servers with the lowest maximum value.\n\nThis is an alias for :py:func:`lowest <lowest>` with aggregation ``max``.",
+			Function:    "lowestMax(seriesList, n)",
+			Group:       "Filter Series",
+			Module:      "graphite.render.functions",
+			Name:        "lowestMax",
 			Params: []types.FunctionParam{
 				{
 					Name:     "seriesList",

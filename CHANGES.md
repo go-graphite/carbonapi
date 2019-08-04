@@ -14,7 +14,8 @@ Changes
 CHANGELOG
 ---------
 **0.12.5 (WIP)**
- - [Feature] Support 'highest' function
+ - [Feature] Implement 'highest' function
+ - [Feature] Implement 'lowest' function
 
 **0.12.4**
  - [Feature] Fuction Defines - allows to do custom metric aliases (thx to @lomik). See [doc/configuration.md](https://github.com/go-graphite/carbonapi/blob/master/doc/configuration.md#define) for config format

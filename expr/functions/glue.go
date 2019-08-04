@@ -37,7 +37,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/group"
 	"github.com/go-graphite/carbonapi/expr/functions/groupByNode"
 	"github.com/go-graphite/carbonapi/expr/functions/groupByTags"
-	"github.com/go-graphite/carbonapi/expr/functions/highest"
+	"github.com/go-graphite/carbonapi/expr/functions/highestLowest"
 	"github.com/go-graphite/carbonapi/expr/functions/hitcount"
 	"github.com/go-graphite/carbonapi/expr/functions/holtWintersAberration"
 	"github.com/go-graphite/carbonapi/expr/functions/holtWintersConfidenceBands"
@@ -53,7 +53,6 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/linearRegression"
 	"github.com/go-graphite/carbonapi/expr/functions/logarithm"
 	"github.com/go-graphite/carbonapi/expr/functions/lowPass"
-	"github.com/go-graphite/carbonapi/expr/functions/lowest"
 	"github.com/go-graphite/carbonapi/expr/functions/mapSeries"
 	"github.com/go-graphite/carbonapi/expr/functions/minMax"
 	"github.com/go-graphite/carbonapi/expr/functions/mostDeviant"
@@ -139,7 +138,7 @@ func New(configs map[string]string) {
 		{name: "group", order: group.GetOrder(), f: group.New},
 		{name: "groupByNode", order: groupByNode.GetOrder(), f: groupByNode.New},
 		{name: "groupByTags", order: groupByTags.GetOrder(), f: groupByTags.New},
-		{name: "highest", order: highest.GetOrder(), f: highest.New},
+		{name: "highestLowest", order: highestLowest.GetOrder(), f: highestLowest.New},
 		{name: "hitcount", order: hitcount.GetOrder(), f: hitcount.New},
 		{name: "holtWintersAberration", order: holtWintersAberration.GetOrder(), f: holtWintersAberration.New},
 		{name: "holtWintersConfidenceBands", order: holtWintersConfidenceBands.GetOrder(), f: holtWintersConfidenceBands.New},
@@ -155,7 +154,6 @@ func New(configs map[string]string) {
 		{name: "linearRegression", order: linearRegression.GetOrder(), f: linearRegression.New},
 		{name: "logarithm", order: logarithm.GetOrder(), f: logarithm.New},
 		{name: "lowPass", order: lowPass.GetOrder(), f: lowPass.New},
-		{name: "lowest", order: lowest.GetOrder(), f: lowest.New},
 		{name: "mapSeries", order: mapSeries.GetOrder(), f: mapSeries.New},
 		{name: "minMax", order: minMax.GetOrder(), f: minMax.New},
 		{name: "mostDeviant", order: mostDeviant.GetOrder(), f: mostDeviant.New},
