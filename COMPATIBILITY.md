@@ -109,7 +109,6 @@ _When `format=png`_ (default if not specified)
 ### Unsupported functions
 | Function                                                                  |
 | :------------------------------------------------------------------------ |
-| aggregateLine |
 | aggregateWithWildcards |
 | aliasQuery |
 | averageOutsidePercentile |
@@ -120,7 +119,6 @@ _When `format=png`_ (default if not specified)
 | identity |
 | integralByInterval |
 | interpolate |
-| lowest |
 | minMax |
 | movingWindow |
 | pct |
@@ -154,6 +152,7 @@ _When `format=png`_ (default if not specified)
 | :-------------|:--------------------------------------------------------- |
 | absolute(seriesList) | no |
 | aggregate(seriesList, func, xFilesFactor=None) | no |
+| aggregateLine | no |
 | alias(seriesList, newName) | no |
 | aliasByMetric(seriesList) | no |
 | aliasByNode(seriesList, *nodes) | no |
@@ -208,6 +207,7 @@ _When `format=png`_ (default if not specified)
 | lineWidth(seriesList, width) | no |
 | linearRegression(seriesList, startSourceAt=None, endSourceAt=None) | no |
 | log(seriesList, base=10) | no |
+| lowest(seriesList, n, func) | no |
 | lowestAverage(seriesList, n) | no |
 | lowestCurrent(seriesList, n) | no |
 | map(seriesList, *mapNodes) | no |
