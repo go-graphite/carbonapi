@@ -7,6 +7,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/aboveSeries"
 	"github.com/go-graphite/carbonapi/expr/functions/absolute"
 	"github.com/go-graphite/carbonapi/expr/functions/aggregate"
+	"github.com/go-graphite/carbonapi/expr/functions/aggregateLine"
 	"github.com/go-graphite/carbonapi/expr/functions/alias"
 	"github.com/go-graphite/carbonapi/expr/functions/aliasByMetric"
 	"github.com/go-graphite/carbonapi/expr/functions/aliasByNode"
@@ -108,6 +109,7 @@ func New(configs map[string]string) {
 		{name: "aboveSeries", order: aboveSeries.GetOrder(), f: aboveSeries.New},
 		{name: "absolute", order: absolute.GetOrder(), f: absolute.New},
 		{name: "aggregate", order: aggregate.GetOrder(), f: aggregate.New},
+		{name: "aggregateLine", order: aggregateLine.GetOrder(), f: aggregateLine.New},
 		{name: "alias", order: alias.GetOrder(), f: alias.New},
 		{name: "aliasByMetric", order: aliasByMetric.GetOrder(), f: aliasByMetric.New},
 		{name: "aliasByNode", order: aliasByNode.GetOrder(), f: aliasByNode.New},
