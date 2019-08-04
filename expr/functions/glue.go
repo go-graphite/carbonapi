@@ -33,6 +33,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/exclude"
 	"github.com/go-graphite/carbonapi/expr/functions/fallbackSeries"
 	"github.com/go-graphite/carbonapi/expr/functions/fft"
+	"github.com/go-graphite/carbonapi/expr/functions/filter"
 	"github.com/go-graphite/carbonapi/expr/functions/graphiteWeb"
 	"github.com/go-graphite/carbonapi/expr/functions/grep"
 	"github.com/go-graphite/carbonapi/expr/functions/group"
@@ -135,6 +136,7 @@ func New(configs map[string]string) {
 		{name: "exclude", order: exclude.GetOrder(), f: exclude.New},
 		{name: "fallbackSeries", order: fallbackSeries.GetOrder(), f: fallbackSeries.New},
 		{name: "fft", order: fft.GetOrder(), f: fft.New},
+		{name: "filter", order: filter.GetOrder(), f: filter.New},
 		{name: "graphiteWeb", order: graphiteWeb.GetOrder(), f: graphiteWeb.New},
 		{name: "grep", order: grep.GetOrder(), f: grep.New},
 		{name: "group", order: group.GetOrder(), f: group.New},

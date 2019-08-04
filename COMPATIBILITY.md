@@ -114,7 +114,6 @@ _When `format=png`_ (default if not specified)
 | averageOutsidePercentile |
 | events |
 | exponentialMovingAverage |
-| filterSeries |
 | holtWintersConfidenceArea |
 | identity |
 | integralByInterval |
@@ -152,7 +151,7 @@ _When `format=png`_ (default if not specified)
 | :-------------|:--------------------------------------------------------- |
 | absolute(seriesList) | no |
 | aggregate(seriesList, func, xFilesFactor=None) | no |
-| aggregateLine | no |
+| aggregateLine((seriesList, func='average', keepStep=False)) | no |
 | alias(seriesList, newName) | no |
 | aliasByMetric(seriesList) | no |
 | aliasByNode(seriesList, *nodes) | no |
@@ -185,6 +184,7 @@ _When `format=png`_ (default if not specified)
 | drawAsInfinite(seriesList) | no |
 | exclude(seriesList, pattern) | no |
 | fallbackSeries(seriesList, fallback) | no |
+| filterSeries(seriesList, func, operator, threshold) | no |
 | grep(seriesList, pattern) | no |
 | group(*seriesLists) | no |
 | groupByNode(seriesList, nodeNum, callback='average') | no |
