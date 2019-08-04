@@ -13,7 +13,7 @@ Changes
 
 CHANGELOG
 ---------
-**0.12.5 (WIP)**
+**0.12.5**
  - [Feature] Implement 'highest' function
  - [Feature] Implement 'lowest' function
  - [Feature] Implement 'aggregateLine' function
