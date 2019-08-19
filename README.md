@@ -22,7 +22,7 @@ Autobuilds (master, might be unstable): [Autobuild repo](https://packagecloud.io
 
 Configuration guides: [docs/configuration.md](https://github.com/go-graphite/carbonapi/blob/master/doc/configuration.md) and [example config](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.yaml).
 
-There are multiple example configurations available for different backends: [prometheus](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.prometheus.yaml), [graphtie-clickhouse](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.clickhouse.yaml), [go-carbon](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.yaml)
+There are multiple example configurations available for different backends: [prometheus](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.prometheus.yaml), [graphite-clickhouse](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.clickhouse.yaml), [go-carbon](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.yaml)
 
 General information
 -------------------
