@@ -1,2 +1,2 @@
-emptyBody: true
-httpCode: 500
+- emptyBody: true
+  httpCode: 500

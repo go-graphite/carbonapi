@@ -5,10 +5,16 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/ansel1/merry"
+	"github.com/go-graphite/carbonapi/intervalset"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"log"
 	"math"
 	"net/http"
+	"strings"
+	"sync"
+	"time"
 
 	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
@@ -49,7 +55,12 @@ type Response struct {
 	Data           []Metric `yaml:"data"`
 }
 
+type MultiListenerConfig struct {
+	Listeners []Config `yaml:"listeners"`
+}
+
 type Config struct {
+	Address     string              `yaml:"address"`
 	Code        int                 `yaml:"httpCode"`
 	EmptyBody   bool                `yaml:"emptyBody"`
 	Expressions map[string]Response `yaml:"expressions"`
@@ -75,7 +86,7 @@ func copyResponse(src Response) Response {
 	return dst
 }
 
-func copy(src map[string]Response) map[string]Response {
+func copyMap(src map[string]Response) map[string]Response {
 	dst := make(map[string]Response)
 
 	for k, v := range src {
@@ -85,7 +96,7 @@ func copy(src map[string]Response) map[string]Response {
 	return dst
 }
 
-var cfg = Config{}
+var cfg = MultiListenerConfig{}
 
 var knownFormats = map[string]responseFormat{
 	"json":            jsonFormat,
@@ -104,13 +115,38 @@ func getFormat(req *http.Request) (responseFormat, error) {
 
 	formatCode, ok := knownFormats[format]
 	if !ok {
-		return formatCode, fmt.Errorf("Unknown format")
+		return formatCode, fmt.Errorf("unknown format")
 	}
 
 	return formatCode, nil
 }
 
-func renderHandler(wr http.ResponseWriter, req *http.Request) {
+type listener struct {
+	Config
+	logger *zap.Logger
+}
+
+const (
+	contentTypeJSON       = "application/json"
+	contentTypeProtobuf   = "application/x-protobuf"
+	contentTypeJavaScript = "text/javascript"
+	contentTypeRaw        = "text/plain"
+	contentTypePickle     = "application/pickle"
+	contentTypePNG        = "image/png"
+	contentTypeCSV        = "text/csv"
+	contentTypeSVG        = "image/svg+xml"
+)
+
+func (cfg *listener) findHandler(wr http.ResponseWriter, req *http.Request) {
+	_ = req.ParseMultipartForm(16 * 1024 * 1024)
+	logger := cfg.logger.With(
+		zap.String("function", "findHandler"),
+		zap.String("method", req.Method),
+		zap.String("path", req.URL.Path),
+		zap.Any("form", req.Form),
+	)
+	logger.Info("got request")
+
 	if cfg.Code != http.StatusOK {
 		wr.WriteHeader(cfg.Code)
 		return
@@ -119,12 +155,170 @@ func renderHandler(wr http.ResponseWriter, req *http.Request) {
 	format, err := getFormat(req)
 	if err != nil {
 		wr.WriteHeader(http.StatusBadRequest)
-		wr.Write([]byte(err.Error()))
+		_, _ = wr.Write([]byte(err.Error()))
+		return
+	}
+
+	query := req.Form["query"]
+
+	if format == protoV3Format {
+		body, err := ioutil.ReadAll(req.Body)
+		if err != nil {
+			logger.Error("failed to read request body",
+				zap.Error(err),
+			)
+			http.Error(wr, "Bad request (unsupported format)",
+				http.StatusBadRequest)
+		}
+
+		var pv3Request protov3.MultiGlobRequest
+		_ = pv3Request.Unmarshal(body)
+
+		query = pv3Request.Metrics
+	}
+
+	logger.Info("request details",
+		zap.Strings("query", query),
+	)
+
+	multiGlobs := protov3.MultiGlobResponse{
+		Metrics: []protov3.GlobResponse{},
+	}
+
+	if query[0] != "*" {
+		for m := range cfg.Config.Expressions {
+			globMatches := []protov3.GlobMatch{}
+
+			for _, metric := range cfg.Expressions[m].Data {
+				globMatches = append(globMatches, protov3.GlobMatch{
+					Path:   metric.MetricName,
+					IsLeaf: true,
+				})
+			}
+			multiGlobs.Metrics = append(multiGlobs.Metrics,
+				protov3.GlobResponse{
+					Name:    cfg.Expressions[m].PathExpression,
+					Matches: globMatches,
+				})
+		}
+	} else {
+		returnMap := make(map[string]struct{}, 0)
+		for m := range cfg.Config.Expressions {
+			for _, metric := range cfg.Expressions[m].Data {
+				returnMap[metric.MetricName] = struct{}{}
+			}
+		}
+
+		globMatches := []protov3.GlobMatch{}
+		for k := range returnMap {
+			metricName := strings.Split(k, ".")
+
+			globMatches = append(globMatches, protov3.GlobMatch{
+				Path:   metricName[0],
+				IsLeaf: len(metricName) == 1,
+			})
+		}
+		multiGlobs.Metrics = append(multiGlobs.Metrics,
+			protov3.GlobResponse{
+				Name:    "*",
+				Matches: globMatches,
+			})
+	}
+
+	logger.Info("will return", zap.Any("response", multiGlobs))
+
+	var b []byte
+	switch format {
+	case protoV2Format:
+		response := protov2.GlobResponse{
+			Name:    query[0],
+			Matches: make([]protov2.GlobMatch, 0),
+		}
+		for _, metric := range multiGlobs.Metrics {
+			if metric.Name == query[0] {
+				for _, m := range metric.Matches {
+					response.Matches = append(response.Matches,
+						protov2.GlobMatch{
+							Path:   m.Path,
+							IsLeaf: m.IsLeaf,
+						})
+				}
+			}
+		}
+		b, err = response.Marshal()
+		format = protoV2Format
+	case protoV3Format:
+		b, err = multiGlobs.Marshal()
+		format = protoV3Format
+	case pickleFormat:
+		var result []map[string]interface{}
+		now := int32(time.Now().Unix() + 60)
+		for _, globs := range multiGlobs.Metrics {
+			for _, metric := range globs.Matches {
+				if strings.HasPrefix(metric.Path, "_tag") {
+					continue
+				}
+				// Tell graphite-web that we have everything
+				var mm map[string]interface{}
+				// graphite-web 1.0
+				interval := &intervalset.IntervalSet{Start: 0, End: now}
+				mm = map[string]interface{}{
+					"is_leaf":   metric.IsLeaf,
+					"path":      metric.Path,
+					"intervals": interval,
+				}
+				result = append(result, mm)
+			}
+		}
+
+		p := bytes.NewBuffer(b)
+		pEnc := pickle.NewEncoder(p)
+		err = merry.Wrap(pEnc.Encode(result))
+		b = p.Bytes()
+	}
+
+	if err != nil {
+		logger.Error("failed to marshal", zap.Error(err))
+		http.Error(wr, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	switch format {
+	case jsonFormat:
+		wr.Header().Set("Content-Type", contentTypeJSON)
+	case protoV3Format, protoV2Format:
+		wr.Header().Set("Content-Type", contentTypeProtobuf)
+	case pickleFormat:
+		wr.Header().Set("Content-Type", contentTypePickle)
+	}
+	_, _ = wr.Write(b)
+
+	return
+}
+
+func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
+	logger := cfg.logger.With(
+		zap.String("function", "renderHandler"),
+		zap.String("method", req.Method),
+		zap.String("path", req.URL.Path),
+	)
+	logger.Info("got request")
+	if cfg.Code != http.StatusOK {
+		wr.WriteHeader(cfg.Code)
+		return
+	}
+
+	format, err := getFormat(req)
+	if err != nil {
+		wr.WriteHeader(http.StatusBadRequest)
+		_, _ = wr.Write([]byte(err.Error()))
 		return
 	}
 
 	targets := req.Form["target"]
-	log.Printf("request for target=%+v\n", targets)
+	logger.Info("request details",
+		zap.Strings("target", targets),
+	)
 
 	multiv2 := protov2.MultiFetchResponse{
 		Metrics: []protov2.FetchResponse{},
@@ -137,14 +331,14 @@ func renderHandler(wr http.ResponseWriter, req *http.Request) {
 	newCfg := Config{
 		Code:        cfg.Code,
 		EmptyBody:   cfg.EmptyBody,
-		Expressions: copy(cfg.Expressions),
+		Expressions: copyMap(cfg.Expressions),
 	}
 
 	for _, target := range targets {
 		response, ok := newCfg.Expressions[target]
 		if !ok {
 			wr.WriteHeader(http.StatusNotFound)
-			wr.Write([]byte(err.Error()))
+			_, _ = wr.Write([]byte("Not found"))
 			return
 		}
 		for _, m := range response.Data {
@@ -224,7 +418,10 @@ func renderHandler(wr http.ResponseWriter, req *http.Request) {
 		}
 
 		var buf bytes.Buffer
-		log.Printf("request will be served. format=pickle, data=%+v\n", response)
+		logger.Info("request will be served",
+			zap.String("format", "pickle"),
+			zap.Any("content", response),
+		)
 		pEnc := pickle.NewEncoder(&buf)
 		err = pEnc.Encode(response)
 		d = buf.Bytes()
@@ -233,11 +430,14 @@ func renderHandler(wr http.ResponseWriter, req *http.Request) {
 		if cfg.EmptyBody {
 			break
 		}
-		log.Printf("request will be served. format=protov2, data=%+v\n", multiv2)
+		logger.Info("request will be served",
+			zap.String("format", "protov2"),
+			zap.Any("content", multiv2),
+		)
 		d, err = multiv2.Marshal()
 		if err != nil {
 			wr.WriteHeader(http.StatusBadGateway)
-			wr.Write([]byte(err.Error()))
+			_, _ = wr.Write([]byte(err.Error()))
 			return
 		}
 	case protoV3Format:
@@ -245,11 +445,14 @@ func renderHandler(wr http.ResponseWriter, req *http.Request) {
 		if cfg.EmptyBody {
 			break
 		}
-		log.Printf("request will be served. format=protov3, data=%+v\n", multiv3)
+		logger.Info("request will be served",
+			zap.String("format", "protov3"),
+			zap.Any("content", multiv3),
+		)
 		d, err = multiv3.Marshal()
 		if err != nil {
 			wr.WriteHeader(http.StatusBadGateway)
-			wr.Write([]byte(err.Error()))
+			_, _ = wr.Write([]byte(err.Error()))
 			return
 		}
 	case jsonFormat:
@@ -257,49 +460,78 @@ func renderHandler(wr http.ResponseWriter, req *http.Request) {
 		if cfg.EmptyBody {
 			break
 		}
-		log.Printf("request will be served. format=json, data=%+v\n", multiv2)
+		logger.Info("request will be served",
+			zap.String("format", "json"),
+			zap.Any("content", multiv2),
+		)
 		d, err = json.Marshal(multiv2)
 		if err != nil {
 			wr.WriteHeader(http.StatusBadGateway)
-			wr.Write([]byte(err.Error()))
+			_, _ = wr.Write([]byte(err.Error()))
 			return
 		}
 	}
 	wr.Header().Set("Content-Type", contentType)
-	wr.Write(d)
+	_, _ = wr.Write(d)
 }
 
 func main() {
 	config := flag.String("config", "average.yaml", "yaml where it would be possible to get data")
-	address := flag.String("address", ":9070", "address to bind")
 	flag.Parse()
+	logger, err := zap.NewProduction()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	if *config == "" {
-		fmt.Printf("failed to get config, it should be non-null")
-		return
+		logger.Fatal("failed to get config, it should be non-null")
 	}
 
 	d, err := ioutil.ReadFile(*config)
 	if err != nil {
-		fmt.Println(err)
-		return
+		logger.Fatal("failed to read config", zap.Error(err))
 	}
 
 	err = yaml.Unmarshal(d, &cfg)
 	if err != nil {
-		fmt.Println(err)
+		logger.Fatal("failed to read config", zap.Error(err))
 		return
 	}
 
-	if cfg.Code == 0 {
-		cfg.Code = http.StatusOK
+	wg := sync.WaitGroup{}
+	for _, c := range cfg.Listeners {
+		logger := logger.With(zap.String("listener", c.Address))
+		listener := listener{
+			Config: c,
+			logger: logger,
+		}
+
+		if listener.Address == "" {
+			listener.Address = ":9070"
+		}
+
+		if listener.Code == 0 {
+			listener.Code = http.StatusOK
+		}
+
+		logger.Info("started",
+			zap.String("listener", listener.Address),
+			zap.Any("config", c),
+		)
+
+		mux := http.NewServeMux()
+		mux.HandleFunc("/render", listener.renderHandler)
+		mux.HandleFunc("/render/", listener.renderHandler)
+		mux.HandleFunc("/metrics/find", listener.findHandler)
+		mux.HandleFunc("/metrics/find/", listener.findHandler)
+
+		wg.Add(1)
+		go func() {
+			err = http.ListenAndServe(listener.Address, mux)
+			fmt.Println(err)
+			wg.Done()
+		}()
 	}
-
-	log.Printf("started. config=%v\n", cfg)
-
-	http.HandleFunc("/render", renderHandler)
-	http.HandleFunc("/render/", renderHandler)
-
-	err = http.ListenAndServe(*address, nil)
-	fmt.Println(err)
+	logger.Info("all listeners started")
+	wg.Wait()
 }

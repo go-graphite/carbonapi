@@ -263,41 +263,51 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 				expr.SortMetrics(metricMap[mFetch], mFetch)
 			}
 		}
-		accessLogDetails.Metrics = metrics
-
-		var rewritten bool
-		var newTargets []string
-
-		rewritten, newTargets, err = expr.RewriteExpr(exp, from32, until32, metricMap)
-		if err != nil && !merry.Is(err, parser.ErrSeriesDoesNotExist) {
-			errors[target] = merry.Wrap(err)
-			accessLogDetails.Reason = err.Error()
-			logAsError = true
-			return
+		// Remove metrics for which fetch failed
+		filteredMetricMap := make(map[parser.MetricRequest][]*types.MetricData)
+		for k := range metricMap {
+			if len(metricMap[k]) != 0 {
+				filteredMetricMap[k] = metricMap[k]
+			}
 		}
+		metricMap = filteredMetricMap
+		accessLogDetails.Metrics = metrics
+		if len(metricMap) > 0 {
 
-		if rewritten {
-			targets = append(targets, newTargets...)
-		} else {
-			func() {
-				defer func() {
-					if r := recover(); r != nil {
-						logger.Error("panic during eval:",
-							zap.String("cache_key", cacheKey),
-							zap.Any("reason", r),
-							zap.Stack("stack"),
-						)
+			var rewritten bool
+			var newTargets []string
+
+			rewritten, newTargets, err = expr.RewriteExpr(exp, from32, until32, metricMap)
+			if err != nil && !merry.Is(err, parser.ErrSeriesDoesNotExist) {
+				errors[target] = merry.Wrap(err)
+				accessLogDetails.Reason = err.Error()
+				logAsError = true
+				return
+			}
+
+			if rewritten {
+				targets = append(targets, newTargets...)
+			} else {
+				func() {
+					defer func() {
+						if r := recover(); r != nil {
+							logger.Error("panic during eval:",
+								zap.String("cache_key", cacheKey),
+								zap.Any("reason", r),
+								zap.Stack("stack"),
+							)
+						}
+					}()
+					expressions, err := expr.EvalExpr(exp, from32, until32, metricMap)
+					if err != nil && !merry.Is(err, parser.ErrSeriesDoesNotExist) {
+						errors[target] = merry.Wrap(err)
+						accessLogDetails.Reason = err.Error()
+						logAsError = true
+						return
 					}
+					results = append(results, expressions...)
 				}()
-				expressions, err := expr.EvalExpr(exp, from32, until32, metricMap)
-				if err != nil && !merry.Is(err, parser.ErrSeriesDoesNotExist) {
-					errors[target] = merry.Wrap(err)
-					accessLogDetails.Reason = err.Error()
-					logAsError = true
-					return
-				}
-				results = append(results, expressions...)
-			}()
+			}
 		}
 	}
 

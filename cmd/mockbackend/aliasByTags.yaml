@@ -1,4 +1,4 @@
-expressions:
+- expressions:
   "seriesByTag('__name__=base.metric1')":
     pathExpression: "seriesByTag('__name__=base.metric1')"
     data:

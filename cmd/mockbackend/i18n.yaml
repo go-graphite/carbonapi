@@ -1,4 +1,4 @@
-expressions:
+- expressions:
   "test.metric.株式.rate":
     pathExpression: "test.metric.株式.rate"
     data:

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-
 	"github.com/ansel1/merry"
 	tags2 "github.com/go-graphite/carbonapi/expr/tags"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -116,15 +115,6 @@ func (z zipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*ty
 }
 
 func (z zipper) RenderCompat(ctx context.Context, metrics []string, from, until int64) ([]*types.MetricData, *zipperTypes.Stats, merry.Error) {
-	var result []*types.MetricData
-	newCtx := ctx
-	if z.ignoreClientTimeout {
-		uuid := util.GetUUID(ctx)
-		hdrs := util.GetPassHeaders(ctx)
-		newCtx = util.SetUUID(context.Background(), uuid)
-		newCtx = util.SetPassHeaders(newCtx, hdrs)
-	}
-
 	req := pb.MultiFetchRequest{}
 	for _, metric := range metrics {
 		req.Metrics = append(req.Metrics, pb.FetchRequest{
@@ -134,22 +124,7 @@ func (z zipper) RenderCompat(ctx context.Context, metrics []string, from, until 
 		})
 	}
 
-	pbresp, stats, err := z.z.FetchProtoV3(newCtx, &req)
-	if err != nil {
-		return result, stats, err
-	}
-
-	z.statsSender(stats)
-
-	if m := pbresp.Metrics; len(m) == 0 {
-		return result, stats, errNoMetrics
-	}
-
-	for i := range pbresp.Metrics {
-		result = append(result, &types.MetricData{FetchResponse: pbresp.Metrics[i]})
-	}
-
-	return result, stats, nil
+	return z.Render(ctx, req)
 }
 
 func (z zipper) TagNames(ctx context.Context, query string, limit int64) ([]string, merry.Error) {

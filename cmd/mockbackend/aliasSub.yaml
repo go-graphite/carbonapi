@@ -1,4 +1,4 @@
-expressions:
+- expressions:
   "dns.snake.sql_updated":
     pathExpression: "dns.snake.sql_updated"
     data:
