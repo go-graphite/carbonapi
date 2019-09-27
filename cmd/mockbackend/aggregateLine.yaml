@@ -1,4 +1,4 @@
-expressions:
+- expressions:
   "metric[12]":
     pathExpression: "metric[12]"
     data:

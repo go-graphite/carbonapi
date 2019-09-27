@@ -3,6 +3,7 @@ package http
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ansel1/merry"
 	"net/http"
 	"time"
 
@@ -73,14 +74,16 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var b []byte
+	var err2 error
 	switch format {
 	case jsonFormat:
-		b, err = json.Marshal(data)
+		b, err2 = json.Marshal(data)
 	case protobufFormat, protobuf3Format:
-		err = fmt.Errorf("not implemented yet")
+		err2 = fmt.Errorf("not implemented yet")
 	default:
-		err = fmt.Errorf("unknown format %v", format)
+		err2 = fmt.Errorf("unknown format %v", format)
 	}
+	err = merry.Wrap(err2)
 
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

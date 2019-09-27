@@ -1,6 +1,7 @@
 package types
 
 import (
+	"github.com/ansel1/merry"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
@@ -20,16 +21,18 @@ type CapabilityRequestV3 struct {
 	protov3.CapabilityRequest
 }
 
-func (request MultiGlobRequestV3) Marshal() ([]byte, error) {
-	return request.MultiGlobRequest.Marshal()
+func (request MultiGlobRequestV3) Marshal() ([]byte, merry.Error) {
+	b, err := request.MultiGlobRequest.Marshal()
+	return b, merry.Wrap(err)
 }
 
 func (request MultiGlobRequestV3) LogInfo() interface{} {
 	return request.MultiGlobRequest
 }
 
-func (request MultiFetchRequestV3) Marshal() ([]byte, error) {
-	return request.MultiFetchRequest.Marshal()
+func (request MultiFetchRequestV3) Marshal() ([]byte, merry.Error) {
+	b, err := request.MultiFetchRequest.Marshal()
+	return b, merry.Wrap(err)
 }
 
 func (request MultiFetchRequestV3) LogInfo() interface{} {
@@ -37,16 +40,18 @@ func (request MultiFetchRequestV3) LogInfo() interface{} {
 
 }
 
-func (request MultiMetricsInfoV3) Marshal() ([]byte, error) {
-	return request.MultiMetricsInfoRequest.Marshal()
+func (request MultiMetricsInfoV3) Marshal() ([]byte, merry.Error) {
+	b, err := request.MultiMetricsInfoRequest.Marshal()
+	return b, merry.Wrap(err)
 }
 
 func (request MultiMetricsInfoV3) LogInfo() interface{} {
 	return request.MultiMetricsInfoRequest
 }
 
-func (request CapabilityRequestV3) Marshal() ([]byte, error) {
-	return request.CapabilityRequest.Marshal()
+func (request CapabilityRequestV3) Marshal() ([]byte, merry.Error) {
+	b, err := request.CapabilityRequest.Marshal()
+	return b, merry.Wrap(err)
 }
 
 func (request CapabilityRequestV3) LogInfo() interface{} {

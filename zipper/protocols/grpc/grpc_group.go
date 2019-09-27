@@ -2,10 +2,10 @@ package grpc
 
 import (
 	"context"
+	"github.com/ansel1/merry"
 	"math"
 
 	"github.com/go-graphite/carbonapi/limiter"
-	"github.com/go-graphite/carbonapi/zipper/errors"
 	"github.com/go-graphite/carbonapi/zipper/metadata"
 	"github.com/go-graphite/carbonapi/zipper/types"
 	protov3grpc "github.com/go-graphite/protocol/carbonapi_v3_grpc"
@@ -48,15 +48,15 @@ func (c *ClientGRPCGroup) Children() []types.BackendServer {
 	return []types.BackendServer{c}
 }
 
-func NewClientGRPCGroupWithLimiter(logger *zap.Logger, config types.BackendV2, limiter limiter.ServerLimiter) (types.BackendServer, *errors.Errors) {
+func NewClientGRPCGroupWithLimiter(logger *zap.Logger, config types.BackendV2, limiter limiter.ServerLimiter) (types.BackendServer, merry.Error) {
 	return NewClientGRPCGroup(logger, config)
 }
 
-func NewClientGRPCGroup(logger *zap.Logger, config types.BackendV2) (types.BackendServer, *errors.Errors) {
+func NewClientGRPCGroup(logger *zap.Logger, config types.BackendV2) (types.BackendServer, merry.Error) {
 	logger = logger.With(zap.String("type", "grpcGroup"), zap.String("name", config.GroupName))
 	// TODO: Implement normal resolver
 	if len(config.Servers) == 0 {
-		return nil, errors.Fatal("no servers specified")
+		return nil, types.ErrNoServersSpecified
 	}
 	r, cleanup := manual.GenerateAndRegisterManualResolver()
 	var resolvedAddrs []resolver.Address
@@ -80,7 +80,7 @@ func NewClientGRPCGroup(logger *zap.Logger, config types.BackendV2) (types.Backe
 	conn, err := grpc.Dial(r.Scheme()+":///server", opts...)
 	if err != nil {
 		cleanup()
-		return nil, errors.FromErr(err)
+		return nil, merry.Wrap(err)
 	}
 
 	client := &ClientGRPCGroup{
@@ -111,7 +111,7 @@ func (c ClientGRPCGroup) Backends() []string {
 	return c.servers
 }
 
-func (c *ClientGRPCGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, *errors.Errors) {
+func (c *ClientGRPCGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, merry.Error) {
 	stats := &types.Stats{
 		Servers: []string{c.Name()},
 	}
@@ -126,10 +126,10 @@ func (c *ClientGRPCGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	}
 	stats.MemoryUsage = int64(res.Size())
 
-	return res, stats, errors.FromErrNonFatal(err)
+	return res, stats, merry.Wrap(err)
 }
 
-func (c *ClientGRPCGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, *errors.Errors) {
+func (c *ClientGRPCGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
 	stats := &types.Stats{
 		Servers: []string{c.Name()},
 	}
@@ -144,9 +144,9 @@ func (c *ClientGRPCGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	}
 	stats.MemoryUsage = int64(res.Size())
 
-	return res, stats, errors.FromErrNonFatal(err)
+	return res, stats, merry.Wrap(err)
 }
-func (c *ClientGRPCGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, *errors.Errors) {
+func (c *ClientGRPCGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, merry.Error) {
 	stats := &types.Stats{
 		Servers: []string{c.Name()},
 	}
@@ -167,10 +167,10 @@ func (c *ClientGRPCGroup) Info(ctx context.Context, request *protov3.MultiMetric
 		},
 	}
 
-	return r, stats, errors.FromErrNonFatal(err)
+	return r, stats, merry.Wrap(err)
 }
 
-func (c *ClientGRPCGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, *errors.Errors) {
+func (c *ClientGRPCGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, merry.Error) {
 	stats := &types.Stats{
 		Servers: []string{c.Name()},
 	}
@@ -185,9 +185,9 @@ func (c *ClientGRPCGroup) List(ctx context.Context) (*protov3.ListMetricsRespons
 	}
 	stats.MemoryUsage = int64(res.Size())
 
-	return res, stats, errors.FromErrNonFatal(err)
+	return res, stats, merry.Wrap(err)
 }
-func (c *ClientGRPCGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, *errors.Errors) {
+func (c *ClientGRPCGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, merry.Error) {
 	stats := &types.Stats{
 		Servers: []string{c.Name()},
 	}
@@ -202,18 +202,18 @@ func (c *ClientGRPCGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResp
 	}
 	stats.MemoryUsage = int64(res.Size())
 
-	return res, stats, errors.FromErrNonFatal(err)
+	return res, stats, merry.Wrap(err)
 }
 
-func (c *ClientGRPCGroup) TagNames(ctx context.Context, query string, limit int64) ([]string, *errors.Errors) {
-	return nil, errors.FromErr(types.ErrNotImplementedYet)
+func (c *ClientGRPCGroup) TagNames(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+	return nil, types.ErrNotImplementedYet
 }
 
-func (c *ClientGRPCGroup) TagValues(ctx context.Context, query string, limit int64) ([]string, *errors.Errors) {
-	return nil, errors.FromErr(types.ErrNotImplementedYet)
+func (c *ClientGRPCGroup) TagValues(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+	return nil, types.ErrNotImplementedYet
 }
 
-func (c *ClientGRPCGroup) ProbeTLDs(ctx context.Context) ([]string, *errors.Errors) {
+func (c *ClientGRPCGroup) ProbeTLDs(ctx context.Context) ([]string, merry.Error) {
 	logger := c.logger.With(zap.String("type", "probe"))
 
 	ctx, cancel := context.WithTimeout(ctx, c.timeout.Find)

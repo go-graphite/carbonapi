@@ -3,12 +3,12 @@ package broadcast
 import (
 	"context"
 	"fmt"
+	"github.com/ansel1/merry"
 	"sort"
 	"strings"
 
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/pathcache"
-	"github.com/go-graphite/carbonapi/zipper/errors"
 	"github.com/go-graphite/carbonapi/zipper/types"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
@@ -31,9 +31,9 @@ func (bg *BroadcastGroup) Children() []types.BackendServer {
 	return bg.backends
 }
 
-func NewBroadcastGroup(logger *zap.Logger, groupName string, servers []types.BackendServer, expireDelaySec int32, concurrencyLimit, maxBatchSize int, timeout types.Timeouts) (*BroadcastGroup, *errors.Errors) {
+func NewBroadcastGroup(logger *zap.Logger, groupName string, servers []types.BackendServer, expireDelaySec int32, concurrencyLimit, maxBatchSize int, timeout types.Timeouts) (*BroadcastGroup, merry.Error) {
 	if len(servers) == 0 {
-		return nil, errors.Fatal("no servers specified")
+		return nil, types.ErrNoServersSpecified
 	}
 	serverNames := make([]string, 0, len(servers))
 	for _, s := range servers {
@@ -45,7 +45,7 @@ func NewBroadcastGroup(logger *zap.Logger, groupName string, servers []types.Bac
 	return NewBroadcastGroupWithLimiter(logger, groupName, servers, serverNames, maxBatchSize, pathCache, limiter, timeout)
 }
 
-func NewBroadcastGroupWithLimiter(logger *zap.Logger, groupName string, servers []types.BackendServer, serverNames []string, maxBatchSize int, pathCache pathcache.PathCache, limiter limiter.ServerLimiter, timeout types.Timeouts) (*BroadcastGroup, *errors.Errors) {
+func NewBroadcastGroupWithLimiter(logger *zap.Logger, groupName string, servers []types.BackendServer, serverNames []string, maxBatchSize int, pathCache pathcache.PathCache, limiter limiter.ServerLimiter, timeout types.Timeouts) (*BroadcastGroup, merry.Error) {
 	b := &BroadcastGroup{
 		timeout:              timeout,
 		groupName:            groupName,
@@ -130,7 +130,7 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 
 	if err := bg.limiter.Enter(ctx, backend.Name()); err != nil {
 		logger.Debug("timeout waiting for a slot")
-		resCh <- response.NonFatalError(err)
+		resCh <- response.NonFatalError(merry.Prepend(err, "timeout waiting for slot"))
 		return
 	}
 
@@ -138,12 +138,14 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 	defer bg.limiter.Leave(ctx, backend.Name())
 
 	// uuid := util.GetUUID(ctx)
+	var err merry.Error
 	for _, req := range requests {
 		logger.Debug("sending request")
 		r := types.NewServerFetchResponse()
-		r.Response, r.Stats, r.Err = backend.Fetch(ctx, req)
+		r.Response, r.Stats, err = backend.Fetch(ctx, req)
+		r.AddError(err)
 		logger.Debug("got response")
-		response.Merge(r)
+		_ = response.Merge(r)
 	}
 
 	resCh <- response
@@ -171,10 +173,10 @@ func (bg *BroadcastGroup) splitRequest(ctx context.Context, request *protov3.Mul
 		}
 
 		f, _, e := bg.Find(ctx, &protov3.MultiGlobRequest{Metrics: []string{metric.Name}})
-		if (e != nil && e.HaveFatalErrors && len(e.Errors) > 0) || f == nil || len(f.Metrics) == 0 {
+		if (e != nil) || f == nil || len(f.Metrics) == 0 {
 			bg.logger.Warn("find request failed when resolving globs",
 				zap.String("metric_name", metric.Name),
-				zap.Any("errors", e.Errors),
+				zap.Any("errors", e),
 			)
 
 			if f == nil {
@@ -207,7 +209,7 @@ func (bg *BroadcastGroup) splitRequest(ctx context.Context, request *protov3.Mul
 	return requests
 }
 
-func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, *errors.Errors) {
+func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, merry.Error) {
 	requestNames := make([]string, 0, len(request.Metrics))
 	for i := range request.Metrics {
 		requestNames = append(requestNames, request.Metrics[i].Name)
@@ -224,7 +226,7 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	result.Stats.TotalMetricsCount = int64(totalMetricsCount)
 
 	if len(requests) == 0 {
-		return result.Response, result.Stats, result.Err
+		return result.Response, result.Stats, types.ErrNoRequests
 	}
 	ctxNew, cancel := context.WithTimeout(ctx, bg.timeout.Render)
 	defer cancel()
@@ -241,23 +243,38 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	}
 
 	if len(result.Response.Metrics) == 0 {
-		logger.Debug("failed to get any response")
-
-		// TODO(gmagnusson): We'll only see this on the root bg group now.
-		// Let's make this message more useful by logging the request, what
-		// hosts we hit, etc.
-		return nil, nil, errors.Errorf("failed to get any response from backend group: %v, query: %s", bg.groupName, requestNames)
+		nonNotFoundErrors := types.ReturnNonNotFoundError(result.Err)
+		if nonNotFoundErrors != nil {
+			err := types.ErrFailedToFetch.WithHTTPCode(500)
+			for _, e := range nonNotFoundErrors {
+				err = err.WithCause(e)
+			}
+			logger.Debug("non-404 errors while fetching data from backends",
+				zap.Any("errors", result.Err),
+			)
+			return nil, result.Stats, err
+		} else {
+			return nil, result.Stats, types.ErrNotFound.WithHTTPCode(404)
+		}
 	}
 
 	logger.Debug("got some fetch responses",
 		zap.Int("backends_count", len(backends)),
 		zap.Int("response_count", responseCount),
-		zap.Bool("have_errors", len(result.Err.Errors) != 0),
-		zap.Any("errors", result.Err.Errors),
+		zap.Bool("have_errors", len(result.Err) != 0),
+		zap.Any("errors", result.Err),
 		zap.Int("response_count", len(result.Response.Metrics)),
 	)
 
-	return result.Response, result.Stats, result.Err
+	var err merry.Error
+	if result.Err != nil && len(result.Err) > 0 {
+		err = types.ErrNonFatalErrors
+		for _, e := range result.Err {
+			err = err.WithCause(e)
+		}
+	}
+
+	return result.Response, result.Stats, err
 }
 
 func getFetchRequestMetricStats(requests []*protov3.MultiFetchRequest, bg *BroadcastGroup, backends []types.BackendServer) (int, int) {
@@ -294,7 +311,7 @@ func (bg *BroadcastGroup) doFind(ctx context.Context, logger *zap.Logger, backen
 
 	if err := bg.limiter.Enter(ctx, backend.Name()); err != nil {
 		logger.Debug("timeout waiting for a slot")
-		r.Err = errors.FromErrNonFatal(types.ErrTimeoutExceeded)
+		r.AddError(merry.Prepend(err, "timeout waiting for slot"))
 		resCh <- r
 		return
 	}
@@ -302,14 +319,16 @@ func (bg *BroadcastGroup) doFind(ctx context.Context, logger *zap.Logger, backen
 	logger.Debug("got slot")
 	defer bg.limiter.Leave(ctx, backend.Name())
 
-	r.Response, r.Stats, r.Err = backend.Find(ctx, request)
+	var err merry.Error
+	r.Response, r.Stats, err = backend.Find(ctx, request)
+	r.AddError(err)
 	logger.Debug("fetched response",
 		zap.Any("response", r),
 	)
 	resCh <- r
 }
 
-func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, *errors.Errors) {
+func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
 	logger := bg.logger.With(zap.String("type", "find"), zap.Strings("request", request.Metrics))
 
 	backends := bg.Children()
@@ -337,7 +356,19 @@ func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	}
 
 	if len(result.Response.Metrics) == 0 {
-		return &protov3.MultiGlobResponse{}, result.Stats, result.Err.Addf("failed to fetch response from the server %v", bg.groupName)
+		nonNotFoundErrors := types.ReturnNonNotFoundError(result.Err)
+		if nonNotFoundErrors != nil {
+			err := types.ErrFailedToFetch.WithHTTPCode(500)
+			for _, e := range nonNotFoundErrors {
+				err = err.WithCause(e)
+			}
+			logger.Debug("non-404 errors while fetching data from backends",
+				zap.Any("errors", result.Err),
+			)
+			return &protov3.MultiGlobResponse{}, result.Stats, err
+		}
+
+		return &protov3.MultiGlobResponse{}, result.Stats, types.ErrNotFound.WithHTTPCode(404)
 	}
 	result.Stats.TotalMetricsCount = 0
 	for _, x := range result.Response.Metrics {
@@ -346,12 +377,20 @@ func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	logger.Debug("got some find responses",
 		zap.Int("backends_count", len(backends)),
 		zap.Int("response_count", responseCount),
-		zap.Bool("have_errors", len(result.Err.Errors) != 0),
-		zap.Any("errors", result.Err.Errors),
+		zap.Bool("have_errors", len(result.Err) != 0),
+		zap.Any("errors", result.Err),
 		zap.Any("response", result.Response),
 	)
 
-	return result.Response, result.Stats, result.Err
+	var err merry.Error
+	if result.Err != nil {
+		err = types.ErrNonFatalErrors
+		for _, e := range result.Err {
+			err = err.WithCause(e)
+		}
+	}
+
+	return result.Response, result.Stats, err
 }
 
 // Info request handling
@@ -374,18 +413,20 @@ func (bg *BroadcastGroup) doInfoRequest(ctx context.Context, logger *zap.Logger,
 
 	if err := bg.limiter.Enter(ctx, backend.Name()); err != nil {
 		logger.Debug("timeout waiting for a slot")
-		r.Err = errors.FromErrNonFatal(err)
+		r.AddError(merry.Prepend(err, "timeout waiting for slot"))
 		resCh <- r
 		return
 	}
 	defer bg.limiter.Leave(ctx, backend.Name())
 
 	logger.Debug("got a slot")
-	r.Response, r.Stats, r.Err = backend.Info(ctx, request)
+	var err merry.Error
+	r.Response, r.Stats, err = backend.Info(ctx, request)
+	r.AddError(err)
 	resCh <- r
 }
 
-func (bg *BroadcastGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, *errors.Errors) {
+func (bg *BroadcastGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, merry.Error) {
 	logger := bg.logger.With(zap.String("type", "info"), zap.Strings("request", request.Names))
 
 	ctxNew, cancel := context.WithTimeout(ctx, bg.timeout.Render)
@@ -409,17 +450,25 @@ func (bg *BroadcastGroup) Info(ctx context.Context, request *protov3.MultiMetric
 	logger.Debug("got some responses",
 		zap.Int("backends_count", len(backends)),
 		zap.Int("response_count", responseCount),
-		zap.Bool("have_errors", len(result.Err.Errors) != 0),
+		zap.Bool("have_errors", len(result.Err) != 0),
 	)
 
-	return result.Response, result.Stats, result.Err
+	var err merry.Error
+	if result.Err != nil {
+		err = types.ErrNonFatalErrors
+		for _, e := range result.Err {
+			err = err.WithCause(e)
+		}
+	}
+
+	return result.Response, result.Stats, err
 }
 
-func (bg *BroadcastGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, *errors.Errors) {
-	return nil, nil, errors.FromErr(types.ErrNotImplementedYet)
+func (bg *BroadcastGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, merry.Error) {
+	return nil, nil, types.ErrNotImplementedYet
 }
-func (bg *BroadcastGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, *errors.Errors) {
-	return nil, nil, errors.FromErr(types.ErrNotImplementedYet)
+func (bg *BroadcastGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, merry.Error) {
+	return nil, nil, types.ErrNotImplementedYet
 }
 
 type tagQuery struct {
@@ -442,7 +491,7 @@ func (bg *BroadcastGroup) doTagRequest(ctx context.Context, logger *zap.Logger, 
 			zap.String("expected_type", fmt.Sprintf("%T", request)),
 		)
 	}
-	res := &types.ServerTagResponse{
+	r := &types.ServerTagResponse{
 		Server:   backend.Name(),
 		Response: []string{},
 	}
@@ -451,25 +500,31 @@ func (bg *BroadcastGroup) doTagRequest(ctx context.Context, logger *zap.Logger, 
 
 	if err := bg.limiter.Enter(ctx, backend.Name()); err != nil {
 		logger.Debug("timeout waiting for a slot")
-		resCh <- res
+		r.AddError(merry.Prepend(err, "timeout waiting for slot"))
+		resCh <- r
 		return
 	}
 	defer bg.limiter.Leave(ctx, backend.Name())
 
 	logger.Debug("got a slot")
+	var err merry.Error
 	if request.IsName {
-		res.Response, res.Err = backend.TagNames(ctx, request.Query, request.Limit)
+		r.Response, err = backend.TagNames(ctx, request.Query, request.Limit)
 	} else {
-		res.Response, res.Err = backend.TagValues(ctx, request.Query, request.Limit)
+		r.Response, err = backend.TagValues(ctx, request.Query, request.Limit)
 	}
 
-	if res.Response == nil {
-		res.Response = []string{}
+	if err != nil {
+		r.AddError(err)
 	}
-	resCh <- res
+
+	if r.Response == nil {
+		r.Response = []string{}
+	}
+	resCh <- r
 }
 
-func (bg *BroadcastGroup) tagEverything(ctx context.Context, isTagName bool, query string, limit int64) ([]string, *errors.Errors) {
+func (bg *BroadcastGroup) tagEverything(ctx context.Context, isTagName bool, query string, limit int64) ([]string, merry.Error) {
 	logger := bg.logger.With(zap.String("query", query))
 	if isTagName {
 		logger = logger.With(zap.String("type", "tagName"))
@@ -509,24 +564,32 @@ func (bg *BroadcastGroup) tagEverything(ctx context.Context, isTagName bool, que
 	logger.Debug("got some responses",
 		zap.Int("backends_count", len(backends)),
 		zap.Int("response_count", responseCount),
-		zap.Bool("have_errors", len(result.Err.Errors) != 0),
+		zap.Bool("have_errors", len(result.Err) != 0),
 	)
 
-	return result.Response, result.Err
+	var err merry.Error
+	if result.Err != nil {
+		err = types.ErrNonFatalErrors
+		for _, e := range result.Err {
+			err = err.WithCause(e)
+		}
+	}
+
+	return result.Response, err
 }
 
-func (bg *BroadcastGroup) TagNames(ctx context.Context, query string, limit int64) ([]string, *errors.Errors) {
+func (bg *BroadcastGroup) TagNames(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
 	return bg.tagEverything(ctx, true, query, limit)
 }
 
-func (bg *BroadcastGroup) TagValues(ctx context.Context, query string, limit int64) ([]string, *errors.Errors) {
+func (bg *BroadcastGroup) TagValues(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
 	return bg.tagEverything(ctx, false, query, limit)
 }
 
 type tldResponse struct {
 	server types.BackendServer
 	tlds   []string
-	err    *errors.Errors
+	err    merry.Error
 }
 
 func doProbe(ctx context.Context, backend types.BackendServer, resCh chan<- tldResponse) {
@@ -539,7 +602,7 @@ func doProbe(ctx context.Context, backend types.BackendServer, resCh chan<- tldR
 	}
 }
 
-func (bg *BroadcastGroup) ProbeTLDs(ctx context.Context) ([]string, *errors.Errors) {
+func (bg *BroadcastGroup) ProbeTLDs(ctx context.Context) ([]string, merry.Error) {
 	logger := bg.logger.With(zap.String("function", "prober"))
 
 	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Find)
@@ -552,7 +615,7 @@ func (bg *BroadcastGroup) ProbeTLDs(ctx context.Context) ([]string, *errors.Erro
 	}
 
 	responses := 0
-	var err errors.Errors
+	var errs []merry.Error
 	answeredServers := make(map[string]struct{})
 	cache := make(map[string][]types.BackendServer)
 	tldSet := make(map[string]struct{})
@@ -567,8 +630,8 @@ GATHER:
 		case r := <-resCh:
 			answeredServers[r.server.Name()] = struct{}{}
 			responses++
-			if r.err != nil && len(r.err.Errors) > 0 {
-				err.Merge(r.err)
+			if r.err != nil {
+				errs = append(errs, r.err)
 				continue
 			}
 			for _, tld := range r.tlds {
@@ -580,7 +643,7 @@ GATHER:
 			logger.Warn("timeout waiting for more responses",
 				zap.Strings("no_answers_from", types.NoAnswerBackends(backends, answeredServers)),
 			)
-			err.Add(types.ErrTimeoutExceeded)
+			errs = append(errs, types.ErrTimeoutExceeded)
 			break GATHER
 		}
 	}
@@ -594,5 +657,13 @@ GATHER:
 		bg.pathCache.Set(k, v)
 	}
 
-	return tlds, &err
+	var err merry.Error
+	if errs != nil {
+		err = types.ErrNonFatalErrors
+		for _, e := range errs {
+			err = err.WithCause(e)
+		}
+	}
+
+	return tlds, err
 }

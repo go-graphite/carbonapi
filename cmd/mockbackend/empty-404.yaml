@@ -1,2 +1,2 @@
-emptyBody: true
-httpCode: 404
+- emptyBody: true
+  httpCode: 404

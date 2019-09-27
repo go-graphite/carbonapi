@@ -3,6 +3,7 @@ package broadcast
 import (
 	"context"
 	"fmt"
+	"github.com/ansel1/merry"
 	"math"
 	"reflect"
 	"sort"
@@ -10,7 +11,6 @@ import (
 	"time"
 
 	"github.com/go-graphite/carbonapi/zipper/dummy"
-	"github.com/go-graphite/carbonapi/zipper/errors"
 	"github.com/go-graphite/carbonapi/zipper/types"
 
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
@@ -61,34 +61,21 @@ func errorTextsEqual(e1, e2 []error) bool {
 	return true
 }
 
-func errorsAreEqual(e1, e2 *errors.Errors) bool {
-	if e1 == nil && e2 != nil {
-		return false
-	}
-
-	if e1 != nil && e2 == nil {
-		return false
-	}
-
-	if e1 != nil && e2 != nil {
-		if e1.HaveFatalErrors != e2.HaveFatalErrors || len(e1.Errors) != len(e2.Errors) || !errorTextsEqual(e1.Errors, e2.Errors) {
-			return false
-		}
-	}
-	return true
+func errorsAreEqual(e1, e2 merry.Error) bool {
+	return merry.Is(e1, e2)
 }
 
 type testCaseNew struct {
 	name        string
 	servers     []types.BackendServer
-	expectedErr *errors.Errors
+	expectedErr merry.Error
 }
 
 func TestNewBroadcastGroup(t *testing.T) {
 	tests := []testCaseNew{
 		{
 			name:        "no servers",
-			expectedErr: errors.Fatal("no servers specified"),
+			expectedErr: types.ErrNoServersSpecified,
 		},
 		{
 			name: "some servers",
@@ -114,7 +101,7 @@ type testCaseProbe struct {
 	servers         []types.BackendServer
 	clientResponses map[string]dummy.ProbeResponse
 	response        []string
-	expectedErr     *errors.Errors
+	expectedErr     merry.Error
 }
 
 func TestProbeTLDs(t *testing.T) {
@@ -134,13 +121,13 @@ func TestProbeTLDs(t *testing.T) {
 				},
 			},
 			response:    []string{"a", "b", "c", "d", "e"},
-			expectedErr: &errors.Errors{},
+			expectedErr: nil,
 		},
 	}
 
 	for _, tt := range tests {
 		b, err := NewBroadcastGroup(logger, tt.name, tt.servers, 60, 500, 100, timeouts)
-		if err != nil && (err.HaveFatalErrors || len(err.Errors) > 0) {
+		if err != nil {
 			t.Fatalf("error while initializing group, when it shouldn't be: %v", err)
 		}
 
@@ -179,7 +166,7 @@ type testCaseFetch struct {
 	fetchRequest   *protov3.MultiFetchRequest
 	fetchResponses map[string]dummy.FetchResponse
 
-	expectedErr      *errors.Errors
+	expectedErr      merry.Error
 	expectedResponse *protov3.MultiFetchResponse
 }
 
@@ -218,7 +205,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client2": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -236,7 +223,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 			},
 
@@ -298,7 +285,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client2": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -316,7 +303,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 			},
 			expectedResponse: &protov3.MultiFetchResponse{
@@ -367,7 +354,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client2": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -385,7 +372,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 			},
 			expectedResponse: &protov3.MultiFetchResponse{
@@ -436,7 +423,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client2": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -454,7 +441,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 			},
 			expectedResponse: &protov3.MultiFetchResponse{
@@ -525,7 +512,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client2": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -553,7 +540,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client3": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -581,7 +568,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client4": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -609,7 +596,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client5": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -637,7 +624,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client6": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -665,7 +652,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client7": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -693,7 +680,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client8": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -721,7 +708,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client9": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -749,7 +736,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client10": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -777,7 +764,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client11": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -805,7 +792,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client12": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -833,7 +820,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client13": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -861,7 +848,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client14": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -889,7 +876,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client15": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -917,7 +904,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client16": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -945,7 +932,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client17": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -973,7 +960,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client18": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -1001,7 +988,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client19": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -1029,7 +1016,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client20": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -1057,7 +1044,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client21": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -1085,7 +1072,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 				"client22": dummy.FetchResponse{
 					Response: &protov3.MultiFetchResponse{
@@ -1113,7 +1100,7 @@ func TestFetchRequests(t *testing.T) {
 						},
 					},
 					Stats:  &types.Stats{},
-					Errors: &errors.Errors{},
+					Errors: nil,
 				},
 			},
 			expectedResponse: &protov3.MultiFetchResponse{
@@ -1145,8 +1132,8 @@ func TestFetchRequests(t *testing.T) {
 
 	for _, tt := range tests {
 		b, err := NewBroadcastGroup(logger, tt.name, tt.servers, 60, 500, 100, timeouts)
-		if err != nil && (err.HaveFatalErrors || len(err.Errors) > 0) {
-			t.Fatalf("error while initializing group, when it shouldn't be: %v", err)
+		if err != nil {
+			t.Fatalf("error while initializing group, when it shouldn't be: %v", merry.Details(err))
 		}
 
 		for i := range tt.servers {
@@ -1162,13 +1149,13 @@ func TestFetchRequests(t *testing.T) {
 
 		t.Run(tt.name, func(t *testing.T) {
 			res, _, err := b.Fetch(ctx, tt.fetchRequest)
-			if tt.expectedErr == nil || !tt.expectedErr.HaveFatalErrors {
-				if err != nil && err.HaveFatalErrors {
-					t.Errorf("unexpected error %v, expected %v", err, tt.expectedErr)
+			if tt.expectedErr == nil {
+				if err != nil {
+					t.Errorf("unexpected error '%+v', expected %v", merry.Details(err), tt.expectedErr)
 				}
 			} else {
 				if !errorsAreEqual(err, tt.expectedErr) {
-					t.Errorf("unexpected error %v, expected %v", err, tt.expectedErr)
+					t.Errorf("unexpected error %v, expected %v", merry.Details(err), tt.expectedErr)
 				}
 			}
 

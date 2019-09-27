@@ -2,17 +2,15 @@ package zipper
 
 import (
 	"context"
-	"math"
+	"github.com/ansel1/merry"
 	_ "net/http/pprof"
 	"strings"
 	"time"
 
 	"github.com/go-graphite/carbonapi/zipper/broadcast"
 	"github.com/go-graphite/carbonapi/zipper/config"
-	"github.com/go-graphite/carbonapi/zipper/errors"
 	"github.com/go-graphite/carbonapi/zipper/metadata"
 	"github.com/go-graphite/carbonapi/zipper/types"
-	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"go.uber.org/zap"
 
@@ -68,10 +66,9 @@ func sanitizeTimouts(timeouts, defaultTimeouts types.Timeouts) types.Timeouts {
 	return timeouts
 }
 
-func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelaySec int32) ([]types.BackendServer, *errors.Errors) {
+func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelaySec int32) ([]types.BackendServer, merry.Error) {
 	storeClients := make([]types.BackendServer, 0)
-	var e errors.Errors
-	var ePtr *errors.Errors
+	var e merry.Error
 	timeouts := backends.Timeouts
 	for _, backend := range backends.Backends {
 		concurrencyLimit := backends.ConcurrencyLimitPerServer
@@ -117,7 +114,7 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 				zap.String("requested_protocol", backend.Protocol),
 				zap.Strings("supported_backends", protocols),
 			)
-			return nil, errors.Fatalf("unknown backend protocol '%v'", backend.Protocol)
+			return nil, merry.Errorf("unknown backend protocol '%v'", backend.Protocol)
 		}
 
 		var lbMethod types.LBMethod
@@ -129,10 +126,9 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 			)
 		}
 		if lbMethod == types.RoundRobinLB {
-			client, ePtr = backendInit(logger, backend)
-			e.Merge(ePtr)
-			if e.HaveFatalErrors {
-				return nil, &e
+			client, e = backendInit(logger, backend)
+			if e != nil {
+				return nil, e
 			}
 		} else {
 			config := backend
@@ -141,18 +137,16 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 			for _, server := range backend.Servers {
 				config.Servers = []string{server}
 				config.GroupName = server
-				client, ePtr = backendInit(logger, config)
-				e.Merge(ePtr)
-				if e.HaveFatalErrors {
-					return nil, &e
+				client, e = backendInit(logger, config)
+				if e != nil {
+					return nil, e
 				}
 				backends = append(backends, client)
 			}
 
-			client, ePtr = broadcast.NewBroadcastGroup(logger, backend.GroupName, backends, expireDelaySec, *backend.ConcurrencyLimit, backend.MaxBatchSize, timeouts)
-			e.Merge(ePtr)
-			if e.HaveFatalErrors {
-				return nil, &e
+			client, e = broadcast.NewBroadcastGroup(logger, backend.GroupName, backends, expireDelaySec, *backend.ConcurrencyLimit, backend.MaxBatchSize, timeouts)
+			if e != nil {
+				return nil, e
 			}
 		}
 		storeClients = append(storeClients, client)
@@ -161,7 +155,7 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 }
 
 // NewZipper allows to create new Zipper
-func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Logger) (*Zipper, error) {
+func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Logger) (*Zipper, merry.Error) {
 	config.Timeouts = sanitizeTimouts(config.Timeouts, defaultTimeouts)
 
 	var searchBackends types.BackendServer
@@ -201,16 +195,16 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 	if len(config.CarbonSearchV2.BackendsV2.Backends) > 0 {
 		prefix = config.CarbonSearchV2.Prefix
 		searchClients, err := createBackendsV2(logger, config.CarbonSearchV2.BackendsV2, int32(config.InternalRoutingCache.Seconds()))
-		if err != nil && err.HaveFatalErrors {
-			logger.Fatal("errors while initialing zipper search backends",
-				zap.Any("errors", err.Errors),
+		if err != nil {
+			logger.Fatal("merry.Errors while initialing zipper search backends",
+				zap.Any("merry.Errors", err),
 			)
 		}
 
 		searchBackends, err = broadcast.NewBroadcastGroup(logger, "search", searchClients, int32(config.InternalRoutingCache.Seconds()), config.ConcurrencyLimitPerServer, config.MaxBatchSize, config.Timeouts)
-		if err != nil && err.HaveFatalErrors {
-			logger.Fatal("errors while initialing zipper search backends",
-				zap.Any("errors", err.Errors),
+		if err != nil {
+			logger.Fatal("merry.Errors while initialing zipper search backends",
+				zap.Any("merry.Errors", err),
 			)
 		}
 	}
@@ -252,17 +246,17 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 	}
 
 	storeClients, err := createBackendsV2(logger, config.BackendsV2, int32(config.InternalRoutingCache.Seconds()))
-	if err != nil && err.HaveFatalErrors {
-		logger.Fatal("errors while initialing zipper store backends",
-			zap.Any("errors", err.Errors),
+	if err != nil {
+		logger.Fatal("merry.Errors while initialing zipper store backends",
+			zap.Any("merry.Errors", err),
 		)
 	}
 
 	var storeBackends types.BackendServer
 	storeBackends, err = broadcast.NewBroadcastGroup(logger, "root", storeClients, int32(config.InternalRoutingCache.Seconds()), config.ConcurrencyLimitPerServer, config.MaxBatchSize, config.Timeouts)
-	if err != nil && err.HaveFatalErrors {
-		logger.Fatal("errors while initialing zipper store backends",
-			zap.Any("errors", err.Errors),
+	if err != nil {
+		logger.Fatal("merry.Errors while initialing zipper store backends",
+			zap.Any("merry.Errors", err),
 		)
 	}
 
@@ -298,9 +292,9 @@ func (z *Zipper) doProbe(logger *zap.Logger) {
 	ctx := context.Background()
 
 	_, err := z.storeBackends.ProbeTLDs(ctx)
-	if err != nil && err.HaveFatalErrors {
+	if err != nil {
 		logger.Error("failed to probe tlds",
-			zap.Any("errors", err.Errors),
+			zap.Any("merry.Errors", err),
 		)
 	}
 }
@@ -321,9 +315,10 @@ func (z *Zipper) probeTlds() {
 }
 
 // GRPC-compatible methods
-func (z Zipper) FetchProtoV3(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, error) {
+func (z Zipper) FetchProtoV3(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, merry.Error) {
+	logger := z.logger.With(zap.String("function", "FetchProtoV3"))
 	var statsSearch *types.Stats
-	var e errors.Errors
+	var e merry.Error
 
 	if z.searchConfigured {
 		realRequest := &protov3.MultiFetchRequest{
@@ -343,7 +338,11 @@ func (z Zipper) FetchProtoV3(ctx context.Context, request *protov3.MultiFetchReq
 				}
 
 				if err != nil {
-					e.Merge(err)
+					if e == nil {
+						e = err
+					} else {
+						e = e.WithCause(err)
+					}
 					continue
 				}
 
@@ -386,19 +385,28 @@ func (z Zipper) FetchProtoV3(ctx context.Context, request *protov3.MultiFetchReq
 		}
 	}
 
-	e.Merge(err)
-
-	if e.HaveFatalErrors || res == nil {
-		z.logger.Error("had fatal errors while fetching result",
-			zap.Any("errors", e.Errors),
+	if e == nil {
+		e = err
+	} else {
+		e = e.WithCause(err)
+	}
+	if e != nil {
+		logger.Debug("had errors while fetching result",
+			zap.Any("errors", e),
 		)
-		return nil, nil, types.ErrNoMetricsFetched
+	}
+	if res == nil || len(res.Metrics) == 0 {
+		logger.Debug("no metrics fetched",
+			zap.Any("errors", e),
+		)
+		return nil, stats, types.ErrNoMetricsFetched
 	}
 
-	return res, stats, nil
+	return res, stats, merry.WithHTTPCode(e, 200)
 }
 
-func (z Zipper) FindProtoV3(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, error) {
+func (z Zipper) FindProtoV3(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
+	logger := z.logger.With(zap.String("function", "FindProtoV3"))
 	searchRequests := &protov3.MultiGlobRequest{}
 	if z.searchConfigured {
 		realRequest := &protov3.MultiGlobRequest{Metrics: make([]string, 0, len(request.Metrics))}
@@ -415,41 +423,54 @@ func (z Zipper) FindProtoV3(ctx context.Context, request *protov3.MultiGlobReque
 	}
 
 	res, stats, err := z.storeBackends.Find(ctx, request)
-	if err == nil {
-		err = &errors.Errors{}
+
+	var errs []merry.Error
+	if err != nil {
+		errs = []merry.Error{err}
 	}
 
 	findResponse := &types.ServerFindResponse{
 		Response: res,
 		Stats:    stats,
-		Err:      err,
+		Err:      errs,
 	}
 
+	// TODO(civil): Rework merging carbonsearch and other responses
 	if len(searchRequests.Metrics) > 0 {
 		resSearch, statsSearch, err := z.searchBackends.Find(ctx, request)
+		var errs []merry.Error
+		if err != nil {
+			errs = []merry.Error{err}
+		}
 		searchResponse := &types.ServerFindResponse{
 			Response: resSearch,
 			Stats:    statsSearch,
-			Err:      err,
+			Err:      errs,
 		}
-		findResponse.Merge(searchResponse)
+		_ = findResponse.Merge(searchResponse)
 	}
 
-	if findResponse.Err.HaveFatalErrors {
-		z.logger.Error("had fatal errors during request",
-			zap.Any("errors", findResponse.Err.Errors),
+	if len(findResponse.Err) > 0 {
+		var e merry.Error
+		if len(findResponse.Err) == 1 {
+			e = findResponse.Err[0]
+		} else {
+			e = findResponse.Err[1].WithCause(findResponse.Err[0])
+		}
+		logger.Debug("had errors while fetching result",
+			zap.Any("errors", e),
 		)
-		return nil, nil, types.ErrNoMetricsFetched
-	} else if len(findResponse.Err.Errors) > 0 {
-		z.logger.Warn("got non-fatal errors during request",
-			zap.Any("errors", findResponse.Err.Errors),
-		)
+		if findResponse.Response != nil && len(findResponse.Response.Metrics) > 0 {
+			return findResponse.Response, findResponse.Stats, merry.WithHTTPCode(e, 200)
+		}
+		return nil, stats, e
 	}
 
 	return findResponse.Response, findResponse.Stats, nil
 }
 
-func (z Zipper) InfoProtoV3(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.ZipperInfoResponse, *types.Stats, error) {
+func (z Zipper) InfoProtoV3(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.ZipperInfoResponse, *types.Stats, merry.Error) {
+	logger := z.logger.With(zap.String("function", "InfoProtoV3"))
 	realRequest := &protov3.MultiMetricsInfoRequest{Names: make([]string, 0, len(request.Metrics))}
 	res, _, err := z.FindProtoV3(ctx, request)
 	if err == nil || err == types.ErrNonFatalErrors {
@@ -465,225 +486,76 @@ func (z Zipper) InfoProtoV3(ctx context.Context, request *protov3.MultiGlobReque
 	}
 
 	r, stats, e := z.storeBackends.Info(ctx, realRequest)
-	if e.HaveFatalErrors {
-		z.logger.Error("had fatal errors during request",
-			zap.Any("errors", e.Errors),
-		)
-		return nil, nil, types.ErrNoMetricsFetched
-	} else if len(e.Errors) > 0 {
-		z.logger.Warn("got non-fatal errors during request",
-			zap.Any("errors", e.Errors),
-		)
+	if e != nil {
+		if merry.Is(e, types.ErrNotFound) {
+			return nil, nil, e
+		} else {
+			logger.Debug("had errors while fetching result",
+				zap.Any("errors", e),
+			)
+			return nil, stats, e
+		}
 	}
 
 	return r, stats, nil
 }
 
-func (z Zipper) ListProtoV3(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, error) {
+func (z Zipper) ListProtoV3(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, merry.Error) {
+	logger := z.logger.With(zap.String("function", "ListProtoV3"))
 	r, stats, e := z.storeBackends.List(ctx)
-	if e.HaveFatalErrors {
-		z.logger.Error("had fatal errors during request",
-			zap.Any("errors", e.Errors),
-		)
-		return nil, nil, types.ErrNoMetricsFetched
-	} else if len(e.Errors) > 0 {
-		z.logger.Warn("got non-fatal errors during request",
-			zap.Any("errors", e.Errors),
-		)
+	if e != nil {
+		if merry.Is(e, types.ErrNotFound) {
+			return nil, nil, e
+		} else {
+			logger.Debug("had errors while fetching result",
+				zap.Any("errors", e),
+			)
+			return r, stats, e
+		}
 	}
 
-	return r, stats, nil
+	return r, stats, e
 }
-func (z Zipper) StatsProtoV3(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, error) {
+func (z Zipper) StatsProtoV3(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, merry.Error) {
+	logger := z.logger.With(zap.String("function", "StatsProtoV3"))
 	r, stats, e := z.storeBackends.Stats(ctx)
-	if e.HaveFatalErrors {
-		z.logger.Error("had fatal errors while fetching result",
-			zap.Any("errors", e.Errors),
-		)
-		return nil, stats, types.ErrNoMetricsFetched
+	if e != nil {
+		if merry.Is(e, types.ErrNotFound) {
+			return nil, nil, e
+		} else {
+			logger.Debug("had errors while fetching result",
+				zap.Any("errors", e),
+			)
+			return r, stats, e
+		}
 	}
 
 	return r, stats, nil
-}
-
-// PB3-compatible methods
-func (z Zipper) FetchProtoV2(ctx context.Context, query []string, startTime, stopTime int32) (*protov2.MultiFetchResponse, *types.Stats, error) {
-	request := &protov3.MultiFetchRequest{}
-	for _, q := range query {
-		request.Metrics = append(request.Metrics, protov3.FetchRequest{
-			Name:      q,
-			StartTime: int64(startTime),
-			StopTime:  int64(stopTime),
-		})
-	}
-
-	grpcRes, stats, err := z.FetchProtoV3(ctx, request)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	var res protov2.MultiFetchResponse
-	for i := range grpcRes.Metrics {
-		vals := make([]float64, 0, len(grpcRes.Metrics[i].Values))
-		isAbsent := make([]bool, 0, len(grpcRes.Metrics[i].Values))
-		for _, v := range grpcRes.Metrics[i].Values {
-			if math.IsNaN(v) {
-				vals = append(vals, 0)
-				isAbsent = append(isAbsent, true)
-			} else {
-				vals = append(vals, v)
-				isAbsent = append(isAbsent, false)
-			}
-		}
-		res.Metrics = append(res.Metrics,
-			protov2.FetchResponse{
-				Name:      grpcRes.Metrics[i].Name,
-				StartTime: int32(grpcRes.Metrics[i].StartTime),
-				StopTime:  int32(grpcRes.Metrics[i].StopTime),
-				StepTime:  int32(grpcRes.Metrics[i].StepTime),
-				Values:    vals,
-				IsAbsent:  isAbsent,
-			})
-	}
-
-	return &res, stats, nil
-}
-
-func (z Zipper) FindProtoV2(ctx context.Context, query []string) ([]*protov2.GlobResponse, *types.Stats, error) {
-	request := &protov3.MultiGlobRequest{
-		Metrics: query,
-	}
-	grpcReses, stats, err := z.FindProtoV3(ctx, request)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	reses := make([]*protov2.GlobResponse, 0, len(grpcReses.Metrics))
-	for _, grpcRes := range grpcReses.Metrics {
-
-		res := &protov2.GlobResponse{
-			Name: grpcRes.Name,
-		}
-
-		for _, v := range grpcRes.Matches {
-			match := protov2.GlobMatch{
-				Path:   v.Path,
-				IsLeaf: v.IsLeaf,
-			}
-			res.Matches = append(res.Matches, match)
-		}
-		reses = append(reses, res)
-	}
-
-	return reses, stats, nil
-}
-
-func (z Zipper) InfoProtoV2(ctx context.Context, targets []string) (*protov2.ZipperInfoResponse, *types.Stats, error) {
-	request := &protov3.MultiGlobRequest{
-		Metrics: targets,
-	}
-	grpcRes, stats, err := z.InfoProtoV3(ctx, request)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	res := &protov2.ZipperInfoResponse{}
-
-	for k, i := range grpcRes.Info {
-		for _, v := range i.Metrics {
-			rets := make([]protov2.Retention, 0, len(v.Retentions))
-			for _, ret := range v.Retentions {
-				rets = append(rets, protov2.Retention{
-					SecondsPerPoint: int32(ret.SecondsPerPoint),
-					NumberOfPoints:  int32(ret.NumberOfPoints),
-				})
-			}
-			i := &protov2.InfoResponse{
-				Name:              v.Name,
-				AggregationMethod: v.ConsolidationFunc,
-				MaxRetention:      int32(v.MaxRetention),
-				XFilesFactor:      v.XFilesFactor,
-				Retentions:        rets,
-			}
-			res.Responses = append(res.Responses, protov2.ServerInfoResponse{
-				Server: k,
-				Info:   i,
-			})
-		}
-	}
-
-	return res, stats, nil
-}
-func (z Zipper) ListProtoV2(ctx context.Context) (*protov2.ListMetricsResponse, *types.Stats, error) {
-	grpcRes, stats, err := z.ListProtoV3(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	res := &protov2.ListMetricsResponse{
-		Metrics: grpcRes.Metrics,
-	}
-	return res, stats, nil
-}
-func (z Zipper) StatsProtoV2(ctx context.Context) (*protov2.MetricDetailsResponse, *types.Stats, error) {
-	grpcRes, stats, err := z.StatsProtoV3(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	metrics := make(map[string]*protov2.MetricDetails, len(grpcRes.Metrics))
-	for k, v := range grpcRes.Metrics {
-		metrics[k] = &protov2.MetricDetails{
-			Size_:   v.Size_,
-			ModTime: v.ModTime,
-			ATime:   v.ATime,
-			RdTime:  v.RdTime,
-		}
-	}
-
-	res := &protov2.MetricDetailsResponse{
-		FreeSpace:  grpcRes.FreeSpace,
-		TotalSpace: grpcRes.TotalSpace,
-		Metrics:    metrics,
-	}
-
-	return res, stats, nil
 }
 
 // Tags
 
-func (z Zipper) TagNames(ctx context.Context, query string, limit int64) ([]string, error) {
-	data, e := z.storeBackends.TagNames(ctx, query, limit)
-	if e.HaveFatalErrors {
-		z.logger.Error("had fatal errors during request",
-			zap.Any("errors", e.Errors),
+func (z Zipper) TagNames(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+	logger := z.logger.With(zap.String("function", "TagNames"))
+	data, err := z.storeBackends.TagNames(ctx, query, limit)
+	if err != nil {
+		logger.Debug("had errors while fetching result",
+			zap.Any("errors", err),
 		)
-
-		return data, types.ErrNoMetricsFetched
-	}
-
-	if len(e.Errors) > 0 {
-		z.logger.Warn("got non-fatal errors during request",
-			zap.Any("errors", e.Errors),
-		)
+		return data, err
 	}
 
 	return data, nil
 }
 
-func (z Zipper) TagValues(ctx context.Context, query string, limit int64) ([]string, error) {
-	data, e := z.storeBackends.TagValues(ctx, query, limit)
-	if e.HaveFatalErrors {
-		z.logger.Error("had fatal errors during request",
-			zap.Any("errors", e.Errors),
+func (z Zipper) TagValues(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+	logger := z.logger.With(zap.String("function", "TagValues"))
+	data, err := z.storeBackends.TagValues(ctx, query, limit)
+	if err != nil {
+		logger.Debug("had errors while fetching result",
+			zap.Any("errors", err),
 		)
-		return data, types.ErrNoMetricsFetched
-	}
-
-	if len(e.Errors) > 0 {
-		z.logger.Warn("got non-fatal errors during request",
-			zap.Any("errors", e.Errors),
-		)
+		return data, err
 	}
 
 	return data, nil

@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"github.com/ansel1/merry"
 	"math"
 	"net/http"
 	"net/http/httptest"
@@ -22,32 +23,32 @@ func newMockCarbonZipper() *mockCarbonZipper {
 	return new(mockCarbonZipper)
 }
 
-func (z mockCarbonZipper) Find(ctx context.Context, metrics []string) (*pb.MultiGlobResponse, *zipperTypes.Stats, error) {
+func (z mockCarbonZipper) Find(ctx context.Context, metrics []string) (*pb.MultiGlobResponse, *zipperTypes.Stats, merry.Error) {
 	return getGlobResponse(), nil, nil
 }
 
-func (z mockCarbonZipper) Info(ctx context.Context, metrics []string) (*pb.ZipperInfoResponse, *zipperTypes.Stats, error) {
+func (z mockCarbonZipper) Info(ctx context.Context, metrics []string) (*pb.ZipperInfoResponse, *zipperTypes.Stats, merry.Error) {
 	response := getMockInfoResponse()
 
 	return response, nil, nil
 }
 
-func (z mockCarbonZipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*types.MetricData, *zipperTypes.Stats, error) {
+func (z mockCarbonZipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*types.MetricData, *zipperTypes.Stats, merry.Error) {
 	return z.RenderCompat(ctx, []string{""}, 0, 0)
 }
 
-func (z mockCarbonZipper) RenderCompat(ctx context.Context, metrics []string, from, until int64) ([]*types.MetricData, *zipperTypes.Stats, error) {
+func (z mockCarbonZipper) RenderCompat(ctx context.Context, metrics []string, from, until int64) ([]*types.MetricData, *zipperTypes.Stats, merry.Error) {
 	var result []*types.MetricData
 	multiFetchResponse := getMultiFetchResponse()
 	result = append(result, &types.MetricData{FetchResponse: multiFetchResponse.Metrics[0]})
 	return result, nil, nil
 }
 
-func (z mockCarbonZipper) TagNames(ctx context.Context, query string, limit int64) ([]string, error) {
+func (z mockCarbonZipper) TagNames(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
 	return []string{}, nil
 }
 
-func (z mockCarbonZipper) TagValues(ctx context.Context, query string, limit int64) ([]string, error) {
+func (z mockCarbonZipper) TagValues(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
 	return []string{}, nil
 }
 

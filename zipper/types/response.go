@@ -2,6 +2,7 @@ package types
 
 import (
 	"context"
+	"github.com/ansel1/merry"
 	"math"
 
 	"github.com/go-graphite/carbonapi/zipper/errors"
@@ -16,8 +17,9 @@ type Fetcher func(ctx context.Context, logger *zap.Logger, client BackendServer,
 
 type ServerFetcherResponse interface {
 	Self() interface{}
-	MergeI(second ServerFetcherResponse) *errors.Errors
-	Errors() *errors.Errors
+	MergeI(second ServerFetcherResponse) merry.Error
+	AddError(err merry.Error)
+	Errors() []merry.Error
 	GetServer() string
 }
 
@@ -50,14 +52,12 @@ GATHER:
 		select {
 		case res := <-resCh:
 			answeredServers[res.GetServer()] = struct{}{}
-			result.MergeI(res)
+			_ = result.MergeI(res)
 			responseCount++
 
 		case <-ctx.Done():
-			logger.Warn("timeout waiting for more responses",
-				zap.Strings("no_answers_from", NoAnswerBackends(clients, answeredServers)),
-			)
-			result.Errors().Add(ErrTimeoutExceeded)
+			err := errors.ErrTimeout.WithValue("timedout_backends", NoAnswerBackends(clients, answeredServers))
+			result.AddError(err)
 
 			break GATHER
 		}
@@ -68,13 +68,12 @@ GATHER:
 type ServerTagResponse struct {
 	Server   string
 	Response []string
-	Err      *errors.Errors
+	Err      []merry.Error
 }
 
 func NewServerTagResponse() *ServerTagResponse {
 	return &ServerTagResponse{
 		Response: []string{},
-		Err:      new(errors.Errors),
 	}
 }
 
@@ -86,27 +85,43 @@ func (s ServerTagResponse) GetServer() string {
 	return s.Server
 }
 
-func (first *ServerTagResponse) MergeI(second ServerFetcherResponse) *errors.Errors {
+func (first *ServerTagResponse) MergeI(second ServerFetcherResponse) merry.Error {
 	secondSelf := second.Self()
 	s, ok := secondSelf.(*ServerTagResponse)
 	if !ok {
-		return errors.Fatalf("got '%T', expected '%T'", secondSelf, first)
+		return errors.ErrResponseTypeMismatch.Here().WithMessagef("got '%T', expected '%T'", secondSelf, first)
 	}
 	return first.Merge(s)
 }
 
-func (first *ServerTagResponse) Errors() *errors.Errors {
+func (s *ServerTagResponse) AddError(err merry.Error) {
+	if err == nil {
+		return
+	}
+	if s.Err == nil {
+		s.Err = []merry.Error{err}
+	} else {
+		s.Err = append(s.Err, err)
+	}
+}
+
+func (first *ServerTagResponse) Errors() []merry.Error {
 	return first.Err
 }
 
-func (first *ServerTagResponse) Merge(second *ServerTagResponse) *errors.Errors {
+func (first *ServerTagResponse) Merge(second *ServerTagResponse) merry.Error {
 	if first.Err == nil {
-		first.Err = new(errors.Errors)
+		if second.Err != nil {
+			first.Err = second.Err
+		}
+	} else {
+		if second.Err != nil {
+			first.Err = append(first.Err, second.Err...)
+		}
 	}
-	first.Err.Merge(second.Err)
 
 	if second.Response == nil {
-		return first.Err
+		return nil
 	}
 
 	// We cannot assume in general that results are sorted
@@ -128,14 +143,13 @@ type ServerInfoResponse struct {
 	Server   string
 	Response *protov3.ZipperInfoResponse
 	Stats    *Stats
-	Err      *errors.Errors
+	Err      []merry.Error
 }
 
 func NewServerInfoResponse() *ServerInfoResponse {
 	return &ServerInfoResponse{
 		Response: &protov3.ZipperInfoResponse{Info: make(map[string]protov3.MultiMetricsInfoResponse)},
 		Stats:    new(Stats),
-		Err:      new(errors.Errors),
 	}
 }
 
@@ -147,31 +161,47 @@ func (s ServerInfoResponse) GetServer() string {
 	return s.Server
 }
 
-func (first *ServerInfoResponse) MergeI(second ServerFetcherResponse) *errors.Errors {
+func (first *ServerInfoResponse) MergeI(second ServerFetcherResponse) merry.Error {
 	secondSelf := second.Self()
 	s, ok := secondSelf.(*ServerInfoResponse)
 	if !ok {
-		return errors.Fatalf("got '%T', expected '%T'", secondSelf, first)
+		return errors.ErrResponseTypeMismatch.Here().WithMessagef("got '%T', expected '%T'", secondSelf, first)
 	}
 	return first.Merge(s)
 }
 
-func (first *ServerInfoResponse) Errors() *errors.Errors {
+func (s *ServerInfoResponse) AddError(err merry.Error) {
+	if err == nil {
+		return
+	}
+	if s.Err == nil {
+		s.Err = []merry.Error{err}
+	} else {
+		s.Err = append(s.Err, err)
+	}
+}
+
+func (first *ServerInfoResponse) Errors() []merry.Error {
 	return first.Err
 }
 
-func (first *ServerInfoResponse) Merge(second *ServerInfoResponse) *errors.Errors {
+func (first *ServerInfoResponse) Merge(second *ServerInfoResponse) merry.Error {
 	if second.Stats != nil {
 		first.Stats.Merge(second.Stats)
 	}
 
 	if first.Err == nil {
-		first.Err = new(errors.Errors)
+		if second.Err != nil {
+			first.Err = second.Err
+		}
+	} else {
+		if second.Err != nil {
+			first.Err = append(first.Err, second.Err...)
+		}
 	}
-	first.Err.Merge(second.Err)
 
 	if second.Response == nil {
-		return first.Err
+		return nil
 	}
 
 	for k, v := range second.Response.Info {
@@ -185,14 +215,13 @@ type ServerFindResponse struct {
 	Server   string
 	Response *protov3.MultiGlobResponse
 	Stats    *Stats
-	Err      *errors.Errors
+	Err      []merry.Error
 }
 
 func NewServerFindResponse() *ServerFindResponse {
 	return &ServerFindResponse{
 		Response: new(protov3.MultiGlobResponse),
 		Stats:    new(Stats),
-		Err:      new(errors.Errors),
 	}
 }
 
@@ -204,31 +233,47 @@ func (s ServerFindResponse) GetServer() string {
 	return s.Server
 }
 
-func (first *ServerFindResponse) MergeI(second ServerFetcherResponse) *errors.Errors {
+func (first *ServerFindResponse) MergeI(second ServerFetcherResponse) merry.Error {
 	secondSelf := second.Self()
 	s, ok := secondSelf.(*ServerFindResponse)
 	if !ok {
-		return errors.Fatalf("got '%T', expected '%T'", secondSelf, first)
+		return errors.ErrResponseTypeMismatch.Here().WithMessagef("got '%T', expected '%T'", secondSelf, first)
 	}
 	return first.Merge(s)
 }
 
-func (first *ServerFindResponse) Errors() *errors.Errors {
+func (s *ServerFindResponse) AddError(err merry.Error) {
+	if err == nil {
+		return
+	}
+	if s.Err == nil {
+		s.Err = []merry.Error{err}
+	} else {
+		s.Err = append(s.Err, err)
+	}
+}
+
+func (first *ServerFindResponse) Errors() []merry.Error {
 	return first.Err
 }
 
-func (first *ServerFindResponse) Merge(second *ServerFindResponse) *errors.Errors {
+func (first *ServerFindResponse) Merge(second *ServerFindResponse) merry.Error {
 	if second.Stats != nil {
 		first.Stats.Merge(second.Stats)
 	}
 
 	if first.Err == nil {
-		first.Err = new(errors.Errors)
+		if second.Err != nil {
+			first.Err = second.Err
+		}
+	} else {
+		if second.Err != nil {
+			first.Err = append(first.Err, second.Err...)
+		}
 	}
-	first.Err.Merge(second.Err)
 
 	if second.Response == nil {
-		return first.Err
+		return nil
 	}
 
 	seenMetrics := make(map[string]int)
@@ -264,14 +309,13 @@ type ServerFetchResponse struct {
 	Server   string
 	Response *protov3.MultiFetchResponse
 	Stats    *Stats
-	Err      *errors.Errors
+	Err      []merry.Error
 }
 
 func NewServerFetchResponse() *ServerFetchResponse {
 	return &ServerFetchResponse{
 		Response: new(protov3.MultiFetchResponse),
 		Stats:    new(Stats),
-		Err:      new(errors.Errors),
 	}
 }
 
@@ -283,21 +327,70 @@ func (s ServerFetchResponse) GetServer() string {
 	return s.Server
 }
 
-func (first *ServerFetchResponse) MergeI(second ServerFetcherResponse) *errors.Errors {
+func (first *ServerFetchResponse) Merge(second *ServerFetchResponse) merry.Error {
+	if second.Stats != nil {
+		first.Stats.Merge(second.Stats)
+	}
+
+	if first.Err == nil {
+		if second.Err != nil {
+			first.Err = second.Err
+		}
+	} else {
+		if second.Err != nil {
+			first.Err = append(first.Err, second.Err...)
+		}
+	}
+
+	if second.Response == nil {
+		return nil
+	}
+
+	metrics := make(map[fetchResponseCoordinates]int)
+	for i := range first.Response.Metrics {
+		metrics[coordinates(&first.Response.Metrics[i])] = i
+	}
+
+	for i := range second.Response.Metrics {
+		if j, ok := metrics[coordinates(&second.Response.Metrics[i])]; ok {
+			err := MergeFetchResponses(&first.Response.Metrics[j], &second.Response.Metrics[i])
+			if err != nil {
+				// TODO: Normal merry.Error handling
+				continue
+			}
+		} else {
+			first.Response.Metrics = append(first.Response.Metrics, second.Response.Metrics[i])
+		}
+	}
+	return nil
+}
+
+func (first *ServerFetchResponse) MergeI(second ServerFetcherResponse) merry.Error {
 	secondSelf := second.Self()
 	s, ok := secondSelf.(*ServerFetchResponse)
 	if !ok {
-		return errors.Fatalf("got '%T', expected '%T'", secondSelf, first)
+		return errors.ErrResponseTypeMismatch.Here().WithMessagef("got '%T', expected '%T'", secondSelf, first)
 	}
 	return first.Merge(s)
 }
 
-func (first *ServerFetchResponse) Errors() *errors.Errors {
+func (s *ServerFetchResponse) AddError(err merry.Error) {
+	if err == nil {
+		return
+	}
+	if s.Err == nil {
+		s.Err = []merry.Error{err}
+	} else {
+		s.Err = append(s.Err, err)
+	}
+}
+
+func (first *ServerFetchResponse) Errors() []merry.Error {
 	return first.Err
 }
 
-func (s *ServerFetchResponse) NonFatalError(err error) *ServerFetchResponse {
-	s.Err.Add(err)
+func (s *ServerFetchResponse) NonFatalError(err merry.Error) *ServerFetchResponse {
+	s.AddError(err)
 	return s
 }
 
@@ -312,7 +405,7 @@ func swapFetchResponses(m1, m2 *protov3.FetchResponse) {
 	m1.StopTime, m2.StopTime = m2.StopTime, m1.StopTime
 }
 
-func mergeFetchResponsesWithEqualStepTimes(m1, m2 *protov3.FetchResponse) error {
+func mergeFetchResponsesWithEqualStepTimes(m1, m2 *protov3.FetchResponse) merry.Error {
 	if m1.StartTime != m2.StartTime {
 		return ErrResponseStartTimeMismatch
 	}
@@ -330,7 +423,7 @@ func mergeFetchResponsesWithEqualStepTimes(m1, m2 *protov3.FetchResponse) error 
 	return nil
 }
 
-func mergeFetchResponsesWithUnequalStepTimes(m1, m2 *protov3.FetchResponse) error {
+func mergeFetchResponsesWithUnequalStepTimes(m1, m2 *protov3.FetchResponse) merry.Error {
 	if m1.StepTime > m2.StepTime {
 		swapFetchResponses(m1, m2)
 	}
@@ -349,8 +442,8 @@ func mergeFetchResponsesWithUnequalStepTimes(m1, m2 *protov3.FetchResponse) erro
 	return nil
 }
 
-func MergeFetchResponses(m1, m2 *protov3.FetchResponse) *errors.Errors {
-	var err error
+func MergeFetchResponses(m1, m2 *protov3.FetchResponse) merry.Error {
+	var err merry.Error
 	if m1.RequestStartTime != m2.RequestStartTime {
 		err = ErrResponseStartTimeMismatch
 	} else if m1.StepTime == m2.StepTime {
@@ -373,48 +466,7 @@ func MergeFetchResponses(m1, m2 *protov3.FetchResponse) *errors.Errors {
 		)
 	}
 
-	return errors.FromErr(err)
-}
-
-func (first *ServerFetchResponse) Merge(second *ServerFetchResponse) *errors.Errors {
-	if first.Server == "" && second.Server != "" {
-		first.Server = second.Server
-	}
-
-	if second.Stats != nil {
-		first.Stats.Merge(second.Stats)
-	}
-
-	if first.Err == nil {
-		first.Err = &errors.Errors{}
-	}
-	first.Err.Merge(second.Err)
-
-	if first.Err.HaveFatalErrors {
-		return first.Err
-	}
-
-	if second.Response == nil {
-		return errors.Fatalf("no response to merge")
-	}
-
-	metrics := make(map[fetchResponseCoordinates]int)
-	for i := range first.Response.Metrics {
-		metrics[coordinates(&first.Response.Metrics[i])] = i
-	}
-
-	for i := range second.Response.Metrics {
-		if j, ok := metrics[coordinates(&second.Response.Metrics[i])]; ok {
-			err := MergeFetchResponses(&first.Response.Metrics[j], &second.Response.Metrics[i])
-			if err != nil {
-				// TODO: Normal error handling
-				continue
-			}
-		} else {
-			first.Response.Metrics = append(first.Response.Metrics, second.Response.Metrics[i])
-		}
-	}
-	return nil
+	return err
 }
 
 type fetchResponseCoordinates struct {

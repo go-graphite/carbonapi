@@ -3,7 +3,7 @@ package helper
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"github.com/ansel1/merry"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -12,7 +12,6 @@ import (
 
 	"github.com/go-graphite/carbonapi/limiter"
 	util "github.com/go-graphite/carbonapi/util/ctx"
-	"github.com/go-graphite/carbonapi/zipper/errors"
 	"github.com/go-graphite/carbonapi/zipper/types"
 	"go.uber.org/zap"
 )
@@ -62,7 +61,7 @@ func (c *HttpQuery) pickServer(logger *zap.Logger) string {
 	return srv
 }
 
-func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, uri string, r types.Request) (*ServerResponse, error) {
+func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, uri string, r types.Request) (*ServerResponse, merry.Error) {
 	logger = logger.With(
 		zap.String("function", "HttpQuery.doRequest"),
 	)
@@ -70,7 +69,7 @@ func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, uri strin
 
 	u, err := url.Parse(server + uri)
 	if err != nil {
-		return nil, err
+		return nil, merry.Here(err).WithValue("server", server)
 	}
 
 	var reader io.Reader
@@ -78,7 +77,7 @@ func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, uri strin
 	if r != nil {
 		body, err = r.Marshal()
 		if err != nil {
-			return nil, err
+			return nil, merry.Here(err).WithValue("server", server)
 		}
 		if body != nil {
 			reader = bytes.NewReader(body)
@@ -93,7 +92,7 @@ func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, uri strin
 	req, err := http.NewRequest("GET", u.String(), reader)
 	req.Header.Set("Accept", c.encoding)
 	if err != nil {
-		return nil, err
+		return nil, merry.Here(err).WithValue("server", server)
 	}
 	req = util.MarshalPassHeaders(ctx, util.MarshalCtx(ctx, util.MarshalCtx(ctx, req, util.HeaderUUIDZipper), util.HeaderUUIDAPI))
 
@@ -103,7 +102,7 @@ func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, uri strin
 	err = c.limiter.Enter(ctx, server)
 	if err != nil {
 		logger.Debug("timeout waiting for a slot")
-		return nil, err
+		return nil, merry.Here(err).WithValue("server", server)
 	}
 
 	defer c.limiter.Leave(ctx, server)
@@ -117,52 +116,48 @@ func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, uri strin
 	}
 	resp, err := c.client.Do(req.WithContext(ctx))
 	if err != nil {
-		logger.Error("error fetching result",
+		logger.Debug("error fetching result",
 			zap.Error(err),
 		)
-		return nil, err
+		return nil, merry.Here(err).WithValue("server", server)
 	}
 	defer resp.Body.Close()
 
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
-		logger.Error("error reading body",
+		logger.Debug("error reading body",
 			zap.Error(err),
 		)
-		return nil, err
+		return nil, merry.Here(err).WithValue("server", server)
 	}
 
 	if resp.StatusCode >= http.StatusInternalServerError {
-		logger.Info("status not ok",
-			zap.Int("status_code", resp.StatusCode),
-		)
-		return nil, fmt.Errorf(types.ErrFailedToFetchFmt, c.groupName, resp.StatusCode, string(body))
+		return nil, types.ErrFailedToFetch.Here().WithValue("group", c.groupName).WithValue("status_code", resp.StatusCode).WithValue("body", string(body))
 	}
-	logger.Debug("got response")
 
 	return &ServerResponse{Server: server, Response: body}, nil
 }
 
-func (c *HttpQuery) DoQuery(ctx context.Context, logger *zap.Logger, uri string, r types.Request) (*ServerResponse, *errors.Errors) {
+func (c *HttpQuery) DoQuery(ctx context.Context, logger *zap.Logger, uri string, r types.Request) (*ServerResponse, merry.Error) {
 	maxTries := c.maxTries
 	if len(c.servers) > maxTries {
 		maxTries = len(c.servers)
 	}
 
-	var e errors.Errors
+	e := types.ErrFailedToFetch.WithValue("uri", uri)
 	for try := 0; try < maxTries; try++ {
 		res, err := c.doRequest(ctx, logger, uri, r)
 		if err != nil {
 			logger.Debug("have errors",
 				zap.Error(err),
 			)
-			e.Add(err)
+
+			e = e.WithCause(err)
 			continue
 		}
 
 		return res, nil
 	}
 
-	e.Add(types.ErrMaxTriesExceeded)
-	return nil, &e
+	return nil, types.ErrMaxTriesExceeded.WithCause(e)
 }

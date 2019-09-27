@@ -6,6 +6,7 @@ import (
 	"expvar"
 	"flag"
 	"fmt"
+	"github.com/ansel1/merry"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -210,7 +211,7 @@ func findHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// There should be exactly one match at this moment
-	err = EncodeFindResponse(format, originalQuery, w, metrics[0].Matches)
+	err = merry.Wrap(EncodeFindResponse(format, originalQuery, w, metrics[0].Matches))
 	if err != nil {
 		http.Error(w, "error marshaling data", http.StatusInternalServerError)
 		accessLogger.Error("find failed",

@@ -19,7 +19,7 @@ git:
 
 matrix:
   include:
-    - go: "1.11.x"
     - go: "1.12.x"
+    - go: "1.13.x"
       env:
         - BUILD_PACKAGES=true

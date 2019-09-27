@@ -1,0 +1,16 @@
+listeners:
+        - address: ":9070"
+          expressions:
+              "metric[123]":
+                  pathExpression: "metric[123]"
+                  data:
+                      - metricName: "metric1"
+                        values: [1.0, .NaN, 2.0, 3.0, 4.0, 5.0]
+                      - metricName: "metric2"
+                        values: [2.0, .NaN, 3.0, .NaN, 5.0, 6.0]
+                      - metricName: "metric3"
+                        values: [3.0, .NaN, 4.0, 5.0, 6.0, .NaN]
+        - address: ":9071"
+          emptyBody: false
+          httpCode: 404
+

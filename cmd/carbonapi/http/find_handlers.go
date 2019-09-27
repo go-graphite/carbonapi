@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ansel1/merry"
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 	"github.com/go-graphite/carbonapi/intervalset"
@@ -218,25 +219,41 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		accessLogDetails.TotalMetricsCount += stats.TotalMetricsCount
 	}
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		accessLogDetails.HTTPCode = http.StatusInternalServerError
-		accessLogDetails.Reason = err.Error()
-		logAsError = true
-		return
+		returnCode := merry.HTTPCode(err)
+		if returnCode != http.StatusOK || multiGlobs == nil {
+			// Allow override status code for 404-not-found replies.
+			if returnCode == 404 {
+				returnCode = config.Config.NotFoundStatusCode
+			}
+			if returnCode < 300 {
+				multiGlobs = &pb.MultiGlobResponse{Metrics: []pb.GlobResponse{}}
+			} else {
+				http.Error(w, http.StatusText(returnCode), returnCode)
+				accessLogDetails.HTTPCode = int32(returnCode)
+				accessLogDetails.Reason = err.Error()
+				logAsError = true
+				return
+			}
+		}
 	}
 	var b []byte
+	var err2 error
 	switch format {
 	case treejsonFormat, jsonFormat:
-		b, err = findTreejson(multiGlobs)
+		b, err2 = findTreejson(multiGlobs)
+		err = merry.Wrap(err2)
 		format = jsonFormat
 	case "completer":
-		b, err = findCompleter(multiGlobs)
+		b, err2 = findCompleter(multiGlobs)
+		err = merry.Wrap(err2)
 		format = jsonFormat
 	case rawFormat:
-		b, err = findList(multiGlobs)
+		b, err2 = findList(multiGlobs)
+		err = merry.Wrap(err2)
 		format = rawFormat
 	case protobufFormat, protobuf3Format:
-		b, err = multiGlobs.Marshal()
+		b, err2 = multiGlobs.Marshal()
+		err = merry.Wrap(err2)
 		format = protobufFormat
 	case "", pickleFormat:
 		var result []map[string]interface{}
@@ -270,7 +287,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 
 		p := bytes.NewBuffer(b)
 		pEnc := pickle.NewEncoder(p)
-		err = pEnc.Encode(result)
+		err = merry.Wrap(pEnc.Encode(result))
 		b = p.Bytes()
 	}
 

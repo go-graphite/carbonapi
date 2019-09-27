@@ -2,10 +2,10 @@ package zipper
 
 import (
 	"fmt"
+	"github.com/ansel1/merry"
 	"math"
 	"testing"
 
-	"github.com/go-graphite/carbonapi/zipper/errors"
 	"github.com/go-graphite/carbonapi/zipper/types"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
@@ -15,7 +15,7 @@ type mergeValuesData struct {
 	m1             protov3.FetchResponse
 	m2             protov3.FetchResponse
 	expectedResult protov3.FetchResponse
-	expectedError  errors.Errors
+	expectedError  merry.Error
 }
 
 var (
@@ -94,7 +94,7 @@ func TestMergeValues(t *testing.T) {
 				Values:            []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 0},
 			},
 
-			expectedError: errors.Errors{},
+			expectedError: nil,
 		},
 		{
 			name: "simple 2",
@@ -123,7 +123,7 @@ func TestMergeValues(t *testing.T) {
 				Values:            []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 0},
 			},
 
-			expectedError: errors.Errors{},
+			expectedError: nil,
 		},
 		{
 			name: "fill the gaps simple",
@@ -152,7 +152,7 @@ func TestMergeValues(t *testing.T) {
 				Values:            []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, math.NaN(), 11, 12, 13, 14, 15, 16, 17, 18, math.NaN(), 20},
 			},
 
-			expectedError: errors.Errors{},
+			expectedError: nil,
 		},
 		{
 			name: "fill end of metric",
@@ -181,7 +181,7 @@ func TestMergeValues(t *testing.T) {
 				Values:            []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, math.NaN(), 11, 12, 13, 14, 15, 16, 17, 18, math.NaN(), 20},
 			},
 
-			expectedError: errors.Errors{},
+			expectedError: nil,
 		},
 	}
 
@@ -197,10 +197,7 @@ func TestMergeValues(t *testing.T) {
 				test.expectedResult.StopTime = test.expectedResult.StartTime + int64(len(test.expectedResult.Values))*test.expectedResult.StepTime
 			}
 			err := types.MergeFetchResponses(&test.m1, &test.m2)
-			if err == nil {
-				err = &errors.Errors{}
-			}
-			if len(err.Errors) != len(test.expectedError.Errors) && err.HaveFatalErrors != test.expectedError.HaveFatalErrors {
+			if !merry.Is(err, test.expectedError) {
 				t.Fatalf("unexpected error: '%v'", err)
 			}
 
