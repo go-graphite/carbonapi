@@ -2,11 +2,11 @@
 bitbucket.org/tebeka/strftime
 # github.com/JaderDias/movingmedian v0.0.0-20170611140316-de8c410559fa
 github.com/JaderDias/movingmedian
-# github.com/aclements/go-moremath v0.0.0-20190506201756-286cc0be6f75
+# github.com/aclements/go-moremath v0.0.0-20190830160640-d16893ddf098
 github.com/aclements/go-moremath/mathx
 # github.com/ansel1/merry v1.5.0
 github.com/ansel1/merry
-# github.com/bradfitz/gomemcache v0.0.0-20190329173943-551aad21a668
+# github.com/bradfitz/gomemcache v0.0.0-20190913173617-a41fca850d0b
 github.com/bradfitz/gomemcache/memcache
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
@@ -36,35 +36,35 @@ github.com/facebookgo/stats
 # github.com/fsnotify/fsnotify v1.4.7
 github.com/fsnotify/fsnotify
 # github.com/go-graphite/protocol v0.4.2
-github.com/go-graphite/protocol/carbonapi_v3_pb
 github.com/go-graphite/protocol/carbonapi_v2_pb
 github.com/go-graphite/protocol/carbonapi_v3_grpc
-# github.com/gogo/protobuf v1.2.1
+github.com/go-graphite/protocol/carbonapi_v3_pb
+# github.com/gogo/protobuf v1.3.0
 github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/proto
-github.com/gogo/protobuf/sortkeys
 github.com/gogo/protobuf/protoc-gen-gogo/descriptor
-# github.com/golang/protobuf v1.3.1
-github.com/golang/protobuf/ptypes/empty
+github.com/gogo/protobuf/sortkeys
+# github.com/golang/protobuf v1.3.2
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
+github.com/golang/protobuf/ptypes/empty
 github.com/golang/protobuf/ptypes/timestamp
-# github.com/gorilla/handlers v1.4.0
+# github.com/gorilla/handlers v1.4.2
 github.com/gorilla/handlers
 # github.com/hashicorp/hcl v1.0.0
 github.com/hashicorp/hcl
-github.com/hashicorp/hcl/hcl/printer
 github.com/hashicorp/hcl/hcl/ast
 github.com/hashicorp/hcl/hcl/parser
-github.com/hashicorp/hcl/hcl/token
-github.com/hashicorp/hcl/json/parser
+github.com/hashicorp/hcl/hcl/printer
 github.com/hashicorp/hcl/hcl/scanner
 github.com/hashicorp/hcl/hcl/strconv
+github.com/hashicorp/hcl/hcl/token
+github.com/hashicorp/hcl/json/parser
 github.com/hashicorp/hcl/json/scanner
 github.com/hashicorp/hcl/json/token
-# github.com/lib/pq v1.1.1
+# github.com/lib/pq v1.2.0
 github.com/lib/pq
 github.com/lib/pq/oid
 github.com/lib/pq/scram
@@ -72,14 +72,14 @@ github.com/lib/pq/scram
 github.com/lomik/og-rek
 # github.com/lomik/zapwriter v0.0.0-20180906104450-2ec2b9a61680
 github.com/lomik/zapwriter
-# github.com/magiconair/properties v1.8.0
+# github.com/magiconair/properties v1.8.1
 github.com/magiconair/properties
 # github.com/mitchellh/mapstructure v1.1.2
 github.com/mitchellh/mapstructure
 # github.com/mjibson/go-dsp v0.0.0-20180508042940-11479a337f12
-github.com/mjibson/go-dsp/fft
 github.com/mjibson/go-dsp/dsputils
-# github.com/pelletier/go-toml v1.2.0
+github.com/mjibson/go-dsp/fft
+# github.com/pelletier/go-toml v1.4.0
 github.com/pelletier/go-toml
 # github.com/peterbourgon/g2g v0.0.0-20161124161852-0c2bab2b173d
 github.com/peterbourgon/g2g
@@ -89,14 +89,14 @@ github.com/philhofer/fwd
 github.com/pmezard/go-difflib/difflib
 # github.com/satori/go.uuid v1.2.0
 github.com/satori/go.uuid
-# github.com/spf13/afero v1.1.2
+# github.com/spf13/afero v1.2.2
 github.com/spf13/afero
 github.com/spf13/afero/mem
 # github.com/spf13/cast v1.3.0
 github.com/spf13/cast
-# github.com/spf13/jwalterweatherman v1.0.0
+# github.com/spf13/jwalterweatherman v1.1.0
 github.com/spf13/jwalterweatherman
-# github.com/spf13/pflag v1.0.3
+# github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
 # github.com/spf13/viper v1.4.0
 github.com/spf13/viper
@@ -108,60 +108,61 @@ github.com/tinylib/msgp/msgp
 github.com/wangjohn/quickselect
 # go.uber.org/atomic v1.4.0
 go.uber.org/atomic
-# go.uber.org/multierr v1.1.0
+# go.uber.org/multierr v1.2.0
 go.uber.org/multierr
 # go.uber.org/zap v1.10.0
 go.uber.org/zap
 go.uber.org/zap/buffer
-go.uber.org/zap/zapcore
 go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
-# golang.org/x/net v0.0.0-20190522155817-f3200d17e092
+go.uber.org/zap/zapcore
+# golang.org/x/net v0.0.0-20191003171128-d98b1b443823
 golang.org/x/net/context
-golang.org/x/net/trace
-golang.org/x/net/internal/timeseries
+golang.org/x/net/http/httpguts
 golang.org/x/net/http2
 golang.org/x/net/http2/hpack
-golang.org/x/net/http/httpguts
 golang.org/x/net/idna
-# golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a
+golang.org/x/net/internal/timeseries
+golang.org/x/net/trace
+# golang.org/x/sys v0.0.0-20191002091554-b397fe3ad8ed
 golang.org/x/sys/unix
-# golang.org/x/text v0.3.0
-golang.org/x/text/transform
-golang.org/x/text/unicode/norm
+# golang.org/x/text v0.3.2
 golang.org/x/text/secure/bidirule
+golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
-# golang.org/x/xerrors v0.0.0-20190513163551-3ee3066db522
+golang.org/x/text/unicode/norm
+# golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7
 golang.org/x/xerrors
 golang.org/x/xerrors/internal
-# gonum.org/v1/gonum v0.0.0-20190624220246-e34e6b933b2b
-gonum.org/v1/gonum/mat
+# gonum.org/v1/gonum v0.0.0-20190929233944-b20cf7805fc4
 gonum.org/v1/gonum/blas
 gonum.org/v1/gonum/blas/blas64
 gonum.org/v1/gonum/blas/cblas128
-gonum.org/v1/gonum/floats
-gonum.org/v1/gonum/internal/asm/f64
-gonum.org/v1/gonum/lapack
-gonum.org/v1/gonum/lapack/lapack64
 gonum.org/v1/gonum/blas/gonum
-gonum.org/v1/gonum/lapack/gonum
+gonum.org/v1/gonum/floats
 gonum.org/v1/gonum/internal/asm/c128
 gonum.org/v1/gonum/internal/asm/c64
 gonum.org/v1/gonum/internal/asm/f32
+gonum.org/v1/gonum/internal/asm/f64
 gonum.org/v1/gonum/internal/cmplx64
 gonum.org/v1/gonum/internal/math32
-# google.golang.org/genproto v0.0.0-20180817151627-c66870c02cf8
+gonum.org/v1/gonum/lapack
+gonum.org/v1/gonum/lapack/gonum
+gonum.org/v1/gonum/lapack/lapack64
+gonum.org/v1/gonum/mat
+# google.golang.org/genproto v0.0.0-20191002211648-c459b9ce5143
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.21.1
+# google.golang.org/grpc v1.24.0
 google.golang.org/grpc
-google.golang.org/grpc/balancer/roundrobin
-google.golang.org/grpc/resolver
-google.golang.org/grpc/resolver/manual
 google.golang.org/grpc/balancer
+google.golang.org/grpc/balancer/base
+google.golang.org/grpc/balancer/roundrobin
+google.golang.org/grpc/binarylog/grpc_binarylog_v1
 google.golang.org/grpc/codes
 google.golang.org/grpc/connectivity
 google.golang.org/grpc/credentials
+google.golang.org/grpc/credentials/internal
 google.golang.org/grpc/encoding
 google.golang.org/grpc/encoding/proto
 google.golang.org/grpc/grpclog
@@ -173,19 +174,19 @@ google.golang.org/grpc/internal/channelz
 google.golang.org/grpc/internal/envconfig
 google.golang.org/grpc/internal/grpcrand
 google.golang.org/grpc/internal/grpcsync
+google.golang.org/grpc/internal/syscall
 google.golang.org/grpc/internal/transport
 google.golang.org/grpc/keepalive
 google.golang.org/grpc/metadata
 google.golang.org/grpc/naming
 google.golang.org/grpc/peer
+google.golang.org/grpc/resolver
 google.golang.org/grpc/resolver/dns
+google.golang.org/grpc/resolver/manual
 google.golang.org/grpc/resolver/passthrough
+google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
-google.golang.org/grpc/balancer/base
-google.golang.org/grpc/credentials/internal
-google.golang.org/grpc/binarylog/grpc_binarylog_v1
-google.golang.org/grpc/internal/syscall
-# gopkg.in/yaml.v2 v2.2.2
+# gopkg.in/yaml.v2 v2.2.4
 gopkg.in/yaml.v2
