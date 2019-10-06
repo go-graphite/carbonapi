@@ -173,11 +173,26 @@ func (bg *BroadcastGroup) splitRequest(ctx context.Context, request *protov3.Mul
 		}
 
 		f, _, e := bg.Find(ctx, &protov3.MultiGlobRequest{Metrics: []string{metric.Name}})
-		if (e != nil) || f == nil || len(f.Metrics) == 0 {
+		if e != nil || f == nil || len(f.Metrics) == 0 {
+			if e == nil {
+				e = merry.Errorf("no result fetched")
+				if f == nil {
+					e = e.WithCause(types.ErrUnmarshalFailed)
+				} else {
+					e = e.WithCause(types.ErrNoMetricsFetched)
+				}
+			}
 			bg.logger.Warn("find request failed when resolving globs",
 				zap.String("metric_name", metric.Name),
-				zap.Any("errors", e),
+				zap.String("error", e.Cause().Error()),
 			)
+			if ce := bg.logger.Check(zap.DebugLevel, "find request failed when resolving globs (verbose)"); ce != nil {
+				ce.Write(
+					zap.String("metric_name", metric.Name),
+					zap.String("error", e.Cause().Error()),
+					zap.Any("stack", e),
+				)
+			}
 
 			if f == nil {
 				continue

@@ -24,6 +24,7 @@ var ErrNoRequests = merry.New("no requests to fetch")
 var ErrNoTagSpecified = merry.New("no tag specified")
 var ErrNoServersSpecified = merry.New("no servers specified")
 var ErrConcurrencyLimitNotSet = merry.New("concurrency limit is not set")
+var ErrUnmarshalFailed = merry.New("unmarshal failed")
 
 func ReturnNonNotFoundError(errors []merry.Error) []merry.Error {
 	var errList []merry.Error

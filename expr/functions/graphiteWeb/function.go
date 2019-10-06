@@ -78,7 +78,7 @@ func paramsIsEqual(first, second []types.FunctionParam) bool {
 func New(configFile string) []interfaces.FunctionMetadata {
 	logger := zapwriter.Logger("functionInit").With(zap.String("function", "graphiteWeb"))
 	if configFile == "" {
-		logger.Warn("no config file specified",
+		logger.Debug("no config file specified",
 			zap.String("message", "this function requrires config file to work properly"),
 		)
 		return nil
@@ -90,6 +90,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 		logger.Fatal("failed to read config file",
 			zap.Error(err),
 		)
+		return nil
 	}
 
 	cfg := graphiteWebConfig{
@@ -105,6 +106,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 		logger.Fatal("failed to parse config",
 			zap.Error(err),
 		)
+		return nil
 	}
 
 	if !cfg.Enabled {

@@ -3,8 +3,6 @@ package config
 import (
 	"bytes"
 	"expvar"
-	"fmt"
-	"github.com/ansel1/merry"
 	"io/ioutil"
 	"runtime"
 	"strconv"
@@ -12,6 +10,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/ansel1/merry"
 	"github.com/facebookgo/pidfile"
 	"github.com/go-graphite/carbonapi/cache"
 	"github.com/go-graphite/carbonapi/expr/functions"
@@ -63,7 +62,6 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 			break
 		}
 	}
-	fmt.Printf("\n\n\n\n\nneedStackTrace=%v\n\n\n\n", needStackTrace)
 	merry.SetStackCaptureEnabled(needStackTrace)
 
 	if Config.GraphTemplates != "" {

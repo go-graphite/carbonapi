@@ -294,8 +294,13 @@ func (z *Zipper) doProbe(logger *zap.Logger) {
 	_, err := z.storeBackends.ProbeTLDs(ctx)
 	if err != nil {
 		logger.Error("failed to probe tlds",
-			zap.Any("merry.Errors", err),
+			zap.String("errors", err.Cause().Error()),
 		)
+		if ce := logger.Check(zap.DebugLevel, "failed to probe tlds (verbose)"); ce != nil {
+			ce.Write(
+				zap.Any("errorVerbose", err),
+			)
+		}
 	}
 }
 

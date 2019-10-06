@@ -86,6 +86,12 @@ func GetOrder() interfaces.Order {
 // New - function for parsing config
 func New(configFile string) []interfaces.FunctionMetadata {
 	logger := zapwriter.Logger("functionInit").With(zap.String("function", "aliasByPostgres"))
+	if configFile == "" {
+		logger.Debug("no config file specified",
+			zap.String("message", "this function requrires config file to work properly"),
+		)
+		return nil
+	}
 	v := viper.New()
 	v.SetConfigFile(configFile)
 	err := v.ReadInConfig()
@@ -93,6 +99,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 		logger.Error("failed to read config file",
 			zap.Error(err),
 		)
+		return nil
 	}
 	key := map[string]KeyString{
 		"keyString": {
@@ -120,6 +127,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 		logger.Error("failed to parse config",
 			zap.Error(err),
 		)
+		return nil
 	}
 	if !cfg.Enabled {
 		logger.Warn("aliasByPostgres config found but aliasByPostgres is disabled")
