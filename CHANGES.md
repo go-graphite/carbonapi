@@ -13,6 +13,12 @@ Changes
 
 CHANGELOG
 ---------
+**(WIP)**
+ - [Fix] Fix aliasByTags to work correclty with other functions
+ - [Fix] panic when using protov2 and backend that doesn't support tags (thx tyo @gekmihesg)
+ - [Improvement] Redesign error handling and logging. Logging should be now less noisy and all error messages should contain better reasoning about error cause
+ - [Improvement] Move more of the logging messages to Debug level - that should make logs less nosiy and still preserve ability to see detailed errors on Debug level
+
 **0.12.5**
  - [Feature] Implement 'highest' function
  - [Feature] Implement 'lowest' function
