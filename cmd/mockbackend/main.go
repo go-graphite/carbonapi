@@ -44,6 +44,24 @@ type Metric struct {
 	Values     []float64 `yaml:"values"`
 }
 
+type metricForJson struct {
+	MetricName string
+	Values []string
+}
+
+func (m *Metric) MarshalJSON() ([]byte, error) {
+	m2 := metricForJson{
+		MetricName: m.MetricName,
+		Values: make([]string, len(m.Values)),
+	}
+
+	for i, v := range m.Values {
+		m2.Values[i] = fmt.Sprintf("%v", v)
+	}
+
+	return json.Marshal(m2)
+}
+
 type Response struct {
 	PathExpression string   `yaml:"pathExpression"`
 	Data           []Metric `yaml:"data"`

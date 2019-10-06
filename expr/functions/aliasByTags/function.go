@@ -1,7 +1,6 @@
 package aliasByTags
 
 import (
-	"fmt"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -9,8 +8,6 @@ import (
 
 	"strings"
 )
-
-const NAME = "name"
 
 type aliasByTags struct {
 	interfaces.FunctionBase
@@ -29,29 +26,14 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func metricToTagMap(s string) map[string]string {
-	r := make(map[string]string)
-	for _, p := range strings.Split(s, ";") {
-		if strings.Contains(p, "=") {
-			tagValue := strings.SplitN(p, "=", 2)
-			r[tagValue[0]] = tagValue[1]
-		} else {
-			r[NAME] = p
-		}
-	}
-	return r
-}
-
 func (f *aliasByTags) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
-		fmt.Println("getSeriesArg missing argument")
 		return nil, err
 	}
 
 	tags, err := e.GetNodeOrTagArgs(1)
 	if err != nil {
-		fmt.Println("GetNodeOrTagArgs missing argument")
 		return nil, err
 	}
 
@@ -59,7 +41,7 @@ func (f *aliasByTags) Do(e parser.Expr, from, until int64, values map[parser.Met
 
 	for _, a := range args {
 		var matched []string
-		metricTags := metricToTagMap(a.Name)
+		metricTags := a.Tags
 		nodes := strings.Split(metricTags["name"], ".")
 		for _, tag := range tags {
 			if tag.IsTag {
