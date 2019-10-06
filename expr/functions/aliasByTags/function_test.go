@@ -1,6 +1,7 @@
 package aliasByTags
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -9,16 +10,23 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
+
+	"github.com/go-graphite/carbonapi/expr/functions/perSecond"
 )
 
 func init() {
 	md := New("")
-	evaluator := th.EvaluatorFromFunc(md[0].F)
-	metadata.SetEvaluator(evaluator)
-	helper.SetEvaluator(evaluator)
 	for _, m := range md {
 		metadata.RegisterFunction(m.Name, m.F)
 	}
+	psFunc := perSecond.New("")
+	for _, m := range psFunc {
+		metadata.RegisterFunction(m.Name, m.F)
+	}
+
+	evaluator := th.EvaluatorFromFuncWithMetadata(metadata.FunctionMD.Functions)
+	metadata.SetEvaluator(evaluator)
+	helper.SetEvaluator(evaluator)
 }
 
 func TestAliasByTags(t *testing.T) {
@@ -52,6 +60,13 @@ func TestAliasByTags(t *testing.T) {
 				{"*", 0, 1}: {types.MakeMetricData("base.metric1;foo=bar;baz=bam", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("bam.bar.metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+		},
+		{
+			`aliasByTags(perSecond(*), 'name')`,
+			map[parser.MetricRequest][]*types.MetricData{
+				{"*", 0, 1}: {types.MakeMetricData("base.metric1;foo=bar;baz=bam", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData("base.metric1", []float64{math.NaN(), 1, 1, 1, 1}, 1, now32)},
 		},
 	}
 
