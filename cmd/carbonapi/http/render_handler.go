@@ -2,6 +2,7 @@ package http
 
 import (
 	"github.com/ansel1/merry"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
@@ -41,19 +42,7 @@ func setError(w http.ResponseWriter, accessLogDetails *carbonapipb.AccessLogDeta
 	accessLogDetails.HTTPCode = int32(status)
 }
 
-func getFormat(r *http.Request) string {
-	format := r.FormValue("format")
 
-	if format == "" && (parser.TruthyBool(r.FormValue("rawData")) || parser.TruthyBool(r.FormValue("rawdata"))) {
-		format = rawFormat
-	}
-
-	if format == "" {
-		format = pngFormat
-	}
-
-	return format
-}
 
 func getCacheTimeout(logger *zap.Logger, r *http.Request) int32 {
 	cacheTimeout := config.Config.Cache.DefaultTimeoutSec
@@ -125,7 +114,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	until := r.FormValue("until")
 	template := r.FormValue("template")
 	useCache := !parser.TruthyBool(r.FormValue("noCache"))
-	format := getFormat(r)
+	// status will be checked later after we'll setup everything else
+	format, ok, formatRaw := getFormat(r, pngFormat)
 
 	var jsonp string
 
@@ -152,8 +142,42 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	accessLogDetails.Until = until32
 	accessLogDetails.Tz = qtz
 	accessLogDetails.CacheTimeout = cacheTimeout
-	accessLogDetails.Format = format
+	accessLogDetails.Format = formatRaw
 	accessLogDetails.Targets = targets
+
+	if !ok || !format.ValidRenderFormat() {
+		setError(w, accessLogDetails, "unsupported format specified: " + formatRaw, http.StatusBadRequest)
+		logAsError = true
+		return
+	}
+
+	if format == protoV3Format {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			accessLogDetails.HTTPCode = http.StatusBadRequest
+			accessLogDetails.Reason = "failed to parse message body: " + err.Error()
+			http.Error(w, "bad request (failed to parse format): " + err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		var pv3Request pb.MultiFetchRequest
+		err = pv3Request.Unmarshal(body)
+
+		if err != nil {
+			accessLogDetails.HTTPCode = http.StatusBadRequest
+			accessLogDetails.Reason = "failed to parse message body: " + err.Error()
+			http.Error(w, "bad request (failed to parse format): " + err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		from32 = pv3Request.Metrics[0].StartTime
+		until32 = pv3Request.Metrics[0].StopTime
+		targets = make([]string, len(pv3Request.Metrics))
+		for i, r := range pv3Request.Metrics {
+			targets[i] = r.PathExpression
+		}
+	}
+
 	if useCache {
 		tc := time.Now()
 		response, err := config.Config.QueryCache.Get(cacheKey)
@@ -345,7 +369,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		body = types.MarshalJSON(results)
-	case protobufFormat, protobuf3Format:
+	case protoV2Format, protoV3Format:
 		body, err = types.MarshalProtobuf(results)
 		if err != nil {
 			setError(w, accessLogDetails, err.Error(), http.StatusInternalServerError)

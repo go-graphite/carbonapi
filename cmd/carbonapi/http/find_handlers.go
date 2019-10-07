@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -164,7 +165,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := utilctx.SetUUID(r.Context(), uuid.String())
 	username, _, _ := r.BasicAuth()
 
-	format := r.FormValue("format")
+	format, ok, formatRaw := getFormat(r, treejsonFormat)
 	jsonp := r.FormValue("jsonp")
 
 	query := r.Form["query"]
@@ -181,6 +182,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		Host:           r.Host,
 		Referer:        r.Referer(),
 		URI:            r.RequestURI,
+		Format:         formatRaw,
 		RequestHeaders: utilctx.GetLogHeaders(ctx),
 	}
 
@@ -189,7 +191,15 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		deferredAccessLogging(accessLogger, &accessLogDetails, t0, logAsError)
 	}()
 
-	if format == "completer" {
+	if !ok || !format.ValidFindFormat() {
+		http.Error(w, "unsupported format: " + formatRaw, http.StatusBadRequest)
+		accessLogDetails.HTTPCode = http.StatusBadRequest
+		accessLogDetails.Reason = "unsupported format: " + formatRaw
+		logAsError = true
+		return
+	}
+
+	if format == completerFormat {
 		var replacer = strings.NewReplacer("/", ".")
 		for i := range query {
 			query[i] = replacer.Replace(query[i])
@@ -201,16 +211,34 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if format == protoV3Format {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			accessLogDetails.HTTPCode = http.StatusBadRequest
+			accessLogDetails.Reason = "failed to parse message body: " + err.Error()
+			http.Error(w, "bad request (failed to parse format): " + err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		var pv3Request pb.MultiGlobRequest
+		err = pv3Request.Unmarshal(body)
+
+		if err != nil {
+			accessLogDetails.HTTPCode = http.StatusBadRequest
+			accessLogDetails.Reason = "failed to parse message body: " + err.Error()
+			http.Error(w, "bad request (failed to parse format): " + err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		query = pv3Request.Metrics
+	}
+
 	if len(query) == 0 {
 		http.Error(w, "missing parameter `query`", http.StatusBadRequest)
 		accessLogDetails.HTTPCode = http.StatusBadRequest
 		accessLogDetails.Reason = "missing parameter `query`"
 		logAsError = true
 		return
-	}
-
-	if format == "" {
-		format = treejsonFormat
 	}
 
 	multiGlobs, stats, err := config.Config.ZipperInstance.Find(ctx, query)
@@ -243,7 +271,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		b, err2 = findTreejson(multiGlobs)
 		err = merry.Wrap(err2)
 		format = jsonFormat
-	case "completer":
+	case completerFormat:
 		b, err2 = findCompleter(multiGlobs)
 		err = merry.Wrap(err2)
 		format = jsonFormat
@@ -251,11 +279,10 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		b, err2 = findList(multiGlobs)
 		err = merry.Wrap(err2)
 		format = rawFormat
-	case protobufFormat, protobuf3Format:
+	case protoV2Format, protoV3Format:
 		b, err2 = multiGlobs.Marshal()
 		err = merry.Wrap(err2)
-		format = protobufFormat
-	case "", pickleFormat:
+	case pickleFormat:
 		var result []map[string]interface{}
 		now := int32(time.Now().Unix() + 60)
 		for _, globs := range multiGlobs.Metrics {

@@ -23,11 +23,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := utilctx.SetUUID(r.Context(), uuid.String())
 	username, _, _ := r.BasicAuth()
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
-	format := r.FormValue("format")
-
-	if format == "" {
-		format = jsonFormat
-	}
+	format, ok, formatRaw := getFormat(r, jsonFormat)
 
 	requestHeaders := utilctx.GetLogHeaders(ctx)
 
@@ -41,7 +37,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 		PeerPort:       srcPort,
 		Host:           r.Host,
 		Referer:        r.Referer(),
-		Format:         format,
+		Format:         formatRaw,
 		URI:            r.RequestURI,
 		RequestHeaders: requestHeaders,
 	}
@@ -50,6 +46,14 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		deferredAccessLogging(accessLogger, &accessLogDetails, t0, logAsError)
 	}()
+
+	if !ok || !format.ValidFindFormat() {
+		http.Error(w, "unsupported format: " + formatRaw, http.StatusBadRequest)
+		accessLogDetails.HTTPCode = http.StatusBadRequest
+		accessLogDetails.Reason = "unsupported format: " + formatRaw
+		logAsError = true
+		return
+	}
 
 	query := r.Form["target"]
 	if len(query) == 0 {
@@ -78,7 +82,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	switch format {
 	case jsonFormat:
 		b, err2 = json.Marshal(data)
-	case protobufFormat, protobuf3Format:
+	case protoV3Format, protoV2Format:
 		err2 = fmt.Errorf("not implemented yet")
 	default:
 		err2 = fmt.Errorf("unknown format %v", format)

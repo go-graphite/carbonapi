@@ -2,6 +2,7 @@ package http
 
 import (
 	"fmt"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 	"net/http"
 	"strings"
 	"sync/atomic"
@@ -13,6 +14,8 @@ import (
 	"go.uber.org/zap"
 )
 
+type responseFormat int
+
 // for testing
 var timeNow = time.Now
 
@@ -22,16 +25,105 @@ type requestInterval struct {
 }
 
 const (
-	jsonFormat      = "json"
-	treejsonFormat  = "treejson"
-	pngFormat       = "png"
-	csvFormat       = "csv"
-	rawFormat       = "raw"
-	svgFormat       = "svg"
-	protobufFormat  = "protobuf"
-	protobuf3Format = "protobuf3"
-	pickleFormat    = "pickle"
+	jsonFormat responseFormat = iota
+	treejsonFormat
+	pngFormat
+	csvFormat
+	rawFormat
+	svgFormat
+	protoV2Format
+	protoV3Format
+	pickleFormat
+	completerFormat
 )
+
+func (r responseFormat) String() string {
+	switch r {
+	case jsonFormat:
+		return "json"
+	case pickleFormat:
+		return "pickle"
+	case protoV2Format:
+		return "protobuf3"
+	case protoV3Format:
+		return "carbonapi_v3_pb"
+	case treejsonFormat:
+		return "treejson"
+	case pngFormat:
+		return "png"
+	case csvFormat:
+		return "csv"
+	case rawFormat:
+		return "raw"
+	case svgFormat:
+		return "svg"
+	case completerFormat:
+		return "completer"
+	default:
+		return "unknown"
+	}
+}
+
+func (r responseFormat) ValidFindFormat() bool {
+	switch r {
+	case jsonFormat:
+		return true
+	case pickleFormat:
+		return true
+	case protoV2Format:
+		return true
+	case protoV3Format:
+		return true
+	case completerFormat:
+		return true
+	case csvFormat:
+		return true
+	case rawFormat:
+		return true
+	case treejsonFormat:
+		return true
+	default:
+		return false
+	}
+}
+
+func (r responseFormat) ValidRenderFormat() bool {
+	switch r {
+	case jsonFormat:
+		return true
+	case pickleFormat:
+		return true
+	case protoV2Format:
+		return true
+	case protoV3Format:
+		return true
+	case pngFormat:
+		return true
+	case svgFormat:
+		return true
+	case csvFormat:
+		return true
+	case rawFormat:
+		return true
+	default:
+		return false
+	}
+}
+
+var knownFormats = map[string]responseFormat{
+	"json":            jsonFormat,
+	"pickle":          pickleFormat,
+	"treejson":        treejsonFormat,
+	"protobuf":        protoV2Format,
+	"protobuf3":       protoV2Format,
+	"carbonapi_v2_pb": protoV2Format,
+	"carbonapi_v3_pb": protoV3Format,
+	"png": pngFormat,
+	"csv": csvFormat,
+	"raw": rawFormat,
+	"svg": svgFormat,
+	"completer": completerFormat,
+}
 
 const (
 	contentTypeJSON       = "application/json"
@@ -44,7 +136,22 @@ const (
 	contentTypeSVG        = "image/svg+xml"
 )
 
-func writeResponse(w http.ResponseWriter, b []byte, format string, jsonp string) {
+func getFormat(r *http.Request, defaultFormat responseFormat) (responseFormat, bool, string) {
+	format := r.FormValue("format")
+
+	if format == "" && (parser.TruthyBool(r.FormValue("rawData")) || parser.TruthyBool(r.FormValue("rawdata"))) {
+		return rawFormat, true, format
+	}
+
+	if format == "" {
+		return defaultFormat, true, format
+	}
+
+	f, ok := knownFormats[format]
+	return f, ok, format
+}
+
+func writeResponse(w http.ResponseWriter, b []byte, format responseFormat, jsonp string) {
 
 	switch format {
 	case jsonFormat:
@@ -58,7 +165,7 @@ func writeResponse(w http.ResponseWriter, b []byte, format string, jsonp string)
 			w.Header().Set("Content-Type", contentTypeJSON)
 			w.Write(b)
 		}
-	case protobufFormat, protobuf3Format:
+	case protoV2Format, protoV3Format:
 		w.Header().Set("Content-Type", contentTypeProtobuf)
 		w.Write(b)
 	case rawFormat:
