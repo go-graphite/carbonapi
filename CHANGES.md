@@ -13,6 +13,10 @@ Changes
 
 CHANGELOG
 ---------
+**0.12.6**
+ - [Fix] Fix aliasByTags to work correclty with other functions
+ - [Fix] panic when using protov2 and backend that doesn't support tags (thx to @gekmihesg)
+
 **0.12.5**
  - [Feature] Implement 'highest' function
  - [Feature] Implement 'lowest' function
