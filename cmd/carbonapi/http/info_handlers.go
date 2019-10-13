@@ -48,7 +48,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	if !ok || !format.ValidFindFormat() {
-		http.Error(w, "unsupported format: " + formatRaw, http.StatusBadRequest)
+		http.Error(w, "unsupported format: "+formatRaw, http.StatusBadRequest)
 		accessLogDetails.HTTPCode = http.StatusBadRequest
 		accessLogDetails.Reason = "unsupported format: " + formatRaw
 		logAsError = true

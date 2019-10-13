@@ -14,7 +14,8 @@ import (
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 	"github.com/go-graphite/carbonapi/intervalset"
 	utilctx "github.com/go-graphite/carbonapi/util/ctx"
-	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
+	pbv2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
+	pbv3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	pickle "github.com/lomik/og-rek"
 	"github.com/lomik/zapwriter"
 	"github.com/satori/go.uuid"
@@ -32,7 +33,7 @@ type treejson struct {
 
 var treejsonContext = make(map[string]int)
 
-func findTreejson(multiGlobs *pb.MultiGlobResponse) ([]byte, error) {
+func findTreejson(multiGlobs *pbv3.MultiGlobResponse) ([]byte, error) {
 	var b bytes.Buffer
 
 	var tree = make([]treejson, 0)
@@ -91,7 +92,7 @@ type completer struct {
 	IsLeaf string `json:"is_leaf"`
 }
 
-func findCompleter(multiGlobs *pb.MultiGlobResponse) ([]byte, error) {
+func findCompleter(multiGlobs *pbv3.MultiGlobResponse) ([]byte, error) {
 	var b bytes.Buffer
 
 	var complete = make([]completer, 0)
@@ -135,7 +136,7 @@ func findCompleter(multiGlobs *pb.MultiGlobResponse) ([]byte, error) {
 	return b.Bytes(), err
 }
 
-func findList(multiGlobs *pb.MultiGlobResponse) ([]byte, error) {
+func findList(multiGlobs *pbv3.MultiGlobResponse) ([]byte, error) {
 	var b bytes.Buffer
 
 	for _, globs := range multiGlobs.Metrics {
@@ -192,7 +193,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	if !ok || !format.ValidFindFormat() {
-		http.Error(w, "unsupported format: " + formatRaw, http.StatusBadRequest)
+		http.Error(w, "unsupported format: "+formatRaw, http.StatusBadRequest)
 		accessLogDetails.HTTPCode = http.StatusBadRequest
 		accessLogDetails.Reason = "unsupported format: " + formatRaw
 		logAsError = true
@@ -216,17 +217,17 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			accessLogDetails.HTTPCode = http.StatusBadRequest
 			accessLogDetails.Reason = "failed to parse message body: " + err.Error()
-			http.Error(w, "bad request (failed to parse format): " + err.Error(), http.StatusBadRequest)
+			http.Error(w, "bad request (failed to parse format): "+err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		var pv3Request pb.MultiGlobRequest
+		var pv3Request pbv3.MultiGlobRequest
 		err = pv3Request.Unmarshal(body)
 
 		if err != nil {
 			accessLogDetails.HTTPCode = http.StatusBadRequest
 			accessLogDetails.Reason = "failed to parse message body: " + err.Error()
-			http.Error(w, "bad request (failed to parse format): " + err.Error(), http.StatusBadRequest)
+			http.Error(w, "bad request (failed to parse format): "+err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -254,7 +255,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 				returnCode = config.Config.NotFoundStatusCode
 			}
 			if returnCode < 300 {
-				multiGlobs = &pb.MultiGlobResponse{Metrics: []pb.GlobResponse{}}
+				multiGlobs = &pbv3.MultiGlobResponse{Metrics: []pbv3.GlobResponse{}}
 			} else {
 				http.Error(w, http.StatusText(returnCode), returnCode)
 				accessLogDetails.HTTPCode = int32(returnCode)
@@ -279,7 +280,20 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		b, err2 = findList(multiGlobs)
 		err = merry.Wrap(err2)
 		format = rawFormat
-	case protoV2Format, protoV3Format:
+	case protoV2Format:
+		r := pbv2.GlobResponse{
+			Name:    multiGlobs.Metrics[0].Name,
+			Matches: make([]pbv2.GlobMatch, 0, len(multiGlobs.Metrics)),
+		}
+
+		for i := range multiGlobs.Metrics {
+			for _, m := range multiGlobs.Metrics[i].Matches {
+				r.Matches = append(r.Matches, pbv2.GlobMatch{IsLeaf: m.IsLeaf, Path: m.Path})
+			}
+		}
+		b, err2 = r.Marshal()
+		err = merry.Wrap(err2)
+	case protoV3Format:
 		b, err2 = multiGlobs.Marshal()
 		err = merry.Wrap(err2)
 	case pickleFormat:

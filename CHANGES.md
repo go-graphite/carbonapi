@@ -16,6 +16,7 @@ CHANGELOG
 **(WIP)**
  - [Fix] Fix aliasByTags to work correclty with other functions
  - [Fix] panic when using protov2 and backend that doesn't support tags (thx tyo @gekmihesg)
+ - [Fix] /render and /metrics/find URLs now works correctly for format=carbonapi\_v2\_pb (protov3) and for new format
  - [Improvement] Redesign error handling and logging. Logging should be now less noisy and all error messages should contain better reasoning about error cause
  - [Improvement] Move more of the logging messages to Debug level - that should make logs less nosiy and still preserve ability to see detailed errors on Debug level
 

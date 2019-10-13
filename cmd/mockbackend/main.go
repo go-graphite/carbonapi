@@ -52,13 +52,13 @@ type Metric struct {
 
 type metricForJson struct {
 	MetricName string
-	Values []string
+	Values     []string
 }
 
 func (m *Metric) MarshalJSON() ([]byte, error) {
 	m2 := metricForJson{
 		MetricName: m.MetricName,
-		Values: make([]string, len(m.Values)),
+		Values:     make([]string, len(m.Values)),
 	}
 
 	for i, v := range m.Values {

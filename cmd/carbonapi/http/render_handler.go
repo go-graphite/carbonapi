@@ -42,8 +42,6 @@ func setError(w http.ResponseWriter, accessLogDetails *carbonapipb.AccessLogDeta
 	accessLogDetails.HTTPCode = int32(status)
 }
 
-
-
 func getCacheTimeout(logger *zap.Logger, r *http.Request) int32 {
 	cacheTimeout := config.Config.Cache.DefaultTimeoutSec
 
@@ -146,7 +144,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	accessLogDetails.Targets = targets
 
 	if !ok || !format.ValidRenderFormat() {
-		setError(w, accessLogDetails, "unsupported format specified: " + formatRaw, http.StatusBadRequest)
+		setError(w, accessLogDetails, "unsupported format specified: "+formatRaw, http.StatusBadRequest)
 		logAsError = true
 		return
 	}
@@ -156,7 +154,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			accessLogDetails.HTTPCode = http.StatusBadRequest
 			accessLogDetails.Reason = "failed to parse message body: " + err.Error()
-			http.Error(w, "bad request (failed to parse format): " + err.Error(), http.StatusBadRequest)
+			http.Error(w, "bad request (failed to parse format): "+err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -166,7 +164,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			accessLogDetails.HTTPCode = http.StatusBadRequest
 			accessLogDetails.Reason = "failed to parse message body: " + err.Error()
-			http.Error(w, "bad request (failed to parse format): " + err.Error(), http.StatusBadRequest)
+			http.Error(w, "bad request (failed to parse format): "+err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -369,8 +367,15 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		body = types.MarshalJSON(results)
-	case protoV2Format, protoV3Format:
-		body, err = types.MarshalProtobuf(results)
+	case protoV2Format:
+		body, err = types.MarshalProtobufV2(results)
+		if err != nil {
+			setError(w, accessLogDetails, err.Error(), http.StatusInternalServerError)
+			logAsError = true
+			return
+		}
+	case protoV3Format:
+		body, err = types.MarshalProtobufV3(results)
 		if err != nil {
 			setError(w, accessLogDetails, err.Error(), http.StatusInternalServerError)
 			logAsError = true

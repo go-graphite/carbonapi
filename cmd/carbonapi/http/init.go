@@ -32,6 +32,9 @@ func InitHandlers(headersToPass, headersToLog []string) *http.ServeMux {
 	r.HandleFunc(config.Config.Prefix+"/tags", enrichContextWithHeaders(headersToPass, headersToLog, tagHandler))
 	r.HandleFunc(config.Config.Prefix+"/tags/", enrichContextWithHeaders(headersToPass, headersToLog, tagHandler))
 
+	r.HandleFunc(config.Config.Prefix+"/_internal/capabilities", enrichContextWithHeaders(headersToPass, headersToLog, capabilityHandler))
+	r.HandleFunc(config.Config.Prefix+"/_internal/capabilities/", enrichContextWithHeaders(headersToPass, headersToLog, capabilityHandler))
+
 	r.HandleFunc(config.Config.Prefix+"/", enrichContextWithHeaders(headersToPass, headersToLog, usageHandler))
 
 	if config.Config.Expvar.Enabled {

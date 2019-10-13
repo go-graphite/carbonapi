@@ -13,6 +13,7 @@ import (
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/tags"
+	pbv2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	pickle "github.com/lomik/og-rek"
 )
@@ -137,14 +138,14 @@ func MarshalJSON(results []*MetricData) []byte {
 			t += r.AggregatedTimeStep()
 		}
 
-		b = append(b, `],"tags":{`...)
+		b = append(b, `],"responseTags":{`...)
 		notFirstTag := false
-		tags := make([]string, 0, len(r.Tags))
+		responseTags := make([]string, 0, len(r.Tags))
 		for tag := range r.Tags {
-			tags = append(tags, tag)
+			responseTags = append(responseTags, tag)
 		}
-		sort.Strings(tags)
-		for _, tag := range tags {
+		sort.Strings(responseTags)
+		for _, tag := range responseTags {
 			v := r.Tags[tag]
 			if notFirstTag {
 				b = append(b, ',')
@@ -198,8 +199,41 @@ func MarshalPickle(results []*MetricData) []byte {
 	return buf.Bytes()
 }
 
-// MarshalProtobuf marshals metric data to protobuf
-func MarshalProtobuf(results []*MetricData) ([]byte, error) {
+// MarshalProtobufV3 marshals metric data to protobuf
+func MarshalProtobufV2(results []*MetricData) ([]byte, error) {
+	response := pbv2.MultiFetchResponse{}
+	for _, metric := range results {
+		fmv3 := (*metric).FetchResponse
+		v := make([]float64, len(fmv3.Values))
+		isAbsent := make([]bool, len(fmv3.Values))
+		for i := range fmv3.Values {
+			if math.IsNaN(fmv3.Values[i]) {
+				v[i] = 0
+				isAbsent[i] = true
+			} else {
+				v[i] = fmv3.Values[i]
+			}
+		}
+		fm := pbv2.FetchResponse{
+			Name:      fmv3.Name,
+			StartTime: int32(fmv3.StartTime),
+			StopTime:  int32(fmv3.StopTime),
+			StepTime:  int32(fmv3.StepTime),
+			Values:    v,
+			IsAbsent:  isAbsent,
+		}
+		response.Metrics = append(response.Metrics, fm)
+	}
+	b, err := response.Marshal()
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
+// MarshalProtobufV3 marshals metric data to protobuf
+func MarshalProtobufV3(results []*MetricData) ([]byte, error) {
 	response := pb.MultiFetchResponse{}
 	for _, metric := range results {
 		response.Metrics = append(response.Metrics, (*metric).FetchResponse)
@@ -210,6 +244,13 @@ func MarshalProtobuf(results []*MetricData) ([]byte, error) {
 	}
 
 	return b, nil
+}
+
+// MarshalProtobuf returns same things as MarshalProtobufV3
+//
+// Deprecated: replaced by MarshalProtobufV3 and will be removed after February 2020
+func MarshalProtobuf(results []*MetricData) ([]byte, error) {
+	return MarshalProtobufV3(results)
 }
 
 // MarshalRaw marshals metric data to graphite's internal format, called 'raw'
