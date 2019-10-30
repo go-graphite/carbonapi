@@ -13,7 +13,7 @@ PNG/SVG support is optional (but enabled by default if you are using Makefile) a
 Requirements
 ------------
 
- - golang 1.7 or newer.
+ - golang 1.11 or newer.
  - For PNG/SVG support only: cairo 1.12.0 or newer.
  - dep (https://github.com/golang/dep) for dependancy management
 
