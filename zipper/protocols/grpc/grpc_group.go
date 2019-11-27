@@ -73,7 +73,7 @@ func NewClientGRPCGroup(logger *zap.Logger, config types.BackendV2) (types.Backe
 		grpc.WithCompressor(grpc.NewGZIPCompressor()),
 		grpc.WithDecompressor(grpc.NewGZIPDecompressor()),
 		grpc.WithBalancerName("round_robin"), // TODO: Make that configurable
-		grpc.WithMaxMsgSize(math.MaxUint32),  // TODO: make that configurable
+		grpc.WithMaxMsgSize(math.MaxInt32),  // TODO: make that configurable
 		grpc.WithInsecure(),                  // TODO: Make configurable
 	}
 
