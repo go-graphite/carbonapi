@@ -23,7 +23,7 @@ func TestJSONResponse(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		b := MarshalJSON(tt.results)
+		b := MarshalJSON(tt.results, 1.0)
 		if !bytes.Equal(b, tt.out) {
 			t.Errorf("marshalJSON(%+v):\n    got %+v\n    want %+v", tt.results, string(b), string(tt.out))
 		}
@@ -71,6 +71,6 @@ func BenchmarkMarshalJSON(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = MarshalJSON(data)
+		_ = MarshalJSON(data, 1.0)
 	}
 }
