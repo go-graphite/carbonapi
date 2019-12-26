@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	pbv3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	pickle "github.com/lomik/og-rek"
 	"github.com/lomik/zapwriter"
+	"github.com/maruel/natural"
 	"github.com/satori/go.uuid"
 )
 
@@ -81,6 +83,16 @@ func findTreejson(multiGlobs *pbv3.MultiGlobResponse) ([]byte, error) {
 			tree = append(tree, t)
 		}
 	}
+
+	sort.Slice(tree, func(i, j int) bool {
+		if tree[i].Leaf < tree[j].Leaf {
+			return true
+		}
+		if tree[i].Leaf > tree[j].Leaf {
+			return false
+		}
+		return natural.Less(tree[i].Text, tree[j].Text)
+	})
 
 	err := json.NewEncoder(&b).Encode(tree)
 	return b.Bytes(), err
