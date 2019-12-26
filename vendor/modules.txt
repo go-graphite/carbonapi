@@ -74,6 +74,8 @@ github.com/lomik/og-rek
 github.com/lomik/zapwriter
 # github.com/magiconair/properties v1.8.1
 github.com/magiconair/properties
+# github.com/maruel/natural v0.0.0-20180416170133-dbcb3e2e8cf1
+github.com/maruel/natural
 # github.com/mitchellh/mapstructure v1.1.2
 github.com/mitchellh/mapstructure
 # github.com/mjibson/go-dsp v0.0.0-20180508042940-11479a337f12
