@@ -1,6 +1,7 @@
 package functions
 
 import (
+	"github.com/go-graphite/carbonapi/expr/functions/smartSummarize"
 	"sort"
 	"strings"
 
@@ -184,6 +185,7 @@ func New(configs map[string]string) {
 		{name: "scaleToSeconds", order: scaleToSeconds.GetOrder(), f: scaleToSeconds.New},
 		{name: "seriesByTag", order: seriesByTag.GetOrder(), f: seriesByTag.New},
 		{name: "seriesList", order: seriesList.GetOrder(), f: seriesList.New},
+		{name: "smartSummarize", order: seriesList.GetOrder(), f: smartSummarize.New},
 		{name: "sortBy", order: sortBy.GetOrder(), f: sortBy.New},
 		{name: "sortByName", order: sortByName.GetOrder(), f: sortByName.New},
 		{name: "squareRoot", order: squareRoot.GetOrder(), f: squareRoot.New},
