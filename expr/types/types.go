@@ -94,7 +94,7 @@ func ConsolidateJSON(maxDataPoints int, results []*MetricData) {
 }
 
 // MarshalJSON marshals metric data to JSON
-func MarshalJSON(results []*MetricData) []byte {
+func MarshalJSON(results []*MetricData, timestampMultiplier int64) []byte {
 	var b []byte
 	b = append(b, '[')
 
@@ -114,7 +114,7 @@ func MarshalJSON(results []*MetricData) []byte {
 		b = append(b, `,"datapoints":[`...)
 
 		var innerComma bool
-		t := r.StartTime
+		t := r.StartTime * timestampMultiplier
 		for _, v := range r.AggregatedValues() {
 			if innerComma {
 				b = append(b, ',')
@@ -135,10 +135,10 @@ func MarshalJSON(results []*MetricData) []byte {
 
 			b = append(b, ']')
 
-			t += r.AggregatedTimeStep()
+			t += r.AggregatedTimeStep() * timestampMultiplier
 		}
 
-		b = append(b, `],"responseTags":{`...)
+		b = append(b, `],"tags":{`...)
 		notFirstTag := false
 		responseTags := make([]string, 0, len(r.Tags))
 		for tag := range r.Tags {

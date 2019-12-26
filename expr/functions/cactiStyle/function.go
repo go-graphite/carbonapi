@@ -8,6 +8,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	"math"
+	"strings"
 )
 
 type cactiStyle struct {
@@ -79,9 +80,9 @@ func (f *cactiStyle) Do(e parser.Expr, from, until int64, values map[parser.Metr
 			xv, xf := humanize.ComputeSI(maxVal)
 			cv, cf := humanize.ComputeSI(currentVal)
 
-			min = fmt.Sprintf("%.0f%s", mv, mf)
-			max = fmt.Sprintf("%.0f%s", xv, xf)
-			current = fmt.Sprintf("%.0f%s", cv, cf)
+			min = fmt.Sprintf("%.2f%s", mv, mf)
+			max = fmt.Sprintf("%.2f%s", xv, xf)
+			current = fmt.Sprintf("%.2f%s", cv, cf)
 
 		} else if system == "" {
 			min = fmt.Sprintf("%.0f", minVal)
@@ -100,7 +101,30 @@ func (f *cactiStyle) Do(e parser.Expr, from, until int64, values map[parser.Metr
 		}
 
 		r := *a
-		r.Name = fmt.Sprintf("%s Current: %s Max: %s Min: %s", a.Name, current, max, min)
+		labels := map[string]string{
+			"current": fmt.Sprintf("Current:%s", current),
+			"min": fmt.Sprintf("Min:%s", min),
+			"max":  fmt.Sprintf("Max:%s", max),
+		}
+
+		maxLength := len(labels["current"])
+		if len(labels["min"]) > maxLength {
+			maxLength = len(labels["min"])
+		}
+		if len(labels["max"]) > maxLength {
+			maxLength = len(labels["max"])
+		}
+
+		for k, v := range labels {
+			tmpBB := strings.Builder{}
+			for i := 0; i < maxLength - len(v); i++ {
+				tmpBB.WriteRune(' ')
+			}
+			tmpBB.WriteString(v)
+			labels[k] = tmpBB.String()
+		}
+
+		r.Name = fmt.Sprintf("%s %s%s%s", a.Name, labels["current"], labels["max"], labels["min"])
 		metrics = append(metrics, &r)
 	}
 

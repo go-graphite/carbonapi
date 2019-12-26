@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-graphite/carbonapi/carbonapipb"
@@ -120,6 +121,27 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	if format == jsonFormat {
 		// TODO(dgryski): check jsonp only has valid characters
 		jsonp = r.FormValue("jsonp")
+	}
+
+	timestampFormat := strings.ToLower(r.FormValue("timestampFormat"))
+	if timestampFormat == "" {
+		timestampFormat = "s"
+	}
+
+	timestampMultiplier := int64(1)
+	switch timestampFormat {
+	case "s":
+		timestampMultiplier = 1
+	case "ms", "millisecond", "milliseconds":
+		timestampMultiplier = 1000
+	case "us", "microsecond", "microseconds":
+		timestampMultiplier = 1000000
+	case "ns", "nanosecond", "nanoseconds":
+		timestampMultiplier = 1000000000
+	default:
+		setError(w, accessLogDetails, "unsupported timestamp format, supported: 's', 'ms', 'us', 'ns'", http.StatusBadRequest)
+		logAsError = true
+		return
 	}
 
 	cacheTimeout := getCacheTimeout(logger, r)
@@ -366,7 +388,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			types.ConsolidateJSON(maxDataPoints, results)
 		}
 
-		body = types.MarshalJSON(results)
+		body = types.MarshalJSON(results, timestampMultiplier)
 	case protoV2Format:
 		body, err = types.MarshalProtobufV2(results)
 		if err != nil {

@@ -1,0 +1,12 @@
+version = 1
+
+test_patterns = [
+  "*/tests/**"
+]
+
+[[analyzers]]
+name = "go"
+enabled = true
+
+  [analyzers.meta]
+  import_path = "github.com/go-graphite/carbonapi"

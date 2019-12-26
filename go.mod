@@ -31,6 +31,7 @@ require (
 	github.com/lomik/og-rek v0.0.0-20170411191824-628eefeb8d80
 	github.com/lomik/zapwriter v0.0.0-20180906104450-2ec2b9a61680
 	github.com/magiconair/properties v1.8.1 // indirect
+	github.com/maruel/natural v0.0.0-20180416170133-dbcb3e2e8cf1
 	github.com/mjibson/go-dsp v0.0.0-20180508042940-11479a337f12
 	github.com/pelletier/go-toml v1.4.0 // indirect
 	github.com/peterbourgon/g2g v0.0.0-20161124161852-0c2bab2b173d
