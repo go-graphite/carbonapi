@@ -20,7 +20,7 @@ import (
 	pickle "github.com/lomik/og-rek"
 	"github.com/lomik/zapwriter"
 	"github.com/maruel/natural"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 )
 
 // Find handler and it's helper functions
@@ -259,23 +259,13 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		accessLogDetails.ZipperRequests = stats.ZipperRequests
 		accessLogDetails.TotalMetricsCount += stats.TotalMetricsCount
 	}
-	if err != nil {
+	if err != nil && multiGlobs == nil && !config.Config.IgnoreHTTPError {
 		returnCode := merry.HTTPCode(err)
-		if returnCode != http.StatusOK || multiGlobs == nil {
-			// Allow override status code for 404-not-found replies.
-			if returnCode == 404 {
-				returnCode = config.Config.NotFoundStatusCode
-			}
-			if returnCode < 300 {
-				multiGlobs = &pbv3.MultiGlobResponse{Metrics: []pbv3.GlobResponse{}}
-			} else {
-				http.Error(w, http.StatusText(returnCode), returnCode)
-				accessLogDetails.HTTPCode = int32(returnCode)
-				accessLogDetails.Reason = err.Error()
-				logAsError = true
-				return
-			}
-		}
+		http.Error(w, err.Error(), returnCode)
+		accessLogDetails.HTTPCode = int32(returnCode)
+		accessLogDetails.Reason = err.Error()
+		logAsError = true
+		return
 	}
 	var b []byte
 	var err2 error
