@@ -39,12 +39,11 @@ func (e *expr) doGetStringArg() (string, error) {
 }
 
 func (e *expr) doGetBoolArg() (bool, error) {
-	if e.etype != EtBool {
+	if e.etype != EtString && e.etype != EtBool {
 		return false, ErrBadType
 	}
 
-	// names go into 'target'
-	switch e.target {
+	switch e.valStr {
 	case "False", "false":
 		return false, nil
 	case "True", "true":
