@@ -1,7 +1,7 @@
 package http
 
 import (
-	"github.com/ansel1/merry"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -15,12 +15,12 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/cairo/png"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	// zipperErrors "github.com/go-graphite/carbonapi/zipper/types"
-	utilctx "github.com/go-graphite/carbonapi/util/ctx"
 
+	"github.com/ansel1/merry"
+	utilctx "github.com/go-graphite/carbonapi/util/ctx"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 	"go.uber.org/zap"
 )
 
@@ -358,33 +358,23 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	var body []byte
 
 	returnCode := http.StatusOK
-	if len(results) == 0 {
-		// Obtain error code from the errors
-		// In case we have only "Not Found" errors, result should be 404
-		// Otherwise it should be 500
-		for _, err := range errors {
-			if returnCode < 500 {
-				returnCode = merry.HTTPCode(err)
-			}
-		}
-		logger.Debug("empty response or no response")
-		// Allow override status code for 404-not-found replies.
-		if returnCode == 404 {
-			returnCode = config.Config.NotFoundStatusCode
 
+	if len(results) == 0 && len(errors) > 0 && !config.Config.IgnoreHTTPError {
+		errorMsg := ""
+		for target, err := range errors {
+			errorMsg += fmt.Sprintf("%s:%s ", target, err)
 		}
-		if returnCode < 300 {
-			results = append(results, &types.MetricData{})
-		} else {
-			setError(w, accessLogDetails, "empty or no response", returnCode)
-			logAsError = true
-			return
-		}
+
+		logger.Debug("empty response or no response", zap.String("error", errorMsg))
+
+		setError(w, accessLogDetails, errorMsg, http.StatusInternalServerError)
+		logAsError = true
+		return
 	}
 
 	switch format {
 	case jsonFormat:
-		if maxDataPoints, _ := strconv.Atoi(r.FormValue("maxDataPoints")); maxDataPoints != 0 {
+		if maxDataPoints, _ := strconv.Atoi(r.FormValue("maxDataPoints")); maxDataPoints != 0 && len(results) > 0 {
 			types.ConsolidateJSON(maxDataPoints, results)
 		}
 
