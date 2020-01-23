@@ -127,8 +127,6 @@ _When `format=png`_ (default if not specified)
 | setXFilesFactor |
 | sin |
 | sinFunction |
-| smartSummarize |
-| sortBy |
 | timeSlice |
 | unique |
 | verticalLine |
