@@ -1,6 +1,7 @@
 package sortBy
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
@@ -21,7 +22,7 @@ func GetOrder() interfaces.Order {
 func New(configFile string) []interfaces.FunctionMetadata {
 	res := make([]interfaces.FunctionMetadata, 0)
 	f := &sortBy{}
-	functions := []string{"sortByMaxima", "sortByMinima", "sortByTotal"}
+	functions := []string{"sortByMaxima", "sortByMinima", "sortByTotal", "sortBy"}
 	for _, n := range functions {
 		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
 	}
@@ -35,24 +36,57 @@ func (f *sortBy) Do(e parser.Expr, from, until int64, values map[parser.MetricRe
 		return nil, err
 	}
 
+	reverse, err := e.GetBoolArgDefault(2, false)
+	if err != nil {
+		return nil, err
+	}
+	ascending := !reverse
+
+	sortByFunc, err := e.GetStringArgDefault(1, "average")
+	if err != nil {
+		return nil, err
+	}
+
+	aggFuncMap := map[string]struct {
+		name      string
+		ascending bool
+	}{
+		"sortByTotal":  {"sum", false},
+		"sortByMaxima": {"max", false},
+		"sortByMinima": {"min", true},
+		"sortBy":       {sortByFunc, true},
+	}
+
+	target := e.Target()
+	aggFunc, exists := aggFuncMap[target]
+	if !exists {
+		return nil, fmt.Errorf("invalid function called: %s", target)
+	}
+
+	// some function by default are not ascending so we need to reverse behaviour
+	if !aggFunc.ascending {
+		ascending = !ascending
+	}
+
+	return doSort(aggFunc.name, ascending, original), nil
+}
+
+func doSort(aggFuncName string, ascending bool, original []*types.MetricData) []*types.MetricData {
 	arg := make([]*types.MetricData, len(original))
 	copy(arg, original)
 	vals := make([]float64, len(arg))
 
 	for i, a := range arg {
-		switch e.Target() {
-		case "sortByTotal":
-			vals[i] = consolidations.SummarizeValues("sum", a.Values)
-		case "sortByMaxima":
-			vals[i] = consolidations.SummarizeValues("max", a.Values)
-		case "sortByMinima":
-			vals[i] = 1 / consolidations.SummarizeValues("min", a.Values)
-		}
+		vals[i] = consolidations.SummarizeValues(aggFuncName, a.Values)
 	}
 
-	sort.Sort(helper.ByVals{Vals: vals, Series: arg})
+	if ascending {
+		sort.Sort(helper.ByVals{Vals: vals, Series: arg})
+	} else {
+		sort.Sort(sort.Reverse(helper.ByVals{Vals: vals, Series: arg}))
+	}
 
-	return arg, nil
+	return arg
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
@@ -97,6 +131,30 @@ func (f *sortBy) Description() map[string]types.FunctionDescription {
 					Name:     "seriesList",
 					Required: true,
 					Type:     types.SeriesList,
+				},
+			},
+		},
+		"sortBy": {
+			Description: "Takes one metric or a wildcard seriesList followed by an aggregation function and an optional reverse parameter.\nReturns the metrics sorted according to the specified function.",
+			Function:    "sortBy(seriesList, func='average', reverse=False)",
+			Group:       "Sorting",
+			Module:      "graphite.render.functions",
+			Name:        "sortBy",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "func",
+					Required: false,
+					Type:     types.AggFunc,
+				},
+				{
+					Name:     "reverse",
+					Required: false,
+					Type:     types.Boolean,
 				},
 			},
 		},
