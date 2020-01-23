@@ -43,6 +43,9 @@ func (f *sortBy) Do(e parser.Expr, from, until int64, values map[parser.MetricRe
 	ascending := !reverse
 
 	sortByFunc, err := e.GetStringArgDefault(1, "average")
+	if err != nil {
+		return nil, err
+	}
 
 	aggFuncMap := map[string]struct {
 		name      string
