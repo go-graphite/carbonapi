@@ -245,6 +245,8 @@ _When `format=png`_ (default if not specified)
 | scaleToSeconds(seriesList, seconds) | no |
 | secondYAxis(seriesList) | no |
 | seriesByTag(*tagExpressions) | no |
+| smartSummarize(seriesList, intervalString, func='sum', alignTo=None) | no |
+| sortBy(seriesList, func='average', reverse=False) | no |
 | sortByMaxima(seriesList) | no |
 | sortByMinima(seriesList) | no |
 | sortByName(seriesList, natural=False, reverse=False) | no |
