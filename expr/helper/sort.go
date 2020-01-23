@@ -27,8 +27,7 @@ func (s ByVals) Swap(i, j int) {
 
 // Less compares two elements with specified IDs, required to be sortable
 func (s ByVals) Less(i, j int) bool {
-	// actually "greater than"
-	return s.Vals[i] > s.Vals[j]
+	return s.Vals[i] < s.Vals[j]
 }
 
 // ByName sorts metrics by name

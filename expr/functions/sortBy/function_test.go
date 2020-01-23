@@ -70,6 +70,52 @@ func TestFunction(t *testing.T) {
 				types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 			},
 		},
+		{
+			"sortBy(metric*)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric*", 0, 1}: {
+					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					types.MakeMetricData("metricC", []float64{1, 2, 3, 4, 5, 6}, 1, now32),
+				},
+			},
+			[]*types.MetricData{
+				types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+				types.MakeMetricData("metricC", []float64{1, 2, 3, 4, 5, 6}, 1, now32),
+				types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+			},
+		},
+		{
+			"sortBy(metric*, 'median')",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric*", 0, 1}: {
+					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricB", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					types.MakeMetricData("metricC", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+				},
+			},
+			[]*types.MetricData{
+				types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+				types.MakeMetricData("metricB", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+				types.MakeMetricData("metricC", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+			},
+		},
+
+		{
+			"sortBy(metric*, 'max', true)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric*", 0, 1}: {
+					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+				},
+			},
+			[]*types.MetricData{
+				types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+				types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+				types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+			},
+		},
 	}
 
 	for _, tt := range tests {
