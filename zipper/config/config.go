@@ -19,7 +19,8 @@ type Config struct {
 	CarbonSearchV2 types.CarbonSearchV2
 
 	ExpireDelaySec       int32
+	TLDCacheDisabled     bool `mapstructure:"tldCacheDisabled"`
 	InternalRoutingCache time.Duration
 	Timeouts             types.Timeouts
-	KeepAliveInterval    time.Duration `yaml:"keepAliveInterval"`
+	KeepAliveInterval    time.Duration `mapstructure:"keepAliveInterval"`
 }

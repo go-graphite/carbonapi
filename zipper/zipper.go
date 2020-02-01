@@ -66,7 +66,7 @@ func sanitizeTimouts(timeouts, defaultTimeouts types.Timeouts) types.Timeouts {
 	return timeouts
 }
 
-func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelaySec int32) ([]types.BackendServer, merry.Error) {
+func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelaySec int32, tldCacheDisabled bool) ([]types.BackendServer, merry.Error) {
 	storeClients := make([]types.BackendServer, 0)
 	var e merry.Error
 	timeouts := backends.Timeouts
@@ -126,7 +126,7 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 			)
 		}
 		if lbMethod == types.RoundRobinLB {
-			client, e = backendInit(logger, backend)
+			client, e = backendInit(logger, backend, tldCacheDisabled)
 			if e != nil {
 				return nil, e
 			}
@@ -137,14 +137,14 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 			for _, server := range backend.Servers {
 				config.Servers = []string{server}
 				config.GroupName = server
-				client, e = backendInit(logger, config)
+				client, e = backendInit(logger, config, tldCacheDisabled)
 				if e != nil {
 					return nil, e
 				}
 				backends = append(backends, client)
 			}
 
-			client, e = broadcast.NewBroadcastGroup(logger, backend.GroupName, backends, expireDelaySec, *backend.ConcurrencyLimit, backend.MaxBatchSize, timeouts)
+			client, e = broadcast.NewBroadcastGroup(logger, backend.GroupName, backends, expireDelaySec, *backend.ConcurrencyLimit, backend.MaxBatchSize, timeouts, tldCacheDisabled)
 			if e != nil {
 				return nil, e
 			}
@@ -194,14 +194,14 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 
 	if len(config.CarbonSearchV2.BackendsV2.Backends) > 0 {
 		prefix = config.CarbonSearchV2.Prefix
-		searchClients, err := createBackendsV2(logger, config.CarbonSearchV2.BackendsV2, int32(config.InternalRoutingCache.Seconds()))
+		searchClients, err := createBackendsV2(logger, config.CarbonSearchV2.BackendsV2, int32(config.InternalRoutingCache.Seconds()), config.TLDCacheDisabled)
 		if err != nil {
 			logger.Fatal("merry.Errors while initialing zipper search backends",
 				zap.Any("merry.Errors", err),
 			)
 		}
 
-		searchBackends, err = broadcast.NewBroadcastGroup(logger, "search", searchClients, int32(config.InternalRoutingCache.Seconds()), config.ConcurrencyLimitPerServer, config.MaxBatchSize, config.Timeouts)
+		searchBackends, err = broadcast.NewBroadcastGroup(logger, "search", searchClients, int32(config.InternalRoutingCache.Seconds()), config.ConcurrencyLimitPerServer, config.MaxBatchSize, config.Timeouts, config.TLDCacheDisabled)
 		if err != nil {
 			logger.Fatal("merry.Errors while initialing zipper search backends",
 				zap.Any("merry.Errors", err),
@@ -245,7 +245,7 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 		config.BackendsV2.Backends[i].Timeouts = &timeouts
 	}
 
-	storeClients, err := createBackendsV2(logger, config.BackendsV2, int32(config.InternalRoutingCache.Seconds()))
+	storeClients, err := createBackendsV2(logger, config.BackendsV2, int32(config.InternalRoutingCache.Seconds()), config.TLDCacheDisabled)
 	if err != nil {
 		logger.Fatal("merry.Errors while initialing zipper store backends",
 			zap.Any("merry.Errors", err),
@@ -253,7 +253,7 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 	}
 
 	var storeBackends types.BackendServer
-	storeBackends, err = broadcast.NewBroadcastGroup(logger, "root", storeClients, int32(config.InternalRoutingCache.Seconds()), config.ConcurrencyLimitPerServer, config.MaxBatchSize, config.Timeouts)
+	storeBackends, err = broadcast.NewBroadcastGroup(logger, "root", storeClients, int32(config.InternalRoutingCache.Seconds()), config.ConcurrencyLimitPerServer, config.MaxBatchSize, config.Timeouts, config.TLDCacheDisabled)
 	if err != nil {
 		logger.Fatal("merry.Errors while initialing zipper store backends",
 			zap.Any("merry.Errors", err),
@@ -261,7 +261,6 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 	}
 
 	z := &Zipper{
-		probeTicker: time.NewTicker(config.InternalRoutingCache),
 		ProbeQuit:   make(chan struct{}),
 		ProbeForce:  make(chan int),
 
@@ -282,9 +281,13 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 		zap.Any("config", config),
 	)
 
-	go z.probeTlds()
+	if !config.TLDCacheDisabled {
+		z.probeTicker = time.NewTicker(config.InternalRoutingCache)
 
-	z.ProbeForce <- 1
+		go z.probeTlds()
+
+		z.ProbeForce <- 1
+	}
 	return z, nil
 }
 

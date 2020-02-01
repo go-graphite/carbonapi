@@ -81,6 +81,22 @@ idleConnections: 10
 pidFile: ""
 # See https://github.com/go-graphite/carbonzipper/blob/master/example.conf#L70-L108 for format explanation
 upstreams:
+    # Use TLD Cache. Useful when you have multiple backends that could contain
+    # different TLDs.
+    #
+    # For example whenever you have multiple top level metric namespaces, like:
+    #   one_min.some.metric
+    #   ten_min.some_metric
+    #   one_hour.some_metric
+    #
+    # `one_min`, `ten_min` and `one_hour` are considered to be TLDs
+    # carbonapi by default will probe all backends and cache the responses
+    # and will know which backends would contain the prefix of the request
+    #
+    # This option allows to disable that, which could be helpful for backends like
+    # `clickhouse` or other backends where all metrics are part of the same cluster
+    tldCacheDisabled: false
+
     # Number of 100ms buckets to track request distribution in. Used to build
     # 'carbon.zipper.hostname.requests_in_0ms_to_100ms' metric and friends.
     # Requests beyond the last bucket are logged as slow (default of 10 implies

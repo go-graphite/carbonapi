@@ -53,7 +53,7 @@ func (c *ClientProtoV3Group) Children() []types.BackendServer {
 	return []types.BackendServer{c}
 }
 
-func New(logger *zap.Logger, config types.BackendV2) (types.BackendServer, merry.Error) {
+func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool) (types.BackendServer, merry.Error) {
 	if config.ConcurrencyLimit == nil {
 		return nil, types.ErrConcurrencyLimitNotSet
 	}
@@ -62,10 +62,10 @@ func New(logger *zap.Logger, config types.BackendV2) (types.BackendServer, merry
 	}
 	limiter := limiter.NewServerLimiter([]string{config.GroupName}, *config.ConcurrencyLimit)
 
-	return NewWithLimiter(logger, config, limiter)
+	return NewWithLimiter(logger, config, tldCacheDisabled, limiter)
 }
 
-func NewWithLimiter(logger *zap.Logger, config types.BackendV2, limiter limiter.ServerLimiter) (types.BackendServer, merry.Error) {
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool, limiter limiter.ServerLimiter) (types.BackendServer, merry.Error) {
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConnsPerHost: *config.MaxIdleConnsPerHost,

@@ -87,7 +87,7 @@ func TestNewBroadcastGroup(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b, err := NewBroadcastGroup(logger, tt.name, tt.servers, 60, 500, 100, timeouts)
+			b, err := NewBroadcastGroup(logger, tt.name, tt.servers, 60, 500, 100, timeouts, false)
 			if !errorsAreEqual(err, tt.expectedErr) {
 				t.Fatalf("unexpected error %v, expected %v", err, tt.expectedErr)
 			}
@@ -126,7 +126,7 @@ func TestProbeTLDs(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		b, err := NewBroadcastGroup(logger, tt.name, tt.servers, 60, 500, 100, timeouts)
+		b, err := NewBroadcastGroup(logger, tt.name, tt.servers, 60, 500, 100, timeouts, false)
 		if err != nil {
 			t.Fatalf("error while initializing group, when it shouldn't be: %v", err)
 		}
@@ -1131,7 +1131,7 @@ func TestFetchRequests(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		b, err := NewBroadcastGroup(logger, tt.name, tt.servers, 60, 500, 100, timeouts)
+		b, err := NewBroadcastGroup(logger, tt.name, tt.servers, 60, 500, 100, timeouts, false)
 		if err != nil {
 			t.Fatalf("error while initializing group, when it shouldn't be: %v", merry.Details(err))
 		}

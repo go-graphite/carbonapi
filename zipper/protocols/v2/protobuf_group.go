@@ -56,7 +56,7 @@ func (c *ClientProtoV2Group) Children() []types.BackendServer {
 	return []types.BackendServer{c}
 }
 
-func NewWithLimiter(logger *zap.Logger, config types.BackendV2, l limiter.ServerLimiter) (types.BackendServer, merry.Error) {
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool, l limiter.ServerLimiter) (types.BackendServer, merry.Error) {
 	logger = logger.With(zap.String("type", "protoV2Group"), zap.String("name", config.GroupName))
 
 	httpClient := &http.Client{
@@ -89,7 +89,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, l limiter.Server
 	return c, nil
 }
 
-func New(logger *zap.Logger, config types.BackendV2) (types.BackendServer, merry.Error) {
+func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool) (types.BackendServer, merry.Error) {
 	if config.ConcurrencyLimit == nil {
 		return nil, types.ErrConcurrencyLimitNotSet
 	}
@@ -98,7 +98,7 @@ func New(logger *zap.Logger, config types.BackendV2) (types.BackendServer, merry
 	}
 	limiter := limiter.NewServerLimiter(config.Servers, *config.ConcurrencyLimit)
 
-	return NewWithLimiter(logger, config, limiter)
+	return NewWithLimiter(logger, config, tldCacheDisabled, limiter)
 }
 
 func (c ClientProtoV2Group) MaxMetricsPerRequest() int {

@@ -22,6 +22,7 @@ type BroadcastGroup struct {
 	backends             []types.BackendServer
 	servers              []string
 	maxMetricsPerRequest int
+	tldCacheDisabled     bool
 
 	pathCache pathcache.PathCache
 	logger    *zap.Logger
@@ -31,7 +32,7 @@ func (bg *BroadcastGroup) Children() []types.BackendServer {
 	return bg.backends
 }
 
-func NewBroadcastGroup(logger *zap.Logger, groupName string, servers []types.BackendServer, expireDelaySec int32, concurrencyLimit, maxBatchSize int, timeout types.Timeouts) (*BroadcastGroup, merry.Error) {
+func NewBroadcastGroup(logger *zap.Logger, groupName string, servers []types.BackendServer, expireDelaySec int32, concurrencyLimit, maxBatchSize int, timeout types.Timeouts, tldCacheDisabled bool) (*BroadcastGroup, merry.Error) {
 	if len(servers) == 0 {
 		return nil, types.ErrNoServersSpecified
 	}
@@ -42,10 +43,10 @@ func NewBroadcastGroup(logger *zap.Logger, groupName string, servers []types.Bac
 	pathCache := pathcache.NewPathCache(expireDelaySec)
 	limiter := limiter.NewServerLimiter(serverNames, concurrencyLimit)
 
-	return NewBroadcastGroupWithLimiter(logger, groupName, servers, serverNames, maxBatchSize, pathCache, limiter, timeout)
+	return NewBroadcastGroupWithLimiter(logger, groupName, servers, serverNames, maxBatchSize, pathCache, limiter, timeout, tldCacheDisabled)
 }
 
-func NewBroadcastGroupWithLimiter(logger *zap.Logger, groupName string, servers []types.BackendServer, serverNames []string, maxBatchSize int, pathCache pathcache.PathCache, limiter limiter.ServerLimiter, timeout types.Timeouts) (*BroadcastGroup, merry.Error) {
+func NewBroadcastGroupWithLimiter(logger *zap.Logger, groupName string, servers []types.BackendServer, serverNames []string, maxBatchSize int, pathCache pathcache.PathCache, limiter limiter.ServerLimiter, timeout types.Timeouts, tldCacheDisabled bool) (*BroadcastGroup, merry.Error) {
 	b := &BroadcastGroup{
 		timeout:              timeout,
 		groupName:            groupName,
@@ -53,6 +54,7 @@ func NewBroadcastGroupWithLimiter(logger *zap.Logger, groupName string, servers 
 		limiter:              limiter,
 		servers:              serverNames,
 		maxMetricsPerRequest: maxBatchSize,
+		tldCacheDisabled:     tldCacheDisabled,
 
 		pathCache: pathCache,
 		logger:    logger.With(zap.String("type", "broadcastGroup"), zap.String("groupName", groupName)),
@@ -76,6 +78,11 @@ func (bg BroadcastGroup) Backends() []string {
 }
 
 func (bg *BroadcastGroup) filterServersByTLD(requests []string, backends []types.BackendServer) []types.BackendServer {
+	// do not check TLDs if internal routing cache is disabled
+	if bg.tldCacheDisabled {
+		return backends
+	}
+
 	tldBackends := make(map[types.BackendServer]bool)
 	for _, request := range requests {
 		// TODO(Civil): Tags: improve logic

@@ -48,11 +48,11 @@ func (c *ClientGRPCGroup) Children() []types.BackendServer {
 	return []types.BackendServer{c}
 }
 
-func NewClientGRPCGroupWithLimiter(logger *zap.Logger, config types.BackendV2, limiter limiter.ServerLimiter) (types.BackendServer, merry.Error) {
-	return NewClientGRPCGroup(logger, config)
+func NewClientGRPCGroupWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool, limiter limiter.ServerLimiter) (types.BackendServer, merry.Error) {
+	return NewClientGRPCGroup(logger, config, tldCacheDisabled)
 }
 
-func NewClientGRPCGroup(logger *zap.Logger, config types.BackendV2) (types.BackendServer, merry.Error) {
+func NewClientGRPCGroup(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool) (types.BackendServer, merry.Error) {
 	logger = logger.With(zap.String("type", "grpcGroup"), zap.String("name", config.GroupName))
 	// TODO: Implement normal resolver
 	if len(config.Servers) == 0 {
