@@ -506,7 +506,7 @@ func IsNameChar(r byte) bool {
 		r == '^' || r == '$' ||
 		r == '<' || r == '>' ||
 		r == '&' || r == '#' ||
-		r == '/'
+		r == '/' || r == '%'
 }
 
 func isDigit(r byte) bool {
