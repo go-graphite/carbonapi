@@ -113,6 +113,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	until := r.FormValue("until")
 	template := r.FormValue("template")
 	useCache := !parser.TruthyBool(r.FormValue("noCache"))
+	noNullPoints := parser.TruthyBool(r.FormValue("noNullPoints"))
 	// status will be checked later after we'll setup everything else
 	format, ok, formatRaw := getFormat(r, pngFormat)
 
@@ -388,7 +389,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			types.ConsolidateJSON(maxDataPoints, results)
 		}
 
-		body = types.MarshalJSON(results, timestampMultiplier)
+		body = types.MarshalJSON(results, timestampMultiplier, noNullPoints)
 	case protoV2Format:
 		body, err = types.MarshalProtobufV2(results)
 		if err != nil {

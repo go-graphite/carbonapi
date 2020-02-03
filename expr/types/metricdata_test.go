@@ -23,7 +23,32 @@ func TestJSONResponse(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		b := MarshalJSON(tt.results, 1.0)
+		b := MarshalJSON(tt.results, 1.0, false)
+		if !bytes.Equal(b, tt.out) {
+			t.Errorf("marshalJSON(%+v):\n    got %+v\n    want %+v", tt.results, string(b), string(tt.out))
+		}
+	}
+}
+
+func TestJSONResponseNoNullPoints(t *testing.T) {
+
+	tests := []struct {
+		results []*MetricData
+		out     []byte
+	}{
+		{
+			[]*MetricData{
+				MakeMetricData("metric1", []float64{1, 1.5, 2.25, math.NaN()}, 100, 100),
+				MakeMetricData("metric2;foo=bar", []float64{math.NaN(), 2.5, 3.25, 4, 5}, 100, 100),
+				MakeMetricData("metric3;foo=bar", []float64{2, math.NaN(), 3.25, 4, 5}, 100, 100),
+				MakeMetricData("metric4;foo=bar", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 100, 100),
+			},
+			[]byte(`[{"target":"metric1","datapoints":[[1,100],[1.5,200],[2.25,300]],"tags":{"name":"metric1"}},{"target":"metric2;foo=bar","datapoints":[[2.5,200],[3.25,300],[4,400],[5,500]],"tags":{"foo":"bar","name":"metric2"}},{"target":"metric3;foo=bar","datapoints":[[2,100],[3.25,300],[4,400],[5,500]],"tags":{"foo":"bar","name":"metric3"}},{"target":"metric4;foo=bar","datapoints":[],"tags":{"foo":"bar","name":"metric4"}}]`),
+		},
+	}
+
+	for _, tt := range tests {
+		b := MarshalJSON(tt.results, 1.0, true)
 		if !bytes.Equal(b, tt.out) {
 			t.Errorf("marshalJSON(%+v):\n    got %+v\n    want %+v", tt.results, string(b), string(tt.out))
 		}
@@ -71,6 +96,6 @@ func BenchmarkMarshalJSON(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = MarshalJSON(data, 1.0)
+		_ = MarshalJSON(data, 1.0, false)
 	}
 }

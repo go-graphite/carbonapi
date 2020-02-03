@@ -94,7 +94,7 @@ func ConsolidateJSON(maxDataPoints int, results []*MetricData) {
 }
 
 // MarshalJSON marshals metric data to JSON
-func MarshalJSON(results []*MetricData, timestampMultiplier int64) []byte {
+func MarshalJSON(results []*MetricData, timestampMultiplier int64, noNullPoints bool) []byte {
 	var b []byte
 	b = append(b, '[')
 
@@ -116,26 +116,34 @@ func MarshalJSON(results []*MetricData, timestampMultiplier int64) []byte {
 		var innerComma bool
 		t := r.StartTime * timestampMultiplier
 		for _, v := range r.AggregatedValues() {
-			if innerComma {
-				b = append(b, ',')
-			}
-			innerComma = true
-
-			b = append(b, '[')
-
-			if math.IsInf(v, 0) || math.IsNaN(v) {
-				b = append(b, "null"...)
+			if noNullPoints && math.IsNaN(v) {
+				t += r.AggregatedTimeStep() * timestampMultiplier
 			} else {
-				b = strconv.AppendFloat(b, v, 'f', -1, 64)
+				if innerComma {
+					b = append(b, ',')
+				}
+				innerComma = true
+
+				b = append(b, '[')
+
+				if math.IsNaN(v) {
+					b = append(b, "null"...)
+				} else if math.IsInf(v, 1) {
+					b = append(b, "inf"...)
+				} else if math.IsInf(v, -1) {
+					b = append(b, "-inf"...)
+				} else {
+					b = strconv.AppendFloat(b, v, 'f', -1, 64)
+				}
+
+				b = append(b, ',')
+
+				b = strconv.AppendInt(b, t, 10)
+
+				b = append(b, ']')
+
+				t += r.AggregatedTimeStep() * timestampMultiplier
 			}
-
-			b = append(b, ',')
-
-			b = strconv.AppendInt(b, t, 10)
-
-			b = append(b, ']')
-
-			t += r.AggregatedTimeStep() * timestampMultiplier
 		}
 
 		b = append(b, `],"tags":{`...)

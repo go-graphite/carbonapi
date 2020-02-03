@@ -20,6 +20,7 @@ CHANGELOG
  - [Improvement] Redesign error handling and logging. Logging should be now less noisy and all error messages should contain better reasoning about error cause
  - [Improvement] Move more of the logging messages to Debug level - that should make logs less nosiy and still preserve ability to see detailed errors on Debug level
  - [Improvement] Add a config parameter to disable tldCache (useful for clickhouse type backends)
+ - [Improvement] Implement noNullPoints query parameter. Works only with JSON as in graphite-web
 
 **0.12.5**
  - [Feature] Implement 'highest' function
