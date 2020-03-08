@@ -148,7 +148,7 @@ func (f *smartSummarize) Description() map[string]types.FunctionDescription {
 					Type:    types.AggFunc,
 				},
 				{
-					Name:     "alignTo",
+					Name: "alignTo",
 					Suggestions: types.NewSuggestions(
 						"1m",
 						"1d",

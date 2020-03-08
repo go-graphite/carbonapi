@@ -372,9 +372,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		// Allow override status code for 404-not-found replies.
 		if returnCode == 404 {
 			returnCode = config.Config.NotFoundStatusCode
-
 		}
-		if returnCode < 300 {
+		if returnCode < 500 {
 			results = append(results, &types.MetricData{})
 		} else {
 			setError(w, accessLogDetails, "empty or no response", returnCode)
@@ -385,11 +384,15 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch format {
 	case jsonFormat:
-		if maxDataPoints, _ := strconv.Atoi(r.FormValue("maxDataPoints")); maxDataPoints != 0 {
-			types.ConsolidateJSON(maxDataPoints, results)
-		}
+		if len(results) == 0 && returnCode == 404 {
+			body = []byte("[]")
+		} else {
+			if maxDataPoints, _ := strconv.Atoi(r.FormValue("maxDataPoints")); maxDataPoints != 0 {
+				types.ConsolidateJSON(maxDataPoints, results)
+			}
 
-		body = types.MarshalJSON(results, timestampMultiplier, noNullPoints)
+			body = types.MarshalJSON(results, timestampMultiplier, noNullPoints)
+		}
 	case protoV2Format:
 		body, err = types.MarshalProtobufV2(results)
 		if err != nil {

@@ -103,8 +103,8 @@ func (f *cactiStyle) Do(e parser.Expr, from, until int64, values map[parser.Metr
 		r := *a
 		labels := map[string]string{
 			"current": fmt.Sprintf("Current:%s", current),
-			"min": fmt.Sprintf("Min:%s", min),
-			"max":  fmt.Sprintf("Max:%s", max),
+			"min":     fmt.Sprintf("Min:%s", min),
+			"max":     fmt.Sprintf("Max:%s", max),
 		}
 
 		maxLength := len(labels["current"])
@@ -117,7 +117,7 @@ func (f *cactiStyle) Do(e parser.Expr, from, until int64, values map[parser.Metr
 
 		for k, v := range labels {
 			tmpBB := strings.Builder{}
-			for i := 0; i < maxLength - len(v); i++ {
+			for i := 0; i < maxLength-len(v); i++ {
 				tmpBB.WriteRune(' ')
 			}
 			tmpBB.WriteString(v)

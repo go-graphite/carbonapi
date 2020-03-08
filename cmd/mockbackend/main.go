@@ -491,7 +491,7 @@ func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
 	default:
 		logger.Error("format is not supported",
 			zap.Any("format", format),
-			)
+		)
 	}
 	wr.Header().Set("Content-Type", contentType)
 	_, _ = wr.Write(d)

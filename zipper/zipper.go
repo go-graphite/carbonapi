@@ -261,8 +261,8 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 	}
 
 	z := &Zipper{
-		ProbeQuit:   make(chan struct{}),
-		ProbeForce:  make(chan int),
+		ProbeQuit:  make(chan struct{}),
+		ProbeForce: make(chan int),
 
 		sendStats: sender,
 
@@ -401,13 +401,22 @@ func (z Zipper) FetchProtoV3(ctx context.Context, request *protov3.MultiFetchReq
 	if e != nil {
 		logger.Debug("had errors while fetching result",
 			zap.Any("errors", e),
+			zap.Int("httpCode", merry.HTTPCode(e)),
 		)
 	}
 	if res == nil || len(res.Metrics) == 0 {
 		logger.Debug("no metrics fetched",
 			zap.Any("errors", e),
 		)
-		return nil, stats, types.ErrNoMetricsFetched
+
+		err := types.ErrNoMetricsFetched
+		if e != nil {
+			err = err.WithHTTPCode(merry.HTTPCode(e))
+		} else {
+			err = err.WithHTTPCode(404)
+		}
+
+		return nil, stats, err
 	}
 
 	return res, stats, merry.WithHTTPCode(e, 200)
@@ -468,6 +477,8 @@ func (z Zipper) FindProtoV3(ctx context.Context, request *protov3.MultiGlobReque
 		logger.Debug("had errors while fetching result",
 			zap.Any("errors", e),
 		)
+		// TODO(civil): Not Found error cases across all zipper code should be handled in the same way
+		// See FetchProtoV3 for more examples
 		if findResponse.Response != nil && len(findResponse.Response.Metrics) > 0 {
 			return findResponse.Response, findResponse.Stats, merry.WithHTTPCode(e, 200)
 		}
