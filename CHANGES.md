@@ -14,6 +14,7 @@ Changes
 CHANGELOG
 ---------
 **(WIP)**
+ - **[Breaking]** [Code] Comment out support for gRPC backend type. It was never properly tested and likely need complete rework before it can be usable
  - [Fix] Fix aliasByTags to work correclty with other functions
  - [Fix] panic when using protov2 and backend that doesn't support tags (thx tyo @gekmihesg)
  - [Fix] /render and /metrics/find URLs now works correctly for format=carbonapi\_v2\_pb (protov3) and for new format
