@@ -60,7 +60,7 @@ func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool) (typ
 	if len(config.Servers) == 0 {
 		return nil, types.ErrNoServersSpecified
 	}
-	limiter := limiter.NewServerLimiter([]string{config.GroupName}, *config.ConcurrencyLimit)
+	limiter := limiter.NewServerLimiter(config.Servers, *config.ConcurrencyLimit)
 
 	return NewWithLimiter(logger, config, tldCacheDisabled, limiter)
 }
