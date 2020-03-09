@@ -46,6 +46,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/holtWintersForecast"
 	"github.com/go-graphite/carbonapi/expr/functions/ifft"
 	"github.com/go-graphite/carbonapi/expr/functions/integral"
+	"github.com/go-graphite/carbonapi/expr/functions/integralByInterval"
 	"github.com/go-graphite/carbonapi/expr/functions/invert"
 	"github.com/go-graphite/carbonapi/expr/functions/isNotNull"
 	"github.com/go-graphite/carbonapi/expr/functions/keepLastValue"
@@ -151,6 +152,7 @@ func New(configs map[string]string) {
 		{name: "holtWintersForecast", order: holtWintersForecast.GetOrder(), f: holtWintersForecast.New},
 		{name: "ifft", order: ifft.GetOrder(), f: ifft.New},
 		{name: "integral", order: integral.GetOrder(), f: integral.New},
+		{name: "integralByInterval", order: integralByInterval.GetOrder(), f: integralByInterval.New},
 		{name: "invert", order: invert.GetOrder(), f: invert.New},
 		{name: "isNotNull", order: isNotNull.GetOrder(), f: isNotNull.New},
 		{name: "keepLastValue", order: keepLastValue.GetOrder(), f: keepLastValue.New},

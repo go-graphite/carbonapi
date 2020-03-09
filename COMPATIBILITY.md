@@ -116,7 +116,6 @@ _When `format=png`_ (default if not specified)
 | exponentialMovingAverage |
 | holtWintersConfidenceArea |
 | identity |
-| integralByInterval |
 | interpolate |
 | minMax |
 | movingWindow |
@@ -197,6 +196,7 @@ _When `format=png`_ (default if not specified)
 | holtWintersConfidenceBands(seriesList, delta=3, bootstrapInterval='7d') | no |
 | holtWintersForecast(seriesList, bootstrapInterval='7d') | no |
 | integral(seriesList) | no |
+| integralByInterval(seriesList, intervalString) | no |
 | invert(seriesList) | no |
 | isNonNull(seriesList) | no |
 | keepLastValue(seriesList, limit=inf) | no |
