@@ -23,6 +23,7 @@ CHANGELOG
  - [Improvement] Move more of the logging messages to Debug level - that should make logs less nosiy and still preserve ability to see detailed errors on Debug level
  - [Improvement] Add a config parameter to disable tldCache (useful for clickhouse type backends)
  - [Improvement] Implement noNullPoints query parameter. Works only with JSON as in graphite-web
+ - [Improvement] For *SeriesLists functions, allow to specify default argument (thx to kolobaev@)
 
 **0.12.5**
  - [Feature] Implement 'highest' function

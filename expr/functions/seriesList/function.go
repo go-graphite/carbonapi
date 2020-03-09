@@ -2,11 +2,13 @@ package seriesList
 
 import (
 	"fmt"
+	"math"
+	"strconv"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"math"
 )
 
 type seriesList struct {
@@ -28,17 +30,52 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *seriesList) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	numerators, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
-	if err != nil {
-		return nil, err
-	}
-	denominators, err := helper.GetSeriesArg(e.Args()[1], from, until, values)
+	useConstant := false
+	useDenom := false
+
+	defaultValue, err := e.GetFloatNamedOrPosArgDefault("default", 3, math.NaN())
 	if err != nil {
 		return nil, err
 	}
 
-	if len(numerators) != len(denominators) {
-		return nil, fmt.Errorf("both %s arguments must have equal length", e.Target())
+	numerators, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
+	if err != nil {
+		if err == parser.ErrSeriesDoesNotExist && !math.IsNaN(defaultValue) {
+			useConstant = true
+			useDenom = true
+		} else {
+			return nil, err
+		}
+	}
+	if len(numerators) == 0 {
+		if !math.IsNaN(defaultValue) {
+			useConstant = true
+			useDenom = true
+		} else {
+			return nil, nil
+		}
+	}
+
+	denominators, err := helper.GetSeriesArg(e.Args()[1], from, until, values)
+	if err != nil {
+		if err == parser.ErrSeriesDoesNotExist && !math.IsNaN(defaultValue) && !useConstant {
+			useConstant = true
+		} else {
+			return nil, err
+		}
+	}
+	if len(denominators) == 0 {
+		if !math.IsNaN(defaultValue) && !useConstant {
+			useConstant = true
+		} else {
+			return nil, nil
+		}
+	}
+
+	sizeMatch := len(denominators) == len(numerators) || len(denominators) == 1
+	useMatching, err := e.GetBoolNamedOrPosArgDefault("matching", 2, !useConstant && !sizeMatch)
+	if err != nil {
+		return nil, err
 	}
 
 	var results []*types.MetricData
@@ -56,23 +93,104 @@ func (f *seriesList) Do(e parser.Expr, from, until int64, values map[parser.Metr
 	case "powSeriesLists":
 		compute = func(l, r float64) float64 { return math.Pow(l, r) }
 	}
+
+	if useConstant {
+		var single []*types.MetricData
+		if useDenom {
+			single = denominators
+		} else {
+			single = numerators
+		}
+		for _, s := range single {
+			r := *s
+			r.Name = fmt.Sprintf("%s(%s,%s)", functionName, s.Name, s.Name)
+			r.Values = make([]float64, len(s.Values))
+			for i, v := range s.Values {
+				if math.IsNaN(v) {
+					r.Values[i] = math.NaN()
+					continue
+				}
+
+				if e.Target() == "divideSeriesLists" {
+					if (useDenom && v == 0) || (!useDenom && defaultValue == 0) {
+						r.Values[i] = math.NaN()
+						continue
+					}
+				}
+				if useDenom {
+					r.Values[i] = compute(defaultValue, v)
+				} else {
+					r.Values[i] = compute(v, defaultValue)
+				}
+
+			}
+			results = append(results, &r)
+		}
+		return results, nil
+	}
+
+	var denomMap map[string]*types.MetricData
+	if useMatching {
+		denomMap = make(map[string]*types.MetricData, len(denominators))
+		for _, s := range denominators {
+			denomMap[s.Name] = s
+		}
+	}
+
+	var denominator *types.MetricData
+
 	for i, numerator := range numerators {
-		denominator := denominators[i]
-		if numerator.StepTime != denominator.StepTime || len(numerator.Values) != len(denominator.Values) {
-			return nil, fmt.Errorf("series %s must have the same length as %s", numerator.Name, denominator.Name)
+		pairFound := false
+		if useMatching {
+			denominator, pairFound = denomMap[numerator.Name]
+			if !pairFound && math.IsNaN(defaultValue) {
+				continue
+			}
+		} else {
+			pairFound = true
+			if len(denominators) == 1 {
+				denominator = denominators[0]
+			} else {
+				denominator = denominators[i]
+			}
+		}
+		if pairFound {
+			if numerator.StepTime != denominator.StepTime || len(numerator.Values) != len(denominator.Values) {
+				return nil, fmt.Errorf("series %s must have the same length as %s", numerator.Name, denominator.Name)
+			}
 		}
 		r := *numerator
-		r.Name = fmt.Sprintf("%s(%s,%s)", functionName, numerator.Name, denominator.Name)
+		var denomName string
+		if pairFound {
+			denomName = denominator.Name
+		} else {
+			denomName = strconv.FormatFloat(defaultValue, 'f', -1, 64)
+		}
+		r.Name = fmt.Sprintf("%s(%s,%s)", functionName, numerator.Name, denomName)
 		r.Values = make([]float64, len(numerator.Values))
+
 		for i, v := range numerator.Values {
+			denomIsAbsent := pairFound && math.IsNaN(denominator.Values[i])
+			if math.IsNaN(numerator.Values[i]) || denomIsAbsent {
+				r.Values[i] = math.NaN()
+				continue
+			}
+
+			denomValue := defaultValue
+			if pairFound {
+				denomValue = denominator.Values[i]
+			}
+
 			switch e.Target() {
 			case "divideSeriesLists":
 				if denominator.Values[i] == 0 {
 					r.Values[i] = math.NaN()
 					continue
 				}
+				r.Values[i] = compute(v, denomValue)
+			default:
+				r.Values[i] = compute(v, denomValue)
 			}
-			r.Values[i] = compute(v, denominator.Values[i])
 		}
 		results = append(results, &r)
 	}
@@ -83,7 +201,7 @@ func (f *seriesList) Do(e parser.Expr, from, until int64, values map[parser.Metr
 func (f *seriesList) Description() map[string]types.FunctionDescription {
 	return map[string]types.FunctionDescription{
 		"divideSeriesLists": {
-			Description: "Iterates over a two lists and divides list1[0} by list2[0}, list1[1} by list2[1} and so on.\nThe lists need to be the same length",
+			Description: "Iterates over a two lists and divides list1[0} by list2[0}, list1[1} by list2[1} and so on.\nThe lists need to be the same length\nCarbonAPI-specific extension allows to specify default value as 3rd optional argument in case series doesn't exist or value is missing",
 			Function:    "divideSeriesLists(dividendSeriesList, divisorSeriesList)",
 			Group:       "Combine",
 			Module:      "graphite.render.functions",
@@ -99,10 +217,15 @@ func (f *seriesList) Description() map[string]types.FunctionDescription {
 					Required: true,
 					Type:     types.SeriesList,
 				},
+				{
+					Name:     "default",
+					Required: false,
+					Type:     types.Float,
+				},
 			},
 		},
 		"diffSeriesLists": {
-			Description: "Iterates over a two lists and substracts list1[0} by list2[0}, list1[1} by list2[1} and so on.\nThe lists need to be the same length",
+			Description: "Iterates over a two lists and substracts list1[0} by list2[0}, list1[1} by list2[1} and so on.\nThe lists need to be the same length\nCarbonAPI-specific extension allows to specify default value as 3rd optional argument in case series doesn't exist or value is missing",
 			Function:    "diffSeriesLists(firstSeriesList, secondSeriesList)",
 			Group:       "Combine",
 			Module:      "graphite.render.functions.custom",
@@ -118,10 +241,15 @@ func (f *seriesList) Description() map[string]types.FunctionDescription {
 					Required: true,
 					Type:     types.SeriesList,
 				},
+				{
+					Name:     "default",
+					Required: false,
+					Type:     types.Float,
+				},
 			},
 		},
 		"multiplySeriesLists": {
-			Description: "Iterates over a two lists and multiplies list1[0} by list2[0}, list1[1} by list2[1} and so on.\nThe lists need to be the same length",
+			Description: "Iterates over a two lists and multiplies list1[0} by list2[0}, list1[1} by list2[1} and so on.\nThe lists need to be the same length\nCarbonAPI-specific extension allows to specify default value as 3rd optional argument in case series doesn't exist or value is missing",
 			Function:    "multiplySeriesLists(sourceSeriesList, factorSeriesList)",
 			Group:       "Combine",
 			Module:      "graphite.render.functions.custom",
@@ -137,10 +265,15 @@ func (f *seriesList) Description() map[string]types.FunctionDescription {
 					Required: true,
 					Type:     types.SeriesList,
 				},
+				{
+					Name:     "default",
+					Required: false,
+					Type:     types.Float,
+				},
 			},
 		},
 		"powSeriesLists": {
-			Description: "Iterates over a two lists and do list1[0} in power of list2[0}, list1[1} in power of  list2[1} and so on.\nThe lists need to be the same length",
+			Description: "Iterates over a two lists and do list1[0} in power of list2[0}, list1[1} in power of  list2[1} and so on.\nThe lists need to be the same length\nCarbonAPI-specific extension allows to specify default value as 3rd optional argument in case series doesn't exist or value is missing",
 			Function:    "powSeriesLists(sourceSeriesList, factorSeriesList)",
 			Group:       "Combine",
 			Module:      "graphite.render.functions.custom",
@@ -155,6 +288,11 @@ func (f *seriesList) Description() map[string]types.FunctionDescription {
 					Name:     "factorSeriesList",
 					Required: true,
 					Type:     types.SeriesList,
+				},
+				{
+					Name:     "default",
+					Required: false,
+					Type:     types.Float,
 				},
 			},
 		},
