@@ -1,7 +1,6 @@
 package functions
 
 import (
-	"github.com/go-graphite/carbonapi/expr/functions/smartSummarize"
 	"sort"
 	"strings"
 
@@ -78,10 +77,12 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/reduce"
 	"github.com/go-graphite/carbonapi/expr/functions/removeBelowSeries"
 	"github.com/go-graphite/carbonapi/expr/functions/removeEmptySeries"
+	"github.com/go-graphite/carbonapi/expr/functions/round"
 	"github.com/go-graphite/carbonapi/expr/functions/scale"
 	"github.com/go-graphite/carbonapi/expr/functions/scaleToSeconds"
 	"github.com/go-graphite/carbonapi/expr/functions/seriesByTag"
 	"github.com/go-graphite/carbonapi/expr/functions/seriesList"
+	"github.com/go-graphite/carbonapi/expr/functions/smartSummarize"
 	"github.com/go-graphite/carbonapi/expr/functions/sortBy"
 	"github.com/go-graphite/carbonapi/expr/functions/sortByName"
 	"github.com/go-graphite/carbonapi/expr/functions/squareRoot"
@@ -181,11 +182,12 @@ func New(configs map[string]string) {
 		{name: "reduce", order: reduce.GetOrder(), f: reduce.New},
 		{name: "removeBelowSeries", order: removeBelowSeries.GetOrder(), f: removeBelowSeries.New},
 		{name: "removeEmptySeries", order: removeEmptySeries.GetOrder(), f: removeEmptySeries.New},
+		{name: "round", order: round.GetOrder(), f: round.New},
 		{name: "scale", order: scale.GetOrder(), f: scale.New},
 		{name: "scaleToSeconds", order: scaleToSeconds.GetOrder(), f: scaleToSeconds.New},
 		{name: "seriesByTag", order: seriesByTag.GetOrder(), f: seriesByTag.New},
 		{name: "seriesList", order: seriesList.GetOrder(), f: seriesList.New},
-		{name: "smartSummarize", order: seriesList.GetOrder(), f: smartSummarize.New},
+		{name: "smartSummarize", order: smartSummarize.GetOrder(), f: smartSummarize.New},
 		{name: "sortBy", order: sortBy.GetOrder(), f: sortBy.New},
 		{name: "sortByName", order: sortByName.GetOrder(), f: sortByName.New},
 		{name: "squareRoot", order: squareRoot.GetOrder(), f: squareRoot.New},
