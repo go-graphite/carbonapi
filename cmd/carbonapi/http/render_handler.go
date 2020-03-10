@@ -373,9 +373,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		if returnCode == 404 {
 			returnCode = config.Config.NotFoundStatusCode
 		}
-		if returnCode < 500 {
-			results = append(results, &types.MetricData{})
-		} else {
+		if returnCode >= 500 {
 			setError(w, accessLogDetails, "empty or no response", returnCode)
 			logAsError = true
 			return
