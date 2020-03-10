@@ -65,6 +65,9 @@ func MarshalCSV(results []*MetricData) []byte {
 
 // ConsolidateJSON consolidates values to maxDataPoints size
 func ConsolidateJSON(maxDataPoints int, results []*MetricData) {
+	if len(results) == 0 {
+		return
+	}
 	startTime := results[0].StartTime
 	endTime := results[0].StopTime
 	for _, r := range results {

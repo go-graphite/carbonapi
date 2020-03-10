@@ -210,7 +210,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 		if err == nil {
 			ApiMetrics.RequestCacheHits.Add(1)
-			writeResponse(w, response, format, jsonp)
+			writeResponse(w, http.StatusOK, response, format, jsonp)
 			accessLogDetails.FromCache = true
 			return
 		}
@@ -382,15 +382,11 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch format {
 	case jsonFormat:
-		if len(results) == 0 && returnCode == 404 {
-			body = []byte("[]")
-		} else {
-			if maxDataPoints, _ := strconv.Atoi(r.FormValue("maxDataPoints")); maxDataPoints != 0 {
-				types.ConsolidateJSON(maxDataPoints, results)
-			}
-
-			body = types.MarshalJSON(results, timestampMultiplier, noNullPoints)
+		if maxDataPoints, _ := strconv.Atoi(r.FormValue("maxDataPoints")); maxDataPoints != 0 {
+			types.ConsolidateJSON(maxDataPoints, results)
 		}
+
+		body = types.MarshalJSON(results, timestampMultiplier, noNullPoints)
 	case protoV2Format:
 		body, err = types.MarshalProtobufV2(results)
 		if err != nil {
@@ -417,8 +413,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		body = png.MarshalSVGRequest(r, results, template)
 	}
 
-	w.WriteHeader(returnCode)
-	writeResponse(w, body, format, jsonp)
+	writeResponse(w, returnCode, body, format, jsonp)
 
 	if len(results) != 0 {
 		tc := time.Now()
