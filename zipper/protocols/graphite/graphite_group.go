@@ -132,8 +132,14 @@ func (c *GraphiteGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRe
 			"until":  []string{strconv.Itoa(int(request.Metrics[0].StopTime))},
 		}
 		rewrite.RawQuery = v.Encode()
+		stats.RenderRequests += 1
 		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if err != nil {
+			stats.RenderErrors += 1
+			if merry.Is(err, types.ErrTimeoutExceeded) {
+				stats.Timeouts += 1
+				stats.RenderTimeouts += 1
+			}
 			if e == nil {
 				e = err
 			} else {
@@ -145,6 +151,7 @@ func (c *GraphiteGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRe
 		metrics := msgpack.MultiGraphiteFetchResponse{}
 		_, marshalErr := metrics.UnmarshalMsg(res.Response)
 		if marshalErr != nil {
+			stats.RenderErrors += 1
 			if e == nil {
 				e = merry.Wrap(marshalErr).WithValue("targets", targets)
 			} else {
@@ -176,6 +183,7 @@ func (c *GraphiteGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRe
 	}
 
 	if e != nil {
+		stats.FailedServers = []string{c.groupName}
 		logger.Error("errors occurred while getting results",
 			zap.Any("error", e),
 		)
@@ -198,8 +206,14 @@ func (c *GraphiteGroup) Find(ctx context.Context, request *protov3.MultiGlobRequ
 			"format": []string{c.protocol},
 		}
 		rewrite.RawQuery = v.Encode()
+		stats.FindRequests += 1
 		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if err != nil {
+			stats.FindErrors += 1
+			if merry.Is(err, types.ErrTimeoutExceeded) {
+				stats.Timeouts += 1
+				stats.FindTimeouts += 1
+			}
 			if e == nil {
 				e = err
 			} else {
@@ -261,8 +275,14 @@ func (c *GraphiteGroup) Info(ctx context.Context, request *protov3.MultiMetricsI
 			"format": []string{c.protocol},
 		}
 		rewrite.RawQuery = v.Encode()
+		stats.InfoRequests += 1
 		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if err != nil {
+			stats.InfoErrors += 1
+			if merry.Is(err, types.ErrTimeoutExceeded) {
+				stats.Timeouts += 1
+				stats.InfoTimeouts += 1
+			}
 			if e == nil {
 				e = err
 			} else {
@@ -274,6 +294,7 @@ func (c *GraphiteGroup) Info(ctx context.Context, request *protov3.MultiMetricsI
 		var info protov2.InfoResponse
 		marshalErr := info.Unmarshal(res.Response)
 		if marshalErr != nil {
+			stats.InfoErrors += 1
 			if e == nil {
 				e = merry.Wrap(marshalErr).WithValue("query", query)
 			} else {
@@ -310,6 +331,7 @@ func (c *GraphiteGroup) Info(ctx context.Context, request *protov3.MultiMetricsI
 	)
 
 	if e != nil {
+		stats.FailedServers = []string{c.groupName}
 		logger.Error("errors occurred while getting results",
 			zap.Any("errors", e),
 		)

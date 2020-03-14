@@ -56,9 +56,7 @@ func (z zipper) Find(ctx context.Context, metrics []string) (*pb.MultiGlobRespon
 	}
 
 	res, stats, err := z.z.FindProtoV3(newCtx, &req)
-	if stats != nil {
-		z.statsSender(stats)
-	}
+	z.statsSender(stats)
 
 	return res, stats, err
 }
@@ -77,9 +75,7 @@ func (z zipper) Info(ctx context.Context, metrics []string) (*pb.ZipperInfoRespo
 	}
 
 	resp, stats, err := z.z.InfoProtoV3(newCtx, &req)
-	if stats != nil {
-		z.statsSender(stats)
-	}
+	z.statsSender(stats)
 
 	return resp, stats, err
 }
@@ -95,10 +91,6 @@ func (z zipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*ty
 	}
 
 	pbresp, stats, err := z.z.FetchProtoV3(newCtx, &request)
-	if stats != nil {
-		z.statsSender(stats)
-	}
-
 	z.statsSender(stats)
 
 	if pbresp != nil {
