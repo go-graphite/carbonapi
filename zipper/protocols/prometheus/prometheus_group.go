@@ -211,7 +211,6 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 			)
 			// rewrite metric for tag
 			// Make local copy
-			stepLocal := step
 			stepLocalStr := stepStr
 			if strings.HasPrefix(target, "seriesByTag") {
 				stepLocalStr, target = c.seriesByTagToPromQL(stepLocalStr, target)
@@ -233,7 +232,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 				}
 				continue
 			}
-			stepLocal = int64(t.Seconds())
+			stepLocal := int64(t.Seconds())
 			/*
 				newStep, err3 := strToStep(stepStr)
 				if err3 == nil {
