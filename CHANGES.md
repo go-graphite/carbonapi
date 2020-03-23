@@ -15,13 +15,13 @@ CHANGELOG
 ---------
 **(WIP)**
  - **[Breaking]** [Code] Comment out support for gRPC backend type. It was never properly tested and likely need complete rework before it can be usable
- - [Fix] Fix aliasByTags to work correclty with other functions
+ - [Fix] Fix aliasByTags to work correctly with other functions
  - [Fix] panic when using protov2 and backend that doesn't support tags (thx tyo @gekmihesg)
  - [Fix] /render and /metrics/find URLs now works correctly for format=carbonapi\_v2\_pb (protov3) and for new format
  - [Fix] Allow '%' in metric names
  - [Fix] Zipper metrics
  - [Improvement] Redesign error handling and logging. Logging should be now less noisy and all error messages should contain better reasoning about error cause
- - [Improvement] Move more of the logging messages to Debug level - that should make logs less nosiy and still preserve ability to see detailed errors on Debug level
+ - [Improvement] Move more of the logging messages to Debug level - that should make logs less noisy and still preserve ability to see detailed errors on Debug level
  - [Improvement] Add a config parameter to disable tldCache (useful for clickhouse type backends)
  - [Improvement] Implement noNullPoints query parameter. Works only with JSON as in graphite-web
  - [Improvement] For all SeriesLists functions, allow to specify default argument (thx to kolobaev@)
@@ -35,7 +35,7 @@ CHANGELOG
  - [Feature] Implement 'filterSeries' function
 
 **0.12.4**
- - [Feature] Fuction Defines - allows to do custom metric aliases (thx to @lomik). See [doc/configuration.md](https://github.com/go-graphite/carbonapi/blob/master/doc/configuration.md#define) for config format
+ - [Feature] Function Defines - allows to do custom metric aliases (thx to @lomik). See [doc/configuration.md](https://github.com/go-graphite/carbonapi/blob/master/doc/configuration.md#define) for config format
  - [Improvement] New config options that allows to prefix all URLs and to enable /debug/vars on a separate address:port. See [docs/configuration.md](https://github.com/go-graphite/carbonapi/blob/master/doc/configuration.md#expvar) for more information
  - [Improvement] `/render` queries now returns tags in json (as graphite-web do)
  - [Improvement] groupByTags should now support all available aggregation functions (#410)
@@ -89,12 +89,12 @@ CHANGELOG
  - **[Breaking][Improvement]** Migrate to carbonzipper 1.0.0. This introduces better loadbalancing support, but significantly changes config file format. It might behave differently with the same settings.
  - seriesByTag Support (thx. to Vladimir Kolobaev)
  - aliasByTag Support (thx. to Vladimir Kolobaev)
- - Supported functions were updated to be more compatible with graphtie-web 1.1.0+
+ - Supported functions were updated to be more compatible with graphite-web 1.1.0+
  - Added support for more aggregation functions (thx. to Oleg Matrokhin)
 
 **0.11.0**
  - **[Breaking][Fix] Allow to specify prefix for environment variables through `-envprefix` command line parameter. Default now is "CARBONAPI_" which might break some environments**
- - [Improvement] graphiteWeb function that implements force-fallback to graphtieWeb
+ - [Improvement] graphiteWeb function that implements force-fallback to graphiteWeb
  - [Improvement] graphiteWeb can query graphite-web 1.1.0+ for a list of supported functions and automatically do fallback to graphite in case user calls unimplemented function
  - [Improvement] New config switch to disable find request before render. This is helpful for graphite-clickhouse backends
  - [Fix] Fix typo in polyfit function description
@@ -109,14 +109,14 @@ CHANGELOG
 **0.10.0**
  - [Fix] `lineWidth` param is not working
  - [Fix] Support `&` in metric name
- - [Fix] default colors for png and svg are now defined as in graphite-web in 1.1.0, but add example of how to set them to new colors 
+ - [Fix] default colors for png and svg are now defined as in graphite-web in 1.1.0, but add example of how to set them to new colors
  - [Improvement] You can override default colors through config
  - [Improvement] It's now possible to specify 'template=' option to png or svg renders. It will use templates that's specified by 'graphTemplates' option in config. Template config format is not compatible with graphite-web though and uses either toml or yaml. Options naming is also different and follows URL override style.
  - [Code] Minor API changes in expr/png: MarshalPNGRequest and MarshalSVGRequest now requires to specify template.
- 
+
 **0.9.2**
  - [Improvement] "pipe" function chaining syntax. Same way as in https://github.com/graphite-project/graphite-web/pull/2042 (thx. to @lomik)
- 
+
 **0.9.1**
  - [Code] Refactor expr. Split it into pkg/parser. Simplify tests.
  - [Code] Refactor expr. Split functions into directories.
@@ -133,10 +133,10 @@ CHANGELOG
  - [Improvement] Add groupByNodes (thx to @errx)
  - [Improvement] Add cumulative(thx to Oleg Matrokhin)
  - [Improvement] Add diffSeriesLists and multiplySeriesLists functions (works the same way as divideSeriesLists vs divideSeries)
- - [Imprvoement] Add linearRegression function (thx. to Oleg Matrokhin)
+ - [Improvement] Add linearRegression function (thx. to Oleg Matrokhin)
  - [Improvement] Allow applyByNode to generate new targets
  - [Improvement] Allow diffSeries to substract series with different Steps
- - [Imprvoement] Make cache timeouts configurable
+ - [Improvement] Make cache timeouts configurable
  - [Improvement] Make batch size configurable for sendGlobAsIs
  - [Improvement] Export GoVersion through expvars
  - [Improvement] Allow overriding config variables through ENV
