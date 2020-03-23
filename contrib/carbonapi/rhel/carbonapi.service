@@ -1,5 +1,5 @@
 [Unit]
-Description=CarbonAPI - replacemet for graphite-web written in Go
+Description=CarbonAPI - replacement for graphite-web written in Go
 After=syslog.target network.target
 
 [Service]
