@@ -229,7 +229,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	var metrics []string
 	// Iterate over all targets, check if we need to fetch them
-	for _, target := range targets {
+	for i := 0; i < len(targets); i++ {
+		target := targets[i]
+
 		exp, e, err := parser.ParseExpr(target)
 
 		// if expression cannot be parsed return error

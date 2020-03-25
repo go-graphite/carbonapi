@@ -54,7 +54,7 @@ func (f *applyByNode) Do(e parser.Expr, from, until int64, values map[parser.Met
 	for _, a := range args {
 		metric := helper.ExtractMetric(a.Name)
 		nodes := strings.Split(metric, ".")
-		node := strings.Join(nodes[0:field], ".")
+		node := strings.Join(nodes[0:field+1], ".")
 		newTarget := strings.Replace(callback, "%", node, -1)
 
 		if newName != "" {
