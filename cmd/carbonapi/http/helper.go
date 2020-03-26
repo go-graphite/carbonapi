@@ -151,37 +151,43 @@ func getFormat(r *http.Request, defaultFormat responseFormat) (responseFormat, b
 	return f, ok, format
 }
 
-func writeResponse(w http.ResponseWriter, b []byte, format responseFormat, jsonp string) {
-
+func writeResponse(w http.ResponseWriter, returnCode int, b []byte, format responseFormat, jsonp string) {
 	switch format {
 	case jsonFormat:
 		if jsonp != "" {
 			w.Header().Set("Content-Type", contentTypeJavaScript)
+			w.WriteHeader(returnCode)
 			w.Write([]byte(jsonp))
 			w.Write([]byte{'('})
 			w.Write(b)
 			w.Write([]byte{')'})
 		} else {
 			w.Header().Set("Content-Type", contentTypeJSON)
+			w.WriteHeader(returnCode)
 			w.Write(b)
 		}
 	case protoV2Format, protoV3Format:
 		w.Header().Set("Content-Type", contentTypeProtobuf)
+		w.WriteHeader(returnCode)
 		w.Write(b)
 	case rawFormat:
 		w.Header().Set("Content-Type", contentTypeRaw)
+		w.WriteHeader(returnCode)
 		w.Write(b)
 	case pickleFormat:
 		w.Header().Set("Content-Type", contentTypePickle)
+		w.WriteHeader(returnCode)
 		w.Write(b)
 	case csvFormat:
 		w.Header().Set("Content-Type", contentTypeCSV)
 		w.Write(b)
 	case pngFormat:
 		w.Header().Set("Content-Type", contentTypePNG)
+		w.WriteHeader(returnCode)
 		w.Write(b)
 	case svgFormat:
 		w.Header().Set("Content-Type", contentTypeSVG)
+		w.WriteHeader(returnCode)
 		w.Write(b)
 	}
 }
