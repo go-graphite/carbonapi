@@ -1,7 +1,7 @@
 # Need to be URL, http or https
 # This url specifies the backend or a loadbalancer
 #
-# Is you are using carbonzipper you should set it to
+# If you are using carbonzipper you should set it to
 # zipper's url
 #
 # If you are using plain go-carbon or graphite-clickhouse

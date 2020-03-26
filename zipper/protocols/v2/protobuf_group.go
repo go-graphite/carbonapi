@@ -145,8 +145,14 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 			"until":  []string{strconv.Itoa(int(batch.until))},
 		}
 		rewrite.RawQuery = v.Encode()
+		stats.RenderRequests += 1
 		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if err != nil {
+			stats.RenderErrors += 1
+			if merry.Is(err, types.ErrTimeoutExceeded) {
+				stats.Timeouts += 1
+				stats.RenderTimeouts += 1
+			}
 			if e == nil {
 				e = err
 			} else {
@@ -158,6 +164,7 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 		var metrics protov2.MultiFetchResponse
 		marshalErr := metrics.Unmarshal(res.Response)
 		if marshalErr != nil {
+			stats.RenderErrors += 1
 			if e == nil {
 				e = err
 			} else {
@@ -213,10 +220,14 @@ func (c *ClientProtoV2Group) Find(ctx context.Context, request *protov3.MultiGlo
 			"format": []string{format},
 		}
 		rewrite.RawQuery = v.Encode()
-		logger.Debug("doing http query")
+		stats.FindRequests += 1
 		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
-		logger.Debug("done http query")
 		if err != nil {
+			stats.FindErrors += 1
+			if merry.Is(err, types.ErrTimeoutExceeded) {
+				stats.Timeouts += 1
+				stats.FindTimeouts += 1
+			}
 			if e == nil {
 				e = err
 			} else {
@@ -225,10 +236,9 @@ func (c *ClientProtoV2Group) Find(ctx context.Context, request *protov3.MultiGlo
 			continue
 		}
 		var globs protov2.GlobResponse
-		logger.Debug("started to unmarshal response")
 		marshalErr := globs.Unmarshal(res.Response)
-		logger.Debug("done unmarshal response")
 		if marshalErr != nil {
+			stats.FindErrors += 1
 			if e == nil {
 				e = err
 			} else {
@@ -281,8 +291,14 @@ func (c *ClientProtoV2Group) Info(ctx context.Context, request *protov3.MultiMet
 			"format": []string{format},
 		}
 		rewrite.RawQuery = v.Encode()
+		stats.InfoRequests += 1
 		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if err != nil {
+			stats.InfoErrors += 1
+			if merry.Is(err, types.ErrTimeoutExceeded) {
+				stats.Timeouts += 1
+				stats.InfoTimeouts += 1
+			}
 			if e == nil {
 				e = err
 			} else {
@@ -294,6 +310,7 @@ func (c *ClientProtoV2Group) Info(ctx context.Context, request *protov3.MultiMet
 		var info protov2.InfoResponse
 		marshalErr := info.Unmarshal(res.Response)
 		if marshalErr != nil {
+			stats.InfoErrors += 1
 			if e == nil {
 				e = err
 			} else {

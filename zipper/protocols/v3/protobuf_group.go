@@ -110,7 +110,9 @@ func (c ClientProtoV3Group) Backends() []string {
 }
 
 func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, merry.Error) {
-	stats := &types.Stats{}
+	stats := &types.Stats{
+		RenderRequests: 1,
+	}
 	rewrite, _ := url.Parse("http://127.0.0.1/render/")
 	logger := c.logger.With(zap.String("type", "fetch"), zap.String("request", request.String()))
 
@@ -119,10 +121,16 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	}
 	rewrite.RawQuery = v.Encode()
 
-	res, e := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), types.MultiFetchRequestV3{*request})
-	if e != nil {
-		return nil, stats, e
-
+	res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), types.MultiFetchRequestV3{*request})
+	stats.Servers = []string{res.Server}
+	if err != nil {
+		stats.FailedServers = []string{res.Server}
+		stats.RenderErrors = 1
+		if merry.Is(err, types.ErrTimeoutExceeded) {
+			stats.Timeouts = 1
+			stats.RenderTimeouts = 1
+		}
+		return nil, stats, err
 	}
 
 	if res == nil {
@@ -130,8 +138,10 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	}
 
 	var r protov3.MultiFetchResponse
-	err := r.Unmarshal(res.Response)
-	if err != nil {
+	err2 := r.Unmarshal(res.Response)
+	if err2 != nil {
+		stats.FailedServers = []string{res.Server}
+		stats.RenderErrors += 1
 		return nil, stats, merry.Wrap(err)
 	}
 
@@ -140,7 +150,9 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 
 func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
 	logger := c.logger.With(zap.String("type", "find"), zap.Strings("request", request.Metrics))
-	stats := &types.Stats{}
+	stats := &types.Stats{
+		FindRequests: 1,
+	}
 	rewrite, _ := url.Parse("http://127.0.0.1/metrics/find/")
 
 	v := url.Values{
@@ -149,7 +161,14 @@ func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlo
 	rewrite.RawQuery = v.Encode()
 
 	res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), types.MultiGlobRequestV3{*request})
+	stats.Servers = []string{res.Server}
 	if err != nil {
+		stats.FailedServers = []string{res.Server}
+		stats.FindErrors = 1
+		if merry.Is(err, types.ErrTimeoutExceeded) {
+			stats.Timeouts = 1
+			stats.FindTimeouts = 1
+		}
 		return nil, stats, err
 	}
 
@@ -159,6 +178,8 @@ func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlo
 	var globs protov3.MultiGlobResponse
 	err2 := globs.Unmarshal(res.Response)
 	if err2 != nil {
+		stats.FailedServers = []string{res.Server}
+		stats.FindErrors = 1
 		return nil, nil, merry.Wrap(err2)
 	}
 
@@ -167,7 +188,9 @@ func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlo
 
 func (c *ClientProtoV3Group) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, merry.Error) {
 	logger := c.logger.With(zap.String("type", "info"), zap.String("request", request.String()))
-	stats := &types.Stats{}
+	stats := &types.Stats{
+		InfoRequests: 1,
+	}
 	rewrite, _ := url.Parse("http://127.0.0.1/metrics/find/")
 
 	v := url.Values{
@@ -176,7 +199,14 @@ func (c *ClientProtoV3Group) Info(ctx context.Context, request *protov3.MultiMet
 	rewrite.RawQuery = v.Encode()
 
 	res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), types.MultiMetricsInfoV3{*request})
+	stats.Servers = []string{res.Server}
 	if err != nil {
+		stats.FailedServers = []string{res.Server}
+		stats.InfoErrors = 1
+		if merry.Is(err, types.ErrTimeoutExceeded) {
+			stats.Timeouts = 1
+			stats.InfoTimeouts = 1
+		}
 		return nil, stats, err
 	}
 
@@ -186,6 +216,8 @@ func (c *ClientProtoV3Group) Info(ctx context.Context, request *protov3.MultiMet
 	var infos protov3.MultiMetricsInfoResponse
 	err2 := infos.Unmarshal(res.Response)
 	if err2 != nil {
+		stats.FailedServers = []string{res.Server}
+		stats.InfoErrors = 1
 		return nil, nil, merry.Wrap(err2)
 	}
 

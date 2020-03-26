@@ -211,7 +211,6 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 			)
 			// rewrite metric for tag
 			// Make local copy
-			stepLocal := step
 			stepLocalStr := stepStr
 			if strings.HasPrefix(target, "seriesByTag") {
 				stepLocalStr, target = c.seriesByTagToPromQL(stepLocalStr, target)
@@ -223,6 +222,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 			}
 			t, err := time.ParseDuration(stepLocalStr)
 			if err != nil {
+				stats.RenderErrors += 1
 				logger.Debug("failed to parse step",
 					zap.String("step", stepLocalStr),
 					zap.Error(err),
@@ -232,7 +232,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 				}
 				continue
 			}
-			stepLocal = int64(t.Seconds())
+			stepLocal := int64(t.Seconds())
 			/*
 				newStep, err3 := strToStep(stepStr)
 				if err3 == nil {
@@ -252,8 +252,14 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 			}
 
 			rewrite.RawQuery = v.Encode()
+			stats.RenderRequests += 1
 			res, err2 := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 			if err2 != nil {
+				stats.RenderErrors += 1
+				if merry.Is(err, types.ErrTimeoutExceeded) {
+					stats.Timeouts += 1
+					stats.RenderTimeouts += 1
+				}
 				if e == nil {
 					e = err2
 				} else {
@@ -265,6 +271,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 			var response prometheusResponse
 			err = json.Unmarshal(res.Response, &response)
 			if err != nil {
+				stats.RenderErrors += 1
 				c.logger.Debug("failed to unmarshal response",
 					zap.Error(err),
 				)
@@ -277,6 +284,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 			}
 
 			if response.Status != "success" {
+				stats.RenderErrors += 1
 				if e == nil {
 					e = types.ErrFailedToFetch.WithMessage(response.Status).WithValue("query", target).WithValue("status", response.Status)
 				} else {
@@ -306,6 +314,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	}
 
 	if e != nil {
+		stats.FailedServers = []string{c.groupName}
 		logger.Error("errors occurred while getting results",
 			zap.Any("errors", e),
 		)
@@ -337,8 +346,14 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 		}
 
 		rewrite.RawQuery = v.Encode()
+		stats.FindRequests += 1
 		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if err != nil {
+			stats.FindErrors += 1
+			if merry.Is(err, types.ErrTimeoutExceeded) {
+				stats.Timeouts += 1
+				stats.FindTimeouts += 1
+			}
 			if e == nil {
 				e = err
 			} else {
@@ -351,6 +366,7 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 
 		err2 := json.Unmarshal(res.Response, &pr)
 		if err2 != nil {
+			stats.FindErrors += 1
 			if e == nil {
 				e = err
 			} else {
@@ -360,6 +376,7 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 		}
 
 		if pr.Status != "success" {
+			stats.FindErrors += 1
 			if e == nil {
 				e = types.ErrFailedToFetch.WithMessage(pr.Error).WithValue("query", matchQuery).WithValue("error_type", pr.ErrorType).WithValue("error", pr.Error)
 			} else {
@@ -402,6 +419,7 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	}
 
 	if e != nil {
+		stats.FailedServers = []string{c.groupName}
 		logger.Error("errors occurred while getting results",
 			zap.Any("errors", e),
 		)

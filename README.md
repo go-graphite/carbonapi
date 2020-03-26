@@ -31,7 +31,7 @@ Carbonapi can be configured by environment variables or by config file. For an e
 
 `$ ./carbonapi -config /etc/carbonapi.yaml`
 
-Request metrics will be dumped to graphite if coresponding config options are set,
+Request metrics will be dumped to graphite if corresponding config options are set,
 or if the GRAPHITEHOST/GRAPHITEPORT environment variables are found.
 
 Request data will be stored in memory (default) or in memcache.
@@ -61,7 +61,7 @@ CARBONAPI_UPSTREAMS_BACKENDS="http://10.0.0.1:8080 http://10.0.0.2:8080"
 ```
 
 You should be only aware of logging: because carbonapi support a list of logger, env variables will replace
-only first logger. 
+only first logger.
 
 If you apply variable `LOGGER_FILE=stdout` to config:
 
