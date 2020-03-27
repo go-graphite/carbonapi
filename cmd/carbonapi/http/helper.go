@@ -2,7 +2,6 @@ package http
 
 import (
 	"fmt"
-	"github.com/go-graphite/carbonapi/pkg/parser"
 	"net/http"
 	"strings"
 	"sync/atomic"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
 )
@@ -18,11 +18,6 @@ type responseFormat int
 
 // for testing
 var timeNow = time.Now
-
-type requestInterval struct {
-	from  int64
-	until int64
-}
 
 const (
 	jsonFormat responseFormat = iota

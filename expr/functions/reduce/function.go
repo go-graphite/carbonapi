@@ -95,7 +95,7 @@ AliasLoop:
 			reducedNodes[i] = parser.NewTargetExpr(matched.Name)
 		}
 
-		result, err := f.Evaluator.EvalExpr(parser.NewExprTyped("alias", []parser.Expr{
+		result, err := f.Evaluator.Eval(parser.NewExprTyped("alias", []parser.Expr{
 			parser.NewExprTyped(reduceFunction, reducedNodes),
 			parser.NewValueExpr(aliasName),
 		}), from, until, reducedValues)

@@ -301,7 +301,7 @@ func TestRewriteExpr(t *testing.T) {
 			parser.NewExpr("applyByNode",
 
 				"metric*",
-				1,
+				0,
 				parser.ArgValue("%.count"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
@@ -320,7 +320,7 @@ func TestRewriteExpr(t *testing.T) {
 			parser.NewExpr("applyByNode",
 
 				"metric*",
-				1,
+				0,
 				parser.ArgValue("%.count"),
 				parser.ArgValue("% count"),
 			),
@@ -340,7 +340,7 @@ func TestRewriteExpr(t *testing.T) {
 			parser.NewExpr("applyByNode",
 
 				"foo.metric*",
-				2,
+				1,
 				parser.ArgValue("%.count"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
