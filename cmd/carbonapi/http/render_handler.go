@@ -220,10 +220,10 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var results []*types.MetricData
 	errors := make(map[string]merry.Error)
-
+	results := make([]*types.MetricData, 0)
 	values := make(map[parser.MetricRequest][]*types.MetricData)
+
 	for _, target := range targets {
 		exp, e, err := parser.ParseExpr(target)
 		if err != nil || e != "" {
@@ -233,15 +233,22 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		expressions, err := expr.FetchTargetExp(exp, from32, until32, values)
-		if err != nil && !merry.Is(err, parser.ErrSeriesDoesNotExist) {
+		ApiMetrics.RenderRequests.Add(1)
+
+		result, err := expr.FetchTargetExp(exp, from32, until32, values)
+		if err != nil {
 			errors[target] = merry.Wrap(err)
-			accessLogDetails.Reason = err.Error()
-			logAsError = true
-			return
 		}
 
-		results = append(results, expressions...)
+		results = append(results, result...)
+	}
+
+	size := 0
+	for _, result := range results {
+		size += result.Size()
+	}
+	for mFetch := range values {
+		expr.SortMetrics(values[mFetch], mFetch)
 	}
 
 	var body []byte
@@ -302,6 +309,10 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	case svgFormat:
 		body = png.MarshalSVGRequest(r, results, template)
 	}
+
+	accessLogDetails.Metrics = targets
+	accessLogDetails.CarbonzipperResponseSizeBytes = int64(size)
+	accessLogDetails.CarbonapiResponseSizeBytes = int64(len(body))
 
 	writeResponse(w, returnCode, body, format, jsonp)
 

@@ -32,7 +32,7 @@ func (eval evaluator) FetchTargetExp(exp parser.Expr, from, until int64, values 
 
 	metrics, _, err := config.Config.ZipperInstance.Render(context.TODO(), req)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 	for _, metric := range metrics {
 		mFetch := parser.MetricRequest{
