@@ -1,13 +1,13 @@
 package http
 
 import (
-	"github.com/ansel1/merry"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/ansel1/merry"
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 	"github.com/go-graphite/carbonapi/date"
@@ -15,12 +15,10 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/cairo/png"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	// zipperErrors "github.com/go-graphite/carbonapi/zipper/types"
 	utilctx "github.com/go-graphite/carbonapi/util/ctx"
-
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 	"go.uber.org/zap"
 )
 
@@ -63,16 +61,16 @@ func getCacheTimeout(logger *zap.Logger, r *http.Request) int32 {
 
 func renderHandler(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
-	uuid := uuid.NewV4()
+	uid := uuid.NewV4()
 
 	// TODO: Migrate to context.WithTimeout
 	// ctx, _ := context.WithTimeout(context.TODO(), config.Config.ZipperTimeout)
-	ctx := utilctx.SetUUID(r.Context(), uuid.String())
+	ctx := utilctx.SetUUID(r.Context(), uid.String())
 	username, _, _ := r.BasicAuth()
 	requestHeaders := utilctx.GetLogHeaders(ctx)
 
 	logger := zapwriter.Logger("render").With(
-		zap.String("carbonapi_uuid", uuid.String()),
+		zap.String("carbonapi_uuid", uid.String()),
 		zap.String("username", username),
 		zap.Any("request_headers", requestHeaders),
 	)
@@ -83,7 +81,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	var accessLogDetails = &carbonapipb.AccessLogDetails{
 		Handler:        "render",
 		Username:       username,
-		CarbonapiUUID:  uuid.String(),
+		CarbonapiUUID:  uid.String(),
 		URL:            r.URL.RequestURI(),
 		PeerIP:         srcIP,
 		PeerPort:       srcPort,
@@ -98,7 +96,6 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		deferredAccessLogging(accessLogger, accessLogDetails, t0, logAsError)
 	}()
 
-	size := 0
 	ApiMetrics.Requests.Add(1)
 
 	err := r.ParseForm()
@@ -225,16 +222,10 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	var results []*types.MetricData
 	errors := make(map[string]merry.Error)
-	metricMap := make(map[parser.MetricRequest][]*types.MetricData)
 
-	var metrics []string
-	// Iterate over all targets, check if we need to fetch them
-	for i := 0; i < len(targets); i++ {
-		target := targets[i]
-
+	values := make(map[parser.MetricRequest][]*types.MetricData)
+	for _, target := range targets {
 		exp, e, err := parser.ParseExpr(target)
-
-		// if expression cannot be parsed return error
 		if err != nil || e != "" {
 			msg := buildParseErrorString(target, e, err)
 			setError(w, accessLogDetails, msg, http.StatusBadRequest)
@@ -242,120 +233,15 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Splitting requests into batches is now done by carbonzipper
-		pathExprTimeMap := make(map[string]requestInterval)
-		var req pb.MultiFetchRequest
-		for _, m := range exp.Metrics() {
-			metrics = append(metrics, m.Metric)
-			mFetch := m
-			mFetch.From += from32
-			mFetch.Until += until32
-
-			if _, ok := metricMap[mFetch]; ok {
-				// we already have this metric in fetch queue
-				continue
-			}
-			metricMap[mFetch] = make([]*types.MetricData, 0, 1)
-
-			req.Metrics = append(req.Metrics, pb.FetchRequest{
-				Name:           m.Metric,
-				PathExpression: m.Metric,
-				StartTime:      mFetch.From,
-				StopTime:       mFetch.Until,
-			})
-			pathExprTimeMap[m.Metric] = requestInterval{from: mFetch.From, until: mFetch.Until}
+		expressions, err := expr.FetchTargetExp(exp, from32, until32, values)
+		if err != nil && !merry.Is(err, parser.ErrSeriesDoesNotExist) {
+			errors[target] = merry.Wrap(err)
+			accessLogDetails.Reason = err.Error()
+			logAsError = true
+			return
 		}
 
-		// Do we need to fetch anything?
-		if len(req.Metrics) > 0 {
-			ApiMetrics.RenderRequests.Add(1)
-			config.Config.Limiter.Enter()
-
-			r, stats, err := config.Config.ZipperInstance.Render(ctx, req)
-			if stats != nil {
-				accessLogDetails.ZipperRequests += stats.ZipperRequests
-				accessLogDetails.TotalMetricsCount += stats.TotalMetricsCount
-			}
-			if err != nil {
-				errors[target] = err
-			}
-
-			config.Config.Limiter.Leave()
-			for _, m := range r {
-				var from int64
-				var until int64
-				if m.RequestStartTime != 0 && m.RequestStopTime != 0 {
-					from = m.RequestStartTime
-					until = m.RequestStopTime
-				} else {
-					from = pathExprTimeMap[m.PathExpression].from
-					until = pathExprTimeMap[m.PathExpression].until
-				}
-
-				mFetch := parser.MetricRequest{
-					Metric: m.PathExpression,
-					From:   from,
-					Until:  until,
-				}
-
-				d := metricMap[mFetch]
-				metricMap[mFetch] = append(d, m)
-
-			}
-			for i := range r {
-				size += r[i].Size()
-			}
-
-			for mFetch := range metricMap {
-				expr.SortMetrics(metricMap[mFetch], mFetch)
-			}
-		}
-		// Remove metrics for which fetch failed
-		filteredMetricMap := make(map[parser.MetricRequest][]*types.MetricData)
-		for k := range metricMap {
-			if len(metricMap[k]) != 0 {
-				filteredMetricMap[k] = metricMap[k]
-			}
-		}
-		metricMap = filteredMetricMap
-		accessLogDetails.Metrics = metrics
-		if len(metricMap) > 0 {
-
-			var rewritten bool
-			var newTargets []string
-
-			rewritten, newTargets, err = expr.RewriteExpr(exp, from32, until32, metricMap)
-			if err != nil && !merry.Is(err, parser.ErrSeriesDoesNotExist) {
-				errors[target] = merry.Wrap(err)
-				accessLogDetails.Reason = err.Error()
-				logAsError = true
-				return
-			}
-
-			if rewritten {
-				targets = append(targets, newTargets...)
-			} else {
-				func() {
-					defer func() {
-						if r := recover(); r != nil {
-							logger.Error("panic during eval:",
-								zap.String("cache_key", cacheKey),
-								zap.Any("reason", r),
-								zap.Stack("stack"),
-							)
-						}
-					}()
-					expressions, err := expr.EvalExpr(exp, from32, until32, metricMap)
-					if err != nil && !merry.Is(err, parser.ErrSeriesDoesNotExist) {
-						errors[target] = merry.Wrap(err)
-						accessLogDetails.Reason = err.Error()
-						logAsError = true
-						return
-					}
-					results = append(results, expressions...)
-				}()
-			}
-		}
+		results = append(results, expressions...)
 	}
 
 	var body []byte
@@ -365,18 +251,20 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		// Obtain error code from the errors
 		// In case we have only "Not Found" errors, result should be 404
 		// Otherwise it should be 500
+		errMsgs := make([]string, 0)
 		for _, err := range errors {
+			errMsgs = append(errMsgs, err.Error())
 			if returnCode < 500 {
 				returnCode = merry.HTTPCode(err)
 			}
 		}
-		logger.Debug("empty response or no response")
+		logger.Debug("error response or no response", zap.Strings("error", errMsgs))
 		// Allow override status code for 404-not-found replies.
 		if returnCode == 404 {
 			returnCode = config.Config.NotFoundStatusCode
 		}
 		if returnCode >= 500 {
-			setError(w, accessLogDetails, "empty or no response", returnCode)
+			setError(w, accessLogDetails, "error or no response: "+strings.Join(errMsgs, ","), returnCode)
 			logAsError = true
 			return
 		}

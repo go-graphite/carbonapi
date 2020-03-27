@@ -22,7 +22,7 @@ func (b *FunctionBase) GetEvaluator() Evaluator {
 
 // Evaluator is a interface for any existing expression parser
 type Evaluator interface {
-	EvalExpr(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
+	Eval(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
 }
 
 type Order int

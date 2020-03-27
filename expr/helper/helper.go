@@ -36,7 +36,7 @@ func GetSeriesArg(arg parser.Expr, from, until int64, values map[parser.MetricRe
 		return nil, parser.ErrMissingTimeseries
 	}
 
-	a, err := evaluator.EvalExpr(arg, from, until, values)
+	a, err := evaluator.Eval(arg, from, until, values)
 	if err != nil {
 		return nil, err
 	}

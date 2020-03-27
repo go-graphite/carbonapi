@@ -98,7 +98,7 @@ func (f *groupByTags) Do(e parser.Expr, from, until int64, values map[parser.Met
 			parser.MetricRequest{"stub", from, until}: v,
 		}
 
-		r, err := f.Evaluator.EvalExpr(nexpr, from, until, nvalues)
+		r, err := f.Evaluator.Eval(nexpr, from, until, nvalues)
 		if err != nil {
 			return nil, err
 		}

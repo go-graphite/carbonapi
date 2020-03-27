@@ -18,7 +18,7 @@ type FuncEvaluator struct {
 	eval func(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
 }
 
-func (evaluator *FuncEvaluator) EvalExpr(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (evaluator *FuncEvaluator) Eval(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if e.IsName() {
 		return values[parser.MetricRequest{Metric: e.Target(), From: from, Until: until}], nil
 	} else if e.IsConst() {
@@ -293,7 +293,7 @@ func TestSummarizeEvalExpr(t *testing.T, tt *SummarizeEvalTestItem) {
 	t.Run(tt.Name, func(t *testing.T) {
 		originalMetrics := DeepClone(tt.M)
 		exp, _, _ := parser.ParseExpr(tt.Target)
-		g, err := evaluator.EvalExpr(exp, 0, 1, tt.M)
+		g, err := evaluator.Eval(exp, 0, 1, tt.M)
 		if err != nil {
 			t.Errorf("failed to eval %v: %+v", tt.Name, err)
 			return
@@ -330,7 +330,7 @@ func TestMultiReturnEvalExpr(t *testing.T, tt *MultiReturnEvalTestItem) {
 
 	originalMetrics := DeepClone(tt.M)
 	exp, _, err := parser.ParseExpr(tt.Target)
-	g, err := evaluator.EvalExpr(exp, 0, 1, tt.M)
+	g, err := evaluator.Eval(exp, 0, 1, tt.M)
 	if err != nil {
 		t.Errorf("failed to eval %v: %+v", tt.Name, err)
 		return
@@ -380,7 +380,7 @@ func TestEvalExpr(t *testing.T, tt *EvalTestItem) {
 	originalMetrics := DeepClone(tt.M)
 	testName := tt.Target
 	exp, _, err := parser.ParseExpr(tt.Target)
-	g, err := evaluator.EvalExpr(exp, 0, 1, tt.M)
+	g, err := evaluator.Eval(exp, 0, 1, tt.M)
 	if err != nil {
 		t.Errorf("failed to eval %s: %+v", testName, err)
 		return

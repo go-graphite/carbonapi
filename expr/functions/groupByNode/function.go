@@ -108,7 +108,7 @@ func (f *groupByNode) Do(e parser.Expr, from, until int64, values map[parser.Met
 			}
 		}
 
-		r, _ := f.Evaluator.EvalExpr(nexpr, from, until, nvalues)
+		r, _ := f.Evaluator.Eval(nexpr, from, until, nvalues)
 		if r != nil {
 			r[0].Name = k
 			results = append(results, r...)
