@@ -201,7 +201,10 @@ func TestEvalExpr(t *testing.T) {
 				&data,
 			}
 
-			EvalExpr(exp, request.From, request.Until, metricMap)
+			_, err = EvalExpr(exp, request.From, request.Until, metricMap)
+			if err != nil {
+				t.Errorf("error='%v'", err)
+			}
 		})
 	}
 }
