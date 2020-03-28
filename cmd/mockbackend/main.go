@@ -220,7 +220,7 @@ func (cfg *listener) findHandler(wr http.ResponseWriter, req *http.Request) {
 				})
 		}
 	} else {
-		returnMap := make(map[string]struct{}, 0)
+		returnMap := make(map[string]struct{})
 		for m := range cfg.Config.Expressions {
 			for _, metric := range cfg.Expressions[m].Data {
 				returnMap[metric.MetricName] = struct{}{}

@@ -184,8 +184,7 @@ func (e *expr) Metrics() []MetricRequest {
 				r[i].From -= 7 * 86400 // starts -7 days from where the original starts
 			}
 		case "movingAverage", "movingMedian", "movingMin", "movingMax", "movingSum":
-			switch e.args[1].etype {
-			case EtString:
+			if e.args[1].etype == EtString {
 				offs, err := e.GetIntervalArg(1, 1)
 				if err != nil {
 					return nil
@@ -373,10 +372,7 @@ func (e *expr) GetNodeOrTagArgs(n int) ([]NodeOrTag, error) {
 }
 
 func (e *expr) IsInterfaceNil() bool {
-	if e == nil {
-		return true
-	}
-	return false
+	return e == nil
 }
 
 func (e *expr) insertFirstArg(exp *expr) error {
