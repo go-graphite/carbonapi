@@ -795,7 +795,9 @@ func main() {
 		pidfile.SetPidfilePath(*pidFile)
 		err = pidfile.Write()
 		if err != nil {
-			log.Fatalln("error during pidfile.Write():", err)
+			logger.Fatal("error during pidfile.Write()",
+				zap.Error(err),
+			)
 		}
 	}
 
