@@ -14,9 +14,7 @@ Changes
 CHANGELOG
 ---------
 **(WIP)**
- - **[Breaking]** [Code] Comment out support for gRPC backend type. It was never properly tested and likely need complete rework before it can be usable
- - [Fix] Fix aliasByTags to work correctly with other functions
- - [Fix] panic when using protov2 and backend that doesn't support tags (thx tyo @gekmihesg)
+ - **[Breaking]** [Code] Comment out support for gRPC backend type. It was never properly tested and likely need complete rework before it will be usable
  - [Fix] /render and /metrics/find URLs now works correctly for format=carbonapi\_v2\_pb (protov3) and for new format
  - [Fix] Allow '%' in metric names
  - [Fix] Zipper metrics
@@ -32,6 +30,10 @@ CHANGELOG
  - [Improvement] Add smartSummarize function (thx to misiek08@)
  - [Code] Make linters much more happier about the code (thx to faceair@ for contribution)
 
+**0.12.6**
+
+ - [Fix] Fix aliasByTags to work correclty with other functions
+ - [Fix] panic when using protov2 and backend that doesn't support tags (thx to @gekmihesg)
 
 **0.12.5**
  - [Feature] Implement 'highest' function
