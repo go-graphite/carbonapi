@@ -330,6 +330,10 @@ func TestMultiReturnEvalExpr(t *testing.T, tt *MultiReturnEvalTestItem) {
 
 	originalMetrics := DeepClone(tt.M)
 	exp, _, err := parser.ParseExpr(tt.Target)
+	if err != nil {
+		t.Errorf("failed to parse %v: %+v", tt.Target, err)
+		return
+	}
 	g, err := evaluator.Eval(exp, 0, 1, tt.M)
 	if err != nil {
 		t.Errorf("failed to eval %v: %+v", tt.Name, err)
@@ -380,6 +384,10 @@ func TestEvalExpr(t *testing.T, tt *EvalTestItem) {
 	originalMetrics := DeepClone(tt.M)
 	testName := tt.Target
 	exp, _, err := parser.ParseExpr(tt.Target)
+	if err != nil {
+		t.Errorf("failed to parse %s: %+v", tt.Target, err)
+		return
+	}
 	g, err := evaluator.Eval(exp, 0, 1, tt.M)
 	if err != nil {
 		t.Errorf("failed to eval %s: %+v", testName, err)
