@@ -90,6 +90,7 @@ type ConfigType struct {
 	Limiter limiter.SimpleLimiter `mapstructure:"-" json:"-"`
 }
 
+// skipcq: CRT-P0003
 func (c ConfigType) String() string {
 	data, err := json.Marshal(c)
 	if err != nil {

@@ -119,6 +119,7 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 			graphTemplates[k] = newStruct
 		}
 
+		// skipcq: CRT-P0006
 		for name, params := range graphTemplates {
 			png.SetTemplate(name, params)
 		}
