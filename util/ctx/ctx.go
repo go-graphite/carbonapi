@@ -39,18 +39,6 @@ func getCtxMapString(ctx context.Context, k key) map[string]string {
 	return map[string]string{}
 }
 
-func getCtxStringList(ctx context.Context, k key) []string {
-	v := ctx.Value(k)
-	if v != nil {
-		vv, ok := v.([]string)
-		if !ok {
-			return []string{}
-		}
-		return vv
-	}
-	return []string{}
-}
-
 func GetPassHeaders(ctx context.Context) map[string]string {
 	return getCtxMapString(ctx, headersToPassKey)
 }

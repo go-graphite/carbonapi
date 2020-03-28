@@ -53,6 +53,8 @@ func getInt(s string, def int) int {
 	return int(n)
 }
 
+// For some reason, deepsource thinks this function is not used, even though it's actually used whenever Cairo is enabled.
+// skipcq: SCC-U1000
 func string2RGBA(clr string) color.RGBA {
 	if c, ok := colors[clr]; ok {
 		return c

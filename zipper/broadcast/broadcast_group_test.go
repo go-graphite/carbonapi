@@ -41,26 +41,6 @@ func init() {
 	}
 }
 
-func errorTextsEqual(e1, e2 []error) bool {
-	e1s := make([]string, 0, len(e1))
-	e2s := make([]string, 0, len(e2))
-	for _, e := range e1 {
-		e1s = append(e1s, e.Error())
-	}
-
-	for _, e := range e2 {
-		e2s = append(e2s, e.Error())
-	}
-	sort.Strings(e1s)
-	sort.Strings(e2s)
-	for i := range e1s {
-		if e1s[i] != e2s[i] {
-			return false
-		}
-	}
-	return true
-}
-
 func errorsAreEqual(e1, e2 merry.Error) bool {
 	return merry.Is(e1, e2)
 }

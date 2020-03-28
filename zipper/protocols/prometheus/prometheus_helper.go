@@ -9,38 +9,6 @@ import (
 	"strings"
 )
 
-// Mwdhmsy
-func strToStep(stepStr string) (int64, error) {
-	step, err := strconv.ParseInt(stepStr, 10, 64)
-	if err != nil {
-		modifier := stepStr[len(stepStr)-1]
-		stepStr = stepStr[:len(stepStr)-1]
-		step, err := strconv.ParseInt(stepStr, 10, 64)
-		if err != nil {
-			return -1, err
-		}
-		switch modifier {
-		case 'M':
-			step *= 2628000
-		case 'w':
-			step *= 604800
-		case 'd':
-			step *= 86400
-		case 'h':
-			step *= 3600
-		case 'm':
-			step *= 60
-		case 'y':
-			// 365 days
-			step *= 31536000
-		case 's':
-		default:
-			return -1, fmt.Errorf("unknown modifier: %v", modifier)
-		}
-	}
-	return step, nil
-}
-
 type tag struct {
 	TagValue string
 	OP       string

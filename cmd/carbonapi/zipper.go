@@ -13,8 +13,6 @@ import (
 	"go.uber.org/zap"
 )
 
-var errNoMetrics = merry.New("no metrics")
-
 type zipper struct {
 	z *realZipper.Zipper
 

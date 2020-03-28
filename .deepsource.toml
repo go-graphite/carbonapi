@@ -1,7 +1,8 @@
 version = 1
 
 test_patterns = [
-  "*/tests/**"
+  "*/tests/**",
+  "**/*_test.go"
 ]
 
 [[analyzers]]
