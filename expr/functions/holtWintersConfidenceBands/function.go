@@ -67,8 +67,7 @@ func (f *holtWintersConfidenceBands) Do(e parser.Expr, from, until int64, values
 			PathExpression:    fmt.Sprintf("holtWintersConfidenceLower(%s)", arg.Name),
 		}}
 
-		results = append(results, &lowerSeries)
-		results = append(results, &upperSeries)
+		results = append(results, &lowerSeries, &upperSeries)
 	}
 	return results, nil
 

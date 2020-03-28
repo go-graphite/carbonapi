@@ -56,8 +56,7 @@ func (f *fft) Do(e parser.Expr, from, until int64, values map[parser.MetricReque
 
 		switch mode {
 		case "", "both", "all":
-			results = append(results, extractComponent(a, values, "abs", cmplx.Abs))
-			results = append(results, extractComponent(a, values, "phase", cmplx.Phase))
+			results = append(results, extractComponent(a, values, "abs", cmplx.Abs), extractComponent(a, values, "phase", cmplx.Phase))
 		case "abs":
 			results = append(results, extractComponent(a, values, "abs", cmplx.Abs))
 		case "phase":
