@@ -21,5 +21,6 @@ matrix:
   include:
     - go: "1.12.x"
     - go: "1.13.x"
+    - go: "1.14.x"
       env:
         - BUILD_PACKAGES=true

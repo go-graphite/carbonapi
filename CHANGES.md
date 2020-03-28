@@ -20,12 +20,17 @@ CHANGELOG
  - [Fix] /render and /metrics/find URLs now works correctly for format=carbonapi\_v2\_pb (protov3) and for new format
  - [Fix] Allow '%' in metric names
  - [Fix] Zipper metrics
+ - [Fix] applyByNode - fix various incompatibilities with graphite-web (node starts with 1, some rewrite related issues, etc) (thx to faceair@)
  - [Improvement] Redesign error handling and logging. Logging should be now less noisy and all error messages should contain better reasoning about error cause
  - [Improvement] Move more of the logging messages to Debug level - that should make logs less noisy and still preserve ability to see detailed errors on Debug level
  - [Improvement] Add a config parameter to disable tldCache (useful for clickhouse type backends)
  - [Improvement] Implement noNullPoints query parameter. Works only with JSON as in graphite-web
  - [Improvement] For all SeriesLists functions, allow to specify default argument (thx to kolobaev@)
  - [Improvement] Add support for `round` function (thx to kolobaev@)
+ - [Improvement] Add integralByInterval function (thx to faceair@)
+ - [Improvement] Add sortBy function (thx to misiek08@)
+ - [Improvement] Add smartSummarize function (thx to misiek08@)
+ - [Code] Make linters much more happier about the code (thx to faceair@ for contribution)
 
 
 **0.12.5**
