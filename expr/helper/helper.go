@@ -61,10 +61,6 @@ func GetSeriesArgs(e []parser.Expr, from, until int64, values map[parser.MetricR
 	for _, arg := range e {
 		a, err := GetSeriesArg(arg, from, until, values)
 		if err != nil && err != parser.ErrSeriesDoesNotExist {
-			eStr := make([]string, 0, len(e))
-			for _, a1 := range e {
-				eStr = append(eStr, fmt.Sprintf("%v", a1))
-			}
 			return nil, err
 		}
 		args = append(args, a...)
