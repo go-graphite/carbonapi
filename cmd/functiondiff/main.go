@@ -123,6 +123,10 @@ func main() {
 	}
 
 	resp1, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Fatalf("failed to read response body for %v: %v", *srv1, err)
+	}
+
 	res.Body.Close()
 
 	var firstDescription map[string]types.FunctionDescription
@@ -134,10 +138,13 @@ func main() {
 
 	res, err = http.Get(*srv2 + "/functions/")
 	if err != nil {
-		log.Fatal("failed to get response from server 1", err)
+		log.Fatalf("failed to read response body for %v: %v", *srv2, err)
 	}
 
 	resp2, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Fatal("failed to read response body", err)
+	}
 	res.Body.Close()
 
 	var secondDescription map[string]types.FunctionDescription

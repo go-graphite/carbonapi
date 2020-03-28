@@ -80,16 +80,17 @@ func capabilityHandler(wr http.ResponseWriter, req *http.Request) {
 		case protoV3Format:
 			contentType = httpHeaders.ContentTypeCarbonAPIv3PB
 			data, err = pvResponse.Marshal()
-			if err != nil {
-				accessLogger.Error("capability failed",
-					zap.Duration("runtime_seconds", time.Since(t0)),
-					zap.String("reason", err.Error()),
-					zap.Int("http_code", http.StatusBadRequest),
-				)
-				http.Error(wr, "Bad request (unsupported format)",
-					http.StatusBadRequest,
-				)
-			}
+		}
+
+		if err != nil {
+			accessLogger.Error("capability failed",
+				zap.Duration("runtime_seconds", time.Since(t0)),
+				zap.String("reason", err.Error()),
+				zap.Int("http_code", http.StatusBadRequest),
+			)
+			http.Error(wr, "Bad request (unsupported format)",
+				http.StatusBadRequest,
+			)
 		}
 
 		wr.Header().Set("Content-Type", contentType)

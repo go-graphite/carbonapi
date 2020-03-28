@@ -45,17 +45,17 @@ var ApiMetrics = struct {
 
 var ZipperMetrics = struct {
 	FindRequests *expvar.Int
-	FindTimeouts   *expvar.Int
+	FindTimeouts *expvar.Int
 	FindErrors   *expvar.Int
 
 	SearchRequests *expvar.Int
 
 	RenderRequests *expvar.Int
-	RenderTimeouts   *expvar.Int
+	RenderTimeouts *expvar.Int
 	RenderErrors   *expvar.Int
 
 	InfoRequests *expvar.Int
-	InfoTimeouts   *expvar.Int
+	InfoTimeouts *expvar.Int
 	InfoErrors   *expvar.Int
 
 	Timeouts *expvar.Int
@@ -72,11 +72,11 @@ var ZipperMetrics = struct {
 	SearchRequests: expvar.NewInt("zipper_search_requests"),
 
 	RenderRequests: expvar.NewInt("zipper_render_requests"),
-	RenderTimeouts:   expvar.NewInt("zipper_render_timeouts"),
+	RenderTimeouts: expvar.NewInt("zipper_render_timeouts"),
 	RenderErrors:   expvar.NewInt("zipper_render_errors"),
 
 	InfoRequests: expvar.NewInt("zipper_info_requests"),
-	InfoTimeouts:   expvar.NewInt("zipper_info_timeouts"),
+	InfoTimeouts: expvar.NewInt("zipper_info_timeouts"),
 	InfoErrors:   expvar.NewInt("zipper_info_errors"),
 
 	Timeouts: expvar.NewInt("zipper_timeouts"),

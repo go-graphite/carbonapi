@@ -442,6 +442,11 @@ func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
 		)
 		pEnc := pickle.NewEncoder(&buf)
 		err = pEnc.Encode(response)
+		if err != nil {
+			wr.WriteHeader(http.StatusBadGateway)
+			_, _ = wr.Write([]byte(err.Error()))
+			return
+		}
 		d = buf.Bytes()
 	case protoV2Format:
 		contentType = httpHeaders.ContentTypeCarbonAPIv2PB
