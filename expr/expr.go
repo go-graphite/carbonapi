@@ -18,6 +18,7 @@ type evaluator struct{}
 // FetchTargetExp evalualtes expressions
 func (eval evaluator) FetchTargetExp(exp parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	config.Config.Limiter.Enter()
+	defer config.Config.Limiter.Leave()
 
 	var req pb.MultiFetchRequest
 
@@ -46,8 +47,6 @@ func (eval evaluator) FetchTargetExp(exp parser.Expr, from, until int64, values 
 		}
 		values[mFetch] = append(data, metric)
 	}
-
-	config.Config.Limiter.Leave()
 
 	return eval.Eval(exp, from, until, values)
 }
