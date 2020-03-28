@@ -817,7 +817,7 @@ func main() {
 	})
 
 	if err != nil {
-		log.Fatal("error during gracehttp.Serve()",
+		logger.Fatal("error during gracehttp.Serve()",
 			zap.Error(err),
 		)
 	}
