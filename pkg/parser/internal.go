@@ -120,8 +120,6 @@ func mapExpr(m NamedArgs) map[string]*expr {
 			res[k] = NewTargetExpr(v).toExpr().(*expr)
 		case Expr:
 			res[k] = v.toExpr().(*expr)
-		case *expr:
-			res[k] = v
 		default:
 			return nil
 		}
