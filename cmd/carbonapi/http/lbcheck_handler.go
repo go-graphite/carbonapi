@@ -13,7 +13,7 @@ func lbcheckHandler(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
 	accessLogger := zapwriter.Logger("access")
 
-	w.Write([]byte("Ok\n"))
+	_, _ = w.Write([]byte("Ok\n"))
 
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
 

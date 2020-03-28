@@ -19,5 +19,4 @@ func (l NoopLimiter) Enter(ctx context.Context, s string) error {
 
 // Frees a slot in limiter
 func (l NoopLimiter) Leave(ctx context.Context, s string) {
-	return
 }

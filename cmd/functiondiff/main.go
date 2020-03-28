@@ -127,7 +127,7 @@ func main() {
 		log.Fatalf("failed to read response body for %v: %v", *srv1, err)
 	}
 
-	res.Body.Close()
+	_ = res.Body.Close()
 
 	var firstDescription map[string]types.FunctionDescription
 
@@ -145,7 +145,7 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to read response body", err)
 	}
-	res.Body.Close()
+	_ = res.Body.Close()
 
 	var secondDescription map[string]types.FunctionDescription
 

@@ -56,7 +56,7 @@ func tagHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logAsError = true
 		w.Header().Set("Content-Type", contentTypeJSON)
-		w.Write([]byte{'[', ']'})
+		_, _ = w.Write([]byte{'[', ']'})
 		return
 	}
 
@@ -115,7 +115,7 @@ func tagHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", contentTypeJSON)
-	w.Write(b)
+	_, _ = w.Write(b)
 	accessLogDetails.Runtime = time.Since(t0).Seconds()
 	accessLogDetails.HTTPCode = http.StatusOK
 }

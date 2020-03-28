@@ -310,8 +310,6 @@ func (cfg *listener) findHandler(wr http.ResponseWriter, req *http.Request) {
 		wr.Header().Set("Content-Type", contentTypePickle)
 	}
 	_, _ = wr.Write(b)
-
-	return
 }
 
 func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
@@ -410,9 +408,7 @@ func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
 		var response []map[string]interface{}
 
 		for _, metric := range multiv3.GetMetrics() {
-			var m map[string]interface{}
-
-			m = make(map[string]interface{})
+			m := make(map[string]interface{})
 			m["start"] = metric.StartTime
 			m["step"] = metric.StepTime
 			m["end"] = metric.StopTime

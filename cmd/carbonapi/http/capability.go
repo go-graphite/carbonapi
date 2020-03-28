@@ -110,5 +110,4 @@ func capabilityHandler(wr http.ResponseWriter, req *http.Request) {
 		zap.Duration("runtime_seconds", time.Since(t0)),
 		zap.Int("http_code", http.StatusOK),
 	)
-	return
 }

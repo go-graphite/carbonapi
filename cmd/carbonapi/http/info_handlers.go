@@ -97,7 +97,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write(b)
+	_, _ = w.Write(b)
 	accessLogDetails.Runtime = time.Since(t0).Seconds()
 	accessLogDetails.HTTPCode = http.StatusOK
 }

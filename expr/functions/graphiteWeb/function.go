@@ -193,7 +193,7 @@ smartSummarise will be performed by graphite-web and then results will be passed
 				zap.Error(fmt.Errorf("return code is not 200 OK")),
 				zap.Int("status_code", resp.StatusCode),
 			)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			continue
 		}
 
@@ -204,10 +204,10 @@ smartSummarise will be performed by graphite-web and then results will be passed
 				zap.Int("status_code", resp.StatusCode),
 				zap.String("body", string(body)),
 			)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			continue
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		ok = true
 		break
 	}
@@ -358,7 +358,11 @@ func (f *graphiteWeb) Do(e parser.Expr, from, until int64, values map[parser.Met
 
 		ctx, cancel := context.WithTimeout(context.Background(), f.timeout)
 		defer cancel()
-		f.limiter.Enter(context.Background(), srv)
+		err := f.limiter.Enter(context.Background(), srv)
+		if err != nil {
+			// Timeout waiting for a new slot
+			return nil, err
+		}
 
 		req, err := http.NewRequest("GET", rewrite.String(), nil)
 		if err != nil {
@@ -370,24 +374,24 @@ func (f *graphiteWeb) Do(e parser.Expr, from, until int64, values map[parser.Met
 		f.limiter.Leave(ctx, srv)
 		if err != nil {
 			errors = append(errors, graphiteError{srv, err})
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			continue
 		}
 
 		body, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
 			errors = append(errors, graphiteError{srv, err})
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			continue
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			err := fmt.Errorf("return code is not 200 OK, code: %v, body: %v", resp.StatusCode, string(body))
 			errors = append(errors, graphiteError{srv, err})
 			continue
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		ok = true
 		request = rewrite.String()
 		break

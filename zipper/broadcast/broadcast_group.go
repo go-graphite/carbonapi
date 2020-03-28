@@ -671,7 +671,7 @@ GATHER:
 	}
 
 	var tlds []string
-	for tld, _ := range tldSet {
+	for tld := range tldSet {
 		tlds = append(tlds, tld)
 	}
 

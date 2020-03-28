@@ -17,5 +17,5 @@ supported requests:
 `)
 
 func usageHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write(usageMsg)
+	_, _ = w.Write(usageMsg)
 }

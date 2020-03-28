@@ -24,7 +24,7 @@ type GRPCServer struct {
 }
 
 func (srv *GRPCServer) serve() {
-	srv.server.Serve(srv.listener)
+	_ = srv.server.Serve(srv.listener)
 }
 
 func (srv GRPCServer) GetVersion(ctx context.Context, in *gpb.Empty) (*protov3grpc.ProtocolVersionResponse, error) {
