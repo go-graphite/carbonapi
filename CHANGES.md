@@ -13,12 +13,13 @@ Changes
 
 CHANGELOG
 ---------
-**(WIP)**
+**0.13.0 (WIP)**
  - **[Breaking]** [Code] Comment out support for gRPC backend type. It was never properly tested and likely need complete rework before it will be usable
  - [Fix] /render and /metrics/find URLs now works correctly for format=carbonapi\_v2\_pb (protov3) and for new format
  - [Fix] Allow '%' in metric names
  - [Fix] Zipper metrics
  - [Fix] applyByNode - fix various incompatibilities with graphite-web (node starts with 1, some rewrite related issues, etc) (thx to faceair@)
+ - [Fix] Honor SendGlobAsIs and AlwaysSendGlobAsIs (important for pre-0.12 configs)
  - [Improvement] Redesign error handling and logging. Logging should be now less noisy and all error messages should contain better reasoning about error cause
  - [Improvement] Move more of the logging messages to Debug level - that should make logs less noisy and still preserve ability to see detailed errors on Debug level
  - [Improvement] Add a config parameter to disable tldCache (useful for clickhouse type backends)
