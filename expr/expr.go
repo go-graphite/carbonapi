@@ -15,37 +15,56 @@ import (
 
 type evaluator struct{}
 
-// FetchTargetExp evalualtes expressions
-func (eval evaluator) FetchTargetExp(exp parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+// FetchAndEvalExp fetch data and evalualtes expressions
+func (eval evaluator) FetchAndEvalExp(exp parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	config.Config.Limiter.Enter()
 	defer config.Config.Limiter.Leave()
 
-	var req pb.MultiFetchRequest
+	multiFetchRequest := pb.MultiFetchRequest{}
+	metricRequestCache := make(map[string]parser.MetricRequest)
 
 	for _, m := range exp.Metrics() {
-		req.Metrics = append(req.Metrics, pb.FetchRequest{
+		fetchRequest := pb.FetchRequest{
 			Name:           m.Metric,
 			PathExpression: m.Metric,
 			StartTime:      m.From + from,
 			StopTime:       m.Until + until,
-		})
+		}
+		metricRequest := parser.MetricRequest{
+			Metric: fetchRequest.PathExpression,
+			From:   fetchRequest.StartTime,
+			Until:  fetchRequest.StopTime,
+		}
+
+		// avoid multiple requests in a function, E.g divideSeries(a.b, a.b)
+		if cachedMetricRequest, ok := metricRequestCache[m.Metric]; ok &&
+			cachedMetricRequest.From == metricRequest.From &&
+			cachedMetricRequest.Until == metricRequest.Until {
+			continue
+		}
+
+		// avoid multiple requests in a http request, E.g render?target=a.b&target=a.b
+		if _, ok := values[metricRequest]; ok {
+			continue
+		}
+
+		metricRequestCache[m.Metric] = metricRequest
+		multiFetchRequest.Metrics = append(multiFetchRequest.Metrics, fetchRequest)
 	}
 
-	metrics, _, err := config.Config.ZipperInstance.Render(context.TODO(), req)
-	if err != nil {
-		return nil, err
-	}
-	for _, metric := range metrics {
-		mFetch := parser.MetricRequest{
-			Metric: metric.PathExpression,
-			From:   from,
-			Until:  until,
+	if len(multiFetchRequest.Metrics) > 0 {
+		metrics, _, err := config.Config.ZipperInstance.Render(context.TODO(), multiFetchRequest)
+		if err != nil {
+			return nil, err
 		}
-		data, ok := values[mFetch]
-		if !ok {
-			data = make([]*types.MetricData, 0, 1)
+		for _, metric := range metrics {
+			metricRequest := metricRequestCache[metric.PathExpression]
+			data, ok := values[metricRequest]
+			if !ok {
+				data = make([]*types.MetricData, 0, 1)
+			}
+			values[metricRequest] = append(data, metric)
 		}
-		values[mFetch] = append(data, metric)
 	}
 
 	return eval.Eval(exp, from, until, values)
@@ -63,7 +82,7 @@ func (eval evaluator) Eval(exp parser.Expr, from, until int64, values map[parser
 			if err != nil {
 				return nil, err
 			}
-			result, err := eval.FetchTargetExp(exp, from, until, values)
+			result, err := eval.FetchAndEvalExp(exp, from, until, values)
 			if err != nil {
 				return nil, err
 			}
@@ -81,8 +100,9 @@ func init() {
 	metadata.SetEvaluator(_evaluator)
 }
 
-func FetchTargetExp(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	return _evaluator.FetchTargetExp(e, from, until, values)
+// FetchAndEvalExp fetch data and evalualtes expressions
+func FetchAndEvalExp(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	return _evaluator.FetchAndEvalExp(e, from, until, values)
 }
 
 // Eval is the main expression evaluator
