@@ -16,7 +16,6 @@ import (
 
 	_ "github.com/go-graphite/carbonapi/zipper/protocols/auto"
 	_ "github.com/go-graphite/carbonapi/zipper/protocols/graphite"
-	// _ "github.com/go-graphite/carbonapi/zipper/protocols/grpc"
 	_ "github.com/go-graphite/carbonapi/zipper/protocols/prometheus"
 	_ "github.com/go-graphite/carbonapi/zipper/protocols/v2"
 	_ "github.com/go-graphite/carbonapi/zipper/protocols/v3"
