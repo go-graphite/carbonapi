@@ -78,7 +78,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		servers:              config.Servers,
 		timeout:              *config.Timeouts,
 		maxTries:             *config.MaxTries,
-		maxMetricsPerRequest: config.MaxBatchSize,
+		maxMetricsPerRequest: *config.MaxBatchSize,
 
 		client:  httpClient,
 		limiter: l,

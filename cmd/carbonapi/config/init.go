@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"expvar"
+	zipperConfig "github.com/go-graphite/carbonapi/zipper/config"
 	"io/ioutil"
 	"runtime"
 	"strconv"
@@ -164,17 +165,8 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 			zap.Strings("servers", Config.Cache.MemcachedServers),
 		)
 		Config.QueryCache = cache.NewMemcached("capi", Config.Cache.MemcachedServers...)
-		// find cache is only used if SendGlobsAsIs is false.
-		if !Config.SendGlobsAsIs {
-			Config.FindCache = cache.NewExpireCache(0)
-		}
 	case "mem":
 		Config.QueryCache = cache.NewExpireCache(uint64(Config.Cache.Size * 1024 * 1024))
-
-		// find cache is only used if SendGlobsAsIs is false.
-		if !Config.SendGlobsAsIs {
-			Config.FindCache = cache.NewExpireCache(0)
-		}
 	case "null":
 		// defaults
 		Config.QueryCache = cache.NullCache{}
@@ -317,8 +309,8 @@ func SetUpViper(logger *zap.Logger, configPath *string, viperPrefix string) {
 	viper.SetDefault("cache.memcachedServers", []string{})
 	viper.SetDefault("cpus", 0)
 	viper.SetDefault("tz", "")
-	viper.SetDefault("sendGlobsAsIs", false)
-	viper.SetDefault("AlwaysSendGlobsAsIs", false)
+	viper.SetDefault("sendGlobsAsIs", nil)
+	viper.SetDefault("AlwaysSendGlobsAsIs", nil)
 	viper.SetDefault("maxBatchSize", 100)
 	viper.SetDefault("graphite.host", "")
 	viper.SetDefault("graphite.interval", "60s")
@@ -356,7 +348,7 @@ func SetUpConfigUpstreams(logger *zap.Logger) {
 		Config.Upstreams.Backends = []string{Config.Zipper}
 		Config.Upstreams.ConcurrencyLimitPerServer = Config.Concurency
 		Config.Upstreams.MaxIdleConnsPerHost = Config.IdleConnections
-		Config.Upstreams.MaxBatchSize = Config.MaxBatchSize
+		Config.Upstreams.MaxBatchSize = &Config.MaxBatchSize
 		Config.Upstreams.KeepAliveInterval = 10 * time.Second
 		// To emulate previous behavior
 		Config.Upstreams.Timeouts = zipperTypes.Timeouts{
@@ -369,4 +361,30 @@ func SetUpConfigUpstreams(logger *zap.Logger) {
 		logger.Fatal("no backends specified for upstreams!")
 	}
 
+	oldStyleGlobsUsed := false
+	alwaysSendGlobs := false
+	sendGlobs := false
+	if Config.AlwaysSendGlobsAsIs != nil {
+		alwaysSendGlobs = *Config.AlwaysSendGlobsAsIs
+		oldStyleGlobsUsed = true
+	}
+
+	if Config.SendGlobsAsIs != nil {
+		alwaysSendGlobs = *Config.SendGlobsAsIs
+		oldStyleGlobsUsed = true
+	}
+
+	if oldStyleGlobsUsed {
+		if alwaysSendGlobs {
+			Config.Upstreams.FallbackMaxBatchSize = 0
+		} else if sendGlobs {
+			Config.Upstreams.FallbackMaxBatchSize = Config.MaxBatchSize
+		} else {
+			Config.Upstreams.FallbackMaxBatchSize = 1
+		}
+	} else {
+		Config.Upstreams.FallbackMaxBatchSize = Config.MaxBatchSize
+	}
+
+	Config.Upstreams = *zipperConfig.SanitizeConfig(logger, Config.Upstreams)
 }

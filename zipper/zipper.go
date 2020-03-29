@@ -45,27 +45,6 @@ type Zipper struct {
 	logger *zap.Logger
 }
 
-var defaultTimeouts = types.Timeouts{
-	Render:  10000 * time.Second,
-	Find:    100 * time.Second,
-	Connect: 200 * time.Millisecond,
-}
-
-func sanitizeTimouts(timeouts, defaultTimeouts types.Timeouts) types.Timeouts {
-	if timeouts.Render == 0 {
-		timeouts.Render = defaultTimeouts.Render
-	}
-	if timeouts.Find == 0 {
-		timeouts.Find = defaultTimeouts.Find
-	}
-
-	if timeouts.Connect == 0 {
-		timeouts.Connect = defaultTimeouts.Connect
-	}
-
-	return timeouts
-}
-
 func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelaySec int32, tldCacheDisabled bool) ([]types.BackendServer, merry.Error) {
 	storeClients := make([]types.BackendServer, 0)
 	var e merry.Error
@@ -144,7 +123,7 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 				backends = append(backends, client)
 			}
 
-			client, e = broadcast.NewBroadcastGroup(logger, backend.GroupName, backends, expireDelaySec, *backend.ConcurrencyLimit, backend.MaxBatchSize, timeouts, tldCacheDisabled)
+			client, e = broadcast.NewBroadcastGroup(logger, backend.GroupName, backends, expireDelaySec, *backend.ConcurrencyLimit, *backend.MaxBatchSize, timeouts, tldCacheDisabled)
 			if e != nil {
 				return nil, e
 			}
@@ -155,53 +134,24 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 }
 
 // NewZipper allows to create new Zipper
-func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Logger) (*Zipper, merry.Error) {
-	config.Timeouts = sanitizeTimouts(config.Timeouts, defaultTimeouts)
+func NewZipper(sender func(*types.Stats), cfg *config.Config, logger *zap.Logger) (*Zipper, merry.Error) {
+	if !cfg.IsSanitized() {
+		cfg = config.SanitizeConfig(logger, *cfg)
+	}
 
 	var searchBackends types.BackendServer
 	var prefix string
 
-	if config.InternalRoutingCache.Seconds() < 30 {
-		logger.Warn("internalRoutingCache is too low",
-			zap.String("reason", "this variable is used for internal routing cache, minimum allowed is 30s"),
-			zap.String("recommendation", "it's usually good idea to set it to something like 600s"),
-		)
-		config.InternalRoutingCache = 60 * time.Second
-	}
-
-	// Convert old config format to new one
-	if config.CarbonSearch.Backend != "" {
-		config.CarbonSearchV2.BackendsV2 = types.BackendsV2{
-			Backends: []types.BackendV2{{
-				GroupName:           config.CarbonSearch.Backend,
-				Protocol:            "carbonapi_v2_pb",
-				LBMethod:            "roundrobin",
-				Servers:             []string{config.CarbonSearch.Backend},
-				Timeouts:            &config.Timeouts,
-				ConcurrencyLimit:    &config.ConcurrencyLimitPerServer,
-				KeepAliveInterval:   &config.KeepAliveInterval,
-				MaxIdleConnsPerHost: &config.MaxIdleConnsPerHost,
-				MaxTries:            &config.MaxTries,
-			}},
-			MaxIdleConnsPerHost:       config.MaxIdleConnsPerHost,
-			ConcurrencyLimitPerServer: config.ConcurrencyLimitPerServer,
-			Timeouts:                  config.Timeouts,
-			KeepAliveInterval:         config.KeepAliveInterval,
-			MaxTries:                  config.MaxTries,
-		}
-		config.CarbonSearchV2.Prefix = config.CarbonSearch.Prefix
-	}
-
-	if len(config.CarbonSearchV2.BackendsV2.Backends) > 0 {
-		prefix = config.CarbonSearchV2.Prefix
-		searchClients, err := createBackendsV2(logger, config.CarbonSearchV2.BackendsV2, int32(config.InternalRoutingCache.Seconds()), config.TLDCacheDisabled)
+	if len(cfg.CarbonSearchV2.BackendsV2.Backends) > 0 {
+		prefix = cfg.CarbonSearchV2.Prefix
+		searchClients, err := createBackendsV2(logger, cfg.CarbonSearchV2.BackendsV2, int32(cfg.InternalRoutingCache.Seconds()), cfg.TLDCacheDisabled)
 		if err != nil {
 			logger.Fatal("merry.Errors while initialing zipper search backends",
 				zap.Any("merry.Errors", err),
 			)
 		}
 
-		searchBackends, err = broadcast.NewBroadcastGroup(logger, "search", searchClients, int32(config.InternalRoutingCache.Seconds()), config.ConcurrencyLimitPerServer, config.MaxBatchSize, config.Timeouts, config.TLDCacheDisabled)
+		searchBackends, err = broadcast.NewBroadcastGroup(logger, "search", searchClients, int32(cfg.InternalRoutingCache.Seconds()), cfg.ConcurrencyLimitPerServer, *cfg.MaxBatchSize, cfg.Timeouts, cfg.TLDCacheDisabled)
 		if err != nil {
 			logger.Fatal("merry.Errors while initialing zipper search backends",
 				zap.Any("merry.Errors", err),
@@ -209,43 +159,7 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 		}
 	}
 
-	// Convert old config format to new one
-	if config.Backends != nil && len(config.Backends) != 0 {
-		config.BackendsV2 = types.BackendsV2{
-			Backends: []types.BackendV2{
-				{
-					GroupName:           "backends",
-					Protocol:            "carbonapi_v2_pb",
-					LBMethod:            "broadcast",
-					Servers:             config.Backends,
-					Timeouts:            &config.Timeouts,
-					ConcurrencyLimit:    &config.ConcurrencyLimitPerServer,
-					KeepAliveInterval:   &config.KeepAliveInterval,
-					MaxIdleConnsPerHost: &config.MaxIdleConnsPerHost,
-					MaxTries:            &config.MaxTries,
-					MaxBatchSize:        config.MaxBatchSize,
-				},
-			},
-			MaxIdleConnsPerHost:       config.MaxIdleConnsPerHost,
-			ConcurrencyLimitPerServer: config.ConcurrencyLimitPerServer,
-			Timeouts:                  config.Timeouts,
-			KeepAliveInterval:         config.KeepAliveInterval,
-			MaxTries:                  config.MaxTries,
-			MaxBatchSize:              config.MaxBatchSize,
-		}
-	}
-
-	config.BackendsV2.Timeouts = sanitizeTimouts(config.BackendsV2.Timeouts, config.Timeouts)
-	for i := range config.BackendsV2.Backends {
-		if config.BackendsV2.Backends[i].Timeouts == nil {
-			timeouts := config.BackendsV2.Timeouts
-			config.BackendsV2.Backends[i].Timeouts = &timeouts
-		}
-		timeouts := sanitizeTimouts(*(config.BackendsV2.Backends[i].Timeouts), config.BackendsV2.Timeouts)
-		config.BackendsV2.Backends[i].Timeouts = &timeouts
-	}
-
-	storeClients, err := createBackendsV2(logger, config.BackendsV2, int32(config.InternalRoutingCache.Seconds()), config.TLDCacheDisabled)
+	storeClients, err := createBackendsV2(logger, cfg.BackendsV2, int32(cfg.InternalRoutingCache.Seconds()), cfg.TLDCacheDisabled)
 	if err != nil {
 		logger.Fatal("merry.Errors while initialing zipper store backends",
 			zap.Any("merry.Errors", err),
@@ -253,7 +167,7 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 	}
 
 	var storeBackends types.BackendServer
-	storeBackends, err = broadcast.NewBroadcastGroup(logger, "root", storeClients, int32(config.InternalRoutingCache.Seconds()), config.ConcurrencyLimitPerServer, config.MaxBatchSize, config.Timeouts, config.TLDCacheDisabled)
+	storeBackends, err = broadcast.NewBroadcastGroup(logger, "root", storeClients, int32(cfg.InternalRoutingCache.Seconds()), cfg.ConcurrencyLimitPerServer, *cfg.MaxBatchSize, cfg.Timeouts, cfg.TLDCacheDisabled)
 	if err != nil {
 		logger.Fatal("merry.Errors while initialing zipper store backends",
 			zap.Any("merry.Errors", err),
@@ -270,19 +184,19 @@ func NewZipper(sender func(*types.Stats), config *config.Config, logger *zap.Log
 		searchBackends:            searchBackends,
 		searchPrefix:              prefix,
 		searchConfigured:          len(prefix) > 0 && len(searchBackends.Backends()) > 0,
-		concurrencyLimitPerServer: config.ConcurrencyLimitPerServer,
-		keepAliveInterval:         config.KeepAliveInterval,
-		timeout:                   config.Timeouts.Render,
-		timeoutConnect:            config.Timeouts.Connect,
+		concurrencyLimitPerServer: cfg.ConcurrencyLimitPerServer,
+		keepAliveInterval:         cfg.KeepAliveInterval,
+		timeout:                   cfg.Timeouts.Render,
+		timeoutConnect:            cfg.Timeouts.Connect,
 		logger:                    logger,
 	}
 
 	logger.Debug("zipper config",
-		zap.Any("config", config),
+		zap.Any("config", cfg),
 	)
 
-	if !config.TLDCacheDisabled {
-		z.probeTicker = time.NewTicker(config.InternalRoutingCache)
+	if !cfg.TLDCacheDisabled {
+		z.probeTicker = time.NewTicker(cfg.InternalRoutingCache)
 
 		go z.probeTlds()
 

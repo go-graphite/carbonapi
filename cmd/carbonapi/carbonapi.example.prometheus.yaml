@@ -15,7 +15,7 @@ headersToPass:
   - "X-Panel-Id"
 functionsConfig:
     graphiteWeb: ./graphiteWeb.example.yaml
-maxBatchSize: 100
+maxBatchSize: 0
 graphite:
     host: ""
     interval: "60s"
@@ -41,7 +41,7 @@ upstreams:
             protocol: "prometheus"
             lbMethod: "broadcast"
             maxTries: 3
-            maxBatchSize: 100
+            maxBatchSize: 0
             keepAliveInterval: "10s"
             concurrencyLimit: 0
             maxIdleConnsPerHost: 1000

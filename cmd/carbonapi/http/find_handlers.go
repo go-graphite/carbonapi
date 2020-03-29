@@ -263,16 +263,22 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		returnCode := merry.HTTPCode(err)
 		if returnCode != http.StatusOK || multiGlobs == nil {
 			// Allow override status code for 404-not-found replies.
-			if returnCode == 404 {
+			if returnCode == http.StatusNotFound {
 				returnCode = config.Config.NotFoundStatusCode
 			}
+
 			if returnCode < 300 {
 				multiGlobs = &pbv3.MultiGlobResponse{Metrics: []pbv3.GlobResponse{}}
 			} else {
 				http.Error(w, http.StatusText(returnCode), returnCode)
 				accessLogDetails.HTTPCode = int32(returnCode)
 				accessLogDetails.Reason = err.Error()
-				logAsError = true
+				// We don't want to log this as an error if it's something normal
+				// Normal is everything that is >= 500. So if config.Config.NotFoundStatusCode is 500 - this will be
+				// logged as error
+				if returnCode >= 500 {
+					logAsError = true
+				}
 				return
 			}
 		}

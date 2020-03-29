@@ -188,7 +188,7 @@ func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool) (typ
 		broadcastClients = append(broadcastClients, c)
 	}
 
-	return broadcast.NewBroadcastGroup(logger, config.GroupName+"_broadcast", broadcastClients, 600, limit, config.MaxBatchSize, *config.Timeouts, tldCacheDisabled)
+	return broadcast.NewBroadcastGroup(logger, config.GroupName+"_broadcast", broadcastClients, 600, limit, *config.MaxBatchSize, *config.Timeouts, tldCacheDisabled)
 }
 
 func (c AutoGroup) MaxMetricsPerRequest() int {

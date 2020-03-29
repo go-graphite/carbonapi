@@ -60,8 +60,8 @@ type ConfigType struct {
 	Graphite                   GraphiteConfig     `mapstructure:"graphite"`
 	IdleConnections            int                `mapstructure:"idleConnections"`
 	PidFile                    string             `mapstructure:"pidFile"`
-	SendGlobsAsIs              bool               `mapstructure:"sendGlobsAsIs"`
-	AlwaysSendGlobsAsIs        bool               `mapstructure:"alwaysSendGlobsAsIs"`
+	SendGlobsAsIs              *bool              `mapstructure:"sendGlobsAsIs"`
+	AlwaysSendGlobsAsIs        *bool              `mapstructure:"alwaysSendGlobsAsIs"`
 	MaxBatchSize               int                `mapstructure:"maxBatchSize"`
 	Zipper                     string             `mapstructure:"zipper"`
 	Upstreams                  zipperCfg.Config   `mapstructure:"upstreams"`
@@ -105,8 +105,6 @@ var Config = ConfigType{
 	Listen:                "[::]:8081",
 	Buckets:               10,
 	Concurency:            1000,
-	SendGlobsAsIs:         false,
-	AlwaysSendGlobsAsIs:   false,
 	MaxBatchSize:          100,
 	Cache: CacheConfig{
 		Type:              "mem",

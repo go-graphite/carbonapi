@@ -123,6 +123,11 @@ func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, uri strin
 	}
 	defer resp.Body.Close()
 
+	// we don't need to process any further if the response is empty.
+	if resp.StatusCode == http.StatusNotFound {
+		return &ServerResponse{Server: server}, nil
+	}
+
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		logger.Debug("error reading body",
