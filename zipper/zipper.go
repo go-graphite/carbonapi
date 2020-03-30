@@ -2,11 +2,11 @@ package zipper
 
 import (
 	"context"
-	"github.com/ansel1/merry"
 	_ "net/http/pprof"
 	"strings"
 	"time"
 
+	"github.com/ansel1/merry"
 	"github.com/go-graphite/carbonapi/zipper/broadcast"
 	"github.com/go-graphite/carbonapi/zipper/config"
 	"github.com/go-graphite/carbonapi/zipper/metadata"
@@ -53,6 +53,7 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 		tries := backends.MaxTries
 		maxIdleConnsPerHost := backends.MaxIdleConnsPerHost
 		keepAliveInterval := backends.KeepAliveInterval
+		maxBatchSize := backends.MaxBatchSize
 
 		if backend.Timeouts == nil {
 			backend.Timeouts = &timeouts
@@ -62,6 +63,9 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 		}
 		if backend.MaxTries == nil {
 			backend.MaxTries = &tries
+		}
+		if backend.MaxBatchSize == nil {
+			backend.MaxBatchSize = maxBatchSize
 		}
 		if backend.MaxIdleConnsPerHost == nil {
 			backend.MaxIdleConnsPerHost = &maxIdleConnsPerHost
