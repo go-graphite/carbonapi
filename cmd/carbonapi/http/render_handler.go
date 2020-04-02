@@ -224,6 +224,16 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	results := make([]*types.MetricData, 0)
 	values := make(map[parser.MetricRequest][]*types.MetricData)
 
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Error("panic during eval:",
+				zap.String("cache_key", cacheKey),
+				zap.Any("reason", r),
+				zap.Stack("stack"),
+			)
+		}
+	}()
+
 	for _, target := range targets {
 		exp, e, err := parser.ParseExpr(target)
 		if err != nil || e != "" {

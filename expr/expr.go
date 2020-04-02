@@ -59,6 +59,10 @@ func (eval evaluator) FetchAndEvalExp(exp parser.Expr, from, until int64, values
 		}
 		for _, metric := range metrics {
 			metricRequest := metricRequestCache[metric.PathExpression]
+			if metric.RequestStartTime != 0 && metric.RequestStopTime != 0 {
+				metricRequest.From = metric.RequestStartTime
+				metricRequest.Until = metric.RequestStopTime
+			}
 			data, ok := values[metricRequest]
 			if !ok {
 				data = make([]*types.MetricData, 0, 1)
