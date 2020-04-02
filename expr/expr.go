@@ -2,8 +2,8 @@ package expr
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/ansel1/merry"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 	_ "github.com/go-graphite/carbonapi/expr/functions"
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -130,7 +130,7 @@ func EvalExpr(e parser.Expr, from, until int64, values map[parser.MetricRequest]
 	if ok {
 		v, err := f.Do(e, from, until, values)
 		if err != nil {
-			err = fmt.Errorf("function=%s, err=%v", e.Target(), err)
+			err = merry.WithMessagef(err, "function=%s", e.Target())
 		}
 		return v, err
 	}

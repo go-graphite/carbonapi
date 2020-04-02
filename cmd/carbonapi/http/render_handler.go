@@ -16,6 +16,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	utilctx "github.com/go-graphite/carbonapi/util/ctx"
+	ztypes "github.com/go-graphite/carbonapi/zipper/types"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
 	uuid "github.com/satori/go.uuid"
@@ -270,6 +271,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		// Otherwise it should be 500
 		errMsgs := make([]string, 0)
 		for _, err := range errors {
+			if merry.Is(err, ztypes.ErrNoMetricsFetched) {
+				continue
+			}
 			errMsgs = append(errMsgs, err.Error())
 			if returnCode < 500 {
 				returnCode = merry.HTTPCode(err)
