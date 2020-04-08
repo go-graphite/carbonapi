@@ -3,18 +3,17 @@ package v3
 import (
 	"context"
 	"encoding/json"
-	"github.com/ansel1/merry"
 	"net"
 	"net/http"
 	"net/url"
 
+	"github.com/ansel1/merry"
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/zipper/helper"
 	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 	"github.com/go-graphite/carbonapi/zipper/metadata"
 	"github.com/go-graphite/carbonapi/zipper/types"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
-
 	"go.uber.org/zap"
 )
 
@@ -122,9 +121,7 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	rewrite.RawQuery = v.Encode()
 
 	res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), types.MultiFetchRequestV3{*request})
-	stats.Servers = []string{res.Server}
 	if err != nil {
-		stats.FailedServers = []string{res.Server}
 		stats.RenderErrors = 1
 		if merry.Is(err, types.ErrTimeoutExceeded) {
 			stats.Timeouts = 1
@@ -161,9 +158,7 @@ func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlo
 	rewrite.RawQuery = v.Encode()
 
 	res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), types.MultiGlobRequestV3{*request})
-	stats.Servers = []string{res.Server}
 	if err != nil {
-		stats.FailedServers = []string{res.Server}
 		stats.FindErrors = 1
 		if merry.Is(err, types.ErrTimeoutExceeded) {
 			stats.Timeouts = 1
@@ -199,9 +194,7 @@ func (c *ClientProtoV3Group) Info(ctx context.Context, request *protov3.MultiMet
 	rewrite.RawQuery = v.Encode()
 
 	res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), types.MultiMetricsInfoV3{*request})
-	stats.Servers = []string{res.Server}
 	if err != nil {
-		stats.FailedServers = []string{res.Server}
 		stats.InfoErrors = 1
 		if merry.Is(err, types.ErrTimeoutExceeded) {
 			stats.Timeouts = 1
