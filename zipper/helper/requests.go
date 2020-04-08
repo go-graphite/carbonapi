@@ -3,13 +3,13 @@ package helper
 import (
 	"bytes"
 	"context"
-	"github.com/ansel1/merry"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sync/atomic"
 
+	"github.com/ansel1/merry"
 	"github.com/go-graphite/carbonapi/limiter"
 	util "github.com/go-graphite/carbonapi/util/ctx"
 	"github.com/go-graphite/carbonapi/zipper/types"
@@ -90,10 +90,11 @@ func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, uri strin
 	)
 
 	req, err := http.NewRequest("GET", u.String(), reader)
-	req.Header.Set("Accept", c.encoding)
 	if err != nil {
 		return nil, merry.Here(err).WithValue("server", server)
 	}
+
+	req.Header.Set("Accept", c.encoding)
 	req = util.MarshalPassHeaders(ctx, util.MarshalCtx(ctx, util.MarshalCtx(ctx, req, util.HeaderUUIDZipper), util.HeaderUUIDAPI))
 
 	logger.Debug("trying to get slot",
