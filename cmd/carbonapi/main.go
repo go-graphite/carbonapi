@@ -55,7 +55,8 @@ func main() {
 			r := http.NewServeMux()
 			r.HandleFunc(config.Config.Prefix+"/debug/vars", expvar.Handler().ServeHTTP)
 			if config.Config.Expvar.PProfEnabled {
-				r.HandleFunc(config.Config.Prefix+"/debug/pprof/heap", pprof.Index)
+				r.HandleFunc(config.Config.Prefix+"/debug/pprof/", pprof.Index)
+				r.HandleFunc(config.Config.Prefix+"/debug/pprof/cmdline", pprof.Cmdline)
 				r.HandleFunc(config.Config.Prefix+"/debug/pprof/profile", pprof.Profile)
 				r.HandleFunc(config.Config.Prefix+"/debug/pprof/symbol", pprof.Symbol)
 				r.HandleFunc(config.Config.Prefix+"/debug/pprof/trace", pprof.Trace)
