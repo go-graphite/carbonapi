@@ -271,7 +271,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		// Otherwise it should be 500
 		errMsgs := make([]string, 0)
 		for _, err := range errors {
-			if merry.Is(err, ztypes.ErrNoMetricsFetched) {
+			if merry.Is(err, ztypes.ErrNoMetricsFetched) || merry.Is(err, parser.ErrSeriesDoesNotExist) {
 				continue
 			}
 			errMsgs = append(errMsgs, err.Error())
