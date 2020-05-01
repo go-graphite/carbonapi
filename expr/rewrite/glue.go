@@ -17,11 +17,10 @@ type initFunc struct {
 }
 
 func New(configs map[string]string) {
-	funcs := make([]initFunc, 0, 2)
-
-	funcs = append(funcs, initFunc{name: "aboveSeries", order: aboveSeries.GetOrder(), f: aboveSeries.New})
-
-	funcs = append(funcs, initFunc{name: "applyByNode", order: applyByNode.GetOrder(), f: applyByNode.New})
+	funcs := []initFunc{
+		{name: "aboveSeries", order: aboveSeries.GetOrder(), f: aboveSeries.New},
+		{name: "applyByNode", order: applyByNode.GetOrder(), f: applyByNode.New},
+	}
 
 	sort.Slice(funcs, func(i, j int) bool {
 		if funcs[i].order == interfaces.Any && funcs[j].order == interfaces.Last {

@@ -54,16 +54,16 @@ type initFunc struct {
 }
 
 func New(configs map[string]string) {
-	funcs := make([]initFunc, 0, %v)
-`, len(funcs))
-	for _, m := range funcs {
-		fmt.Fprintf(writer, `
-	funcs = append(funcs, initFunc{name: "%s", order: %s.GetOrder(), f: %s.New})
-`, m, m, m)
+	funcs := []initFunc{`)
+        for _, m := range funcs {
+                fmt.Fprintf(writer, `
+		{name: "%s", order: %s.GetOrder(), f: %s.New},`, m, m, m)
 
+        }
+
+        fmt.Fprintln(writer, `
 	}
 
-	fmt.Fprintln(writer, `
 	sort.Slice(funcs, func(i, j int) bool {
 		if funcs[i].order == interfaces.Any && funcs[j].order == interfaces.Last {
 			return true
