@@ -4,7 +4,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/go-graphite/carbonapi/expr/functions/aboveSeries"
 	"github.com/go-graphite/carbonapi/expr/functions/absolute"
 	"github.com/go-graphite/carbonapi/expr/functions/aggregate"
 	"github.com/go-graphite/carbonapi/expr/functions/aggregateLine"
@@ -110,7 +109,6 @@ type initFunc struct {
 
 func New(configs map[string]string) {
 	funcs := []initFunc{
-		{name: "aboveSeries", order: aboveSeries.GetOrder(), f: aboveSeries.New},
 		{name: "absolute", order: absolute.GetOrder(), f: absolute.New},
 		{name: "aggregate", order: aggregate.GetOrder(), f: aggregate.New},
 		{name: "aggregateLine", order: aggregateLine.GetOrder(), f: aggregateLine.New},

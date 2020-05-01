@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -32,7 +33,19 @@ func (evaluator *FuncEvaluator) Eval(e parser.Expr, from, until int64, values ma
 		return nil, parser.ErrMissingArgument
 	}
 
-	return evaluator.eval(e, from, until, values)
+	if evaluator.eval != nil {
+		return evaluator.eval(e, from, until, values)
+	} else {
+		return nil, helper.ErrUnknownFunction(e.Target())
+	}
+}
+
+func DummyEvaluator() interfaces.Evaluator {
+	e := &FuncEvaluator{
+		eval: nil,
+	}
+
+	return e
 }
 
 func EvaluatorFromFunc(function interfaces.Function) interfaces.Evaluator {
@@ -368,6 +381,63 @@ func TestMultiReturnEvalExpr(t *testing.T, tt *MultiReturnEvalTestItem) {
 			r[0].StopTime != gg.StopTime ||
 			r[0].StepTime != gg.StepTime {
 			t.Errorf("result mismatch, got\n%#v,\nwant\n%#v", gg, r)
+		}
+	}
+}
+
+type RewriteTestResult struct {
+	Rewritten bool
+	Targets []string
+	Err error
+}
+
+type RewriteTestItem struct {
+	//E    parser.Expr
+	Target string
+	M      map[parser.MetricRequest][]*types.MetricData
+	Want   RewriteTestResult
+}
+
+func rewriteExpr(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
+	if e.IsFunc() {
+		metadata.FunctionMD.RLock()
+		f, ok := metadata.FunctionMD.RewriteFunctions[e.Target()]
+		metadata.FunctionMD.RUnlock()
+		if ok {
+			return f.Do(e, from, until, values)
+		}
+	}
+	return false, nil, nil
+}
+
+func TestRewriteExpr(t *testing.T, tt *RewriteTestItem) {
+	originalMetrics := DeepClone(tt.M)
+	testName := tt.Target
+	exp, _, err := parser.ParseExpr(tt.Target)
+	if err != nil {
+		t.Errorf("failed to parse %s: %+v", tt.Target, err)
+		return
+	}
+
+	rewritten, targets, err := rewriteExpr(exp, 0, 1, tt.M)
+	if err != tt.Want.Err {
+		t.Errorf("unexpected error while calling rewrite for '%s': got '%+v', expected '%+v'", testName, err, tt.Want.Err)
+		return
+	}
+	if rewritten != tt.Want.Rewritten {
+		t.Errorf("unexpected result for rewritten for '%s': got '%v', expected '%v'", testName, rewritten, tt.Want.Rewritten)
+		return
+	}
+
+	if len(targets) != len(tt.Want.Targets) {
+		t.Errorf("%s returned a different number of metrics, actual %v, Want %v", testName, len(targets), len(tt.Want.Targets))
+		return
+	}
+	DeepEqual(t, testName, originalMetrics, tt.M)
+
+	for i, want := range tt.Want.Targets {
+		if want != targets[i] {
+			t.Errorf("unexpected result for rewrite for '%s': got='%s', expected='%s'", testName, targets[i], want)
 		}
 	}
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/metadata"
+	"github.com/go-graphite/carbonapi/expr/rewrite/aboveSeries"
 	"github.com/go-graphite/carbonapi/expr/rewrite/applyByNode"
 )
 
@@ -16,7 +17,9 @@ type initFunc struct {
 }
 
 func New(configs map[string]string) {
-	funcs := make([]initFunc, 0, 1)
+	funcs := make([]initFunc, 0, 2)
+
+	funcs = append(funcs, initFunc{name: "aboveSeries", order: aboveSeries.GetOrder(), f: aboveSeries.New})
 
 	funcs = append(funcs, initFunc{name: "applyByNode", order: applyByNode.GetOrder(), f: applyByNode.New})
 

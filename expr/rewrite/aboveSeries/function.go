@@ -1,6 +1,7 @@
 package aboveSeries
 
 import (
+	"fmt"
 	"regexp"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
@@ -18,58 +19,52 @@ func GetOrder() interfaces.Order {
 	return interfaces.Any
 }
 
-func New(configFile string) []interfaces.FunctionMetadata {
-	res := make([]interfaces.FunctionMetadata, 0)
+func New(configFile string) []interfaces.RewriteFunctionMetadata {
+	res := make([]interfaces.RewriteFunctionMetadata, 0)
 	f := &aboveSeries{}
 	functions := []string{"useSeriesAbove", "aboveSeries"}
 	for _, n := range functions {
-		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
+		res = append(res, interfaces.RewriteFunctionMetadata{Name: n, F: f})
 	}
 	return res
 }
 
-func (f *aboveSeries) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *aboveSeries) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
-		return nil, err
+		return false, nil, err
 	}
 
 	max, err := e.GetFloatArg(1)
 	if err != nil {
-		return nil, err
+		return false, nil, err
 	}
 
-	rename := true
 	search, err := e.GetStringArg(2)
 	if err != nil {
-		rename = false
+		return false, nil, err
 	}
 
 	replace, err := e.GetStringArg(3)
 	if err != nil {
-		rename = false
+		return false, nil, err
 	}
 
-	var rre *regexp.Regexp
-	if rename {
-		rre, err = regexp.Compile(search)
-		if err != nil {
-			return nil, err
-		}
+	rre, err := regexp.Compile(search)
+	if err != nil {
+		return false, nil, err
 	}
 
-	var results []*types.MetricData
+	var rv []string
 	for _, a := range args {
 		if consolidations.MaxValue(a.Values) > max {
-			r := *a
-			if rename {
-				r.Name = rre.ReplaceAllString(r.Name, replace)
-			}
-			results = append(results, &r)
+			rv = append(rv, rre.ReplaceAllString(a.Name, replace))
 		}
 	}
 
-	return results, nil
+	fmt.Printf("\n\n\n\n%+v\n\n\n", rv)
+
+	return true, rv, nil
 }
 
 func (f *aboveSeries) Description() map[string]types.FunctionDescription {
@@ -89,14 +84,16 @@ func (f *aboveSeries) Description() map[string]types.FunctionDescription {
 				{
 					Name:     "value",
 					Required: true,
-					Type:     types.Integer,
+					Type:     types.Float,
 				},
 				{
 					Name: "search",
+					Required: true,
 					Type: types.String,
 				},
 				{
 					Name: "replace",
+					Required: true,
 					Type: types.String,
 				},
 			},
