@@ -189,14 +189,23 @@ func (bg *BroadcastGroup) splitRequest(ctx context.Context, request *protov3.Mul
 					e = e.WithCause(types.ErrNoMetricsFetched)
 				}
 			}
+
+			err := ""
+			if e.Cause() != nil {
+				err = e.Cause().Error()
+			} else {
+				// e != nil, but len(f.Metrics) == 0 or f == nil, then Cause could be nil
+				err = e.Error()
+			}
+
 			bg.logger.Warn("find request failed when resolving globs",
 				zap.String("metric_name", metric.Name),
-				zap.String("error", e.Cause().Error()),
+				zap.String("error", err),
 			)
 			if ce := bg.logger.Check(zap.DebugLevel, "find request failed when resolving globs (verbose)"); ce != nil {
 				ce.Write(
 					zap.String("metric_name", metric.Name),
-					zap.String("error", e.Cause().Error()),
+					zap.String("error", err),
 					zap.Any("stack", e),
 				)
 			}
