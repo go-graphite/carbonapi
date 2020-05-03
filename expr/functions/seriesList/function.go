@@ -3,6 +3,7 @@ package seriesList
 import (
 	"fmt"
 	"math"
+	"sort"
 	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -55,6 +56,7 @@ func (f *seriesList) Do(e parser.Expr, from, until int64, values map[parser.Metr
 			return nil, nil
 		}
 	}
+	sort.Slice(numerators, func(i, j int) bool { return numerators[i].Name < numerators[j].Name })
 
 	denominators, err := helper.GetSeriesArg(e.Args()[1], from, until, values)
 	if err != nil {
@@ -71,6 +73,7 @@ func (f *seriesList) Do(e parser.Expr, from, until int64, values map[parser.Metr
 			return nil, nil
 		}
 	}
+	sort.Slice(numerators, func(i, j int) bool { return denominators[i].Name < denominators[j].Name })
 
 	sizeMatch := len(denominators) == len(numerators) || len(denominators) == 1
 	useMatching, err := e.GetBoolNamedOrPosArgDefault("matching", 2, !useConstant && !sizeMatch)

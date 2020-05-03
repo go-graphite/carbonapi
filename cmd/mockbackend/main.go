@@ -5,16 +5,18 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/ansel1/merry"
-	"github.com/go-graphite/carbonapi/intervalset"
-	"go.uber.org/zap"
 	"io/ioutil"
 	"log"
 	"math"
+	"math/rand"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/ansel1/merry"
+	"github.com/go-graphite/carbonapi/intervalset"
+	"go.uber.org/zap"
 
 	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
@@ -78,10 +80,11 @@ type MultiListenerConfig struct {
 }
 
 type Config struct {
-	Address     string              `yaml:"address"`
-	Code        int                 `yaml:"httpCode"`
-	EmptyBody   bool                `yaml:"emptyBody"`
-	Expressions map[string]Response `yaml:"expressions"`
+	Address        string              `yaml:"address"`
+	Code           int                 `yaml:"httpCode"`
+	ShuffleResults bool                `yaml:"shuffleResults"`
+	EmptyBody      bool                `yaml:"emptyBody"`
+	Expressions    map[string]Response `yaml:"expressions"`
 }
 
 func copyResponse(src Response) Response {
@@ -243,6 +246,12 @@ func (cfg *listener) findHandler(wr http.ResponseWriter, req *http.Request) {
 			})
 	}
 
+	if cfg.Config.ShuffleResults {
+		rand.Shuffle(len(multiGlobs.Metrics), func(i, j int) {
+			multiGlobs.Metrics[i], multiGlobs.Metrics[j] = multiGlobs.Metrics[j], multiGlobs.Metrics[i]
+		})
+	}
+
 	logger.Info("will return", zap.Any("response", multiGlobs))
 
 	var b []byte
@@ -395,6 +404,15 @@ func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
 			multiv2.Metrics = append(multiv2.Metrics, fr2)
 			multiv3.Metrics = append(multiv3.Metrics, fr3)
 		}
+	}
+
+	if cfg.Config.ShuffleResults {
+		rand.Shuffle(len(multiv2.Metrics), func(i, j int) {
+			multiv2.Metrics[i], multiv2.Metrics[j] = multiv2.Metrics[j], multiv2.Metrics[i]
+		})
+		rand.Shuffle(len(multiv3.Metrics), func(i, j int) {
+			multiv3.Metrics[i], multiv3.Metrics[j] = multiv3.Metrics[j], multiv3.Metrics[i]
+		})
 	}
 
 	var d []byte

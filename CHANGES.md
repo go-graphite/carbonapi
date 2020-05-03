@@ -25,6 +25,7 @@ CHANGELOG
  - [Fix] Honor SendGlobAsIs and AlwaysSendGlobAsIs (important for pre-0.12 configs)
  - [Fix] Fix panic in some cases when one of the metrics is missing
  - [Fix] Compatbility fixes to useAboveSeries (now it's behavior matches graphite-web's)
+ - [Fix] Fix seriesList functions in case of unsorted responses (\*seriesList sorts denomniators and numerators first of all)
  - [Improvement] Redesign error handling and logging. Logging should be now less noisy and all error messages should contain better reasoning about error cause
  - [Improvement] Move more of the logging messages to Debug level - that should make logs less noisy and still preserve ability to see detailed errors on Debug level
  - [Improvement] Add a config parameter to disable tldCache (useful for clickhouse type backends)
