@@ -269,11 +269,16 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		// Obtain error code from the errors
 		// In case we have only "Not Found" errors, result should be 404
 		// Otherwise it should be 500
-                returnCode = http.StatusNotFound
+		returnCode = http.StatusNotFound
 		errMsgs := make([]string, 0)
 		for _, err := range errors {
 			if merry.Is(err, ztypes.ErrNoMetricsFetched) || merry.Is(err, parser.ErrSeriesDoesNotExist) {
 				continue
+			}
+			if returnCode >= 500 {
+				setError(w, accessLogDetails, "error or no response: "+strings.Join(errMsgs, ","), returnCode)
+				logAsError = true
+				return
 			}
 			errMsgs = append(errMsgs, err.Error())
 			returnCode = merry.HTTPCode(err)
@@ -282,11 +287,6 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		// Allow override status code for 404-not-found replies.
 		if returnCode == 404 {
 			returnCode = config.Config.NotFoundStatusCode
-		}
-		if returnCode >= 500 {
-			setError(w, accessLogDetails, "error or no response: "+strings.Join(errMsgs, ","), returnCode)
-			logAsError = true
-			return
 		}
 	}
 
