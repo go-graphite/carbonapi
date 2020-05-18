@@ -24,6 +24,11 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	for _, n := range []string{"aggregate"} {
 		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
 	}
+
+	// Also register aliases for each and every summarizer
+	for _, n := range consolidations.AvailableSummarizers {
+		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
+	}
 	return res
 }
 
@@ -36,7 +41,11 @@ func (f *aggregate) Do(e parser.Expr, from, until int64, values map[parser.Metri
 
 	callback, err := e.GetStringArg(1)
 	if err != nil {
-		return nil, err
+		if e.Target() == "aggregate" {
+			return nil, err
+		} else {
+			callback = e.Target()
+		}
 	}
 
 	// TODO: Implement xFilesFactor

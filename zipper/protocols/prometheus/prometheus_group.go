@@ -4,6 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/ansel1/merry"
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/zipper/helper"
@@ -11,12 +18,6 @@ import (
 	"github.com/go-graphite/carbonapi/zipper/metadata"
 	"github.com/go-graphite/carbonapi/zipper/types"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"net"
-	"net/http"
-	"net/url"
-	"strconv"
-	"strings"
-	"time"
 
 	"go.uber.org/zap"
 )
@@ -215,7 +216,8 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 			if strings.HasPrefix(target, "seriesByTag") {
 				stepLocalStr, target = c.seriesByTagToPromQL(stepLocalStr, target)
 			} else {
-				target = convertGraphiteTargetToPromQL(target)
+				reQuery := convertGraphiteTargetToPromQL(target)
+				target = "{__name__=~\"" + reQuery + "\"}"
 			}
 			if stepLocalStr[len(stepLocalStr)-1] >= '0' && stepLocalStr[len(stepLocalStr)-1] <= '9' {
 				stepLocalStr += "s"

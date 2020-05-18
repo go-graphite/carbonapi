@@ -502,7 +502,8 @@ func IsNameChar(r byte) bool {
 		r == '^' || r == '$' ||
 		r == '<' || r == '>' ||
 		r == '&' || r == '#' ||
-		r == '/' || r == '%'
+		r == '/' || r == '%' ||
+		r == ';' || r == '=' // this could happen if returned metric contains tags
 }
 
 func isDigit(r byte) bool {
