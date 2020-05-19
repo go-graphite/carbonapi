@@ -296,11 +296,8 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 			}
 
 			for _, m := range response.Data.Result {
-				vals := make([]float64, len(m.Values))
-				// TODO: Verify timestamps
-				for i, v := range m.Values {
-					vals[i] = v.Value
-				}
+				alignedValues := alignValues(request.Metrics[0].StartTime, request.Metrics[0].StopTime, stepLocal, m.Values)
+
 				r.Metrics = append(r.Metrics, protov3.FetchResponse{
 					Name:              c.promMetricToGraphite(m.Metric),
 					PathExpression:    pathExpr,
@@ -308,7 +305,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 					StartTime:         request.Metrics[0].StartTime,
 					StopTime:          request.Metrics[0].StopTime,
 					StepTime:          stepLocal,
-					Values:            vals,
+					Values:            alignedValues,
 					XFilesFactor:      0.0,
 				})
 			}
