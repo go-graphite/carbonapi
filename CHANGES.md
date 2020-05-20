@@ -15,6 +15,15 @@ Changes
 
 CHANGELOG
 ---------
+**0.13.0.rc.3**
+ - [Fix] Proper fix for prometheus backend and non-taged render requests with groupByNodes function
+ - [Fix] Align timestamps in prometheus backend (thx to @rodio, #467)
+
+**0.13.0-rc.2**
+ - [Fix] Prometheus backend wasn't working correctly for non-taged render requests (#465, thx to @menai34 for proposed fix)
+ - [Fix] Fix panic when using prometheus tagged response for non-tagged queries in groupByTags function (and maybe more)
+ - [Fix] Add proper aliases for `aggregate` functions - that would make groupByTags properly usable with functions like `diff` and `total`.
+
 **0.13.0-rc.1**
  - [Improvement] Redesign error handling and logging. Logging should be now less noisy and all error messages should contain better reasoning about error cause
  - [Improvement] Move some of the logging messages to Debug level - that should make logs less noisy and still preserve ability to see detailed errors on Debug level
