@@ -225,6 +225,9 @@ FOR:
 		}
 
 		switch s[i] {
+		// If metric name have tags, we want to skip them
+		case ';':
+			break FOR
 		case '{':
 			braces++
 		case '}':

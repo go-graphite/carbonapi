@@ -218,3 +218,25 @@ func convertGraphiteTargetToPromQL(query string) string {
 
 	return reQuery.String()
 }
+
+// inserts math.NaN() in place of gaps in data from Prometheus
+func alignValues(startTime, stopTime, step int64, promValues []prometheusValue) []float64 {
+	var (
+		promValuesCtr = 0
+		resValues     = make([]float64, (stopTime-startTime)/step)
+	)
+
+	for i := range resValues {
+		nextTimestamp := float64(startTime + int64(i)*step)
+
+		if promValuesCtr < len(promValues) && promValues[promValuesCtr].Timestamp == nextTimestamp {
+			resValues[i] = promValues[promValuesCtr].Value
+			promValuesCtr++
+			continue
+		}
+
+		resValues[i] = math.NaN()
+	}
+
+	return resValues
+}
