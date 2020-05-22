@@ -276,17 +276,20 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			errMsgs = append(errMsgs, err.Error())
-			returnCode = merry.HTTPCode(err)
 			if returnCode >= 500 {
-				setError(w, accessLogDetails, "error or no response: "+strings.Join(errMsgs, ","), returnCode)
-				logAsError = true
-				return
+				continue
 			}
+			returnCode = merry.HTTPCode(err)
 		}
 		logger.Debug("error response or no response", zap.Strings("error", errMsgs))
 		// Allow override status code for 404-not-found replies.
 		if returnCode == 404 {
 			returnCode = config.Config.NotFoundStatusCode
+		}
+		if returnCode >= 500 {
+			setError(w, accessLogDetails, "error or no response: "+strings.Join(errMsgs, ","), returnCode)
+			logAsError = true
+			return
 		}
 	}
 
