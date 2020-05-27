@@ -207,7 +207,7 @@ func convertGraphiteTargetToPromQL(query string) string {
 
 		switch ch {
 		case '*':
-			if len(query) == 0 {
+			if query == "" {
 				// needed to support find requests when asterisk is the last character and dots should be included
 				sb.WriteString(".*")
 				break
