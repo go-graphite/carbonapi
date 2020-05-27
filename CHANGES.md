@@ -15,6 +15,11 @@ Changes
 
 CHANGELOG
 ---------
+**0.13.0**
+ - [Fix] smartSummarize now supports wildcards in the metric names (thx to @Peter-Sh)
+ - [Fix] json format correctly distinguishes between +-inf and nan (thx to @faceair)
+ - [Fix] prometheus backend: fix a bunch of problems related to globs and regex escaping (thx to @rodio)
+
 **0.13.0.rc.3**
  - [Fix] Proper fix for prometheus backend and non-taged render requests with groupByNodes function
  - [Fix] Align timestamps in prometheus backend (thx to @rodio, #467)
