@@ -1,6 +1,7 @@
 package smartSummarize
 
 import (
+	"fmt"
 	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -66,7 +67,12 @@ func (f *smartSummarize) Do(e parser.Expr, from, until int64, values map[parser.
 	results := make([]*types.MetricData, 0, len(args))
 	for _, arg := range args {
 
-		name := e.ToString()
+		name := fmt.Sprintf("smartSummarize(%s,'%s','%s'", arg.Name, e.Args()[1].StringValue(), summarizeFunction)
+		if alignToInterval != "" {
+			name += fmt.Sprintf(",'%s')", alignToInterval)
+		} else {
+			name += ")";
+		}
 
 		r := types.MetricData{FetchResponse: pb.FetchResponse{
 			Name:              name,
