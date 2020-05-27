@@ -124,12 +124,8 @@ func MarshalJSON(results []*MetricData, timestampMultiplier int64, noNullPoints 
 
 				b = append(b, '[')
 
-				if math.IsNaN(v) {
+				if math.IsNaN(v) || math.IsInf(v, 1) || math.IsInf(v, -1) {
 					b = append(b, "null"...)
-				} else if math.IsInf(v, 1) {
-					b = append(b, "inf"...)
-				} else if math.IsInf(v, -1) {
-					b = append(b, "-inf"...)
 				} else {
 					b = strconv.AppendFloat(b, v, 'f', -1, 64)
 				}
