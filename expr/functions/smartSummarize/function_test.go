@@ -85,6 +85,32 @@ func TestEvalSummarize(t *testing.T) {
 	}
 }
 
+func TestFunctionUseNameWithWildcards(t *testing.T) {
+	tests := []th.MultiReturnEvalTestItem{
+		{
+			"smartSummarize(metric1.*,'1minute','last')",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1.*", 0, 1}: {
+					types.MakeMetricData("metric1.foo", generateValues(0, 240, 1), 1, 0),
+					types.MakeMetricData("metric1.bar", generateValues(0, 240, 1), 1, 0),
+				},
+			},
+			"smartSummarize",
+			map[string][]*types.MetricData{
+				"smartSummarize(metric1.foo,'1minute','last')": {types.MakeMetricData("smartSummarize(metric1.foo,'1minute','last')", []float64{59, 119, 179, 239}, 60, 0)},
+				"smartSummarize(metric1.bar,'1minute','last')": {types.MakeMetricData("smartSummarize(metric1.bar,'1minute','last')", []float64{59, 119, 179, 239}, 60, 0)},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		testName := tt.Target
+		t.Run(testName, func(t *testing.T) {
+			th.TestMultiReturnEvalExpr(t, &tt)
+		})
+	}
+}
+
 func generateValues(start, stop, step int64) (values []float64) {
 	for i := start; i < stop; i += step {
 		values = append(values, float64(i))
