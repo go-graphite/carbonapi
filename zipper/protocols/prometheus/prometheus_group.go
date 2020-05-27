@@ -217,7 +217,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 				stepLocalStr, target = c.seriesByTagToPromQL(stepLocalStr, target)
 			} else {
 				reQuery := convertGraphiteTargetToPromQL(target)
-				target = "{__name__=~\"" + reQuery + "\"}"
+				target = fmt.Sprintf("{__name__=~%q}", reQuery)
 			}
 			if stepLocalStr[len(stepLocalStr)-1] >= '0' && stepLocalStr[len(stepLocalStr)-1] <= '9' {
 				stepLocalStr += "s"
@@ -334,8 +334,12 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	uniqueMetrics := make(map[string]bool)
 	for _, query := range request.Metrics {
 		// Convert query to Prometheus-compatible regex
+		if !strings.HasSuffix(query, "*") {
+			query = query + "*"
+		}
+
 		reQuery := convertGraphiteTargetToPromQL(query)
-		matchQuery := "{__name__=~\"" + reQuery + "\"}"
+		matchQuery := fmt.Sprintf("{__name__=~%q}", reQuery)
 		v := url.Values{
 			"match[]": []string{matchQuery},
 		}

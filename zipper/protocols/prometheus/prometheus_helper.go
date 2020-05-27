@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -191,32 +192,52 @@ func (c *PrometheusGroup) seriesByTagToPromQL(step, target string) (string, stri
 }
 
 func convertGraphiteTargetToPromQL(query string) string {
-	// Special case for query for "*", which is used to get top level metric parts
-	if query == "*" {
-		return ".*"
-	}
-	reQuery := strings.Builder{}
+	var sb strings.Builder
 
-	inGroup := 0
-	for _, c := range query {
-		switch c {
-		case '.':
-			reQuery.WriteString("\\\\.")
+	for {
+		n := strings.IndexAny(query, "*[{")
+		if n < 0 {
+			sb.WriteString(regexp.QuoteMeta(query))
+			return sb.String()
+		}
+
+		sb.WriteString(regexp.QuoteMeta(query[:n]))
+		ch := query[n]
+		query = query[n+1:]
+
+		switch ch {
 		case '*':
-			reQuery.WriteString("[^.][^.]*")
+			if query == "" {
+				// needed to support find requests when asterisk is the last character and dots should be included
+				sb.WriteString(".*")
+				break
+			}
+
+			sb.WriteString("[^.]*?")
+
+		case '[':
+			n = strings.Index(query, "]")
+			if n < 0 {
+				sb.WriteString(regexp.QuoteMeta("[" + query))
+				return sb.String()
+			}
+			sb.WriteString("[" + query[:n+1])
+			query = query[n+1:]
+
 		case '{':
-			reQuery.WriteString("(")
-			inGroup++
-		case ',':
-			reQuery.WriteString("|")
-		case '}':
-			reQuery.WriteString(")")
-		default:
-			reQuery.WriteRune(c)
+			n = strings.Index(query, "}")
+			if n < 0 {
+				sb.WriteString(regexp.QuoteMeta("{" + query))
+				return sb.String()
+			}
+			alts := strings.Split(query[:n], ",")
+			query = query[n+1:]
+			for i := range alts {
+				alts[i] = regexp.QuoteMeta(alts[i])
+			}
+			sb.WriteString("(" + strings.Join(alts, "|") + ")")
 		}
 	}
-
-	return reQuery.String()
 }
 
 // inserts math.NaN() in place of gaps in data from Prometheus
