@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+
 	"github.com/ansel1/merry"
 	tags2 "github.com/go-graphite/carbonapi/expr/tags"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -40,17 +41,13 @@ func newZipper(sender func(*zipperTypes.Stats), config *zipperCfg.Config, ignore
 	return z
 }
 
-func (z zipper) Find(ctx context.Context, metrics []string) (*pb.MultiGlobResponse, *zipperTypes.Stats, merry.Error) {
+func (z zipper) Find(ctx context.Context, req pb.MultiGlobRequest) (*pb.MultiGlobResponse, *zipperTypes.Stats, merry.Error) {
 	newCtx := ctx
 	if z.ignoreClientTimeout {
 		uuid := util.GetUUID(ctx)
 		hdrs := util.GetPassHeaders(ctx)
 		newCtx = util.SetUUID(context.Background(), uuid)
 		newCtx = util.SetPassHeaders(newCtx, hdrs)
-	}
-
-	req := pb.MultiGlobRequest{
-		Metrics: metrics,
 	}
 
 	res, stats, err := z.z.FindProtoV3(newCtx, &req)

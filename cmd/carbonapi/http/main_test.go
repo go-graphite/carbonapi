@@ -3,12 +3,12 @@ package http
 import (
 	"context"
 	"encoding/json"
-	"github.com/ansel1/merry"
 	"math"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/ansel1/merry"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 	"github.com/go-graphite/carbonapi/expr/types"
 	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
@@ -23,7 +23,7 @@ func newMockCarbonZipper() *mockCarbonZipper {
 	return new(mockCarbonZipper)
 }
 
-func (z mockCarbonZipper) Find(ctx context.Context, metrics []string) (*pb.MultiGlobResponse, *zipperTypes.Stats, merry.Error) {
+func (z mockCarbonZipper) Find(ctx context.Context, request pb.MultiGlobRequest) (*pb.MultiGlobResponse, *zipperTypes.Stats, merry.Error) {
 	return getGlobResponse(), nil, nil
 }
 

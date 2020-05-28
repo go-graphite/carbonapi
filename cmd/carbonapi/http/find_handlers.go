@@ -13,6 +13,7 @@ import (
 	"github.com/ansel1/merry"
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
+	"github.com/go-graphite/carbonapi/date"
 	"github.com/go-graphite/carbonapi/intervalset"
 	utilctx "github.com/go-graphite/carbonapi/util/ctx"
 	pbv2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
@@ -20,7 +21,7 @@ import (
 	pickle "github.com/lomik/og-rek"
 	"github.com/lomik/zapwriter"
 	"github.com/maruel/natural"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 )
 
 // Find handler and it's helper functions
@@ -181,6 +182,12 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	format, ok, formatRaw := getFormat(r, treejsonFormat)
 	jsonp := r.FormValue("jsonp")
 
+	qtz := r.FormValue("tz")
+	from := r.FormValue("from")
+	until := r.FormValue("until")
+	from64 := date.DateParamToEpoch(from, qtz, timeNow().Add(-time.Hour).Unix(), config.Config.DefaultTimeZone)
+	until64 := date.DateParamToEpoch(until, qtz, timeNow().Unix(), config.Config.DefaultTimeZone)
+
 	query := r.Form["query"]
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
 
@@ -224,6 +231,8 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var pv3Request pbv3.MultiGlobRequest
+
 	if format == protoV3Format {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -233,20 +242,20 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		var pv3Request pbv3.MultiGlobRequest
 		err = pv3Request.Unmarshal(body)
-
 		if err != nil {
 			accessLogDetails.HTTPCode = http.StatusBadRequest
 			accessLogDetails.Reason = "failed to parse message body: " + err.Error()
 			http.Error(w, "bad request (failed to parse format): "+err.Error(), http.StatusBadRequest)
 			return
 		}
-
-		query = pv3Request.Metrics
+	} else {
+		pv3Request.Metrics = query
+		pv3Request.StartTime = from64
+		pv3Request.StopTime = until64
 	}
 
-	if len(query) == 0 {
+	if len(pv3Request.Metrics) == 0 {
 		http.Error(w, "missing parameter `query`", http.StatusBadRequest)
 		accessLogDetails.HTTPCode = http.StatusBadRequest
 		accessLogDetails.Reason = "missing parameter `query`"
@@ -254,7 +263,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	multiGlobs, stats, err := config.Config.ZipperInstance.Find(ctx, query)
+	multiGlobs, stats, err := config.Config.ZipperInstance.Find(ctx, pv3Request)
 	if stats != nil {
 		accessLogDetails.ZipperRequests = stats.ZipperRequests
 		accessLogDetails.TotalMetricsCount += stats.TotalMetricsCount
