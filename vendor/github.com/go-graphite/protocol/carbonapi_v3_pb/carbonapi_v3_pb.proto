@@ -35,6 +35,7 @@ message FetchRequest {
     bool highPrecisionTimestamps = 4;
     string pathExpression = 5;
     repeated FilteringFunction filterFunctions = 6;
+    int64 maxDataPoints = 7;
 }
 
 message MultiFetchRequest {
@@ -65,6 +66,8 @@ message MultiFetchResponse {
 // Find Metrics
 message MultiGlobRequest {
     repeated string metrics = 1;
+    int64 startTime = 2;
+    int64 stopTime = 3;
 }
 
 message GlobMatch {
