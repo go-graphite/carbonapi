@@ -16,7 +16,6 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	utilctx "github.com/go-graphite/carbonapi/util/ctx"
-	ztypes "github.com/go-graphite/carbonapi/zipper/types"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
 	uuid "github.com/satori/go.uuid"
@@ -272,7 +271,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		returnCode = http.StatusNotFound
 		errMsgs := make([]string, 0)
 		for _, err := range errors {
-			if merry.Is(err, ztypes.ErrNoMetricsFetched) || merry.Is(err, parser.ErrSeriesDoesNotExist) {
+			if merry.HTTPCode(err) == 404 || merry.Is(err, parser.ErrSeriesDoesNotExist) {
 				continue
 			}
 			errMsgs = append(errMsgs, err.Error())
