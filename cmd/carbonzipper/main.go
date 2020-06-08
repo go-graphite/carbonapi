@@ -587,7 +587,7 @@ func main() {
 
 	configFile := flag.String("config", "", "config file (yaml)")
 	pidFile := flag.String("pid", "", "pidfile (default: empty, don't create pidfile)")
-	envPrefix := flag.String("envprefix", "CARBONZIPPER_", "Preifx for environment variables override")
+	envPrefix := flag.String("envprefix", "CARBONZIPPER_", "Prefix for environment variables override")
 	if *envPrefix == "" {
 		logger.Fatal("empty prefix is not suppoerted due to possible collisions with OS environment variables")
 	}
