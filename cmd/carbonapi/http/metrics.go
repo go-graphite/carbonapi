@@ -16,13 +16,12 @@ var ApiMetrics = struct {
 	RenderRequests        *expvar.Int
 	RequestCacheHits      *expvar.Int
 	RequestCacheMisses    *expvar.Int
+	BackendCacheHits      *expvar.Int
+	BackendCacheMisses    *expvar.Int
 	RenderCacheOverheadNS *expvar.Int
 	RequestBuckets        expvar.Func
 
-	FindRequests        *expvar.Int
-	FindCacheHits       *expvar.Int
-	FindCacheMisses     *expvar.Int
-	FindCacheOverheadNS *expvar.Int
+	FindRequests *expvar.Int
 
 	MemcacheTimeouts expvar.Func
 
@@ -34,13 +33,11 @@ var ApiMetrics = struct {
 	RenderRequests:        expvar.NewInt("render_requests"),
 	RequestCacheHits:      expvar.NewInt("request_cache_hits"),
 	RequestCacheMisses:    expvar.NewInt("request_cache_misses"),
+	BackendCacheHits:      expvar.NewInt("backend_cache_hits"),
+	BackendCacheMisses:    expvar.NewInt("backend_cache_misses"),
 	RenderCacheOverheadNS: expvar.NewInt("render_cache_overhead_ns"),
 
 	FindRequests: expvar.NewInt("find_requests"),
-
-	FindCacheHits:       expvar.NewInt("find_cache_hits"),
-	FindCacheMisses:     expvar.NewInt("find_cache_misses"),
-	FindCacheOverheadNS: expvar.NewInt("find_cache_overhead_ns"),
 }
 
 var ZipperMetrics = struct {
@@ -117,9 +114,9 @@ func RenderTimeBuckets() interface{} {
 }
 
 func SetupMetrics(logger *zap.Logger) {
-	switch config.Config.Cache.Type {
+	switch config.Config.ResponseCacheConfig.Type {
 	case "memcache":
-		mcache := config.Config.QueryCache.(*cache.MemcachedCache)
+		mcache := config.Config.ResponseCache.(*cache.MemcachedCache)
 
 		ApiMetrics.MemcacheTimeouts = expvar.Func(func() interface{} {
 			return mcache.Timeouts()
@@ -127,7 +124,7 @@ func SetupMetrics(logger *zap.Logger) {
 		expvar.Publish("memcache_timeouts", ApiMetrics.MemcacheTimeouts)
 
 	case "mem":
-		qcache := config.Config.QueryCache.(*cache.ExpireCache)
+		qcache := config.Config.ResponseCache.(*cache.ExpireCache)
 
 		ApiMetrics.CacheSize = expvar.Func(func() interface{} {
 			return qcache.Size()

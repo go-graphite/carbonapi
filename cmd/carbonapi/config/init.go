@@ -29,7 +29,8 @@ import (
 var graphTemplates map[string]png.PictureParams
 
 func SetUpConfig(logger *zap.Logger, BuildVersion string) {
-	Config.Cache.MemcachedServers = viper.GetStringSlice("cache.memcachedServers")
+	Config.ResponseCacheConfig.MemcachedServers = viper.GetStringSlice("cache.memcachedServers")
+	Config.BackendCacheConfig.MemcachedServers = viper.GetStringSlice("backendCache.memcachedServers")
 	if n := viper.GetString("logger.logger"); n != "" {
 		Config.Logger[0].Logger = n
 	}
@@ -155,28 +156,8 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 
 	Config.Limiter = limiter.NewSimpleLimiter(Config.Concurency)
 
-	switch Config.Cache.Type {
-	case "memcache":
-		if len(Config.Cache.MemcachedServers) == 0 {
-			logger.Fatal("memcache cache requested but no memcache servers provided")
-		}
-
-		logger.Info("memcached configured",
-			zap.Strings("servers", Config.Cache.MemcachedServers),
-		)
-		Config.QueryCache = cache.NewMemcached("capi", Config.Cache.MemcachedServers...)
-	case "mem":
-		Config.QueryCache = cache.NewExpireCache(uint64(Config.Cache.Size * 1024 * 1024))
-	case "null":
-		// defaults
-		Config.QueryCache = cache.NullCache{}
-		Config.FindCache = cache.NullCache{}
-	default:
-		logger.Error("unknown cache type",
-			zap.String("cache_type", Config.Cache.Type),
-			zap.Strings("known_cache_types", []string{"null", "mem", "memcache"}),
-		)
-	}
+	Config.ResponseCache = createCache(logger, "cache", Config.ResponseCacheConfig)
+	Config.BackendCache = createCache(logger, "backendCache", Config.BackendCacheConfig)
 
 	if Config.TimezoneString != "" {
 		fields := strings.Split(Config.TimezoneString, ",")
@@ -263,6 +244,32 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 				zap.String("template", define.Template),
 			)
 		}
+	}
+}
+
+func createCache(logger *zap.Logger, cacheName string, cacheConfig CacheConfig) cache.BytesCache {
+	switch cacheConfig.Type {
+	case "memcache":
+		if len(cacheConfig.MemcachedServers) == 0 {
+			logger.Fatal(cacheName + ": memcache cache requested but no memcache servers provided")
+		}
+
+		logger.Info(cacheName+": memcached configured",
+			zap.Strings("servers", cacheConfig.MemcachedServers),
+		)
+		return cache.NewMemcached("capi-"+cacheName, cacheConfig.MemcachedServers...)
+	case "mem":
+		logger.Info(cacheName + ": in-memory cache configured")
+		return cache.NewExpireCache(uint64(cacheConfig.Size * 1024 * 1024))
+	case "null":
+		// defaults
+		return cache.NullCache{}
+	default:
+		logger.Error(cacheName+": unknown cache type",
+			zap.String("cache_type", cacheConfig.Type),
+			zap.Strings("known_cache_types", []string{"null", "mem", "memcache"}),
+		)
+		return nil
 	}
 }
 

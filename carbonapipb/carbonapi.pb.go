@@ -23,11 +23,13 @@ type AccessLogDetails struct {
 	SendGlobs                     bool              `json:"send_globs,omitempty"`
 	From                          int64             `json:"from,omitempty"`
 	Until                         int64             `json:"until,omitempty"`
+	MaxDataPoints                 int64             `json:"max_data_points,omitempty"`
 	Tz                            string            `json:"tz,omitempty"`
 	FromRaw                       string            `json:"from_raw,omitempty"`
 	UntilRaw                      string            `json:"until_raw,omitempty"`
 	URI                           string            `json:"uri,omitempty"`
 	FromCache                     bool              `json:"from_cache"`
+	UsedBackendCache              bool              `json:"used_backend_cache"`
 	ZipperRequests                int64             `json:"zipper_requests,omitempty"`
 	TotalMetricsCount             int64             `json:"total_metrics_count,omitempty"`
 	RequestHeaders                map[string]string `json:"request_headers"`
