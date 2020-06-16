@@ -202,7 +202,13 @@ unicodeRangeTables:
 
 ***
 ## cache
-Specify what storage to use for metric cache and path cache.
+Specify what storage to use for response cache. This cache stores the final
+carbonapi response right before sending it to the client. A cache hit to this
+cache avoids almost all computations, including rendering images etc. On the
+other hand, a request will cause a cache hit only if a previous request with
+exactly the same response format and with same maxDataPoints param populated the
+cache. Grafana sets maxDataPoints depending on client screen width, reducing the
+hit ratio for this cache.
 
 Supported cache types:
  - `mem` - will use integrated in-memory cache. Not distributed. Fast.
@@ -212,7 +218,6 @@ Supported cache types:
 Extra options:
  - `size_mb` - specify max size of cache, in MiB
  - `defaultTimeoutSec` - specify default cache duration. Identical to `DEFAULT_CACHE_DURATION` in graphite-web
-
 ### Example
 ```yaml
 cache:
@@ -223,7 +228,24 @@ cache:
        - "127.0.0.1:1234"
        - "127.0.0.2:1235"
 ```
+## backendCache
+Specify what storage to use for backend cache. This cache stores the responses
+from the backends. It should have more cache hits than the response cache since
+the response format and the maxDataPoints paramter are not part of the cache
+key, but results from cache still need to be postprocessed (e.g. serialized to
+desired response format).
 
+Supports same options as the response cache.
+### Example
+```yaml
+backendCache:
+   type: "memcache"
+   size_mb: 0
+   defaultTimeoutSec: 60
+   memcachedServers:
+       - "127.0.0.1:1234"
+       - "127.0.0.2:1235"
+```
 ***
 ## cpus
 
