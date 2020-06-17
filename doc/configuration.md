@@ -456,6 +456,7 @@ Supported options:
         supports either unix timestamp or delta from now(). For delta you should specify it in duration format.
 
         For example `-5m` will mean "5 minutes ago", time will be resolved every time you do find query.
+      - `max_points_per_query` - define maximum datapoints per query. It will be used to adjust step for queries over big range. Default limit for Prometheus is 11000.
   - `concurrencyLimitPerServer` - limit of max connections per server. Likely should be >= maxIdleConnsPerHost. Default: 0 - unlimited
   - `maxIdleConnsPerHost` - as we use KeepAlive to keep connections opened, this limits amount of connections that will be left opened. Tune with care as some backends might have issues handling larger number of connections.
   - `keepAliveInterval` - KeepAlive interval
