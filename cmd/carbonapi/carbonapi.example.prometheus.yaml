@@ -48,6 +48,7 @@ upstreams:
             backendOptions:
                 step: "60"
                 start: "-5m"
+                max_points_per_query: 5000
             timeouts:
                 find: "2s"
                 render: "50s"

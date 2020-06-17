@@ -65,7 +65,9 @@ type PrometheusGroup struct {
 	maxTries             int
 	maxMetricsPerRequest int
 
-	step       int64
+	step              int64
+	maxPointsPerQuery int64
+
 	startDelay startDelay
 
 	httpQuery *helper.HttpQuery
@@ -111,6 +113,20 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		}
 	}
 
+	maxPointsPerQuery := int64(11000)
+	mppqI, ok := config.BackendOptions["max_points_per_query"]
+	if ok {
+		mppq, ok := mppqI.(int)
+		if !ok {
+			logger.Fatal("failed to parse max_points_per_query",
+				zap.String("type_parsed", fmt.Sprintf("%T", mppqI)),
+				zap.String("type_expected", "int"),
+			)
+		}
+
+		maxPointsPerQuery = int64(mppq)
+	}
+
 	startDelay := startDelay{
 		IsSet:      false,
 		IsDuration: false,
@@ -149,6 +165,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		maxTries:             *config.MaxTries,
 		maxMetricsPerRequest: *config.MaxBatchSize,
 		step:                 step,
+		maxPointsPerQuery:    maxPointsPerQuery,
 		startDelay:           startDelay,
 
 		client:  httpClient,
@@ -201,8 +218,12 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 
 	var r protov3.MultiFetchResponse
 	var e merry.Error
-	// TODO: Do something clever with "step"
-	step := c.step
+
+	start := request.Metrics[0].StartTime
+	stop := request.Metrics[0].StopTime
+
+	step := adjustStep(start, stop, c.maxPointsPerQuery, c.step)
+
 	stepStr := strconv.FormatInt(step, 10)
 	for pathExpr, targets := range pathExprToTargets {
 		for _, target := range targets {
@@ -243,13 +264,14 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 			*/
 			logger.Debug("will do query",
 				zap.String("query", target),
-				zap.Int64("start", request.Metrics[0].StartTime),
-				zap.Int64("stop", request.Metrics[0].StopTime),
+				zap.Int64("start", start),
+				zap.Int64("stop", stop),
+				zap.String("step", stepLocalStr),
 			)
 			v := url.Values{
 				"query": []string{target},
-				"start": []string{strconv.Itoa(int(request.Metrics[0].StartTime))},
-				"stop":  []string{strconv.Itoa(int(request.Metrics[0].StopTime))},
+				"start": []string{strconv.Itoa(int(start))},
+				"stop":  []string{strconv.Itoa(int(stop))},
 				"step":  []string{stepLocalStr},
 			}
 
@@ -296,14 +318,14 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 			}
 
 			for _, m := range response.Data.Result {
-				alignedValues := alignValues(request.Metrics[0].StartTime, request.Metrics[0].StopTime, stepLocal, m.Values)
+				alignedValues := alignValues(start, stop, stepLocal, m.Values)
 
 				r.Metrics = append(r.Metrics, protov3.FetchResponse{
 					Name:              c.promMetricToGraphite(m.Metric),
 					PathExpression:    pathExpr,
 					ConsolidationFunc: "Average",
-					StartTime:         request.Metrics[0].StartTime,
-					StopTime:          request.Metrics[0].StopTime,
+					StartTime:         start,
+					StopTime:          stop,
 					StepTime:          stepLocal,
 					Values:            alignedValues,
 					XFilesFactor:      0.0,
