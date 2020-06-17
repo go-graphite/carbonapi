@@ -73,7 +73,7 @@ func (f *seriesList) Do(e parser.Expr, from, until int64, values map[parser.Metr
 			return nil, nil
 		}
 	}
-	sort.Slice(numerators, func(i, j int) bool { return denominators[i].Name < denominators[j].Name })
+	sort.Slice(denominators, func(i, j int) bool { return denominators[i].Name < denominators[j].Name })
 
 	sizeMatch := len(denominators) == len(numerators) || len(denominators) == 1
 	useMatching, err := e.GetBoolNamedOrPosArgDefault("matching", 2, !useConstant && !sizeMatch)

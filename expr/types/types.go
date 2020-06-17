@@ -59,7 +59,7 @@ func MarshalCSV(results []*MetricData) []byte {
 }
 
 // ConsolidateJSON consolidates values to maxDataPoints size
-func ConsolidateJSON(maxDataPoints int, results []*MetricData) {
+func ConsolidateJSON(maxDataPoints int64, results []*MetricData) {
 	if len(results) == 0 {
 		return
 	}

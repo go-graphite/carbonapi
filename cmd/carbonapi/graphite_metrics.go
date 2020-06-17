@@ -48,16 +48,14 @@ func setupGraphiteMetrics(logger *zap.Logger) {
 		graphite.Register(fmt.Sprintf("%s.request_cache_hits", pattern), http.ApiMetrics.RequestCacheHits)
 		graphite.Register(fmt.Sprintf("%s.request_cache_misses", pattern), http.ApiMetrics.RequestCacheMisses)
 		graphite.Register(fmt.Sprintf("%s.request_cache_overhead_ns", pattern), http.ApiMetrics.RenderCacheOverheadNS)
+		graphite.Register(fmt.Sprintf("%s.backend_cache_hits", pattern), http.ApiMetrics.BackendCacheHits)
+		graphite.Register(fmt.Sprintf("%s.backend_cache_misses", pattern), http.ApiMetrics.BackendCacheMisses)
 
 		for i := 0; i <= config.Config.Buckets; i++ {
 			graphite.Register(fmt.Sprintf("%s.requests_in_%dms_to_%dms", pattern, i*100, (i+1)*100), http.BucketEntry(i))
 		}
 
 		graphite.Register(fmt.Sprintf("%s.find_requests", pattern), http.ApiMetrics.FindRequests)
-		graphite.Register(fmt.Sprintf("%s.find_cache_hits", pattern), http.ApiMetrics.FindCacheHits)
-		graphite.Register(fmt.Sprintf("%s.find_cache_misses", pattern), http.ApiMetrics.FindCacheMisses)
-		graphite.Register(fmt.Sprintf("%s.find_cache_overhead_ns", pattern), http.ApiMetrics.FindCacheOverheadNS)
-
 		graphite.Register(fmt.Sprintf("%s.render_requests", pattern), http.ApiMetrics.RenderRequests)
 
 		if http.ApiMetrics.MemcacheTimeouts != nil {

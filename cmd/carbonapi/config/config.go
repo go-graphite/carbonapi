@@ -53,7 +53,8 @@ type ConfigType struct {
 	Listen                     string             `mapstructure:"listen"`
 	Buckets                    int                `mapstructure:"buckets"`
 	Concurency                 int                `mapstructure:"concurency"`
-	Cache                      CacheConfig        `mapstructure:"cache"`
+	ResponseCacheConfig        CacheConfig        `mapstructure:"cache"`
+	BackendCacheConfig         CacheConfig        `mapstructure:"backendCache"`
 	Cpus                       int                `mapstructure:"cpus"`
 	TimezoneString             string             `mapstructure:"tz"`
 	UnicodeRangeTables         []string           `mapstructure:"unicodeRangeTables"`
@@ -78,8 +79,8 @@ type ConfigType struct {
 	Expvar                     ExpvarConfig       `mapstructure:"expvar"`
 	NotFoundStatusCode         int                `mapstructure:"notFoundStatusCode"`
 
-	QueryCache cache.BytesCache `mapstructure:"-" json:"-"`
-	FindCache  cache.BytesCache `mapstructure:"-" json:"-"`
+	ResponseCache cache.BytesCache `mapstructure:"-" json:"-"`
+	BackendCache  cache.BytesCache `mapstructure:"-" json:"-"`
 
 	DefaultTimeZone *time.Location `mapstructure:"-" json:"-"`
 
@@ -106,9 +107,13 @@ var Config = ConfigType{
 	Buckets:               10,
 	Concurency:            1000,
 	MaxBatchSize:          100,
-	Cache: CacheConfig{
+	ResponseCacheConfig: CacheConfig{
 		Type:              "mem",
 		DefaultTimeoutSec: 60,
+	},
+	BackendCacheConfig: CacheConfig{
+		Type:              "null",
+		DefaultTimeoutSec: 0,
 	},
 	TimezoneString: "",
 	Graphite: GraphiteConfig{
@@ -121,8 +126,8 @@ var Config = ConfigType{
 	IdleConnections: 10,
 	PidFile:         "",
 
-	QueryCache: cache.NullCache{},
-	FindCache:  cache.NullCache{},
+	ResponseCache: cache.NullCache{},
+	BackendCache:  cache.NullCache{},
 
 	DefaultTimeZone: time.Local,
 	Logger:          []zapwriter.Config{DefaultLoggerConfig},

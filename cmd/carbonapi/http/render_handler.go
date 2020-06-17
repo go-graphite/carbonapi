@@ -1,6 +1,9 @@
 package http
 
 import (
+	"bytes"
+	"encoding/gob"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -41,9 +44,7 @@ func setError(w http.ResponseWriter, accessLogDetails *carbonapipb.AccessLogDeta
 	accessLogDetails.HTTPCode = int32(status)
 }
 
-func getCacheTimeout(logger *zap.Logger, r *http.Request) int32 {
-	cacheTimeout := config.Config.Cache.DefaultTimeoutSec
-
+func getCacheTimeout(logger *zap.Logger, r *http.Request, defaultTimeout int32) int32 {
 	if tstr := r.FormValue("cacheTimeout"); tstr != "" {
 		t, err := strconv.Atoi(tstr)
 		if err != nil {
@@ -52,11 +53,11 @@ func getCacheTimeout(logger *zap.Logger, r *http.Request) int32 {
 				zap.Error(err),
 			)
 		} else {
-			cacheTimeout = int32(t)
+			return int32(t)
 		}
 	}
 
-	return cacheTimeout
+	return defaultTimeout
 }
 
 func renderHandler(w http.ResponseWriter, r *http.Request) {
@@ -109,6 +110,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	from := r.FormValue("from")
 	until := r.FormValue("until")
 	template := r.FormValue("template")
+	maxDataPoints, _ := strconv.ParseInt(r.FormValue("maxDataPoints"), 10, 64)
 	useCache := !parser.TruthyBool(r.FormValue("noCache"))
 	noNullPoints := parser.TruthyBool(r.FormValue("noNullPoints"))
 	// status will be checked later after we'll setup everything else
@@ -142,11 +144,12 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cacheTimeout := getCacheTimeout(logger, r)
+	responseCacheTimeout := getCacheTimeout(logger, r, config.Config.ResponseCacheConfig.DefaultTimeoutSec)
+	backendCacheTimeout := getCacheTimeout(logger, r, config.Config.BackendCacheConfig.DefaultTimeoutSec)
 
 	cleanupParams(r)
 
-	cacheKey := r.Form.Encode()
+	responseCacheKey := r.Form.Encode()
 
 	// normalize from and until values
 	qtz := r.FormValue("tz")
@@ -159,7 +162,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	accessLogDetails.UntilRaw = until
 	accessLogDetails.Until = until32
 	accessLogDetails.Tz = qtz
-	accessLogDetails.CacheTimeout = cacheTimeout
+	accessLogDetails.CacheTimeout = responseCacheTimeout
 	accessLogDetails.Format = formatRaw
 	accessLogDetails.Targets = targets
 
@@ -198,7 +201,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	if useCache {
 		tc := time.Now()
-		response, err := config.Config.QueryCache.Get(cacheKey)
+		response, err := config.Config.ResponseCache.Get(responseCacheKey)
 		td := time.Since(tc).Nanoseconds()
 		ApiMetrics.RenderCacheOverheadNS.Add(td)
 
@@ -220,45 +223,57 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	errors := make(map[string]merry.Error)
-	results := make([]*types.MetricData, 0)
-	values := make(map[parser.MetricRequest][]*types.MetricData)
-
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Error("panic during eval:",
-				zap.String("cache_key", cacheKey),
+				zap.String("cache_key", responseCacheKey),
 				zap.Any("reason", r),
 				zap.Stack("stack"),
 			)
 		}
 	}()
 
-	for _, target := range targets {
-		exp, e, err := parser.ParseExpr(target)
-		if err != nil || e != "" {
-			msg := buildParseErrorString(target, e, err)
-			setError(w, accessLogDetails, msg, http.StatusBadRequest)
-			logAsError = true
-			return
+	errors := make(map[string]merry.Error)
+	backendCacheKey := backendCacheComputeKey(from, until, targets)
+	results, err := backendCacheFetchResults(logger, useCache, backendCacheKey, accessLogDetails)
+
+	if err != nil {
+		ApiMetrics.BackendCacheMisses.Add(1)
+
+		results = make([]*types.MetricData, 0)
+		values := make(map[parser.MetricRequest][]*types.MetricData)
+
+		for _, target := range targets {
+			exp, e, err := parser.ParseExpr(target)
+			if err != nil || e != "" {
+				msg := buildParseErrorString(target, e, err)
+				setError(w, accessLogDetails, msg, http.StatusBadRequest)
+				logAsError = true
+				return
+			}
+
+			ApiMetrics.RenderRequests.Add(1)
+
+			result, err := expr.FetchAndEvalExp(exp, from32, until32, values)
+			if err != nil {
+				errors[target] = merry.Wrap(err)
+			}
+
+			results = append(results, result...)
 		}
 
-		ApiMetrics.RenderRequests.Add(1)
-
-		result, err := expr.FetchAndEvalExp(exp, from32, until32, values)
-		if err != nil {
-			errors[target] = merry.Wrap(err)
+		for mFetch := range values {
+			expr.SortMetrics(values[mFetch], mFetch)
 		}
 
-		results = append(results, result...)
+		if len(errors) == 0 {
+			backendCacheStoreResults(logger, backendCacheKey, results, backendCacheTimeout)
+		}
 	}
 
 	size := 0
 	for _, result := range results {
 		size += result.Size()
-	}
-	for mFetch := range values {
-		expr.SortMetrics(values[mFetch], mFetch)
 	}
 
 	var body []byte
@@ -293,8 +308,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch format {
 	case jsonFormat:
-		if maxDataPoints, _ := strconv.Atoi(r.FormValue("maxDataPoints")); maxDataPoints != 0 {
+		if maxDataPoints != 0 {
 			types.ConsolidateJSON(maxDataPoints, results)
+			accessLogDetails.MaxDataPoints = maxDataPoints
 		}
 
 		body = types.MarshalJSON(results, timestampMultiplier, noNullPoints)
@@ -332,11 +348,62 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	if len(results) != 0 {
 		tc := time.Now()
-		config.Config.QueryCache.Set(cacheKey, body, cacheTimeout)
+		config.Config.ResponseCache.Set(responseCacheKey, body, responseCacheTimeout)
 		td := time.Since(tc).Nanoseconds()
 		ApiMetrics.RenderCacheOverheadNS.Add(td)
 	}
 
 	gotErrors := len(errors) > 0
 	accessLogDetails.HaveNonFatalErrors = gotErrors
+}
+
+func backendCacheComputeKey(from, until string, targets []string) string {
+	var backendCacheKey bytes.Buffer
+	backendCacheKey.WriteString("from:")
+	backendCacheKey.WriteString(from)
+	backendCacheKey.WriteString(" until:")
+	backendCacheKey.WriteString(until)
+	backendCacheKey.WriteString(" targets:")
+	backendCacheKey.WriteString(strings.Join(targets, ","))
+	return backendCacheKey.String()
+}
+
+func backendCacheFetchResults(logger *zap.Logger, useCache bool, backendCacheKey string, accessLogDetails *carbonapipb.AccessLogDetails) ([]*types.MetricData, error) {
+	if !useCache {
+		return nil, errors.New("useCache is false")
+	}
+
+	backendCacheResults, err := config.Config.BackendCache.Get(backendCacheKey)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var results []*types.MetricData
+	cacheDecodingBuf := bytes.NewBuffer(backendCacheResults)
+	dec := gob.NewDecoder(cacheDecodingBuf)
+	err = dec.Decode(&results)
+
+	if err != nil {
+		logger.Error("Error decoding cached backend results")
+		return nil, err
+	}
+
+	accessLogDetails.UsedBackendCache = true
+	ApiMetrics.BackendCacheHits.Add(1)
+
+	return results, nil
+}
+
+func backendCacheStoreResults(logger *zap.Logger, backendCacheKey string, results []*types.MetricData, backendCacheTimeout int32) {
+	var serializedResults bytes.Buffer
+	enc := gob.NewEncoder(&serializedResults)
+	err := enc.Encode(results)
+
+	if err != nil {
+		logger.Error("Error encoding backend results for caching")
+		return
+	}
+
+	config.Config.BackendCache.Set(backendCacheKey, serializedResults.Bytes(), backendCacheTimeout)
 }
