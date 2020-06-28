@@ -160,11 +160,18 @@ const (
 
 func (cfg *listener) findHandler(wr http.ResponseWriter, req *http.Request) {
 	_ = req.ParseMultipartForm(16 * 1024 * 1024)
+	hdrs := make(map[string][]string)
+
+	for n, v := range req.Header {
+		hdrs[n] = v
+	}
+
 	logger := cfg.logger.With(
 		zap.String("function", "findHandler"),
 		zap.String("method", req.Method),
 		zap.String("path", req.URL.Path),
 		zap.Any("form", req.Form),
+		zap.Any("headers", hdrs),
 	)
 	logger.Info("got request")
 
@@ -322,10 +329,17 @@ func (cfg *listener) findHandler(wr http.ResponseWriter, req *http.Request) {
 }
 
 func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
+	hdrs := make(map[string][]string)
+
+	for n, v := range req.Header {
+		hdrs[n] = v
+	}
+
 	logger := cfg.logger.With(
 		zap.String("function", "renderHandler"),
 		zap.String("method", req.Method),
 		zap.String("path", req.URL.Path),
+		zap.Any("headers", hdrs),
 	)
 	logger.Info("got request")
 	if cfg.Code != http.StatusOK {
