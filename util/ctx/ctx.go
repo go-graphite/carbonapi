@@ -14,6 +14,7 @@ const (
 	uuidKey key = iota
 	headersToPassKey
 	headersToLogKey
+	maxDataPoints
 )
 
 func ifaceToString(v interface{}) string {
@@ -25,6 +26,14 @@ func ifaceToString(v interface{}) string {
 
 func getCtxString(ctx context.Context, k key) string {
 	return ifaceToString(ctx.Value(k))
+}
+
+func getCtxInt64(ctx context.Context, k key) int64 {
+	v := ctx.Value(k)
+	if v != nil {
+		return v.(int64)
+	}
+	return 0
 }
 
 func getCtxMapString(ctx context.Context, k key) map[string]string {
@@ -61,6 +70,14 @@ func GetUUID(ctx context.Context) string {
 
 func SetUUID(ctx context.Context, v string) context.Context {
 	return context.WithValue(ctx, uuidKey, v)
+}
+
+func SetMaxDatapoints(ctx context.Context, h int64) context.Context {
+	return context.WithValue(ctx, maxDataPoints, h)
+}
+
+func GetMaxDatapoints(ctx context.Context) int64 {
+	return getCtxInt64(ctx, maxDataPoints)
 }
 
 func ParseCtx(h http.HandlerFunc, uuidKey string) http.HandlerFunc {

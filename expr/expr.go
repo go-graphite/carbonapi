@@ -3,6 +3,8 @@ package expr
 import (
 	"context"
 
+	utilctx "github.com/go-graphite/carbonapi/util/ctx"
+
 	"github.com/ansel1/merry"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 	_ "github.com/go-graphite/carbonapi/expr/functions"
@@ -22,6 +24,7 @@ func (eval evaluator) FetchAndEvalExp(ctx context.Context, exp parser.Expr, from
 
 	multiFetchRequest := pb.MultiFetchRequest{}
 	metricRequestCache := make(map[string]parser.MetricRequest)
+	maxDataPoints := utilctx.GetMaxDatapoints(ctx)
 
 	for _, m := range exp.Metrics() {
 		fetchRequest := pb.FetchRequest{
@@ -29,6 +32,7 @@ func (eval evaluator) FetchAndEvalExp(ctx context.Context, exp parser.Expr, from
 			PathExpression: m.Metric,
 			StartTime:      m.From + from,
 			StopTime:       m.Until + until,
+			MaxDataPoints:  maxDataPoints,
 		}
 		metricRequest := parser.MetricRequest{
 			Metric: fetchRequest.PathExpression,

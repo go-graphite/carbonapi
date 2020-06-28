@@ -111,6 +111,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	until := r.FormValue("until")
 	template := r.FormValue("template")
 	maxDataPoints, _ := strconv.ParseInt(r.FormValue("maxDataPoints"), 10, 64)
+	ctx = utilctx.SetMaxDatapoints(ctx, maxDataPoints)
 	useCache := !parser.TruthyBool(r.FormValue("noCache"))
 	noNullPoints := parser.TruthyBool(r.FormValue("noNullPoints"))
 	// status will be checked later after we'll setup everything else
