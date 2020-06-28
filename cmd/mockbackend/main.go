@@ -341,6 +341,7 @@ func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
 		zap.String("path", req.URL.Path),
 		zap.Any("headers", hdrs),
 	)
+
 	logger.Info("got request")
 	if cfg.Code != http.StatusOK {
 		wr.WriteHeader(cfg.Code)
@@ -349,14 +350,47 @@ func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
 
 	format, err := getFormat(req)
 	if err != nil {
+		logger.Error("bad request, failed to parse format")
 		wr.WriteHeader(http.StatusBadRequest)
 		_, _ = wr.Write([]byte(err.Error()))
 		return
 	}
 
 	targets := req.Form["target"]
+	maxDataPoints := int64(0)
+
+	if format == protoV3Format {
+		body, err := ioutil.ReadAll(req.Body)
+		if err != nil {
+			logger.Error("bad request, failed to read request body",
+				zap.Error(err),
+			)
+			http.Error(wr, "bad request (failed to read request body): "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		var pv3Request protov3.MultiFetchRequest
+		err = pv3Request.Unmarshal(body)
+
+		if err != nil {
+			logger.Error("bad request, failed to unmarshal request",
+				zap.Error(err),
+			)
+			http.Error(wr, "bad request (failed to parse format): "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		targets = make([]string, len(pv3Request.Metrics))
+		for i, r := range pv3Request.Metrics {
+			targets[i] = r.PathExpression
+		}
+		maxDataPoints = pv3Request.Metrics[0].MaxDataPoints
+	}
+
 	logger.Info("request details",
 		zap.Strings("target", targets),
+		zap.String("format", format.String()),
+		zap.Int64("maxDataPoints", maxDataPoints),
 	)
 
 	multiv2 := protov2.MultiFetchResponse{
