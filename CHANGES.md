@@ -17,6 +17,14 @@ CHANGELOG
 ---------
 **0.14.0 (WIP)**
  - **[Breaking]**[Code] expr library and all functions now requires caller to pass context. See #485
+ - [Feature] Add a `backendCache` option that implements dedicated cache for backend responses. See #480 (thx to @jaroslawr)
+ - [Feature] For Prometheus backend it is now possible to specify max\_points\_per\_query
+ - [Improvement] carbonapi now pass maxDataPoints to backends that support carbonapi\_v3\_pb format. Previously 0 was passed.
+ - [Fix] metric find requests to backend now pass start and end time (thx to @faceair)
+ - [Fix] Fix 404 status code if backend have errors (thx to @lexx-bright)
+ - [Fix] Fix sorting in \*seriesLists functions (thx to Egor Redozubov)
+ - [Fix] Potential panic during groupByNode evaluation if callback is invalid expression
+
 
 **0.13.0**
  - [Fix] smartSummarize now supports wildcards in the metric names (thx to @Peter-Sh)
