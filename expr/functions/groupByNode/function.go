@@ -92,13 +92,13 @@ func (f *groupByNode) Do(e parser.Expr, from, until int64, values map[parser.Met
 
 		// create a stub context to evaluate the callback in
 		nexpr, _, err := parser.ParseExpr(expr)
+		if err != nil {
+			return nil, err
+		}
 		// remove all stub_ prefixes we've prepended before
 		nexpr.SetRawArgs(strings.Replace(nexpr.RawArgs(), "stub_", "", 1))
 		for argIdx := range nexpr.Args() {
 			nexpr.Args()[argIdx].SetTarget(strings.Replace(nexpr.Args()[0].Target(), "stub_", "", 1))
-		}
-		if err != nil {
-			return nil, err
 		}
 
 		nvalues := values
