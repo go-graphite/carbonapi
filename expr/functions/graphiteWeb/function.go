@@ -324,7 +324,7 @@ type graphiteError struct {
 	err    error
 }
 
-func (f *graphiteWeb) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *graphiteWeb) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	f.logger.Info("received request",
 		zap.Bool("working", f.working),
 	)

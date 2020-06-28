@@ -1,7 +1,9 @@
 package timeShift
 
 import (
+	"context"
 	"fmt"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -27,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // timeShift(seriesList, timeShift, resetEnd=True)
-func (f *timeShift) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *timeShift) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// FIXME(dgryski): support resetEnd=true
 	// FIXME(civil): support alignDst
 	offs, err := e.GetIntervalArg(1, -1)

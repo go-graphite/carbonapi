@@ -2,6 +2,7 @@ package mostDeviant
 
 import (
 	"container/heap"
+	"context"
 	"math"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
@@ -30,7 +31,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // mostDeviant(seriesList, n) -or- mostDeviant(n, seriesList)
-func (f *mostDeviant) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *mostDeviant) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	var nArg int
 	if !e.Args()[0].IsConst() {
 		// mostDeviant(seriesList, n)

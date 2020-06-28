@@ -2,13 +2,15 @@ package pearsonClosest
 
 import (
 	"container/heap"
+	"context"
 	"errors"
+	"math"
+
 	"github.com/dgryski/go-onlinestats"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"math"
 )
 
 type pearsonClosest struct {
@@ -30,7 +32,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // pearsonClosest(series, seriesList, n, direction=abs)
-func (f *pearsonClosest) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *pearsonClosest) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if len(e.Args()) > 3 {
 		return nil, types.ErrTooManyArguments
 	}

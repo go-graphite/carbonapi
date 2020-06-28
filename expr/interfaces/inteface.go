@@ -1,6 +1,8 @@
 package interfaces
 
 import (
+	"context"
+
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
@@ -22,7 +24,7 @@ func (b *FunctionBase) GetEvaluator() Evaluator {
 
 // Evaluator is a interface for any existing expression parser
 type Evaluator interface {
-	Eval(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
+	Eval(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
 }
 
 type Order int
@@ -48,7 +50,7 @@ type FunctionMetadata struct {
 type Function interface {
 	SetEvaluator(evaluator Evaluator)
 	GetEvaluator() Evaluator
-	Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
+	Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
 	Description() map[string]types.FunctionDescription
 }
 
@@ -56,6 +58,6 @@ type Function interface {
 type RewriteFunction interface {
 	SetEvaluator(evaluator Evaluator)
 	GetEvaluator() Evaluator
-	Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error)
+	Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error)
 	Description() map[string]types.FunctionDescription
 }

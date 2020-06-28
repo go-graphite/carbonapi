@@ -1,6 +1,7 @@
 package seriesList
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"sort"
@@ -30,7 +31,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *seriesList) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	useConstant := false
 	useDenom := false
 

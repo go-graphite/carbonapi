@@ -15,6 +15,9 @@ Changes
 
 CHANGELOG
 ---------
+**0.14.0 (WIP)**
+ - **[Breaking]**[Code] expr library and all functions now requires caller to pass context. See #485
+
 **0.13.0**
  - [Fix] smartSummarize now supports wildcards in the metric names (thx to @Peter-Sh)
  - [Fix] json format correctly distinguishes between +-inf and nan (thx to @faceair)

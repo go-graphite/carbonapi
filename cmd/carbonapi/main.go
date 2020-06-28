@@ -44,11 +44,6 @@ func main() {
 
 	config.Config.ZipperInstance = newZipper(carbonapiHttp.ZipperStats, &config.Config.Upstreams, config.Config.IgnoreClientTimeout, zapwriter.Logger("zipper"))
 
-	r := carbonapiHttp.InitHandlers(config.Config.HeadersToPass, config.Config.HeadersToLog)
-	handler := handlers.CompressHandler(r)
-	handler = handlers.CORS()(handler)
-	handler = handlers.ProxyHeaders(handler)
-
 	wg := sync.WaitGroup{}
 	if config.Config.Expvar.Enabled {
 		if config.Config.Expvar.Listen != "" || config.Config.Expvar.Listen != config.Config.Listen {
@@ -88,6 +83,11 @@ func main() {
 			}()
 		}
 	}
+
+	r := carbonapiHttp.InitHandlers(config.Config.HeadersToPass, config.Config.HeadersToLog)
+	handler := handlers.CompressHandler(r)
+	handler = handlers.CORS()(handler)
+	handler = handlers.ProxyHeaders(handler)
 
 	wg.Add(1)
 	go func() {

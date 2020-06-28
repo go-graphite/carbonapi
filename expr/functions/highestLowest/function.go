@@ -2,6 +2,7 @@ package highestLowest
 
 import (
 	"container/heap"
+	"context"
 	"fmt"
 	"math"
 	"strings"
@@ -32,7 +33,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // highestAverage(seriesList, n) , highestCurrent(seriesList, n), highestMax(seriesList, n)
-func (f *highest) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *highest) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err

@@ -1,6 +1,7 @@
 package linearRegression
 
 import (
+	"context"
 	"fmt"
 	"math"
 
@@ -31,7 +32,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // linearRegression(seriesList, startSourceAt=None, endSourceAt=None)
-func (f *linearRegression) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *linearRegression) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err

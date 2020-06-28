@@ -1,6 +1,8 @@
 package fallbackSeries
 
 import (
+	"context"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -26,7 +28,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // fallbackSeries( seriesList, fallback )
-func (f *fallbackSeries) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *fallbackSeries) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	/*
 		Takes a wildcard seriesList, and a second fallback metric.
 		If the wildcard does not match any series, draws the fallback metric.

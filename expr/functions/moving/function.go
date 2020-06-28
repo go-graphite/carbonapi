@@ -1,13 +1,15 @@
 package moving
 
 import (
+	"context"
 	"fmt"
+	"math"
+	"strconv"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"math"
-	"strconv"
 )
 
 type moving struct {
@@ -29,7 +31,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // movingXyz(seriesList, windowSize)
-func (f *moving) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	var n int
 	var err error
 

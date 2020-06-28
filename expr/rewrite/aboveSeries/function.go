@@ -1,6 +1,7 @@
 package aboveSeries
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 
@@ -29,7 +30,7 @@ func New(configFile string) []interfaces.RewriteFunctionMetadata {
 	return res
 }
 
-func (f *aboveSeries) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
+func (f *aboveSeries) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return false, nil, err
@@ -87,14 +88,14 @@ func (f *aboveSeries) Description() map[string]types.FunctionDescription {
 					Type:     types.Float,
 				},
 				{
-					Name: "search",
+					Name:     "search",
 					Required: true,
-					Type: types.String,
+					Type:     types.String,
 				},
 				{
-					Name: "replace",
+					Name:     "replace",
 					Required: true,
-					Type: types.String,
+					Type:     types.String,
 				},
 			},
 		},

@@ -173,11 +173,12 @@ func findList(multiGlobs *pbv3.MultiGlobResponse) ([]byte, error) {
 
 func findHandler(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
-	uuid := uuid.NewV4()
+	uid := uuid.NewV4()
 	// TODO: Migrate to context.WithTimeout
 	// ctx, _ := context.WithTimeout(context.TODO(), config.Config.ZipperTimeout)
-	ctx := utilctx.SetUUID(r.Context(), uuid.String())
+	ctx := utilctx.SetUUID(r.Context(), uid.String())
 	username, _, _ := r.BasicAuth()
+	requestHeaders := utilctx.GetLogHeaders(ctx)
 
 	format, ok, formatRaw := getFormat(r, treejsonFormat)
 	jsonp := r.FormValue("jsonp")
@@ -195,7 +196,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	var accessLogDetails = carbonapipb.AccessLogDetails{
 		Handler:        "find",
 		Username:       username,
-		CarbonapiUUID:  uuid.String(),
+		CarbonapiUUID:  uid.String(),
 		URL:            r.URL.RequestURI(),
 		PeerIP:         srcIP,
 		PeerPort:       srcPort,
@@ -203,7 +204,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		Referer:        r.Referer(),
 		URI:            r.RequestURI,
 		Format:         formatRaw,
-		RequestHeaders: utilctx.GetLogHeaders(ctx),
+		RequestHeaders: requestHeaders,
 	}
 
 	logAsError := false

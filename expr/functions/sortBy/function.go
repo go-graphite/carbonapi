@@ -1,6 +1,7 @@
 package sortBy
 
 import (
+	"context"
 	"fmt"
 	"sort"
 
@@ -30,7 +31,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // sortByMaxima(seriesList), sortByMinima(seriesList), sortByTotal(seriesList)
-func (f *sortBy) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *sortBy) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	original, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err

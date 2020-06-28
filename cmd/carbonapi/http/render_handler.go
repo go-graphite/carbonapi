@@ -254,7 +254,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 			ApiMetrics.RenderRequests.Add(1)
 
-			result, err := expr.FetchAndEvalExp(exp, from32, until32, values)
+			result, err := expr.FetchAndEvalExp(ctx, exp, from32, until32, values)
 			if err != nil {
 				errors[target] = merry.Wrap(err)
 			}

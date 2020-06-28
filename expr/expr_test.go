@@ -1,6 +1,7 @@
 package expr
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -201,7 +202,7 @@ func TestEvalExpr(t *testing.T) {
 				&data,
 			}
 
-			_, err = EvalExpr(exp, request.From, request.Until, metricMap)
+			_, err = EvalExpr(context.Background(), exp, request.From, request.Until, metricMap)
 			if err != nil {
 				t.Errorf("error='%v'", err)
 			}
@@ -365,7 +366,7 @@ func TestRewriteExpr(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rewritten, newTargets, err := RewriteExpr(tt.e, 0, 1, tt.m)
+			rewritten, newTargets, err := RewriteExpr(context.Background(), tt.e, 0, 1, tt.m)
 
 			if err != nil {
 				t.Errorf("failed to rewrite %v: %+v", tt.name, err)
@@ -465,7 +466,7 @@ func TestEvalCustomFromUntil(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			originalMetrics := th.DeepClone(tt.m)
 			exp, _, _ := parser.ParseExpr(tt.target)
-			g, err := EvalExpr(exp, tt.from, tt.until, tt.m)
+			g, err := EvalExpr(context.Background(), exp, tt.from, tt.until, tt.m)
 			if err != nil {
 				t.Errorf("failed to eval %v: %s", tt.name, err)
 				return

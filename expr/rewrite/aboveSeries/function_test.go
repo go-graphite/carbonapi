@@ -37,8 +37,8 @@ func TestDiffSeries(t *testing.T) {
 			},
 			th.RewriteTestResult{
 				Rewritten: true,
-				Targets: []string{"metricBog"},
-				Err: nil,
+				Targets:   []string{"metricBog"},
+				Err:       nil,
 			},
 		},
 		{
@@ -52,8 +52,8 @@ func TestDiffSeries(t *testing.T) {
 			},
 			th.RewriteTestResult{
 				Rewritten: true,
-				Targets: []string{"Bog", "metricHomyak"},
-				Err: nil,
+				Targets:   []string{"Bog", "metricHomyak"},
+				Err:       nil,
 			},
 		},
 		{
@@ -66,11 +66,10 @@ func TestDiffSeries(t *testing.T) {
 			},
 			th.RewriteTestResult{
 				Rewritten: true,
-				Targets: []string{"statsd.timers.metric.median"},
-				Err: nil,
+				Targets:   []string{"statsd.timers.metric.median"},
+				Err:       nil,
 			},
 		},
-
 	}
 
 	for _, tt := range tests {

@@ -1,7 +1,9 @@
 package countSeries
 
 import (
+	"context"
 	"fmt"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -27,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // countSeries(seriesList)
-func (f *countSeries) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *countSeries) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(civil): Check that series have equal length
 	args, err := helper.GetSeriesArgsAndRemoveNonExisting(e, from, until, values)
 	if err != nil {

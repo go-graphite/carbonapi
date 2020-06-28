@@ -1,6 +1,7 @@
 package integral
 
 import (
+	"context"
 	"math"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -28,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // integral(seriesList)
-func (f *integral) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *integral) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	return helper.ForEachSeriesDo(e, from, until, values, func(a *types.MetricData, r *types.MetricData) *types.MetricData {
 		current := 0.0
 		for i, v := range a.Values {

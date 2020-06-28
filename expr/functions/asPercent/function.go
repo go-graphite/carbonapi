@@ -1,6 +1,7 @@
 package asPercent
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -31,7 +32,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // asPercent(seriesList, total=None, *nodes)
-func (f *asPercent) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
@@ -130,7 +131,7 @@ func (f *asPercent) Do(e parser.Expr, from, until int64, values map[parser.Metri
 				seriesNameExprs[i] = parser.NewTargetExpr(seriesName)
 			}
 
-			result, err := f.Evaluator.Eval(parser.NewExprTyped("sumSeries", seriesNameExprs), from, until, values)
+			result, err := f.Evaluator.Eval(ctx, parser.NewExprTyped("sumSeries", seriesNameExprs), from, until, values)
 
 			if err != nil {
 				return nil, err

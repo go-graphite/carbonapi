@@ -1,13 +1,15 @@
 package perSecond
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"math"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"math"
 )
 
 // TODO(civil): See if it's possible to merge it with NonNegativeDerivative
@@ -30,7 +32,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // perSecond(seriesList, maxValue=None)
-func (f *perSecond) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *perSecond) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err

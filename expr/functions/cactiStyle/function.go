@@ -1,14 +1,16 @@
 package cactiStyle
 
 import (
+	"context"
 	"fmt"
+	"math"
+	"strings"
+
 	"github.com/dustin/go-humanize"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"math"
-	"strings"
 )
 
 type cactiStyle struct {
@@ -30,7 +32,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // cactiStyle(seriesList, system=None, units=None)
-func (f *cactiStyle) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *cactiStyle) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// Get the series data
 	original, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {

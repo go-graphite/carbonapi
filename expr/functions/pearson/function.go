@@ -1,13 +1,15 @@
 package pearson
 
 import (
+	"context"
 	"fmt"
+	"math"
+
 	"github.com/dgryski/go-onlinestats"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"math"
 )
 
 type pearson struct {
@@ -29,7 +31,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // pearson(series, series, windowSize)
-func (f *pearson) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *pearson) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg1, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err

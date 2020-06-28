@@ -1,14 +1,16 @@
 package movingMedian
 
 import (
+	"context"
 	"fmt"
+	"math"
+	"strconv"
+
 	"github.com/JaderDias/movingmedian"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"math"
-	"strconv"
 )
 
 type movingMedian struct {
@@ -30,7 +32,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // movingMedian(seriesList, windowSize)
-func (f *movingMedian) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *movingMedian) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	var n int
 	var err error
 

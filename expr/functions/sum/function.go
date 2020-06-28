@@ -1,6 +1,8 @@
 package sum
 
 import (
+	"context"
+
 	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -27,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // sumSeries(*seriesLists)
-func (f *sum) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *sum) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(dgryski): make sure the arrays are all the same 'size'
 	args, err := helper.GetSeriesArgsAndRemoveNonExisting(e, from, until, values)
 	if err != nil {

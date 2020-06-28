@@ -1,6 +1,7 @@
 package isNotNull
 
 import (
+	"context"
 	"math"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -29,7 +30,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // isNonNull(seriesList)
 // alias: isNotNull(seriesList)
-func (f *isNotNull) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *isNotNull) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	e.SetTarget("isNonNull")
 
 	return helper.ForEachSeriesDo(e, from, until, values, func(a *types.MetricData, r *types.MetricData) *types.MetricData {

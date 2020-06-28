@@ -1,6 +1,8 @@
 package reduce
 
 import (
+	"context"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -27,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *reduce) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *reduce) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	const matchersStartIndex = 3
 
 	if len(e.Args()) < matchersStartIndex+1 {
@@ -95,7 +97,7 @@ AliasLoop:
 			reducedNodes[i] = parser.NewTargetExpr(matched.Name)
 		}
 
-		result, err := f.Evaluator.Eval(parser.NewExprTyped("alias", []parser.Expr{
+		result, err := f.Evaluator.Eval(ctx, parser.NewExprTyped("alias", []parser.Expr{
 			parser.NewExprTyped(reduceFunction, reducedNodes),
 			parser.NewValueExpr(aliasName),
 		}), from, until, reducedValues)

@@ -1,6 +1,7 @@
 package ifft
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"math/cmplx"
@@ -31,7 +32,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // ifft(absSeriesList, phaseSeriesList)
-func (f *ifft) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *ifft) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	absSeriesList, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err

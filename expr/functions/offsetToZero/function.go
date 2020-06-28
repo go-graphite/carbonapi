@@ -1,11 +1,13 @@
 package offsetToZero
 
 import (
+	"context"
+	"math"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"math"
 )
 
 type offsetToZero struct {
@@ -27,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // offsetToZero(seriesList)
-func (f *offsetToZero) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *offsetToZero) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	return helper.ForEachSeriesDo(e, from, until, values, func(a *types.MetricData, r *types.MetricData) *types.MetricData {
 		minimum := math.Inf(1)
 		for _, v := range a.Values {

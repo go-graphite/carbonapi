@@ -1,6 +1,7 @@
 package filter
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
@@ -37,7 +38,7 @@ var supportedOperators = map[string]struct{}{
 }
 
 // filterSeries(*seriesLists)
-func (f *filterSeries) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *filterSeries) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err

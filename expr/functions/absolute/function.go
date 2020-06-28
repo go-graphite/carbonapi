@@ -1,6 +1,7 @@
 package absolute
 
 import (
+	"context"
 	"math"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -26,7 +27,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *absolute) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *absolute) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	return helper.ForEachSeriesDo(e, from, until, values, func(a *types.MetricData, r *types.MetricData) *types.MetricData {
 		for i, v := range a.Values {
 			if math.IsNaN(a.Values[i]) {

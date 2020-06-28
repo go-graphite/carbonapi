@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"reflect"
@@ -16,10 +17,10 @@ import (
 )
 
 type FuncEvaluator struct {
-	eval func(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
+	eval func(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
 }
 
-func (evaluator *FuncEvaluator) Eval(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (evaluator *FuncEvaluator) Eval(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if e.IsName() {
 		return values[parser.MetricRequest{Metric: e.Target(), From: from, Until: until}], nil
 	} else if e.IsConst() {
@@ -34,7 +35,7 @@ func (evaluator *FuncEvaluator) Eval(e parser.Expr, from, until int64, values ma
 	}
 
 	if evaluator.eval != nil {
-		return evaluator.eval(e, from, until, values)
+		return evaluator.eval(context.Background(), e, from, until, values)
 	} else {
 		return nil, helper.ErrUnknownFunction(e.Target())
 	}
@@ -58,9 +59,9 @@ func EvaluatorFromFunc(function interfaces.Function) interfaces.Evaluator {
 
 func EvaluatorFromFuncWithMetadata(metadata map[string]interfaces.Function) interfaces.Evaluator {
 	e := &FuncEvaluator{
-		eval: func(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+		eval: func(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 			if f, ok := metadata[e.Target()]; ok {
-				return f.Do(e, from, until, values)
+				return f.Do(context.Background(), e, from, until, values)
 			}
 			return nil, fmt.Errorf("unknown function: %v", e.Target())
 		},
@@ -306,7 +307,7 @@ func TestSummarizeEvalExpr(t *testing.T, tt *SummarizeEvalTestItem) {
 	t.Run(tt.Name, func(t *testing.T) {
 		originalMetrics := DeepClone(tt.M)
 		exp, _, _ := parser.ParseExpr(tt.Target)
-		g, err := evaluator.Eval(exp, 0, 1, tt.M)
+		g, err := evaluator.Eval(context.Background(), exp, 0, 1, tt.M)
 		if err != nil {
 			t.Errorf("failed to eval %v: %+v", tt.Name, err)
 			return
@@ -347,7 +348,7 @@ func TestMultiReturnEvalExpr(t *testing.T, tt *MultiReturnEvalTestItem) {
 		t.Errorf("failed to parse %v: %+v", tt.Target, err)
 		return
 	}
-	g, err := evaluator.Eval(exp, 0, 1, tt.M)
+	g, err := evaluator.Eval(context.Background(), exp, 0, 1, tt.M)
 	if err != nil {
 		t.Errorf("failed to eval %v: %+v", tt.Name, err)
 		return
@@ -387,8 +388,8 @@ func TestMultiReturnEvalExpr(t *testing.T, tt *MultiReturnEvalTestItem) {
 
 type RewriteTestResult struct {
 	Rewritten bool
-	Targets []string
-	Err error
+	Targets   []string
+	Err       error
 }
 
 type RewriteTestItem struct {
@@ -404,7 +405,7 @@ func rewriteExpr(e parser.Expr, from, until int64, values map[parser.MetricReque
 		f, ok := metadata.FunctionMD.RewriteFunctions[e.Target()]
 		metadata.FunctionMD.RUnlock()
 		if ok {
-			return f.Do(e, from, until, values)
+			return f.Do(context.Background(), e, from, until, values)
 		}
 	}
 	return false, nil, nil
@@ -458,7 +459,7 @@ func TestEvalExpr(t *testing.T, tt *EvalTestItem) {
 		t.Errorf("failed to parse %s: %+v", tt.Target, err)
 		return
 	}
-	g, err := evaluator.Eval(exp, 0, 1, tt.M)
+	g, err := evaluator.Eval(context.Background(), exp, 0, 1, tt.M)
 	if err != nil {
 		t.Errorf("failed to eval %s: %+v", testName, err)
 		return

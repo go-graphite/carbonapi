@@ -55,13 +55,13 @@ type initFunc struct {
 
 func New(configs map[string]string) {
 	funcs := []initFunc{`)
-        for _, m := range funcs {
-                fmt.Fprintf(writer, `
+	for _, m := range funcs {
+		fmt.Fprintf(writer, `
 		{name: "%s", order: %s.GetOrder(), f: %s.New},`, m, m, m)
 
-        }
+	}
 
-        fmt.Fprintln(writer, `
+	fmt.Fprintln(writer, `
 	}
 
 	sort.Slice(funcs, func(i, j int) bool {

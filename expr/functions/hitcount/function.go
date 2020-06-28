@@ -1,13 +1,15 @@
 package hitcount
 
 import (
+	"context"
 	"fmt"
+	"math"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"math"
 )
 
 type hitcount struct {
@@ -29,7 +31,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // hitcount(seriesList, intervalString, alignToInterval=False)
-func (f *hitcount) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(dgryski): make sure the arrays are all the same 'size'
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {

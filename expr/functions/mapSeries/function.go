@@ -1,11 +1,13 @@
 package mapSeries
 
 import (
+	"context"
+	"strings"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"strings"
 )
 
 type mapSeries struct {
@@ -28,7 +30,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // mapSeries(seriesList, *mapNodes)
 // Alias: map
-func (f *mapSeries) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *mapSeries) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err

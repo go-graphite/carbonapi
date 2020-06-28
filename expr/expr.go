@@ -16,7 +16,7 @@ import (
 type evaluator struct{}
 
 // FetchAndEvalExp fetch data and evalualtes expressions
-func (eval evaluator) FetchAndEvalExp(exp parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (eval evaluator) FetchAndEvalExp(ctx context.Context, exp parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	config.Config.Limiter.Enter()
 	defer config.Config.Limiter.Leave()
 
@@ -53,7 +53,7 @@ func (eval evaluator) FetchAndEvalExp(exp parser.Expr, from, until int64, values
 	}
 
 	if len(multiFetchRequest.Metrics) > 0 {
-		metrics, _, err := config.Config.ZipperInstance.Render(context.TODO(), multiFetchRequest)
+		metrics, _, err := config.Config.ZipperInstance.Render(ctx, multiFetchRequest)
 		if err != nil {
 			return nil, err
 		}
@@ -71,12 +71,12 @@ func (eval evaluator) FetchAndEvalExp(exp parser.Expr, from, until int64, values
 		}
 	}
 
-	return eval.Eval(exp, from, until, values)
+	return eval.Eval(ctx, exp, from, until, values)
 }
 
 // Eval evalualtes expressions
-func (eval evaluator) Eval(exp parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (results []*types.MetricData, err error) {
-	rewritten, targets, err := RewriteExpr(exp, from, until, values)
+func (eval evaluator) Eval(ctx context.Context, exp parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (results []*types.MetricData, err error) {
+	rewritten, targets, err := RewriteExpr(ctx, exp, from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func (eval evaluator) Eval(exp parser.Expr, from, until int64, values map[parser
 			if err != nil {
 				return nil, err
 			}
-			result, err := eval.FetchAndEvalExp(exp, from, until, values)
+			result, err := eval.FetchAndEvalExp(ctx, exp, from, until, values)
 			if err != nil {
 				return nil, err
 			}
@@ -94,7 +94,7 @@ func (eval evaluator) Eval(exp parser.Expr, from, until int64, values map[parser
 		}
 		return results, nil
 	}
-	return EvalExpr(exp, from, until, values)
+	return EvalExpr(ctx, exp, from, until, values)
 }
 
 var _evaluator = evaluator{}
@@ -105,12 +105,12 @@ func init() {
 }
 
 // FetchAndEvalExp fetch data and evalualtes expressions
-func FetchAndEvalExp(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	return _evaluator.FetchAndEvalExp(e, from, until, values)
+func FetchAndEvalExp(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	return _evaluator.FetchAndEvalExp(ctx, e, from, until, values)
 }
 
 // Eval is the main expression evaluator
-func EvalExpr(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func EvalExpr(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if e.IsName() {
 		return values[parser.MetricRequest{Metric: e.Target(), From: from, Until: until}], nil
 	} else if e.IsConst() {
@@ -128,7 +128,7 @@ func EvalExpr(e parser.Expr, from, until int64, values map[parser.MetricRequest]
 	f, ok := metadata.FunctionMD.Functions[e.Target()]
 	metadata.FunctionMD.RUnlock()
 	if ok {
-		v, err := f.Do(e, from, until, values)
+		v, err := f.Do(ctx, e, from, until, values)
 		if err != nil {
 			err = merry.WithMessagef(err, "function=%s", e.Target())
 		}
@@ -143,13 +143,13 @@ func EvalExpr(e parser.Expr, from, until int64, values map[parser.MetricRequest]
 // applyByNode(foo*, 1, "%") -> (true, ["foo1", "foo2"], nil)
 // sumSeries(foo) -> (false, nil, nil)
 // Assumes that applyByNode only appears as the outermost function.
-func RewriteExpr(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
+func RewriteExpr(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
 	if e.IsFunc() {
 		metadata.FunctionMD.RLock()
 		f, ok := metadata.FunctionMD.RewriteFunctions[e.Target()]
 		metadata.FunctionMD.RUnlock()
 		if ok {
-			return f.Do(e, from, until, values)
+			return f.Do(ctx, e, from, until, values)
 		}
 	}
 	return false, nil, nil

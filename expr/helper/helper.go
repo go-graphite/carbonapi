@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"regexp"
@@ -36,7 +37,7 @@ func GetSeriesArg(arg parser.Expr, from, until int64, values map[parser.MetricRe
 		return nil, parser.ErrMissingTimeseries
 	}
 
-	a, err := evaluator.Eval(arg, from, until, values)
+	a, err := evaluator.Eval(context.TODO(), arg, from, until, values)
 	if err != nil {
 		return nil, err
 	}

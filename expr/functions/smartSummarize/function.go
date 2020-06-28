@@ -1,14 +1,16 @@
 package smartSummarize
 
 import (
+	"context"
 	"fmt"
+	"math"
+
 	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"math"
 )
 
 type smartSummarize struct {
@@ -30,7 +32,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // smartSummarize(seriesList, intervalString, alignToInterval=False)
-func (f *smartSummarize) Do(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *smartSummarize) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(dgryski): make sure the arrays are all the same 'size'
 	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
@@ -71,7 +73,7 @@ func (f *smartSummarize) Do(e parser.Expr, from, until int64, values map[parser.
 		if alignToInterval != "" {
 			name += fmt.Sprintf(",'%s')", alignToInterval)
 		} else {
-			name += ")";
+			name += ")"
 		}
 
 		r := types.MetricData{FetchResponse: pb.FetchResponse{
