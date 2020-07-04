@@ -129,7 +129,6 @@ _When `format=png`_ (default if not specified)
 | timeSlice |
 | unique |
 | verticalLine |
-| weightedAverage |
 | xFilesFactor |
 
 
@@ -267,6 +266,7 @@ _When `format=png`_ (default if not specified)
 | timeStack(seriesList, timeShiftUnit='1d', timeShiftStart=0, timeShiftEnd=7) | no |
 | transformNull(seriesList, default=0, referenceSeries=None) | no |
 | useSeriesAbove(seriesList, value, search, replace) | no |
+| weightedAverage(seriesListAvg, seriesListWeight, *nodes)| no |
 | diffSeriesLists(firstSeriesList, secondSeriesList) | yes |
 | exponentialWeightedMovingAverage(seriesList, alpha) | yes |
 | exponentialWeightedMovingAverage(seriesList, alpha) | yes |
