@@ -7,8 +7,6 @@ import (
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-
-	"strings"
 )
 
 type aliasByTags struct {
@@ -42,27 +40,10 @@ func (f *aliasByTags) Do(ctx context.Context, e parser.Expr, from, until int64, 
 	var results []*types.MetricData
 
 	for _, a := range args {
-		var matched []string
-		metricTags := a.Tags
-		nodes := strings.Split(metricTags["name"], ".")
-		for _, tag := range tags {
-			if tag.IsTag {
-				tagStr := tag.Value.(string)
-				matched = append(matched, metricTags[tagStr])
-			} else {
-				f := tag.Value.(int)
-				if f < 0 {
-					f += len(nodes)
-				}
-				if f >= len(nodes) || f < 0 {
-					continue
-				}
-				matched = append(matched, nodes[f])
-			}
-		}
+		name := helper.AggKey(a, tags)
 		r := *a
-		if len(matched) > 0 {
-			r.Name = strings.Join(matched, ".")
+		if len(name) > 0 {
+			r.Name = name
 		}
 		results = append(results, &r)
 	}
