@@ -9,7 +9,7 @@ What you should take into account
 3. Function-specific tests should be also stored in `expr/functions/$function_name$`
 4. Function type should be called exactly the same as package
 5. Function type must implement `interfaces.Function`. There is helper `interfaces.FunctionBase` that implements basic `SetEvaluator` and `GetEvaluator` functions
-6. There is a way to auto-generate `Description` method from graphite-web's output: `scripts/json_to_go_struct.sh`. Script is very hackish, but works most of the time.
+6. There is a way to auto-generate `Description` method from graphite-web's /functions handler output: `scripts/json_to_go_struct.sh`. Script is very hackish, but works most of the time.
 7. Each function must have valid description, type, name, etc. Ideally description should contain examples, but that's not a strict requirement
 8. All functions and it's aliases must be registered in `func init()`.
 9. To create new `expr/functions/glue.go` you can do `cd expr/functions/; go generate > glue.go.new; mv glue.go.new glue.go`. This will automatically add all necessary imports.
