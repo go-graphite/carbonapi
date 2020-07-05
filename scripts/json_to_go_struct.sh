@@ -9,7 +9,7 @@
 usage() {
 	echo "${0} func_list_output.json function_dir code_path"
 	echo
-	echo "Main idea of this file is to get graphite-web's json and autogenerate description as a Go-struct."
+	echo "Main idea of this file is to get graphite-web's /functions handler json output and autogenerate description as a Go-struct."
 	echo "Example: ./${0} ./func.json below ~/go/gopath_third_party/src/github.com/go-graphite/carbonapi"
 }
 
@@ -46,8 +46,8 @@ FUNCTIONS=$(egrep 'RegisterFunction|functions :=' "${CODE_PATH}"/"${FUNCTIONS_DI
 {
 echo
 echo "// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web"
-echo "func (f *${FUNCTION_DIR}) Description() map[string]*types.FunctionDescription {"
-echo "return map[string]*types.FunctionDescription{"
+echo "func (f *${FUNCTION_DIR}) Description() map[string]types.FunctionDescription {"
+echo "return map[string]types.FunctionDescription{"
 for NAME in ${FUNCTIONS}; do
 	JSON=$(jq ".[\"${NAME}\"]" "${JSON_FILE}")
 	echo "\"${NAME}\": {"

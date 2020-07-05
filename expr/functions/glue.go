@@ -97,6 +97,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/timeStack"
 	"github.com/go-graphite/carbonapi/expr/functions/transformNull"
 	"github.com/go-graphite/carbonapi/expr/functions/tukey"
+	"github.com/go-graphite/carbonapi/expr/functions/weightedAverage"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 )
@@ -202,6 +203,7 @@ func New(configs map[string]string) {
 		{name: "timeStack", order: timeStack.GetOrder(), f: timeStack.New},
 		{name: "transformNull", order: transformNull.GetOrder(), f: transformNull.New},
 		{name: "tukey", order: tukey.GetOrder(), f: tukey.New},
+		{name: "weightedAverage", order: weightedAverage.GetOrder(), f: weightedAverage.New},
 	}
 
 	sort.Slice(funcs, func(i, j int) bool {

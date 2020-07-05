@@ -33,6 +33,7 @@ func (f *aliasByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 	if err != nil {
 		return nil, err
 	}
+	// TODO(Felixoid): use helper.AggKey
 
 	fields, err := e.GetIntArgs(1)
 	if err != nil {

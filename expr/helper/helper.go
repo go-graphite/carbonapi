@@ -90,6 +90,32 @@ func GetSeriesArgsAndRemoveNonExisting(e parser.Expr, from, until int64, values 
 	return args, nil
 }
 
+// AggKey returns joined by dot nodes of tags names
+func AggKey(arg *types.MetricData, nodesOrTags []parser.NodeOrTag) string {
+	var matched []string
+	metricTags := arg.Tags
+	nodes := strings.Split(metricTags["name"], ".")
+	for _, nt := range nodesOrTags {
+		if nt.IsTag {
+			tagStr := nt.Value.(string)
+			matched = append(matched, metricTags[tagStr])
+		} else {
+			f := nt.Value.(int)
+			if f < 0 {
+				f += len(nodes)
+			}
+			if f >= len(nodes) || f < 0 {
+				continue
+			}
+			matched = append(matched, nodes[f])
+		}
+	}
+	if len(matched) > 0 {
+		return strings.Join(matched, ".")
+	}
+	return ""
+}
+
 type seriesFunc func(*types.MetricData, *types.MetricData) *types.MetricData
 
 // ForEachSeriesDo do action for each serie in list.
