@@ -133,12 +133,9 @@ service starts to send any data out and don't want to have errors from Grafana.
 Default: 404
 
 ### Example:
-This is example to log all dashboard/panel ids from Grafana
+This is example to return HTTP code 200
 ```yaml
-headersToLog:
-    - "X-Dashboard-Id"
-    - "X-Grafana-Org-Id"
-    - "X-Panel-Id"
+notFoundStatusCode: 200
 ```
 
 ***
