@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/go-graphite/carbonapi/date"
 	"github.com/go-graphite/carbonapi/expr"
 	"github.com/go-graphite/carbonapi/expr/functions/cairo/png"
+	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	utilctx "github.com/go-graphite/carbonapi/util/ctx"
@@ -259,6 +261,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				errors[target] = merry.Wrap(err)
 			}
+
+			sort.Sort(helper.ByNameNatural(result))
 
 			results = append(results, result...)
 		}
