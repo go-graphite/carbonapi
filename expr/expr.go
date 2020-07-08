@@ -58,7 +58,8 @@ func (eval evaluator) FetchAndEvalExp(ctx context.Context, exp parser.Expr, from
 
 	if len(multiFetchRequest.Metrics) > 0 {
 		metrics, _, err := config.Config.ZipperInstance.Render(ctx, multiFetchRequest)
-		if err != nil {
+		// If we had only partial result, we want to do our best to actually do our job
+		if err != nil && merry.HTTPCode(err) >= 400 {
 			return nil, err
 		}
 		for _, metric := range metrics {

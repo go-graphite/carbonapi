@@ -17,4 +17,10 @@ listeners:
        data:
          - metricName: "metric.metric2"
            values: [50, 55]
-
+     "metric.metric[34]":
+       pathExpression: "metric.metric[34]"
+       data:
+         - metricName: "metric.metric3"
+           values: [-2.0, -3.0]
+         - metricName: "metric.metric4"
+           values: [-2.0, 5.0]

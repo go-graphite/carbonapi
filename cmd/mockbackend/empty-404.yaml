@@ -1,7 +1,11 @@
 listeners:
-        - address: ":9070"
+        - address: ":9071"
           expressions:
                 "a":
                     pathExpression: "a"
+                    emptyBody: true
+                    httpCode: 404
+                "*":
+                    pathExpression: "*"
                     emptyBody: true
                     httpCode: 404
