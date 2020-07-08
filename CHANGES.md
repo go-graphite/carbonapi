@@ -19,11 +19,14 @@ CHANGELOG
  - **[Breaking]**[Code] expr library and all functions now requires caller to pass context. See #485
  - [Feature] Add a `backendCache` option that implements dedicated cache for backend responses. See #480 (thx to @jaroslawr)
  - [Feature] For Prometheus backend it is now possible to specify max\_points\_per\_query
+ - [Feature] weightedAverage function (thx to @Felixoid)
  - [Improvement] carbonapi now pass maxDataPoints to backends that support carbonapi\_v3\_pb format. Previously 0 was passed.
  - [Fix] metric find requests to backend now pass start and end time (thx to @faceair)
  - [Fix] Fix 404 status code if backend have errors (thx to @lexx-bright)
  - [Fix] Fix sorting in \*seriesLists functions (thx to Egor Redozubov)
  - [Fix] Potential panic during groupByNode evaluation if callback is invalid expression
+ - [Fix] Partially overlapping backend groups caused some queries to return empty result
+ - [Fix] Sorting metrics should work now in the same way as in graphite-web (thx to @Felixoid)
 
 
 **0.13.0**
