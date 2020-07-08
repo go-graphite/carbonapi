@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"sort"
 
 	"github.com/ansel1/merry"
+	"github.com/go-graphite/carbonapi/expr/helper"
 	tags2 "github.com/go-graphite/carbonapi/expr/tags"
 	"github.com/go-graphite/carbonapi/expr/types"
 	util "github.com/go-graphite/carbonapi/util/ctx"
@@ -97,6 +99,8 @@ func (z zipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*ty
 			})
 		}
 	}
+
+	sort.Sort(helper.ByNameNatural(result))
 
 	return result, stats, err
 }
