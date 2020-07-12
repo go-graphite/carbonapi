@@ -33,11 +33,10 @@ func New(configFile string) []interfaces.FunctionMetadata {
 func (f *multiplySeries) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	r := types.MetricData{
 		FetchResponse: pb.FetchResponse{
-			Name:      fmt.Sprintf("multiplySeries(%s)", e.RawArgs()),
-			StartTime: from,
-			StopTime:  until,
+			Name: fmt.Sprintf("multiplySeries(%s)", e.RawArgs()),
 		},
 	}
+
 	for _, arg := range e.Args() {
 		series, err := helper.GetSeriesArg(arg, from, until, values)
 		if err != nil {
@@ -46,6 +45,8 @@ func (f *multiplySeries) Do(ctx context.Context, e parser.Expr, from, until int6
 
 		if r.Values == nil {
 			r.StepTime = series[0].StepTime
+			r.StartTime = series[0].StartTime
+			r.StopTime = series[0].StopTime
 			r.Values = make([]float64, len(series[0].Values))
 			copy(r.Values, series[0].Values)
 			series = series[1:]

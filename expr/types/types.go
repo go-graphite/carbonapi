@@ -3,9 +3,7 @@ package types
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"math"
-	"runtime/debug"
 	"sort"
 	"strconv"
 	"strings"
@@ -248,13 +246,6 @@ func MarshalProtobufV3(results []*MetricData) ([]byte, error) {
 	return b, nil
 }
 
-// MarshalProtobuf returns same things as MarshalProtobufV3
-//
-// Deprecated: replaced by MarshalProtobufV3 and will be removed after February 2020
-func MarshalProtobuf(results []*MetricData) ([]byte, error) {
-	return MarshalProtobufV3(results)
-}
-
 // MarshalRaw marshals metric data to graphite's internal format, called 'raw'
 func MarshalRaw(results []*MetricData) []byte {
 
@@ -324,7 +315,8 @@ func (r *MetricData) AggregateValues() {
 	if r.AggregateFunction == nil {
 		var ok bool
 		if r.AggregateFunction, ok = consolidations.ConsolidationToFunc[strings.ToLower(r.ConsolidationFunc)]; !ok {
-			fmt.Printf("\nconsolidateFunc = %+v\n\nstack:\n%v\n\n", r.ConsolidationFunc, string(debug.Stack()))
+			// if consolidation function is not known, we should fall back to average
+			r.AggregateFunction = consolidations.AvgValue
 		}
 	}
 
