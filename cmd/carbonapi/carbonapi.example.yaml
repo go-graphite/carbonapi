@@ -43,8 +43,8 @@ define:
   -
     name: "perMinute"
     template: "perSecond({{.argString}})|scale(60)"
-# Control what status code will be returned where /render or find query do not return any metric
-notFoundStatusCode: 404
+# Control what status code will be returned where /render or find query do not return any metric. Default is 200
+notFoundStatusCode: 200
 # Max concurrent requests to CarbonZipper
 concurency: 1000
 cache:

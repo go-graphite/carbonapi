@@ -130,7 +130,7 @@ This option controls what status code will be returned if `/render` or `/metrics
 In some cases someone would like to override this to "200". Example use case - when you create a dashboard before
 service starts to send any data out and don't want to have errors from Grafana.
 
-Default: 404
+Default: 200
 
 ### Example:
 This is example to return HTTP code 200

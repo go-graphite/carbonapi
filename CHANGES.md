@@ -20,6 +20,7 @@ CHANGELOG
 **0.14.0 (WIP)**
  - **[Breaking]**[Code] expr library and all functions now requires caller to pass context. See #485
  - **[Breaking]**[Config] for protocol `auto` there is now no default implied concurrency limit of `100` as it was before.
+ - **[Breaking]**[Config] Changed default value for `notFoundStatusCode` to 200 to match graphite-web behavior
  - [Feature] Add a `backendCache` option that implements dedicated cache for backend responses. See #480 (thx to @jaroslawr)
  - [Feature] For Prometheus backend it is now possible to specify max\_points\_per\_query
  - [Feature] weightedAverage function (thx to @Felixoid)
