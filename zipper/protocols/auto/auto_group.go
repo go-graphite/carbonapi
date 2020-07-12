@@ -2,12 +2,12 @@ package auto
 
 import (
 	"context"
-	"github.com/ansel1/merry"
 	"net"
 	"net/http"
 	"net/url"
 	"time"
 
+	"github.com/ansel1/merry"
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/zipper/broadcast"
 	"github.com/go-graphite/carbonapi/zipper/helper"
@@ -75,12 +75,12 @@ type CapabilityResponse struct {
 	ProtoToServers map[string][]string
 }
 
-func getBestSupportedProtocol(logger *zap.Logger, servers []string, concurrencyLimit int) *CapabilityResponse {
+func getBestSupportedProtocol(logger *zap.Logger, servers []string) *CapabilityResponse {
 	response := &CapabilityResponse{
 		ProtoToServers: make(map[string][]string),
 	}
 	groupName := "capability query"
-	limiter := limiter.NewServerLimiter([]string{groupName}, concurrencyLimit)
+	l := limiter.NoopLimiter{}
 
 	httpClient := &http.Client{
 		Transport: &http.Transport{
@@ -100,7 +100,7 @@ func getBestSupportedProtocol(logger *zap.Logger, servers []string, concurrencyL
 	resCh := make(chan capabilityResponse, len(servers))
 
 	for _, srv := range servers {
-		go doQuery(ctx, logger, groupName, httpClient, limiter, srv, request, resCh)
+		go doQuery(ctx, logger, groupName, httpClient, l, srv, request, resCh)
 	}
 
 	answeredServers := make(map[string]struct{})
@@ -136,7 +136,6 @@ GATHER:
 	return response
 }
 
-// RoundRobin is used to connect to backends inside clientGroups, implements BackendServer interface
 type AutoGroup struct {
 	groupName string
 }
@@ -148,11 +147,12 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool) (types.BackendServer, merry.Error) {
 	logger = logger.With(zap.String("type", "autoGroup"), zap.String("name", config.GroupName))
 
-	limit := 100
-	if config.ConcurrencyLimit != nil {
-		limit = *config.ConcurrencyLimit
+	if config.ConcurrencyLimit == nil {
+		logger.Error("this behavior changes in 0.14.0, before that there was an implied concurrencyLimit of 100 for the backend. Currently it's required to specify this limit for auto backend as well.")
+		return nil, types.ErrConcurrencyLimitNotSet
 	}
-	res := getBestSupportedProtocol(logger, config.Servers, limit)
+
+	res := getBestSupportedProtocol(logger, config.Servers)
 	if res == nil {
 		return nil, merry.New("can't query all backend")
 	}
@@ -188,7 +188,7 @@ func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool) (typ
 		broadcastClients = append(broadcastClients, c)
 	}
 
-	return broadcast.NewBroadcastGroup(logger, config.GroupName+"_broadcast", broadcastClients, 600, limit, *config.MaxBatchSize, *config.Timeouts, tldCacheDisabled)
+	return broadcast.NewBroadcastGroup(logger, config.GroupName+"_broadcast", broadcastClients, 600, *config.ConcurrencyLimit, *config.MaxBatchSize, *config.Timeouts, tldCacheDisabled)
 }
 
 func (c AutoGroup) MaxMetricsPerRequest() int {

@@ -11,12 +11,15 @@ Changes
 
 [Code] - code quality related change that shouldn't make any significant difference for end-user
 
+[Config] - related to config options or default parameters
+
 [Build] - only related to ways how someone can build application
 
 CHANGELOG
 ---------
 **0.14.0 (WIP)**
  - **[Breaking]**[Code] expr library and all functions now requires caller to pass context. See #485
+ - **[Breaking]**[Config] for protocol `auto` there is now no default implied concurrency limit of `100` as it was before.
  - [Feature] Add a `backendCache` option that implements dedicated cache for backend responses. See #480 (thx to @jaroslawr)
  - [Feature] For Prometheus backend it is now possible to specify max\_points\_per\_query
  - [Feature] weightedAverage function (thx to @Felixoid)
