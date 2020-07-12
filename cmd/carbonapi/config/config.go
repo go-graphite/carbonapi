@@ -150,5 +150,5 @@ var Config = ConfigType{
 		Enabled:      true,
 		PProfEnabled: false,
 	},
-	NotFoundStatusCode: 404,
+	NotFoundStatusCode: 200,
 }
