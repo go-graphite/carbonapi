@@ -17,7 +17,7 @@ Changes
 
 CHANGELOG
 ---------
-**0.14.0 (WIP)**
+**0.14.0**
  - **[Breaking]**[Code] expr library and all functions now requires caller to pass context. See #485
  - **[Breaking]**[Config] for protocol `auto` there is now no default implied concurrency limit of `100` as it was before.
  - **[Breaking]**[Config] Changed default value for `notFoundStatusCode` to 200 to match graphite-web behavior
@@ -31,6 +31,7 @@ CHANGELOG
  - [Fix] Potential panic during groupByNode evaluation if callback is invalid expression
  - [Fix] Partially overlapping backend groups caused some queries to return empty result
  - [Fix] Sorting metrics should work now in the same way as in graphite-web (thx to @Felixoid)
+ - [Fix] Time of the first timestamp was wrong if multiplySeries was applied (it matched request `from`)
 
 
 **0.13.0**
