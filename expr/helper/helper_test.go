@@ -47,3 +47,67 @@ func TestExtractTags(t *testing.T) {
 		})
 	}
 }
+
+func TestGCD(t *testing.T) {
+	tests := []struct {
+		arg1     int64
+		arg2     int64
+		expected int64
+	}{
+		{
+			13,
+			17,
+			1,
+		},
+		{
+			14,
+			21,
+			7,
+		},
+		{
+			12,
+			16,
+			4,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("GDC(%v, %v)=>%v", tt.arg1, tt.arg2, tt.expected), func(t *testing.T) {
+			value := GCD(tt.arg1, tt.arg2)
+			if value != tt.expected {
+				t.Errorf("GCD of %v and %v != %v: %v", tt.arg1, tt.arg2, tt.expected, value)
+			}
+		})
+	}
+}
+
+func TestLCM(t *testing.T) {
+	tests := []struct {
+		args     []int64
+		expected int64
+	}{
+		{
+			[]int64{2, 3},
+			6,
+		},
+		{
+			[]int64{},
+			0,
+		},
+		{
+			[]int64{15},
+			15,
+		},
+		{
+			[]int64{10, 15, 20},
+			60,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("LMC(%v)=>%v", tt.args, tt.expected), func(t *testing.T) {
+			value := LCM(tt.args...)
+			if value != tt.expected {
+				t.Errorf("LCM of %v != %v: %v", tt.args, tt.expected, value)
+			}
+		})
+	}
+}

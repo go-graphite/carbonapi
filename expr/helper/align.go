@@ -7,6 +7,32 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 )
 
+// GCD returns greatest common divisor calculated via Euclidean algorithm
+func GCD(a, b int64) int64 {
+	for b != 0 {
+		t := b
+		b = a % b
+		a = t
+	}
+	return a
+}
+
+// LCM returns the least common multiple of 2 or more integers via GDB
+func LCM(args ...int64) int64 {
+	if len(args) <= 1 {
+		if len(args) == 0 {
+			return 0
+		}
+		return args[0]
+	}
+	lcm := args[0] / GCD(args[0], args[1]) * args[1]
+
+	for i := 2; i < len(args); i++ {
+		lcm = LCM(lcm, args[i])
+	}
+	return lcm
+}
+
 // GetBuckets returns amount buckets for timeSeries (defined with startTime, stopTime and step (bucket) size.
 func GetBuckets(start, stop, bucketSize int64) int64 {
 	return int64(math.Ceil(float64(stop-start) / float64(bucketSize)))
