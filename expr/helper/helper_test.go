@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/go-graphite/carbonapi/expr/tags"
+	"github.com/go-graphite/carbonapi/expr/types"
 )
 
 func TestExtractTags(t *testing.T) {
@@ -107,6 +108,49 @@ func TestLCM(t *testing.T) {
 			value := LCM(tt.args...)
 			if value != tt.expected {
 				t.Errorf("LCM of %v != %v: %v", tt.args, tt.expected, value)
+			}
+		})
+	}
+}
+
+func TestGetCommonStep(t *testing.T) {
+	tests := []struct {
+		metrics    []*types.MetricData
+		commonStep int64
+	}{
+		// Different steps and start/stop time
+		{
+			[]*types.MetricData{
+				types.MakeMetricData("metric1", make([]float64, 15), 5, 5), // 5..80
+				types.MakeMetricData("metric2", make([]float64, 30), 2, 4), // 4..64
+				types.MakeMetricData("metric2", make([]float64, 25), 3, 6), // 6..81
+			},
+			30,
+		},
+		// Same set of points
+		{
+			[]*types.MetricData{
+				types.MakeMetricData("metric1", make([]float64, 15), 5, 5), // 5..80
+				types.MakeMetricData("metric2", make([]float64, 15), 5, 5), // 5..80
+				types.MakeMetricData("metric3", make([]float64, 15), 5, 5), // 5..80
+			},
+			5,
+		},
+		// Same step, different lengths
+		{
+			[]*types.MetricData{
+				types.MakeMetricData("metric1", make([]float64, 5), 5, 15), // 15..40
+				types.MakeMetricData("metric2", make([]float64, 8), 5, 30), // 30..70
+				types.MakeMetricData("metric3", make([]float64, 4), 5, 35), // 35..55
+			},
+			5,
+		},
+	}
+	for i, tt := range tests {
+		t.Run(fmt.Sprintf("Set %v", i), func(t *testing.T) {
+			com := GetCommonStep(tt.metrics)
+			if com != tt.commonStep {
+				t.Errorf("Result of GetCommonStep: %v; expected is %v", com, tt.commonStep)
 			}
 		})
 	}
