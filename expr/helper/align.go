@@ -124,9 +124,8 @@ func AlignSeries(args []*types.MetricData) []*types.MetricData {
 			}
 			if minStart < arg.StartTime {
 				valCnt := (arg.StartTime - minStart) / arg.StepTime
-				newVals := make([]float64, valCnt)
-				newVals = append(newVals, arg.Values...)
-				arg.Values = newVals
+				newVals := genNaNs(int(valCnt))
+				arg.Values = append(newVals, arg.Values...)
 				arg.StartTime = minStart
 			}
 
@@ -135,11 +134,19 @@ func AlignSeries(args []*types.MetricData) []*types.MetricData {
 			}
 			if maxStop > arg.StopTime {
 				valCnt := (maxStop - arg.StopTime) / arg.StepTime
-				newVals := make([]float64, valCnt)
+				newVals := genNaNs(int(valCnt))
 				arg.Values = append(arg.Values, newVals...)
 				arg.StopTime = maxStop
 			}
 		}
 	}
 	return args
+}
+
+func genNaNs(length int) []float64 {
+	nans := make([]float64, length)
+	for i := range nans {
+		nans[i] = math.NaN()
+	}
+	return nans
 }
