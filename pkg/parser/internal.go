@@ -39,14 +39,14 @@ func (e *expr) doGetStringArg() (string, error) {
 }
 
 func (e *expr) doGetBoolArg() (bool, error) {
-	if e.etype != EtString && e.etype != EtBool {
+	if e.etype != EtString && e.etype != EtBool && e.etype != EtConst {
 		return false, ErrBadType
 	}
 
 	switch e.valStr {
-	case "False", "false":
+	case "False", "false", "0":
 		return false, nil
-	case "True", "true":
+	case "True", "true", "1":
 		return true, nil
 	}
 
