@@ -409,7 +409,7 @@ func (z Zipper) InfoProtoV3(ctx context.Context, request *protov3.MultiGlobReque
 	logger := z.logger.With(zap.String("function", "InfoProtoV3"))
 	realRequest := &protov3.MultiMetricsInfoRequest{Names: make([]string, 0, len(request.Metrics))}
 	res, _, err := z.FindProtoV3(ctx, request)
-	if err == nil || err == types.ErrNonFatalErrors {
+	if err == nil || merry.Is(err, types.ErrNonFatalErrors) {
 		for _, m := range res.Metrics {
 			for _, match := range m.Matches {
 				if match.IsLeaf {

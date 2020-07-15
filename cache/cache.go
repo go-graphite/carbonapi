@@ -7,6 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ansel1/merry"
+
 	"github.com/bradfitz/gomemcache/memcache"
 
 	"github.com/dgryski/go-expirecache"
@@ -89,7 +91,7 @@ func (m *MemcachedCache) Get(k string) ([]byte, error) {
 
 	if err != nil {
 		// translate to internal cache miss error
-		if err == memcache.ErrCacheMiss {
+		if merry.Is(err, memcache.ErrCacheMiss) {
 			err = ErrNotFound
 		}
 		return nil, err

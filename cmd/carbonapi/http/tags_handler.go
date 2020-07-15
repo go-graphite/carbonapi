@@ -7,12 +7,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ansel1/merry"
+	uuid "github.com/satori/go.uuid"
+
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 	utilctx "github.com/go-graphite/carbonapi/util/ctx"
 	"github.com/go-graphite/carbonapi/zipper/types"
 	"github.com/lomik/zapwriter"
-	"github.com/satori/go.uuid"
 	"go.uber.org/zap"
 )
 
@@ -91,7 +93,7 @@ func tagHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO(civil): Implement stats
-	if err != nil && err != types.ErrNoMetricsFetched {
+	if err != nil && !merry.Is(err, types.ErrNoMetricsFetched) {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		accessLogDetails.HTTPCode = http.StatusInternalServerError
 		accessLogDetails.Reason = err.Error()
