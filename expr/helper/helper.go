@@ -9,6 +9,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/ansel1/merry"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -61,7 +62,7 @@ func GetSeriesArgs(e []parser.Expr, from, until int64, values map[parser.MetricR
 
 	for _, arg := range e {
 		a, err := GetSeriesArg(arg, from, until, values)
-		if err != nil && err != parser.ErrSeriesDoesNotExist {
+		if err != nil && !merry.Is(err, parser.ErrSeriesDoesNotExist) {
 			return nil, err
 		}
 		args = append(args, a...)

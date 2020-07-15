@@ -1,0 +1,12 @@
+listeners:
+        - address: ":9070"
+          expressions:
+                "seriesA":
+                    pathExpression: "seriesA"
+                    data:
+                        - metricName: "seriesA"
+                          values: [500.0, 1500.0]
+                "seriesB":
+                    pathExpression: "seriesB"
+                    emptyBody: true
+                    httpCode: 404

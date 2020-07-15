@@ -17,6 +17,10 @@ Changes
 
 CHANGELOG
 ---------
+**WIP**
+ - [Fix] Fix case where some metrics passed to functions like group or sumSeries were missing. Fixes #438
+ - [Fix] Accept `1` and `0` as bool arguments for `True` and `False`. (thx to @Felixoid)
+
 **0.14.0**
  - **[Breaking]**[Code] expr library and all functions now requires caller to pass context. See #485
  - **[Breaking]**[Config] for protocol `auto` there is now no default implied concurrency limit of `100` as it was before.
