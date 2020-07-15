@@ -371,3 +371,52 @@ func TestParseExpr(t *testing.T) {
 		})
 	}
 }
+
+func TestDoGetBoolVar(t *testing.T) {
+	tests := []struct {
+		s string
+		e *expr
+		r bool
+	}{
+		{
+			"1 is true",
+			&expr{val: 1, etype: EtConst, valStr: "1"},
+			true,
+		},
+		{
+			"true is true",
+			&expr{etype: EtString, valStr: "true"},
+			true,
+		},
+		{
+			"True is true",
+			&expr{etype: EtString, valStr: "True"},
+			true,
+		},
+		{
+			"0 is false",
+			&expr{val: 0, etype: EtConst, valStr: "0"},
+			false,
+		},
+		{
+			"False is false",
+			&expr{etype: EtString, valStr: "False"},
+			false,
+		},
+		{
+			"false is false",
+			&expr{etype: EtString, valStr: "false"},
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.s, func(t *testing.T) {
+			assert := assert.New(t)
+
+			r, err := tt.e.doGetBoolArg()
+			if assert.NoError(err) {
+				assert.Equal(tt.r, r, tt.s)
+			}
+		})
+	}
+}
