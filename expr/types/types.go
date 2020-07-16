@@ -296,6 +296,19 @@ func (r *MetricData) AggregatedTimeStep() int64 {
 	return r.StepTime * int64(r.ValuesPerPoint)
 }
 
+// GetAggregateFunction returns MetricData.AggregateFunction and set it, if it's not yet
+func (r *MetricData) GetAggregateFunction() func([]float64) float64 {
+	if r.AggregateFunction == nil {
+		var ok bool
+		if r.AggregateFunction, ok = consolidations.ConsolidationToFunc[strings.ToLower(r.ConsolidationFunc)]; !ok {
+			// if consolidation function is not known, we should fall back to average
+			r.AggregateFunction = consolidations.AvgValue
+		}
+	}
+
+	return r.AggregateFunction
+}
+
 // AggregatedValues aggregates values (with cache)
 func (r *MetricData) AggregatedValues() []float64 {
 	if r.aggregatedValues == nil {
@@ -311,14 +324,7 @@ func (r *MetricData) AggregateValues() {
 		copy(r.aggregatedValues, r.Values)
 		return
 	}
-
-	if r.AggregateFunction == nil {
-		var ok bool
-		if r.AggregateFunction, ok = consolidations.ConsolidationToFunc[strings.ToLower(r.ConsolidationFunc)]; !ok {
-			// if consolidation function is not known, we should fall back to average
-			r.AggregateFunction = consolidations.AvgValue
-		}
-	}
+	aggFunc := r.GetAggregateFunction()
 
 	n := len(r.Values)/r.ValuesPerPoint + 1
 	aggV := make([]float64, 0, n)
@@ -326,13 +332,13 @@ func (r *MetricData) AggregateValues() {
 	v := r.Values
 
 	for len(v) >= r.ValuesPerPoint {
-		val := r.AggregateFunction(v[:r.ValuesPerPoint])
+		val := aggFunc(v[:r.ValuesPerPoint])
 		aggV = append(aggV, val)
 		v = v[r.ValuesPerPoint:]
 	}
 
 	if len(v) > 0 {
-		val := r.AggregateFunction(v)
+		val := aggFunc(v)
 		aggV = append(aggV, val)
 	}
 
