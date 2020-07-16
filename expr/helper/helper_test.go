@@ -1,6 +1,8 @@
 package helper
 
 import (
+	"fmt"
+	"math"
 	"testing"
 
 	"github.com/go-graphite/carbonapi/expr/tags"
@@ -151,6 +153,82 @@ func TestGetCommonStep(t *testing.T) {
 			com := GetCommonStep(tt.metrics)
 			if com != tt.commonStep {
 				t.Errorf("Result of GetCommonStep: %v; expected is %v", com, tt.commonStep)
+			}
+		})
+	}
+}
+
+func TestScaleToCommonStep(t *testing.T) {
+	NaN := math.NaN()
+	tests := []struct {
+		name     string
+		metrics  []*types.MetricData
+		expected []*types.MetricData
+	}{
+		{
+			"Normal metrics",
+			[]*types.MetricData{
+				types.MakeMetricData("metric1", []float64{1, 3, 5, 7, 9, 11, 13, 15, 17}, 1, 4), // 4..13
+				types.MakeMetricData("metric2", []float64{1, 2, 3, 4, 5}, 2, 4),                 // 4..14
+				types.MakeMetricData("metric3", []float64{1, 2, 3, 4, 5, 6}, 3, 3),              // 3..21
+			},
+			[]*types.MetricData{
+				types.MakeMetricData("metric1", []float64{2, 10, 17}, 6, 0),      // 0..18
+				types.MakeMetricData("metric2", []float64{1, 3, 5}, 6, 0),        // 0..18
+				types.MakeMetricData("metric3", []float64{1, 2.5, 4.5, 6}, 6, 0), // 0..24
+			},
+		},
+		{
+			"xFilesFactor and custom aggregate function",
+			[]*types.MetricData{
+				types.MakeMetricData("metric1", []float64{NaN, 3, 5, 7, 9, 11, 13, 15, 17}, 1, 3), // 3..12
+				types.MakeMetricData("metric2", []float64{1, 2, 3, 4, 5}, 2, 4),                   // 4..14
+				types.MakeMetricData("metric3", []float64{1, 2, 3, 4, 5, 6}, 3, 3),                // 3..21
+				types.MakeMetricData("metric6", []float64{1, 2, 3, 4, 5}, 6, 0),                   // 0..30
+			},
+			[]*types.MetricData{
+				types.MakeMetricData("metric1", []float64{NaN, 72}, 6, 0),        // 0..12
+				types.MakeMetricData("metric2", []float64{NaN, 2, NaN}, 6, 0),    // 0..18
+				types.MakeMetricData("metric3", []float64{NaN, 3, 5, NaN}, 6, 0), // 0..24
+				types.MakeMetricData("metric6", []float64{1, 2, 3, 4, 5}, 6, 0),  // 0..30, unchanged
+			},
+		},
+	}
+	custom := tests[1].metrics
+	custom[0].ConsolidationFunc = "sum"
+	custom[1].ConsolidationFunc = "min"
+	custom[2].ConsolidationFunc = "max"
+	custom[0].XFilesFactor = 0.45
+	custom[1].XFilesFactor = 0.45
+	custom[2].XFilesFactor = 0.51
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ScaleToCommonStep(tt.metrics)
+			if len(result) != len(tt.expected) {
+				t.Errorf("Result has different length %v than expected %v", len(result), len(tt.expected))
+			}
+			for i, r := range result {
+				e := tt.expected[i]
+				if len(r.Values) != len(e.Values) {
+					t.Fatalf("Values of result[%v] has the different length %v than expected %v", i, len(r.Values), len(e.Values))
+				}
+				for v, rv := range r.Values {
+					ev := e.Values[v]
+					if math.IsNaN(rv) != math.IsNaN(ev) {
+						t.Errorf("One of result[%v][%v] is NaN, but not the second: result=%v, expected=%v", i, v, rv, ev)
+					} else if !math.IsNaN(rv) && (rv != ev) {
+						t.Errorf("result[%v][%v] %v != expected[%v][%v]: %v", i, v, rv, i, v, ev)
+					}
+				}
+				if r.StartTime != e.StartTime {
+					t.Errorf("result[%v].StartTime %v != expected[%v].StartTime %v", i, r.StartTime, i, e.StartTime)
+				}
+				if r.StopTime != e.StopTime {
+					t.Errorf("result[%v].StopTime %v != expected[%v].StopTime %v", i, r.StopTime, i, e.StopTime)
+				}
+				if r.StepTime != e.StepTime {
+					t.Errorf("result[%v].StepTime %v != expected[%v].StepTime %v", i, r.StepTime, i, e.StepTime)
+				}
 			}
 		})
 	}

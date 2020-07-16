@@ -44,6 +44,60 @@ func GetCommonStep(args []*types.MetricData) int64 {
 	return commonStep
 }
 
+// ScaleToCommonStep returns the metrics, aligned LCM of all metrics steps.
+// It respects xFilesFactor and fills gaps in the begin and end with NaNs if needed.
+func ScaleToCommonStep(args []*types.MetricData) []*types.MetricData {
+	commonStep := GetCommonStep(args)
+	for _, arg := range args {
+		if arg.StepTime == commonStep {
+			continue
+		}
+		stepFactor := commonStep / arg.StepTime
+		newStart := arg.StartTime - (arg.StartTime % commonStep)
+		if (arg.StartTime % commonStep) != 0 {
+			// Fill with NaNs from newStart to arg.StartTime
+			valCnt := (arg.StartTime - newStart) / arg.StepTime
+			nans := genNaNs(int(valCnt))
+			arg.Values = append(nans, arg.Values...)
+			arg.StartTime = newStart
+		}
+
+		newValsLen := 1 + int64(len(arg.Values)-1)/stepFactor
+		newStop := arg.StartTime + newValsLen*commonStep
+		newVals := make([]float64, 0, newValsLen)
+
+		if len(arg.Values) != int(stepFactor*newValsLen) {
+			// Fill the last step with NaNs from newStart to (newStart + commonStep - arg.StepTime)
+			valCnt := int(stepFactor*newValsLen) - len(arg.Values)
+			nans := genNaNs(valCnt)
+			arg.Values = append(arg.Values, nans...)
+		}
+		arg.StopTime = newStop
+		for i := 0; i < len(arg.Values); i += int(stepFactor) {
+			aggregatedBatch := aggregateBatch(arg.Values[i:i+int(stepFactor)], arg)
+			newVals = append(newVals, aggregatedBatch)
+		}
+		arg.StepTime = commonStep
+		arg.Values = newVals
+	}
+	return args
+}
+
+func aggregateBatch(vals []float64, arg *types.MetricData) float64 {
+	if arg.XFilesFactor != 0 {
+		notNans := 0
+		for _, i := range vals {
+			if !math.IsNaN(i) {
+				notNans++
+			}
+		}
+		if float32(notNans)/float32(len(vals)) < arg.XFilesFactor {
+			return math.NaN()
+		}
+	}
+	return arg.GetAggregateFunction()(vals)
+}
+
 // GetBuckets returns amount buckets for timeSeries (defined with startTime, stopTime and step (bucket) size.
 func GetBuckets(start, stop, bucketSize int64) int64 {
 	return int64(math.Ceil(float64(stop-start) / float64(bucketSize)))
