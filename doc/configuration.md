@@ -14,6 +14,7 @@ Table of Contents
     * [Example:](#example-4)
   * [notFoundStatusCode](#notfoundstatuscode)
     * [Example:](#example-5)
+  * [httpResponseStackTrace](#httpresponsestacktrace)
   * [unicodeRangeTables](#unicoderangetables)
     * [Example](#example-6)
   * [cache](#cache)
@@ -137,6 +138,13 @@ This is example to return HTTP code 200
 ```yaml
 notFoundStatusCode: 200
 ```
+
+***
+## httpResponseStackTrace
+
+This option controls if stack trace should be sent as http answer in case of a panic during `/render` proceeding.
+
+Default: true
 
 ***
 ## define

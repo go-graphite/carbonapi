@@ -78,6 +78,7 @@ type ConfigType struct {
 	Prefix                     string             `mapstructure:"prefix"`
 	Expvar                     ExpvarConfig       `mapstructure:"expvar"`
 	NotFoundStatusCode         int                `mapstructure:"notFoundStatusCode"`
+	HTTPResponseStackTrace     bool               `mapstructure:"httpResponseStackTrace"`
 
 	ResponseCache cache.BytesCache `mapstructure:"-" json:"-"`
 	BackendCache  cache.BytesCache `mapstructure:"-" json:"-"`
@@ -150,5 +151,6 @@ var Config = ConfigType{
 		Enabled:      true,
 		PProfEnabled: false,
 	},
-	NotFoundStatusCode: 200,
+	NotFoundStatusCode:     200,
+	HTTPResponseStackTrace: true,
 }
