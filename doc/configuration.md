@@ -479,6 +479,7 @@ Supported options:
   - `concurrencyLimitPerServer` - limit of max connections per server. Likely should be >= maxIdleConnsPerHost. Default: 0 - unlimited
   - `maxIdleConnsPerHost` - as we use KeepAlive to keep connections opened, this limits amount of connections that will be left opened. Tune with care as some backends might have issues handling larger number of connections.
   - `keepAliveInterval` - KeepAlive interval
+  - `scaleToCommonStep` - controls if metrics in one target should be aggregated to common step. `true` by default
   - `backends` - old-style backend configuration.
   
     Contains list of servers. Requests will be sent to **ALL** of them. There is a small optimization here - every once in a while, carbonapi will ask all backends about top-level parts of metric names and will try to send requests only to servers which have that in their name.

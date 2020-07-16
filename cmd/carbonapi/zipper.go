@@ -98,6 +98,9 @@ func (z zipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*ty
 				Tags:          tags,
 			})
 		}
+		if z.z.ScaleToCommonStep {
+			result = helper.ScaleToCommonStep(result)
+		}
 	}
 
 	sort.Sort(helper.ByNameNatural(result))

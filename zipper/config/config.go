@@ -26,6 +26,9 @@ type Config struct {
 	Timeouts             types.Timeouts
 	KeepAliveInterval    time.Duration `mapstructure:"keepAliveInterval"`
 
+	// ScaleToCommonStep controls if metrics in one target should be aggregated to common step
+	ScaleToCommonStep bool `mapstructure:"scaleToCommonStep"`
+
 	isSanitized bool
 }
 
@@ -74,6 +77,7 @@ func SanitizeConfig(logger *zap.Logger, oldConfig Config) *Config {
 		InternalRoutingCache: oldConfig.InternalRoutingCache,
 		Timeouts:             oldConfig.Timeouts,
 		KeepAliveInterval:    oldConfig.KeepAliveInterval,
+		ScaleToCommonStep:    oldConfig.ScaleToCommonStep,
 	}
 
 	if newConfig.MaxBatchSize == nil {

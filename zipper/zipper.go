@@ -39,6 +39,8 @@ type Zipper struct {
 	storeBackends             types.BackendServer
 	concurrencyLimitPerServer int
 
+	ScaleToCommonStep bool
+
 	sendStats func(*types.Stats)
 
 	logger *zap.Logger
@@ -181,7 +183,8 @@ func NewZipper(sender func(*types.Stats), cfg *config.Config, logger *zap.Logger
 		ProbeQuit:  make(chan struct{}),
 		ProbeForce: make(chan int),
 
-		sendStats: sender,
+		ScaleToCommonStep: cfg.ScaleToCommonStep,
+		sendStats:         sender,
 
 		storeBackends:             storeBackends,
 		searchBackends:            searchBackends,

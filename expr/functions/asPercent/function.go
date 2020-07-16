@@ -279,6 +279,7 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			results = append(results, &r)
 		}
 
+		results = helper.AlignSeries(results)
 		for i := range results[0].Values {
 
 			total := getTotal(i)
