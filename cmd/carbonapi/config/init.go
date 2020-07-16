@@ -335,6 +335,7 @@ func SetUpViper(logger *zap.Logger, configPath *string, viperPrefix string) {
 	viper.SetDefault("upstreams.maxIdleConnsPerHost", 100)
 	viper.SetDefault("upstreams.carbonsearch.backend", "")
 	viper.SetDefault("upstreams.carbonsearch.prefix", "virt.v1.*")
+	viper.SetDefault("upstreams.scaleToCommonStep", true)
 	viper.SetDefault("upstreams.graphite09compat", false)
 	viper.SetDefault("expireDelaySec", 600)
 	viper.SetDefault("logger", map[string]string{})
@@ -363,6 +364,7 @@ func SetUpConfigUpstreams(logger *zap.Logger) {
 			Render:  600 * time.Second,
 			Find:    600 * time.Second,
 		}
+		Config.Upstreams.ScaleToCommonStep = true
 	}
 	if len(Config.Upstreams.Backends) == 0 && len(Config.Upstreams.BackendsV2.Backends) == 0 {
 		logger.Fatal("no backends specified for upstreams!")
