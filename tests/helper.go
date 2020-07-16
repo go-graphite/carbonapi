@@ -450,9 +450,8 @@ type EvalTestItem struct {
 	Want   []*types.MetricData
 }
 
-func TestEvalExpr(t *testing.T, tt *EvalTestItem) {
+func TestEvalExprModifiedOrigin(t *testing.T, tt *EvalTestItem) {
 	evaluator := metadata.GetEvaluator()
-	originalMetrics := DeepClone(tt.M)
 	testName := tt.Target
 	exp, _, err := parser.ParseExpr(tt.Target)
 	if err != nil {
@@ -467,9 +466,7 @@ func TestEvalExpr(t *testing.T, tt *EvalTestItem) {
 	if len(g) != len(tt.Want) {
 		t.Errorf("%s returned a different number of metrics, actual %v, Want %v", testName, len(g), len(tt.Want))
 		return
-
 	}
-	DeepEqual(t, testName, originalMetrics, tt.M)
 
 	for i, want := range tt.Want {
 		actual := g[i]
@@ -488,4 +485,10 @@ func TestEvalExpr(t *testing.T, tt *EvalTestItem) {
 			return
 		}
 	}
+}
+
+func TestEvalExpr(t *testing.T, tt *EvalTestItem) {
+	originalMetrics := DeepClone(tt.M)
+	TestEvalExprModifiedOrigin(t, tt)
+	DeepEqual(t, tt.Target, originalMetrics, tt.M)
 }
