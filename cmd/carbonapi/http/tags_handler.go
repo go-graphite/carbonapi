@@ -93,7 +93,7 @@ func tagHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO(civil): Implement stats
-	if err != nil && !merry.Is(err, types.ErrNoMetricsFetched) {
+	if err != nil && !merry.Is(err, types.ErrNoMetricsFetched) && !merry.Is(err, types.ErrNonFatalErrors) {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		accessLogDetails.HTTPCode = http.StatusInternalServerError
 		accessLogDetails.Reason = err.Error()
