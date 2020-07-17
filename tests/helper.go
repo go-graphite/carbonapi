@@ -484,6 +484,9 @@ func TestEvalExprModifiedOrigin(t *testing.T, tt *EvalTestItem) {
 			t.Errorf("different values for %s metric %s: got %v, Want %v", testName, actual.Name, actual.Values, want.Values)
 			return
 		}
+		if actual.StepTime != want.StepTime {
+			t.Errorf("different StepTime for %s metric %s: got %v, Want %v", testName, actual.Name, actual.StepTime, want.StepTime)
+		}
 	}
 }
 

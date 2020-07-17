@@ -31,7 +31,7 @@ func TestFunction(t *testing.T) {
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{5, 1, math.NaN(), 0, 12, 125, 10.4, 1.1}, 60, now32)},
 			},
-			[]*types.MetricData{types.MakeMetricData("pow(metric1,3)", []float64{125, 1, math.NaN(), 0, 1728, 1953125, 1124.864, 1.331}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("pow(metric1,3)", []float64{125, 1, math.NaN(), 0, 1728, 1953125, 1124.864, 1.331}, 60, now32)},
 		},
 	}
 
