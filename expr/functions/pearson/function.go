@@ -61,7 +61,7 @@ func (f *pearson) Do(ctx context.Context, e parser.Expr, from, until int64, valu
 	r.Name = fmt.Sprintf("pearson(%s,%s,%d)", a1.Name, a2.Name, windowSize)
 	r.Values = make([]float64, len(a1.Values))
 	r.StartTime = from
-	r.StopTime = until
+	r.StopTime = r.StartTime + int64(len(r.Values))*r.StepTime
 
 	for i, v1 := range a1.Values {
 		v2 := a2.Values[i]

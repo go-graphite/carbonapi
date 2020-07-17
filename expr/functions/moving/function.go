@@ -85,7 +85,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		r := *a
 		r.Name = fmt.Sprintf("%s(%s,%s)", e.Target(), a.Name, argstr)
 		r.StartTime = from
-		r.StopTime = until
+		r.StopTime = r.StartTime + int64(len(r.Values))*r.StepTime
 
 		if windowSize == 0 {
 			// Fix error on long time ranges (greater than 30 days), sampling to 10 min
