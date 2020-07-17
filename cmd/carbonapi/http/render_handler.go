@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -231,6 +232,14 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 				zap.Any("reason", r),
 				zap.Stack("stack"),
 			)
+			logAsError = true
+			var answer string
+			if config.Config.HTTPResponseStackTrace {
+				answer = fmt.Sprintf("%v\nStack trace: %v", r, zap.Stack("").String)
+			} else {
+				answer = fmt.Sprint(r)
+			}
+			setError(w, accessLogDetails, answer, http.StatusInternalServerError)
 		}
 	}()
 
