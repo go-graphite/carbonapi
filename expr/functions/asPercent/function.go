@@ -48,6 +48,7 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	var results []*types.MetricData
 
 	if len(e.Args()) == 1 {
+		arg = helper.AlignSeries(arg)
 		getTotal = func(i int) float64 {
 			var t float64
 			var atLeastOne bool
@@ -72,6 +73,7 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		if err != nil {
 			return nil, err
 		}
+		arg = helper.AlignSeries(arg)
 		getTotal = func(i int) float64 { return total }
 		totalString = fmt.Sprintf("%g", total)
 		formatName = func(a, b string) string {
@@ -82,9 +84,15 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		if err != nil {
 			return nil, err
 		}
+
 		if len(total) != 1 && len(total) != len(arg) {
 			return nil, types.ErrWildcardNotAllowed
 		}
+
+		alignedSeries := helper.AlignSeries(append(arg, total...))
+		arg = alignedSeries[0:len(arg)]
+		total = alignedSeries[len(arg):]
+
 		if len(total) == 1 {
 			getTotal = func(i int) float64 {
 				return total[0].Values[i]
@@ -114,6 +122,10 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		if len(total) != 1 && len(total) != len(arg) {
 			return nil, types.ErrWildcardNotAllowed
 		}
+
+		alignedSeries := helper.AlignSeries(append(arg, total...))
+		arg = alignedSeries[0:len(arg)]
+		total = alignedSeries[len(arg):]
 
 		nodeIndexes, err := e.GetIntArgs(2)
 		if err != nil {
@@ -279,7 +291,6 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			results = append(results, &r)
 		}
 
-		results = helper.AlignSeries(results)
 		for i := range results[0].Values {
 
 			total := getTotal(i)

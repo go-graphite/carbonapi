@@ -39,7 +39,7 @@ func TestAbsolute(t *testing.T) {
 				{"metric1", -1, 0}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, now32-1)},
 			},
 			[]*types.MetricData{types.MakeMetricData("timeShift(metric1,'-1')",
-				[]float64{-1, 0, 1, 2, 3, 4}, 1, now32-1)},
+				[]float64{-1, 0, 1, 2, 3, 4}, 1, now32)},
 		},
 		{
 			`timeShift(metric1, "1h")`,
@@ -47,7 +47,7 @@ func TestAbsolute(t *testing.T) {
 				{"metric1", -60 * 60, -60*60 + 1}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, now32-60*60)},
 			},
 			[]*types.MetricData{types.MakeMetricData("timeShift(metric1,'-3600')",
-				[]float64{-1, 0, 1, 2, 3, 4}, 1, now32-60*60)},
+				[]float64{-1, 0, 1, 2, 3, 4}, 1, now32)},
 		},
 	}
 

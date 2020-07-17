@@ -450,9 +450,8 @@ type EvalTestItem struct {
 	Want   []*types.MetricData
 }
 
-func TestEvalExpr(t *testing.T, tt *EvalTestItem) {
+func TestEvalExprModifiedOrigin(t *testing.T, tt *EvalTestItem) {
 	evaluator := metadata.GetEvaluator()
-	originalMetrics := DeepClone(tt.M)
 	testName := tt.Target
 	exp, _, err := parser.ParseExpr(tt.Target)
 	if err != nil {
@@ -467,9 +466,7 @@ func TestEvalExpr(t *testing.T, tt *EvalTestItem) {
 	if len(g) != len(tt.Want) {
 		t.Errorf("%s returned a different number of metrics, actual %v, Want %v", testName, len(g), len(tt.Want))
 		return
-
 	}
-	DeepEqual(t, testName, originalMetrics, tt.M)
 
 	for i, want := range tt.Want {
 		actual := g[i]
@@ -487,5 +484,20 @@ func TestEvalExpr(t *testing.T, tt *EvalTestItem) {
 			t.Errorf("different values for %s metric %s: got %v, Want %v", testName, actual.Name, actual.Values, want.Values)
 			return
 		}
+		if actual.StepTime != want.StepTime {
+			t.Errorf("different StepTime for %s metric %s: got %v, Want %v", testName, actual.Name, actual.StepTime, want.StepTime)
+		}
+		if actual.StartTime != want.StartTime {
+			t.Errorf("different StartTime for %s metric %s: got %v, Want %v", testName, actual.Name, actual.StartTime, want.StartTime)
+		}
+		if actual.StopTime != want.StopTime {
+			t.Errorf("different StopTime for %s metric %s: got %v, Want %v", testName, actual.Name, actual.StopTime, want.StopTime)
+		}
 	}
+}
+
+func TestEvalExpr(t *testing.T, tt *EvalTestItem) {
+	originalMetrics := DeepClone(tt.M)
+	TestEvalExprModifiedOrigin(t, tt)
+	DeepEqual(t, tt.Target, originalMetrics, tt.M)
 }

@@ -36,9 +36,9 @@ func TestConstantLine(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{
-				types.MakeMetricData("aggregateLine(metric1, 3)", []float64{3, 3, 3}, 1, now32),
-				types.MakeMetricData("aggregateLine(metric2, 4)", []float64{4, 4, 4}, 1, now32),
-				types.MakeMetricData("aggregateLine(metric3, 4.5)", []float64{4.5, 4.5, 4.5}, 1, now32),
+				types.MakeMetricData("aggregateLine(metric1, 3)", []float64{3, 3}, 6, now32),
+				types.MakeMetricData("aggregateLine(metric2, 4)", []float64{4, 4}, 6, now32),
+				types.MakeMetricData("aggregateLine(metric3, 4.5)", []float64{4.5, 4.5}, 6, now32),
 			},
 		},
 		{

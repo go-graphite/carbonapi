@@ -34,13 +34,16 @@ func (f *constantLine) Do(ctx context.Context, e parser.Expr, from, until int64,
 	if err != nil {
 		return nil, err
 	}
+	newValues := []float64{value, value}
+	stepTime := until - from
+	stopTime := from + stepTime*int64(len(newValues))
 	p := types.MetricData{
 		FetchResponse: pb.FetchResponse{
 			Name:              fmt.Sprintf("%g", value),
 			StartTime:         from,
-			StopTime:          until,
-			StepTime:          until - from,
-			Values:            []float64{value, value},
+			StopTime:          stopTime,
+			StepTime:          stepTime,
+			Values:            newValues,
 			ConsolidationFunc: "max",
 		},
 	}

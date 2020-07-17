@@ -641,6 +641,7 @@ func Description() map[string]types.FunctionDescription {
 			Function:    "lineWidth(seriesList, width)",
 			Group:       "Graph",
 		},
+		// TODO: This function doesn't depend on cairo, should be moved out
 		"threshold": {
 			Name: "threshold",
 			Params: []types.FunctionParam{
@@ -821,6 +822,7 @@ func EvalExprGraph(e parser.Expr, from, until int64, values map[parser.MetricReq
 		return results, nil
 
 	case "threshold": // threshold(value, label=None, color=None)
+		// TODO: This function doesn't depend on cairo, should be moved out
 		// XXX does not match graphite's signature
 		// BUG(nnuss): the signature *does* match but there is an edge case because of named argument handling if you use it *just* wrong:
 		//			   threshold(value, "gold", label="Aurum")
@@ -845,13 +847,16 @@ func EvalExprGraph(e parser.Expr, from, until int64, values map[parser.MetricReq
 			return nil, err
 		}
 
+		newValues := []float64{value, value}
+		stepTime := until - from
+		stopTime := from + stepTime*int64(len(newValues))
 		p := types.MetricData{
 			FetchResponse: pb.FetchResponse{
 				Name:              name,
 				StartTime:         from,
-				StopTime:          until,
-				StepTime:          until - from,
-				Values:            []float64{value, value},
+				StopTime:          stopTime,
+				StepTime:          stepTime,
+				Values:            newValues,
 				ConsolidationFunc: "average",
 			},
 			GraphOptions: types.GraphOptions{Color: color},

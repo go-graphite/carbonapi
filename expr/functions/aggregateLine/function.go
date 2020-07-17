@@ -93,6 +93,7 @@ func (f *aggregateLine) Do(ctx context.Context, e parser.Expr, from, until int64
 		} else {
 			r.FetchResponse.StepTime = a.FetchResponse.StopTime - a.FetchResponse.StartTime
 			r.FetchResponse.Values = []float64{val, val}
+			r.FetchResponse.StopTime = r.StartTime + int64(len(r.FetchResponse.Values))*r.FetchResponse.StepTime
 		}
 
 		results = append(results, &r)
