@@ -2,7 +2,6 @@ package constantLine
 
 import (
 	"testing"
-	"time"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/metadata"
@@ -22,16 +21,12 @@ func init() {
 }
 
 func TestConstantLine(t *testing.T) {
-	now32 := int64(time.Now().Unix())
-
 	tests := []th.EvalTestItem{
 		{
 			"constantLine(42.42)",
-			map[parser.MetricRequest][]*types.MetricData{
-				{"42.42", 0, 1}: {types.MakeMetricData("constantLine", []float64{12.3, 12.3}, 1, now32)},
-			},
+			map[parser.MetricRequest][]*types.MetricData{},
 			[]*types.MetricData{types.MakeMetricData("42.42",
-				[]float64{42.42, 42.42}, 1, now32)},
+				[]float64{42.42, 42.42}, 1, 0)},
 		},
 	}
 

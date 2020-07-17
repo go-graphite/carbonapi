@@ -32,7 +32,7 @@ func TestFunction(t *testing.T) {
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{43, 21, 25, 42, 57, 59}, 1, now32)},
 				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{99, 65, 79, 75, 87, 81}, 1, now32)},
 			},
-			[]*types.MetricData{types.MakeMetricData("pearson(metric1,metric2,6)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0.5298089018901744}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("pearson(metric1,metric2,6)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0.5298089018901744}, 1, 0)}, // StartTime = from
 		},
 	}
 
