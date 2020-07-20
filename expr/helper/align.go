@@ -37,20 +37,19 @@ func LCM(args ...int64) int64 {
 // GetCommonStep returns LCM(steps), changed (bool) for slice of metrics.
 // If all metrics have the same step, changed == false.
 func GetCommonStep(args []*types.MetricData) (commonStep int64, changed bool) {
-	changed = false
-	steps := make([]int64, 0, len(args))
-	firstStep := args[0].StepTime
+	steps := make([]int64, 0, 1)
+	stepsIndex := make(map[int64]struct{})
 	for _, arg := range args {
-		steps = append(steps, arg.StepTime)
-		if !changed && firstStep != arg.StepTime {
-			changed = true
+		if _, ok := stepsIndex[arg.StepTime]; !ok {
+			stepsIndex[arg.StepTime] = struct{}{}
+			steps = append(steps, arg.StepTime)
 		}
 	}
-	if !changed {
-		return firstStep, changed
+	if len(steps) == 1 {
+		return steps[0], false
 	}
 	commonStep = LCM(steps...)
-	return commonStep, changed
+	return commonStep, true
 }
 
 // ScaleToCommonStep returns the metrics, aligned LCM of all metrics steps.
