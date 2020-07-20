@@ -98,9 +98,6 @@ func (z zipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*ty
 				Tags:          tags,
 			})
 		}
-		if z.z.ScaleToCommonStep {
-			result = helper.ScaleToCommonStep(result)
-		}
 	}
 
 	sort.Sort(helper.ByNameNatural(result))
@@ -127,4 +124,8 @@ func (z zipper) TagNames(ctx context.Context, query string, limit int64) ([]stri
 
 func (z zipper) TagValues(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
 	return z.z.TagValues(ctx, query, limit)
+}
+
+func (z zipper) ScaleToCommonStep() bool {
+	return z.z.ScaleToCommonStep
 }

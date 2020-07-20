@@ -119,6 +119,7 @@ func TestGetCommonStep(t *testing.T) {
 	tests := []struct {
 		metrics    []*types.MetricData
 		commonStep int64
+		changed    bool
 	}{
 		// Different steps and start/stop time
 		{
@@ -128,6 +129,7 @@ func TestGetCommonStep(t *testing.T) {
 				types.MakeMetricData("metric2", make([]float64, 25), 3, 6), // 6..81
 			},
 			30,
+			true,
 		},
 		// Same set of points
 		{
@@ -137,6 +139,7 @@ func TestGetCommonStep(t *testing.T) {
 				types.MakeMetricData("metric3", make([]float64, 15), 5, 5), // 5..80
 			},
 			5,
+			false,
 		},
 		// Same step, different lengths
 		{
@@ -146,13 +149,17 @@ func TestGetCommonStep(t *testing.T) {
 				types.MakeMetricData("metric3", make([]float64, 4), 5, 35), // 35..55
 			},
 			5,
+			false,
 		},
 	}
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("Set %v", i), func(t *testing.T) {
-			com := GetCommonStep(tt.metrics)
+			com, changed := GetCommonStep(tt.metrics)
 			if com != tt.commonStep {
 				t.Errorf("Result of GetCommonStep: %v; expected is %v", com, tt.commonStep)
+			}
+			if changed != tt.changed {
+				t.Errorf("GetCommonStep changed: %v; expected is %v", changed, tt.changed)
 			}
 		})
 	}
@@ -161,9 +168,10 @@ func TestGetCommonStep(t *testing.T) {
 func TestScaleToCommonStep(t *testing.T) {
 	NaN := math.NaN()
 	tests := []struct {
-		name     string
-		metrics  []*types.MetricData
-		expected []*types.MetricData
+		name       string
+		metrics    []*types.MetricData
+		commonStep int64
+		expected   []*types.MetricData
 	}{
 		{
 			"Normal metrics",
@@ -172,6 +180,7 @@ func TestScaleToCommonStep(t *testing.T) {
 				types.MakeMetricData("metric2", []float64{1, 2, 3, 4, 5}, 2, 4),                 // 4..14
 				types.MakeMetricData("metric3", []float64{1, 2, 3, 4, 5, 6}, 3, 3),              // 3..21
 			},
+			0,
 			[]*types.MetricData{
 				types.MakeMetricData("metric1", []float64{2, 10, 17}, 6, 0),      // 0..18
 				types.MakeMetricData("metric2", []float64{1, 3, 5}, 6, 0),        // 0..18
@@ -186,11 +195,28 @@ func TestScaleToCommonStep(t *testing.T) {
 				types.MakeMetricData("metric3", []float64{1, 2, 3, 4, 5, 6}, 3, 3),                // 3..21
 				types.MakeMetricData("metric6", []float64{1, 2, 3, 4, 5}, 6, 0),                   // 0..30
 			},
+			0,
 			[]*types.MetricData{
 				types.MakeMetricData("metric1", []float64{NaN, 72}, 6, 0),        // 0..12
 				types.MakeMetricData("metric2", []float64{NaN, 2, NaN}, 6, 0),    // 0..18
 				types.MakeMetricData("metric3", []float64{NaN, 3, 5, NaN}, 6, 0), // 0..24
 				types.MakeMetricData("metric6", []float64{1, 2, 3, 4, 5}, 6, 0),  // 0..30, unchanged
+			},
+		},
+		{
+			"Custom common step",
+			[]*types.MetricData{
+				types.MakeMetricData("metric1", []float64{NaN, 3, 5, 7, 9, 11, 13, 15, 17}, 1, 3), // 3..12
+				types.MakeMetricData("metric2", []float64{1, 2, 3, 4, 5}, 2, 4),                   // 4..14
+				types.MakeMetricData("metric3", []float64{1, 2, 3, 4, 5, 6}, 3, 3),                // 3..21
+				types.MakeMetricData("metric6", []float64{1, 2, 3, 4, 5}, 6, 0),                   // 0..30
+			},
+			12,
+			[]*types.MetricData{
+				types.MakeMetricData("metric1", []float64{10}, 12, 0),          // 0..12
+				types.MakeMetricData("metric2", []float64{2.5, 5}, 12, 0),      // 0..18
+				types.MakeMetricData("metric3", []float64{2, 5}, 12, 0),        // 0..24
+				types.MakeMetricData("metric6", []float64{1.5, 3.5, 5}, 12, 0), // 0..30, unchanged
 			},
 		},
 	}
@@ -203,7 +229,7 @@ func TestScaleToCommonStep(t *testing.T) {
 	custom[2].XFilesFactor = 0.51
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ScaleToCommonStep(tt.metrics)
+			result := ScaleToCommonStep(tt.metrics, tt.commonStep)
 			if len(result) != len(tt.expected) {
 				t.Errorf("Result has different length %v than expected %v", len(result), len(tt.expected))
 			}
