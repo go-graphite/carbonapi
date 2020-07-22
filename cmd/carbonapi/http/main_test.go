@@ -52,6 +52,10 @@ func (z mockCarbonZipper) TagValues(ctx context.Context, query string, limit int
 	return []string{}, nil
 }
 
+func (z mockCarbonZipper) ScaleToCommonStep() bool {
+	return true
+}
+
 func getGlobResponse() *pb.MultiGlobResponse {
 	globMtach := pb.GlobMatch{Path: "foo.bar", IsLeaf: true}
 	var matches []pb.GlobMatch

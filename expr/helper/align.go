@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/go-graphite/carbonapi/expr/types"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
 // GCD returns greatest common divisor calculated via Euclidean algorithm
@@ -33,25 +34,49 @@ func LCM(args ...int64) int64 {
 	return lcm
 }
 
-// GetCommonStep returns LCM(steps) for slice of metrics.
-// minStart and maxStop will be set to closest lower or equal multiple of LCM(steps).
-func GetCommonStep(args []*types.MetricData) int64 {
-	steps := make([]int64, 0, len(args))
+// GetCommonStep returns LCM(steps), changed (bool) for slice of metrics.
+// If all metrics have the same step, changed == false.
+func GetCommonStep(args []*types.MetricData) (commonStep int64, changed bool) {
+	steps := make([]int64, 0, 1)
+	stepsIndex := make(map[int64]struct{})
 	for _, arg := range args {
-		steps = append(steps, arg.StepTime)
+		if _, ok := stepsIndex[arg.StepTime]; !ok {
+			stepsIndex[arg.StepTime] = struct{}{}
+			steps = append(steps, arg.StepTime)
+		}
 	}
-	commonStep := LCM(steps...)
-	return commonStep
+	if len(steps) == 1 {
+		return steps[0], false
+	}
+	commonStep = LCM(steps...)
+	return commonStep, true
 }
 
 // ScaleToCommonStep returns the metrics, aligned LCM of all metrics steps.
+// If commonStep == 0, then it will be calculated automatically
 // It respects xFilesFactor and fills gaps in the begin and end with NaNs if needed.
-func ScaleToCommonStep(args []*types.MetricData) []*types.MetricData {
-	commonStep := GetCommonStep(args)
-	for _, arg := range args {
+func ScaleToCommonStep(args []*types.MetricData, commonStep int64) []*types.MetricData {
+	if commonStep < 0 {
+		// This doesn't make sence
+		return args
+	}
+
+	// If it's invoked with commonStep other than 0, changes are applied by default
+	changed := true
+	if commonStep == 0 {
+		commonStep, changed = GetCommonStep(args)
+	}
+
+	if !changed {
+		return args
+	}
+
+	for a, arg := range args {
 		if arg.StepTime == commonStep {
 			continue
 		}
+		arg = arg.Copy(true)
+		args[a] = arg
 		stepFactor := commonStep / arg.StepTime
 		newStart := arg.StartTime - (arg.StartTime % commonStep)
 		if (arg.StartTime % commonStep) != 0 {
@@ -96,6 +121,27 @@ func aggregateBatch(vals []float64, arg *types.MetricData) float64 {
 		}
 	}
 	return arg.GetAggregateFunction()(vals)
+}
+
+// ScaleValuesToCommonStep returns map[parser.MetricRequest][]*types.MetricData. If any element of []*types.MetricData is changed, it doesn't change original
+// metric, but creates the new one to avoid cache spoiling.
+func ScaleValuesToCommonStep(values map[parser.MetricRequest][]*types.MetricData) map[parser.MetricRequest][]*types.MetricData {
+	// Calculate global commonStep
+	var args []*types.MetricData
+	for _, metrics := range values {
+		args = append(args, metrics...)
+	}
+
+	commonStep, changed := GetCommonStep(args)
+	if !changed {
+		return values
+	}
+
+	for m, metrics := range values {
+		values[m] = ScaleToCommonStep(metrics, commonStep)
+	}
+
+	return values
 }
 
 // GetBuckets returns amount buckets for timeSeries (defined with startTime, stopTime and step (bucket) size.

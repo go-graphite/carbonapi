@@ -25,6 +25,8 @@ func (eval evaluator) FetchAndEvalExp(ctx context.Context, exp parser.Expr, from
 	multiFetchRequest := pb.MultiFetchRequest{}
 	metricRequestCache := make(map[string]parser.MetricRequest)
 	maxDataPoints := utilctx.GetMaxDatapoints(ctx)
+	// values related to this particular `target=`
+	targetValues := make(map[parser.MetricRequest][]*types.MetricData)
 
 	for _, m := range exp.Metrics() {
 		fetchRequest := pb.FetchRequest{
@@ -49,10 +51,12 @@ func (eval evaluator) FetchAndEvalExp(ctx context.Context, exp parser.Expr, from
 
 		// avoid multiple requests in a http request, E.g render?target=a.b&target=a.b
 		if _, ok := values[metricRequest]; ok {
+			targetValues[metricRequest] = nil
 			continue
 		}
 
 		metricRequestCache[m.Metric] = metricRequest
+		targetValues[metricRequest] = nil
 		multiFetchRequest.Metrics = append(multiFetchRequest.Metrics, fetchRequest)
 	}
 
@@ -76,7 +80,15 @@ func (eval evaluator) FetchAndEvalExp(ctx context.Context, exp parser.Expr, from
 		}
 	}
 
-	return eval.Eval(ctx, exp, from, until, values)
+	for m := range targetValues {
+		targetValues[m] = values[m]
+	}
+
+	if config.Config.ZipperInstance.ScaleToCommonStep() {
+		targetValues = helper.ScaleValuesToCommonStep(targetValues)
+	}
+
+	return eval.Eval(ctx, exp, from, until, targetValues)
 }
 
 // Eval evalualtes expressions

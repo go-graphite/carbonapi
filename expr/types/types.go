@@ -345,6 +345,44 @@ func (r *MetricData) AggregateValues() {
 	r.aggregatedValues = aggV
 }
 
+// Copy returns the copy of r. If includeValues set to true, it copies values as well.
+func (r *MetricData) Copy(includeValues bool) *MetricData {
+	var values, aggregatedValues []float64
+	values = make([]float64, 0)
+	aggregatedValues = nil
+
+	if includeValues {
+		values = make([]float64, len(r.Values))
+		copy(values, r.Values)
+		if r.aggregatedValues != nil {
+			aggregatedValues = make([]float64, len(r.aggregatedValues))
+			copy(aggregatedValues, r.aggregatedValues)
+		}
+	}
+
+	return &MetricData{
+		FetchResponse: pb.FetchResponse{
+			Name:                    r.Name,
+			PathExpression:          r.PathExpression,
+			ConsolidationFunc:       r.ConsolidationFunc,
+			StartTime:               r.StartTime,
+			StopTime:                r.StopTime,
+			StepTime:                r.StepTime,
+			XFilesFactor:            r.XFilesFactor,
+			HighPrecisionTimestamps: r.HighPrecisionTimestamps,
+			Values:                  values,
+			AppliedFunctions:        r.AppliedFunctions,
+			RequestStartTime:        r.RequestStartTime,
+			RequestStopTime:         r.RequestStopTime,
+		},
+		GraphOptions:      r.GraphOptions,
+		ValuesPerPoint:    r.ValuesPerPoint,
+		aggregatedValues:  aggregatedValues,
+		Tags:              r.Tags,
+		AggregateFunction: r.AggregateFunction,
+	}
+}
+
 // MakeMetricData creates new metrics data with given metric timeseries
 func MakeMetricData(name string, values []float64, step, start int64) *MetricData {
 	return makeMetricDataWithTags(name, values, step, start, tags.ExtractTags(name))
@@ -354,13 +392,14 @@ func MakeMetricData(name string, values []float64, step, start int64) *MetricDat
 func makeMetricDataWithTags(name string, values []float64, step, start int64, tags map[string]string) *MetricData {
 	stop := start + int64(len(values))*step
 
-	return &MetricData{FetchResponse: pb.FetchResponse{
-		Name:      name,
-		Values:    values,
-		StartTime: start,
-		StepTime:  step,
-		StopTime:  stop,
-	},
+	return &MetricData{
+		FetchResponse: pb.FetchResponse{
+			Name:      name,
+			Values:    values,
+			StartTime: start,
+			StepTime:  step,
+			StopTime:  stop,
+		},
 		Tags: tags,
 	}
 }

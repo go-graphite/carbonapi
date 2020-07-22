@@ -97,7 +97,7 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 	case "diffSeriesLists":
 		compute = func(l, r float64) float64 { return l - r }
 	case "powSeriesLists":
-		compute = func(l, r float64) float64 { return math.Pow(l, r) }
+		compute = math.Pow
 	}
 
 	if useConstant {

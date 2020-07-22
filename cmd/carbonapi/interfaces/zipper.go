@@ -19,4 +19,5 @@ type CarbonZipper interface {
 	Render(ctx context.Context, request pb.MultiFetchRequest) ([]*types.MetricData, *zipperTypes.Stats, merry.Error)
 	TagNames(ctx context.Context, query string, limit int64) ([]string, merry.Error)
 	TagValues(ctx context.Context, query string, limit int64) ([]string, merry.Error)
+	ScaleToCommonStep() bool
 }

@@ -33,7 +33,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // weightedAverage(seriesListAvg, seriesListWeight, *nodes)
 func (f *weightedAverage) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	aggKeyPairs := make(map[string]map[string]*types.MetricData, 0)
+	aggKeyPairs := make(map[string]map[string]*types.MetricData)
 	var productList []*types.MetricData
 
 	avgs, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
