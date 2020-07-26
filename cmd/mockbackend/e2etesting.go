@@ -44,7 +44,7 @@ type ExpectedResponse struct {
 }
 
 type ExpectedResult struct {
-	SHA256  string `yaml:"sha256"`
+	SHA256  []string `yaml:"sha256"`
 	Metrics []CarbonAPIResponse
 }
 
@@ -212,7 +212,14 @@ func doTest(logger *zap.Logger, t *Query) []string {
 	case "image/svg+xml":
 		hash := sha256.Sum256(b)
 		hashStr := fmt.Sprintf("%x", hash)
-		if hashStr != t.ExpectedResponse.ExpectedResults[0].SHA256 {
+		sha256matched := false
+		for _, sha256sum := range t.ExpectedResponse.ExpectedResults[0].SHA256 {
+			if hashStr == sha256sum {
+				sha256matched = true
+				break
+			}
+		}
+		if !sha256matched {
 			encodedBody := base64.StdEncoding.EncodeToString(b)
 			failures = append(failures, fmt.Sprintf("sha256 mismatch, got '%v', expected '%v', encodedBodyy: '%v'", hashStr, t.ExpectedResponse.ExpectedResults[0].SHA256, encodedBody))
 			return failures
