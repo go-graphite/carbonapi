@@ -6,10 +6,19 @@ sudo: required
 services:
   - docker
 
+before_script:
+  - export -f travis_nanoseconds
+  - export -f travis_fold
+  - export -f travis_time_start
+  - export -f travis_time_finish
+
 before_install:
   - sudo apt-get -qq update
   - sudo apt-get install libcairo2-dev mercurial pkg-config wget -y
+
+script:
   - make test
+  - make
   - wget "https://raw.githubusercontent.com/go-graphite/helper-scripts/main/travis-docker-build.sh" && chmod +x ./travis-docker-build.sh
   - ./travis-docker-build.sh carbonapi
 

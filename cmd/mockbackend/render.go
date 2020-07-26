@@ -9,11 +9,12 @@ import (
 	"math/rand"
 	"net/http"
 
-	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 	"github.com/go-graphite/protocol/carbonapi_v2_pb"
 	"github.com/go-graphite/protocol/carbonapi_v3_pb"
 	ogórek "github.com/lomik/og-rek"
 	"go.uber.org/zap"
+
+	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 )
 
 func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
@@ -89,7 +90,7 @@ func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
 		Metrics: []carbonapi_v3_pb.FetchResponse{},
 	}
 
-	newCfg := Config{
+	newCfg := Listener{
 		Code:        cfg.Code,
 		EmptyBody:   cfg.EmptyBody,
 		Expressions: copyMap(cfg.Expressions),
@@ -103,6 +104,14 @@ func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
 			return
 		}
 		for _, m := range response.Data {
+			startTime := m.StartTime
+			if startTime == 0 {
+				startTime = 1
+			}
+			step := m.Step
+			if step == 0 {
+				step = 1
+			}
 			isAbsent := make([]bool, 0, len(m.Values))
 			protov2Values := make([]float64, 0, len(m.Values))
 			for i := range m.Values {
@@ -116,9 +125,9 @@ func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
 			}
 			fr2 := carbonapi_v2_pb.FetchResponse{
 				Name:      m.MetricName,
-				StartTime: 1,
-				StopTime:  int32(1 + len(protov2Values)),
-				StepTime:  1,
+				StartTime: int32(startTime),
+				StopTime:  int32(step * (startTime + len(protov2Values) - 1)),
+				StepTime:  int32(step),
 				Values:    protov2Values,
 				IsAbsent:  isAbsent,
 			}
@@ -127,14 +136,14 @@ func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
 				Name:                    m.MetricName,
 				PathExpression:          target,
 				ConsolidationFunc:       "avg",
-				StartTime:               1,
-				StopTime:                int64(1 + len(m.Values)),
-				StepTime:                1,
+				StartTime:               int64(startTime),
+				StopTime:                int64(step * (startTime + len(m.Values) - 1)),
+				StepTime:                int64(step),
 				XFilesFactor:            0,
 				HighPrecisionTimestamps: false,
 				Values:                  m.Values,
 				RequestStartTime:        1,
-				RequestStopTime:         int64(1 + len(m.Values)),
+				RequestStopTime:         int64(step * (startTime + len(m.Values) - 1)),
 			}
 
 			multiv2.Metrics = append(multiv2.Metrics, fr2)
@@ -142,7 +151,7 @@ func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	if cfg.Config.ShuffleResults {
+	if cfg.Listener.ShuffleResults {
 		rand.Shuffle(len(multiv2.Metrics), func(i, j int) {
 			multiv2.Metrics[i], multiv2.Metrics[j] = multiv2.Metrics[j], multiv2.Metrics[i]
 		})
@@ -151,8 +160,18 @@ func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
 		})
 	}
 
+	contentType, d := cfg.marshalResponse(wr, logger, format, multiv3, multiv2)
+	if d == nil {
+		return
+	}
+	wr.Header().Set("Content-Type", contentType)
+	_, _ = wr.Write(d)
+}
+
+func (cfg *listener) marshalResponse(wr http.ResponseWriter, logger *zap.Logger, format responseFormat, multiv3 carbonapi_v3_pb.MultiFetchResponse, multiv2 carbonapi_v2_pb.MultiFetchResponse) (string, []byte) {
 	var d []byte
 	var contentType string
+	var err error
 	switch format {
 	case pickleFormat:
 		contentType = httpHeaders.ContentTypePickle
@@ -195,7 +214,7 @@ func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			wr.WriteHeader(http.StatusBadGateway)
 			_, _ = wr.Write([]byte(err.Error()))
-			return
+			return "", nil
 		}
 		d = buf.Bytes()
 	case protoV2Format:
@@ -211,7 +230,7 @@ func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			wr.WriteHeader(http.StatusBadGateway)
 			_, _ = wr.Write([]byte(err.Error()))
-			return
+			return "", nil
 		}
 	case protoV3Format:
 		contentType = httpHeaders.ContentTypeCarbonAPIv3PB
@@ -226,7 +245,7 @@ func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			wr.WriteHeader(http.StatusBadGateway)
 			_, _ = wr.Write([]byte(err.Error()))
-			return
+			return "", nil
 		}
 	case jsonFormat:
 		contentType = "application/json"
@@ -241,13 +260,13 @@ func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			wr.WriteHeader(http.StatusBadGateway)
 			_, _ = wr.Write([]byte(err.Error()))
-			return
+			return "", nil
 		}
 	default:
 		logger.Error("format is not supported",
 			zap.Any("format", format),
 		)
+		return "", nil
 	}
-	wr.Header().Set("Content-Type", contentType)
-	_, _ = wr.Write(d)
+	return contentType, d
 }

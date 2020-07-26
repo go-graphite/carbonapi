@@ -1,0 +1,36 @@
+version: "v1"
+test:
+    apps:
+        - name: "carbonapi"
+          binary: "./carbonapi"
+          args:
+              - "-config"
+              - "./cmd/mockbackend/carbonapi_singlebackend.yaml"
+    queries:
+            - endpoint: "http://127.0.0.1:8081"
+              delay: 1
+              type: "GET"
+              URL: "/render?format=json&target=sumSeries(metric[123])"
+              expectedResponse:
+                  httpCode: 200
+                  contentType: "application/json"
+                  expectedResults:
+                          - metrics:
+                                  - target: "sumSeries(metric[123])"
+                                    datapoints: [[3,0],[5,2],[10.5,4],[9.5,6],[8.5,8],[7.5,10],[2,12]]
+listeners:
+        - address: ":9070"
+          expressions:
+                     "metric[123]":
+                         pathExpression: "metric[123]"
+                         data:
+                             - metricName: "metric1"
+                               values: [1.0, .NaN, 2.0, 3.0, 4.0, 6.0, 2.0, 3.0, 4.0, 1.0, 2.0, 2.0]
+                               step: 1
+                             - metricName: "metric2"
+                               values: [2.0, .NaN, 3.0, .NaN, 5.0, 6.0]
+                               step: 2
+                             - metricName: "metric3"
+                               values: [3.0, .NaN, 4.0, 5.0, 6.0, .NaN]
+                               step: 1
+                               startTime: 3

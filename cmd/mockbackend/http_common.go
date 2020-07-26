@@ -6,8 +6,15 @@ import (
 	"net/http"
 )
 
+type Response struct {
+	PathExpression string   `yaml:"pathExpression"`
+	Data           []Metric `yaml:"data"`
+}
+
 type Metric struct {
 	MetricName string    `yaml:"metricName"`
+	Step       int       `yaml:"step"`
+	StartTime  int       `yaml:"startTime"`
 	Values     []float64 `yaml:"values"`
 }
 
@@ -74,11 +81,6 @@ func (r responseFormat) String() string {
 	}
 }
 
-type Response struct {
-	PathExpression string   `yaml:"pathExpression"`
-	Data           []Metric `yaml:"data"`
-}
-
 func copyResponse(src Response) Response {
 	dst := Response{
 		PathExpression: src.PathExpression,
@@ -89,6 +91,8 @@ func copyResponse(src Response) Response {
 		dst.Data[i] = Metric{
 			MetricName: src.Data[i].MetricName,
 			Values:     make([]float64, len(src.Data[i].Values)),
+			StartTime:  src.Data[i].StartTime,
+			Step:       src.Data[i].Step,
 		}
 
 		for j := range src.Data[i].Values {

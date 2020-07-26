@@ -2,16 +2,11 @@ package main
 
 import (
 	"context"
-	"crypto/sha256"
 	"flag"
-	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -20,42 +15,12 @@ import (
 )
 
 type MainConfig struct {
-	Version   string   `yaml:"version"`
-	Test      *Schema  `yaml:"test"`
-	Listeners []Config `yaml:"listeners"`
+	Version   string      `yaml:"version"`
+	Test      *TestSchema `yaml:"test"`
+	Listeners []Listener  `yaml:"listeners"`
 }
 
-type Schema struct {
-	Apps    []App
-	Queries []Query
-}
-
-type App struct {
-	Name   string
-	Binary string
-	Args   []string
-}
-
-type Query struct {
-	Endpoint         string           `yaml:"endpoint"`
-	Delay            int              `yaml:"delay"`
-	URL              string           `yaml:"URL"`
-	Type             string           `yaml:"type"`
-	Body             string           `yaml:"body"`
-	ExpectedResponse ExpectedResponse `yaml:"expectedResponse"`
-}
-
-type ExpectedResponse struct {
-	HttpCode        int              `yaml:"httpCode"`
-	ContentType     string           `yaml:"contentType"`
-	ExpectedResults []ExpectedResult `yaml:"expectedResults"`
-}
-
-type ExpectedResult struct {
-	SHA256 string `yaml:"sha256"`
-}
-
-type Config struct {
+type Listener struct {
 	Address        string              `yaml:"address"`
 	Code           int                 `yaml:"httpCode"`
 	ShuffleResults bool                `yaml:"shuffleResults"`
@@ -66,83 +31,15 @@ type Config struct {
 var cfg = MainConfig{}
 
 type listener struct {
-	Config
+	Listener
 	logger *zap.Logger
-}
-
-func doTest(logger *zap.Logger, t *Query) []string {
-	client := http.Client{}
-	failures := make([]string, 0)
-	d, err := time.ParseDuration(fmt.Sprintf("%v", t.Delay) + "s")
-	if err != nil {
-		failures = append(failures, fmt.Sprintf("failed parse duration: %v", err))
-		return failures
-	}
-	time.Sleep(d)
-	ctx := context.Background()
-	var body io.Reader
-	if t.Type != "GET" {
-		body = strings.NewReader(t.Body)
-	}
-	var resp *http.Response
-	var contentType string
-	u, err := url.Parse(t.URL)
-	if err != nil {
-		failures = append(failures, fmt.Sprintf("failed to parse URL: %v", err))
-		return failures
-	}
-	req, err := http.NewRequestWithContext(ctx, t.Type, t.Endpoint+u.EscapedPath(), body)
-	if err != nil {
-		failures = append(failures, fmt.Sprintf("failed to prepare the request: %v", err))
-		return failures
-	}
-
-	req.URL.RawQuery = req.URL.Query().Encode()
-
-	resp, err = client.Do(req)
-	if err != nil {
-		failures = append(failures, fmt.Sprintf("failed to perform the request: %v", err))
-	}
-
-	if resp.StatusCode != t.ExpectedResponse.HttpCode {
-		failures = append(failures,
-			fmt.Sprintf("http code different, got %v, expected %v",
-				resp.StatusCode,
-				t.ExpectedResponse.HttpCode,
-			),
-		)
-	}
-
-	contentType = resp.Header.Get("Content-Type")
-	if t.ExpectedResponse.ContentType != contentType {
-		failures = append(failures,
-			fmt.Sprintf("unexpected content-type, got %v, expected %v",
-				resp.StatusCode,
-				t.ExpectedResponse.HttpCode,
-			),
-		)
-	}
-
-	if contentType == "image/png" {
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			failures = append(failures, fmt.Sprintf("failed to read body: %v", err))
-			return failures
-		}
-
-		hash := sha256.Sum256(body)
-		hashStr := fmt.Sprintf("%x", hash)
-		if hashStr != t.ExpectedResponse.ExpectedResults[0].SHA256 {
-			failures = append(failures, fmt.Sprintf("sha256 mismatch, got '%v', expected '%v'", hashStr, t.ExpectedResponse.ExpectedResults[0].SHA256))
-			return failures
-		}
-	}
-
-	return failures
 }
 
 func main() {
 	config := flag.String("config", "average.yaml", "yaml where it would be possible to get data")
+	testonly := flag.Bool("testonly", false, "run only unit test")
+	noapp := flag.Bool("noapp", false, "do not run application")
+	test := flag.Bool("test", false, "run unit test if present")
 	flag.Parse()
 	logger, err := zap.NewProduction()
 	if err != nil {
@@ -170,99 +67,71 @@ func main() {
 
 	httpServers := make([]*http.Server, 0)
 	wg := sync.WaitGroup{}
-	for _, c := range cfg.Listeners {
-		logger := logger.With(zap.String("listener", c.Address))
-		listener := listener{
-			Config: c,
-			logger: logger,
-		}
-
-		if listener.Address == "" {
-			listener.Address = ":9070"
-		}
-
-		if listener.Code == 0 {
-			listener.Code = http.StatusOK
-		}
-
-		logger.Info("started",
-			zap.String("listener", listener.Address),
-			zap.Any("config", c),
-		)
-
-		mux := http.NewServeMux()
-		mux.HandleFunc("/render", listener.renderHandler)
-		mux.HandleFunc("/render/", listener.renderHandler)
-		mux.HandleFunc("/metrics/find", listener.findHandler)
-		mux.HandleFunc("/metrics/find/", listener.findHandler)
-
-		wg.Add(1)
-		server := &http.Server{
-			Addr:    listener.Address,
-			Handler: mux,
-		}
-		go func(h *http.Server) {
-			err = h.ListenAndServe()
-			if err != nil {
-				logger.Error("failed to start server",
-					zap.Error(err),
-				)
+	if !*testonly {
+		for _, c := range cfg.Listeners {
+			logger := logger.With(zap.String("listener", c.Address))
+			listener := listener{
+				Listener: c,
+				logger:   logger,
 			}
-			wg.Done()
-		}(server)
 
-		httpServers = append(httpServers, server)
+			if listener.Address == "" {
+				listener.Address = ":9070"
+			}
+
+			if listener.Code == 0 {
+				listener.Code = http.StatusOK
+			}
+
+			logger.Info("started",
+				zap.String("listener", listener.Address),
+				zap.Any("config", c),
+			)
+
+			mux := http.NewServeMux()
+			mux.HandleFunc("/render", listener.renderHandler)
+			mux.HandleFunc("/render/", listener.renderHandler)
+			mux.HandleFunc("/metrics/find", listener.findHandler)
+			mux.HandleFunc("/metrics/find/", listener.findHandler)
+
+			wg.Add(1)
+			server := &http.Server{
+				Addr:    listener.Address,
+				Handler: mux,
+			}
+			go func(h *http.Server) {
+				err = h.ListenAndServe()
+				if err != nil {
+					logger.Error("failed to start server",
+						zap.Error(err),
+					)
+				}
+				wg.Done()
+			}(server)
+
+			httpServers = append(httpServers, server)
+		}
+		logger.Info("all listeners started")
 	}
-	logger.Info("all listeners started")
 
 	failed := false
-	if cfg.Test != nil {
-		logger.Info("will run test",
-			zap.Any("config", cfg.Test),
-		)
-		runningApps := make(map[string]*runner)
-		for i, c := range cfg.Test.Apps {
-			r := NewRunner(&cfg.Test.Apps[i], logger)
-			runningApps[c.Name] = r
-			go r.Run()
-		}
+	if cfg.Test != nil && (*test || *testonly) {
+		failed = e2eTest(logger, *noapp)
+	}
 
-		logger.Info("will sleep for 5 seconds to start all required apps")
-		time.Sleep(5 * time.Second)
-
-		for _, t := range cfg.Test.Queries {
-			failures := doTest(logger, &t)
-
-			if len(failures) != 0 {
-				failed = true
-				logger.Error("test failed",
-					zap.Strings("failures", failures),
-				)
-			} else {
-				logger.Info("test OK")
+	if !*testonly {
+		if *test {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			for i := range httpServers {
+				// we don't care about error here
+				_ = httpServers[i].Shutdown(ctx)
 			}
 		}
 
-		logger.Info("shutting down running application")
-		for _, v := range runningApps {
-			v.Finish()
-		}
-
-		if failed {
-			logger.Error("tests failed")
-		} else {
-			logger.Info("All tests OK")
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		for i := range httpServers {
-			// we don't care about error here
-			_ = httpServers[i].Shutdown(ctx)
-		}
+		wg.Wait()
 	}
 
-	wg.Wait()
 	if failed {
 		os.Exit(1)
 	}

@@ -5,7 +5,7 @@ test:
           binary: "./carbonapi"
           args:
               - "-config"
-              - "./cmd/mockbackend/testcases/i503/carbonapi.yaml"
+              - "./cmd/mockbackend/carbonapi_singlebackend.yaml"
     queries:
             - endpoint: "http://127.0.0.1:8081"
               delay: 1

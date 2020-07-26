@@ -72,7 +72,7 @@ func (cfg *listener) findHandler(wr http.ResponseWriter, req *http.Request) {
 	}
 
 	if query[0] != "*" {
-		for m := range cfg.Config.Expressions {
+		for m := range cfg.Listener.Expressions {
 			globMatches := []carbonapi_v3_pb.GlobMatch{}
 
 			for _, metric := range cfg.Expressions[m].Data {
@@ -89,7 +89,7 @@ func (cfg *listener) findHandler(wr http.ResponseWriter, req *http.Request) {
 		}
 	} else {
 		returnMap := make(map[string]struct{})
-		for m := range cfg.Config.Expressions {
+		for m := range cfg.Listener.Expressions {
 			for _, metric := range cfg.Expressions[m].Data {
 				returnMap[metric.MetricName] = struct{}{}
 			}
@@ -111,7 +111,7 @@ func (cfg *listener) findHandler(wr http.ResponseWriter, req *http.Request) {
 			})
 	}
 
-	if cfg.Config.ShuffleResults {
+	if cfg.Listener.ShuffleResults {
 		rand.Shuffle(len(multiGlobs.Metrics), func(i, j int) {
 			multiGlobs.Metrics[i], multiGlobs.Metrics[j] = multiGlobs.Metrics[j], multiGlobs.Metrics[i]
 		})
