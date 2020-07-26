@@ -1,0 +1,105 @@
+listeners:
+  - address: ":9070"
+    expressions:
+      "a.open":
+        pathExpression: "a.open"
+        data:
+            - metricName: "a.open"
+              values: [0,1,2,2,3]
+      "a.waiting":
+        pathExpression: "a.waiting"
+        data:
+            - metricName: "a.waiting"
+              values: [100,110,110,110,150]
+      "a.*":
+        pathExpression: "a.*"
+        data:
+            - metricName: "a.waiting"
+              values: [100,110,110,110,150]
+            - metricName: "a.open"
+              values: [0,1,2,2,3]
+      "a.{open,waiting}":
+        pathExpression: "a.{open,waiting}"
+        data:
+            - metricName: "a.waiting"
+              values: [100,110,110,110,150]
+            - metricName: "a.open"
+              values: [0,1,2,2,3]
+  - address: ":9071"
+    expressions:
+      "a.open":
+        pathExpression: "a.open"
+        data:
+            - metricName: "a.open"
+              values: [0,1,2,2,3]
+      "a.waiting":
+        pathExpression: "a.waiting"
+        data:
+            - metricName: "a.waiting"
+              values: [100,110,110,110,150]
+      "a.*":
+        pathExpression: "a.*"
+        data:
+            - metricName: "a.waiting"
+              values: [100,110,110,110,150]
+            - metricName: "a.open"
+              values: [0,1,2,2,3]
+      "a.{open,waiting}":
+        pathExpression: "a.{open,waiting}"
+        data:
+            - metricName: "a.waiting"
+              values: [100,110,110,110,150]
+            - metricName: "a.open"
+              values: [0,1,2,2,3]
+  - address: ":9072"
+    expressions:
+      "a.open2":
+        pathExpression: "a.open2"
+        data:
+            - metricName: "a.open2"
+              values: [0,1,2,2,3]
+      "a.waiting2":
+        pathExpression: "a.waiting2"
+        data:
+            - metricName: "a.waiting2"
+              values: [100,110,110,110,150]
+      "a.*":
+        pathExpression: "a.*"
+        data:
+            - metricName: "a.waiting2"
+              values: [100,110,110,110,150]
+            - metricName: "a.open2"
+              values: [0,1,2,2,3]
+      "a.{open2,waiting2}":
+        pathExpression: "a.{open2,waiting2}"
+        data:
+            - metricName: "a.waiting2"
+              values: [100,110,110,110,150]
+            - metricName: "a.open2"
+              values: [0,1,2,2,3]
+  - address: ":9073"
+    expressions:
+      "a.open2":
+        pathExpression: "a.open2"
+        data:
+            - metricName: "a.open2"
+              values: [0,1,2,2,3]
+      "a.waiting2":
+        pathExpression: "a.waiting2"
+        data:
+            - metricName: "a.waiting2"
+              values: [100,110,110,110,150]
+      "a.*":
+        pathExpression: "a.*"
+        data:
+            - metricName: "a.waiting2"
+              values: [100,110,110,110,150]
+            - metricName: "a.open2"
+              values: [0,1,2,2,3]
+      "a.{open2,waiting2}":
+        pathExpression: "a.{open2,waiting2}"
+        data:
+            - metricName: "a.waiting2"
+              values: [100,110,110,110,150]
+            - metricName: "a.open2"
+              values: [0,1,2,2,3]

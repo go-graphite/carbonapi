@@ -1,82 +1,58 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
+	"crypto/sha256"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
-	"math"
-	"math/rand"
 	"net/http"
+	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/ansel1/merry"
-	"github.com/go-graphite/carbonapi/intervalset"
 	"go.uber.org/zap"
-
-	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
-	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
-	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	pickle "github.com/lomik/og-rek"
 	"gopkg.in/yaml.v2"
 )
 
-type responseFormat int
-
-func (r responseFormat) String() string {
-	switch r {
-	case jsonFormat:
-		return "json"
-	case pickleFormat:
-		return "pickle"
-	case protoV2Format:
-		return "carbonapi_v2_pb"
-	default:
-		return "unknown"
-	}
-}
-
-const (
-	jsonFormat responseFormat = iota
-	pickleFormat
-	protoV2Format
-	protoV3Format
-)
-
-type Metric struct {
-	MetricName string    `yaml:"metricName"`
-	Values     []float64 `yaml:"values"`
-}
-
-type metricForJson struct {
-	MetricName string
-	Values     []string
-}
-
-func (m *Metric) MarshalJSON() ([]byte, error) {
-	m2 := metricForJson{
-		MetricName: m.MetricName,
-		Values:     make([]string, len(m.Values)),
-	}
-
-	for i, v := range m.Values {
-		m2.Values[i] = fmt.Sprintf("%v", v)
-	}
-
-	return json.Marshal(m2)
-}
-
-type Response struct {
-	PathExpression string   `yaml:"pathExpression"`
-	Data           []Metric `yaml:"data"`
-}
-
-type MultiListenerConfig struct {
+type MainConfig struct {
+	Version   string   `yaml:"version"`
+	Test      *Schema  `yaml:"test"`
 	Listeners []Config `yaml:"listeners"`
+}
+
+type Schema struct {
+	Apps    []App
+	Queries []Query
+}
+
+type App struct {
+	Name   string
+	Binary string
+	Args   []string
+}
+
+type Query struct {
+	Endpoint         string           `yaml:"endpoint"`
+	Delay            int              `yaml:"delay"`
+	URL              string           `yaml:"URL"`
+	Type             string           `yaml:"type"`
+	Body             string           `yaml:"body"`
+	ExpectedResponse ExpectedResponse `yaml:"expectedResponse"`
+}
+
+type ExpectedResponse struct {
+	HttpCode        int              `yaml:"httpCode"`
+	ContentType     string           `yaml:"contentType"`
+	ExpectedResults []ExpectedResult `yaml:"expectedResults"`
+}
+
+type ExpectedResult struct {
+	SHA256 string `yaml:"sha256"`
 }
 
 type Config struct {
@@ -87,481 +63,82 @@ type Config struct {
 	Expressions    map[string]Response `yaml:"expressions"`
 }
 
-func copyResponse(src Response) Response {
-	dst := Response{
-		PathExpression: src.PathExpression,
-		Data:           make([]Metric, len(src.Data)),
-	}
-
-	for i := range src.Data {
-		dst.Data[i] = Metric{
-			MetricName: src.Data[i].MetricName,
-			Values:     make([]float64, len(src.Data[i].Values)),
-		}
-
-		for j := range src.Data[i].Values {
-			dst.Data[i].Values[j] = src.Data[i].Values[j]
-		}
-	}
-
-	return dst
-}
-
-func copyMap(src map[string]Response) map[string]Response {
-	dst := make(map[string]Response)
-
-	for k, v := range src {
-		dst[k] = copyResponse(v)
-	}
-
-	return dst
-}
-
-var cfg = MultiListenerConfig{}
-
-var knownFormats = map[string]responseFormat{
-	"json":            jsonFormat,
-	"pickle":          pickleFormat,
-	"protobuf":        protoV2Format,
-	"protobuf3":       protoV2Format,
-	"carbonapi_v2_pb": protoV2Format,
-	"carbonapi_v3_pb": protoV3Format,
-}
-
-func getFormat(req *http.Request) (responseFormat, error) {
-	format := req.FormValue("format")
-	if format == "" {
-		format = "json"
-	}
-
-	formatCode, ok := knownFormats[format]
-	if !ok {
-		return formatCode, fmt.Errorf("unknown format")
-	}
-
-	return formatCode, nil
-}
+var cfg = MainConfig{}
 
 type listener struct {
 	Config
 	logger *zap.Logger
 }
 
-const (
-	contentTypeJSON       = "application/json"
-	contentTypeProtobuf   = "application/x-protobuf"
-	contentTypeJavaScript = "text/javascript"
-	contentTypeRaw        = "text/plain"
-	contentTypePickle     = "application/pickle"
-	contentTypePNG        = "image/png"
-	contentTypeCSV        = "text/csv"
-	contentTypeSVG        = "image/svg+xml"
-)
-
-func (cfg *listener) findHandler(wr http.ResponseWriter, req *http.Request) {
-	_ = req.ParseMultipartForm(16 * 1024 * 1024)
-	hdrs := make(map[string][]string)
-
-	for n, v := range req.Header {
-		hdrs[n] = v
-	}
-
-	logger := cfg.logger.With(
-		zap.String("function", "findHandler"),
-		zap.String("method", req.Method),
-		zap.String("path", req.URL.Path),
-		zap.Any("form", req.Form),
-		zap.Any("headers", hdrs),
-	)
-	logger.Info("got request")
-
-	if cfg.Code != http.StatusOK {
-		wr.WriteHeader(cfg.Code)
-		return
-	}
-
-	format, err := getFormat(req)
+func doTest(logger *zap.Logger, t *Query) []string {
+	client := http.Client{}
+	failures := make([]string, 0)
+	d, err := time.ParseDuration(fmt.Sprintf("%v", t.Delay) + "s")
 	if err != nil {
-		wr.WriteHeader(http.StatusBadRequest)
-		_, _ = wr.Write([]byte(err.Error()))
-		return
+		failures = append(failures, fmt.Sprintf("failed parse duration: %v", err))
+		return failures
 	}
-
-	query := req.Form["query"]
-
-	if format == protoV3Format {
-		body, err := ioutil.ReadAll(req.Body)
-		if err != nil {
-			logger.Error("failed to read request body",
-				zap.Error(err),
-			)
-			http.Error(wr, "Bad request (unsupported format)",
-				http.StatusBadRequest)
-		}
-
-		var pv3Request protov3.MultiGlobRequest
-		_ = pv3Request.Unmarshal(body)
-
-		query = pv3Request.Metrics
+	time.Sleep(d)
+	ctx := context.Background()
+	var body io.Reader
+	if t.Type != "GET" {
+		body = strings.NewReader(t.Body)
 	}
-
-	logger.Info("request details",
-		zap.Strings("query", query),
-	)
-
-	multiGlobs := protov3.MultiGlobResponse{
-		Metrics: []protov3.GlobResponse{},
-	}
-
-	if query[0] != "*" {
-		for m := range cfg.Config.Expressions {
-			globMatches := []protov3.GlobMatch{}
-
-			for _, metric := range cfg.Expressions[m].Data {
-				globMatches = append(globMatches, protov3.GlobMatch{
-					Path:   metric.MetricName,
-					IsLeaf: true,
-				})
-			}
-			multiGlobs.Metrics = append(multiGlobs.Metrics,
-				protov3.GlobResponse{
-					Name:    cfg.Expressions[m].PathExpression,
-					Matches: globMatches,
-				})
-		}
-	} else {
-		returnMap := make(map[string]struct{})
-		for m := range cfg.Config.Expressions {
-			for _, metric := range cfg.Expressions[m].Data {
-				returnMap[metric.MetricName] = struct{}{}
-			}
-		}
-
-		globMatches := []protov3.GlobMatch{}
-		for k := range returnMap {
-			metricName := strings.Split(k, ".")
-
-			globMatches = append(globMatches, protov3.GlobMatch{
-				Path:   metricName[0],
-				IsLeaf: len(metricName) == 1,
-			})
-		}
-		multiGlobs.Metrics = append(multiGlobs.Metrics,
-			protov3.GlobResponse{
-				Name:    "*",
-				Matches: globMatches,
-			})
-	}
-
-	if cfg.Config.ShuffleResults {
-		rand.Shuffle(len(multiGlobs.Metrics), func(i, j int) {
-			multiGlobs.Metrics[i], multiGlobs.Metrics[j] = multiGlobs.Metrics[j], multiGlobs.Metrics[i]
-		})
-	}
-
-	logger.Info("will return", zap.Any("response", multiGlobs))
-
-	var b []byte
-	switch format {
-	case protoV2Format:
-		response := protov2.GlobResponse{
-			Name:    query[0],
-			Matches: make([]protov2.GlobMatch, 0),
-		}
-		for _, metric := range multiGlobs.Metrics {
-			if metric.Name == query[0] {
-				for _, m := range metric.Matches {
-					response.Matches = append(response.Matches,
-						protov2.GlobMatch{
-							Path:   m.Path,
-							IsLeaf: m.IsLeaf,
-						})
-				}
-			}
-		}
-		b, err = response.Marshal()
-		format = protoV2Format
-	case protoV3Format:
-		b, err = multiGlobs.Marshal()
-		format = protoV3Format
-	case pickleFormat:
-		var result []map[string]interface{}
-		now := int32(time.Now().Unix() + 60)
-		for _, globs := range multiGlobs.Metrics {
-			for _, metric := range globs.Matches {
-				if strings.HasPrefix(metric.Path, "_tag") {
-					continue
-				}
-				// Tell graphite-web that we have everything
-				var mm map[string]interface{}
-				// graphite-web 1.0
-				interval := &intervalset.IntervalSet{Start: 0, End: now}
-				mm = map[string]interface{}{
-					"is_leaf":   metric.IsLeaf,
-					"path":      metric.Path,
-					"intervals": interval,
-				}
-				result = append(result, mm)
-			}
-		}
-
-		p := bytes.NewBuffer(b)
-		pEnc := pickle.NewEncoder(p)
-		err = merry.Wrap(pEnc.Encode(result))
-		b = p.Bytes()
-	}
-
-	if err != nil {
-		logger.Error("failed to marshal", zap.Error(err))
-		http.Error(wr, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	switch format {
-	case jsonFormat:
-		wr.Header().Set("Content-Type", contentTypeJSON)
-	case protoV3Format, protoV2Format:
-		wr.Header().Set("Content-Type", contentTypeProtobuf)
-	case pickleFormat:
-		wr.Header().Set("Content-Type", contentTypePickle)
-	}
-	_, _ = wr.Write(b)
-}
-
-func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
-	hdrs := make(map[string][]string)
-
-	for n, v := range req.Header {
-		hdrs[n] = v
-	}
-
-	logger := cfg.logger.With(
-		zap.String("function", "renderHandler"),
-		zap.String("method", req.Method),
-		zap.String("path", req.URL.Path),
-		zap.Any("headers", hdrs),
-	)
-
-	logger.Info("got request")
-	if cfg.Code != http.StatusOK {
-		wr.WriteHeader(cfg.Code)
-		return
-	}
-
-	format, err := getFormat(req)
-	if err != nil {
-		logger.Error("bad request, failed to parse format")
-		wr.WriteHeader(http.StatusBadRequest)
-		_, _ = wr.Write([]byte(err.Error()))
-		return
-	}
-
-	targets := req.Form["target"]
-	maxDataPoints := int64(0)
-
-	if format == protoV3Format {
-		body, err := ioutil.ReadAll(req.Body)
-		if err != nil {
-			logger.Error("bad request, failed to read request body",
-				zap.Error(err),
-			)
-			http.Error(wr, "bad request (failed to read request body): "+err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		var pv3Request protov3.MultiFetchRequest
-		err = pv3Request.Unmarshal(body)
-
-		if err != nil {
-			logger.Error("bad request, failed to unmarshal request",
-				zap.Error(err),
-			)
-			http.Error(wr, "bad request (failed to parse format): "+err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		targets = make([]string, len(pv3Request.Metrics))
-		for i, r := range pv3Request.Metrics {
-			targets[i] = r.PathExpression
-		}
-		maxDataPoints = pv3Request.Metrics[0].MaxDataPoints
-	}
-
-	logger.Info("request details",
-		zap.Strings("target", targets),
-		zap.String("format", format.String()),
-		zap.Int64("maxDataPoints", maxDataPoints),
-	)
-
-	multiv2 := protov2.MultiFetchResponse{
-		Metrics: []protov2.FetchResponse{},
-	}
-
-	multiv3 := protov3.MultiFetchResponse{
-		Metrics: []protov3.FetchResponse{},
-	}
-
-	newCfg := Config{
-		Code:        cfg.Code,
-		EmptyBody:   cfg.EmptyBody,
-		Expressions: copyMap(cfg.Expressions),
-	}
-
-	for _, target := range targets {
-		response, ok := newCfg.Expressions[target]
-		if !ok {
-			wr.WriteHeader(http.StatusNotFound)
-			_, _ = wr.Write([]byte("Not found"))
-			return
-		}
-		for _, m := range response.Data {
-			isAbsent := make([]bool, 0, len(m.Values))
-			protov2Values := make([]float64, 0, len(m.Values))
-			for i := range m.Values {
-				if math.IsNaN(m.Values[i]) {
-					isAbsent = append(isAbsent, true)
-					protov2Values = append(protov2Values, 0.0)
-				} else {
-					isAbsent = append(isAbsent, false)
-					protov2Values = append(protov2Values, m.Values[i])
-				}
-			}
-			fr2 := protov2.FetchResponse{
-				Name:      m.MetricName,
-				StartTime: 1,
-				StopTime:  int32(1 + len(protov2Values)),
-				StepTime:  1,
-				Values:    protov2Values,
-				IsAbsent:  isAbsent,
-			}
-
-			fr3 := protov3.FetchResponse{
-				Name:                    m.MetricName,
-				PathExpression:          target,
-				ConsolidationFunc:       "avg",
-				StartTime:               1,
-				StopTime:                int64(1 + len(m.Values)),
-				StepTime:                1,
-				XFilesFactor:            0,
-				HighPrecisionTimestamps: false,
-				Values:                  m.Values,
-				RequestStartTime:        1,
-				RequestStopTime:         int64(1 + len(m.Values)),
-			}
-
-			multiv2.Metrics = append(multiv2.Metrics, fr2)
-			multiv3.Metrics = append(multiv3.Metrics, fr3)
-		}
-	}
-
-	if cfg.Config.ShuffleResults {
-		rand.Shuffle(len(multiv2.Metrics), func(i, j int) {
-			multiv2.Metrics[i], multiv2.Metrics[j] = multiv2.Metrics[j], multiv2.Metrics[i]
-		})
-		rand.Shuffle(len(multiv3.Metrics), func(i, j int) {
-			multiv3.Metrics[i], multiv3.Metrics[j] = multiv3.Metrics[j], multiv3.Metrics[i]
-		})
-	}
-
-	var d []byte
+	var resp *http.Response
 	var contentType string
-	switch format {
-	case pickleFormat:
-		contentType = httpHeaders.ContentTypePickle
-		if cfg.EmptyBody {
-			break
-		}
-		var response []map[string]interface{}
+	u, err := url.Parse(t.URL)
+	if err != nil {
+		failures = append(failures, fmt.Sprintf("failed to parse URL: %v", err))
+		return failures
+	}
+	req, err := http.NewRequestWithContext(ctx, t.Type, t.Endpoint+u.EscapedPath(), body)
+	if err != nil {
+		failures = append(failures, fmt.Sprintf("failed to prepare the request: %v", err))
+		return failures
+	}
 
-		for _, metric := range multiv3.GetMetrics() {
-			m := make(map[string]interface{})
-			m["start"] = metric.StartTime
-			m["step"] = metric.StepTime
-			m["end"] = metric.StopTime
-			m["name"] = metric.Name
-			m["pathExpression"] = metric.PathExpression
-			m["xFilesFactor"] = 0.5
-			m["consolidationFunc"] = "avg"
+	req.URL.RawQuery = req.URL.Query().Encode()
 
-			mv := make([]interface{}, len(metric.Values))
-			for i, p := range metric.Values {
-				if math.IsNaN(p) {
-					mv[i] = nil
-				} else {
-					mv[i] = p
-				}
-			}
+	resp, err = client.Do(req)
+	if err != nil {
+		failures = append(failures, fmt.Sprintf("failed to perform the request: %v", err))
+	}
 
-			m["values"] = mv
-			log.Printf("%+v\n\n", m)
-			response = append(response, m)
-		}
-
-		var buf bytes.Buffer
-		logger.Info("request will be served",
-			zap.String("format", "pickle"),
-			zap.Any("content", response),
-		)
-		pEnc := pickle.NewEncoder(&buf)
-		err = pEnc.Encode(response)
-		if err != nil {
-			wr.WriteHeader(http.StatusBadGateway)
-			_, _ = wr.Write([]byte(err.Error()))
-			return
-		}
-		d = buf.Bytes()
-	case protoV2Format:
-		contentType = httpHeaders.ContentTypeCarbonAPIv2PB
-		if cfg.EmptyBody {
-			break
-		}
-		logger.Info("request will be served",
-			zap.String("format", "protov2"),
-			zap.Any("content", multiv2),
-		)
-		d, err = multiv2.Marshal()
-		if err != nil {
-			wr.WriteHeader(http.StatusBadGateway)
-			_, _ = wr.Write([]byte(err.Error()))
-			return
-		}
-	case protoV3Format:
-		contentType = httpHeaders.ContentTypeCarbonAPIv3PB
-		if cfg.EmptyBody {
-			break
-		}
-		logger.Info("request will be served",
-			zap.String("format", "protov3"),
-			zap.Any("content", multiv3),
-		)
-		d, err = multiv3.Marshal()
-		if err != nil {
-			wr.WriteHeader(http.StatusBadGateway)
-			_, _ = wr.Write([]byte(err.Error()))
-			return
-		}
-	case jsonFormat:
-		contentType = "application/json"
-		if cfg.EmptyBody {
-			break
-		}
-		logger.Info("request will be served",
-			zap.String("format", "json"),
-			zap.Any("content", multiv2),
-		)
-		d, err = json.Marshal(multiv2)
-		if err != nil {
-			wr.WriteHeader(http.StatusBadGateway)
-			_, _ = wr.Write([]byte(err.Error()))
-			return
-		}
-	default:
-		logger.Error("format is not supported",
-			zap.Any("format", format),
+	if resp.StatusCode != t.ExpectedResponse.HttpCode {
+		failures = append(failures,
+			fmt.Sprintf("http code different, got %v, expected %v",
+				resp.StatusCode,
+				t.ExpectedResponse.HttpCode,
+			),
 		)
 	}
-	wr.Header().Set("Content-Type", contentType)
-	_, _ = wr.Write(d)
+
+	contentType = resp.Header.Get("Content-Type")
+	if t.ExpectedResponse.ContentType != contentType {
+		failures = append(failures,
+			fmt.Sprintf("unexpected content-type, got %v, expected %v",
+				resp.StatusCode,
+				t.ExpectedResponse.HttpCode,
+			),
+		)
+	}
+
+	if contentType == "image/png" {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			failures = append(failures, fmt.Sprintf("failed to read body: %v", err))
+			return failures
+		}
+
+		hash := sha256.Sum256(body)
+		hashStr := fmt.Sprintf("%x", hash)
+		if hashStr != t.ExpectedResponse.ExpectedResults[0].SHA256 {
+			failures = append(failures, fmt.Sprintf("sha256 mismatch, got '%v', expected '%v'", hashStr, t.ExpectedResponse.ExpectedResults[0].SHA256))
+			return failures
+		}
+	}
+
+	return failures
 }
 
 func main() {
@@ -587,6 +164,11 @@ func main() {
 		return
 	}
 
+	logger.Info("starting mockbackend",
+		zap.Any("config", cfg),
+	)
+
+	httpServers := make([]*http.Server, 0)
 	wg := sync.WaitGroup{}
 	for _, c := range cfg.Listeners {
 		logger := logger.With(zap.String("listener", c.Address))
@@ -615,12 +197,73 @@ func main() {
 		mux.HandleFunc("/metrics/find/", listener.findHandler)
 
 		wg.Add(1)
-		go func() {
-			err = http.ListenAndServe(listener.Address, mux)
-			fmt.Println(err)
+		server := &http.Server{
+			Addr:    listener.Address,
+			Handler: mux,
+		}
+		go func(h *http.Server) {
+			err = h.ListenAndServe()
+			if err != nil {
+				logger.Error("failed to start server",
+					zap.Error(err),
+				)
+			}
 			wg.Done()
-		}()
+		}(server)
+
+		httpServers = append(httpServers, server)
 	}
 	logger.Info("all listeners started")
+
+	failed := false
+	if cfg.Test != nil {
+		logger.Info("will run test",
+			zap.Any("config", cfg.Test),
+		)
+		runningApps := make(map[string]*runner)
+		for i, c := range cfg.Test.Apps {
+			r := NewRunner(&cfg.Test.Apps[i], logger)
+			runningApps[c.Name] = r
+			go r.Run()
+		}
+
+		logger.Info("will sleep for 5 seconds to start all required apps")
+		time.Sleep(5 * time.Second)
+
+		for _, t := range cfg.Test.Queries {
+			failures := doTest(logger, &t)
+
+			if len(failures) != 0 {
+				failed = true
+				logger.Error("test failed",
+					zap.Strings("failures", failures),
+				)
+			} else {
+				logger.Info("test OK")
+			}
+		}
+
+		logger.Info("shutting down running application")
+		for _, v := range runningApps {
+			v.Finish()
+		}
+
+		if failed {
+			logger.Error("tests failed")
+		} else {
+			logger.Info("All tests OK")
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		for i := range httpServers {
+			// we don't care about error here
+			_ = httpServers[i].Shutdown(ctx)
+		}
+	}
+
 	wg.Wait()
+	if failed {
+		os.Exit(1)
+	}
 }

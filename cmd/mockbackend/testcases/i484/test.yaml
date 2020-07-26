@@ -1,0 +1,18 @@
+schema:
+    configs:
+        carbonapi:
+            - "carbonapi_i484.yaml"
+        mockbackend:
+            - "i484-1.yaml"
+            - "i484-2.yaml"
+            - "i484-3.yaml"
+            - "i484-4.yaml"
+query:
+    -
+        request: "/render/?target=a.open&format=json"
+        result:
+            type: "json"
+            data:
+                -
+                    target: "a.open"
+                    datapoints: [[0,1],[1,2],[2,3],[2,4],[3,5]]

@@ -1,0 +1,8 @@
+version: "v1"
+listeners:
+        - address: ":9070"
+          expressions:
+                "a":
+                    pathExpression: "a"
+                    emptyBody: true
+                    httpCode: 404

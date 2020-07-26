@@ -1,0 +1,25 @@
+version: "v1"
+test:
+    apps:
+        - name: "carbonapi"
+          binary: "./carbonapi"
+          args:
+              - "-config"
+              - "./cmd/mockbackend/testcases/i503/carbonapi.yaml"
+    queries:
+            - endpoint: "http://127.0.0.1:8081"
+              delay: 1
+              type: "GET"
+              URL: "/render?target=legendValue(alias(color(a, \"066591\"), \"b\"),\"last\")"
+              expectedResponse:
+                  httpCode: 200
+                  contentType: "image/png"
+                  expectedResults:
+                    - sha256: "d149b08b5f68c6b7e536b25c84c83a5ea3aee07d3c9ae9675d717ae3ed0d215a" # sha256(nodata png)
+listeners:
+        - address: ":9070"
+          expressions:
+                "a":
+                    pathExpression: "a"
+                    emptyBody: true
+                    httpCode: 404

@@ -1,0 +1,27 @@
+listeners:
+  - address: ":9072"
+    expressions:
+      "a.open":
+        pathExpression: "a.open"
+        data:
+            - metricName: "a.open"
+              values: [0,1,2,2,3]
+      "a.waiting":
+        pathExpression: "a.waiting"
+        data:
+            - metricName: "a.waiting"
+              values: [100,110,110,110,150]
+      "a.*":
+        pathExpression: "a.*"
+        data:
+            - metricName: "a.waiting"
+              values: [100,110,110,110,150]
+            - metricName: "a.open"
+              values: [0,1,2,2,3]
+      "a.{open,waiting}":
+        pathExpression: "a.{open,waiting}"
+        data:
+            - metricName: "a.waiting"
+              values: [100,110,110,110,150]
+            - metricName: "a.open"
+              values: [0,1,2,2,3]
