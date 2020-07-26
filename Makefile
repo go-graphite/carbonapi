@@ -27,10 +27,10 @@ carbonzipper: $(shell find . -name '*.go' | grep -v 'vendor')
 	GO111MODULE=on $(GO) build -mod=vendor --ldflags '-X main.BuildVersion=$(VERSION)' $(PKG_CARBONZIPPER)
 
 test:
-	PKG_CONFIG_PATH="$(EXTRA_PKG_CONFIG_PATH)" $(GO) test -tags cairo ./... -race
+	PKG_CONFIG_PATH="$(EXTRA_PKG_CONFIG_PATH)" $(GO) test -mod=vendor -tags cairo ./... -race
 
 test_nocairo:
-	$(GO) test  ./... -race
+	$(GO) test -mod=vendor ./... -race
 
 vet:
 	$(GO) vet
