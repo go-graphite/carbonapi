@@ -19,6 +19,7 @@ before_install:
 script:
   - make test
   - make
+  - ./e2e_test.sh
   - wget "https://raw.githubusercontent.com/go-graphite/helper-scripts/main/travis-docker-build.sh" && chmod +x ./travis-docker-build.sh
   - ./travis-docker-build.sh carbonapi
 
