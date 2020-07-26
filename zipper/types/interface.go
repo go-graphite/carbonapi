@@ -2,6 +2,7 @@ package types
 
 import (
 	"context"
+
 	"github.com/ansel1/merry"
 
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"

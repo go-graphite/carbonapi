@@ -2,10 +2,11 @@ package dummy
 
 import (
 	"context"
-	"github.com/ansel1/merry"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ansel1/merry"
 
 	"github.com/go-graphite/carbonapi/zipper/types"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"

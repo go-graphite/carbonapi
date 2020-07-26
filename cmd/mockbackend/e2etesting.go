@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -208,10 +209,12 @@ func doTest(logger *zap.Logger, t *Query) []string {
 
 	switch contentType {
 	case "image/png":
+	case "image/svg+xml":
 		hash := sha256.Sum256(b)
 		hashStr := fmt.Sprintf("%x", hash)
 		if hashStr != t.ExpectedResponse.ExpectedResults[0].SHA256 {
-			failures = append(failures, fmt.Sprintf("sha256 mismatch, got '%v', expected '%v'", hashStr, t.ExpectedResponse.ExpectedResults[0].SHA256))
+			encodedBody := base64.StdEncoding.EncodeToString(b)
+			failures = append(failures, fmt.Sprintf("sha256 mismatch, got '%v', expected '%v', encodedBodyy: '%v'", hashStr, t.ExpectedResponse.ExpectedResults[0].SHA256, encodedBody))
 			return failures
 		}
 	case "application/json":

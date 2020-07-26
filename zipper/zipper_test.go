@@ -2,9 +2,10 @@ package zipper
 
 import (
 	"fmt"
-	"github.com/ansel1/merry"
 	"math"
 	"testing"
+
+	"github.com/ansel1/merry"
 
 	"github.com/go-graphite/carbonapi/zipper/types"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"

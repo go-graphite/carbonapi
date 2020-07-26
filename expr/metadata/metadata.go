@@ -1,11 +1,12 @@
 package metadata
 
 import (
+	"sync"
+
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
-	"sync"
 )
 
 // RegisterRewriteFunction registers function for a rewrite phase in metadata and fills out all Description structs

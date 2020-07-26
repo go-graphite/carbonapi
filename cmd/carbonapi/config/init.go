@@ -3,13 +3,14 @@ package config
 import (
 	"bytes"
 	"expvar"
-	zipperConfig "github.com/go-graphite/carbonapi/zipper/config"
 	"io/ioutil"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
 	"unicode"
+
+	zipperConfig "github.com/go-graphite/carbonapi/zipper/config"
 
 	"github.com/ansel1/merry"
 	"github.com/facebookgo/pidfile"

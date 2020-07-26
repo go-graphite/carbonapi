@@ -3,12 +3,13 @@ package v2
 import (
 	"context"
 	"encoding/json"
-	"github.com/ansel1/merry"
 	"math"
 	"net"
 	"net/http"
 	"net/url"
 	"strconv"
+
+	"github.com/ansel1/merry"
 
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/zipper/helper"

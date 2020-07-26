@@ -1,8 +1,9 @@
 package config
 
 import (
-	"go.uber.org/zap"
 	"time"
+
+	"go.uber.org/zap"
 
 	"github.com/go-graphite/carbonapi/zipper/types"
 )

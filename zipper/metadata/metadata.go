@@ -1,8 +1,9 @@
 package metadata
 
 import (
-	"github.com/ansel1/merry"
 	"sync"
+
+	"github.com/ansel1/merry"
 
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/zipper/types"

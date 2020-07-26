@@ -3,9 +3,10 @@ package broadcast
 import (
 	"context"
 	"fmt"
-	"github.com/ansel1/merry"
 	"sort"
 	"strings"
+
+	"github.com/ansel1/merry"
 
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/pathcache"

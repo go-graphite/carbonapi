@@ -3,16 +3,17 @@ package http
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ansel1/merry"
 	"net/http"
 	"time"
+
+	"github.com/ansel1/merry"
+	uuid "github.com/satori/go.uuid"
 
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 	utilctx "github.com/go-graphite/carbonapi/util/ctx"
 
 	"github.com/lomik/zapwriter"
-	"github.com/satori/go.uuid"
 )
 
 func infoHandler(w http.ResponseWriter, r *http.Request) {

@@ -3,9 +3,10 @@
 package png
 
 import (
+	"net/http"
+
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"net/http"
 )
 
 const HaveGraphSupport = false

@@ -10,12 +10,12 @@ test:
             - endpoint: "http://127.0.0.1:8081"
               delay: 1
               type: "GET"
-              URL: "/render?target=legendValue(alias(color(a, \"066591\"), \"b\"),\"last\")"
+              URL: "/render?target=legendValue(alias(color(a, \"066591\"), \"b\"),\"last\")&format=svg"
               expectedResponse:
                   httpCode: 200
-                  contentType: "image/png"
+                  contentType: "image/svg+xml"
                   expectedResults:
-                    - sha256: "d149b08b5f68c6b7e536b25c84c83a5ea3aee07d3c9ae9675d717ae3ed0d215a" # sha256(nodata png)
+                    - sha256: "6d9b18d1fe7264cc0ceb1aa319bf735d346f264bae058e0918d1e41437834aa7" # sha256(nodata svg)
 listeners:
         - address: ":9070"
           expressions:

@@ -6,7 +6,6 @@ import (
 	"expvar"
 	"flag"
 	"fmt"
-	"github.com/ansel1/merry"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -17,6 +16,8 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/ansel1/merry"
 
 	"github.com/dgryski/httputil"
 	"github.com/facebookgo/grace/gracehttp"
@@ -35,7 +36,7 @@ import (
 	pickle "github.com/lomik/og-rek"
 	"github.com/peterbourgon/g2g"
 
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 	"go.uber.org/zap"
 )
 

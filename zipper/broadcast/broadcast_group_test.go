@@ -3,12 +3,13 @@ package broadcast
 import (
 	"context"
 	"fmt"
-	"github.com/ansel1/merry"
 	"math"
 	"reflect"
 	"sort"
 	"testing"
 	"time"
+
+	"github.com/ansel1/merry"
 
 	"github.com/go-graphite/carbonapi/zipper/dummy"
 	"github.com/go-graphite/carbonapi/zipper/types"
