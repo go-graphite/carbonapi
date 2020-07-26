@@ -18,8 +18,12 @@ Changes
 CHANGELOG
 ---------
 **WIP**
+ - [Improvement] Return stacktrace on panic (thx to @Felixoid)
  - [Fix] Fix case where some metrics passed to functions like group or sumSeries were missing. Fixes #438
  - [Fix] Accept `1` and `0` as bool arguments for `True` and `False`. (thx to @Felixoid)
+ - [Fix] Align precision of multiple metrics (thx to @Felixoid, see #500 and #501)
+ - [Fix] fallbackSeries now works properly (thx to @Egor Redozubov)
+ - [Fix] Panic when trying to render png/svg of an empty response (Fixes #503)
 
 **0.14.0**
  - **[Breaking]**[Code] expr library and all functions now requires caller to pass context. See #485

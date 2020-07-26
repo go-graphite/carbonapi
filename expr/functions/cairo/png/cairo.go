@@ -1019,31 +1019,35 @@ func marshalCairo(p PictureParams, results []*types.MetricData, backend cairoBac
 
 func drawGraph(cr *cairoSurfaceContext, params *Params, results []*types.MetricData) {
 	params.secondYAxis = false
+	minNumberOfPoints := int64(0)
+	maxNumberOfPoints := int64(0)
 
-	params.startTime = int64(results[0].StartTime)
-	params.endTime = int64(results[0].StopTime)
-	minNumberOfPoints := int64(len(results[0].Values))
-	maxNumberOfPoints := minNumberOfPoints
-	for _, res := range results {
-		tmp := int64(res.StartTime)
-		if params.startTime > tmp {
-			params.startTime = tmp
-		}
-		tmp = int64(res.StopTime)
-		if params.endTime > tmp {
-			params.endTime = tmp
-		}
+	if len(results) > 0 {
+		params.startTime = results[0].StartTime
+		params.endTime = results[0].StopTime
+		minNumberOfPoints = int64(len(results[0].Values))
+		maxNumberOfPoints = minNumberOfPoints
+		for _, res := range results {
+			tmp := res.StartTime
+			if params.startTime > tmp {
+				params.startTime = tmp
+			}
+			tmp = res.StopTime
+			if params.endTime > tmp {
+				params.endTime = tmp
+			}
 
-		tmp = int64(len(res.Values))
-		if tmp < minNumberOfPoints {
-			minNumberOfPoints = tmp
-		}
-		if tmp > maxNumberOfPoints {
-			maxNumberOfPoints = tmp
-		}
+			tmp = int64(len(res.Values))
+			if tmp < minNumberOfPoints {
+				minNumberOfPoints = tmp
+			}
+			if tmp > maxNumberOfPoints {
+				maxNumberOfPoints = tmp
+			}
 
+		}
+		params.timeRange = params.endTime - params.startTime
 	}
-	params.timeRange = params.endTime - params.startTime
 
 	if params.timeRange <= 0 {
 		x := params.width / 2.0
