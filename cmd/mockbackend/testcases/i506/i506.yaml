@@ -1,0 +1,28 @@
+version: "v1"
+test:
+    apps:
+        - name: "carbonapi"
+          binary: "./carbonapi"
+          args:
+              - "-config"
+              - "./cmd/mockbackend/testcases/i506/carbonapi.yaml"
+    queries:
+            - endpoint: "http://127.0.0.1:8081"
+              delay: 1
+              type: "GET"
+              URL: "/render?format=svg&target=a"
+              expectedResponse:
+                  httpCode: 200
+                  contentType: "image/svg+xml"
+                  expectedResults:
+                    - sha256:
+                            - "6d9b18d1fe7264cc0ceb1aa319bf735d346f264bae058e0918d1e41437834aa7" # sha256(nodata svg) on Gentoo stable
+                            - "33d0b579778e2e0bfdb7cf85cbddafe08f5f97b720e1e717d046262ded23cdf2" # sha256(nodata svg) on Ubuntu Xenial (travis-ci) 
+listeners:
+        - address: ":9070"
+          expressions:
+                     "a":
+                         pathExpression: "a"
+                         emptyBody: true
+                         httpCode: 200
+
