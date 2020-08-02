@@ -7,8 +7,6 @@ import (
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-
-	"strings"
 )
 
 type aliasByNode struct {
@@ -22,7 +20,7 @@ func GetOrder() interfaces.Order {
 func New(configFile string) []interfaces.FunctionMetadata {
 	res := make([]interfaces.FunctionMetadata, 0)
 	f := &aliasByNode{}
-	for _, n := range []string{"aliasByNode"} {
+	for _, n := range []string{"aliasByNode", "aliasByTags"} {
 		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
 	}
 	return res
@@ -33,9 +31,8 @@ func (f *aliasByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 	if err != nil {
 		return nil, err
 	}
-	// TODO(Felixoid): use helper.AggKey
 
-	fields, err := e.GetIntArgs(1)
+	nodesOrTags, err := e.GetNodeOrTagArgs(1)
 	if err != nil {
 		return nil, err
 	}
@@ -43,23 +40,11 @@ func (f *aliasByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 	var results []*types.MetricData
 
 	for _, a := range args {
-
-		metric := helper.ExtractMetric(a.Name)
-		nodes := strings.Split(metric, ".")
-
-		var name []string
-		for _, f := range fields {
-			if f < 0 {
-				f += len(nodes)
-			}
-			if f >= len(nodes) || f < 0 {
-				continue
-			}
-			name = append(name, nodes[f])
-		}
-
+		name := helper.AggKey(a, nodesOrTags)
 		r := *a
-		r.Name = strings.Join(name, ".")
+		if len(name) > 0 {
+			r.Name = name
+		}
 		results = append(results, &r)
 	}
 
@@ -84,6 +69,26 @@ func (f *aliasByNode) Description() map[string]types.FunctionDescription {
 				{
 					Multiple: true,
 					Name:     "nodes",
+					Required: true,
+					Type:     types.NodeOrTag,
+				},
+			},
+		},
+		"aliasByTags": {
+			Description: "Takes a seriesList and applies an alias derived from one or more tags",
+			Function:    "aliasByTags(seriesList, *tags)",
+			Group:       "Alias",
+			Module:      "graphite.render.functions",
+			Name:        "aliasByTags",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Multiple: true,
+					Name:     "tags",
 					Required: true,
 					Type:     types.NodeOrTag,
 				},
