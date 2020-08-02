@@ -159,12 +159,13 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 	resCh <- response
 }
 
-func (bg *BroadcastGroup) splitRequest(ctx context.Context, request *protov3.MultiFetchRequest) []*protov3.MultiFetchRequest {
+func (bg *BroadcastGroup) splitRequest(ctx context.Context, request *protov3.MultiFetchRequest) ([]*protov3.MultiFetchRequest, merry.Error) {
 	if bg.MaxMetricsPerRequest() == 0 {
-		return []*protov3.MultiFetchRequest{request}
+		return []*protov3.MultiFetchRequest{request}, nil
 	}
 
 	var requests []*protov3.MultiFetchRequest
+	var err merry.Error
 	for _, metric := range request.Metrics {
 		newRequest := &protov3.MultiFetchRequest{}
 		// TODO(Civil): Tags: improve logic
@@ -190,24 +191,26 @@ func (bg *BroadcastGroup) splitRequest(ctx context.Context, request *protov3.Mul
 					e = e.WithCause(types.ErrNoMetricsFetched)
 				}
 			}
+			err = e
 
-			err := ""
+			errStr := ""
 			if e.Cause() != nil {
-				err = e.Cause().Error()
+				errStr = e.Cause().Error()
 			} else {
 				// e != nil, but len(f.Metrics) == 0 or f == nil, then Cause could be nil
-				err = e.Error()
+				errStr = e.Error()
 			}
 
-			bg.logger.Warn("find request failed when resolving globs",
-				zap.String("metric_name", metric.Name),
-				zap.String("error", err),
-			)
 			if ce := bg.logger.Check(zap.DebugLevel, "find request failed when resolving globs (verbose)"); ce != nil {
 				ce.Write(
 					zap.String("metric_name", metric.Name),
-					zap.String("error", err),
+					zap.String("error", errStr),
 					zap.Any("stack", e),
+				)
+			} else {
+				bg.logger.Warn("find request failed when resolving globs",
+					zap.String("metric_name", metric.Name),
+					zap.String("error", errStr),
 				)
 			}
 
@@ -238,7 +241,7 @@ func (bg *BroadcastGroup) splitRequest(ctx context.Context, request *protov3.Mul
 		}
 	}
 
-	return requests
+	return requests, err
 }
 
 func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, merry.Error) {
@@ -250,16 +253,16 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	logger.Debug("will try to fetch data")
 
 	backends := bg.filterServersByTLD(requestNames, bg.Children())
-	requests := bg.splitRequest(ctx, request)
+	requests, err := bg.splitRequest(ctx, request)
 	zipperRequests, totalMetricsCount := getFetchRequestMetricStats(requests, bg, backends)
 
 	result := types.NewServerFetchResponse()
 	result.Stats.ZipperRequests = int64(zipperRequests)
 	result.Stats.TotalMetricsCount = int64(totalMetricsCount)
-
-	if len(requests) == 0 {
-		return result.Response, result.Stats, types.ErrNoRequests
+	if len(requests) == 0 || err != nil {
+		return result.Response, result.Stats, err
 	}
+
 	ctxNew, cancel := context.WithTimeout(ctx, bg.timeout.Render)
 	defer cancel()
 
@@ -298,7 +301,6 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 		zap.Int("response_count", len(result.Response.Metrics)),
 	)
 
-	var err merry.Error
 	if result.Err != nil && len(result.Err) > 0 {
 		err = types.ErrNonFatalErrors
 		for _, e := range result.Err {

@@ -207,6 +207,11 @@ func doTest(logger *zap.Logger, t *Query) []string {
 		return failures
 	}
 
+	// We don't need to actually check body of response if we expect any sort of error (4xx/5xx)
+	if t.ExpectedResponse.HttpCode >= 300 {
+		return failures
+	}
+
 	switch contentType {
 	case "image/png":
 	case "image/svg+xml":
