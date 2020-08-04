@@ -46,7 +46,7 @@ func parseTime(s string) (hour, minute int, err error) {
 var TimeFormats = []string{"20060102", "01/02/06"}
 
 // DateParamToEpoch turns a passed string parameter into a unix epoch
-func DateParamToEpoch(s string, qtz string, d int64, defaultTimeZone *time.Location) int64 {
+func DateParamToEpoch(s, qtz string, d int64, defaultTimeZone *time.Location) int64 {
 
 	if s == "" {
 		// return the default if nothing was passed

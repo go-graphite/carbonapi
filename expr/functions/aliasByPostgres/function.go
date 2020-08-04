@@ -59,7 +59,7 @@ func (f *aliasByPostgres) SQLConnectDB(databaseName string) (*sql.DB, error) {
 }
 
 // SQLQueryDB convenience function to query the database
-func (f *aliasByPostgres) SQLQueryDB(query string, databaseName string) (res string, err error) {
+func (f *aliasByPostgres) SQLQueryDB(query, databaseName string) (res string, err error) {
 	var result string
 	logger := zapwriter.Logger("functionInit").With(zap.String("function", "aliasByPostgres"))
 	db, _ := f.SQLConnectDB(databaseName)
