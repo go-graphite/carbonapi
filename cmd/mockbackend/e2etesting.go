@@ -109,7 +109,7 @@ func (d *Datapoint) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
-func isMetricsEqual(m1 CarbonAPIResponse, m2 CarbonAPIResponse) error {
+func isMetricsEqual(m1, m2 CarbonAPIResponse) error {
 	if m1.Target != m2.Target {
 		return fmt.Errorf("target mismatch, got '%v', expected '%v'", m1.Target, m2.Target)
 	}

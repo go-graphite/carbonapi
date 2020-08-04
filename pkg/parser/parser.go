@@ -201,7 +201,7 @@ func (e *expr) Metrics() []MetricRequest {
 	return nil
 }
 
-func (e *expr) GetIntervalArg(n int, defaultSign int) (int32, error) {
+func (e *expr) GetIntervalArg(n, defaultSign int) (int32, error) {
 	if len(e.args) <= n {
 		return 0, ErrMissingArgument
 	}
@@ -310,7 +310,7 @@ func (e *expr) GetIntArgs(n int) ([]int, error) {
 	return ints, nil
 }
 
-func (e *expr) GetIntArgDefault(n int, d int) (int, error) {
+func (e *expr) GetIntArgDefault(n, d int) (int, error) {
 	if len(e.args) <= n {
 		return d, nil
 	}
@@ -318,7 +318,7 @@ func (e *expr) GetIntArgDefault(n int, d int) (int, error) {
 	return e.args[n].doGetIntArg()
 }
 
-func (e *expr) GetIntNamedOrPosArgDefault(k string, n int, d int) (int, error) {
+func (e *expr) GetIntNamedOrPosArgDefault(k string, n, d int) (int, error) {
 	if a := e.getNamedArg(k); a != nil {
 		return a.doGetIntArg()
 	}

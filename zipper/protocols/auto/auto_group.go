@@ -226,7 +226,7 @@ func (bg *AutoGroup) TagNames(ctx context.Context, prefix string, exprs []string
 	return nil, merry.New("auto group doesn't support tag names")
 }
 
-func (bg *AutoGroup) TagValues(ctx context.Context, tagName string, prefix string, exprs []string, limit int64) ([]string, merry.Error) {
+func (bg *AutoGroup) TagValues(ctx context.Context, tagName, prefix string, exprs []string, limit int64) ([]string, merry.Error) {
 	return nil, merry.New("auto group doesn't support tag values")
 }
 

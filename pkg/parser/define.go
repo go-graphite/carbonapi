@@ -12,7 +12,7 @@ type defineStruct struct {
 var defineMap = &defineStruct{tpl: template.New("define")}
 
 // Define new template
-func Define(name string, tmpl string) error {
+func Define(name, tmpl string) error {
 	return defineMap.define(name, tmpl)
 }
 
@@ -20,7 +20,7 @@ func defineCleanUp() {
 	defineMap = &defineStruct{tpl: template.New("define")}
 }
 
-func (d *defineStruct) define(name string, tmpl string) error {
+func (d *defineStruct) define(name, tmpl string) error {
 	t := d.tpl.New(name)
 	_, err := t.Parse(tmpl)
 	return err

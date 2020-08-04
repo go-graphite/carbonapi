@@ -21,7 +21,7 @@ func getBool(s string, def bool) bool {
 	return def
 }
 
-func getString(s string, def string) string {
+func getString(s, def string) string {
 	if s == "" {
 		return def
 	}
