@@ -77,12 +77,21 @@ func TestDiffSeries(t *testing.T) {
 			[]*types.MetricData{types.MakeMetricData("diffSeries(metric*)",
 				[]float64{-4, -3, math.NaN(), 3, -2, math.NaN()}, 1, now32)},
 		},
+		{
+			"diffSeries(metric1,metric3)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12, 5}, 1, now32)},
+				{"metric3", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData("diffSeries(metric1,metric3)",
+				[]float64{-1, math.NaN(), math.NaN(), 3, 4, 6, 5}, 1, now32)},
+		},
 	}
 
 	for _, tt := range tests {
 		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
-			th.TestEvalExpr(t, &tt)
+			th.TestEvalExprModifiedOrigin(t, &tt)
 		})
 	}
 
