@@ -55,6 +55,10 @@ func (f *diffSeries) Do(ctx context.Context, e parser.Expr, from, until int64, v
 		e.SetRawArgs(strings.Join(args, ","))
 	}
 
+	alignedSeries := helper.AlignSeries(append(minuends, subtrahends...))
+	minuends = alignedSeries[0:len(minuends)]
+	subtrahends = alignedSeries[len(minuends):]
+
 	minuend := minuends[0]
 
 	// FIXME: need more error checking on minuend, subtrahends here
