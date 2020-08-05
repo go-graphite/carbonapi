@@ -83,6 +83,7 @@ func (f *aggregateLine) Do(ctx context.Context, e parser.Expr, from, until int64
 				RequestStopTime:   a.FetchResponse.RequestStopTime,
 				XFilesFactor:      a.FetchResponse.XFilesFactor,
 			},
+			Tags: a.Tags,
 		}
 		if keepStep {
 			r.FetchResponse.Values = make([]float64, len(a.Values))

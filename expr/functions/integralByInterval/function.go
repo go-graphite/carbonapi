@@ -53,16 +53,19 @@ func (f *integralByInterval) Do(ctx context.Context, e parser.Expr, from, until 
 		currentTime := arg.StartTime
 
 		name := fmt.Sprintf("integralByInterval(%s,'%s')", arg.Name, e.Args()[1].StringValue())
-		result := types.MetricData{FetchResponse: pb.FetchResponse{
-			Name:              name,
-			Values:            make([]float64, len(arg.Values)),
-			StepTime:          arg.StepTime,
-			StartTime:         arg.StartTime,
-			StopTime:          arg.StopTime,
-			XFilesFactor:      arg.XFilesFactor,
-			PathExpression:    name,
-			ConsolidationFunc: arg.ConsolidationFunc,
-		}}
+		result := types.MetricData{
+			FetchResponse: pb.FetchResponse{
+				Name:              name,
+				Values:            make([]float64, len(arg.Values)),
+				StepTime:          arg.StepTime,
+				StartTime:         arg.StartTime,
+				StopTime:          arg.StopTime,
+				XFilesFactor:      arg.XFilesFactor,
+				PathExpression:    name,
+				ConsolidationFunc: arg.ConsolidationFunc,
+			},
+			Tags: arg.Tags,
+		}
 		for i, v := range arg.Values {
 			if (currentTime-startTime)/bucketSize != (currentTime-startTime-arg.StepTime)/bucketSize {
 				current = 0
