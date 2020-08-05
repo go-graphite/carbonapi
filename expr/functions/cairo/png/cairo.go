@@ -859,6 +859,7 @@ func EvalExprGraph(e parser.Expr, from, until int64, values map[parser.MetricReq
 				Values:            newValues,
 				ConsolidationFunc: "average",
 			},
+			Tags:         map[string]string{"name": name},
 			GraphOptions: types.GraphOptions{Color: color},
 		}
 

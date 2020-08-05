@@ -96,29 +96,35 @@ func (f *summarize) Do(ctx context.Context, e parser.Expr, from, until int64, va
 
 		if arg.StepTime > bucketSize {
 			// We don't have enough data to do math
-			results = append(results, &types.MetricData{FetchResponse: pb.FetchResponse{
-				Name:              name,
-				Values:            arg.Values,
-				StepTime:          arg.StepTime,
-				StartTime:         arg.StartTime,
-				StopTime:          arg.StopTime,
-				XFilesFactor:      arg.XFilesFactor,
-				PathExpression:    arg.PathExpression,
-				ConsolidationFunc: arg.ConsolidationFunc,
-			}})
+			results = append(results, &types.MetricData{
+				FetchResponse: pb.FetchResponse{
+					Name:              name,
+					Values:            arg.Values,
+					StepTime:          arg.StepTime,
+					StartTime:         arg.StartTime,
+					StopTime:          arg.StopTime,
+					XFilesFactor:      arg.XFilesFactor,
+					PathExpression:    arg.PathExpression,
+					ConsolidationFunc: arg.ConsolidationFunc,
+				},
+				Tags: arg.Tags,
+			})
 			continue
 		}
 
-		r := types.MetricData{FetchResponse: pb.FetchResponse{
-			Name:              name,
-			Values:            make([]float64, buckets),
-			StepTime:          bucketSize,
-			StartTime:         start,
-			StopTime:          stop,
-			XFilesFactor:      arg.XFilesFactor,
-			PathExpression:    name,
-			ConsolidationFunc: arg.ConsolidationFunc,
-		}}
+		r := types.MetricData{
+			FetchResponse: pb.FetchResponse{
+				Name:              name,
+				Values:            make([]float64, buckets),
+				StepTime:          bucketSize,
+				StartTime:         start,
+				StopTime:          stop,
+				XFilesFactor:      arg.XFilesFactor,
+				PathExpression:    name,
+				ConsolidationFunc: arg.ConsolidationFunc,
+			},
+			Tags: arg.Tags,
+		}
 
 		t := arg.StartTime // unadjusted
 		bucketEnd := start + bucketSize

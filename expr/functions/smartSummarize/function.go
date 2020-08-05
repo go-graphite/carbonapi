@@ -76,14 +76,17 @@ func (f *smartSummarize) Do(ctx context.Context, e parser.Expr, from, until int6
 			name += ")"
 		}
 
-		r := types.MetricData{FetchResponse: pb.FetchResponse{
-			Name:              name,
-			Values:            make([]float64, buckets, buckets+1),
-			StepTime:          bucketSize,
-			StartTime:         start,
-			StopTime:          stop,
-			ConsolidationFunc: summarizeFunction,
-		}}
+		r := types.MetricData{
+			FetchResponse: pb.FetchResponse{
+				Name:              name,
+				Values:            make([]float64, buckets, buckets+1),
+				StepTime:          bucketSize,
+				StartTime:         start,
+				StopTime:          stop,
+				ConsolidationFunc: summarizeFunction,
+			},
+			Tags: arg.Tags,
+		}
 
 		t := arg.StartTime // unadjusted
 		bucketEnd := start + bucketSize

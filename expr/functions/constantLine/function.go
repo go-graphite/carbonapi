@@ -46,6 +46,7 @@ func (f *constantLine) Do(ctx context.Context, e parser.Expr, from, until int64,
 			Values:            newValues,
 			ConsolidationFunc: "max",
 		},
+		Tags: map[string]string{"name": fmt.Sprintf("%g", value)},
 	}
 
 	return []*types.MetricData{&p}, nil

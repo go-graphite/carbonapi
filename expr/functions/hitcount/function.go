@@ -69,14 +69,17 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 		}
 		name += ")"
 
-		r := types.MetricData{FetchResponse: pb.FetchResponse{
-			Name:              name,
-			Values:            make([]float64, buckets, buckets+1),
-			StepTime:          bucketSize,
-			StartTime:         start,
-			StopTime:          stop,
-			ConsolidationFunc: "max",
-		}}
+		r := types.MetricData{
+			FetchResponse: pb.FetchResponse{
+				Name:              name,
+				Values:            make([]float64, buckets, buckets+1),
+				StepTime:          bucketSize,
+				StartTime:         start,
+				StopTime:          stop,
+				ConsolidationFunc: "max",
+			},
+			Tags: arg.Tags,
+		}
 
 		bucketEnd := start + bucketSize
 		t := arg.StartTime

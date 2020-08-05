@@ -35,12 +35,16 @@ func (f *multiplySeries) Do(ctx context.Context, e parser.Expr, from, until int6
 		FetchResponse: pb.FetchResponse{
 			Name: fmt.Sprintf("multiplySeries(%s)", e.RawArgs()),
 		},
+		Tags: nil,
 	}
 
 	for _, arg := range e.Args() {
 		series, err := helper.GetSeriesArg(arg, from, until, values)
 		if err != nil {
 			return nil, err
+		}
+		if r.Tags == nil {
+			r.Tags = series[0].Tags
 		}
 
 		if r.Values == nil {
