@@ -329,6 +329,9 @@ func TestSummarizeEvalExpr(t *testing.T, tt *SummarizeEvalTestItem) {
 		if g[0].Name != tt.Name {
 			t.Errorf("bad Name for %+v: got %v, want %v", g, g[0].Name, tt.Name)
 		}
+		if _, ok := g[0].Tags["name"]; !ok {
+			t.Errorf("metric with name %v doesn't contain 'name' tag", g[0].Name)
+		}
 	})
 }
 
@@ -470,6 +473,9 @@ func TestEvalExprModifiedOrigin(t *testing.T, tt *EvalTestItem) {
 
 	for i, want := range tt.Want {
 		actual := g[i]
+		if _, ok := actual.Tags["name"]; !ok {
+			t.Errorf("metric %+v with name %v doesn't contain 'name' tag", actual, actual.Name)
+		}
 		if actual == nil {
 			t.Errorf("returned no value %v", tt.Target)
 			return
