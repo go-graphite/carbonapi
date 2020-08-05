@@ -288,9 +288,13 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 				zap.Any("errors", result.Err),
 			)
 			return nil, result.Stats, err
-		} else {
-			return nil, result.Stats, types.ErrNotFound.WithHTTPCode(404)
 		}
+		return nil, result.Stats, types.ErrNotFound.WithHTTPCode(404)
+	}
+
+	// Recalculate metrics start/step/stop parameters to avoid upstream misbehavior
+	for i, metric := range result.Response.Metrics {
+		result.Response.Metrics[i].StopTime = metric.StartTime + int64(len(metric.Values))*metric.StepTime
 	}
 
 	logger.Debug("got some fetch responses",
