@@ -349,15 +349,25 @@ func (r *MetricData) AggregateValues() {
 func (r *MetricData) Copy(includeValues bool) *MetricData {
 	var values, aggregatedValues []float64
 	values = make([]float64, 0)
+	appliedFunctions := make([]string, 0)
 	aggregatedValues = nil
 
 	if includeValues {
 		values = make([]float64, len(r.Values))
 		copy(values, r.Values)
+
 		if r.aggregatedValues != nil {
 			aggregatedValues = make([]float64, len(r.aggregatedValues))
 			copy(aggregatedValues, r.aggregatedValues)
 		}
+
+		appliedFunctions = make([]string, len(r.AppliedFunctions))
+		copy(appliedFunctions, r.AppliedFunctions)
+	}
+
+	tags := make(map[string]string)
+	for k, v := range r.Tags {
+		tags[k] = v
 	}
 
 	return &MetricData{
@@ -371,16 +381,26 @@ func (r *MetricData) Copy(includeValues bool) *MetricData {
 			XFilesFactor:            r.XFilesFactor,
 			HighPrecisionTimestamps: r.HighPrecisionTimestamps,
 			Values:                  values,
-			AppliedFunctions:        r.AppliedFunctions,
+			AppliedFunctions:        appliedFunctions,
 			RequestStartTime:        r.RequestStartTime,
 			RequestStopTime:         r.RequestStopTime,
 		},
 		GraphOptions:      r.GraphOptions,
 		ValuesPerPoint:    r.ValuesPerPoint,
 		aggregatedValues:  aggregatedValues,
-		Tags:              r.Tags,
+		Tags:              tags,
 		AggregateFunction: r.AggregateFunction,
 	}
+}
+
+// CopyMetricDataSlice returns the slice of metrics that should be changed later.
+// It allows to avoid a changing of source data, e.g. by AlignMetrics
+func CopyMetricDataSlice(args []*MetricData) (newData []*MetricData) {
+	newData = make([]*MetricData, len(args))
+	for i, m := range args {
+		newData[i] = m.Copy(true)
+	}
+	return newData
 }
 
 // MakeMetricData creates new metrics data with given metric timeseries

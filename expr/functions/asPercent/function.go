@@ -48,7 +48,7 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	var results []*types.MetricData
 
 	if len(e.Args()) == 1 {
-		arg = helper.AlignSeries(arg)
+		arg = helper.AlignSeries(types.CopyMetricDataSlice(arg))
 		getTotal = func(i int) float64 {
 			var t float64
 			var atLeastOne bool
@@ -73,7 +73,7 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		if err != nil {
 			return nil, err
 		}
-		arg = helper.AlignSeries(arg)
+		arg = helper.AlignSeries(types.CopyMetricDataSlice(arg))
 		getTotal = func(i int) float64 { return total }
 		totalString = fmt.Sprintf("%g", total)
 		formatName = func(a, b string) string {
@@ -89,7 +89,7 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			return nil, types.ErrWildcardNotAllowed
 		}
 
-		alignedSeries := helper.AlignSeries(append(arg, total...))
+		alignedSeries := helper.AlignSeries(types.CopyMetricDataSlice(append(arg, total...)))
 		arg = alignedSeries[0:len(arg)]
 		total = alignedSeries[len(arg):]
 
@@ -123,7 +123,7 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			return nil, types.ErrWildcardNotAllowed
 		}
 
-		alignedSeries := helper.AlignSeries(append(arg, total...))
+		alignedSeries := helper.AlignSeries(types.CopyMetricDataSlice(append(arg, total...)))
 		arg = alignedSeries[0:len(arg)]
 		total = alignedSeries[len(arg):]
 

@@ -75,6 +75,11 @@ func (f *multiplySeriesWithWildcards) Do(ctx context.Context, e parser.Expr, fro
 		args := groups[series]
 		r := *args[0]
 		r.Name = fmt.Sprintf("multiplySeriesWithWildcards(%s)", series)
+		r.Tags = make(map[string]string)
+		for k, v := range args[0].Tags {
+			r.Tags[k] = v
+		}
+		r.Tags["name"] = series
 		r.Values = make([]float64, len(args[0].Values))
 
 		atLeastOne := make([]bool, len(args[0].Values))
