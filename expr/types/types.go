@@ -349,15 +349,25 @@ func (r *MetricData) AggregateValues() {
 func (r *MetricData) Copy(includeValues bool) *MetricData {
 	var values, aggregatedValues []float64
 	values = make([]float64, 0)
+	appliedFunctions := make([]string, 0)
 	aggregatedValues = nil
 
 	if includeValues {
 		values = make([]float64, len(r.Values))
 		copy(values, r.Values)
+
 		if r.aggregatedValues != nil {
 			aggregatedValues = make([]float64, len(r.aggregatedValues))
 			copy(aggregatedValues, r.aggregatedValues)
 		}
+
+		appliedFunctions = make([]string, len(r.AppliedFunctions))
+		copy(appliedFunctions, r.AppliedFunctions)
+	}
+
+	tags := make(map[string]string)
+	for k, v := range r.Tags {
+		tags[k] = v
 	}
 
 	return &MetricData{
@@ -371,14 +381,14 @@ func (r *MetricData) Copy(includeValues bool) *MetricData {
 			XFilesFactor:            r.XFilesFactor,
 			HighPrecisionTimestamps: r.HighPrecisionTimestamps,
 			Values:                  values,
-			AppliedFunctions:        r.AppliedFunctions,
+			AppliedFunctions:        appliedFunctions,
 			RequestStartTime:        r.RequestStartTime,
 			RequestStopTime:         r.RequestStopTime,
 		},
 		GraphOptions:      r.GraphOptions,
 		ValuesPerPoint:    r.ValuesPerPoint,
 		aggregatedValues:  aggregatedValues,
-		Tags:              r.Tags,
+		Tags:              tags,
 		AggregateFunction: r.AggregateFunction,
 	}
 }
