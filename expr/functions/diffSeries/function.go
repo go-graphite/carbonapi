@@ -55,7 +55,7 @@ func (f *diffSeries) Do(ctx context.Context, e parser.Expr, from, until int64, v
 		e.SetRawArgs(strings.Join(args, ","))
 	}
 
-	alignedSeries := helper.AlignSeries(append(minuends, subtrahends...))
+	alignedSeries := helper.AlignSeries(types.CopyMetricDataSlice(append(minuends, subtrahends...)))
 	minuends = alignedSeries[0:len(minuends)]
 	subtrahends = alignedSeries[len(minuends):]
 

@@ -383,6 +383,16 @@ func (r *MetricData) Copy(includeValues bool) *MetricData {
 	}
 }
 
+// CopyMetricDataSlice returns the slice of metrics that should be changed later.
+// It allows to avoid a changing of source data, e.g. by AlignMetrics
+func CopyMetricDataSlice(args []*MetricData) (newData []*MetricData) {
+	newData = make([]*MetricData, len(args))
+	for i, m := range args {
+		newData[i] = m.Copy(true)
+	}
+	return newData
+}
+
 // MakeMetricData creates new metrics data with given metric timeseries
 func MakeMetricData(name string, values []float64, step, start int64) *MetricData {
 	return makeMetricDataWithTags(name, values, step, start, tags.ExtractTags(name))
