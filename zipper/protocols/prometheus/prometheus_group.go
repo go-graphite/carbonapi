@@ -271,7 +271,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 			v := url.Values{
 				"query": []string{target},
 				"start": []string{strconv.Itoa(int(start))},
-				"stop":  []string{strconv.Itoa(int(stop))},
+				"end":   []string{strconv.Itoa(int(stop))},
 				"step":  []string{stepLocalStr},
 			}
 
