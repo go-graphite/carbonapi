@@ -17,6 +17,7 @@ type Config struct {
 	MaxBatchSize              *int             `mapstructure:"maxBatchSize"`
 	FallbackMaxBatchSize      int              `mapstructure:"-"`
 	MaxTries                  int              `mapstructure:"maxTries"`
+	DoMultipleRequestsIfSplit bool             `mapstructure:"doMultipleRequestsIfSplit"`
 
 	CarbonSearch   types.CarbonSearch
 	CarbonSearchV2 types.CarbonSearchV2
@@ -99,15 +100,16 @@ func SanitizeConfig(logger *zap.Logger, oldConfig Config) *Config {
 	if newConfig.CarbonSearch.Backend != "" {
 		newConfig.CarbonSearchV2.BackendsV2 = types.BackendsV2{
 			Backends: []types.BackendV2{{
-				GroupName:           newConfig.CarbonSearch.Backend,
-				Protocol:            "carbonapi_v2_pb",
-				LBMethod:            "roundrobin",
-				Servers:             []string{newConfig.CarbonSearch.Backend},
-				Timeouts:            &newConfig.Timeouts,
-				ConcurrencyLimit:    &newConfig.ConcurrencyLimitPerServer,
-				KeepAliveInterval:   &newConfig.KeepAliveInterval,
-				MaxIdleConnsPerHost: &newConfig.MaxIdleConnsPerHost,
-				MaxTries:            &newConfig.MaxTries,
+				GroupName:                 newConfig.CarbonSearch.Backend,
+				Protocol:                  "carbonapi_v2_pb",
+				LBMethod:                  "roundrobin",
+				Servers:                   []string{newConfig.CarbonSearch.Backend},
+				Timeouts:                  &newConfig.Timeouts,
+				DoMultipleRequestsIfSplit: false,
+				ConcurrencyLimit:          &newConfig.ConcurrencyLimitPerServer,
+				KeepAliveInterval:         &newConfig.KeepAliveInterval,
+				MaxIdleConnsPerHost:       &newConfig.MaxIdleConnsPerHost,
+				MaxTries:                  &newConfig.MaxTries,
 			}},
 			MaxIdleConnsPerHost:       newConfig.MaxIdleConnsPerHost,
 			ConcurrencyLimitPerServer: newConfig.ConcurrencyLimitPerServer,
@@ -124,16 +126,17 @@ func SanitizeConfig(logger *zap.Logger, oldConfig Config) *Config {
 		newConfig.BackendsV2 = types.BackendsV2{
 			Backends: []types.BackendV2{
 				{
-					GroupName:           "backends",
-					Protocol:            "carbonapi_v2_pb",
-					LBMethod:            "broadcast",
-					Servers:             newConfig.Backends,
-					Timeouts:            &newConfig.Timeouts,
-					ConcurrencyLimit:    &newConfig.ConcurrencyLimitPerServer,
-					KeepAliveInterval:   &newConfig.KeepAliveInterval,
-					MaxIdleConnsPerHost: &newConfig.MaxIdleConnsPerHost,
-					MaxTries:            &newConfig.MaxTries,
-					MaxBatchSize:        newConfig.MaxBatchSize,
+					GroupName:                 "backends",
+					Protocol:                  "carbonapi_v2_pb",
+					LBMethod:                  "broadcast",
+					Servers:                   newConfig.Backends,
+					Timeouts:                  &newConfig.Timeouts,
+					ConcurrencyLimit:          &newConfig.ConcurrencyLimitPerServer,
+					DoMultipleRequestsIfSplit: false,
+					KeepAliveInterval:         &newConfig.KeepAliveInterval,
+					MaxIdleConnsPerHost:       &newConfig.MaxIdleConnsPerHost,
+					MaxTries:                  &newConfig.MaxTries,
+					MaxBatchSize:              newConfig.MaxBatchSize,
 				},
 			},
 			MaxIdleConnsPerHost:       newConfig.MaxIdleConnsPerHost,
@@ -143,6 +146,8 @@ func SanitizeConfig(logger *zap.Logger, oldConfig Config) *Config {
 			MaxTries:                  newConfig.MaxTries,
 			MaxBatchSize:              newConfig.MaxBatchSize,
 		}
+
+		newConfig.DoMultipleRequestsIfSplit = false
 	}
 
 	newConfig.BackendsV2.Timeouts = sanitizeTimeouts(newConfig.BackendsV2.Timeouts, newConfig.Timeouts)

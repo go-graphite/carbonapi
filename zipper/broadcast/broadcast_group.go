@@ -17,14 +17,16 @@ import (
 )
 
 type BroadcastGroup struct {
-	limiter              limiter.ServerLimiter
-	groupName            string
-	timeout              types.Timeouts
-	backends             []types.BackendServer
-	servers              []string
-	maxMetricsPerRequest int
-	tldCacheDisabled     bool
+	limiter                   limiter.ServerLimiter
+	groupName                 string
+	timeout                   types.Timeouts
+	backends                  []types.BackendServer
+	servers                   []string
+	maxMetricsPerRequest      int
+	doMultipleRequestsIfSplit bool
+	tldCacheDisabled          bool
 
+	fetcher   types.Fetcher
 	pathCache pathcache.PathCache
 	logger    *zap.Logger
 }
@@ -33,7 +35,16 @@ func (bg *BroadcastGroup) Children() []types.BackendServer {
 	return bg.backends
 }
 
-func NewBroadcastGroup(logger *zap.Logger, groupName string, servers []types.BackendServer, expireDelaySec int32, concurrencyLimit, maxBatchSize int, timeout types.Timeouts, tldCacheDisabled bool) (*BroadcastGroup, merry.Error) {
+func (bg *BroadcastGroup) SetDoMultipleRequestIfSplit(v bool) {
+	bg.doMultipleRequestsIfSplit = v
+	if v {
+		bg.fetcher = bg.doMultiFetch
+	} else {
+		bg.fetcher = bg.doSingleFetch
+	}
+}
+
+func NewBroadcastGroup(logger *zap.Logger, groupName string, doMultipleRequestsIfSplit bool, servers []types.BackendServer, expireDelaySec int32, concurrencyLimit, maxBatchSize int, timeout types.Timeouts, tldCacheDisabled bool) (*BroadcastGroup, merry.Error) {
 	if len(servers) == 0 {
 		return nil, types.ErrNoServersSpecified
 	}
@@ -42,12 +53,12 @@ func NewBroadcastGroup(logger *zap.Logger, groupName string, servers []types.Bac
 		serverNames = append(serverNames, s.Name())
 	}
 	pathCache := pathcache.NewPathCache(expireDelaySec)
-	limiter := limiter.NewServerLimiter(serverNames, concurrencyLimit)
+	l := limiter.NewServerLimiter(serverNames, concurrencyLimit)
 
-	return NewBroadcastGroupWithLimiter(logger, groupName, servers, serverNames, maxBatchSize, pathCache, limiter, timeout, tldCacheDisabled)
+	return NewBroadcastGroupWithLimiter(logger, groupName, doMultipleRequestsIfSplit, servers, serverNames, maxBatchSize, pathCache, l, timeout, tldCacheDisabled)
 }
 
-func NewBroadcastGroupWithLimiter(logger *zap.Logger, groupName string, servers []types.BackendServer, serverNames []string, maxBatchSize int, pathCache pathcache.PathCache, limiter limiter.ServerLimiter, timeout types.Timeouts, tldCacheDisabled bool) (*BroadcastGroup, merry.Error) {
+func NewBroadcastGroupWithLimiter(logger *zap.Logger, groupName string, doMultipleRequestsIfSplit bool, servers []types.BackendServer, serverNames []string, maxBatchSize int, pathCache pathcache.PathCache, limiter limiter.ServerLimiter, timeout types.Timeouts, tldCacheDisabled bool) (*BroadcastGroup, merry.Error) {
 	b := &BroadcastGroup{
 		timeout:              timeout,
 		groupName:            groupName,
@@ -61,10 +72,13 @@ func NewBroadcastGroupWithLimiter(logger *zap.Logger, groupName string, servers 
 		logger:    logger.With(zap.String("type", "broadcastGroup"), zap.String("groupName", groupName)),
 	}
 
+	b.SetDoMultipleRequestIfSplit(doMultipleRequestsIfSplit)
+
 	b.logger.Debug("created broadcast group",
 		zap.String("group_name", b.groupName),
 		zap.Strings("backends", b.servers),
 		zap.Int("max_batch_size", maxBatchSize),
+		zap.Bool("do_single_request_at_a_time", b.doMultipleRequestsIfSplit),
 	)
 
 	return b, nil
@@ -117,6 +131,48 @@ func (bg *BroadcastGroup) filterServersByTLD(requests []string, backends []types
 
 func (bg BroadcastGroup) MaxMetricsPerRequest() int {
 	return bg.maxMetricsPerRequest
+}
+
+func (bg *BroadcastGroup) doMultiFetch(ctx context.Context, logger *zap.Logger, backend types.BackendServer, reqs interface{}, resCh chan types.ServerFetcherResponse) {
+	requests, ok := reqs.([]*protov3.MultiFetchRequest)
+	if !ok {
+		logger.Fatal("unhandled error in doMultiFetch",
+			zap.Stack("stack"),
+			zap.String("got_type", fmt.Sprintf("%T", reqs)),
+			zap.String("expected_type", fmt.Sprintf("%T", requests)),
+		)
+	}
+
+	for _, req := range requests {
+		go func(req *protov3.MultiFetchRequest) {
+			logger = logger.With(zap.String("backend_name", backend.Name()))
+			logger.Debug("waiting for slot",
+				zap.Int("max_connections", bg.limiter.Capacity()),
+			)
+
+			response := types.NewServerFetchResponse()
+			response.Server = backend.Name()
+
+			if err := bg.limiter.Enter(ctx, backend.Name()); err != nil {
+				logger.Debug("timeout waiting for a slot")
+				resCh <- response.NonFatalError(merry.Prepend(err, "timeout waiting for slot"))
+				return
+			}
+
+			logger.Debug("got slot")
+			defer bg.limiter.Leave(ctx, backend.Name())
+
+			// uuid := util.GetUUID(ctx)
+			var err merry.Error
+			logger.Debug("sending request")
+			response.Response, response.Stats, err = backend.Fetch(ctx, req)
+			response.AddError(err)
+			logger.Debug("got response")
+
+			resCh <- response
+		}(req)
+	}
+
 }
 
 func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger, backend types.BackendServer, reqs interface{}, resCh chan types.ServerFetcherResponse) {
@@ -279,7 +335,7 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	ctxNew, cancel := context.WithTimeout(ctx, bg.timeout.Render)
 	defer cancel()
 
-	resultNew, responseCount := types.DoRequest(ctxNew, logger, backends, result, requests, bg.doSingleFetch)
+	resultNew, responseCount := types.DoRequest(ctxNew, logger, backends, result, requests, bg.fetcher)
 
 	result, ok := resultNew.Self().(*types.ServerFetchResponse)
 	if !ok {

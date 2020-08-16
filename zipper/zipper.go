@@ -128,7 +128,7 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 				backends = append(backends, client)
 			}
 
-			client, e = broadcast.NewBroadcastGroup(logger, backend.GroupName, backends, expireDelaySec, *backend.ConcurrencyLimit, *backend.MaxBatchSize, timeouts, tldCacheDisabled)
+			client, e = broadcast.NewBroadcastGroup(logger, backend.GroupName, backend.DoMultipleRequestsIfSplit, backends, expireDelaySec, *backend.ConcurrencyLimit, *backend.MaxBatchSize, timeouts, tldCacheDisabled)
 			if e != nil {
 				return nil, e
 			}
@@ -156,7 +156,7 @@ func NewZipper(sender func(*types.Stats), cfg *config.Config, logger *zap.Logger
 			)
 		}
 
-		searchBackends, err = broadcast.NewBroadcastGroup(logger, "search", searchClients, int32(cfg.InternalRoutingCache.Seconds()), cfg.ConcurrencyLimitPerServer, *cfg.MaxBatchSize, cfg.Timeouts, cfg.TLDCacheDisabled)
+		searchBackends, err = broadcast.NewBroadcastGroup(logger, "search", true, searchClients, int32(cfg.InternalRoutingCache.Seconds()), cfg.ConcurrencyLimitPerServer, *cfg.MaxBatchSize, cfg.Timeouts, cfg.TLDCacheDisabled)
 		if err != nil {
 			logger.Fatal("merry.Errors while initialing zipper search backends",
 				zap.Any("merry.Errors", err),
@@ -172,7 +172,7 @@ func NewZipper(sender func(*types.Stats), cfg *config.Config, logger *zap.Logger
 	}
 
 	var storeBackends types.BackendServer
-	storeBackends, err = broadcast.NewBroadcastGroup(logger, "root", storeClients, int32(cfg.InternalRoutingCache.Seconds()), cfg.ConcurrencyLimitPerServer, *cfg.MaxBatchSize, cfg.Timeouts, cfg.TLDCacheDisabled)
+	storeBackends, err = broadcast.NewBroadcastGroup(logger, "root", cfg.DoMultipleRequestsIfSplit, storeClients, int32(cfg.InternalRoutingCache.Seconds()), cfg.ConcurrencyLimitPerServer, *cfg.MaxBatchSize, cfg.Timeouts, cfg.TLDCacheDisabled)
 	if err != nil {
 		logger.Fatal("merry.Errors while initialing zipper store backends",
 			zap.Any("merry.Errors", err),
