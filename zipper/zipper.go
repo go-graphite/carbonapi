@@ -148,6 +148,7 @@ func NewZipper(sender func(*types.Stats), cfg *config.Config, logger *zap.Logger
 	var prefix string
 
 	if len(cfg.CarbonSearchV2.BackendsV2.Backends) > 0 {
+		logger.Warn("Carbonsearch support is considered to be deprecated in November 2020, please comment on https://github.com/go-graphite/carbonapi/issues/449 if you still need it")
 		prefix = cfg.CarbonSearchV2.Prefix
 		searchClients, err := createBackendsV2(logger, cfg.CarbonSearchV2.BackendsV2, int32(cfg.InternalRoutingCache.Seconds()), cfg.TLDCacheDisabled)
 		if err != nil {
