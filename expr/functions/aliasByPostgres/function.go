@@ -218,10 +218,12 @@ func (f *aliasByPostgres) Do(ctx context.Context, e parser.Expr, from, until int
 					r.Name = res
 					results = append(results, &r)
 				}
+				r.Tags["name"] = r.Name
 			}
 		} else {
 			r := *a
 			r.Name = tempName
+			r.Tags["name"] = r.Name
 			results = append(results, &r)
 		}
 	}

@@ -33,6 +33,7 @@ func (f *aliasByMetric) Do(ctx context.Context, e parser.Expr, from, until int64
 		metric := helper.ExtractMetric(a.Name)
 		part := strings.Split(metric, ".")
 		r.Name = part[len(part)-1]
+		r.Tags["name"] = r.Name
 		r.PathExpression = r.Name
 		r.Values = a.Values
 		return r

@@ -44,6 +44,7 @@ func (f *aliasByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		r := *a
 		if len(name) > 0 {
 			r.Name = name
+			r.Tags["name"] = r.Name
 		}
 		results = append(results, &r)
 	}

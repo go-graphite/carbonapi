@@ -56,6 +56,7 @@ func (f *aliasSub) Do(ctx context.Context, e parser.Expr, from, until int64, val
 	for _, a := range args {
 		r := *a
 		r.Name = re.ReplaceAllString(r.Name, replace)
+		r.Tags["name"] = r.Name
 		results = append(results, &r)
 	}
 
