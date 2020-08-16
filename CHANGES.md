@@ -25,6 +25,9 @@ CHANGELOG
  - [Fix] fallbackSeries now works properly (thx to @Egor Redozubov)
  - [Fix] Panic when trying to render png/svg of an empty response (Fixes #503)
  - [Fix] Fix Error 500 when sendGlobsAsIs is false (Fixes #506)
+ - [Fix] prometheus backend: carbonapi should send 'end' instead of 'stop' in queries (thx to Alexandre Vincent)
+ - [Fix] change metrics resulting tags to match graphite-web in some cases (thx to @Felixoid)
+ - [Code] merge aliasByNode and aliasByTags (thx to @Felixoid)
 
 **0.14.0**
  - **[Breaking]**[Code] expr library and all functions now requires caller to pass context. See #485
