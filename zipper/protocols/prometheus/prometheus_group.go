@@ -81,6 +81,8 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConnsPerHost: *config.MaxIdleConnsPerHost,
+			IdleConnTimeout:     0,
+			ForceAttemptHTTP2:   config.ForceAttemptHTTP2,
 			DialContext: (&net.Dialer{
 				Timeout:   config.Timeouts.Connect,
 				KeepAlive: *config.KeepAliveInterval,

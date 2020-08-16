@@ -181,6 +181,19 @@ func (bg *BroadcastGroup) splitRequest(ctx context.Context, request *protov3.Mul
 			continue
 		}
 
+		// Do not send Find requests if we have neither globs in the request nor metric expansions
+		if !strings.ContainsAny(metric.Name, "*{") {
+			newRequest.Metrics = append(newRequest.Metrics, protov3.FetchRequest{
+				Name:            metric.PathExpression,
+				StartTime:       metric.StartTime,
+				StopTime:        metric.StopTime,
+				PathExpression:  metric.PathExpression,
+				FilterFunctions: metric.FilterFunctions,
+			})
+			requests = append(requests, newRequest)
+			continue
+		}
+
 		f, _, e := bg.Find(ctx, &protov3.MultiGlobRequest{Metrics: []string{metric.Name}})
 		if e != nil || f == nil || len(f.Metrics) == 0 {
 			if e == nil {

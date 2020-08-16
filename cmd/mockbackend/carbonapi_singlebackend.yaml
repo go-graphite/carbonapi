@@ -38,6 +38,7 @@ upstreams:
             maxBatchSize: 0
             keepAliveInterval: "10s"
             concurrencyLimit: 0
+            forceAttemptHTTP2: true
             maxIdleConnsPerHost: 1000
             timeouts:
                 find: "15s"

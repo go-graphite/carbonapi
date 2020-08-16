@@ -26,6 +26,7 @@ type BackendV2 struct {
 	MaxTries            *int                   `mapstructure:"maxTries"`
 	MaxBatchSize        *int                   `mapstructure:"maxBatchSize"`
 	BackendOptions      map[string]interface{} `mapstructure:"backendOptions"`
+	ForceAttemptHTTP2   bool                   `mapstructure:"forceAttemptHTTP2"`
 }
 
 func (b *BackendV2) FillDefaults() {

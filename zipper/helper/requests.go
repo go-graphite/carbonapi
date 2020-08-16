@@ -89,6 +89,7 @@ func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, uri strin
 		zap.String("uri", u.String()),
 	)
 
+	// TODO: change to NewRequestWithContext
 	req, err := http.NewRequest("GET", u.String(), reader)
 	if err != nil {
 		return nil, merry.Here(err).WithValue("server", server)
