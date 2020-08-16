@@ -105,7 +105,7 @@ func SanitizeConfig(logger *zap.Logger, oldConfig Config) *Config {
 				LBMethod:                  "roundrobin",
 				Servers:                   []string{newConfig.CarbonSearch.Backend},
 				Timeouts:                  &newConfig.Timeouts,
-				DoMultipleRequestsIfSplit: false,
+				DoMultipleRequestsIfSplit: true,
 				ConcurrencyLimit:          &newConfig.ConcurrencyLimitPerServer,
 				KeepAliveInterval:         &newConfig.KeepAliveInterval,
 				MaxIdleConnsPerHost:       &newConfig.MaxIdleConnsPerHost,
@@ -132,7 +132,7 @@ func SanitizeConfig(logger *zap.Logger, oldConfig Config) *Config {
 					Servers:                   newConfig.Backends,
 					Timeouts:                  &newConfig.Timeouts,
 					ConcurrencyLimit:          &newConfig.ConcurrencyLimitPerServer,
-					DoMultipleRequestsIfSplit: false,
+					DoMultipleRequestsIfSplit: true,
 					KeepAliveInterval:         &newConfig.KeepAliveInterval,
 					MaxIdleConnsPerHost:       &newConfig.MaxIdleConnsPerHost,
 					MaxTries:                  &newConfig.MaxTries,
@@ -147,7 +147,7 @@ func SanitizeConfig(logger *zap.Logger, oldConfig Config) *Config {
 			MaxBatchSize:              newConfig.MaxBatchSize,
 		}
 
-		newConfig.DoMultipleRequestsIfSplit = false
+		newConfig.DoMultipleRequestsIfSplit = true
 	}
 
 	newConfig.BackendsV2.Timeouts = sanitizeTimeouts(newConfig.BackendsV2.Timeouts, newConfig.Timeouts)
