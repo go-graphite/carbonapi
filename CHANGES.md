@@ -28,6 +28,7 @@ CHANGELOG
  - [Fix] Fix Error 500 when sendGlobsAsIs is false (Fixes #506)
  - [Fix] prometheus backend: carbonapi should send 'end' instead of 'stop' in queries (thx to Alexandre Vincent)
  - [Fix] change metrics resulting tags to match graphite-web in some cases (thx to @Felixoid)
+ - [Fix] Prometheus backend: trust timestamps from the backend (Fixes #504, Fixes #514)
  - [Code] merge aliasByNode and aliasByTags (thx to @Felixoid)
 
 **0.14.0**

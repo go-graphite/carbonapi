@@ -320,14 +320,22 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 			}
 
 			for _, m := range response.Data.Result {
-				alignedValues := alignValues(start, stop, stepLocal, m.Values)
+				// We always should trust backend's response (to mimic behavior of graphite for grahpite native protoocols)
+				// See https://github.com/go-graphite/carbonapi/issues/504 and https://github.com/go-graphite/carbonapi/issues/514
+				realStart := start
+				realStop := stop
+				if len(m.Values) > 0 {
+					realStart = int64(m.Values[0].Timestamp)
+					realStop = int64(m.Values[len(m.Values)-1].Timestamp)
+				}
+				alignedValues := alignValues(realStart, realStop, stepLocal, m.Values)
 
 				r.Metrics = append(r.Metrics, protov3.FetchResponse{
 					Name:              c.promMetricToGraphite(m.Metric),
 					PathExpression:    pathExpr,
 					ConsolidationFunc: "Average",
-					StartTime:         start,
-					StopTime:          stop,
+					StartTime:         realStart,
+					StopTime:          realStop,
 					StepTime:          stepLocal,
 					Values:            alignedValues,
 					XFilesFactor:      0.0,
