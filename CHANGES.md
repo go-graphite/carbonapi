@@ -17,7 +17,7 @@ Changes
 
 CHANGELOG
 ---------
-**0.14.1 (WIP)**
+**0.14.1**
  - [Feature] Implement `doMultipleRequestsIfSplit` config option which could be useful for go-carbon and huge requests (See #509)
  - [Improvement] Return stacktrace on panic (thx to @Felixoid)
  - [Fix] Fix case where some metrics passed to functions like group or sumSeries were missing. Fixes #438
