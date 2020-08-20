@@ -17,6 +17,9 @@ Changes
 
 CHANGELOG
 ---------
+**WIP**
+ - [Fix] Warnings about duplicate functions when carbonapi starts.
+
 **0.14.1**
  - [Feature] Implement `doMultipleRequestsIfSplit` config option which could be useful for go-carbon and huge requests (See #509)
  - [Improvement] Return stacktrace on panic (thx to @Felixoid)

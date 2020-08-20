@@ -13,7 +13,6 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/aliasByPostgres"
 	"github.com/go-graphite/carbonapi/expr/functions/aliasSub"
 	"github.com/go-graphite/carbonapi/expr/functions/asPercent"
-	"github.com/go-graphite/carbonapi/expr/functions/averageSeries"
 	"github.com/go-graphite/carbonapi/expr/functions/averageSeriesWithWildcards"
 	"github.com/go-graphite/carbonapi/expr/functions/below"
 	"github.com/go-graphite/carbonapi/expr/functions/cactiStyle"
@@ -21,11 +20,9 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/changed"
 	"github.com/go-graphite/carbonapi/expr/functions/consolidateBy"
 	"github.com/go-graphite/carbonapi/expr/functions/constantLine"
-	"github.com/go-graphite/carbonapi/expr/functions/countSeries"
 	"github.com/go-graphite/carbonapi/expr/functions/cumulative"
 	"github.com/go-graphite/carbonapi/expr/functions/delay"
 	"github.com/go-graphite/carbonapi/expr/functions/derivative"
-	"github.com/go-graphite/carbonapi/expr/functions/diffSeries"
 	"github.com/go-graphite/carbonapi/expr/functions/divideSeries"
 	"github.com/go-graphite/carbonapi/expr/functions/ewma"
 	"github.com/go-graphite/carbonapi/expr/functions/exclude"
@@ -55,11 +52,9 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/logarithm"
 	"github.com/go-graphite/carbonapi/expr/functions/lowPass"
 	"github.com/go-graphite/carbonapi/expr/functions/mapSeries"
-	"github.com/go-graphite/carbonapi/expr/functions/minMax"
 	"github.com/go-graphite/carbonapi/expr/functions/mostDeviant"
 	"github.com/go-graphite/carbonapi/expr/functions/moving"
 	"github.com/go-graphite/carbonapi/expr/functions/movingMedian"
-	"github.com/go-graphite/carbonapi/expr/functions/multiplySeries"
 	"github.com/go-graphite/carbonapi/expr/functions/multiplySeriesWithWildcards"
 	"github.com/go-graphite/carbonapi/expr/functions/nPercentile"
 	"github.com/go-graphite/carbonapi/expr/functions/nonNegativeDerivative"
@@ -85,10 +80,8 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/sortBy"
 	"github.com/go-graphite/carbonapi/expr/functions/sortByName"
 	"github.com/go-graphite/carbonapi/expr/functions/squareRoot"
-	"github.com/go-graphite/carbonapi/expr/functions/stddevSeries"
 	"github.com/go-graphite/carbonapi/expr/functions/stdev"
 	"github.com/go-graphite/carbonapi/expr/functions/substr"
-	"github.com/go-graphite/carbonapi/expr/functions/sum"
 	"github.com/go-graphite/carbonapi/expr/functions/sumSeriesWithWildcards"
 	"github.com/go-graphite/carbonapi/expr/functions/summarize"
 	"github.com/go-graphite/carbonapi/expr/functions/timeFunction"
@@ -102,106 +95,100 @@ import (
 )
 
 type initFunc struct {
-	name  string
-	order interfaces.Order
-	f     func(configFile string) []interfaces.FunctionMetadata
+	name     string
+	filename string
+	order    interfaces.Order
+	f        func(configFile string) []interfaces.FunctionMetadata
 }
 
 func New(configs map[string]string) {
 	funcs := []initFunc{
-		{name: "absolute", order: absolute.GetOrder(), f: absolute.New},
-		{name: "aggregate", order: aggregate.GetOrder(), f: aggregate.New},
-		{name: "aggregateLine", order: aggregateLine.GetOrder(), f: aggregateLine.New},
-		{name: "alias", order: alias.GetOrder(), f: alias.New},
-		{name: "aliasByMetric", order: aliasByMetric.GetOrder(), f: aliasByMetric.New},
-		{name: "aliasByNode", order: aliasByNode.GetOrder(), f: aliasByNode.New},
-		{name: "aliasByPostgres", order: aliasByPostgres.GetOrder(), f: aliasByPostgres.New},
-		{name: "aliasSub", order: aliasSub.GetOrder(), f: aliasSub.New},
-		{name: "asPercent", order: asPercent.GetOrder(), f: asPercent.New},
-		{name: "averageSeries", order: averageSeries.GetOrder(), f: averageSeries.New},
-		{name: "averageSeriesWithWildcards", order: averageSeriesWithWildcards.GetOrder(), f: averageSeriesWithWildcards.New},
-		{name: "below", order: below.GetOrder(), f: below.New},
-		{name: "cactiStyle", order: cactiStyle.GetOrder(), f: cactiStyle.New},
-		{name: "cairo", order: cairo.GetOrder(), f: cairo.New},
-		{name: "changed", order: changed.GetOrder(), f: changed.New},
-		{name: "consolidateBy", order: consolidateBy.GetOrder(), f: consolidateBy.New},
-		{name: "constantLine", order: constantLine.GetOrder(), f: constantLine.New},
-		{name: "countSeries", order: countSeries.GetOrder(), f: countSeries.New},
-		{name: "cumulative", order: cumulative.GetOrder(), f: cumulative.New},
-		{name: "delay", order: delay.GetOrder(), f: delay.New},
-		{name: "derivative", order: derivative.GetOrder(), f: derivative.New},
-		{name: "diffSeries", order: diffSeries.GetOrder(), f: diffSeries.New},
-		{name: "divideSeries", order: divideSeries.GetOrder(), f: divideSeries.New},
-		{name: "ewma", order: ewma.GetOrder(), f: ewma.New},
-		{name: "exclude", order: exclude.GetOrder(), f: exclude.New},
-		{name: "fallbackSeries", order: fallbackSeries.GetOrder(), f: fallbackSeries.New},
-		{name: "fft", order: fft.GetOrder(), f: fft.New},
-		{name: "filter", order: filter.GetOrder(), f: filter.New},
-		{name: "graphiteWeb", order: graphiteWeb.GetOrder(), f: graphiteWeb.New},
-		{name: "grep", order: grep.GetOrder(), f: grep.New},
-		{name: "group", order: group.GetOrder(), f: group.New},
-		{name: "groupByNode", order: groupByNode.GetOrder(), f: groupByNode.New},
-		{name: "groupByTags", order: groupByTags.GetOrder(), f: groupByTags.New},
-		{name: "highestLowest", order: highestLowest.GetOrder(), f: highestLowest.New},
-		{name: "hitcount", order: hitcount.GetOrder(), f: hitcount.New},
-		{name: "holtWintersAberration", order: holtWintersAberration.GetOrder(), f: holtWintersAberration.New},
-		{name: "holtWintersConfidenceBands", order: holtWintersConfidenceBands.GetOrder(), f: holtWintersConfidenceBands.New},
-		{name: "holtWintersForecast", order: holtWintersForecast.GetOrder(), f: holtWintersForecast.New},
-		{name: "ifft", order: ifft.GetOrder(), f: ifft.New},
-		{name: "integral", order: integral.GetOrder(), f: integral.New},
-		{name: "integralByInterval", order: integralByInterval.GetOrder(), f: integralByInterval.New},
-		{name: "invert", order: invert.GetOrder(), f: invert.New},
-		{name: "isNotNull", order: isNotNull.GetOrder(), f: isNotNull.New},
-		{name: "keepLastValue", order: keepLastValue.GetOrder(), f: keepLastValue.New},
-		{name: "kolmogorovSmirnovTest2", order: kolmogorovSmirnovTest2.GetOrder(), f: kolmogorovSmirnovTest2.New},
-		{name: "legendValue", order: legendValue.GetOrder(), f: legendValue.New},
-		{name: "limit", order: limit.GetOrder(), f: limit.New},
-		{name: "linearRegression", order: linearRegression.GetOrder(), f: linearRegression.New},
-		{name: "logarithm", order: logarithm.GetOrder(), f: logarithm.New},
-		{name: "lowPass", order: lowPass.GetOrder(), f: lowPass.New},
-		{name: "mapSeries", order: mapSeries.GetOrder(), f: mapSeries.New},
-		{name: "minMax", order: minMax.GetOrder(), f: minMax.New},
-		{name: "mostDeviant", order: mostDeviant.GetOrder(), f: mostDeviant.New},
-		{name: "moving", order: moving.GetOrder(), f: moving.New},
-		{name: "movingMedian", order: movingMedian.GetOrder(), f: movingMedian.New},
-		{name: "multiplySeries", order: multiplySeries.GetOrder(), f: multiplySeries.New},
-		{name: "multiplySeriesWithWildcards", order: multiplySeriesWithWildcards.GetOrder(), f: multiplySeriesWithWildcards.New},
-		{name: "nPercentile", order: nPercentile.GetOrder(), f: nPercentile.New},
-		{name: "nonNegativeDerivative", order: nonNegativeDerivative.GetOrder(), f: nonNegativeDerivative.New},
-		{name: "offset", order: offset.GetOrder(), f: offset.New},
-		{name: "offsetToZero", order: offsetToZero.GetOrder(), f: offsetToZero.New},
-		{name: "pearson", order: pearson.GetOrder(), f: pearson.New},
-		{name: "pearsonClosest", order: pearsonClosest.GetOrder(), f: pearsonClosest.New},
-		{name: "perSecond", order: perSecond.GetOrder(), f: perSecond.New},
-		{name: "percentileOfSeries", order: percentileOfSeries.GetOrder(), f: percentileOfSeries.New},
-		{name: "polyfit", order: polyfit.GetOrder(), f: polyfit.New},
-		{name: "pow", order: pow.GetOrder(), f: pow.New},
-		{name: "randomWalk", order: randomWalk.GetOrder(), f: randomWalk.New},
-		{name: "rangeOfSeries", order: rangeOfSeries.GetOrder(), f: rangeOfSeries.New},
-		{name: "reduce", order: reduce.GetOrder(), f: reduce.New},
-		{name: "removeBelowSeries", order: removeBelowSeries.GetOrder(), f: removeBelowSeries.New},
-		{name: "removeEmptySeries", order: removeEmptySeries.GetOrder(), f: removeEmptySeries.New},
-		{name: "round", order: round.GetOrder(), f: round.New},
-		{name: "scale", order: scale.GetOrder(), f: scale.New},
-		{name: "scaleToSeconds", order: scaleToSeconds.GetOrder(), f: scaleToSeconds.New},
-		{name: "seriesByTag", order: seriesByTag.GetOrder(), f: seriesByTag.New},
-		{name: "seriesList", order: seriesList.GetOrder(), f: seriesList.New},
-		{name: "smartSummarize", order: smartSummarize.GetOrder(), f: smartSummarize.New},
-		{name: "sortBy", order: sortBy.GetOrder(), f: sortBy.New},
-		{name: "sortByName", order: sortByName.GetOrder(), f: sortByName.New},
-		{name: "squareRoot", order: squareRoot.GetOrder(), f: squareRoot.New},
-		{name: "stddevSeries", order: stddevSeries.GetOrder(), f: stddevSeries.New},
-		{name: "stdev", order: stdev.GetOrder(), f: stdev.New},
-		{name: "substr", order: substr.GetOrder(), f: substr.New},
-		{name: "sum", order: sum.GetOrder(), f: sum.New},
-		{name: "sumSeriesWithWildcards", order: sumSeriesWithWildcards.GetOrder(), f: sumSeriesWithWildcards.New},
-		{name: "summarize", order: summarize.GetOrder(), f: summarize.New},
-		{name: "timeFunction", order: timeFunction.GetOrder(), f: timeFunction.New},
-		{name: "timeShift", order: timeShift.GetOrder(), f: timeShift.New},
-		{name: "timeStack", order: timeStack.GetOrder(), f: timeStack.New},
-		{name: "transformNull", order: transformNull.GetOrder(), f: transformNull.New},
-		{name: "tukey", order: tukey.GetOrder(), f: tukey.New},
-		{name: "weightedAverage", order: weightedAverage.GetOrder(), f: weightedAverage.New},
+		{name: "absolute", filename: "absolute", order: absolute.GetOrder(), f: absolute.New},
+		{name: "aggregate", filename: "aggregate", order: aggregate.GetOrder(), f: aggregate.New},
+		{name: "aggregateLine", filename: "aggregateLine", order: aggregateLine.GetOrder(), f: aggregateLine.New},
+		{name: "alias", filename: "alias", order: alias.GetOrder(), f: alias.New},
+		{name: "aliasByMetric", filename: "aliasByMetric", order: aliasByMetric.GetOrder(), f: aliasByMetric.New},
+		{name: "aliasByNode", filename: "aliasByNode", order: aliasByNode.GetOrder(), f: aliasByNode.New},
+		{name: "aliasByPostgres", filename: "aliasByPostgres", order: aliasByPostgres.GetOrder(), f: aliasByPostgres.New},
+		{name: "aliasSub", filename: "aliasSub", order: aliasSub.GetOrder(), f: aliasSub.New},
+		{name: "asPercent", filename: "asPercent", order: asPercent.GetOrder(), f: asPercent.New},
+		{name: "averageSeriesWithWildcards", filename: "averageSeriesWithWildcards", order: averageSeriesWithWildcards.GetOrder(), f: averageSeriesWithWildcards.New},
+		{name: "below", filename: "below", order: below.GetOrder(), f: below.New},
+		{name: "cactiStyle", filename: "cactiStyle", order: cactiStyle.GetOrder(), f: cactiStyle.New},
+		{name: "cairo", filename: "cairo", order: cairo.GetOrder(), f: cairo.New},
+		{name: "changed", filename: "changed", order: changed.GetOrder(), f: changed.New},
+		{name: "consolidateBy", filename: "consolidateBy", order: consolidateBy.GetOrder(), f: consolidateBy.New},
+		{name: "constantLine", filename: "constantLine", order: constantLine.GetOrder(), f: constantLine.New},
+		{name: "cumulative", filename: "cumulative", order: cumulative.GetOrder(), f: cumulative.New},
+		{name: "delay", filename: "delay", order: delay.GetOrder(), f: delay.New},
+		{name: "derivative", filename: "derivative", order: derivative.GetOrder(), f: derivative.New},
+		{name: "divideSeries", filename: "divideSeries", order: divideSeries.GetOrder(), f: divideSeries.New},
+		{name: "ewma", filename: "ewma", order: ewma.GetOrder(), f: ewma.New},
+		{name: "exclude", filename: "exclude", order: exclude.GetOrder(), f: exclude.New},
+		{name: "fallbackSeries", filename: "fallbackSeries", order: fallbackSeries.GetOrder(), f: fallbackSeries.New},
+		{name: "fft", filename: "fft", order: fft.GetOrder(), f: fft.New},
+		{name: "filter", filename: "filter", order: filter.GetOrder(), f: filter.New},
+		{name: "graphiteWeb", filename: "graphiteWeb", order: graphiteWeb.GetOrder(), f: graphiteWeb.New},
+		{name: "grep", filename: "grep", order: grep.GetOrder(), f: grep.New},
+		{name: "group", filename: "group", order: group.GetOrder(), f: group.New},
+		{name: "groupByNode", filename: "groupByNode", order: groupByNode.GetOrder(), f: groupByNode.New},
+		{name: "groupByTags", filename: "groupByTags", order: groupByTags.GetOrder(), f: groupByTags.New},
+		{name: "highestLowest", filename: "highestLowest", order: highestLowest.GetOrder(), f: highestLowest.New},
+		{name: "hitcount", filename: "hitcount", order: hitcount.GetOrder(), f: hitcount.New},
+		{name: "holtWintersAberration", filename: "holtWintersAberration", order: holtWintersAberration.GetOrder(), f: holtWintersAberration.New},
+		{name: "holtWintersConfidenceBands", filename: "holtWintersConfidenceBands", order: holtWintersConfidenceBands.GetOrder(), f: holtWintersConfidenceBands.New},
+		{name: "holtWintersForecast", filename: "holtWintersForecast", order: holtWintersForecast.GetOrder(), f: holtWintersForecast.New},
+		{name: "ifft", filename: "ifft", order: ifft.GetOrder(), f: ifft.New},
+		{name: "integral", filename: "integral", order: integral.GetOrder(), f: integral.New},
+		{name: "integralByInterval", filename: "integralByInterval", order: integralByInterval.GetOrder(), f: integralByInterval.New},
+		{name: "invert", filename: "invert", order: invert.GetOrder(), f: invert.New},
+		{name: "isNotNull", filename: "isNotNull", order: isNotNull.GetOrder(), f: isNotNull.New},
+		{name: "keepLastValue", filename: "keepLastValue", order: keepLastValue.GetOrder(), f: keepLastValue.New},
+		{name: "kolmogorovSmirnovTest2", filename: "kolmogorovSmirnovTest2", order: kolmogorovSmirnovTest2.GetOrder(), f: kolmogorovSmirnovTest2.New},
+		{name: "legendValue", filename: "legendValue", order: legendValue.GetOrder(), f: legendValue.New},
+		{name: "limit", filename: "limit", order: limit.GetOrder(), f: limit.New},
+		{name: "linearRegression", filename: "linearRegression", order: linearRegression.GetOrder(), f: linearRegression.New},
+		{name: "logarithm", filename: "logarithm", order: logarithm.GetOrder(), f: logarithm.New},
+		{name: "lowPass", filename: "lowPass", order: lowPass.GetOrder(), f: lowPass.New},
+		{name: "mapSeries", filename: "mapSeries", order: mapSeries.GetOrder(), f: mapSeries.New},
+		{name: "mostDeviant", filename: "mostDeviant", order: mostDeviant.GetOrder(), f: mostDeviant.New},
+		{name: "moving", filename: "moving", order: moving.GetOrder(), f: moving.New},
+		{name: "movingMedian", filename: "movingMedian", order: movingMedian.GetOrder(), f: movingMedian.New},
+		{name: "multiplySeriesWithWildcards", filename: "multiplySeriesWithWildcards", order: multiplySeriesWithWildcards.GetOrder(), f: multiplySeriesWithWildcards.New},
+		{name: "nPercentile", filename: "nPercentile", order: nPercentile.GetOrder(), f: nPercentile.New},
+		{name: "nonNegativeDerivative", filename: "nonNegativeDerivative", order: nonNegativeDerivative.GetOrder(), f: nonNegativeDerivative.New},
+		{name: "offset", filename: "offset", order: offset.GetOrder(), f: offset.New},
+		{name: "offsetToZero", filename: "offsetToZero", order: offsetToZero.GetOrder(), f: offsetToZero.New},
+		{name: "pearson", filename: "pearson", order: pearson.GetOrder(), f: pearson.New},
+		{name: "pearsonClosest", filename: "pearsonClosest", order: pearsonClosest.GetOrder(), f: pearsonClosest.New},
+		{name: "perSecond", filename: "perSecond", order: perSecond.GetOrder(), f: perSecond.New},
+		{name: "percentileOfSeries", filename: "percentileOfSeries", order: percentileOfSeries.GetOrder(), f: percentileOfSeries.New},
+		{name: "polyfit", filename: "polyfit", order: polyfit.GetOrder(), f: polyfit.New},
+		{name: "pow", filename: "pow", order: pow.GetOrder(), f: pow.New},
+		{name: "randomWalk", filename: "randomWalk", order: randomWalk.GetOrder(), f: randomWalk.New},
+		{name: "rangeOfSeries", filename: "rangeOfSeries", order: rangeOfSeries.GetOrder(), f: rangeOfSeries.New},
+		{name: "reduce", filename: "reduce", order: reduce.GetOrder(), f: reduce.New},
+		{name: "removeBelowSeries", filename: "removeBelowSeries", order: removeBelowSeries.GetOrder(), f: removeBelowSeries.New},
+		{name: "removeEmptySeries", filename: "removeEmptySeries", order: removeEmptySeries.GetOrder(), f: removeEmptySeries.New},
+		{name: "round", filename: "round", order: round.GetOrder(), f: round.New},
+		{name: "scale", filename: "scale", order: scale.GetOrder(), f: scale.New},
+		{name: "scaleToSeconds", filename: "scaleToSeconds", order: scaleToSeconds.GetOrder(), f: scaleToSeconds.New},
+		{name: "seriesByTag", filename: "seriesByTag", order: seriesByTag.GetOrder(), f: seriesByTag.New},
+		{name: "seriesList", filename: "seriesList", order: seriesList.GetOrder(), f: seriesList.New},
+		{name: "smartSummarize", filename: "smartSummarize", order: smartSummarize.GetOrder(), f: smartSummarize.New},
+		{name: "sortBy", filename: "sortBy", order: sortBy.GetOrder(), f: sortBy.New},
+		{name: "sortByName", filename: "sortByName", order: sortByName.GetOrder(), f: sortByName.New},
+		{name: "squareRoot", filename: "squareRoot", order: squareRoot.GetOrder(), f: squareRoot.New},
+		{name: "stdev", filename: "stdev", order: stdev.GetOrder(), f: stdev.New},
+		{name: "substr", filename: "substr", order: substr.GetOrder(), f: substr.New},
+		{name: "sumSeriesWithWildcards", filename: "sumSeriesWithWildcards", order: sumSeriesWithWildcards.GetOrder(), f: sumSeriesWithWildcards.New},
+		{name: "summarize", filename: "summarize", order: summarize.GetOrder(), f: summarize.New},
+		{name: "timeFunction", filename: "timeFunction", order: timeFunction.GetOrder(), f: timeFunction.New},
+		{name: "timeShift", filename: "timeShift", order: timeShift.GetOrder(), f: timeShift.New},
+		{name: "timeStack", filename: "timeStack", order: timeStack.GetOrder(), f: timeStack.New},
+		{name: "transformNull", filename: "transformNull", order: transformNull.GetOrder(), f: transformNull.New},
+		{name: "tukey", filename: "tukey", order: tukey.GetOrder(), f: tukey.New},
+		{name: "weightedAverage", filename: "weightedAverage", order: weightedAverage.GetOrder(), f: weightedAverage.New},
 	}
 
 	sort.Slice(funcs, func(i, j int) bool {
@@ -217,7 +204,7 @@ func New(configs map[string]string) {
 	for _, f := range funcs {
 		md := f.f(configs[strings.ToLower(f.name)])
 		for _, m := range md {
-			metadata.RegisterFunction(m.Name, m.F)
+			metadata.RegisterFunctionWithFilename(m.Name, f.filename, m.F)
 		}
 	}
 }
