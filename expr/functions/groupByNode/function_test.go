@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-graphite/carbonapi/expr/functions/sum"
+	"github.com/go-graphite/carbonapi/expr/functions/aggregate"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	s := sum.New("")
+	s := aggregate.New("")
 	for _, m := range s {
 		metadata.RegisterFunction(m.Name, m.F)
 	}
