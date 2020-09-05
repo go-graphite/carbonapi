@@ -752,6 +752,18 @@ upstreams:
             servers:
                 - "http://192.168.0.1:6060"
                 - "http://192.168.0.2:6060"
+          -
+            groupName: "graphite-web"
+            protocol: "msgpack"
+            lbMethod: "broadcast"
+            maxTries: 3
+            maxBatchSize: 0
+            keepAliveInterval: "10s"
+            concurrencyLimit: 0
+            maxIdleConnsPerHost: 1000
+            servers:
+                - "http://192.168.0.3:8080?format=msgpack"
+                - "http://192.168.0.4:8080?format=msgpack"
 ```
 
 ***
