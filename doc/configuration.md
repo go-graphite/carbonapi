@@ -542,7 +542,7 @@ Supported options:
            * `protocol` - specify protocol for the backend.
            
              Supported protocols:
-               * `carbonapi_v3_pb` - new native protocol, over http. Should be fastest. Currently supported only by [lomik/go-carbon](https://github.com/lomik/go-carbon) and [go-graphite/carbonapi](https://github.com/go-graphite/carbonapi)
+               * `carbonapi_v3_pb` - new native protocol, over http. Should be fastest. Currently supported by [lomik/go-carbon](https://github.com/lomik/go-carbon), [lomik/graphite-clickhouse](https://github.com/lomik/graphite-clickhouse) and [go-graphite/carbonapi](https://github.com/go-graphite/carbonapi)
                * `carbonapi_v3_grpc` - new experimental protocol that instead of HTTP requests, uses gRPC. No known backend support that.
                * `carbonapi_v2_pb`, `protobuf`, `pb`, `pb3` - older protobuf-based protocol. Supported by [lomik/go-carbon](https://github.com/lomik/go-carbon) and [lomik/graphite-clickhouse](https://github.com/lomik/graphite-clickhouse)
                * `msgpack` - message pack encoding, supported by [graphite-project/graphite-web](https://github.com/graphite-project/graphite-web) and [grafana/metrictank](https://github.com/grafana/metrictank)
@@ -688,7 +688,7 @@ upstreams:
         backends:
           -
             groupName: "clickhouse-cluster1"
-            protocol: "carbonapi_v2_pb"
+            protocol: "carbonapi_v2_pb" # "carbonapi_v3_pb" for the latest master
             lbMethod: "rr"
             maxTries: 3
             maxBatchSize: 0
@@ -704,7 +704,7 @@ upstreams:
                 - "http://192.168.0.2:8080"
           -
             groupName: "clickhouse-cluster2"
-            protocol: "carbonapi_v2_pb"
+            protocol: "carbonapi_v2_pb" # "carbonapi_v3_pb" for the latest master
             lbMethod: "rr"
             maxTries: 3
             maxBatchSize: 0
