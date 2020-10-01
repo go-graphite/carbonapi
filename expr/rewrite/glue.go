@@ -11,15 +11,16 @@ import (
 )
 
 type initFunc struct {
-	name  string
-	order interfaces.Order
-	f     func(configFile string) []interfaces.RewriteFunctionMetadata
+	name     string
+	filename string
+	order    interfaces.Order
+	f        func(configFile string) []interfaces.RewriteFunctionMetadata
 }
 
 func New(configs map[string]string) {
 	funcs := []initFunc{
-		{name: "aboveSeries", order: aboveSeries.GetOrder(), f: aboveSeries.New},
-		{name: "applyByNode", order: applyByNode.GetOrder(), f: applyByNode.New},
+		{name: "aboveSeries", filename: "aboveSeries", order: aboveSeries.GetOrder(), f: aboveSeries.New},
+		{name: "applyByNode", filename: "applyByNode", order: applyByNode.GetOrder(), f: applyByNode.New},
 	}
 
 	sort.Slice(funcs, func(i, j int) bool {
@@ -35,7 +36,7 @@ func New(configs map[string]string) {
 	for _, f := range funcs {
 		md := f.f(configs[strings.ToLower(f.name)])
 		for _, m := range md {
-			metadata.RegisterRewriteFunction(m.Name, m.F)
+			metadata.RegisterRewriteFunctionWithFilename(m.Name, f.filename, m.F)
 		}
 	}
 }

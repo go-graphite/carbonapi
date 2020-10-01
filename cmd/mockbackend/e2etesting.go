@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -74,6 +75,10 @@ func (d *Datapoint) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("failed to parse Timestamp: %v", err)
 	}
 
+	if valueStr == "null" || valueStr == "\"null\"" {
+		d.Value = math.NaN()
+		return nil
+	}
 	d.Value, err = strconv.ParseFloat(valueStr, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse Value: %v", err)
@@ -101,6 +106,10 @@ func (d *Datapoint) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return fmt.Errorf("failed to parse Timestamp: %v", err)
 	}
 
+	if valueStr == "null" || valueStr == "\"null\"" {
+		d.Value = math.NaN()
+		return nil
+	}
 	d.Value, err = strconv.ParseFloat(valueStr, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse Value: %v", err)

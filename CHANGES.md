@@ -18,6 +18,10 @@ Changes
 CHANGELOG
 ---------
 **WIP**
+ - [Fix] Warnings about duplicate functions when carbonapi starts.
+
+**0.14.1**
+ - [Feature] Implement `doMultipleRequestsIfSplit` config option which could be useful for go-carbon and huge requests (See #509)
  - [Improvement] Return stacktrace on panic (thx to @Felixoid)
  - [Fix] Fix case where some metrics passed to functions like group or sumSeries were missing. Fixes #438
  - [Fix] Accept `1` and `0` as bool arguments for `True` and `False`. (thx to @Felixoid)
@@ -25,6 +29,11 @@ CHANGELOG
  - [Fix] fallbackSeries now works properly (thx to @Egor Redozubov)
  - [Fix] Panic when trying to render png/svg of an empty response (Fixes #503)
  - [Fix] Fix Error 500 when sendGlobsAsIs is false (Fixes #506)
+ - [Fix] prometheus backend: carbonapi should send 'end' instead of 'stop' in queries (thx to Alexandre Vincent)
+ - [Fix] change metrics resulting tags to match graphite-web in some cases (thx to @Felixoid)
+ - [Fix] Prometheus backend: trust timestamps from the backend (Fixes #504, Fixes #514)
+ - [Fix] percentileOfSeries: return first of filtered datapoints in case only one series have valid data (Fixes #516)
+ - [Code] merge aliasByNode and aliasByTags (thx to @Felixoid)
 
 **0.14.0**
  - **[Breaking]**[Code] expr library and all functions now requires caller to pass context. See #485

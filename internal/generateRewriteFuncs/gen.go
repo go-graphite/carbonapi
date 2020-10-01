@@ -48,16 +48,17 @@ import (
 	fmt.Fprintf(writer, `)
 
 type initFunc struct {
-	name  string
-	order interfaces.Order
-	f     func(configFile string) []interfaces.RewriteFunctionMetadata
+	name     string
+	filename string
+	order    interfaces.Order
+	f        func(configFile string) []interfaces.RewriteFunctionMetadata
 }
 
 func New(configs map[string]string) {
 	funcs := []initFunc{`)
 	for _, m := range funcs {
 		fmt.Fprintf(writer, `
-		{name: "%s", order: %s.GetOrder(), f: %s.New},`, m, m, m)
+		{name: "%s", filename: "%s", order: %s.GetOrder(), f: %s.New},`, m, m, m, m)
 
 	}
 
@@ -77,7 +78,7 @@ func New(configs map[string]string) {
 	for _, f := range funcs {
 		md := f.f(configs[strings.ToLower(f.name)])
 		for _, m := range md {
-			metadata.RegisterRewriteFunction(m.Name, m.F)
+			metadata.RegisterRewriteFunctionWithFilename(m.Name, f.filename, m.F)
 		}
 	}
 }`)

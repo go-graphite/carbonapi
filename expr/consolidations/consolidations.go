@@ -79,7 +79,7 @@ func Percentile(data []float64, percent float64, interpolate bool) float64 {
 		return math.NaN()
 	}
 	if len(dataFiltered) == 1 {
-		return data[0]
+		return dataFiltered[0]
 	}
 
 	k := (float64(len(dataFiltered)-1) * percent) / 100

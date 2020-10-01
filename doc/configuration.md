@@ -47,6 +47,7 @@ Table of Contents
     * [Example](#example-19)
       * [For go\-carbon and prometheus](#for-go-carbon-and-prometheus)
       * [For graphite\-clickhouse](#for-graphite-clickhouse)
+      * [For metrictank](#for-metrictank)
   * [expireDelaySec](#expiredelaysec)
     * [Example](#example-20)
 
@@ -716,6 +717,53 @@ upstreams:
             servers:
                 - "http://192.168.0.3:8080"
                 - "http://192.168.0.4:8080"
+```
+
+#### For metrictank
+```yaml
+upstreams:
+    graphite09compat: false
+    buckets: 10
+
+    concurrencyLimitPerServer: 0
+    keepAliveInterval: "30s"
+    maxIdleConnsPerHost: 100
+    timeouts:
+        find: "2s"
+        render: "10s"
+        connect: "200ms"
+
+    #backends section will override this one!
+    backendsv2:
+        backends:
+          -
+            groupName: "metrictank"
+            protocol: "msgpack"
+            lbMethod: "rr"
+            maxTries: 3
+            maxBatchSize: 0
+            keepAliveInterval: "10s"
+            concurrencyLimit: 0
+            maxIdleConnsPerHost: 1000
+            timeouts:
+                find: "2s"
+                render: "50s"
+                connect: "200ms"
+            servers:
+                - "http://192.168.0.1:6060"
+                - "http://192.168.0.2:6060"
+          -
+            groupName: "graphite-web"
+            protocol: "msgpack"
+            lbMethod: "broadcast"
+            maxTries: 3
+            maxBatchSize: 0
+            keepAliveInterval: "10s"
+            concurrencyLimit: 0
+            maxIdleConnsPerHost: 1000
+            servers:
+                - "http://192.168.0.3:8080?format=msgpack"
+                - "http://192.168.0.4:8080?format=msgpack"
 ```
 
 ***

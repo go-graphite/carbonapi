@@ -476,7 +476,7 @@ func TestEvalCustomFromUntil(t *testing.T) {
 				return
 			}
 
-			th.DeepEqual(t, tt.target, originalMetrics, tt.m)
+			th.DeepEqual(t, tt.target, originalMetrics, tt.m, false)
 
 			if g[0].StepTime == 0 {
 				t.Errorf("missing step for %+v", g)

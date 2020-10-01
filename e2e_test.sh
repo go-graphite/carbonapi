@@ -2,6 +2,10 @@
 
 TESTS=$(ls cmd/mockbackend/testcases/)
 
+if [[ ! -z "${1}" ]]; then
+	TESTS="${1}"
+fi
+
 FAILED_TESTS=""
 for t in ${TESTS}; do
 	if [[ "${TRAVIS}" == "true" ]]; then

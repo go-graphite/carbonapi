@@ -186,11 +186,14 @@ func deepCompareFields(v1, v2 reflect.Value) bool {
 	return true
 }
 
-func MetricDataIsEqual(d1, d2 *types.MetricData) bool {
+func MetricDataIsEqual(d1, d2 *types.MetricData, compareTags bool) bool {
 	v1 := reflect.ValueOf(*d1)
 	v2 := reflect.ValueOf(*d2)
 
 	for i := 0; i < v1.NumField(); i++ {
+		if v1.Type().Field(i).Name == "Tags" && !compareTags {
+			continue
+		}
 		r := deepCompareFields(v1.Field(i), v2.Field(i))
 		if !r {
 			return r
@@ -199,11 +202,11 @@ func MetricDataIsEqual(d1, d2 *types.MetricData) bool {
 	return true
 }
 
-func DeepEqual(t *testing.T, target string, original, modified map[parser.MetricRequest][]*types.MetricData) {
+func DeepEqual(t *testing.T, target string, original, modified map[parser.MetricRequest][]*types.MetricData, compareTags bool) {
 	for key := range original {
 		if len(original[key]) == len(modified[key]) {
 			for i := range original[key] {
-				if !MetricDataIsEqual(original[key][i], modified[key][i]) {
+				if !MetricDataIsEqual(original[key][i], modified[key][i], compareTags) {
 					t.Errorf(
 						"%s: source data was modified key %v index %v original:\n%v\n modified:\n%v",
 						target,
@@ -312,7 +315,7 @@ func TestSummarizeEvalExpr(t *testing.T, tt *SummarizeEvalTestItem) {
 			t.Errorf("failed to eval %v: %+v", tt.Name, err)
 			return
 		}
-		DeepEqual(t, g[0].Name, originalMetrics, tt.M)
+		DeepEqual(t, g[0].Name, originalMetrics, tt.M, false)
 		if g[0].StepTime != tt.Step {
 			t.Errorf("bad Step for %s:\ngot  %d\nwant %d", g[0].Name, g[0].StepTime, tt.Step)
 		}
@@ -356,7 +359,7 @@ func TestMultiReturnEvalExpr(t *testing.T, tt *MultiReturnEvalTestItem) {
 		t.Errorf("failed to eval %v: %+v", tt.Name, err)
 		return
 	}
-	DeepEqual(t, tt.Name, originalMetrics, tt.M)
+	DeepEqual(t, tt.Name, originalMetrics, tt.M, false)
 	if len(g) == 0 {
 		t.Errorf("returned no data %v", tt.Name)
 		return
@@ -437,7 +440,7 @@ func TestRewriteExpr(t *testing.T, tt *RewriteTestItem) {
 		t.Errorf("%s returned a different number of metrics, actual %v, Want %v", testName, len(targets), len(tt.Want.Targets))
 		return
 	}
-	DeepEqual(t, testName, originalMetrics, tt.M)
+	DeepEqual(t, testName, originalMetrics, tt.M, false)
 
 	for i, want := range tt.Want.Targets {
 		if want != targets[i] {
@@ -505,5 +508,5 @@ func TestEvalExprModifiedOrigin(t *testing.T, tt *EvalTestItem) {
 func TestEvalExpr(t *testing.T, tt *EvalTestItem) {
 	originalMetrics := DeepClone(tt.M)
 	TestEvalExprModifiedOrigin(t, tt)
-	DeepEqual(t, tt.Target, originalMetrics, tt.M)
+	DeepEqual(t, tt.Target, originalMetrics, tt.M, false)
 }

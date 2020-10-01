@@ -35,15 +35,17 @@ const (
 )
 
 type RewriteFunctionMetadata struct {
-	Name  string
-	Order Order
-	F     RewriteFunction
+	Name     string
+	Filename string
+	Order    Order
+	F        RewriteFunction
 }
 
 type FunctionMetadata struct {
-	Name  string
-	Order Order
-	F     Function
+	Name     string
+	Filename string
+	Order    Order
+	F        Function
 }
 
 // Function is interface that all graphite functions should follow

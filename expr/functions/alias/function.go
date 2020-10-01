@@ -41,6 +41,7 @@ func (f *alias) Do(ctx context.Context, e parser.Expr, from, until int64, values
 	for _, a := range arg {
 		r := *a
 		r.Name = alias
+		r.Tags["name"] = r.Name
 		results = append(results, &r)
 	}
 	return results, nil

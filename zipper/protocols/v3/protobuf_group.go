@@ -8,13 +8,14 @@ import (
 	"net/url"
 
 	"github.com/ansel1/merry"
+	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
+	"go.uber.org/zap"
+
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/zipper/helper"
 	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 	"github.com/go-graphite/carbonapi/zipper/metadata"
 	"github.com/go-graphite/carbonapi/zipper/types"
-	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"go.uber.org/zap"
 )
 
 const (
@@ -68,10 +69,11 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConnsPerHost: *config.MaxIdleConnsPerHost,
+			IdleConnTimeout:     0,
+			ForceAttemptHTTP2:   config.ForceAttemptHTTP2,
 			DialContext: (&net.Dialer{
 				Timeout:   config.Timeouts.Connect,
 				KeepAlive: *config.KeepAliveInterval,
-				DualStack: true,
 			}).DialContext,
 		},
 	}

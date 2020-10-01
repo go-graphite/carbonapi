@@ -1,0 +1,36 @@
+version: "v1"
+test:
+    apps:
+        - name: "carbonapi"
+          binary: "./carbonapi"
+          args:
+              - "-config"
+              - "./cmd/mockbackend/carbonapi_singlebackend.yaml"
+    queries:
+            - endpoint: "http://127.0.0.1:8081"
+              delay: 1
+              type: "GET"
+              URL: "/render?format=json&target=percentileOfSeries(carbon.api.*.cache_size, 95, false)"
+              expectedResponse:
+                  httpCode: 200
+                  contentType: "application/json"
+                  expectedResults:
+                          - metrics:
+                                  - target: "percentileOfSeries(carbon.api.*.cache_size, 95, false)"
+                                    datapoints: [[0.0, 1],[0.0, 2],[0.0, 3],[100500.0, 4],[100500.0, 5],[100500.0, 6]]
+listeners:
+        - address: ":9070"
+          expressions:
+                     "carbon.api.*.cache_size":
+                         pathExpression: "carbon.api.*.cache_size"
+                         data:
+                             - metricName: "carbon.api.host001.cache_size"
+                               values: [.NaN, .NaN, .NaN, .NaN, .NaN, .NaN]
+                             - metricName: "carbon.api.host002.cache_size"
+                               values: [.NaN, .NaN, .NaN, .NaN, .NaN, .NaN]
+                             - metricName: "carbon.api.host003.cache_size"
+                               values: [0.0, 0.0, 0.0, 100500.0, 100500.0, 100500.0]
+                             - metricName: "carbon.api.host004.cache_size"
+                               values: [.NaN, .NaN, .NaN, .NaN, .NaN, .NaN]
+                             - metricName: "carbon.api.host005.cache_size"
+                               values: [.NaN, .NaN, .NaN, .NaN, .NaN, .NaN]

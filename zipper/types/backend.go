@@ -15,17 +15,19 @@ type BackendsV2 struct {
 }
 
 type BackendV2 struct {
-	GroupName           string                 `mapstructure:"groupName"`
-	Protocol            string                 `mapstructure:"protocol"`
-	LBMethod            string                 `mapstructure:"lbMethod"` // Valid: rr/roundrobin, broadcast/all
-	Servers             []string               `mapstructure:"servers"`
-	Timeouts            *Timeouts              `mapstructure:"timeouts"`
-	ConcurrencyLimit    *int                   `mapstructure:"concurrencyLimit"`
-	KeepAliveInterval   *time.Duration         `mapstructure:"keepAliveInterval"`
-	MaxIdleConnsPerHost *int                   `mapstructure:"maxIdleConnsPerHost"`
-	MaxTries            *int                   `mapstructure:"maxTries"`
-	MaxBatchSize        *int                   `mapstructure:"maxBatchSize"`
-	BackendOptions      map[string]interface{} `mapstructure:"backendOptions"`
+	GroupName                 string                 `mapstructure:"groupName"`
+	Protocol                  string                 `mapstructure:"protocol"`
+	LBMethod                  string                 `mapstructure:"lbMethod"` // Valid: rr/roundrobin, broadcast/all
+	Servers                   []string               `mapstructure:"servers"`
+	Timeouts                  *Timeouts              `mapstructure:"timeouts"`
+	ConcurrencyLimit          *int                   `mapstructure:"concurrencyLimit"`
+	KeepAliveInterval         *time.Duration         `mapstructure:"keepAliveInterval"`
+	MaxIdleConnsPerHost       *int                   `mapstructure:"maxIdleConnsPerHost"`
+	MaxTries                  *int                   `mapstructure:"maxTries"`
+	MaxBatchSize              *int                   `mapstructure:"maxBatchSize"`
+	BackendOptions            map[string]interface{} `mapstructure:"backendOptions"`
+	ForceAttemptHTTP2         bool                   `mapstructure:"forceAttemptHTTP2"`
+	DoMultipleRequestsIfSplit bool                   `mapstructure:"doMultipleRequestsIfSplit"`
 }
 
 func (b *BackendV2) FillDefaults() {

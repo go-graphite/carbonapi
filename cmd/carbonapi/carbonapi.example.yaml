@@ -125,6 +125,9 @@ upstreams:
     # connections on the backend servers which may bump into limits; tune with care.
     maxIdleConnsPerHost: 100
 
+    # Only affects cases with maxBatchSize > 0. If set to `false` requests after split will be sent out one by one, otherwise in parallel
+    doMultipleRequestsIfSplit: false
+
     # "http://host:port" array of instances of carbonserver stores
     # It MUST be specified.
     backends:
@@ -164,6 +167,11 @@ upstreams:
             concurrencyLimit: 0
             # override for global maxIdleConnsPerHost
             maxIdleConnsPerHost: 1000
+            # force attempt to establish HTTP2 connection, instead of http1.1. Default: false
+            # Backends must use https for this to take any effect
+            forceAttemptHTTP2: false
+            # Only affects cases with maxBatchSize > 0. If set to `false` requests after split will be sent out one by one, otherwise in parallel
+            doMultipleRequestsIfSplit: false
             # per-group timeout override. If not specified, global will be used.
             # Please note that ONLY min(global, local) will be used.
             timeouts:
@@ -176,6 +184,7 @@ upstreams:
             servers:
                 - "http://127.0.0.2:8080"
                 - "http://127.0.0.3:8080"
+
           -
             groupName: "group2"
             protocol: "carbonapi_v3_pb"
