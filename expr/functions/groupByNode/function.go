@@ -112,6 +112,7 @@ func (f *groupByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		r, _ := f.Evaluator.Eval(ctx, nexpr, from, until, nvalues)
 		if r != nil {
 			r[0].Name = k
+			r[0].Tags["name"] = k
 			results = append(results, r...)
 		}
 	}
