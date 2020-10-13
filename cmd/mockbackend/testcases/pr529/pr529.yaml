@@ -1,0 +1,30 @@
+version: "v1"
+test:
+    apps:
+        - name: "carbonapi"
+          binary: "./carbonapi"
+          args:
+              - "-config"
+              - "./cmd/mockbackend/carbonapi_singlebackend.yaml"
+    queries:
+            - endpoint: "http://127.0.0.1:8081"
+              delay: 1
+              type: "GET"
+              URL: "/render?format=json&target=maxSeries(metric,asPercent(timeShift(metric,'1s'),metric))"
+              expectedResponse:
+                  httpCode: 200
+                  contentType: "application/json"
+                  expectedResults:
+                          - metrics:
+                                  - target: "maxSeries(metric,asPercent(timeShift(metric,'1s'),metric))"
+                                    datapoints: [[1,3],[100,4],[100,5],[100,6],[100,7],["null", 8]]
+listeners:
+        - address: ":9070"
+          expressions:
+                     "metric":
+                         pathExpression: "metric"
+                         data:
+                             - metricName: "metric"
+                               values: [1.0, 1.0, 1.0, 1.0, 1.0]
+                               step: 1
+                               startTime: 3
