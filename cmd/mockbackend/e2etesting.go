@@ -136,6 +136,9 @@ func isMetricsEqual(m1, m2 CarbonAPIResponse) error {
 	}
 	datapointsMismatch := false
 	for i := range m1.Datapoints {
+		if math.IsNaN(m1.Datapoints[i].Value) && math.IsNaN(m2.Datapoints[i].Value) {
+			continue
+		}
 		if m1.Datapoints[i].Value != m2.Datapoints[i].Value {
 			datapointsMismatch = true
 			break

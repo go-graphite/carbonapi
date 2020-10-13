@@ -55,6 +55,11 @@ func (eval evaluator) FetchAndEvalExp(ctx context.Context, exp parser.Expr, from
 			continue
 		}
 
+		// avoid multiple requests from the same target, e.g. target=max(a,asPercent(holtWintersForecast(a),a))
+		if _, ok := targetValues[metricRequest]; ok {
+			continue
+		}
+
 		metricRequestCache[m.Metric] = metricRequest
 		targetValues[metricRequest] = nil
 		multiFetchRequest.Metrics = append(multiFetchRequest.Metrics, fetchRequest)
