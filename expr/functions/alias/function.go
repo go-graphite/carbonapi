@@ -2,6 +2,7 @@ package alias
 
 import (
 	"context"
+	"strings"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -27,35 +28,49 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *alias) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
+	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
 	}
+
 	alias, err := e.GetStringArg(1)
 	if err != nil {
 		return nil, err
 	}
 
-	var results []*types.MetricData
+	allowFormatStr, err := e.GetBoolArgDefault(2, false)
+	if err != nil {
+		return nil, err
+	}
 
-	for _, a := range arg {
-		r := *a
+	results := make([]*types.MetricData, 0, len(args))
+	for _, arg := range args {
+		r := *arg
+
 		r.Name = alias
+		if allowFormatStr {
+			r.Name = strings.ReplaceAll(r.Name, "${expr}", arg.Name)
+		}
 		r.Tags["name"] = r.Name
+
 		results = append(results, &r)
 	}
+
 	return results, nil
 }
 
-// Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
 func (f *alias) Description() map[string]types.FunctionDescription {
 	return map[string]types.FunctionDescription{
 		"alias": {
-			Description: "Takes one metric or a wildcard seriesList and a string in quotes.\nPrints the string instead of the metric name in the legend.\n\n.. code-block:: none\n\n  &target=alias(Sales.widgets.largeBlue,\"Large Blue Widgets\")",
-			Function:    "alias(seriesList, newName)",
-			Group:       "Alias",
-			Module:      "graphite.render.functions",
-			Name:        "alias",
+			Description: "Takes one metric or a wildcard seriesList and a string in quotes.\n" +
+				"Prints the string instead of the metric name in the legend.\n" +
+				"If set to True, `allowFormatStr` will replace all occurrences of `${expr}` with name of expression\n\n" +
+				".. code-block:: none\n\n" +
+				"  &target=alias(Sales.widgets.largeBlue,\"Large Blue Widgets\")",
+			Function: "alias(seriesList, newName)",
+			Group:    "Alias",
+			Module:   "graphite.render.functions",
+			Name:     "alias",
 			Params: []types.FunctionParam{
 				{
 					Name:     "seriesList",
@@ -66,6 +81,12 @@ func (f *alias) Description() map[string]types.FunctionDescription {
 					Name:     "newName",
 					Required: true,
 					Type:     types.String,
+				},
+				{
+					Default:  types.NewSuggestion(false),
+					Name:     "allowFormatStr",
+					Required: false,
+					Type:     types.Boolean,
 				},
 			},
 		},
