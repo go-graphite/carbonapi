@@ -108,87 +108,12 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 				*/
 			},
 		},
-		"sum": {
-			Description: "Short form: sum()\n\nThis will add metrics together and return the sum at each datapoint. (See\nintegral for a sum over time)\n\nExample:\n\n.. code-block:: none\n\n  &target=sum(company.server.application*.requestsHandled)\n\nThis would show the sum of all requests handled per minute (provided\nrequestsHandled are collected once a minute).   If metrics with different\nretention rates are combined, the coarsest metric is graphed, and the sum\nof the other metrics is averaged for the metrics with finer retention rates.\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``sum``.",
-			Function:    "sum(*seriesLists)",
+		"averageSeries": {
+			Description: "Short Alias: avg()\n\nTakes one metric or a wildcard seriesList.\nDraws the average value of all metrics passed at each time.\n\nExample:\n\n.. code-block:: none\n\n  &target=averageSeries(company.server.*.threads.busy)\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``average``.",
+			Function:    "averageSeries(*seriesLists)",
 			Group:       "Combine",
 			Module:      "graphite.render.functions",
-			Name:        "sum",
-			Params: []types.FunctionParam{
-				{
-					Multiple: true,
-					Name:     "seriesLists",
-					Required: true,
-					Type:     types.SeriesList,
-				},
-			},
-		},
-		"sumSeries": {
-			Description: "Short form: sum()\n\nThis will add metrics together and return the sum at each datapoint. (See\nintegral for a sum over time)\n\nExample:\n\n.. code-block:: none\n\n  &target=sum(company.server.application*.requestsHandled)\n\nThis would show the sum of all requests handled per minute (provided\nrequestsHandled are collected once a minute).   If metrics with different\nretention rates are combined, the coarsest metric is graphed, and the sum\nof the other metrics is averaged for the metrics with finer retention rates.\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``sum``.",
-			Function:    "sumSeries(*seriesLists)",
-			Group:       "Combine",
-			Module:      "graphite.render.functions",
-			Name:        "sumSeries",
-			Params: []types.FunctionParam{
-				{
-					Multiple: true,
-					Name:     "seriesLists",
-					Required: true,
-					Type:     types.SeriesList,
-				},
-			},
-		},
-		"minSeries": {
-			Description: "Takes one metric or a wildcard seriesList.\nFor each datapoint from each metric passed in, pick the minimum value and graph it.\n\nExample:\n\n.. code-block:: none\n\n  &target=minSeries(Server*.connections.total)\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``min``.",
-			Function:    "minSeries(*seriesLists)",
-			Group:       "Combine",
-			Module:      "graphite.render.functions",
-			Name:        "minSeries",
-			Params: []types.FunctionParam{
-				{
-					Multiple: true,
-					Name:     "seriesLists",
-					Required: true,
-					Type:     types.SeriesList,
-				},
-			},
-		},
-		"min": {
-			Description: "Takes one metric or a wildcard seriesList.\nFor each datapoint from each metric passed in, pick the minimum value and graph it.\n\nExample:\n\n.. code-block:: none\n\n  &target=minSeries(Server*.connections.total)\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``min``.",
-			Function:    "minSeries(*seriesLists)",
-			Group:       "Combine",
-			Module:      "graphite.render.functions",
-			Name:        "minSeries",
-			Params: []types.FunctionParam{
-				{
-					Multiple: true,
-					Name:     "seriesLists",
-					Required: true,
-					Type:     types.SeriesList,
-				},
-			},
-		},
-		"maxSeries": {
-			Description: "Takes one metric or a wildcard seriesList.\nFor each datapoint from each metric passed in, pick the maximum value and graph it.\n\nExample:\n\n.. code-block:: none\n\n  &target=maxSeries(Server*.connections.total)\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``max``.",
-			Function:    "maxSeries(*seriesLists)",
-			Group:       "Combine",
-			Module:      "graphite.render.functions",
-			Name:        "maxSeries",
-			Params: []types.FunctionParam{
-				{
-					Multiple: true,
-					Name:     "seriesLists",
-					Required: true,
-					Type:     types.SeriesList,
-				},
-			},
-		},
-		"max": {
-			Description: "Takes one metric or a wildcard seriesList.\nFor each datapoint from each metric passed in, pick the maximum value and graph it.\n\nExample:\n\n.. code-block:: none\n\n  &target=maxSeries(Server*.connections.total)\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``max``.",
-			Function:    "maxSeries(*seriesLists)",
-			Group:       "Combine",
-			Module:      "graphite.render.functions",
-			Name:        "maxSeries",
+			Name:        "averageSeries",
 			Params: []types.FunctionParam{
 				{
 					Multiple: true,
@@ -213,12 +138,87 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 				},
 			},
 		},
-		"averageSeries": {
-			Description: "Short Alias: avg()\n\nTakes one metric or a wildcard seriesList.\nDraws the average value of all metrics passed at each time.\n\nExample:\n\n.. code-block:: none\n\n  &target=averageSeries(company.server.*.threads.busy)\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``average``.",
-			Function:    "averageSeries(*seriesLists)",
+		"max": {
+			Description: "Takes one metric or a wildcard seriesList.\nFor each datapoint from each metric passed in, pick the maximum value and graph it.\n\nExample:\n\n.. code-block:: none\n\n  &target=maxSeries(Server*.connections.total)\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``max``.",
+			Function:    "maxSeries(*seriesLists)",
 			Group:       "Combine",
 			Module:      "graphite.render.functions",
-			Name:        "averageSeries",
+			Name:        "maxSeries",
+			Params: []types.FunctionParam{
+				{
+					Multiple: true,
+					Name:     "seriesLists",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+			},
+		},
+		"maxSeries": {
+			Description: "Takes one metric or a wildcard seriesList.\nFor each datapoint from each metric passed in, pick the maximum value and graph it.\n\nExample:\n\n.. code-block:: none\n\n  &target=maxSeries(Server*.connections.total)\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``max``.",
+			Function:    "maxSeries(*seriesLists)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions",
+			Name:        "maxSeries",
+			Params: []types.FunctionParam{
+				{
+					Multiple: true,
+					Name:     "seriesLists",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+			},
+		},
+		"min": {
+			Description: "Takes one metric or a wildcard seriesList.\nFor each datapoint from each metric passed in, pick the minimum value and graph it.\n\nExample:\n\n.. code-block:: none\n\n  &target=minSeries(Server*.connections.total)\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``min``.",
+			Function:    "minSeries(*seriesLists)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions",
+			Name:        "minSeries",
+			Params: []types.FunctionParam{
+				{
+					Multiple: true,
+					Name:     "seriesLists",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+			},
+		},
+		"minSeries": {
+			Description: "Takes one metric or a wildcard seriesList.\nFor each datapoint from each metric passed in, pick the minimum value and graph it.\n\nExample:\n\n.. code-block:: none\n\n  &target=minSeries(Server*.connections.total)\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``min``.",
+			Function:    "minSeries(*seriesLists)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions",
+			Name:        "minSeries",
+			Params: []types.FunctionParam{
+				{
+					Multiple: true,
+					Name:     "seriesLists",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+			},
+		},
+		"sum": {
+			Description: "Short form: sum()\n\nThis will add metrics together and return the sum at each datapoint. (See\nintegral for a sum over time)\n\nExample:\n\n.. code-block:: none\n\n  &target=sum(company.server.application*.requestsHandled)\n\nThis would show the sum of all requests handled per minute (provided\nrequestsHandled are collected once a minute).   If metrics with different\nretention rates are combined, the coarsest metric is graphed, and the sum\nof the other metrics is averaged for the metrics with finer retention rates.\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``sum``.",
+			Function:    "sum(*seriesLists)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions",
+			Name:        "sum",
+			Params: []types.FunctionParam{
+				{
+					Multiple: true,
+					Name:     "seriesLists",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+			},
+		},
+		"sumSeries": {
+			Description: "Short form: sum()\n\nThis will add metrics together and return the sum at each datapoint. (See\nintegral for a sum over time)\n\nExample:\n\n.. code-block:: none\n\n  &target=sum(company.server.application*.requestsHandled)\n\nThis would show the sum of all requests handled per minute (provided\nrequestsHandled are collected once a minute).   If metrics with different\nretention rates are combined, the coarsest metric is graphed, and the sum\nof the other metrics is averaged for the metrics with finer retention rates.\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``sum``.",
+			Function:    "sumSeries(*seriesLists)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions",
+			Name:        "sumSeries",
 			Params: []types.FunctionParam{
 				{
 					Multiple: true,
