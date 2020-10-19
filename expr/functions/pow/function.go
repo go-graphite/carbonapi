@@ -47,7 +47,11 @@ func (f *pow) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 		r.Values = make([]float64, len(a.Values))
 
 		for i, v := range a.Values {
-			r.Values[i] = math.Pow(v, factor)
+			if math.IsNaN(v) {
+				r.Values[i] = math.NaN()
+			} else {
+				r.Values[i] = math.Pow(v, factor)
+			}
 		}
 		results = append(results, &r)
 	}

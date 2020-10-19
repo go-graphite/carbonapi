@@ -3,6 +3,7 @@ package expr
 import (
 	"context"
 	"fmt"
+	"math"
 	"testing"
 	"time"
 	"unicode"
@@ -262,6 +263,17 @@ func TestEvalExpression(t *testing.T) {
 			[]*types.MetricData{
 				types.MakeMetricData("devops.service.server2.filter.received.reduce.asPercent.count", []float64{25, 100, 400}, 1, now32),
 			},
+		},
+		{
+			"sumSeries(pow(devops.service.*.filter.received.*.count, 0))",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"devops.service.*.filter.received.*.count", 0, 1}: {
+					types.MakeMetricData("devops.service.server1.filter.received.total.count", []float64{8, 2, 4}, 1, now32),
+					types.MakeMetricData("devops.service.server2.filter.received.valid.count", []float64{3, 9, 12}, 1, now32),
+					types.MakeMetricData("devops.service.server2.filter.received.total.count", []float64{math.NaN(), math.NaN(), math.NaN()}, 1, now32),
+				},
+			},
+			[]*types.MetricData{types.MakeMetricData("sumSeries(pow(devops.service.*.filter.received.*.count, 0))", []float64{2, 2, 2}, 1, now32)},
 		},
 	}
 
