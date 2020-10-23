@@ -45,7 +45,7 @@ func MarshalCSV(results []*MetricData) []byte {
 		step := r.StepTime
 		t := r.StartTime
 		for _, v := range r.Values {
-			b = append(b, "\""+r.Name+"\","+time.Unix(t, 0).Format("2006-01-02 15:04:05")+","...)
+			b = append(b, "\""+r.Name+"\","+time.Unix(t, 0).UTC().Format("2006-01-02 15:04:05")+","...)
 			if !math.IsNaN(v) {
 				b = strconv.AppendFloat(b, v, 'f', -1, 64)
 			}
