@@ -134,13 +134,22 @@ func (bg BroadcastGroup) MaxMetricsPerRequest() int {
 }
 
 func (bg *BroadcastGroup) doMultiFetch(ctx context.Context, logger *zap.Logger, backend types.BackendServer, reqs interface{}, resCh chan types.ServerFetcherResponse) {
-	requests, ok := reqs.([]*protov3.MultiFetchRequest)
+	request, ok := reqs.(*protov3.MultiFetchRequest)
 	if !ok {
 		logger.Fatal("unhandled error in doMultiFetch",
 			zap.Stack("stack"),
 			zap.String("got_type", fmt.Sprintf("%T", reqs)),
-			zap.String("expected_type", fmt.Sprintf("%T", requests)),
+			zap.String("expected_type", fmt.Sprintf("%T", request)),
 		)
+	}
+
+	requests, err := bg.splitRequest(ctx, request, backend)
+	if len(requests) == 0 || err != nil {
+		response := types.NewServerFetchResponse()
+		response.Server = backend.Name()
+		response.AddError(err)
+		resCh <- response
+		return
 	}
 
 	for _, req := range requests {
@@ -176,14 +185,25 @@ func (bg *BroadcastGroup) doMultiFetch(ctx context.Context, logger *zap.Logger, 
 }
 
 func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger, backend types.BackendServer, reqs interface{}, resCh chan types.ServerFetcherResponse) {
-	requests, ok := reqs.([]*protov3.MultiFetchRequest)
+	request, ok := reqs.(*protov3.MultiFetchRequest)
 	if !ok {
 		logger.Fatal("unhandled error in doSingleFetch",
 			zap.Stack("stack"),
 			zap.String("got_type", fmt.Sprintf("%T", reqs)),
-			zap.String("expected_type", fmt.Sprintf("%T", requests)),
+			zap.String("expected_type", fmt.Sprintf("%T", request)),
 		)
 	}
+
+	//TODO(Civil): migrate limiter to merry
+	requests, splitErr := bg.splitRequest(ctx, request, backend)
+	if len(requests) == 0 || splitErr != nil {
+		response := types.NewServerFetchResponse()
+		response.Server = backend.Name()
+		response.AddError(splitErr)
+		resCh <- response
+		return
+	}
+
 	logger = logger.With(zap.String("backend_name", backend.Name()))
 	logger.Debug("waiting for slot",
 		zap.Int("max_connections", bg.limiter.Capacity()),
@@ -215,8 +235,8 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 	resCh <- response
 }
 
-func (bg *BroadcastGroup) splitRequest(ctx context.Context, request *protov3.MultiFetchRequest) ([]*protov3.MultiFetchRequest, merry.Error) {
-	if bg.MaxMetricsPerRequest() == 0 {
+func (bg *BroadcastGroup) splitRequest(ctx context.Context, request *protov3.MultiFetchRequest, backend types.BackendServer) ([]*protov3.MultiFetchRequest, merry.Error) {
+	if backend.MaxMetricsPerRequest() == 0 {
 		return []*protov3.MultiFetchRequest{request}, nil
 	}
 
@@ -250,7 +270,7 @@ func (bg *BroadcastGroup) splitRequest(ctx context.Context, request *protov3.Mul
 			continue
 		}
 
-		f, _, e := bg.Find(ctx, &protov3.MultiGlobRequest{Metrics: []string{metric.Name}})
+		f, _, e := backend.Find(ctx, &protov3.MultiGlobRequest{Metrics: []string{metric.Name}})
 		if e != nil || f == nil || len(f.Metrics) == 0 {
 			if e == nil {
 				e = merry.Errorf("no result fetched")
@@ -298,7 +318,7 @@ func (bg *BroadcastGroup) splitRequest(ctx context.Context, request *protov3.Mul
 					FilterFunctions: metric.FilterFunctions,
 				})
 
-				if len(newRequest.Metrics) == bg.MaxMetricsPerRequest() {
+				if len(newRequest.Metrics) == backend.MaxMetricsPerRequest() {
 					requests = append(requests, newRequest)
 					newRequest = &protov3.MultiFetchRequest{}
 				}
@@ -322,20 +342,13 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	logger.Debug("will try to fetch data")
 
 	backends := bg.filterServersByTLD(requestNames, bg.Children())
-	requests, err := bg.splitRequest(ctx, request)
-	zipperRequests, totalMetricsCount := getFetchRequestMetricStats(requests, bg, backends)
 
 	result := types.NewServerFetchResponse()
-	result.Stats.ZipperRequests = int64(zipperRequests)
-	result.Stats.TotalMetricsCount = int64(totalMetricsCount)
-	if len(requests) == 0 || err != nil {
-		return result.Response, result.Stats, err
-	}
 
 	ctxNew, cancel := context.WithTimeout(ctx, bg.timeout.Render)
 	defer cancel()
 
-	resultNew, responseCount := types.DoRequest(ctxNew, logger, backends, result, requests, bg.fetcher)
+	resultNew, responseCount := types.DoRequest(ctxNew, logger, backends, result, request, bg.fetcher)
 
 	result, ok := resultNew.Self().(*types.ServerFetchResponse)
 	if !ok {
@@ -374,6 +387,7 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 		zap.Int("response_count", len(result.Response.Metrics)),
 	)
 
+	var err merry.Error
 	if result.Err != nil && len(result.Err) > 0 {
 		err = types.ErrNonFatalErrors
 		for _, e := range result.Err {

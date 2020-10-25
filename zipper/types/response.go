@@ -36,14 +36,14 @@ func NoAnswerBackends(backends []BackendServer, answered map[string]struct{}) []
 }
 
 // Helper function
-func DoRequest(ctx context.Context, logger *zap.Logger, clients []BackendServer, result ServerFetcherResponse, requests interface{}, fetcher Fetcher) (ServerFetcherResponse, int) {
+func DoRequest(ctx context.Context, logger *zap.Logger, clients []BackendServer, result ServerFetcherResponse, request interface{}, fetcher Fetcher) (ServerFetcherResponse, int) {
 	resCh := make(chan ServerFetcherResponse, len(clients))
 
 	for _, client := range clients {
 		logger.Debug("single fetch",
 			zap.Any("client", client),
 		)
-		go fetcher(ctx, logger, client, requests, resCh)
+		go fetcher(ctx, logger, client, request, resCh)
 	}
 
 	answeredServers := make(map[string]struct{})
