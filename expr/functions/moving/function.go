@@ -45,6 +45,8 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 
 	switch e.Args()[1].Type() {
 	case parser.EtConst:
+		// In this case, zipper does not request additional retrospective points,
+		// and leading `n` values, that used to calculate window, become NaN
 		n, err = e.GetIntArg(1)
 		argstr = strconv.Itoa(n)
 	case parser.EtString:
@@ -88,18 +90,17 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 	for _, a := range arg {
 		r := *a
 		r.Name = fmt.Sprintf("%s(%s,%s)", e.Target(), a.Name, argstr)
-		r.StartTime = from
+		r.Values = make([]float64, len(a.Values)-offset)
+		r.StartTime = (from + r.StepTime - 1) / r.StepTime * r.StepTime // align StartTime to closest >= StepTime
 		r.StopTime = r.StartTime + int64(len(r.Values))*r.StepTime
 
 		if windowSize == 0 {
 			// Fix error on long time ranges (greater than 30 days), sampling to 10 min
 			// https://github.com/go-graphite/carbonapi/issues/371
-			r.Values = make([]float64, len(a.Values))
 			for i := range a.Values {
 				r.Values[i] = math.NaN()
 			}
 		} else {
-			r.Values = make([]float64, len(a.Values)-offset)
 			w := &types.Windowed{Data: make([]float64, windowSize)}
 			for i, v := range a.Values {
 				if ridx := i - offset; ridx >= 0 {

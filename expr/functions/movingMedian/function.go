@@ -86,7 +86,7 @@ func (f *movingMedian) Do(ctx context.Context, e parser.Expr, from, until int64,
 		r := *a
 		r.Name = fmt.Sprintf("movingMedian(%s,%s)", a.Name, argstr)
 		r.Values = make([]float64, len(a.Values)-offset)
-		r.StartTime = from
+		r.StartTime = (from + r.StepTime - 1) / r.StepTime * r.StepTime // align StartTime to closest >= StepTime
 		r.StopTime = r.StartTime + int64(len(r.Values))*r.StepTime
 
 		data := movingmedian.NewMovingMedian(windowSize)
