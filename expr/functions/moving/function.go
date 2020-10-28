@@ -39,6 +39,10 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 
 	var argstr string
 
+	if len(e.Args()) < 2 {
+		return nil, parser.ErrMissingArgument
+	}
+
 	switch e.Args()[1].Type() {
 	case parser.EtConst:
 		n, err = e.GetIntArg(1)
