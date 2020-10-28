@@ -27,6 +27,13 @@ func TestMoving(t *testing.T) {
 
 	tests := []th.EvalTestItem{
 		{
+			"movingAverage(metric1,'3sec')",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", -3, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 1, 2, 3}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData(`movingAverage(metric1,"3sec")`, []float64{2, 2, 2}, 1, 0)}, // StartTime = from
+		},
+		{
 			"movingAverage(metric1,4)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8}, 1, now32)},
