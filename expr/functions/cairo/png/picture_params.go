@@ -3,6 +3,7 @@ package png
 import (
 	"math"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -215,8 +216,20 @@ func GetPictureParamsWithTemplate(r *http.Request, template string, metricData [
 	if !ok {
 		t = templates["default"]
 	}
+
+	pixelRatioParam := ""
+	if r.Header.Get("Referer") != "" {
+		u, err := url.Parse(r.Header.Get("Referer"))
+		if err == nil {
+			pixelRatioParam = u.Query().Get("pixelRatio")
+		}
+	}
+	if r.FormValue("pixelRatio") != "" {
+		pixelRatioParam = r.FormValue("pixelRatio")
+	}
+
 	return PictureParams{
-		PixelRatio: getFloat64(r.FormValue("pixelRatio"), 1.0),
+		PixelRatio: getFloat64(pixelRatioParam, 1.0),
 		Width:      getFloat64(r.FormValue("width"), t.Width),
 		Height:     getFloat64(r.FormValue("height"), t.Height),
 		Margin:     getInt(r.FormValue("margin"), t.Margin),
