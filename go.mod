@@ -37,6 +37,7 @@ require (
 	github.com/spf13/viper v1.6.3
 	github.com/stretchr/testify v1.5.1
 	github.com/tinylib/msgp v1.1.2
+	github.com/valyala/fastjson v1.6.1
 	github.com/wangjohn/quickselect v0.0.0-20161129230411-ed8402a42d5f
 	go.uber.org/zap v1.15.0
 	gonum.org/v1/gonum v0.7.0

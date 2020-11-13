@@ -19,6 +19,7 @@ CHANGELOG
 ---------
 **WIP**
  - [Fix] Warnings about duplicate functions when carbonapi starts.
+ - [Feature] Separate backend protocol for VictoriaMetrics. Based on prometheus protocol (and share some of it's code), but uses some of VM-specific features to improve performance for /metrics/find queries (Related to #521)
 
 **0.14.1**
  - [Feature] Implement `doMultipleRequestsIfSplit` config option which could be useful for go-carbon and huge requests (See #509)

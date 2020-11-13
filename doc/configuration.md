@@ -46,6 +46,7 @@ Table of Contents
   * [upstreams](#upstreams)
     * [Example](#example-19)
       * [For go\-carbon and prometheus](#for-go-carbon-and-prometheus)
+      * [For VictoriaMetrics](#for-victoriametrics)
       * [For graphite\-clickhouse](#for-graphite-clickhouse)
       * [For metrictank](#for-metrictank)
   * [expireDelaySec](#expiredelaysec)
@@ -475,7 +476,7 @@ Supported options:
   - `timeouts` - structure that allow to set timeout for `find`, `render` and `connect` phases
   - `backendOptions` - extra options to pass for the backend.
 
-    currently only prometheus backend supports options.
+    currently, only prometheus backend supports options.
 
     valid options:
       - `step` - define default step for the request
@@ -546,7 +547,8 @@ Supported options:
                * `carbonapi_v3_grpc` - new experimental protocol that instead of HTTP requests, uses gRPC. No known backend support that.
                * `carbonapi_v2_pb`, `protobuf`, `pb`, `pb3` - older protobuf-based protocol. Supported by [lomik/go-carbon](https://github.com/lomik/go-carbon) and [lomik/graphite-clickhouse](https://github.com/lomik/graphite-clickhouse)
                * `msgpack` - message pack encoding, supported by [graphite-project/graphite-web](https://github.com/graphite-project/graphite-web) and [grafana/metrictank](https://github.com/grafana/metrictank)
-               * `prometheus` - prometheus HTTP Request API. Can be used with [prometheus](https://prometheus.io) and [VictoriaMetrics](https://github.com/VictoriaMetrics/VictoriaMetrics). All current tests are done with VictoriaMetrics as backend.
+               * `prometheus` - prometheus HTTP Request API. Can be used with [prometheus](https://prometheus.io) and should be usable with other backends that supports PromQL (backend can do basic fetching at this moment and doesn't offload any functions to the backend).
+               * `victoriametrics`, `vm` - special version of prometheus backend, that take advantage of some APIs that's not supported by prometheus. Can be used with [VictoriaMetrics](https://github.com/VictoriaMetrics/VictoriaMetrics).
                * `auto` - attempts to detect if carbonapi can use `carbonapi_v3_pb` or `carbonapi_v2_pb`
            * `lbMethod` - load-balancing method.
            
@@ -667,6 +669,32 @@ upstreams:
             servers:
                 - "http://192.168.0.5:9090"
                 - "http://192.168.0.6:9090"
+```
+
+#### For VictoriaMetrics
+```yaml
+upstreams:
+    graphite09compat: false
+    buckets: 10
+    concurrencyLimitPerServer: 0
+    keepAliveInterval: "30s"
+    maxIdleConnsPerHost: 100
+    timeouts:
+        find: "2s"
+        render: "10s"
+        connect: "200ms"
+    backendsv2:
+        backends:
+          -
+            groupName: "prometheus"
+            protocol: "victoriametrics"
+            lbMethod: "broadcast"
+            maxBatchSize: 0
+            concurrencyLimit: 0
+            maxIdleConnsPerHost: 1000
+            servers:
+                - "http://192.168.0.5:8428"
+                - "http://192.168.0.6:8428"
 ```
 
 #### For graphite-clickhouse
