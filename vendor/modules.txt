@@ -146,6 +146,10 @@ github.com/subosito/gotenv
 # github.com/tinylib/msgp v1.1.2
 ## explicit
 github.com/tinylib/msgp/msgp
+# github.com/valyala/fastjson v1.6.1
+## explicit
+github.com/valyala/fastjson
+github.com/valyala/fastjson/fastfloat
 # github.com/wangjohn/quickselect v0.0.0-20161129230411-ed8402a42d5f
 ## explicit
 github.com/wangjohn/quickselect

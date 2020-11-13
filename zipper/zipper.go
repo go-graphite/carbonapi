@@ -7,18 +7,20 @@ import (
 	"time"
 
 	"github.com/ansel1/merry"
+	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
+	"go.uber.org/zap"
+
 	"github.com/go-graphite/carbonapi/zipper/broadcast"
 	"github.com/go-graphite/carbonapi/zipper/config"
 	"github.com/go-graphite/carbonapi/zipper/metadata"
 	"github.com/go-graphite/carbonapi/zipper/types"
-	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"go.uber.org/zap"
 
 	_ "github.com/go-graphite/carbonapi/zipper/protocols/auto"
 	_ "github.com/go-graphite/carbonapi/zipper/protocols/graphite"
 	_ "github.com/go-graphite/carbonapi/zipper/protocols/prometheus"
 	_ "github.com/go-graphite/carbonapi/zipper/protocols/v2"
 	_ "github.com/go-graphite/carbonapi/zipper/protocols/v3"
+	_ "github.com/go-graphite/carbonapi/zipper/protocols/victoriametrics"
 )
 
 // Zipper provides interface to Zipper-related functions
