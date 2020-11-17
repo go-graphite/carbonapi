@@ -33,7 +33,7 @@ func init() {
 	defer metadata.Metadata.Unlock()
 }
 
-type startDelay struct {
+type StartDelay struct {
 	IsSet      bool
 	IsDuration bool
 	D          time.Duration
@@ -41,7 +41,7 @@ type startDelay struct {
 	S          string
 }
 
-func (s *startDelay) String() string {
+func (s *StartDelay) String() string {
 	if s.IsDuration {
 		return strconv.FormatInt(time.Now().Add(s.D).Unix(), 10)
 	}
@@ -68,7 +68,7 @@ type PrometheusGroup struct {
 	step              int64
 	maxPointsPerQuery int64
 
-	startDelay startDelay
+	startDelay StartDelay
 
 	httpQuery *helper.HttpQuery
 }
@@ -129,14 +129,14 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		maxPointsPerQuery = int64(mppq)
 	}
 
-	startDelay := startDelay{
+	delay := StartDelay{
 		IsSet:      false,
 		IsDuration: false,
 		T:          -1,
 	}
 	startI, ok := config.BackendOptions["start"]
 	if ok {
-		startDelay.IsSet = true
+		delay.IsSet = true
 		startNew, ok := startI.(string)
 		if ok {
 			startNewInt, err := strconv.Atoi(startNew)
@@ -149,16 +149,21 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 						zap.Errors("errors", []error{err, err2}),
 					)
 				}
-				startDelay.IsDuration = true
-				startDelay.D = d
+				delay.IsDuration = true
+				delay.D = d
 			} else {
-				startDelay.T = int64(startNewInt)
+				delay.T = int64(startNewInt)
 			}
 		}
 	}
 
+
 	httpQuery := helper.NewHttpQuery(config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv2PB)
 
+	return NewWithEverythingInitialized(logger, config, tldCacheDisabled, limiter, step, maxPointsPerQuery, delay, httpQuery, httpClient)
+}
+
+func NewWithEverythingInitialized(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool, limiter limiter.ServerLimiter, step, maxPointsPerQuery int64, delay StartDelay, httpQuery *helper.HttpQuery, httpClient *http.Client) (types.BackendServer, merry.Error) {
 	c := &PrometheusGroup{
 		groupName:            config.GroupName,
 		servers:              config.Servers,
@@ -168,7 +173,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		maxMetricsPerRequest: *config.MaxBatchSize,
 		step:                 step,
 		maxPointsPerQuery:    maxPointsPerQuery,
-		startDelay:           startDelay,
+		startDelay:           delay,
 
 		client:  httpClient,
 		limiter: limiter,
