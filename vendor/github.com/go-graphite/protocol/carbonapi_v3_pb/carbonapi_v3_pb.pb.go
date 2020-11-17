@@ -122,7 +122,7 @@ type CapabilityResponse struct {
 	Name                      string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	HighPrecisionTimestamps   bool   `protobuf:"varint,3,opt,name=highPrecisionTimestamps,proto3" json:"highPrecisionTimestamps,omitempty"`
 	SupportFilteringFunctions bool   `protobuf:"varint,4,opt,name=supportFilteringFunctions,proto3" json:"supportFilteringFunctions,omitempty"`
-	// true if storage will behave normally if request is splitted by maxGlobs
+	// true if storage will behave normally if request is splitted by maxBatchSize
 	LikeSplittedRequests bool `protobuf:"varint,5,opt,name=likeSplittedRequests,proto3" json:"likeSplittedRequests,omitempty"`
 	SupportStreaming     bool `protobuf:"varint,6,opt,name=supportStreaming,proto3" json:"supportStreaming,omitempty"`
 }

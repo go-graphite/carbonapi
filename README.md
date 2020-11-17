@@ -124,7 +124,7 @@ CarbonAPI uses protobuf-based protocol to talk with underlying storages. For cur
 Some remarks on different backends
 ----------------------------------
 
-For backends that uses proper database (e.x. `graphite-clickhouse`) you should set `maxGlobs: 0` in your config file for this backend group.
+For backends that uses proper database (e.x. `graphite-clickhouse`) you should set `maxBatchSize: 0` in your config file for this backend group.
 
 For other backends (e.x. go-carbon) you should set it to some reasonable value. It increases response speed, but the cost is increased memory consumption.
 

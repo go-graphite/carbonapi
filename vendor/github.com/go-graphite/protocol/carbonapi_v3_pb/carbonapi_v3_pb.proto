@@ -21,7 +21,7 @@ message CapabilityResponse {
     string name = 2;
     bool highPrecisionTimestamps = 3;
     bool supportFilteringFunctions = 4;
-    // true if storage will behave normally if request is splitted by maxGlobs
+    // true if storage will behave normally if request is splitted by maxBatchSize
     bool likeSplittedRequests = 5;
     bool supportStreaming = 6;
 }
