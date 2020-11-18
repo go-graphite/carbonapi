@@ -22,7 +22,7 @@ for t in ${TESTS}; do
 		travis_fold end "test_${t}"
 	fi
 
-
+	sleep 10
 	if [[ ${status} -ne 0 ]]; then
 		FAILED_TESTS="${FAILED_TESTS} ${t}"
 		echo "test_${t}: FAIL"
