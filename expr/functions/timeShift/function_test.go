@@ -21,8 +21,8 @@ func init() {
 	}
 }
 
-func TestAbsolute(t *testing.T) {
-	now32 := int64(time.Now().Unix())
+func TestTimeShift(t *testing.T) {
+	now32 := time.Now().Unix()
 
 	tests := []th.EvalTestItem{
 		{
@@ -30,24 +30,39 @@ func TestAbsolute(t *testing.T) {
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{0, 1, 2, 3, 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{types.MakeMetricData("timeShift(metric1,'0')",
+			[]*types.MetricData{types.MakeMetricData("timeShift(metric1,'0',true)",
 				[]float64{0, 1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
-			`timeShift(metric1, "1s")`,
+			`timeShift(metric1, "1s", false)`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", -1, 0}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, now32-1)},
 			},
-			[]*types.MetricData{types.MakeMetricData("timeShift(metric1,'-1')",
+			[]*types.MetricData{types.MakeMetricData("timeShift(metric1,'-1',false)",
 				[]float64{-1, 0, 1, 2, 3, 4}, 1, now32)},
 		},
 		{
-			`timeShift(metric1, "1h")`,
+			`timeShift(metric1, "1s", true)`,
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", -1, 0}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, now32-1)},
+			},
+			[]*types.MetricData{types.MakeMetricData("timeShift(metric1,'-1',true)",
+				[]float64{-1, 0, 1, 2, 3}, 1, now32)},
+		},
+		{
+			`timeShift(metric1, "1h", false)`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", -60 * 60, -60*60 + 1}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, now32-60*60)},
 			},
-			[]*types.MetricData{types.MakeMetricData("timeShift(metric1,'-3600')",
+			[]*types.MetricData{types.MakeMetricData("timeShift(metric1,'-3600',false)",
 				[]float64{-1, 0, 1, 2, 3, 4}, 1, now32)},
+		},
+		{
+			`timeShift(metric1, "1h", true)`,
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", -60 * 60, -60*60 + 1}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, now32-60*60)},
+			},
+			[]*types.MetricData{},
 		},
 	}
 
