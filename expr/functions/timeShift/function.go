@@ -4,6 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/lomik/zapwriter"
+	"github.com/spf13/viper"
+	"go.uber.org/zap"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -12,19 +16,58 @@ import (
 
 type timeShift struct {
 	interfaces.FunctionBase
+
+	config timeShiftConfig
 }
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
 }
 
+type timeShiftConfig struct {
+	ResetEndDefaultValue *bool
+}
+
 func New(configFile string) []interfaces.FunctionMetadata {
+	logger := zapwriter.Logger("functionInit").With(zap.String("function", "timeShift"))
 	res := make([]interfaces.FunctionMetadata, 0)
 	f := &timeShift{}
 	functions := []string{"timeShift"}
 	for _, n := range functions {
 		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
 	}
+
+	cfg := timeShiftConfig{}
+	v := viper.New()
+	v.SetConfigFile(configFile)
+	err := v.ReadInConfig()
+	if err != nil {
+		logger.Info("failed to read config file, using default",
+			zap.Error(err),
+		)
+	} else {
+		err = v.Unmarshal(&cfg)
+		if err != nil {
+			logger.Fatal("failed to parse config",
+				zap.Error(err),
+			)
+			return nil
+		}
+
+		f.config = cfg
+	}
+
+	if cfg.ResetEndDefaultValue == nil {
+		// TODO(civil): Change default value in 0.15
+		v := false
+		f.config.ResetEndDefaultValue = &v
+		logger.Warn("timeShift function in graphite-web have a default value for resetEnd set to true." +
+			"carbonapi currently forces this to be false. This behavior will change in next major release (0.15)" +
+			"to be compatible with graphite-web. Please change your dashboards to explicitly pass resetEnd parameter" +
+			"or create a config file for this function that sets it to false." +
+			"Please see https://github.com/go-graphite/carbonapi/blob/main/doc/configuration.md#example-for-timeshift")
+	}
+
 	return res
 }
 
@@ -36,7 +79,7 @@ func (f *timeShift) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		return nil, err
 	}
 
-	resetEnd, err := e.GetBoolArgDefault(2, true)
+	resetEnd, err := e.GetBoolArgDefault(2, *f.config.ResetEndDefaultValue)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +140,7 @@ func (f *timeShift) Description() map[string]types.FunctionDescription {
 					Type: types.Interval,
 				},
 				{
-					Default: types.NewSuggestion(true),
+					Default: types.NewSuggestion(*f.config.ResetEndDefaultValue),
 					Name:    "resetEnd",
 					Type:    types.Boolean,
 				},

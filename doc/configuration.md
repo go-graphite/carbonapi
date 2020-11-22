@@ -25,6 +25,7 @@ Table of Contents
     * [Example](#example-9)
   * [functionsConfig](#functionsconfig)
     * [Example](#example-10)
+    * [Example for timeShift](#example-for-timeshift)
   * [graphite](#graphite)
     * [Example](#example-11)
   * [pidFile](#pidfile)
@@ -290,6 +291,17 @@ Currently only `grpahiteWeb` and `aliasByPostgres` supports it's own config
 ```yaml
 functionsConfig:
     graphiteWeb: ./graphiteWeb.example.yaml
+```
+
+### Example for timeShift
+```yaml
+functionsConfig:
+    timeShift: ./timeShift.example.yaml
+```
+
+`timeShift.example.yaml`:
+```yaml
+resetEndDefaultValue: false
 ```
 
 ***

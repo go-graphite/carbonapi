@@ -65,6 +65,7 @@ tz: ""
 
 functionsConfig:
     graphiteWeb: ./graphiteWeb.example.yaml
+    timeShift: ./timeShift.example.yaml
 maxBatchSize: 100
 graphite:
     # Host:port where to send internal metrics
