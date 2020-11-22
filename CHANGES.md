@@ -17,9 +17,17 @@ Changes
 
 CHANGELOG
 ---------
-**WIP**
- - [Fix] Warnings about duplicate functions when carbonapi starts.
+**0.14.2**
  - [Feature] Separate backend protocol for VictoriaMetrics. Based on prometheus protocol (and share some of it's code), but uses some of VM-specific features to improve performance for /metrics/find queries (Related to #521)
+ - [Feature] timeShift function supports `resetEnd` parameter (thx to @faceair). Current default is set to `false` to match carbonapi behavior, however in 0.15.0 it will be changed to `true`.
+ - [Feature] Resepct pixelRatio parameter from referer if not specified in request. (thx to @lomik)
+ - [Fix] Handling of maxBatchSize (maxGlobs) in config file. Respect overrides on backend level.
+ - [Fix] Warnings about duplicate functions when carbonapi starts.
+ - [Fix] Resulting tags in groupByTags are now correct (thx to @Felixoid)
+ - [Fix] Fix handling of requests that fetches data with different start/end times (thx to @Felixoid). Related to #526
+ - [Fix] Fix the way how `pow` function works with NaN in values (thx to @zhelyabuzhsky)
+ - [Fix] CSV format now produce dates in UTC (like in graphite-web) (thx to @jonasbleyl)
+ - [Fix] Fix from/util timestamp aligning in all moving* functions (thx to @Felixoid)
 
 **0.14.1**
  - [Feature] Implement `doMultipleRequestsIfSplit` config option which could be useful for go-carbon and huge requests (See #509)
