@@ -25,8 +25,9 @@ func TestTimeShift(t *testing.T) {
 	now32 := time.Now().Unix()
 
 	tests := []th.EvalTestItem{
+		// TODO(civil): Do not pass `true` resetEnd parameter in 0.15
 		{
-			`timeShift(metric1, "0s")`,
+			`timeShift(metric1, "0s", true)`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{0, 1, 2, 3, 4, 5}, 1, now32)},
 			},
