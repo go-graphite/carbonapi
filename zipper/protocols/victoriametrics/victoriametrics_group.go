@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/ansel1/merry"
@@ -55,10 +56,13 @@ type VictoriaMetricsGroup struct {
 	step              int64
 	maxPointsPerQuery int64
 
-	startDelay prometheus.StartDelay
+	startDelay           prometheus.StartDelay
+	probeVersionInterval time.Duration
 
 	httpQuery  *helper.HttpQuery
 	parserPool fastjson.ParserPool
+
+	featureSet atomic.Value // *vmSupportedFeatures
 }
 
 func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool, limiter limiter.ServerLimiter) (types.BackendServer, merry.Error) {
@@ -140,6 +144,33 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		}
 	}
 
+	periodicProbe := false
+	probeVersionInterval, _ := time.ParseDuration("600s")
+	probeVersionIntervalParam, ok := config.BackendOptions["probe_version_interval"]
+	if ok {
+		probeVersionIntervalStr, ok := probeVersionIntervalParam.(string)
+		if ok && probeVersionIntervalStr != "never" {
+			interval, err := time.ParseDuration(probeVersionIntervalStr)
+			if err != nil {
+				logger.Fatal("failed to parse option",
+					zap.String("option_name", "start"),
+					zap.String("option_value", probeVersionIntervalStr),
+					zap.Errors("errors", []error{err}),
+				)
+			}
+			probeVersionInterval = interval
+			periodicProbe = true
+		} else {
+			logger.Fatal("failed to parse option",
+				zap.String("option_name", "start"),
+				zap.Any("option_value", probeVersionIntervalParam),
+				zap.Errors("errors", []error{fmt.Errorf("not a string")}),
+			)
+		}
+	} else {
+		periodicProbe = true
+	}
+
 	httpQuery := helper.NewHttpQuery(config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv2PB)
 
 	c := &VictoriaMetricsGroup{
@@ -152,6 +183,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		step:                 step,
 		maxPointsPerQuery:    maxPointsPerQuery,
 		startDelay:           delay,
+		probeVersionInterval: probeVersionInterval,
 
 		client:  httpClient,
 		limiter: limiter,
@@ -162,6 +194,17 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 
 	promLogger := logger.With(zap.String("subclass", "prometheus"))
 	c.BackendServer, _ = prometheus.NewWithEverythingInitialized(promLogger, config, tldCacheDisabled, limiter, step, maxPointsPerQuery, delay, httpQuery, httpClient)
+
+	c.updateFeatureSet(context.Background())
+
+	logger.Info("periodic probe for version change",
+		zap.Bool("enabled", periodicProbe),
+		zap.Duration("interval", c.probeVersionInterval),
+	)
+	if periodicProbe {
+		go c.probeVMVersion(context.Background())
+	}
+
 	return c, nil
 }
 
@@ -178,10 +221,19 @@ func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool) (typ
 }
 
 func (c *VictoriaMetricsGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
+	supportedFeatures, _ := c.featureSet.Load().(*vmSupportedFeatures)
+	if !supportedFeatures.SupportGraphiteFindAPI {
+		// VictoriaMetrics doesn't support graphite find api, reverting back to prometheus code-path
+		return c.BackendServer.Find(ctx, request)
+	}
 	var r protov3.MultiGlobResponse
 	var e merry.Error
 
-	logger := c.logger.With(zap.String("type", "find"), zap.Strings("request", request.Metrics))
+	logger := c.logger.With(
+		zap.String("type", "find"),
+		zap.Strings("request", request.Metrics),
+		zap.Any("supported_features", supportedFeatures),
+	)
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/metrics/expand/")
 

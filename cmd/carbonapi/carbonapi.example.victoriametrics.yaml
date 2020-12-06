@@ -49,6 +49,7 @@ upstreams:
                 step: "60"
                 start: "-5m"
                 max_points_per_query: 5000
+                probeVersionInterval: "600s"
             timeouts:
                 find: "2s"
                 render: "50s"
