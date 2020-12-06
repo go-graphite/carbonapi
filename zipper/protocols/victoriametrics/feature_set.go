@@ -13,10 +13,11 @@ import (
 )
 
 type vmSupportedFeatures struct {
-	vmVersion              string
-	versionParsed          [3]int64
-	SupportGraphiteFindAPI bool
-	SupportGraphiteTagsAPI bool
+	vmVersion                     string
+	versionParsed                 [3]int64
+	SupportGraphiteFindAPI        bool
+	SupportGraphiteTagsAPI        bool
+	GraphiteTagsAPIRequiresDedupe bool
 }
 
 // Example: v1.46.0
@@ -55,6 +56,7 @@ func versionToFeatureSet(logger *zap.Logger, version string) *vmSupportedFeature
 
 	if v2 >= 47 {
 		res.SupportGraphiteTagsAPI = true
+		res.GraphiteTagsAPIRequiresDedupe = true
 	}
 
 	return res
