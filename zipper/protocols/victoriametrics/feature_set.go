@@ -130,7 +130,7 @@ func (c *VictoriaMetricsGroup) updateFeatureSet(ctx context.Context) {
 			zap.Error(queryErr),
 		)
 	}
-	if res == nil || len(res) == 0 {
+	if len(res) == 0 {
 		return
 	}
 
