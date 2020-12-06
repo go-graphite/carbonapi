@@ -55,6 +55,7 @@ type VictoriaMetricsGroup struct {
 
 	startDelay           prometheus.StartDelay
 	probeVersionInterval time.Duration
+	fallbackVersion      string
 
 	httpQuery  *helper.HttpQuery
 	parserPool fastjson.ParserPool
@@ -168,6 +169,19 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		periodicProbe = true
 	}
 
+	fallbackVersion := "v0.0.0"
+	fallbackVersionParam, ok := config.BackendOptions["fallback_version"]
+	if ok {
+		fallbackVersion, ok = fallbackVersionParam.(string)
+		if !ok {
+			logger.Fatal("failed to parse option",
+				zap.String("option_name", "start"),
+				zap.Any("option_value", probeVersionIntervalParam),
+				zap.Errors("errors", []error{fmt.Errorf("not a string")}),
+			)
+		}
+	}
+
 	httpQuery := helper.NewHttpQuery(config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv2PB)
 
 	c := &VictoriaMetricsGroup{
@@ -181,6 +195,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		maxPointsPerQuery:    maxPointsPerQuery,
 		startDelay:           delay,
 		probeVersionInterval: probeVersionInterval,
+		fallbackVersion:      fallbackVersion,
 
 		client:  httpClient,
 		limiter: limiter,

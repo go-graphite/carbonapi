@@ -499,6 +499,7 @@ Supported options:
         For example `-5m` will mean "5 minutes ago", time will be resolved every time you do find query.
       - `max_points_per_query` - (`prometheus` or `victoriametrics` only) define maximum datapoints per query. It will be used to adjust step for queries over big range. Default limit for Prometheus is 11000.
       - `probe_version_interval` - (`victoriametrics` only) define how often VictoriaMetrics version will be checked (as VM supports certain API endpoints starting from a specific version). Special value to disable: `never`. Default: `600s`.
+      - `fallback_version` - (`victoriametrics` only) define version string that will be used as a fallback if version_short will be empty (useful when you run master builds, as they will have it empty). Format: "vX.Y.Z", Default: `v0.0.0` (all special VM optimizations will be disabled)
   - `concurrencyLimitPerServer` - limit of max connections per server. Likely should be >= maxIdleConnsPerHost. Default: 0 - unlimited
   - `maxIdleConnsPerHost` - as we use KeepAlive to keep connections opened, this limits amount of connections that will be left opened. Tune with care as some backends might have issues handling larger number of connections.
   - `keepAliveInterval` - KeepAlive interval

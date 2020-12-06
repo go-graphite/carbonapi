@@ -59,10 +59,14 @@ func versionToFeatureSet(logger *zap.Logger, version string) *vmSupportedFeature
 		res.GraphiteTagsAPIRequiresDedupe = true
 	}
 
+	if v2 >= 50 {
+		res.GraphiteTagsAPIRequiresDedupe = false
+	}
+
 	return res
 }
 
-func parseVMVersion(in []byte) string {
+func parseVMVersion(in []byte, fallbackVersion string) string {
 	/*
 		Logic:
 		Step1:
@@ -112,11 +116,16 @@ func parseVMVersion(in []byte) string {
 		in = in[idx+l:]
 		idx = bytes.Index(in, tokens[i])
 		if idx == -1 {
-			return "v0.0.0"
+			return fallbackVersion
 		}
 	}
 
-	return string(in[:idx])
+	in = in[:idx]
+	if len(in) == 0 {
+		return fallbackVersion
+	}
+
+	return string(in)
 }
 
 func (c *VictoriaMetricsGroup) updateFeatureSet(ctx context.Context) {
@@ -138,7 +147,7 @@ func (c *VictoriaMetricsGroup) updateFeatureSet(ctx context.Context) {
 		if res[i] == nil || res[i].Response == nil {
 			continue
 		}
-		version := parseVMVersion(res[i].Response)
+		version := parseVMVersion(res[i].Response, c.fallbackVersion)
 		featureSet := versionToFeatureSet(logger, version)
 		if minFeatureSet == nil {
 			minFeatureSet = featureSet
@@ -157,7 +166,7 @@ func (c *VictoriaMetricsGroup) updateFeatureSet(ctx context.Context) {
 	)
 
 	if minFeatureSet == nil {
-		minFeatureSet = versionToFeatureSet(logger, "v0.0.0")
+		minFeatureSet = versionToFeatureSet(logger, "c.fallbackVersion")
 	}
 
 	c.featureSet.Store(minFeatureSet)
