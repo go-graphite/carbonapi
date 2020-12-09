@@ -61,11 +61,10 @@ func (c *HttpQuery) pickServer(logger *zap.Logger) string {
 	return srv
 }
 
-func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, uri string, r types.Request) (*ServerResponse, merry.Error) {
+func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, server, uri string, r types.Request) (*ServerResponse, merry.Error) {
 	logger = logger.With(
 		zap.String("function", "HttpQuery.doRequest"),
 	)
-	server := c.pickServer(logger)
 
 	u, err := url.Parse(server + uri)
 	if err != nil {
@@ -153,7 +152,8 @@ func (c *HttpQuery) DoQuery(ctx context.Context, logger *zap.Logger, uri string,
 
 	e := types.ErrFailedToFetch.WithValue("uri", uri)
 	for try := 0; try < maxTries; try++ {
-		res, err := c.doRequest(ctx, logger, uri, r)
+		server := c.pickServer(logger)
+		res, err := c.doRequest(ctx, logger, server, uri, r)
 		if err != nil {
 			logger.Debug("have errors",
 				zap.Error(err),
@@ -167,4 +167,38 @@ func (c *HttpQuery) DoQuery(ctx context.Context, logger *zap.Logger, uri string,
 	}
 
 	return nil, types.ErrMaxTriesExceeded.WithCause(e)
+}
+
+func (c *HttpQuery) DoQueryToAll(ctx context.Context, logger *zap.Logger, uri string, r types.Request) ([]*ServerResponse, merry.Error) {
+	maxTries := c.maxTries
+	if len(c.servers) > maxTries {
+		maxTries = len(c.servers)
+	}
+
+	res := make([]*ServerResponse, len(c.servers))
+	e := types.ErrFailedToFetch.WithValue("uri", uri)
+	responseCount := 0
+	for i := range c.servers {
+		for try := 0; try < maxTries; try++ {
+			response, err := c.doRequest(ctx, logger, c.servers[i], uri, r)
+			if err != nil {
+				logger.Debug("have errors",
+					zap.Error(err),
+				)
+
+				e = e.WithCause(err)
+				continue
+			}
+
+			res[i] = response
+			responseCount++
+			break
+		}
+	}
+
+	if responseCount == len(c.servers) {
+		return res, nil
+	}
+
+	return res, types.ErrMaxTriesExceeded.WithCause(e)
 }

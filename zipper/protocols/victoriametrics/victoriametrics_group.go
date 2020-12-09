@@ -1,17 +1,15 @@
 package victoriametrics
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"net"
 	"net/http"
-	"net/url"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/ansel1/merry"
-	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/valyala/fastjson"
 
 	"github.com/go-graphite/carbonapi/limiter"
@@ -55,10 +53,14 @@ type VictoriaMetricsGroup struct {
 	step              int64
 	maxPointsPerQuery int64
 
-	startDelay prometheus.StartDelay
+	startDelay           prometheus.StartDelay
+	probeVersionInterval time.Duration
+	fallbackVersion      string
 
 	httpQuery  *helper.HttpQuery
 	parserPool fastjson.ParserPool
+
+	featureSet atomic.Value // *vmSupportedFeatures
 }
 
 func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool, limiter limiter.ServerLimiter) (types.BackendServer, merry.Error) {
@@ -140,6 +142,46 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		}
 	}
 
+	periodicProbe := false
+	probeVersionInterval, _ := time.ParseDuration("600s")
+	probeVersionIntervalParam, ok := config.BackendOptions["probe_version_interval"]
+	if ok {
+		probeVersionIntervalStr, ok := probeVersionIntervalParam.(string)
+		if ok && probeVersionIntervalStr != "never" {
+			interval, err := time.ParseDuration(probeVersionIntervalStr)
+			if err != nil {
+				logger.Fatal("failed to parse option",
+					zap.String("option_name", "start"),
+					zap.String("option_value", probeVersionIntervalStr),
+					zap.Errors("errors", []error{err}),
+				)
+			}
+			probeVersionInterval = interval
+			periodicProbe = true
+		} else {
+			logger.Fatal("failed to parse option",
+				zap.String("option_name", "start"),
+				zap.Any("option_value", probeVersionIntervalParam),
+				zap.Errors("errors", []error{fmt.Errorf("not a string")}),
+			)
+		}
+	} else {
+		periodicProbe = true
+	}
+
+	fallbackVersion := "v0.0.0"
+	fallbackVersionParam, ok := config.BackendOptions["fallback_version"]
+	if ok {
+		fallbackVersion, ok = fallbackVersionParam.(string)
+		if !ok {
+			logger.Fatal("failed to parse option",
+				zap.String("option_name", "start"),
+				zap.Any("option_value", probeVersionIntervalParam),
+				zap.Errors("errors", []error{fmt.Errorf("not a string")}),
+			)
+		}
+	}
+
 	httpQuery := helper.NewHttpQuery(config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv2PB)
 
 	c := &VictoriaMetricsGroup{
@@ -152,6 +194,8 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		step:                 step,
 		maxPointsPerQuery:    maxPointsPerQuery,
 		startDelay:           delay,
+		probeVersionInterval: probeVersionInterval,
+		fallbackVersion:      fallbackVersion,
 
 		client:  httpClient,
 		limiter: limiter,
@@ -162,6 +206,17 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 
 	promLogger := logger.With(zap.String("subclass", "prometheus"))
 	c.BackendServer, _ = prometheus.NewWithEverythingInitialized(promLogger, config, tldCacheDisabled, limiter, step, maxPointsPerQuery, delay, httpQuery, httpClient)
+
+	c.updateFeatureSet(context.Background())
+
+	logger.Info("periodic probe for version change",
+		zap.Bool("enabled", periodicProbe),
+		zap.Duration("interval", c.probeVersionInterval),
+	)
+	if periodicProbe {
+		go c.probeVMVersion(context.Background())
+	}
+
 	return c, nil
 }
 
@@ -175,120 +230,4 @@ func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool) (typ
 	l := limiter.NewServerLimiter([]string{config.GroupName}, *config.ConcurrencyLimit)
 
 	return NewWithLimiter(logger, config, tldCacheDisabled, l)
-}
-
-func (c *VictoriaMetricsGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
-	var r protov3.MultiGlobResponse
-	var e merry.Error
-
-	logger := c.logger.With(zap.String("type", "find"), zap.Strings("request", request.Metrics))
-	stats := &types.Stats{}
-	rewrite, _ := url.Parse("http://127.0.0.1/metrics/expand/")
-
-	r.Metrics = make([]protov3.GlobResponse, 0)
-	parser := c.parserPool.Get()
-	defer c.parserPool.Put(parser)
-
-	for _, query := range request.Metrics {
-		v := url.Values{
-			"query":  []string{query},
-			"format": []string{"json"},
-		}
-
-		rewrite.RawQuery = v.Encode()
-		stats.FindRequests += 1
-		res, queryErr := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
-		if queryErr != nil {
-			stats.FindErrors += 1
-			if merry.Is(queryErr, types.ErrTimeoutExceeded) {
-				stats.Timeouts += 1
-				stats.FindTimeouts += 1
-			}
-			if e == nil {
-				e = merry.Wrap(queryErr).WithValue("query", query)
-			} else {
-				e = e.WithCause(queryErr)
-			}
-			continue
-		}
-
-		parsedJson, err := parser.ParseBytes(res.Response)
-		if err != nil {
-			if e == nil {
-				e = merry.Wrap(err).WithValue("query", query)
-			} else {
-				e = e.WithCause(err)
-			}
-			continue
-		}
-
-		globs, err := parsedJson.Array()
-		if err != nil {
-			if e == nil {
-				e = merry.Wrap(err).WithValue("query", query)
-			} else {
-				e = e.WithCause(err)
-			}
-			continue
-		}
-
-		stats.Servers = append(stats.Servers, res.Server)
-		matches := make([]protov3.GlobMatch, 0, len(globs))
-		var path string
-		for _, m := range globs {
-			b, _ := m.StringBytes()
-			isLeaf := true
-			if bytes.HasSuffix(b, []byte{'.'}) {
-				isLeaf = false
-				path = string(b[:len(b)-1])
-			} else {
-				path = string(b)
-			}
-			matches = append(matches, protov3.GlobMatch{
-				Path:   path,
-				IsLeaf: isLeaf,
-			})
-		}
-		r.Metrics = append(r.Metrics, protov3.GlobResponse{
-			Name:    query,
-			Matches: matches,
-		})
-	}
-
-	if e != nil {
-		logger.Error("errors occurred while getting results",
-			zap.Any("errors", e),
-		)
-		return &r, stats, e
-	}
-	return &r, stats, nil
-}
-
-func (c *VictoriaMetricsGroup) ProbeTLDs(ctx context.Context) ([]string, merry.Error) {
-	logger := c.logger.With(zap.String("function", "prober"))
-	req := &protov3.MultiGlobRequest{
-		Metrics: []string{"*"},
-	}
-
-	logger.Debug("doing request",
-		zap.Strings("request", req.Metrics),
-	)
-
-	res, _, err := c.Find(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	var tlds []string
-	for _, m := range res.Metrics {
-		for _, v := range m.Matches {
-			tlds = append(tlds, v.Path)
-		}
-	}
-
-	logger.Debug("will return data",
-		zap.Strings("tlds", tlds),
-	)
-
-	return tlds, nil
 }
