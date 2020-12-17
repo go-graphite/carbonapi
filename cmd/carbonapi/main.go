@@ -46,7 +46,7 @@ func main() {
 
 	wg := sync.WaitGroup{}
 	if config.Config.Expvar.Enabled {
-		if config.Config.Expvar.Listen != "" || config.Config.Expvar.Listen != config.Config.Listen {
+		if config.Config.Expvar.Listen != "" || config.Config.Expvar.Listen != config.Config.Listeners[0].Address {
 			r := http.NewServeMux()
 			r.HandleFunc(config.Config.Prefix+"/debug/vars", expvar.Handler().ServeHTTP)
 			if config.Config.Expvar.PProfEnabled {
@@ -66,21 +66,23 @@ func main() {
 				zap.Bool("pprof_enabled", config.Config.Expvar.PProfEnabled),
 			)
 
-			wg.Add(1)
-			go func() {
-				err = gracehttp.Serve(&http.Server{
-					Addr:    config.Config.Expvar.Listen,
-					Handler: handler,
-				})
+			for _, listener := range config.Config.Listeners {
+				wg.Add(1)
+				go func(listen config.Listener) {
+					err = gracehttp.Serve(&http.Server{
+						Addr:    listen.Address,
+						Handler: handler,
+					})
 
-				if err != nil {
-					logger.Fatal("failed to start http server",
-						zap.Error(err),
-					)
-				}
+					if err != nil {
+						logger.Fatal("failed to start http server",
+							zap.Error(err),
+						)
+					}
 
-				wg.Done()
-			}()
+					wg.Done()
+				}(listener)
+			}
 		}
 	}
 

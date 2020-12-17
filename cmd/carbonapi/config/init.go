@@ -234,6 +234,12 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 		)
 	}
 
+	if Config.Listen != "" {
+		Config.Listeners = append(Config.Listeners, Listener{
+			Address: Config.Listen,
+		})
+	}
+
 	for _, define := range Config.Define {
 		if define.Name == "" {
 			logger.Fatal("empty define name")
@@ -309,7 +315,9 @@ func SetUpViper(logger *zap.Logger, configPath *string, viperPrefix string) {
 	}
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.BindEnv("tz", "carbonapi_tz")
-	viper.SetDefault("listen", "localhost:8081")
+	viper.SetDefault("listeners", []Listener{{
+		Address: "localhost:8081",
+	}})
 	viper.SetDefault("concurency", 20)
 	viper.SetDefault("cache.type", "mem")
 	viper.SetDefault("cache.size_mb", 0)

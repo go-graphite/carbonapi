@@ -47,10 +47,16 @@ type ExpvarConfig struct {
 	PProfEnabled bool   `mapstructure:"pprofEnabled"`
 }
 
+type Listener struct {
+	Address string `mapstructure:"address"`
+	// TODO(civil): implement TLS and mTLS
+}
+
 type ConfigType struct {
 	ExtrapolateExperiment      bool               `mapstructure:"extrapolateExperiment"`
 	Logger                     []zapwriter.Config `mapstructure:"logger"`
 	Listen                     string             `mapstructure:"listen"`
+	Listeners                  []Listener         `mapstructure:"listeners"`
 	Buckets                    int                `mapstructure:"buckets"`
 	Concurency                 int                `mapstructure:"concurency"`
 	ResponseCacheConfig        CacheConfig        `mapstructure:"cache"`
@@ -104,7 +110,6 @@ func (c ConfigType) String() string {
 
 var Config = ConfigType{
 	ExtrapolateExperiment: false,
-	Listen:                "[::]:8081",
 	Buckets:               10,
 	Concurency:            1000,
 	MaxBatchSize:          100,
