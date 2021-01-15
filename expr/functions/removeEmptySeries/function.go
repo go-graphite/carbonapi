@@ -35,18 +35,29 @@ func (f *removeEmptySeries) Do(ctx context.Context, e parser.Expr, from, until i
 		return nil, err
 	}
 
-	// TODO: implement xFilesFactor
+	factor, err := e.GetFloatArgDefault(1, 0)
+	if err != nil {
+		return nil, err
+	}
 
 	var results []*types.MetricData
 
-	for _, a := range args {
-		for _, v := range a.Values {
+	for _, arg := range args {
+		nonNull := 0.0
+		for _, v := range arg.Values {
 			if !math.IsNaN(v) {
-				if e.Target() == "removeEmptySeries" || (v != 0) {
-					results = append(results, a)
-					break
+				switch e.Target() {
+				case "removeEmptySeries":
+					nonNull++
+				case "removeZeroSeries":
+					if v != 0 {
+						nonNull++
+					}
 				}
 			}
+		}
+		if nonNull/float64(len(arg.Values)) >= factor {
+			results = append(results, arg)
 		}
 	}
 	return results, nil
