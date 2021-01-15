@@ -37,11 +37,12 @@ func TestFunction(t *testing.T) {
 			},
 			[]*types.MetricData{
 				types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32),
+				types.MakeMetricData("metric2", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
 				types.MakeMetricData("metric3", []float64{0, 0, 0, 0, 0, 0, 0, 0}, 1, now32),
 			},
 		},
 		{
-			"removeZeroSeries(metric*)",
+			"removeEmptySeries(metric*,0.00001)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32),
@@ -51,6 +52,49 @@ func TestFunction(t *testing.T) {
 			},
 			[]*types.MetricData{
 				types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32),
+				types.MakeMetricData("metric3", []float64{0, 0, 0, 0, 0, 0, 0, 0}, 1, now32),
+			},
+		},
+		{
+			"removeZeroSeries(metric*,0.000001)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric*", 0, 1}: {
+					types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32),
+					types.MakeMetricData("metric2", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
+					types.MakeMetricData("metric3", []float64{0, 0, 0, 0, 0, 0, 0, 0}, 1, now32),
+				},
+			},
+			[]*types.MetricData{
+				types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32),
+			},
+		},
+		{
+			"removeEmptySeries(metric*,0.8)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric*", 0, 1}: {
+					types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 23, 12, 8, math.NaN()}, 1, now32),
+					types.MakeMetricData("metric2", []float64{1, 2, -1, 7, 8, 20, 23, 12, math.NaN(), math.NaN()}, 1, now32),
+					types.MakeMetricData("metric3", []float64{1, 2, -1, 7, 8, 20, 23, math.NaN(), math.NaN(), math.NaN()}, 1, now32),
+					types.MakeMetricData("metric4", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
+					types.MakeMetricData("metric5", []float64{0, 0, 0, 0, 0, 0, 0, 0}, 1, now32),
+				},
+			},
+			[]*types.MetricData{
+				types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 23, 12, 8, math.NaN()}, 1, now32),
+				types.MakeMetricData("metric2", []float64{1, 2, -1, 7, 8, 20, 23, 12, math.NaN(), math.NaN()}, 1, now32),
+				types.MakeMetricData("metric5", []float64{0, 0, 0, 0, 0, 0, 0, 0}, 1, now32),
+			},
+		},
+		{
+			"removeEmptySeries(metric*,1)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric*", 0, 1}: {
+					types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 23, 12, 8, -2.3}, 1, now32),
+					types.MakeMetricData("metric2", []float64{1, 2, -1, 7, 8, 20, 23, 12, 8, math.NaN()}, 1, now32),
+				},
+			},
+			[]*types.MetricData{
+				types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 23, 12, 8, -2.3}, 1, now32),
 			},
 		},
 	}
