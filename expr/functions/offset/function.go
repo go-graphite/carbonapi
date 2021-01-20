@@ -21,7 +21,7 @@ func GetOrder() interfaces.Order {
 func New(configFile string) []interfaces.FunctionMetadata {
 	res := make([]interfaces.FunctionMetadata, 0)
 	f := &offset{}
-	functions := []string{"offset"}
+	functions := []string{"add", "offset"}
 	for _, n := range functions {
 		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
 	}
@@ -42,7 +42,7 @@ func (f *offset) Do(ctx context.Context, e parser.Expr, from, until int64, value
 
 	for _, a := range arg {
 		r := *a
-		r.Name = fmt.Sprintf("offset(%s,%g)", a.Name, factor)
+		r.Name = fmt.Sprintf("%s(%s,%g)", e.Target(), a.Name, factor)
 		r.Values = make([]float64, len(a.Values))
 
 		for i, v := range a.Values {
@@ -56,6 +56,25 @@ func (f *offset) Do(ctx context.Context, e parser.Expr, from, until int64, value
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
 func (f *offset) Description() map[string]types.FunctionDescription {
 	return map[string]types.FunctionDescription{
+		"add": {
+			Description: "Takes one metric or a wildcard seriesList followed by a constant, and adds the constant to\neach datapoint.\n\nExample:\n\n.. code-block:: none\n\n  &target=add(Server.instance01.threads.busy,10)\n  &target=add(Server.instance*.threads.busy, 10)",
+			Function:    "add(seriesList, constant)",
+			Group:       "Transform",
+			Module:      "graphite.render.functions",
+			Name:        "add",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "constant",
+					Required: true,
+					Type:     types.Float,
+				},
+			},
+		},
 		"offset": {
 			Description: "Takes one metric or a wildcard seriesList followed by a constant, and adds the constant to\neach datapoint.\n\nExample:\n\n.. code-block:: none\n\n  &target=offset(Server.instance01.threads.busy,10)",
 			Function:    "offset(seriesList, factor)",
