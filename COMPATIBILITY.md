@@ -146,6 +146,7 @@ _When `format=png`_ (default if not specified)
 | Function      | Carbonapi-only                                            |
 | :-------------|:--------------------------------------------------------- |
 | absolute(seriesList) | no |
+| add(seriesList, constant) | no |
 | aggregate(seriesList, func, xFilesFactor=None) | no |
 | aggregateLine((seriesList, func='average', keepStep=False)) | no |
 | alias(seriesList, newName) | no |
