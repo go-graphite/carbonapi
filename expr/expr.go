@@ -143,7 +143,7 @@ func EvalExpr(ctx context.Context, e parser.Expr, from, until int64, values map[
 
 	// all functions have arguments -- check we do too
 	if len(e.Args()) == 0 {
-		return nil, parser.ErrMissingArgument
+		return nil, merry.WithHTTPCode(parser.ErrMissingArgument, 400)
 	}
 
 	metadata.FunctionMD.RLock()
@@ -157,7 +157,7 @@ func EvalExpr(ctx context.Context, e parser.Expr, from, until int64, values map[
 		return v, err
 	}
 
-	return nil, helper.ErrUnknownFunction(e.Target())
+	return nil, merry.WithHTTPCode(helper.ErrUnknownFunction(e.Target()), 400)
 }
 
 // RewriteExpr expands targets that use applyByNode into a new list of targets.
