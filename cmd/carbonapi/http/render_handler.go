@@ -300,6 +300,11 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			errMsgs = append(errMsgs, err.Error())
+			if merry.HTTPCode(err) == 400 {
+				// The 400 is returned on wrong requests, e.g. non-existent functions
+				returnCode = merry.HTTPCode(err)
+				continue
+			}
 			if returnCode < 500 {
 				returnCode = merry.HTTPCode(err)
 			}
@@ -308,6 +313,11 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		// Allow override status code for 404-not-found replies.
 		if returnCode == 404 {
 			returnCode = config.Config.NotFoundStatusCode
+		}
+		if returnCode == 400 {
+			setError(w, accessLogDetails, strings.Join(errMsgs, ","), returnCode)
+			logAsError = true
+			return
 		}
 		if returnCode >= 500 {
 			setError(w, accessLogDetails, "error or no response: "+strings.Join(errMsgs, ","), returnCode)
