@@ -11,13 +11,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-graphite/carbonapi/zipper/protocols/prometheus/helpers"
+	prometheusTypes "github.com/go-graphite/carbonapi/zipper/protocols/prometheus/types"
+
 	"github.com/ansel1/merry"
+	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
+
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/zipper/helper"
 	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 	"github.com/go-graphite/carbonapi/zipper/metadata"
 	"github.com/go-graphite/carbonapi/zipper/types"
-	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
 	"go.uber.org/zap"
 )
@@ -157,7 +161,6 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		}
 	}
 
-
 	httpQuery := helper.NewHttpQuery(config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv2PB)
 
 	return NewWithEverythingInitialized(logger, config, tldCacheDisabled, limiter, step, maxPointsPerQuery, delay, httpQuery, httpClient)
@@ -229,7 +232,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	start := request.Metrics[0].StartTime
 	stop := request.Metrics[0].StopTime
 
-	step := adjustStep(start, stop, c.maxPointsPerQuery, c.step)
+	step := helpers.AdjustStep(start, stop, c.maxPointsPerQuery, c.step)
 
 	stepStr := strconv.FormatInt(step, 10)
 	for pathExpr, targets := range pathExprToTargets {
@@ -238,13 +241,13 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 				zap.Any("pathExpr", pathExpr),
 				zap.Any("target", target),
 			)
-			// rewrite metric for tag
+			// rewrite metric for Tag
 			// Make local copy
 			stepLocalStr := stepStr
 			if strings.HasPrefix(target, "seriesByTag") {
-				stepLocalStr, target = c.seriesByTagToPromQL(stepLocalStr, target)
+				stepLocalStr, target = helpers.SeriesByTagToPromQL(stepLocalStr, target)
 			} else {
-				reQuery := convertGraphiteTargetToPromQL(target)
+				reQuery := helpers.ConvertGraphiteTargetToPromQL(target)
 				target = fmt.Sprintf("{__name__=~%q}", reQuery)
 			}
 			if stepLocalStr[len(stepLocalStr)-1] >= '0' && stepLocalStr[len(stepLocalStr)-1] <= '9' {
@@ -252,7 +255,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 			}
 			t, err := time.ParseDuration(stepLocalStr)
 			if err != nil {
-				stats.RenderErrors += 1
+				stats.RenderErrors++
 				logger.Debug("failed to parse step",
 					zap.String("step", stepLocalStr),
 					zap.Error(err),
@@ -283,13 +286,13 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 			}
 
 			rewrite.RawQuery = v.Encode()
-			stats.RenderRequests += 1
+			stats.RenderRequests++
 			res, err2 := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 			if err2 != nil {
-				stats.RenderErrors += 1
+				stats.RenderErrors++
 				if merry.Is(err, types.ErrTimeoutExceeded) {
-					stats.Timeouts += 1
-					stats.RenderTimeouts += 1
+					stats.Timeouts++
+					stats.RenderTimeouts++
 				}
 				if e == nil {
 					e = err2
@@ -299,10 +302,10 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 				continue
 			}
 
-			var response prometheusResponse
+			var response prometheusTypes.HTTPResponse
 			err = json.Unmarshal(res.Response, &response)
 			if err != nil {
-				stats.RenderErrors += 1
+				stats.RenderErrors++
 				c.logger.Debug("failed to unmarshal response",
 					zap.Error(err),
 				)
@@ -315,7 +318,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 			}
 
 			if response.Status != "success" {
-				stats.RenderErrors += 1
+				stats.RenderErrors++
 				if e == nil {
 					e = types.ErrFailedToFetch.WithMessage(response.Status).WithValue("query", target).WithValue("status", response.Status)
 				} else {
@@ -333,10 +336,10 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 					realStart = int64(m.Values[0].Timestamp)
 					realStop = int64(m.Values[len(m.Values)-1].Timestamp)
 				}
-				alignedValues := alignValues(realStart, realStop, stepLocal, m.Values)
+				alignedValues := helpers.AlignValues(realStart, realStop, stepLocal, m.Values)
 
 				r.Metrics = append(r.Metrics, protov3.FetchResponse{
-					Name:              c.promMetricToGraphite(m.Metric),
+					Name:              helpers.PromMetricToGraphite(m.Metric),
 					PathExpression:    pathExpr,
 					ConsolidationFunc: "Average",
 					StartTime:         realStart,
@@ -375,7 +378,7 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 			query = query + "*"
 		}
 
-		reQuery := convertGraphiteTargetToPromQL(query)
+		reQuery := helpers.ConvertGraphiteTargetToPromQL(query)
 		matchQuery := fmt.Sprintf("{__name__=~%q}", reQuery)
 		v := url.Values{
 			"match[]": []string{matchQuery},
@@ -402,7 +405,7 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 			continue
 		}
 
-		var pr prometheusFindResponse
+		var pr prometheusTypes.PrometheusFindResponse
 
 		err2 := json.Unmarshal(res.Response, &pr)
 		if err2 != nil {
@@ -487,14 +490,14 @@ func (c *PrometheusGroup) doSimpleTagQuery(ctx context.Context, logger *zap.Logg
 		rewrite, _ = url.Parse("http://127.0.0.1/api/v1/labels")
 	} else {
 		logger = logger.With(zap.String("type", "tagValues"))
-		if tag, ok := params["tag"]; ok {
+		if tag, ok := params["Tag"]; ok {
 			rewrite, _ = url.Parse(fmt.Sprintf("http://127.0.0.1/api/v1/label/%s/values", tag[0]))
 		} else {
 			return []string{}, types.ErrNoTagSpecified
 		}
 	}
 
-	var r prometheusTagResponse
+	var r prometheusTypes.PrometheusTagResponse
 
 	res, e := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 	if e != nil {
@@ -551,14 +554,14 @@ func (c *PrometheusGroup) doComplexTagQuery(ctx context.Context, isTagName bool,
 		logger = logger.With(zap.String("type", "tagName"))
 	} else {
 		logger = logger.With(zap.String("type", "tagValues"))
-		if _, ok := params["tag"]; !ok {
+		if _, ok := params["Tag"]; !ok {
 			return []string{}, types.ErrNoTagSpecified
 		}
 	}
 
 	matches := make([]string, 0, len(params["expr"]))
 	for _, e := range params["expr"] {
-		name, t := c.promethizeTagValue(e)
+		name, t := helpers.PromethizeTagValue(e)
 		matches = append(matches, "{"+name+t.OP+"\""+t.TagValue+"\"}")
 	}
 
@@ -569,7 +572,7 @@ func (c *PrometheusGroup) doComplexTagQuery(ctx context.Context, isTagName bool,
 	rewrite.RawQuery = v.Encode()
 
 	result := make([]string, 0)
-	var r prometheusFindResponse
+	var r prometheusTypes.PrometheusFindResponse
 
 	res, e := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 	if e != nil {
@@ -608,7 +611,7 @@ func (c *PrometheusGroup) doComplexTagQuery(ctx context.Context, isTagName bool,
 		}
 
 		uniqueTagValues := make(map[string]struct{})
-		tag := params["tag"][0]
+		tag := params["Tag"][0]
 		for _, d := range r.Data {
 			if v, ok := d[tag]; ok {
 				if strings.HasPrefix(v, prefix) {
