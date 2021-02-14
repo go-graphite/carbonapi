@@ -34,7 +34,7 @@ func init() {
 	defer metadata.Metadata.Unlock()
 }
 
-// RoundRobin is used to connect to backends inside clientGroups, implements BackendServer interface
+// VictoriaMetricsGroup is a protocol group that can query victoria-metrics
 type VictoriaMetricsGroup struct {
 	types.BackendServer
 

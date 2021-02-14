@@ -18,6 +18,7 @@ type vmSupportedFeatures struct {
 	SupportGraphiteFindAPI        bool
 	SupportGraphiteTagsAPI        bool
 	GraphiteTagsAPIRequiresDedupe bool
+	SupportOptimizedGraphiteFetch bool
 }
 
 // Example: v1.46.0
@@ -50,6 +51,17 @@ func versionToFeatureSet(logger *zap.Logger, version string) *vmSupportedFeature
 	}
 	res.versionParsed[1] = v2
 
+	ver3Raw := strings.Split(verSplitted[2], "-")[0]
+	v3, err := strconv.ParseInt(ver3Raw, 10, 64)
+	if err != nil {
+		logger.Warn("failed to parse version string",
+			zap.Strings("version_array", verSplitted),
+			zap.Error(err),
+		)
+		return res
+	}
+	res.versionParsed[2] = v3
+
 	if v2 >= 41 {
 		res.SupportGraphiteFindAPI = true
 	}
@@ -61,6 +73,10 @@ func versionToFeatureSet(logger *zap.Logger, version string) *vmSupportedFeature
 
 	if v2 >= 50 {
 		res.GraphiteTagsAPIRequiresDedupe = false
+	}
+
+	if v2 > 53 || (v2 == 53 && v3 >= 1) {
+		res.SupportOptimizedGraphiteFetch = true
 	}
 
 	return res

@@ -41,13 +41,13 @@ func (c *VictoriaMetricsGroup) Find(ctx context.Context, request *protov3.MultiG
 		}
 
 		rewrite.RawQuery = v.Encode()
-		stats.FindRequests += 1
+		stats.FindRequests++
 		res, queryErr := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if queryErr != nil {
-			stats.FindErrors += 1
+			stats.FindErrors++
 			if merry.Is(queryErr, types.ErrTimeoutExceeded) {
-				stats.Timeouts += 1
-				stats.FindTimeouts += 1
+				stats.Timeouts++
+				stats.FindTimeouts++
 			}
 			if e == nil {
 				e = merry.Wrap(queryErr).WithValue("query", query)
@@ -57,7 +57,7 @@ func (c *VictoriaMetricsGroup) Find(ctx context.Context, request *protov3.MultiG
 			continue
 		}
 
-		parsedJson, err := parser.ParseBytes(res.Response)
+		parsedJSON, err := parser.ParseBytes(res.Response)
 		if err != nil {
 			if e == nil {
 				e = merry.Wrap(err).WithValue("query", query)
@@ -67,7 +67,7 @@ func (c *VictoriaMetricsGroup) Find(ctx context.Context, request *protov3.MultiG
 			continue
 		}
 
-		globs, err := parsedJson.Array()
+		globs, err := parsedJSON.Array()
 		if err != nil {
 			if e == nil {
 				e = merry.Wrap(err).WithValue("query", query)
