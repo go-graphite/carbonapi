@@ -90,7 +90,12 @@ func (cfg *listener) findHandler(wr http.ResponseWriter, req *http.Request) {
 	} else {
 		returnMap := make(map[string]struct{})
 		for m := range cfg.Listener.Expressions {
-			for _, metric := range cfg.Expressions[m].Data {
+			response := cfg.Expressions[m]
+			if response.ReplyDelayMS > 0 {
+				delay := time.Duration(response.ReplyDelayMS) * time.Millisecond
+				time.Sleep(delay)
+			}
+			for _, metric := range response.Data {
 				returnMap[metric.MetricName] = struct{}{}
 			}
 		}
