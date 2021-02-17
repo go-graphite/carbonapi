@@ -1,0 +1,28 @@
+version: "v1"
+test:
+    apps:
+        - name: "carbonapi"
+          binary: "./carbonapi"
+          args:
+              - "-config"
+              - "./cmd/mockbackend/carbonapi_singlebackend.yaml"
+    queries:
+            - endpoint: "http://127.0.0.1:8081"
+              delay: 1
+              type: "GET"
+              URL: "/render?format=json&target=seriesByTag('tag1=v1', 'tag2=v2')"
+              expectedResponse:
+                  httpCode: 200
+                  contentType: "application/json"
+                  expectedResults:
+                          - metrics:
+                                  - target: "metric;tag1=v1;tag2=v2;;tag4=v4"
+                                    datapoints: [[1.0, 1],[3.0, 2],[2.0, 3]]
+listeners:
+        - address: ":9070"
+          expressions:
+                     "seriesByTag('tag1=v1', 'tag2=v2')":
+                         pathExpression: "seriesByTag('tag1=v1', 'tag2=v2')"
+                         data:
+                             - metricName: "metric;tag1=v1;tag2=v2;;tag4=v4"
+                               values: [1.0, 3.0, 2.0]
