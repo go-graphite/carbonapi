@@ -143,7 +143,8 @@ func EvalExpr(ctx context.Context, e parser.Expr, from, until int64, values map[
 
 	// all functions have arguments -- check we do too
 	if len(e.Args()) == 0 {
-		return nil, parser.ErrMissingArgument
+		err := merry.WithMessagef(parser.ErrMissingArgument, "target=%s: %s", e.Target(), parser.ErrMissingArgument)
+		return nil, merry.WithHTTPCode(err, 400)
 	}
 
 	metadata.FunctionMD.RLock()
@@ -152,12 +153,26 @@ func EvalExpr(ctx context.Context, e parser.Expr, from, until int64, values map[
 	if ok {
 		v, err := f.Do(ctx, e, from, until, values)
 		if err != nil {
-			err = merry.WithMessagef(err, "function=%s", e.Target())
+			err = merry.WithMessagef(err, "function=%s: %s", e.Target(), err.Error())
+			if merry.Is(
+				err,
+				parser.ErrMissingExpr,
+				parser.ErrMissingComma,
+				parser.ErrMissingQuote,
+				parser.ErrUnexpectedCharacter,
+				parser.ErrBadType,
+				parser.ErrMissingArgument,
+				parser.ErrMissingTimeseries,
+				parser.ErrSeriesDoesNotExist,
+				parser.ErrUnknownTimeUnits,
+			) {
+				err = merry.WithHTTPCode(err, 400)
+			}
 		}
 		return v, err
 	}
 
-	return nil, helper.ErrUnknownFunction(e.Target())
+	return nil, merry.WithHTTPCode(helper.ErrUnknownFunction(e.Target()), 400)
 }
 
 // RewriteExpr expands targets that use applyByNode into a new list of targets.

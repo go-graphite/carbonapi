@@ -8,6 +8,7 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
+	"time"
 
 	"github.com/go-graphite/protocol/carbonapi_v2_pb"
 	"github.com/go-graphite/protocol/carbonapi_v3_pb"
@@ -102,6 +103,10 @@ func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
 			wr.WriteHeader(http.StatusNotFound)
 			_, _ = wr.Write([]byte("Not found"))
 			return
+		}
+		if response.ReplyDelayMS > 0 {
+			delay := time.Duration(response.ReplyDelayMS) * time.Millisecond
+			time.Sleep(delay)
 		}
 		for _, m := range response.Data {
 			startTime := m.StartTime

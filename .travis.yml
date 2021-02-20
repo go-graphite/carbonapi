@@ -17,9 +17,7 @@ before_install:
   - sudo apt-get install libcairo2-dev mercurial pkg-config wget -y
 
 script:
-  - make test
   - make
-  - ./e2e_test.sh
   - wget "https://raw.githubusercontent.com/go-graphite/helper-scripts/main/travis-docker-build.sh" && chmod +x ./travis-docker-build.sh
   - ./travis-docker-build.sh carbonapi
 
