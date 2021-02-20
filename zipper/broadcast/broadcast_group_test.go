@@ -32,13 +32,13 @@ func init() {
 		EncodingDuration: "seconds",
 	}
 
-	zapwriter.ApplyConfig([]zapwriter.Config{defaultLoggerConfig})
+	_ = zapwriter.ApplyConfig([]zapwriter.Config{defaultLoggerConfig})
 
 	logger = zapwriter.Logger("test")
 	timeouts = types.Timeouts{
-		1000 * time.Second,
-		1000 * time.Second,
-		1000 * time.Second,
+		Find:    1000 * time.Second,
+		Render:  1000 * time.Second,
+		Connect: 1000 * time.Second,
 	}
 }
 
@@ -94,10 +94,10 @@ func TestProbeTLDs(t *testing.T) {
 				dummy.NewDummyClient("client2", []string{"backend3", "backend4"}, 1),
 			},
 			clientResponses: map[string]dummy.ProbeResponse{
-				"client1": dummy.ProbeResponse{
+				"client1": {
 					Response: []string{"a", "b", "c"},
 				},
-				"client2": dummy.ProbeResponse{
+				"client2": {
 					Response: []string{"a", "d", "e"},
 				},
 			},
