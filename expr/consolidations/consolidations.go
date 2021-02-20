@@ -85,7 +85,7 @@ func Percentile(data []float64, percent float64, interpolate bool) float64 {
 	k := (float64(len(dataFiltered)-1) * percent) / 100
 	length := int(math.Ceil(k)) + 1
 
-	quickselect.Float64QuickSelect(dataFiltered, length)
+	_ = quickselect.Float64QuickSelect(dataFiltered, length)
 	top, secondTop := math.Inf(-1), math.Inf(-1)
 	for _, val := range dataFiltered[0:length] {
 		if val > top {
