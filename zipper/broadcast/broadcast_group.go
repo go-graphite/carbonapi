@@ -398,19 +398,6 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	return result.Response, result.Stats, err
 }
 
-func getFetchRequestMetricStats(requests []*protov3.MultiFetchRequest, bg *BroadcastGroup, backends []types.BackendServer) (int, int) {
-	var totalMetricsCount int
-	var zipperRequests int
-	if bg.MaxMetricsPerRequest() > 0 {
-		zipperRequests = 1
-	}
-	if len(requests) > 0 {
-		totalMetricsCount = (len(requests)-1)*bg.MaxMetricsPerRequest() + len(requests[len(requests)-1].Metrics)
-		zipperRequests += len(requests) * len(backends)
-	}
-	return zipperRequests, totalMetricsCount
-}
-
 // Find request handling
 func (bg *BroadcastGroup) doFind(ctx context.Context, logger *zap.Logger, backend types.BackendServer, reqs interface{}, resCh chan types.ServerFetcherResponse) {
 	request, ok := reqs.(*protov3.MultiGlobRequest)

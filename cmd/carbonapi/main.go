@@ -6,15 +6,15 @@ import (
 	"log"
 	"net/http"
 	"net/http/pprof"
-	_ "net/http/pprof"
 	"sync"
 
 	"github.com/facebookgo/grace/gracehttp"
-	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
-	carbonapiHttp "github.com/go-graphite/carbonapi/cmd/carbonapi/http"
 	"github.com/gorilla/handlers"
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
+
+	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
+	carbonapiHttp "github.com/go-graphite/carbonapi/cmd/carbonapi/http"
 )
 
 // BuildVersion is provided to be overridden at build time. Eg. go build -ldflags -X 'main.BuildVersion=...'
