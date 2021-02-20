@@ -355,8 +355,8 @@ func getTimeZone(s string, def *time.Location) *time.Location {
 }
 
 // SetTemplate adds a picture param template with specified name and parameters
-func SetTemplate(name string, params PictureParams) {
-	templates[name] = params
+func SetTemplate(name string, params *PictureParams) {
+	templates[name] = *params
 }
 
 var DefaultParams = PictureParams{
