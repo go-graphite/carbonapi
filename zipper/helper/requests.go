@@ -122,7 +122,9 @@ func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, server, u
 		)
 		return nil, merry.Here(err).WithValue("server", server)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	// we don't need to process any further if the response is empty.
 	if resp.StatusCode == http.StatusNotFound {

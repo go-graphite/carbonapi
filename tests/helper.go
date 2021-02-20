@@ -232,7 +232,6 @@ func DeepEqual(t *testing.T, target string, original, modified map[parser.Metric
 const eps = 0.0000000001
 
 func NearlyEqual(a, b []float64) bool {
-
 	if len(a) != len(b) {
 		return false
 	}

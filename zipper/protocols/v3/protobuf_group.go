@@ -60,12 +60,12 @@ func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool) (typ
 	if len(config.Servers) == 0 {
 		return nil, types.ErrNoServersSpecified
 	}
-	limiter := limiter.NewServerLimiter(config.Servers, *config.ConcurrencyLimit)
+	l := limiter.NewServerLimiter(config.Servers, *config.ConcurrencyLimit)
 
-	return NewWithLimiter(logger, config, tldCacheDisabled, limiter)
+	return NewWithLimiter(logger, config, tldCacheDisabled, l)
 }
 
-func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool, limiter limiter.ServerLimiter) (types.BackendServer, merry.Error) {
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool, l limiter.ServerLimiter) (types.BackendServer, merry.Error) {
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConnsPerHost: *config.MaxIdleConnsPerHost,
@@ -80,7 +80,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 
 	logger = logger.With(zap.String("type", "protoV3Group"), zap.String("name", config.GroupName))
 
-	httpQuery := helper.NewHttpQuery(config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv3PB)
+	httpQuery := helper.NewHttpQuery(config.GroupName, config.Servers, *config.MaxTries, l, httpClient, httpHeaders.ContentTypeCarbonAPIv3PB)
 
 	c := &ClientProtoV3Group{
 		groupName:            config.GroupName,
@@ -90,7 +90,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		maxMetricsPerRequest: *config.MaxBatchSize,
 
 		client:  httpClient,
-		limiter: limiter,
+		limiter: l,
 		logger:  logger,
 
 		httpQuery: httpQuery,
@@ -122,7 +122,7 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	}
 	rewrite.RawQuery = v.Encode()
 
-	res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), types.MultiFetchRequestV3{*request})
+	res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), types.MultiFetchRequestV3{MultiFetchRequest: *request})
 	if err != nil {
 		stats.RenderErrors = 1
 		if merry.Is(err, types.ErrTimeoutExceeded) {
@@ -140,7 +140,7 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	err2 := r.Unmarshal(res.Response)
 	if err2 != nil {
 		stats.FailedServers = []string{res.Server}
-		stats.RenderErrors += 1
+		stats.RenderErrors++
 		return nil, stats, merry.Wrap(err)
 	}
 
@@ -159,7 +159,7 @@ func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlo
 	}
 	rewrite.RawQuery = v.Encode()
 
-	res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), types.MultiGlobRequestV3{*request})
+	res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), types.MultiGlobRequestV3{MultiGlobRequest: *request})
 	if err != nil {
 		stats.FindErrors = 1
 		if merry.Is(err, types.ErrTimeoutExceeded) {
@@ -195,7 +195,7 @@ func (c *ClientProtoV3Group) Info(ctx context.Context, request *protov3.MultiMet
 	}
 	rewrite.RawQuery = v.Encode()
 
-	res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), types.MultiMetricsInfoV3{*request})
+	res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), types.MultiMetricsInfoV3{MultiMetricsInfoRequest: *request})
 	if err != nil {
 		stats.InfoErrors = 1
 		if merry.Is(err, types.ErrTimeoutExceeded) {

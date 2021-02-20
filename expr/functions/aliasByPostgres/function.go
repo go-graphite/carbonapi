@@ -67,7 +67,9 @@ func (f *aliasByPostgres) SQLQueryDB(query, databaseName string) (res string, er
 	if err != nil {
 		logger.Error("Error with query ti database")
 	}
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 	for rows.Next() {
 		err := rows.Scan(&result)
 		if err != nil {
@@ -75,7 +77,9 @@ func (f *aliasByPostgres) SQLQueryDB(query, databaseName string) (res string, er
 		}
 		logger.Debug(result)
 	}
-	defer rows.Close()
+	defer func() {
+		_ = rows.Close()
+	}()
 	return result, nil
 }
 

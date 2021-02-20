@@ -124,7 +124,7 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 
 		// skipcq: CRT-P0006
 		for name, params := range graphTemplates {
-			png.SetTemplate(name, params)
+			png.SetTemplate(name, &params)
 		}
 	}
 
@@ -308,7 +308,7 @@ func SetUpViper(logger *zap.Logger, configPath *string, viperPrefix string) {
 		viper.SetEnvPrefix(viperPrefix)
 	}
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	viper.BindEnv("tz", "carbonapi_tz")
+	_ = viper.BindEnv("tz", "carbonapi_tz")
 	viper.SetDefault("listen", "localhost:8081")
 	viper.SetDefault("concurency", 20)
 	viper.SetDefault("cache.type", "mem")

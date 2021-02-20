@@ -571,7 +571,7 @@ func lbCheckHandler(w http.ResponseWriter, req *http.Request) {
 	)
 
 	/* #nosec */
-	fmt.Fprintf(w, "Ok\n")
+	_, _ = fmt.Fprintf(w, "Ok\n")
 	accessLogger.Info("lb request served",
 		zap.Int("http_code", http.StatusOK),
 		zap.Duration("runtime_seconds", time.Since(t0)),
