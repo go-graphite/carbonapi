@@ -314,7 +314,7 @@ func SetUpViper(logger *zap.Logger, configPath *string, viperPrefix string) {
 		viper.SetEnvPrefix(viperPrefix)
 	}
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	viper.BindEnv("tz", "carbonapi_tz")
+	_ = viper.BindEnv("tz", "carbonapi_tz")
 	viper.SetDefault("listeners", []Listener{{
 		Address: "localhost:8081",
 	}})

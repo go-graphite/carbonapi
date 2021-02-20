@@ -103,7 +103,9 @@ func (m *MemcachedCache) Get(k string) ([]byte, error) {
 func (m *MemcachedCache) Set(k string, v []byte, expire int32) {
 	key := sha256.Sum256([]byte(k))
 	hk := hex.EncodeToString(key[:])
-	go m.client.Set(&memcache.Item{Key: m.prefix + hk, Value: v, Expiration: expire}) //nolint:errcheck
+	go func() {
+		_ = m.client.Set(&memcache.Item{Key: m.prefix + hk, Value: v, Expiration: expire})
+	}()
 }
 
 func (m *MemcachedCache) Timeouts() uint64 {
