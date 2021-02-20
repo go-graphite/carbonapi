@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"sync/atomic"
@@ -68,7 +68,7 @@ type MemcachedCache struct {
 }
 
 func (m *MemcachedCache) Get(k string) ([]byte, error) {
-	key := sha1.Sum([]byte(k))
+	key := sha256.Sum256([]byte(k))
 	hk := hex.EncodeToString(key[:])
 	done := make(chan bool, 1)
 
@@ -101,9 +101,9 @@ func (m *MemcachedCache) Get(k string) ([]byte, error) {
 }
 
 func (m *MemcachedCache) Set(k string, v []byte, expire int32) {
-	key := sha1.Sum([]byte(k))
+	key := sha256.Sum256([]byte(k))
 	hk := hex.EncodeToString(key[:])
-	go m.client.Set(&memcache.Item{Key: m.prefix + hk, Value: v, Expiration: expire})
+	go m.client.Set(&memcache.Item{Key: m.prefix + hk, Value: v, Expiration: expire}) //nolint:errcheck
 }
 
 func (m *MemcachedCache) Timeouts() uint64 {
