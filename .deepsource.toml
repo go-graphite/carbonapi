@@ -5,9 +5,12 @@ test_patterns = [
   "**/*_test.go"
 ]
 
+exclude_patterns = ["vendor"]
+
 [[analyzers]]
 name = "go"
 enabled = true
 
   [analyzers.meta]
   import_path = "github.com/go-graphite/carbonapi"
+  dependencies_vendored = true
