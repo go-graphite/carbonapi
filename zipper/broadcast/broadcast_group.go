@@ -241,9 +241,15 @@ func (bg *BroadcastGroup) splitRequest(ctx context.Context, request *protov3.Mul
 	}
 
 	var requests []*protov3.MultiFetchRequest
+	newRequest := &protov3.MultiFetchRequest{}
+
 	var err merry.Error
 	for _, metric := range request.Metrics {
-		newRequest := &protov3.MultiFetchRequest{}
+		if len(newRequest.Metrics) >= backend.MaxMetricsPerRequest() {
+			requests = append(requests, newRequest)
+			newRequest = &protov3.MultiFetchRequest{}
+		}
+
 		// TODO(Civil): Tags: improve logic
 		if strings.HasPrefix(metric.Name, "seriesByTag") {
 			newRequest.Metrics = append(newRequest.Metrics, protov3.FetchRequest{
@@ -253,20 +259,20 @@ func (bg *BroadcastGroup) splitRequest(ctx context.Context, request *protov3.Mul
 				PathExpression:  metric.PathExpression,
 				FilterFunctions: metric.FilterFunctions,
 			})
-			requests = append(requests, newRequest)
+
 			continue
 		}
 
 		// Do not send Find requests if we have neither globs in the request nor metric expansions
 		if !strings.ContainsAny(metric.Name, "*{") {
 			newRequest.Metrics = append(newRequest.Metrics, protov3.FetchRequest{
-				Name:            metric.PathExpression,
+				Name:            metric.Name,
 				StartTime:       metric.StartTime,
 				StopTime:        metric.StopTime,
 				PathExpression:  metric.PathExpression,
 				FilterFunctions: metric.FilterFunctions,
 			})
-			requests = append(requests, newRequest)
+
 			continue
 		}
 
@@ -318,16 +324,16 @@ func (bg *BroadcastGroup) splitRequest(ctx context.Context, request *protov3.Mul
 					FilterFunctions: metric.FilterFunctions,
 				})
 
-				if len(newRequest.Metrics) == backend.MaxMetricsPerRequest() {
+				if len(newRequest.Metrics) >= backend.MaxMetricsPerRequest() {
 					requests = append(requests, newRequest)
 					newRequest = &protov3.MultiFetchRequest{}
 				}
 			}
 		}
+	}
 
-		if len(newRequest.Metrics) > 0 {
-			requests = append(requests, newRequest)
-		}
+	if len(newRequest.Metrics) > 0 {
+		requests = append(requests, newRequest)
 	}
 
 	return requests, err
