@@ -19,7 +19,9 @@ CHANGELOG
 ---------
 **0.15.0 (WIP)**
  - **[Breaking]** - cache (including memcache) now uses sha256 for a hash function for keys. This might break existing setup
+ - **[Breaking]** - new config variable `slowLogThreshold` under `upstreams` section controls what request time would be required for request to be logged in `slow` logger.
  - [Fix] Fix parsing tags from backend replies (adds support of `=` in tag values, make them more compatible with graphite-web)
+ - [Fix] Fix how request splitting worked for maxBatchSize != 0 (thx to @tantra35)
  - [Improvement] Bad requests will return error 400 instead of 500 (thx to @Felixoid)
  - [Improvement] VictoriaMetrics >= 1.53.1 backend should work a bit faster for find queries
  - [Improvement] Do not apply tag-deduplication for VictoriaMetrics >= 1.50.0 (less memory consumption, faster queries)

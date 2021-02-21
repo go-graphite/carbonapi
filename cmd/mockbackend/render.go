@@ -106,6 +106,9 @@ func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
 		}
 		if response.ReplyDelayMS > 0 {
 			delay := time.Duration(response.ReplyDelayMS) * time.Millisecond
+			logger.Info("will add extra delay",
+				zap.Duration("delay", delay),
+			)
 			time.Sleep(delay)
 		}
 		for _, m := range response.Data {

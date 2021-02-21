@@ -11,6 +11,7 @@ import (
 // Config is a structure that contains zipper-related configuration bits
 type Config struct {
 	Buckets                   int              `mapstructure:"buckets"`
+	SlowLogThreshold          time.Duration    `mapstructure:"slowLogThreshold"`
 	ConcurrencyLimitPerServer int              `mapstructure:"concurrencyLimitPerServer"`
 	MaxIdleConnsPerHost       int              `mapstructure:"maxIdleConnsPerHost"`
 	Backends                  []string         `mapstructure:"backends"`
@@ -64,6 +65,8 @@ func sanitizeTimeouts(timeouts, defaultTimeouts types.Timeouts) types.Timeouts {
 func SanitizeConfig(logger *zap.Logger, oldConfig Config) *Config {
 	// create a full copy of old config
 	newConfig := &Config{
+		Buckets:                   oldConfig.Buckets,
+		SlowLogThreshold:          oldConfig.SlowLogThreshold,
 		ConcurrencyLimitPerServer: oldConfig.ConcurrencyLimitPerServer,
 		MaxIdleConnsPerHost:       oldConfig.MaxIdleConnsPerHost,
 		Backends:                  oldConfig.Backends,
