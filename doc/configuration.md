@@ -426,6 +426,9 @@ logger:
       file: "carbonapi.log"
       level: "info"
       encoding: "json"
+    # disable slow log completely
+    - logger: "slow"
+      level: "error"
 ```
 
 
@@ -483,7 +486,11 @@ Supported options:
   - `buckets` - Number of 100ms buckets to track request distribution in. Used to build `carbon.zipper.hostname.requests_in_0ms_to_100ms` metric and friends.
   
      The last bucket is **not** called 'requests_in_Xms_to_inf' on purpose, so we can change our minds about how many buckets we want to have and have their names remain consistent.
-  - `slowLogThreshold` -  threshold for slow requests to be logged. Default: "1s"
+  - `slowLogThreshold` -  threshold for slow requests to be logged.
+
+    If you don't want it to be logged at all, please see [logger](#example-16) section for more details
+
+    Default: "1s"
   - `timeouts` - structure that allow to set timeout for `find`, `render` and `connect` phases
   - `backendOptions` - extra options to pass for the backend.
 
@@ -699,7 +706,7 @@ upstreams:
     backendsv2:
         backends:
           -
-            groupName: "prometheus"
+            groupName: "victoriametrics"
             protocol: "victoriametrics"
             lbMethod: "broadcast"
             maxBatchSize: 0
