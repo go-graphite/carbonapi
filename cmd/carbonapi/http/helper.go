@@ -198,11 +198,15 @@ func bucketRequestTimes(req *http.Request, t time.Duration) {
 	if bucket < config.Config.Upstreams.Buckets {
 		atomic.AddInt64(&TimeBuckets[bucket], 1)
 	} else {
-		referer := req.Header.Get("Referer")
-		// Too big? Increment overflow bucket and log
+		// Too big? Increment overflow bucket
 		atomic.AddInt64(&TimeBuckets[config.Config.Upstreams.Buckets], 1)
+	}
+
+	if t > config.Config.Upstreams.SlowLogThreshold {
+		referer := req.Header.Get("Referer")
 		logger.Warn("Slow Request",
 			zap.Duration("time", t),
+			zap.Duration("slowLogThreshold", config.Config.Upstreams.SlowLogThreshold),
 			zap.String("url", req.URL.String()),
 			zap.String("referer", referer),
 		)

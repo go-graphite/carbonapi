@@ -107,6 +107,9 @@ upstreams:
     # their names remain consistent.
     buckets: 10
 
+    # If request took more than specified amount of time, it will be logged as a slow request as well
+    slowLogThreshold: "1s"
+
     timeouts:
         # Maximum backend request time for find requests.
         find: "2s"

@@ -328,6 +328,7 @@ func SetUpViper(logger *zap.Logger, configPath *string, viperPrefix string) {
 	viper.SetDefault("pidFile", "")
 	viper.SetDefault("upstreams.internalRoutingCache", "600s")
 	viper.SetDefault("upstreams.buckets", 10)
+	viper.SetDefault("upstreams.slowLogThreshold", "1s")
 	viper.SetDefault("upstreams.timeouts.global", "10s")
 	viper.SetDefault("upstreams.timeouts.afterStarted", "2s")
 	viper.SetDefault("upstreams.timeouts.connect", "200ms")
@@ -359,6 +360,7 @@ func SetUpConfigUpstreams(logger *zap.Logger) {
 		Config.Upstreams.MaxIdleConnsPerHost = Config.IdleConnections
 		Config.Upstreams.MaxBatchSize = &Config.MaxBatchSize
 		Config.Upstreams.KeepAliveInterval = 10 * time.Second
+		Config.Upstreams.SlowLogThreshold = 1 * time.Second
 		// To emulate previous behavior
 		Config.Upstreams.Timeouts = zipperTypes.Timeouts{
 			Connect: 1 * time.Second,

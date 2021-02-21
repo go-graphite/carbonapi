@@ -85,6 +85,7 @@ func (r responseFormat) String() string {
 func copyResponse(src Response) Response {
 	dst := Response{
 		PathExpression: src.PathExpression,
+		ReplyDelayMS:   src.ReplyDelayMS,
 		Data:           make([]Metric, len(src.Data)),
 	}
 

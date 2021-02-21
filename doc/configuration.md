@@ -482,9 +482,8 @@ Supported options:
   - `graphite09compat` - enables compatibility with graphite-web 0.9.x in terms of cluster response, default: false
   - `buckets` - Number of 100ms buckets to track request distribution in. Used to build `carbon.zipper.hostname.requests_in_0ms_to_100ms` metric and friends.
   
-     Requests beyond the last bucket are logged as slow (default of 10 implies "slow" is >1 second).
-  
      The last bucket is **not** called 'requests_in_Xms_to_inf' on purpose, so we can change our minds about how many buckets we want to have and have their names remain consistent.
+  - `slowLogThreshold` -  threshold for slow requests to be logged. Default: "1s"
   - `timeouts` - structure that allow to set timeout for `find`, `render` and `connect` phases
   - `backendOptions` - extra options to pass for the backend.
 

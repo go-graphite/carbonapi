@@ -134,7 +134,8 @@ var Config = ConfigType{
 	Logger:          []zapwriter.Config{DefaultLoggerConfig},
 
 	Upstreams: zipperCfg.Config{
-		Buckets:  10,
+		Buckets:          10,
+		SlowLogThreshold: 1 * time.Second,
 		Timeouts: zipperTypes.Timeouts{
 			Render:  10000 * time.Second,
 			Find:    2 * time.Second,
