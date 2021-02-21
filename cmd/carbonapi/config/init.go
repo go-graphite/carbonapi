@@ -397,4 +397,9 @@ func SetUpConfigUpstreams(logger *zap.Logger) {
 	}
 
 	Config.Upstreams = *zipperConfig.SanitizeConfig(logger, Config.Upstreams)
+
+	if Config.Buckets != 10 {
+		logger.Warn("`buckets` config option was moved to `upstreams` section, this will be removed in future releases, please migrate your configuration")
+		Config.Upstreams.Buckets = Config.Buckets
+	}
 }

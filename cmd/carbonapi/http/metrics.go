@@ -139,6 +139,6 @@ func SetupMetrics(logger *zap.Logger) {
 	}
 
 	// +1 to track every over the number of buckets we track
-	TimeBuckets = make([]int64, config.Config.Buckets+1)
+	TimeBuckets = make([]int64, config.Config.Upstreams.Buckets+1)
 	expvar.Publish("requestBuckets", expvar.Func(RenderTimeBuckets))
 }

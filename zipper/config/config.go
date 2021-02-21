@@ -10,6 +10,7 @@ import (
 
 // Config is a structure that contains zipper-related configuration bits
 type Config struct {
+	Buckets                   int              `mapstructure:"buckets"`
 	ConcurrencyLimitPerServer int              `mapstructure:"concurrencyLimitPerServer"`
 	MaxIdleConnsPerHost       int              `mapstructure:"maxIdleConnsPerHost"`
 	Backends                  []string         `mapstructure:"backends"`

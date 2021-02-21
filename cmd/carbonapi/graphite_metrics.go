@@ -36,13 +36,13 @@ func setupGraphiteMetrics(logger *zap.Logger) {
 		graphite := g2g.NewGraphite(host, config.Config.Graphite.Interval, 10*time.Second)
 
 		hostname, _ := os.Hostname()
-		hostname = strings.Replace(hostname, ".", "_", -1)
+		hostname = strings.ReplaceAll(hostname, ".", "_")
 
 		prefix := config.Config.Graphite.Prefix
 
 		pattern := config.Config.Graphite.Pattern
-		pattern = strings.Replace(pattern, "{prefix}", prefix, -1)
-		pattern = strings.Replace(pattern, "{fqdn}", hostname, -1)
+		pattern = strings.ReplaceAll(pattern, "{prefix}", prefix)
+		pattern = strings.ReplaceAll(pattern, "{fqdn}", hostname)
 
 		graphite.Register(fmt.Sprintf("%s.requests", pattern), http.ApiMetrics.Requests)
 		graphite.Register(fmt.Sprintf("%s.request_cache_hits", pattern), http.ApiMetrics.RequestCacheHits)
@@ -51,7 +51,7 @@ func setupGraphiteMetrics(logger *zap.Logger) {
 		graphite.Register(fmt.Sprintf("%s.backend_cache_hits", pattern), http.ApiMetrics.BackendCacheHits)
 		graphite.Register(fmt.Sprintf("%s.backend_cache_misses", pattern), http.ApiMetrics.BackendCacheMisses)
 
-		for i := 0; i <= config.Config.Buckets; i++ {
+		for i := 0; i <= config.Config.Upstreams.Buckets; i++ {
 			graphite.Register(fmt.Sprintf("%s.requests_in_%dms_to_%dms", pattern, i*100, (i+1)*100), http.BucketEntry(i))
 		}
 
@@ -82,11 +82,9 @@ func setupGraphiteMetrics(logger *zap.Logger) {
 		graphite.Register(fmt.Sprintf("%s.zipper.cache_misses", pattern), http.ZipperMetrics.CacheMisses)
 
 		go mstats.Start(config.Config.Graphite.Interval)
-
 		graphite.Register(fmt.Sprintf("%s.alloc", pattern), &mstats.Alloc)
 		graphite.Register(fmt.Sprintf("%s.total_alloc", pattern), &mstats.TotalAlloc)
 		graphite.Register(fmt.Sprintf("%s.num_gc", pattern), &mstats.NumGC)
 		graphite.Register(fmt.Sprintf("%s.pause_ns", pattern), &mstats.PauseNS)
-
 	}
 }
