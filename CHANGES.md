@@ -17,6 +17,16 @@ Changes
 
 CHANGELOG
 ---------
+**0.15.0 (WIP)**
+ - **[Breaking]** - cache (including memcache) now uses sha256 for a hash function for keys. This might break existing setup
+ - [Fix] Fix parsing tags from backend replies (adds support of `=` in tag values, make them more compatible with graphite-web)
+ - [Improvement] Bad requests will return error 400 instead of 500 (thx to @Felixoid)
+ - [Improvement] VictoriaMetrics >= 1.53.1 backend should work a bit faster for find queries
+ - [Improvement] Do not apply tag-deduplication for VictoriaMetrics >= 1.50.0 (less memory consumption, faster queries)
+ - [Improvement] Use VictoriaMetrics's graphite-compatibe API to query for tags (less memory consumption, faster queres)
+ - [Feature] Support `add` function (thx to @Felixoid)
+ - [Feature] removeEmptySeries supports xFilesFactor parameter (thx to @faceair)
+
 **0.14.2.1**
  - [Fix] Fix test for timeShift function. This doesn't affect the way how carbonapi works, just makes CI happy
 
