@@ -66,23 +66,24 @@ func main() {
 				zap.Bool("pprof_enabled", config.Config.Expvar.PProfEnabled),
 			)
 
-			for _, listener := range config.Config.Listeners {
-				wg.Add(1)
-				go func(listen config.Listener) {
-					err = gracehttp.Serve(&http.Server{
-						Addr:    listen.Address,
-						Handler: handler,
-					})
-
-					if err != nil {
-						logger.Fatal("failed to start http server",
-							zap.Error(err),
-						)
-					}
-
-					wg.Done()
-				}(listener)
+			listener := config.Listener{
+				Address: config.Config.Expvar.Listen,
 			}
+			wg.Add(1)
+			go func(listen config.Listener) {
+				err = gracehttp.Serve(&http.Server{
+					Addr:    listen.Address,
+					Handler: handler,
+				})
+
+				if err != nil {
+					logger.Fatal("failed to start http server",
+						zap.Error(err),
+					)
+				}
+
+				wg.Done()
+			}(listener)
 		}
 	}
 
@@ -91,21 +92,23 @@ func main() {
 	handler = handlers.CORS()(handler)
 	handler = handlers.ProxyHeaders(handler)
 
-	wg.Add(1)
-	go func() {
-		err = gracehttp.Serve(&http.Server{
-			Addr:    config.Config.Listen,
-			Handler: handler,
-		})
+	for _, listener := range config.Config.Listeners {
+		wg.Add(1)
+		go func(listen config.Listener) {
+			err = gracehttp.Serve(&http.Server{
+				Addr:    listen.Address,
+				Handler: handler,
+			})
 
-		if err != nil {
-			logger.Fatal("gracehttp failed",
-				zap.Error(err),
-			)
-		}
+			if err != nil {
+				logger.Fatal("failed to start http server",
+					zap.Error(err),
+				)
+			}
 
-		wg.Done()
-	}()
+			wg.Done()
+		}(listener)
+	}
 
 	wg.Wait()
 }

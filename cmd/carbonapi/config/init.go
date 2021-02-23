@@ -235,9 +235,15 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 	}
 
 	if Config.Listen != "" {
-		Config.Listeners = append(Config.Listeners, Listener{
-			Address: Config.Listen,
-		})
+		listeners := make(map[string]struct{})
+		for _, l := range Config.Listeners {
+			listeners[l.Address] = struct{}{}
+		}
+		if _, ok := listeners[Config.Listen]; !ok {
+			Config.Listeners = append(Config.Listeners, Listener{
+				Address: Config.Listen,
+			})
+		}
 	}
 
 	for _, define := range Config.Define {
