@@ -7,10 +7,12 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"sync"
+	"time"
 
 	"github.com/facebookgo/grace/gracehttp"
 	"github.com/gorilla/handlers"
 	"github.com/lomik/zapwriter"
+	"github.com/rs/dnscache"
 	"go.uber.org/zap"
 
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
@@ -41,6 +43,19 @@ func main() {
 	config.SetUpConfig(logger, BuildVersion)
 	carbonapiHttp.SetupMetrics(logger)
 	setupGraphiteMetrics(logger)
+
+	if config.Config.UseCachingDNSResolver {
+		config.Config.Resolver = &dnscache.Resolver{}
+
+		// Periodically refresh cache
+		go func() {
+			ticker := time.NewTicker(config.Config.CachingDNSRefreshTime)
+			defer ticker.Stop()
+			for range ticker.C {
+				config.Config.Resolver.Refresh(true)
+			}
+		}()
+	}
 
 	config.Config.ZipperInstance = newZipper(carbonapiHttp.ZipperStats, &config.Config.Upstreams, config.Config.IgnoreClientTimeout, zapwriter.Logger("zipper"))
 

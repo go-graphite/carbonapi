@@ -353,6 +353,7 @@ func SetUpViper(logger *zap.Logger, configPath *string, viperPrefix string) {
 	viper.SetDefault("upstreams.scaleToCommonStep", true)
 	viper.SetDefault("upstreams.graphite09compat", false)
 	viper.SetDefault("expireDelaySec", 600)
+	viper.SetDefault("useCachingDNSResolver", false)
 	viper.SetDefault("logger", map[string]string{})
 	viper.AutomaticEnv()
 

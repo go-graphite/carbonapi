@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/rs/dnscache"
+
 	"github.com/go-graphite/carbonapi/cache"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/interfaces"
 	"github.com/go-graphite/carbonapi/limiter"
@@ -85,6 +87,8 @@ type ConfigType struct {
 	Expvar                     ExpvarConfig       `mapstructure:"expvar"`
 	NotFoundStatusCode         int                `mapstructure:"notFoundStatusCode"`
 	HTTPResponseStackTrace     bool               `mapstructure:"httpResponseStackTrace"`
+	UseCachingDNSResolver      bool               `mapstructure:"useCachingDNSResolver"`
+	CachingDNSRefreshTime      time.Duration      `mapstructure:"cachingDNSRefreshTime"`
 
 	ResponseCache cache.BytesCache `mapstructure:"-" json:"-"`
 	BackendCache  cache.BytesCache `mapstructure:"-" json:"-"`
@@ -95,7 +99,8 @@ type ConfigType struct {
 	ZipperInstance interfaces.CarbonZipper `mapstructure:"-" json:"-"`
 
 	// Limiter limits concurrent zipper requests
-	Limiter limiter.SimpleLimiter `mapstructure:"-" json:"-"`
+	Limiter  limiter.SimpleLimiter `mapstructure:"-" json:"-"`
+	Resolver *dnscache.Resolver    `mapstructure:"-" json:"-"`
 }
 
 // skipcq: CRT-P0003
@@ -158,4 +163,6 @@ var Config = ConfigType{
 	},
 	NotFoundStatusCode:     200,
 	HTTPResponseStackTrace: true,
+	UseCachingDNSResolver:  false,
+	CachingDNSRefreshTime:  1 * time.Minute,
 }

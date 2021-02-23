@@ -157,7 +157,7 @@ func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool) (typ
 		return nil, merry.New("can't query all backend")
 	}
 
-	var broadcastClients []types.BackendServer
+	var backends []types.BackendServer
 	for proto, servers := range res.ProtoToServers {
 		metadata.Metadata.RLock()
 		backendInit, ok := metadata.Metadata.ProtocolInits[proto]
@@ -185,10 +185,22 @@ func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool) (typ
 			return nil, ePtr
 		}
 
-		broadcastClients = append(broadcastClients, c)
+		backends = append(backends, c)
 	}
 
-	return broadcast.NewBroadcastGroup(logger, config.GroupName+"_broadcast", config.DoMultipleRequestsIfSplit, broadcastClients, 600, *config.ConcurrencyLimit, *config.MaxBatchSize, *config.Timeouts, tldCacheDisabled)
+	b := broadcast.New(
+		broadcast.WithLogger(logger),
+		broadcast.WithGroupName(config.GroupName+"_broadcast"),
+		broadcast.WithSplitMultipleRequests(config.DoMultipleRequestsIfSplit),
+		broadcast.WithBackends(backends),
+		broadcast.WithPathCache(600),
+		broadcast.WithLimiter(*config.ConcurrencyLimit),
+		broadcast.WithMaxMetricsPerRequest(*config.MaxBatchSize),
+		broadcast.WithTimeouts(*config.Timeouts),
+		broadcast.WithTLDCache(!tldCacheDisabled),
+	)
+
+	return b, nil
 }
 
 func (c AutoGroup) MaxMetricsPerRequest() int {

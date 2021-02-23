@@ -58,15 +58,17 @@ func (g *GraphiteGroup) Children() []types.BackendServer {
 func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool, limiter limiter.ServerLimiter) (types.BackendServer, merry.Error) {
 	logger = logger.With(zap.String("type", "graphite"), zap.String("protocol", config.Protocol), zap.String("name", config.GroupName))
 
+	dialContext := (&net.Dialer{
+		Timeout:   config.Timeouts.Connect,
+		KeepAlive: *config.KeepAliveInterval,
+	}).DialContext
+
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConnsPerHost: *config.MaxIdleConnsPerHost,
 			IdleConnTimeout:     0,
 			ForceAttemptHTTP2:   config.ForceAttemptHTTP2,
-			DialContext: (&net.Dialer{
-				Timeout:   config.Timeouts.Connect,
-				KeepAlive: *config.KeepAliveInterval,
-			}).DialContext,
+			DialContext:         dialContext,
 		},
 	}
 
