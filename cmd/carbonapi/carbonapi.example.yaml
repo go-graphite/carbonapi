@@ -8,7 +8,9 @@
 # you should set it to URL of go-carbon's carbonserver module
 # or graphite-clickhouse's http url.
 # Listen address, should always include hostname or ip address and a port.
-listen: "localhost:8081"
+listeners:
+        - address: "127.0.0.1:8081"
+        - address: "[::1]:8081"
 # Specify URL Prefix for all handlers
 prefix: ""
 # Specify if metrics are exported over HTTP and if they are available on the same address or not
