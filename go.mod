@@ -33,13 +33,14 @@ require (
 	github.com/mjibson/go-dsp v0.0.0-20180508042940-11479a337f12
 	github.com/peterbourgon/g2g v0.0.0-20161124161852-0c2bab2b173d
 	github.com/philhofer/fwd v1.0.0 // indirect
+	github.com/rs/dnscache v0.0.0-20210201191234-295bba877686
 	github.com/satori/go.uuid v1.2.0
 	github.com/spf13/viper v1.6.3
 	github.com/stretchr/testify v1.5.1
 	github.com/tinylib/msgp v1.1.2
 	github.com/valyala/fastjson v1.6.1
 	github.com/wangjohn/quickselect v0.0.0-20161129230411-ed8402a42d5f
-	go.uber.org/zap v1.15.0
+	go.uber.org/zap v1.16.0
 	gonum.org/v1/gonum v0.7.0
 	google.golang.org/grpc v1.29.1
 	gopkg.in/yaml.v2 v2.2.8
