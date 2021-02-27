@@ -107,9 +107,20 @@ func TestProbeTLDs(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		b, err := NewBroadcastGroup(logger, tt.name, true, tt.servers, 60, 500, 100, timeouts, false)
+		b, err := New(
+			WithLogger(logger),
+			WithGroupName(tt.name),
+			WithSplitMultipleRequests(true),
+			WithBackends(tt.servers),
+			WithPathCache(60),
+			WithLimiter(500),
+			WithMaxMetricsPerRequest(100),
+			WithTimeouts(timeouts),
+			WithTLDCache(true),
+		)
+
 		if err != nil {
-			t.Fatalf("error while initializing group, when it shouldn't be: %v", err)
+			t.Fatalf("unexpected error %v", err)
 		}
 
 		for i := range tt.servers {
@@ -1112,9 +1123,19 @@ func TestFetchRequests(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		b, err := NewBroadcastGroup(logger, tt.name, false, tt.servers, 60, 500, 100, timeouts, false)
+		b, err := New(
+			WithLogger(logger),
+			WithGroupName(tt.name),
+			WithSplitMultipleRequests(false),
+			WithBackends(tt.servers),
+			WithPathCache(60),
+			WithLimiter(500),
+			WithMaxMetricsPerRequest(100),
+			WithTimeouts(timeouts),
+			WithTLDCache(true),
+		)
 		if err != nil {
-			t.Fatalf("error while initializing group, when it shouldn't be: %v", merry.Details(err))
+			t.Fatalf("unepxected error %v", err)
 		}
 
 		for i := range tt.servers {
