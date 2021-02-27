@@ -3,7 +3,6 @@ package zipper
 import (
 	"context"
 	_ "net/http/pprof"
-	"strings"
 	"time"
 
 	"github.com/ansel1/merry"
@@ -33,12 +32,8 @@ type Zipper struct {
 	timeoutConnect    time.Duration
 	keepAliveInterval time.Duration
 
-	searchConfigured bool
-	searchBackends   types.BackendServer
-	searchPrefix     string
-
 	// Will broadcast to all servers there
-	storeBackends             types.BackendServer
+	backend                   types.BackendServer
 	concurrencyLimitPerServer int
 
 	ScaleToCommonStep bool
@@ -49,7 +44,7 @@ type Zipper struct {
 }
 
 func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelaySec int32, tldCacheDisabled bool) ([]types.BackendServer, merry.Error) {
-	storeClients := make([]types.BackendServer, 0)
+	backendServers := make([]types.BackendServer, 0)
 	var e merry.Error
 	timeouts := backends.Timeouts
 	for _, backend := range backends.Backends {
@@ -78,7 +73,7 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 			backend.KeepAliveInterval = &keepAliveInterval
 		}
 
-		var client types.BackendServer
+		var backendServer types.BackendServer
 		logger.Debug("creating lb group",
 			zap.String("name", backend.GroupName),
 			zap.Strings("servers", backend.Servers),
@@ -112,32 +107,42 @@ func createBackendsV2(logger *zap.Logger, backends types.BackendsV2, expireDelay
 			)
 		}
 		if lbMethod == types.RoundRobinLB {
-			client, e = backendInit(logger, backend, tldCacheDisabled)
+			backendServer, e = backendInit(logger, backend, tldCacheDisabled)
 			if e != nil {
 				return nil, e
 			}
 		} else {
 			config := backend
 
-			backends := make([]types.BackendServer, 0, len(backend.Servers))
+			backendServers := make([]types.BackendServer, 0, len(backend.Servers))
 			for _, server := range backend.Servers {
 				config.Servers = []string{server}
 				config.GroupName = server
-				client, e = backendInit(logger, config, tldCacheDisabled)
+				backendServer, e = backendInit(logger, config, tldCacheDisabled)
 				if e != nil {
 					return nil, e
 				}
-				backends = append(backends, client)
+				backendServers = append(backendServers, backendServer)
 			}
 
-			client, e = broadcast.NewBroadcastGroup(logger, backend.GroupName, backend.DoMultipleRequestsIfSplit, backends, expireDelaySec, *backend.ConcurrencyLimit, *backend.MaxBatchSize, timeouts, tldCacheDisabled)
-			if e != nil {
-				return nil, e
+			backendServer, err = broadcast.New(
+				broadcast.WithLogger(logger),
+				broadcast.WithGroupName(backend.GroupName),
+				broadcast.WithSplitMultipleRequests(backend.DoMultipleRequestsIfSplit),
+				broadcast.WithBackends(backendServers),
+				broadcast.WithPathCache(expireDelaySec),
+				broadcast.WithLimiter(*backend.ConcurrencyLimit),
+				broadcast.WithMaxMetricsPerRequest(*backend.MaxBatchSize),
+				broadcast.WithTimeouts(timeouts),
+				broadcast.WithTLDCache(!tldCacheDisabled),
+			)
+			if err != nil {
+				return nil, merry.Wrap(err)
 			}
 		}
-		storeClients = append(storeClients, client)
+		backendServers = append(backendServers, backendServer)
 	}
-	return storeClients, nil
+	return backendServers, nil
 }
 
 // NewZipper allows to create new Zipper
@@ -146,39 +151,27 @@ func NewZipper(sender func(*types.Stats), cfg *config.Config, logger *zap.Logger
 		cfg = config.SanitizeConfig(logger, *cfg)
 	}
 
-	var searchBackends types.BackendServer
-	var prefix string
-
-	if len(cfg.CarbonSearchV2.BackendsV2.Backends) > 0 {
-		logger.Warn("Carbonsearch support is considered to be deprecated in November 2020, please comment on https://github.com/go-graphite/carbonapi/issues/449 if you still need it")
-		prefix = cfg.CarbonSearchV2.Prefix
-		searchClients, err := createBackendsV2(logger, cfg.CarbonSearchV2.BackendsV2, int32(cfg.InternalRoutingCache.Seconds()), cfg.TLDCacheDisabled)
-		if err != nil {
-			logger.Fatal("merry.Errors while initialing zipper search backends",
-				zap.Any("merry.Errors", err),
-			)
-		}
-
-		searchBackends, err = broadcast.NewBroadcastGroup(logger, "search", true, searchClients, int32(cfg.InternalRoutingCache.Seconds()), cfg.ConcurrencyLimitPerServer, *cfg.MaxBatchSize, cfg.Timeouts, cfg.TLDCacheDisabled)
-		if err != nil {
-			logger.Fatal("merry.Errors while initialing zipper search backends",
-				zap.Any("merry.Errors", err),
-			)
-		}
-	}
-
-	storeClients, err := createBackendsV2(logger, cfg.BackendsV2, int32(cfg.InternalRoutingCache.Seconds()), cfg.TLDCacheDisabled)
+	backends, err := createBackendsV2(logger, cfg.BackendsV2, int32(cfg.InternalRoutingCache.Seconds()), cfg.TLDCacheDisabled)
 	if err != nil {
-		logger.Fatal("merry.Errors while initialing zipper store backends",
-			zap.Any("merry.Errors", err),
+		logger.Fatal("errors while initialing zipper store backend",
+			zap.Any("error", err),
 		)
 	}
 
-	var storeBackends types.BackendServer
-	storeBackends, err = broadcast.NewBroadcastGroup(logger, "root", cfg.DoMultipleRequestsIfSplit, storeClients, int32(cfg.InternalRoutingCache.Seconds()), cfg.ConcurrencyLimitPerServer, *cfg.MaxBatchSize, cfg.Timeouts, cfg.TLDCacheDisabled)
+	broadcastGroup, err := broadcast.New(
+		broadcast.WithLogger(logger),
+		broadcast.WithGroupName("root"),
+		broadcast.WithSplitMultipleRequests(cfg.DoMultipleRequestsIfSplit),
+		broadcast.WithBackends(backends),
+		broadcast.WithPathCache(int32(cfg.InternalRoutingCache.Seconds())),
+		broadcast.WithLimiter(cfg.ConcurrencyLimitPerServer),
+		broadcast.WithMaxMetricsPerRequest(*cfg.MaxBatchSize),
+		broadcast.WithTimeouts(cfg.Timeouts),
+		broadcast.WithTLDCache(cfg.TLDCacheDisabled),
+	)
 	if err != nil {
-		logger.Fatal("merry.Errors while initialing zipper store backends",
-			zap.Any("merry.Errors", err),
+		logger.Fatal("error while initialing zipper store backend",
+			zap.Any("error", err),
 		)
 	}
 
@@ -189,10 +182,7 @@ func NewZipper(sender func(*types.Stats), cfg *config.Config, logger *zap.Logger
 		ScaleToCommonStep: cfg.ScaleToCommonStep,
 		sendStats:         sender,
 
-		storeBackends:             storeBackends,
-		searchBackends:            searchBackends,
-		searchPrefix:              prefix,
-		searchConfigured:          len(prefix) > 0 && len(searchBackends.Backends()) > 0,
+		backend:                   broadcastGroup,
 		concurrencyLimitPerServer: cfg.ConcurrencyLimitPerServer,
 		keepAliveInterval:         cfg.KeepAliveInterval,
 		timeout:                   cfg.Timeouts.Render,
@@ -217,7 +207,7 @@ func NewZipper(sender func(*types.Stats), cfg *config.Config, logger *zap.Logger
 func (z *Zipper) doProbe(logger *zap.Logger) {
 	ctx := context.Background()
 
-	_, err := z.storeBackends.ProbeTLDs(ctx)
+	_, err := z.backend.ProbeTLDs(ctx)
 	if err != nil {
 		logger.Error("failed to probe tlds",
 			zap.String("errors", err.Cause().Error()),
@@ -248,79 +238,9 @@ func (z *Zipper) probeTlds() {
 // GRPC-compatible methods
 func (z Zipper) FetchProtoV3(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, merry.Error) {
 	logger := z.logger.With(zap.String("function", "FetchProtoV3"))
-	var statsSearch *types.Stats
-	var e merry.Error
 
-	if z.searchConfigured {
-		realRequest := &protov3.MultiFetchRequest{
-			Metrics: make([]protov3.FetchRequest, 0, len(request.Metrics)),
-		}
+	res, stats, e := z.backend.Fetch(ctx, request)
 
-		for _, metric := range request.Metrics {
-			if strings.HasPrefix(metric.Name, z.searchPrefix) {
-				res, stat, err := z.searchBackends.Find(ctx, &protov3.MultiGlobRequest{
-					Metrics: []string{metric.Name},
-				})
-
-				if statsSearch == nil {
-					statsSearch = stat
-				} else {
-					statsSearch.Merge(stat)
-				}
-
-				if err != nil {
-					if e == nil {
-						e = err
-					} else {
-						e = e.WithCause(err)
-					}
-					continue
-				}
-
-				if len(res.Metrics) == 0 {
-					continue
-				}
-
-				metricRequests := make([]protov3.FetchRequest, 0, len(res.Metrics))
-				for _, n := range res.Metrics {
-					for _, m := range n.Matches {
-						metricRequests = append(metricRequests, protov3.FetchRequest{
-							Name:            m.Path,
-							StartTime:       metric.StartTime,
-							StopTime:        metric.StopTime,
-							FilterFunctions: metric.FilterFunctions,
-						})
-					}
-				}
-
-				if len(metricRequests) > 0 {
-					realRequest.Metrics = append(realRequest.Metrics, metricRequests...)
-				}
-
-			} else {
-				realRequest.Metrics = append(realRequest.Metrics, metric)
-			}
-		}
-
-		if len(realRequest.Metrics) > 0 {
-			request = realRequest
-		}
-	}
-
-	res, stats, err := z.storeBackends.Fetch(ctx, request)
-	if statsSearch != nil {
-		if stats == nil {
-			stats = statsSearch
-		} else {
-			stats.Merge(statsSearch)
-		}
-	}
-
-	if e == nil {
-		e = err
-	} else {
-		e = e.WithCause(err)
-	}
 	if e != nil {
 		logger.Debug("had errors while fetching result",
 			zap.Any("errors", e),
@@ -347,22 +267,8 @@ func (z Zipper) FetchProtoV3(ctx context.Context, request *protov3.MultiFetchReq
 
 func (z Zipper) FindProtoV3(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
 	logger := z.logger.With(zap.String("function", "FindProtoV3"))
-	searchRequests := &protov3.MultiGlobRequest{}
-	if z.searchConfigured {
-		realRequest := &protov3.MultiGlobRequest{Metrics: make([]string, 0, len(request.Metrics))}
-		for _, m := range request.Metrics {
-			if strings.HasPrefix(m, z.searchPrefix) {
-				searchRequests.Metrics = append(searchRequests.Metrics, m)
-			} else {
-				realRequest.Metrics = append(realRequest.Metrics, m)
-			}
-		}
-		if len(searchRequests.Metrics) > 0 {
-			request = realRequest
-		}
-	}
 
-	res, stats, err := z.storeBackends.Find(ctx, request)
+	res, stats, err := z.backend.Find(ctx, request)
 
 	var errs []merry.Error
 	if err != nil {
@@ -373,21 +279,6 @@ func (z Zipper) FindProtoV3(ctx context.Context, request *protov3.MultiGlobReque
 		Response: res,
 		Stats:    stats,
 		Err:      errs,
-	}
-
-	// TODO(civil): Rework merging carbonsearch and other responses
-	if len(searchRequests.Metrics) > 0 {
-		resSearch, statsSearch, err := z.searchBackends.Find(ctx, request)
-		var errs []merry.Error
-		if err != nil {
-			errs = []merry.Error{err}
-		}
-		searchResponse := &types.ServerFindResponse{
-			Response: resSearch,
-			Stats:    statsSearch,
-			Err:      errs,
-		}
-		_ = findResponse.Merge(searchResponse)
 	}
 
 	if len(findResponse.Err) > 0 {
@@ -427,7 +318,7 @@ func (z Zipper) InfoProtoV3(ctx context.Context, request *protov3.MultiGlobReque
 		realRequest.Names = append(realRequest.Names, request.Metrics...)
 	}
 
-	r, stats, e := z.storeBackends.Info(ctx, realRequest)
+	r, stats, e := z.backend.Info(ctx, realRequest)
 	if e != nil {
 		if merry.Is(e, types.ErrNotFound) {
 			return nil, nil, e
@@ -444,7 +335,7 @@ func (z Zipper) InfoProtoV3(ctx context.Context, request *protov3.MultiGlobReque
 
 func (z Zipper) ListProtoV3(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, merry.Error) {
 	logger := z.logger.With(zap.String("function", "ListProtoV3"))
-	r, stats, e := z.storeBackends.List(ctx)
+	r, stats, e := z.backend.List(ctx)
 	if e != nil {
 		if merry.Is(e, types.ErrNotFound) {
 			return nil, nil, e
@@ -460,7 +351,7 @@ func (z Zipper) ListProtoV3(ctx context.Context) (*protov3.ListMetricsResponse, 
 }
 func (z Zipper) StatsProtoV3(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, merry.Error) {
 	logger := z.logger.With(zap.String("function", "StatsProtoV3"))
-	r, stats, e := z.storeBackends.Stats(ctx)
+	r, stats, e := z.backend.Stats(ctx)
 	if e != nil {
 		if merry.Is(e, types.ErrNotFound) {
 			return nil, nil, e
@@ -479,7 +370,7 @@ func (z Zipper) StatsProtoV3(ctx context.Context) (*protov3.MetricDetailsRespons
 
 func (z Zipper) TagNames(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
 	logger := z.logger.With(zap.String("function", "TagNames"))
-	data, err := z.storeBackends.TagNames(ctx, query, limit)
+	data, err := z.backend.TagNames(ctx, query, limit)
 	if err != nil {
 		logger.Debug("had errors while fetching result",
 			zap.Any("errors", err),
@@ -492,7 +383,7 @@ func (z Zipper) TagNames(ctx context.Context, query string, limit int64) ([]stri
 
 func (z Zipper) TagValues(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
 	logger := z.logger.With(zap.String("function", "TagValues"))
-	data, err := z.storeBackends.TagValues(ctx, query, limit)
+	data, err := z.backend.TagValues(ctx, query, limit)
 	if err != nil {
 		logger.Debug("had errors while fetching result",
 			zap.Any("errors", err),

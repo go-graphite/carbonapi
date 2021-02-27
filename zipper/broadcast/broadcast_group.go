@@ -7,11 +7,12 @@ import (
 	"strings"
 
 	"github.com/ansel1/merry"
+	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
+	"github.com/lomik/zapwriter"
 
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/pathcache"
 	"github.com/go-graphite/carbonapi/zipper/types"
-	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
 	"go.uber.org/zap"
 )
@@ -25,10 +26,104 @@ type BroadcastGroup struct {
 	maxMetricsPerRequest      int
 	doMultipleRequestsIfSplit bool
 	tldCacheDisabled          bool
+	concurrencyLimit          int
 
 	fetcher   types.Fetcher
 	pathCache pathcache.PathCache
 	logger    *zap.Logger
+}
+
+type Option func(group *BroadcastGroup)
+
+func WithLogger(logger *zap.Logger) Option {
+	return func(bg *BroadcastGroup) {
+		bg.logger = logger
+	}
+}
+
+func WithGroupName(name string) Option {
+	return func(bg *BroadcastGroup) {
+		bg.groupName = name
+	}
+}
+
+func WithSplitMultipleRequests(multiRequests bool) Option {
+	return func(bg *BroadcastGroup) {
+		bg.doMultipleRequestsIfSplit = multiRequests
+		if multiRequests {
+			bg.fetcher = bg.doMultiFetch
+		} else {
+			bg.fetcher = bg.doSingleFetch
+		}
+	}
+}
+
+func WithBackends(backends []types.BackendServer) Option {
+	return func(bg *BroadcastGroup) {
+		serverNames := make([]string, 0, len(backends))
+		for _, b := range backends {
+			serverNames = append(serverNames, b.Name())
+		}
+		bg.backends = backends
+		bg.servers = serverNames
+	}
+}
+
+func WithPathCache(expireDelaySec int32) Option {
+	return func(bg *BroadcastGroup) {
+		bg.pathCache = pathcache.NewPathCache(expireDelaySec)
+	}
+}
+
+func WithLimiter(concurrencyLimit int) Option {
+	return func(bg *BroadcastGroup) {
+		bg.concurrencyLimit = concurrencyLimit
+	}
+}
+
+func WithMaxMetricsPerRequest(maxMetricsPerRequest int) Option {
+	return func(bg *BroadcastGroup) {
+		bg.maxMetricsPerRequest = maxMetricsPerRequest
+	}
+}
+
+func WithTLDCache(enableTLDCache bool) Option {
+	return func(bg *BroadcastGroup) {
+		bg.tldCacheDisabled = !enableTLDCache
+	}
+}
+
+func WithTimeouts(timeouts types.Timeouts) Option {
+	return func(bg *BroadcastGroup) {
+		bg.timeout = timeouts
+	}
+}
+
+func New(opts ...Option) (*BroadcastGroup, merry.Error) {
+	bg := &BroadcastGroup{
+		limiter: limiter.NoopLimiter{},
+	}
+
+	for _, opt := range opts {
+		opt(bg)
+	}
+
+	if bg.logger == nil {
+		logger := zapwriter.Logger("init")
+		logger.Fatal("failed to initialize backend")
+	}
+
+	bg.logger = bg.logger.With(zap.String("type", "broadcastGroup"), zap.String("groupName", bg.groupName))
+
+	if len(bg.backends) == 0 {
+		return nil, types.ErrNoServersSpecified
+	}
+
+	if bg.concurrencyLimit != 0 {
+		bg.limiter = limiter.NewServerLimiter(bg.servers, bg.concurrencyLimit)
+	}
+
+	return bg, nil
 }
 
 func (bg *BroadcastGroup) Children() []types.BackendServer {
@@ -44,44 +139,18 @@ func (bg *BroadcastGroup) SetDoMultipleRequestIfSplit(v bool) {
 	}
 }
 
-func NewBroadcastGroup(logger *zap.Logger, groupName string, doMultipleRequestsIfSplit bool, servers []types.BackendServer, expireDelaySec int32, concurrencyLimit, maxBatchSize int, timeout types.Timeouts, tldCacheDisabled bool) (*BroadcastGroup, merry.Error) {
-	if len(servers) == 0 {
-		return nil, types.ErrNoServersSpecified
-	}
-	serverNames := make([]string, 0, len(servers))
-	for _, s := range servers {
-		serverNames = append(serverNames, s.Name())
-	}
-	pathCache := pathcache.NewPathCache(expireDelaySec)
-	l := limiter.NewServerLimiter(serverNames, concurrencyLimit)
-
-	return NewBroadcastGroupWithLimiter(logger, groupName, doMultipleRequestsIfSplit, servers, serverNames, maxBatchSize, pathCache, l, timeout, tldCacheDisabled)
-}
-
-func NewBroadcastGroupWithLimiter(logger *zap.Logger, groupName string, doMultipleRequestsIfSplit bool, servers []types.BackendServer, serverNames []string, maxBatchSize int, pathCache pathcache.PathCache, limiter limiter.ServerLimiter, timeout types.Timeouts, tldCacheDisabled bool) (*BroadcastGroup, merry.Error) {
-	b := &BroadcastGroup{
-		timeout:              timeout,
-		groupName:            groupName,
-		backends:             servers,
-		limiter:              limiter,
-		servers:              serverNames,
-		maxMetricsPerRequest: maxBatchSize,
-		tldCacheDisabled:     tldCacheDisabled,
-
-		pathCache: pathCache,
-		logger:    logger.With(zap.String("type", "broadcastGroup"), zap.String("groupName", groupName)),
-	}
-
-	b.SetDoMultipleRequestIfSplit(doMultipleRequestsIfSplit)
-
-	b.logger.Debug("created broadcast group",
-		zap.String("group_name", b.groupName),
-		zap.Strings("backends", b.servers),
-		zap.Int("max_batch_size", maxBatchSize),
-		zap.Bool("do_single_request_at_a_time", b.doMultipleRequestsIfSplit),
+func NewBroadcastGroup(logger *zap.Logger, groupName string, doMultipleRequestsIfSplit bool, servers []types.BackendServer, expireDelaySec int32, concurrencyLimit, maxBatchSize int, timeouts types.Timeouts, tldCacheDisabled bool) (*BroadcastGroup, merry.Error) {
+	return New(
+		WithLogger(logger),
+		WithGroupName(groupName),
+		WithSplitMultipleRequests(doMultipleRequestsIfSplit),
+		WithBackends(servers),
+		WithPathCache(expireDelaySec),
+		WithLimiter(concurrencyLimit),
+		WithMaxMetricsPerRequest(maxBatchSize),
+		WithTimeouts(timeouts),
+		WithTLDCache(!tldCacheDisabled),
 	)
-
-	return b, nil
 }
 
 func (bg BroadcastGroup) Name() string {

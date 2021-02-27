@@ -40,6 +40,8 @@ type ClientProtoV3Group struct {
 
 	client *http.Client
 
+	config               types.BackendV2
+	tldCache             bool
 	limiter              limiter.ServerLimiter
 	logger               *zap.Logger
 	timeout              types.Timeouts
