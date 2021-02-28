@@ -29,8 +29,10 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 	// Also register aliases for each and every summarizer
 	for _, n := range consolidations.AvailableSummarizers {
-		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
-		res = append(res, interfaces.FunctionMetadata{Name: n + "Series", F: f})
+		res = append(res,
+			interfaces.FunctionMetadata{Name: n, F: f},
+			interfaces.FunctionMetadata{Name: n + "Series", F: f},
+		)
 	}
 	return res
 }
