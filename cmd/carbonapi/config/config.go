@@ -85,6 +85,8 @@ type ConfigType struct {
 	Expvar                     ExpvarConfig       `mapstructure:"expvar"`
 	NotFoundStatusCode         int                `mapstructure:"notFoundStatusCode"`
 	HTTPResponseStackTrace     bool               `mapstructure:"httpResponseStackTrace"`
+	UseCachingDNSResolver      bool               `mapstructure:"useCachingDNSResolver"`
+	CachingDNSRefreshTime      time.Duration      `mapstructure:"cachingDNSRefreshTime"`
 
 	ResponseCache cache.BytesCache `mapstructure:"-" json:"-"`
 	BackendCache  cache.BytesCache `mapstructure:"-" json:"-"`
@@ -160,4 +162,6 @@ var Config = ConfigType{
 	},
 	NotFoundStatusCode:     200,
 	HTTPResponseStackTrace: true,
+	UseCachingDNSResolver:  false,
+	CachingDNSRefreshTime:  1 * time.Minute,
 }

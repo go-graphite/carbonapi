@@ -3,6 +3,7 @@ package broadcast
 import (
 	"context"
 	"fmt"
+	"net"
 	"sort"
 	"strings"
 
@@ -31,6 +32,7 @@ type BroadcastGroup struct {
 	fetcher   types.Fetcher
 	pathCache pathcache.PathCache
 	logger    *zap.Logger
+	dialer    *net.Dialer
 }
 
 type Option func(group *BroadcastGroup)
@@ -96,6 +98,12 @@ func WithTLDCache(enableTLDCache bool) Option {
 func WithTimeouts(timeouts types.Timeouts) Option {
 	return func(bg *BroadcastGroup) {
 		bg.timeout = timeouts
+	}
+}
+
+func WithDialer(dialer *net.Dialer) Option {
+	return func(bg *BroadcastGroup) {
+		bg.dialer = dialer
 	}
 }
 

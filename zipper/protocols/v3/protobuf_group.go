@@ -3,7 +3,6 @@ package v3
 import (
 	"context"
 	"encoding/json"
-	"net"
 	"net/http"
 	"net/url"
 
@@ -11,6 +10,7 @@ import (
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"go.uber.org/zap"
 
+	"github.com/go-graphite/carbonapi/internal/dns"
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/zipper/helper"
 	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
@@ -40,8 +40,6 @@ type ClientProtoV3Group struct {
 
 	client *http.Client
 
-	config               types.BackendV2
-	tldCache             bool
 	limiter              limiter.ServerLimiter
 	logger               *zap.Logger
 	timeout              types.Timeouts
@@ -73,10 +71,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 			MaxIdleConnsPerHost: *config.MaxIdleConnsPerHost,
 			IdleConnTimeout:     0,
 			ForceAttemptHTTP2:   config.ForceAttemptHTTP2,
-			DialContext: (&net.Dialer{
-				Timeout:   config.Timeouts.Connect,
-				KeepAlive: *config.KeepAliveInterval,
-			}).DialContext,
+			DialContext:         dns.GetDialContextWithTimeout(config.Timeouts.Connect, *config.KeepAliveInterval),
 		},
 	}
 

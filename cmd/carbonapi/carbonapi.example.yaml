@@ -13,6 +13,10 @@ listeners:
         - address: "[::1]:8081"
 # Specify URL Prefix for all handlers
 prefix: ""
+# Use custom caching DNS resolver instead of default one. You shouldn't use it unless you know what you are doing.
+useCachingDNSResolver: false
+# TTL for DNS records in DNS cache. Only matters if `useCachingDNSResolver` is enabled.
+cachingDNSRefreshTime: "1m"
 # Specify if metrics are exported over HTTP and if they are available on the same address or not
 # pprofEnabled controls if extra HTTP Handlers to profile and debug application will be available
 expvar:

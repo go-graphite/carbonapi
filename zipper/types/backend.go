@@ -12,7 +12,6 @@ type BackendsV2 struct {
 	KeepAliveInterval         time.Duration `mapstructure:"keepAliveInterval"`
 	MaxTries                  int           `mapstructure:"maxTries"`
 	MaxBatchSize              *int          `mapstructure:"maxBatchSize"`
-	UseCachingDNSResolver     *bool         `mapstructure:"useCachingDNSResolver"`
 }
 
 type BackendV2 struct {
@@ -29,7 +28,6 @@ type BackendV2 struct {
 	BackendOptions            map[string]interface{} `mapstructure:"backendOptions"`
 	ForceAttemptHTTP2         bool                   `mapstructure:"forceAttemptHTTP2"`
 	DoMultipleRequestsIfSplit bool                   `mapstructure:"doMultipleRequestsIfSplit"`
-	UseCachingDNSResolver     *bool                  `mapstructure:"useCachingDNSResolver"`
 }
 
 func (b *BackendV2) FillDefaults() {

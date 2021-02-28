@@ -4,20 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"math"
-	"net"
 	"net/http"
 	"net/url"
 	"strconv"
 
 	"github.com/ansel1/merry"
 
+	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
+	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
+
+	"github.com/go-graphite/carbonapi/internal/dns"
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/zipper/helper"
 	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 	"github.com/go-graphite/carbonapi/zipper/metadata"
 	"github.com/go-graphite/carbonapi/zipper/types"
-	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
-	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
 	"go.uber.org/zap"
 )
@@ -65,10 +66,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 			MaxIdleConnsPerHost: *config.MaxIdleConnsPerHost,
 			IdleConnTimeout:     0,
 			ForceAttemptHTTP2:   config.ForceAttemptHTTP2,
-			DialContext: (&net.Dialer{
-				Timeout:   config.Timeouts.Connect,
-				KeepAlive: *config.KeepAliveInterval,
-			}).DialContext,
+			DialContext:         dns.GetDialContextWithTimeout(config.Timeouts.Connect, *config.KeepAliveInterval),
 		},
 	}
 

@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/go-graphite/carbonapi/internal/dns"
 	"github.com/go-graphite/carbonapi/zipper/protocols/prometheus/helpers"
 	prometheusTypes "github.com/go-graphite/carbonapi/zipper/protocols/prometheus/types"
 
@@ -87,10 +87,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 			MaxIdleConnsPerHost: *config.MaxIdleConnsPerHost,
 			IdleConnTimeout:     0,
 			ForceAttemptHTTP2:   config.ForceAttemptHTTP2,
-			DialContext: (&net.Dialer{
-				Timeout:   config.Timeouts.Connect,
-				KeepAlive: *config.KeepAliveInterval,
-			}).DialContext,
+			DialContext:         dns.GetDialContextWithTimeout(config.Timeouts.Connect, *config.KeepAliveInterval),
 		},
 	}
 
