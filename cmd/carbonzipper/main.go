@@ -20,18 +20,18 @@ import (
 	"github.com/ansel1/merry"
 
 	"github.com/dgryski/httputil"
-	"github.com/facebookgo/grace/gracehttp"
 	"github.com/facebookgo/pidfile"
+	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
+	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
+	"github.com/lomik/zapwriter"
+	"github.com/spf13/viper"
+
 	"github.com/go-graphite/carbonapi/intervalset"
 	"github.com/go-graphite/carbonapi/mstats"
 	util "github.com/go-graphite/carbonapi/util/ctx"
 	"github.com/go-graphite/carbonapi/zipper"
 	zipperConfig "github.com/go-graphite/carbonapi/zipper/config"
 	"github.com/go-graphite/carbonapi/zipper/types"
-	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
-	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"github.com/lomik/zapwriter"
-	"github.com/spf13/viper"
 
 	pickle "github.com/lomik/og-rek"
 	"github.com/peterbourgon/g2g"
@@ -812,13 +812,14 @@ func main() {
 		go srv.serve()
 	}
 
-	err = gracehttp.Serve(&http.Server{
+	srv := &http.Server{
 		Addr:    config.Listen,
 		Handler: nil,
-	})
+	}
+	err = srv.ListenAndServe()
 
 	if err != nil {
-		logger.Fatal("error during gracehttp.Serve()",
+		logger.Fatal("error during starting web server",
 			zap.Error(err),
 		)
 	}
