@@ -401,7 +401,7 @@ func parseExprWithoutPipe(e string) (Expr, string, error) {
 		e = e[1:]
 	}
 
-	if len(e) == 0 {
+	if e == "" {
 		return nil, "", ErrMissingExpr
 	}
 
