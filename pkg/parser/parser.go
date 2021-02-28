@@ -53,8 +53,8 @@ func (e *expr) ToString() string {
 		return e.valStr
 	case EtString:
 		s := e.valStr
-		s = strings.Replace(s, `\`, `\\`, -1)
-		s = strings.Replace(s, `'`, `\'`, -1)
+		s = strings.ReplaceAll(s, `\`, `\\`)
+		s = strings.ReplaceAll(s, `'`, `\'`)
 		return "'" + s + "'"
 	case EtBool:
 		return fmt.Sprint(e.val)

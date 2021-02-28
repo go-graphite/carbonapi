@@ -57,10 +57,10 @@ func (f *applyByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		metric := helper.ExtractMetric(a.Name)
 		nodes := strings.Split(metric, ".")
 		node := strings.Join(nodes[0:field+1], ".")
-		newTarget := strings.Replace(callback, "%", node, -1)
+		newTarget := strings.ReplaceAll(callback, "%", node)
 
 		if newName != "" {
-			newTarget = fmt.Sprintf("alias(%s,\"%s\")", newTarget, strings.Replace(newName, "%", node, -1))
+			newTarget = fmt.Sprintf("alias(%s,\"%s\")", newTarget, strings.ReplaceAll(newName, "%", node))
 		}
 		rv = append(rv, newTarget)
 	}
