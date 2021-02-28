@@ -3,7 +3,6 @@ package victoriametrics
 import (
 	"context"
 	"fmt"
-	"net"
 	"net/http"
 	"strconv"
 	"sync/atomic"
@@ -12,6 +11,7 @@ import (
 	"github.com/ansel1/merry"
 	"github.com/valyala/fastjson"
 
+	"github.com/go-graphite/carbonapi/internal/dns"
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/zipper/helper"
 	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
@@ -68,10 +68,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConnsPerHost: *config.MaxIdleConnsPerHost,
-			DialContext: (&net.Dialer{
-				Timeout:   config.Timeouts.Connect,
-				KeepAlive: *config.KeepAliveInterval,
-			}).DialContext,
+			DialContext:         dns.GetDialContextWithTimeout(config.Timeouts.Connect, *config.KeepAliveInterval),
 		},
 	}
 

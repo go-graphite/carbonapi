@@ -4,21 +4,22 @@ import (
 	"context"
 	"encoding/json"
 	"math"
-	"net"
 	"net/http"
 	"net/url"
 	"strconv"
 
 	"github.com/ansel1/merry"
 
+	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
+	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
+
+	"github.com/go-graphite/carbonapi/internal/dns"
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/zipper/helper"
 	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 	"github.com/go-graphite/carbonapi/zipper/metadata"
 	"github.com/go-graphite/carbonapi/zipper/protocols/graphite/msgpack"
 	"github.com/go-graphite/carbonapi/zipper/types"
-	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
-	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
 	"go.uber.org/zap"
 )
@@ -58,17 +59,12 @@ func (g *GraphiteGroup) Children() []types.BackendServer {
 func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool, limiter limiter.ServerLimiter) (types.BackendServer, merry.Error) {
 	logger = logger.With(zap.String("type", "graphite"), zap.String("protocol", config.Protocol), zap.String("name", config.GroupName))
 
-	dialContext := (&net.Dialer{
-		Timeout:   config.Timeouts.Connect,
-		KeepAlive: *config.KeepAliveInterval,
-	}).DialContext
-
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConnsPerHost: *config.MaxIdleConnsPerHost,
 			IdleConnTimeout:     0,
 			ForceAttemptHTTP2:   config.ForceAttemptHTTP2,
-			DialContext:         dialContext,
+			DialContext:         dns.GetDialContextWithTimeout(config.Timeouts.Connect, *config.KeepAliveInterval),
 		},
 	}
 
@@ -136,13 +132,13 @@ func (c *GraphiteGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRe
 			"until":  []string{strconv.Itoa(int(request.Metrics[0].StopTime))},
 		}
 		rewrite.RawQuery = v.Encode()
-		stats.RenderRequests += 1
+		stats.RenderRequests++
 		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if err != nil {
-			stats.RenderErrors += 1
+			stats.RenderErrors++
 			if merry.Is(err, types.ErrTimeoutExceeded) {
-				stats.Timeouts += 1
-				stats.RenderTimeouts += 1
+				stats.Timeouts++
+				stats.RenderTimeouts++
 			}
 			if e == nil {
 				e = err
@@ -155,7 +151,7 @@ func (c *GraphiteGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRe
 		metrics := msgpack.MultiGraphiteFetchResponse{}
 		_, marshalErr := metrics.UnmarshalMsg(res.Response)
 		if marshalErr != nil {
-			stats.RenderErrors += 1
+			stats.RenderErrors++
 			if e == nil {
 				e = merry.Wrap(marshalErr).WithValue("targets", targets)
 			} else {
@@ -210,13 +206,13 @@ func (c *GraphiteGroup) Find(ctx context.Context, request *protov3.MultiGlobRequ
 			"format": []string{c.protocol},
 		}
 		rewrite.RawQuery = v.Encode()
-		stats.FindRequests += 1
+		stats.FindRequests++
 		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if err != nil {
-			stats.FindErrors += 1
+			stats.FindErrors++
 			if merry.Is(err, types.ErrTimeoutExceeded) {
-				stats.Timeouts += 1
-				stats.FindTimeouts += 1
+				stats.Timeouts++
+				stats.FindTimeouts++
 			}
 			if e == nil {
 				e = err
@@ -279,13 +275,13 @@ func (c *GraphiteGroup) Info(ctx context.Context, request *protov3.MultiMetricsI
 			"format": []string{c.protocol},
 		}
 		rewrite.RawQuery = v.Encode()
-		stats.InfoRequests += 1
+		stats.InfoRequests++
 		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if err != nil {
-			stats.InfoErrors += 1
+			stats.InfoErrors++
 			if merry.Is(err, types.ErrTimeoutExceeded) {
-				stats.Timeouts += 1
-				stats.InfoTimeouts += 1
+				stats.Timeouts++
+				stats.InfoTimeouts++
 			}
 			if e == nil {
 				e = err
@@ -298,7 +294,7 @@ func (c *GraphiteGroup) Info(ctx context.Context, request *protov3.MultiMetricsI
 		var info protov2.InfoResponse
 		marshalErr := info.Unmarshal(res.Response)
 		if marshalErr != nil {
-			stats.InfoErrors += 1
+			stats.InfoErrors++
 			if e == nil {
 				e = merry.Wrap(marshalErr).WithValue("query", query)
 			} else {

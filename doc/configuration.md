@@ -4,6 +4,7 @@ Table of Contents
 * [General configuration for carbonapi](#general-configuration-for-carbonapi)
   * [listen](#listen)
     * [Example:](#example)
+  * [useCachingDNSResolver](#useCachingDNSResolver)
   * [prefix](#prefix)
     * [Example:](#example-1)
   * [headersToPass](#headerstopass)
@@ -74,6 +75,26 @@ This will make it available on all IPv4 addresses, port 8080:
 ```yaml
 listen: "0.0.0.0:8080"
 ```
+
+***
+## useCachingDNSResolver
+
+**You shouldn't use it unless you know what you are doing.**
+
+Use custom DNS resolver that have internal cache instead of default Golang one. This is global setting and cannot be overridden on backend level.
+
+This option might help with environments where using DNS names is highly encouraged but DNS server provided have troubles keeping up with request rate. For example - some older versions of k8s or very specific settings on kube-dns side might rate-limit DNS requests.
+
+Please note that this DNS resolver is deliberately non-RFC compliant and will ignore TTL for the domain. `cachingDNSRefreshTime` will be used as a TTL instead.
+
+Default: false
+
+***
+## cachingDNSRefreshTime
+
+If `useCachingDNSResolver` is set to true, this is the TTL for DNS records to be valid.
+
+Default: 1m
 
 ***
 ## prefix

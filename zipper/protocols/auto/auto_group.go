@@ -2,20 +2,21 @@ package auto
 
 import (
 	"context"
-	"net"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/ansel1/merry"
+	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
+	"go.uber.org/zap"
+
+	"github.com/go-graphite/carbonapi/internal/dns"
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/zipper/broadcast"
 	"github.com/go-graphite/carbonapi/zipper/helper"
 	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 	"github.com/go-graphite/carbonapi/zipper/metadata"
 	"github.com/go-graphite/carbonapi/zipper/types"
-	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"go.uber.org/zap"
 )
 
 func init() {
@@ -84,12 +85,7 @@ func getBestSupportedProtocol(logger *zap.Logger, servers []string) *CapabilityR
 
 	httpClient := &http.Client{
 		Transport: &http.Transport{
-			DialContext: (&net.Dialer{
-				// TODO: Make that configurable
-				Timeout:   200 * time.Millisecond,
-				KeepAlive: 30 * time.Second,
-				DualStack: true,
-			}).DialContext,
+			DialContext: dns.GetDialContextWithTimeout(200*time.Millisecond, 30*time.Second),
 		},
 	}
 

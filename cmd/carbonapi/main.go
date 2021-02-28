@@ -15,6 +15,7 @@ import (
 
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 	carbonapiHttp "github.com/go-graphite/carbonapi/cmd/carbonapi/http"
+	"github.com/go-graphite/carbonapi/internal/dns"
 )
 
 // BuildVersion is provided to be overridden at build time. Eg. go build -ldflags -X 'main.BuildVersion=...'
@@ -41,6 +42,11 @@ func main() {
 	config.SetUpConfig(logger, BuildVersion)
 	carbonapiHttp.SetupMetrics(logger)
 	setupGraphiteMetrics(logger)
+
+	if config.Config.UseCachingDNSResolver {
+		logger.Info("will use custom caching dns resolver")
+		dns.UseDNSCache(config.Config.CachingDNSRefreshTime)
+	}
 
 	config.Config.ZipperInstance = newZipper(carbonapiHttp.ZipperStats, &config.Config.Upstreams, config.Config.IgnoreClientTimeout, zapwriter.Logger("zipper"))
 
