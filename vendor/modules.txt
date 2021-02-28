@@ -33,30 +33,9 @@ github.com/evmar/gocairo/cairo
 # github.com/facebookgo/atomicfile v0.0.0-20151019160806-2de1f203e7d5
 ## explicit
 github.com/facebookgo/atomicfile
-# github.com/facebookgo/clock v0.0.0-20150410010913-600d898af40a
-## explicit
-github.com/facebookgo/clock
-# github.com/facebookgo/ensure v0.0.0-20200202191622-63f1cf65ac4c
-## explicit
-# github.com/facebookgo/freeport v0.0.0-20150612182905-d4adf43b75b9
-## explicit
-# github.com/facebookgo/grace v0.0.0-20180706040059-75cf19382434
-## explicit
-github.com/facebookgo/grace/gracehttp
-github.com/facebookgo/grace/gracenet
-# github.com/facebookgo/httpdown v0.0.0-20180706035922-5979d39b15c2
-## explicit
-github.com/facebookgo/httpdown
 # github.com/facebookgo/pidfile v0.0.0-20150612191647-f242e2999868
 ## explicit
 github.com/facebookgo/pidfile
-# github.com/facebookgo/stack v0.0.0-20160209184415-751773369052
-## explicit
-# github.com/facebookgo/stats v0.0.0-20151006221625-1b76add642e4
-## explicit
-github.com/facebookgo/stats
-# github.com/facebookgo/subset v0.0.0-20200203212716-c811ad88dec4
-## explicit
 # github.com/fsnotify/fsnotify v1.4.7
 github.com/fsnotify/fsnotify
 # github.com/go-graphite/protocol v0.4.3
@@ -167,9 +146,7 @@ go.uber.org/zap/buffer
 go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
-go.uber.org/zap/internal/ztest
 go.uber.org/zap/zapcore
-go.uber.org/zap/zaptest
 # golang.org/x/net v0.0.0-20190620200207-3b0461eec859
 golang.org/x/net/context
 golang.org/x/net/http/httpguts
@@ -181,6 +158,7 @@ golang.org/x/net/trace
 # golang.org/x/sync v0.0.0-20190423024810-112230192c58
 golang.org/x/sync/singleflight
 # golang.org/x/sys v0.0.0-20190412213103-97732733099d
+## explicit
 golang.org/x/sys/unix
 # golang.org/x/text v0.3.0
 golang.org/x/text/secure/bidirule

@@ -1,19 +1,21 @@
 package main
 
 import (
+	"context"
 	"expvar"
 	"flag"
 	"log"
+	"net"
 	"net/http"
 	"net/http/pprof"
 	"sync"
 
-	"github.com/facebookgo/grace/gracehttp"
 	"github.com/gorilla/handlers"
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
 
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
+	"github.com/go-graphite/carbonapi/cmd/carbonapi/helper"
 	carbonapiHttp "github.com/go-graphite/carbonapi/cmd/carbonapi/http"
 	"github.com/go-graphite/carbonapi/internal/dns"
 )
@@ -77,10 +79,18 @@ func main() {
 			}
 			wg.Add(1)
 			go func(listen config.Listener) {
-				err = gracehttp.Serve(&http.Server{
+				l := &net.ListenConfig{Control: helper.ReusePort}
+				s := &http.Server{
 					Addr:    listen.Address,
 					Handler: handler,
-				})
+				}
+				listener, err := l.Listen(context.Background(), "tcp", listen.Address)
+				if err != nil {
+					logger.Fatal("failed to start http server",
+						zap.Error(err),
+					)
+				}
+				err = s.Serve(listener)
 
 				if err != nil {
 					logger.Fatal("failed to start http server",
@@ -101,10 +111,18 @@ func main() {
 	for _, listener := range config.Config.Listeners {
 		wg.Add(1)
 		go func(listen config.Listener) {
-			err = gracehttp.Serve(&http.Server{
+			l := &net.ListenConfig{Control: helper.ReusePort}
+			s := &http.Server{
 				Addr:    listen.Address,
 				Handler: handler,
-			})
+			}
+			listener, err := l.Listen(context.Background(), "tcp", listen.Address)
+			if err != nil {
+				logger.Fatal("failed to start http server",
+					zap.Error(err),
+				)
+			}
+			err = s.Serve(listener)
 
 			if err != nil {
 				logger.Fatal("failed to start http server",
