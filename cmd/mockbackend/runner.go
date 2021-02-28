@@ -16,7 +16,7 @@ type runner struct {
 	logger    *zap.Logger
 }
 
-func NewRunner(config *App, logger *zap.Logger) *runner {
+func new(config *App, logger *zap.Logger) *runner {
 	r := &runner{
 		App: *config,
 		logger: logger.With(
