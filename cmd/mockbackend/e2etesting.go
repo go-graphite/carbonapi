@@ -276,7 +276,7 @@ func e2eTest(logger *zap.Logger, noapp bool) bool {
 	runningApps := make(map[string]*runner)
 	if !noapp {
 		for i, c := range cfg.Test.Apps {
-			r := NewRunner(&cfg.Test.Apps[i], logger)
+			r := new(&cfg.Test.Apps[i], logger)
 			runningApps[c.Name] = r
 			go r.Run()
 		}

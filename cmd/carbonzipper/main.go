@@ -747,13 +747,13 @@ func main() {
 
 		/* #nosec */
 		hostname, _ := os.Hostname()
-		hostname = strings.Replace(hostname, ".", "_", -1)
+		hostname = strings.ReplaceAll(hostname, ".", "_")
 
 		prefix := config.Graphite.Prefix
 
 		pattern := config.Graphite.Pattern
-		pattern = strings.Replace(pattern, "{prefix}", prefix, -1)
-		pattern = strings.Replace(pattern, "{fqdn}", hostname, -1)
+		pattern = strings.ReplaceAll(pattern, "{prefix}", prefix)
+		pattern = strings.ReplaceAll(pattern, "{fqdn}", hostname)
 
 		graphite.Register(fmt.Sprintf("%s.find_requests", pattern), Metrics.FindRequests)
 		graphite.Register(fmt.Sprintf("%s.find_errors", pattern), Metrics.FindErrors)

@@ -122,17 +122,18 @@ func main() {
 	if !*testonly {
 		if *test {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
 			for i := range httpServers {
 				// we don't care about error here
 				_ = httpServers[i].Shutdown(ctx)
 			}
+			cancel()
 		}
 
 		wg.Wait()
 	}
 
 	if failed {
+		// skipcq: CRT-D0011
 		os.Exit(1)
 	}
 }

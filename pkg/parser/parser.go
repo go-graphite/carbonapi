@@ -53,8 +53,8 @@ func (e *expr) ToString() string {
 		return e.valStr
 	case EtString:
 		s := e.valStr
-		s = strings.Replace(s, `\`, `\\`, -1)
-		s = strings.Replace(s, `'`, `\'`, -1)
+		s = strings.ReplaceAll(s, `\`, `\\`)
+		s = strings.ReplaceAll(s, `'`, `\'`)
 		return "'" + s + "'"
 	case EtBool:
 		return fmt.Sprint(e.val)
@@ -401,7 +401,7 @@ func parseExprWithoutPipe(e string) (Expr, string, error) {
 		e = e[1:]
 	}
 
-	if len(e) == 0 {
+	if e == "" {
 		return nil, "", ErrMissingExpr
 	}
 

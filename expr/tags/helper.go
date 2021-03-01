@@ -27,7 +27,7 @@ func ExtractTags(s string) map[string]string {
 		if idx < 0 {
 			firstEqualSignIdx := strings.IndexRune(newS, '=')
 			// tag starts with `=` sign or have zero length
-			if len(newS) == 0 || firstEqualSignIdx == 0 {
+			if newS == "" || firstEqualSignIdx == 0 {
 				break
 			}
 			// tag doesn't have = sign at all
