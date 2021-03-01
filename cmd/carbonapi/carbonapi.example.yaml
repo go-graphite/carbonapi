@@ -11,6 +11,11 @@
 listeners:
         - address: "127.0.0.1:8081"
         - address: "[::1]:8081"
+        # OR
+        - address: "localhost:8081"
+# OR
+listen: "localhost:8081"
+
 # Specify URL Prefix for all handlers
 prefix: ""
 # Use custom caching DNS resolver instead of default one. You shouldn't use it unless you know what you are doing.
