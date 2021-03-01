@@ -40,7 +40,7 @@ func (c *VictoriaMetricsGroup) Fetch(ctx context.Context, request *protov3.Multi
 	stop := request.Metrics[0].StopTime
 
 	maxPointsPerQuery := c.maxPointsPerQuery
-	if request.Metrics != nil && request.Metrics[0].MaxDataPoints != 0 {
+	if len(request.Metrics) > 0 && request.Metrics[0].MaxDataPoints != 0 {
 		maxPointsPerQuery = request.Metrics[0].MaxDataPoints
 	}
 	step := helpers.AdjustStep(start, stop, maxPointsPerQuery, c.step)
