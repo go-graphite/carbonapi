@@ -54,7 +54,7 @@ func main() {
 
 	wg := sync.WaitGroup{}
 	if config.Config.Expvar.Enabled {
-		if config.Config.Expvar.Listen != "" || config.Config.Expvar.Listen != config.Config.Listeners[0].Address {
+		if config.Config.Expvar.Listen != "" && config.Config.Expvar.Listen != config.Config.Listeners[0].Address {
 			r := http.NewServeMux()
 			r.HandleFunc(config.Config.Prefix+"/debug/vars", expvar.Handler().ServeHTTP)
 			if config.Config.Expvar.PProfEnabled {
