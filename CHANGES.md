@@ -17,7 +17,7 @@ Changes
 
 CHANGELOG
 ---------
-**0.15.0 (WIP)**
+**0.15.0**
  - **[Breaking]** - cache (including memcache) now uses sha256 for a hash function for keys. This might break existing setup
  - **[Breaking]** - new config variable `slowLogThreshold` under `upstreams` section controls what request time would be required for request to be logged in `slow` logger.
  - **[Breaking]** - remove semi-broken support for graceful restarts (See #552)
