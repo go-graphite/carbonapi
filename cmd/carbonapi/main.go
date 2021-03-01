@@ -53,6 +53,54 @@ func main() {
 	config.Config.ZipperInstance = newZipper(carbonapiHttp.ZipperStats, &config.Config.Upstreams, config.Config.IgnoreClientTimeout, zapwriter.Logger("zipper"))
 
 	wg := sync.WaitGroup{}
+	serve := func(listen config.Listener, handler http.Handler) {
+		l := &net.ListenConfig{Control: helper.ReusePort}
+		h, p, err := net.SplitHostPort(listen.Address)
+		if err != nil {
+			logger.Fatal("failed to split adress",
+				zap.Error(err),
+			)
+		}
+		ips, err := net.LookupIP(h)
+		if err != nil {
+			logger.Fatal("failed to resolve adress",
+				zap.Error(err),
+			)
+		}
+		// Resolve named ports
+		port, err := net.LookupPort("tcp", p)
+		if err != nil {
+			logger.Fatal("failed to resolve port",
+				zap.Error(err),
+			)
+		}
+		for _, ip := range ips {
+			address := (&net.TCPAddr{IP: ip, Port: port}).String()
+			s := &http.Server{
+				Addr:    address,
+				Handler: handler,
+			}
+			listener, err := l.Listen(context.Background(), "tcp", address)
+			if err != nil {
+				logger.Fatal("failed to start http server",
+					zap.Error(err),
+				)
+			}
+			wg.Add(1)
+			go func() {
+				err = s.Serve(listener)
+
+				if err != nil {
+					logger.Fatal("failed to start http server",
+						zap.Error(err),
+					)
+				}
+
+				wg.Done()
+			}()
+		}
+	}
+
 	if config.Config.Expvar.Enabled {
 		if config.Config.Expvar.Listen != "" && config.Config.Expvar.Listen != config.Config.Listeners[0].Address {
 			r := http.NewServeMux()
@@ -77,29 +125,7 @@ func main() {
 			listener := config.Listener{
 				Address: config.Config.Expvar.Listen,
 			}
-			wg.Add(1)
-			go func(listen config.Listener) {
-				l := &net.ListenConfig{Control: helper.ReusePort}
-				s := &http.Server{
-					Addr:    listen.Address,
-					Handler: handler,
-				}
-				listener, err := l.Listen(context.Background(), "tcp", listen.Address)
-				if err != nil {
-					logger.Fatal("failed to start http server",
-						zap.Error(err),
-					)
-				}
-				err = s.Serve(listener)
-
-				if err != nil {
-					logger.Fatal("failed to start http server",
-						zap.Error(err),
-					)
-				}
-
-				wg.Done()
-			}(listener)
+			serve(listener, handler)
 		}
 	}
 
@@ -109,29 +135,7 @@ func main() {
 	handler = handlers.ProxyHeaders(handler)
 
 	for _, listener := range config.Config.Listeners {
-		wg.Add(1)
-		go func(listen config.Listener) {
-			l := &net.ListenConfig{Control: helper.ReusePort}
-			s := &http.Server{
-				Addr:    listen.Address,
-				Handler: handler,
-			}
-			listener, err := l.Listen(context.Background(), "tcp", listen.Address)
-			if err != nil {
-				logger.Fatal("failed to start http server",
-					zap.Error(err),
-				)
-			}
-			err = s.Serve(listener)
-
-			if err != nil {
-				logger.Fatal("failed to start http server",
-					zap.Error(err),
-				)
-			}
-
-			wg.Done()
-		}(listener)
+		serve(listener, handler)
 	}
 
 	wg.Wait()
