@@ -12,6 +12,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/aliasByMetric"
 	"github.com/go-graphite/carbonapi/expr/functions/aliasByNode"
 	"github.com/go-graphite/carbonapi/expr/functions/aliasByPostgres"
+	"github.com/go-graphite/carbonapi/expr/functions/aliasByRedis"
 	"github.com/go-graphite/carbonapi/expr/functions/aliasSub"
 	"github.com/go-graphite/carbonapi/expr/functions/asPercent"
 	"github.com/go-graphite/carbonapi/expr/functions/averageSeriesWithWildcards"
@@ -112,6 +113,7 @@ func New(configs map[string]string) {
 		{name: "aliasByMetric", filename: "aliasByMetric", order: aliasByMetric.GetOrder(), f: aliasByMetric.New},
 		{name: "aliasByNode", filename: "aliasByNode", order: aliasByNode.GetOrder(), f: aliasByNode.New},
 		{name: "aliasByPostgres", filename: "aliasByPostgres", order: aliasByPostgres.GetOrder(), f: aliasByPostgres.New},
+		{name: "aliasByRedis", filename: "aliasByRedis", order: aliasByRedis.GetOrder(), f: aliasByRedis.New},
 		{name: "aliasSub", filename: "aliasSub", order: aliasSub.GetOrder(), f: aliasSub.New},
 		{name: "asPercent", filename: "asPercent", order: asPercent.GetOrder(), f: asPercent.New},
 		{name: "averageSeriesWithWildcards", filename: "averageSeriesWithWildcards", order: averageSeriesWithWildcards.GetOrder(), f: averageSeriesWithWildcards.New},
