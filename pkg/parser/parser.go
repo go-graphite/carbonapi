@@ -7,6 +7,8 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/ansel1/merry"
 )
 
 // expression parser
@@ -513,11 +515,11 @@ func isDigit(r byte) bool {
 }
 
 func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
-
 	var (
 		posArgs   []*expr
 		namedArgs map[string]*expr
 	)
+	eOrig := e
 
 	if e[0] != '(' {
 		panic("arg list should start with paren")
@@ -533,9 +535,11 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 		return "", posArgs, namedArgs, t[1:], nil
 	}
 
+	charNum := 1
 	for {
 		var arg Expr
 		var err error
+		charNum++
 
 		argString := e
 		arg, e, err = parseExprInner(e)
@@ -580,6 +584,7 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 				argStringBuffer.WriteByte(',')
 			}
 			argStringBuffer.WriteString(argString[:len(argString)-len(e)])
+			charNum += len(argString) - len(e)
 		} else {
 			exp := arg.toExpr().(*expr)
 			posArgs = append(posArgs, exp)
@@ -588,9 +593,12 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 				argStringBuffer.WriteByte(',')
 			}
 			if exp.IsFunc() {
-				argStringBuffer.WriteString(exp.ToString())
+				expString := exp.ToString()
+				argStringBuffer.WriteString(expString)
+				charNum += len(expString)
 			} else {
 				argStringBuffer.WriteString(argString[:len(argString)-len(e)])
+				charNum += len(argString) - len(e)
 			}
 		}
 
@@ -604,7 +612,7 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 		}
 
 		if e[0] != ',' && e[0] != ' ' {
-			return "", nil, nil, "", ErrUnexpectedCharacter
+			return "", nil, nil, "", merry.Wrap(ErrUnexpectedCharacter).WithUserMessagef("string_to_parse=`%v`, character_number=%v, character=`%v`", eOrig, charNum, string(e[0]))
 		}
 
 		e = e[1:]
@@ -612,7 +620,6 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 }
 
 func parseConst(s string) (float64, string, string, error) {
-
 	var i int
 	// All valid characters for a floating-point constant
 	// Just slurp them all in and let ParseFloat sort 'em out
@@ -632,7 +639,6 @@ func parseConst(s string) (float64, string, string, error) {
 var RangeTables []*unicode.RangeTable
 
 func parseName(s string) (string, string) {
-
 	var (
 		braces, i, w int
 		r            rune
@@ -658,6 +664,14 @@ FOR:
 			if braces == 0 {
 				break FOR
 			}
+		/* */
+		case '=':
+			// allow metric name to end with any amount of `=` without treating it as a named arg or tag
+			if s[i+1] == '=' || s[i+1] == ',' || s[i+1] == ')' {
+				continue
+			}
+			fallthrough
+		/* */
 		default:
 			r, w = utf8.DecodeRuneInString(s[i:])
 			if unicode.In(r, RangeTables...) {
@@ -665,7 +679,6 @@ FOR:
 			}
 			break FOR
 		}
-
 	}
 
 	if i == len(s) {

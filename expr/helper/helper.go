@@ -164,7 +164,6 @@ func AggregateSeries(e parser.Expr, args []*types.MetricData, function Aggregate
 
 // ExtractMetric extracts metric out of function list
 func ExtractMetric(s string) string {
-
 	// search for a metric name in 's'
 	// metric name is defined to be a Series of name characters terminated by a ',' or ')'
 	// work sample: bla(bla{bl,a}b[la,b]la) => bla{bl,a}b[la
@@ -199,6 +198,12 @@ FOR:
 			}
 		case ')':
 			break FOR
+		case '=':
+			// allow metric name to end with any amount of `=` without treating it as a named arg or tag
+			if i == len(s)-1 || s[i+1] == '=' || s[i+1] == ',' || s[i+1] == ')' {
+				continue
+			}
+			fallthrough
 		default:
 			r, w = utf8.DecodeRuneInString(s[i:])
 			if unicode.In(r, parser.RangeTables...) {
@@ -206,7 +211,6 @@ FOR:
 			}
 			start = i + 1
 		}
-
 	}
 
 	return s[start:i]
