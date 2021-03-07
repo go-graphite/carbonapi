@@ -17,6 +17,7 @@ require (
 	github.com/facebookgo/pidfile v0.0.0-20150612191647-f242e2999868
 	github.com/go-graphite/protocol v0.4.3
 	github.com/golang/protobuf v1.4.0
+	github.com/gomodule/redigo v1.8.4
 	github.com/gorilla/handlers v1.4.2
 	github.com/lib/pq v1.4.0
 	github.com/lomik/og-rek v0.0.0-20170411191824-628eefeb8d80

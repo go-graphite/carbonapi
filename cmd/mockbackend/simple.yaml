@@ -1,0 +1,9 @@
+version: "v1"
+listeners:
+  - address: ":8080"
+    expressions:
+      "some.metric":
+        pathExpression: "some.metric"
+        data:
+            - metricName: "some.metric"
+              values: [0,1,2,3,4,5]

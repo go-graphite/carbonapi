@@ -1,0 +1,23 @@
+enabled: true
+## redis address. Default: 127.0.0.1:6379
+#address: "127.0.0.1:6379"
+## connection timeout to redis
+#connectTimeout: "100ms"
+## maxIdleConnections for redis connection pool, default: 1
+#maxIdleConnections: 10
+## timeout for idle connections to redis
+#idleTimeout: 1s
+## redis database number
+#databaseNumber: 0
+## redis username
+#username: "some-user-name"
+## redis password
+#password: "some-password"
+## default queryTimeout value is 250ms
+#queryTimeout: "250ms"
+## kepp alive probes interval
+#keepAliveInterval: "1m"
+## use encryption
+#useTLS: true
+## allow self-signed, expired, etc certificates
+#TLSSkipVerify: false
