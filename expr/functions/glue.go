@@ -8,6 +8,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/aggregate"
 	"github.com/go-graphite/carbonapi/expr/functions/aggregateLine"
 	"github.com/go-graphite/carbonapi/expr/functions/alias"
+	"github.com/go-graphite/carbonapi/expr/functions/aliasByBase64"
 	"github.com/go-graphite/carbonapi/expr/functions/aliasByMetric"
 	"github.com/go-graphite/carbonapi/expr/functions/aliasByNode"
 	"github.com/go-graphite/carbonapi/expr/functions/aliasByPostgres"
@@ -107,6 +108,7 @@ func New(configs map[string]string) {
 		{name: "aggregate", filename: "aggregate", order: aggregate.GetOrder(), f: aggregate.New},
 		{name: "aggregateLine", filename: "aggregateLine", order: aggregateLine.GetOrder(), f: aggregateLine.New},
 		{name: "alias", filename: "alias", order: alias.GetOrder(), f: alias.New},
+		{name: "aliasByBase64", filename: "aliasByBase64", order: aliasByBase64.GetOrder(), f: aliasByBase64.New},
 		{name: "aliasByMetric", filename: "aliasByMetric", order: aliasByMetric.GetOrder(), f: aliasByMetric.New},
 		{name: "aliasByNode", filename: "aliasByNode", order: aliasByNode.GetOrder(), f: aliasByNode.New},
 		{name: "aliasByPostgres", filename: "aliasByPostgres", order: aliasByPostgres.GetOrder(), f: aliasByPostgres.New},
