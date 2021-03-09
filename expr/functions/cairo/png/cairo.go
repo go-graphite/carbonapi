@@ -2252,6 +2252,7 @@ func drawLines(cr *cairoSurfaceContext, params *Params, results []*types.MetricD
 						PathExpression:    r.Name,
 						ConsolidationFunc: "average",
 					},
+					Tags: r.Tags,
 					ValuesPerPoint: 1,
 					GraphOptions: types.GraphOptions{
 						Color:       r.Color,

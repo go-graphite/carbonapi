@@ -31,12 +31,12 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *holtWintersForecast) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	var results []*types.MetricData
 	args, err := helper.GetSeriesArgsAndRemoveNonExisting(e, from-7*86400, until, values)
 	if err != nil {
 		return nil, err
 	}
 
+	results := make([]*types.MetricData, 0, len(args))
 	for _, arg := range args {
 		stepTime := arg.StepTime
 
@@ -45,21 +45,22 @@ func (f *holtWintersForecast) Do(ctx context.Context, e parser.Expr, from, until
 		windowPoints := 7 * 86400 / stepTime
 		predictionsOfInterest := predictions[windowPoints:]
 
-		r := types.MetricData{FetchResponse: pb.FetchResponse{
-			Name:              fmt.Sprintf("holtWintersForecast(%s)", arg.Name),
-			Values:            predictionsOfInterest,
-			StepTime:          arg.StepTime,
-			StartTime:         arg.StartTime + 7*86400,
-			StopTime:          arg.StopTime,
-			PathExpression:    fmt.Sprintf("holtWintersForecast(%s)", arg.Name),
-			XFilesFactor:      arg.XFilesFactor,
-			ConsolidationFunc: arg.ConsolidationFunc,
-		}}
-
+		r := types.MetricData{
+			FetchResponse: pb.FetchResponse{
+				Name:              fmt.Sprintf("holtWintersForecast(%s)", arg.Name),
+				Values:            predictionsOfInterest,
+				StepTime:          arg.StepTime,
+				StartTime:         arg.StartTime + 7*86400,
+				StopTime:          arg.StopTime,
+				PathExpression:    fmt.Sprintf("holtWintersForecast(%s)", arg.Name),
+				XFilesFactor:      arg.XFilesFactor,
+				ConsolidationFunc: arg.ConsolidationFunc,
+			},
+			Tags: arg.Tags,
+		}
 		results = append(results, &r)
 	}
 	return results, nil
-
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web

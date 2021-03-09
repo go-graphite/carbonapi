@@ -24,7 +24,13 @@ func (evaluator *FuncEvaluator) Eval(ctx context.Context, e parser.Expr, from, u
 	if e.IsName() {
 		return values[parser.MetricRequest{Metric: e.Target(), From: from, Until: until}], nil
 	} else if e.IsConst() {
-		p := types.MetricData{FetchResponse: pb.FetchResponse{Name: e.Target(), Values: []float64{e.FloatValue()}}}
+		p := types.MetricData{
+			FetchResponse: pb.FetchResponse{
+				Name: e.Target(),
+				Values: []float64{e.FloatValue()},
+			},
+			Tags: map[string]string{"name": e.Target()},
+		}
 		return []*types.MetricData{&p}, nil
 	}
 	// evaluate the function
@@ -72,7 +78,7 @@ func EvaluatorFromFuncWithMetadata(metadata map[string]interfaces.Function) inte
 func DeepClone(original map[parser.MetricRequest][]*types.MetricData) map[parser.MetricRequest][]*types.MetricData {
 	clone := map[parser.MetricRequest][]*types.MetricData{}
 	for key, originalMetrics := range original {
-		copiedMetrics := []*types.MetricData{}
+		copiedMetrics := make([]*types.MetricData, 0, len(originalMetrics))
 		for _, originalMetric := range originalMetrics {
 			copiedMetric := types.MetricData{
 				FetchResponse: pb.FetchResponse{
@@ -81,11 +87,22 @@ func DeepClone(original map[parser.MetricRequest][]*types.MetricData) map[parser
 					StopTime:  originalMetric.StopTime,
 					StepTime:  originalMetric.StepTime,
 					Values:    make([]float64, len(originalMetric.Values)),
+					PathExpression: originalMetric.PathExpression,
+					ConsolidationFunc: originalMetric.ConsolidationFunc,
+					XFilesFactor: originalMetric.XFilesFactor,
+					HighPrecisionTimestamps: originalMetric.HighPrecisionTimestamps,
+					AppliedFunctions: make([]string, len(originalMetric.AppliedFunctions)),
+					RequestStartTime: originalMetric.RequestStartTime,
+					RequestStopTime: originalMetric.RequestStopTime,
 				},
-				Tags: make(map[string]string),
+				GraphOptions:      originalMetric.GraphOptions,
+				ValuesPerPoint:    originalMetric.ValuesPerPoint,
+				Tags:              make(map[string]string),
+				AggregateFunction: originalMetric.AggregateFunction,
 			}
 
 			copy(copiedMetric.Values, originalMetric.Values)
+			copy(copiedMetric.AppliedFunctions, originalMetric.AppliedFunctions)
 			copiedMetrics = append(copiedMetrics, &copiedMetric)
 			for k, v := range originalMetric.Tags {
 				copiedMetric.Tags[k] = v
