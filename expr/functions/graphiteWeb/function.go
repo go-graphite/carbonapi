@@ -438,11 +438,24 @@ func (f *graphiteWeb) Do(ctx context.Context, e parser.Expr, from, until int64, 
 			PathExpression:    string(m.PathExpression),
 			ConsolidationFunc: m.ConsolidationFunc,
 		}
+		tags := make(map[string]string, len(m.Tags))
+		for tag, rawValue := range m.Tags {
+			var value string
+			err = json.Unmarshal(rawValue, &value)
+			// TODO(civil): check if invalid message can ever occur
+			// We are currently ignoring all invalid tags
+			if err != nil {
+				continue
+			}
+			tags[tag] = value
+		}
+
 		for i, v := range m.Datapoints {
 			pbResp.Values[i] = v[0]
 		}
 		res = append(res, &types.MetricData{
 			FetchResponse: pbResp,
+			Tags: tags,
 		})
 	}
 

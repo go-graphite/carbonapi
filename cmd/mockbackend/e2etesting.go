@@ -249,6 +249,10 @@ func doTest(logger *zap.Logger, t *Query) []string {
 			return failures
 		}
 
+		if len(t.ExpectedResponse.ExpectedResults) == 0 {
+			return failures
+		}
+
 		if len(res) != len(t.ExpectedResponse.ExpectedResults[0].Metrics) {
 			failures = append(failures, fmt.Sprintf("unexpected amount of results, got %v, expected %v", len(res), len(t.ExpectedResponse.ExpectedResults[0].Metrics)))
 			return failures

@@ -65,16 +65,19 @@ func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, unt
 			}
 		}
 
-		r := types.MetricData{FetchResponse: pb.FetchResponse{
-			Name:              fmt.Sprintf("holtWintersAberration(%s)", arg.Name),
-			Values:            aberration,
-			StepTime:          arg.StepTime,
-			StartTime:         arg.StartTime + 7*86400,
-			StopTime:          arg.StopTime,
-			PathExpression:    fmt.Sprintf("holtWintersAberration(%s)", arg.Name),
-			ConsolidationFunc: arg.ConsolidationFunc,
-			XFilesFactor:      arg.XFilesFactor,
-		}}
+		r := types.MetricData{
+			FetchResponse: pb.FetchResponse{
+				Name:              fmt.Sprintf("holtWintersAberration(%s)", arg.Name),
+				Values:            aberration,
+				StepTime:          arg.StepTime,
+				StartTime:         arg.StartTime + 7*86400,
+				StopTime:          arg.StopTime,
+				PathExpression:    fmt.Sprintf("holtWintersAberration(%s)", arg.Name),
+				ConsolidationFunc: arg.ConsolidationFunc,
+				XFilesFactor:      arg.XFilesFactor,
+			},
+			Tags: arg.Tags,
+		}
 
 		results = append(results, &r)
 	}

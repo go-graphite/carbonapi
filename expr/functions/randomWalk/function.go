@@ -37,14 +37,17 @@ func (f *randomWalk) Do(ctx context.Context, e parser.Expr, from, until int64, v
 
 	size := until - from
 
-	r := types.MetricData{FetchResponse: pb.FetchResponse{
-		Name:              name,
-		Values:            make([]float64, size),
-		StepTime:          1,
-		StartTime:         from,
-		StopTime:          until,
-		ConsolidationFunc: "average",
-	}}
+	r := types.MetricData{
+		FetchResponse: pb.FetchResponse{
+			Name:              name,
+			Values:            make([]float64, size),
+			StepTime:          1,
+			StartTime:         from,
+			StopTime:          until,
+			ConsolidationFunc: "average",
+		},
+		Tags: map[string]string{"name": name},
+	}
 
 	for i := 1; i < len(r.Values)-1; i++ {
 		r.Values[i+1] = r.Values[i] + (rand.Float64() - 0.5)

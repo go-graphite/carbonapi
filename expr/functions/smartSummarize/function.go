@@ -68,7 +68,6 @@ func (f *smartSummarize) Do(ctx context.Context, e parser.Expr, from, until int6
 	buckets := helper.GetBuckets(start, stop, bucketSize)
 	results := make([]*types.MetricData, 0, len(args))
 	for _, arg := range args {
-
 		name := fmt.Sprintf("smartSummarize(%s,'%s','%s'", arg.Name, e.Args()[1].StringValue(), summarizeFunction)
 		if alignToInterval != "" {
 			name += fmt.Sprintf(",'%s')", alignToInterval)
