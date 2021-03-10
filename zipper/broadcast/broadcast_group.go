@@ -393,6 +393,9 @@ func (bg *BroadcastGroup) splitRequest(ctx context.Context, request *protov3.Mul
 
 		for _, m := range f.Metrics {
 			for _, match := range m.Matches {
+				if !match.IsLeaf {
+					continue
+				}
 				newRequest.Metrics = append(newRequest.Metrics, protov3.FetchRequest{
 					Name:            match.Path,
 					StartTime:       metric.StartTime,
