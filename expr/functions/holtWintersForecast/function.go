@@ -31,26 +31,36 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *holtWintersForecast) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := helper.GetSeriesArgsAndRemoveNonExisting(e, from-7*86400, until, values)
+	bootstrapInterval, err := e.GetIntervalNamedOrPosArgDefault("bootstrapInterval", 2, 1, 7*86400)
 	if err != nil {
 		return nil, err
 	}
 
+	args, err := helper.GetSeriesArgsAndRemoveNonExisting(e, from-bootstrapInterval, until, values)
+	if err != nil {
+		return nil, err
+	}
+
+	var predictionsOfInterest []float64
 	results := make([]*types.MetricData, 0, len(args))
 	for _, arg := range args {
 		stepTime := arg.StepTime
 
 		predictions, _ := holtwinters.HoltWintersAnalysis(arg.Values, stepTime)
 
-		windowPoints := 7 * 86400 / stepTime
-		predictionsOfInterest := predictions[windowPoints:]
+		windowPoints := int(bootstrapInterval / stepTime)
+		if len(predictions) < windowPoints {
+			predictionsOfInterest = predictions
+		} else {
+			predictionsOfInterest = predictions[windowPoints:]
+		}
 
 		r := types.MetricData{
 			FetchResponse: pb.FetchResponse{
 				Name:              fmt.Sprintf("holtWintersForecast(%s)", arg.Name),
 				Values:            predictionsOfInterest,
 				StepTime:          arg.StepTime,
-				StartTime:         arg.StartTime + 7*86400,
+				StartTime:         arg.StartTime + bootstrapInterval,
 				StopTime:          arg.StopTime,
 				PathExpression:    fmt.Sprintf("holtWintersForecast(%s)", arg.Name),
 				XFilesFactor:      arg.XFilesFactor,
