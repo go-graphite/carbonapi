@@ -107,6 +107,9 @@ type Expr interface {
 	// GetIntervalArg returns interval typed argument.
 	GetIntervalArg(n int, defaultSign int) (int32, error)
 
+	// GetIntervalNamedOrPosArgDefault returns interval typed argument that can be passed as a named argument or as position or replace it with default if none found.
+	GetIntervalNamedOrPosArgDefault(k string, n, defaultSign int, v int64) (int64, error)
+
 	// GetStringArg returns n-th argument as string.
 	GetStringArg(n int) (string, error)
 	// GetStringArgs returns n-th argument as slice of strings.

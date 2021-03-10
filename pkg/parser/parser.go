@@ -221,6 +221,33 @@ func (e *expr) GetIntervalArg(n, defaultSign int) (int32, error) {
 	return seconds, nil
 }
 
+func (e *expr) GetIntervalNamedOrPosArgDefault(k string, n, defaultSign int, v int64) (int64, error) {
+	var val string
+	var err error
+	if a := e.getNamedArg(k); a != nil {
+		val, err = e.doGetStringArg()
+		if err != nil {
+			return 0, ErrBadType
+		}
+	} else {
+		if len(e.args) <= n {
+			return v, nil
+		}
+
+		if e.args[n].etype != EtString {
+			return 0, ErrBadType
+		}
+		val = e.args[n].valStr
+	}
+
+	seconds, err := IntervalString(val, defaultSign)
+	if err != nil {
+		return 0, ErrBadType
+	}
+
+	return int64(seconds), nil
+}
+
 func (e *expr) GetStringArg(n int) (string, error) {
 	if len(e.args) <= n {
 		return "", ErrMissingArgument
