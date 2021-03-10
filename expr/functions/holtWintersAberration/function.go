@@ -32,23 +32,30 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	var results []*types.MetricData
-	args, err := helper.GetSeriesArg(e.Args()[0], from-7*86400, until, values)
+	bootstrapInterval, err := e.GetIntervalNamedOrPosArgDefault("bootstrapInterval", 2, 1, 7 * 86400)
 	if err != nil {
 		return nil, err
 	}
+
+	args, err := helper.GetSeriesArg(e.Args()[0], from-bootstrapInterval, until, values)
+	if err != nil {
+		return nil, err
+	}
+
+	bootstrapInterval /= 86400
 
 	delta, err := e.GetFloatNamedOrPosArgDefault("delta", 1, 3)
 	if err != nil {
 		return nil, err
 	}
 
+	results := make([]*types.MetricData, 0, len(args))
 	for _, arg := range args {
 		var aberration []float64
 
 		stepTime := arg.StepTime
 
-		lowerBand, upperBand := holtwinters.HoltWintersConfidenceBands(arg.Values, stepTime, delta)
+		lowerBand, upperBand := holtwinters.HoltWintersConfidenceBands(arg.Values, stepTime, delta, bootstrapInterval)
 
 		windowPoints := 7 * 86400 / stepTime
 		series := arg.Values[windowPoints:]
