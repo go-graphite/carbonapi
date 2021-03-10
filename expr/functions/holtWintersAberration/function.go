@@ -32,7 +32,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	bootstrapInterval, err := e.GetIntervalNamedOrPosArgDefault("bootstrapInterval", 2, 1, 7 * 86400)
+	bootstrapInterval, err := e.GetIntervalNamedOrPosArgDefault("bootstrapInterval", 2, 1, 7*86400)
 	if err != nil {
 		return nil, err
 	}
@@ -41,8 +41,6 @@ func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, unt
 	if err != nil {
 		return nil, err
 	}
-
-	bootstrapInterval /= 86400
 
 	delta, err := e.GetFloatNamedOrPosArgDefault("delta", 1, 3)
 	if err != nil {
@@ -55,7 +53,7 @@ func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, unt
 
 		stepTime := arg.StepTime
 
-		lowerBand, upperBand := holtwinters.HoltWintersConfidenceBands(arg.Values, stepTime, delta, bootstrapInterval)
+		lowerBand, upperBand := holtwinters.HoltWintersConfidenceBands(arg.Values, stepTime, delta, bootstrapInterval/86400)
 
 		windowPoints := 7 * 86400 / stepTime
 		series := arg.Values[windowPoints:]
@@ -77,7 +75,7 @@ func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, unt
 				Name:              fmt.Sprintf("holtWintersAberration(%s)", arg.Name),
 				Values:            aberration,
 				StepTime:          arg.StepTime,
-				StartTime:         arg.StartTime + 7*86400,
+				StartTime:         arg.StartTime + bootstrapInterval,
 				StopTime:          arg.StopTime,
 				PathExpression:    fmt.Sprintf("holtWintersAberration(%s)", arg.Name),
 				ConsolidationFunc: arg.ConsolidationFunc,
