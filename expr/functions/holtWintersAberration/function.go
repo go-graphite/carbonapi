@@ -49,14 +49,19 @@ func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, unt
 
 	results := make([]*types.MetricData, 0, len(args))
 	for _, arg := range args {
-		var aberration []float64
+		var (
+			aberration []float64
+			series []float64
+		)
 
 		stepTime := arg.StepTime
 
 		lowerBand, upperBand := holtwinters.HoltWintersConfidenceBands(arg.Values, stepTime, delta, bootstrapInterval/86400)
 
-		windowPoints := 7 * 86400 / stepTime
-		series := arg.Values[windowPoints:]
+		windowPoints := int(bootstrapInterval / stepTime)
+		if len(arg.Values) > windowPoints {
+			series = arg.Values[windowPoints:]
+		}
 
 		for i := range series {
 			if math.IsNaN(series[i]) {
