@@ -277,17 +277,22 @@ func (first *ServerFindResponse) Merge(second *ServerFindResponse) merry.Error {
 		return nil
 	}
 
+	var ok bool
 	seenMetrics := make(map[string]int)
-	seenMatches := make(map[string]struct{})
+	seenMatches := make(map[string]map[bool]struct{})
 	for i, m := range first.Response.Metrics {
 		seenMetrics[m.Name] = i
 		for _, mm := range m.Matches {
-			seenMatches[m.Name+"."+mm.Path] = struct{}{}
+			lkey := m.Name + "." + mm.Path
+			if _, ok = seenMatches[lkey]; !ok {
+				seenMatches[lkey] = map[bool]struct{}{}
+			}
+
+			seenMatches[lkey][mm.IsLeaf] = struct{}{}
 		}
 	}
 
 	var i int
-	var ok bool
 	for _, m := range second.Response.Metrics {
 		if i, ok = seenMetrics[m.Name]; !ok {
 			first.Response.Metrics = append(first.Response.Metrics, m)
@@ -296,8 +301,14 @@ func (first *ServerFindResponse) Merge(second *ServerFindResponse) merry.Error {
 
 		for _, mm := range m.Matches {
 			key := first.Response.Metrics[i].Name + "." + mm.Path
-			if _, ok := seenMatches[key]; !ok {
-				seenMatches[key] = struct{}{}
+			lisLeaf := seenMatches[key]
+			if lisLeaf == nil {
+				lisLeaf = map[bool]struct{}{}
+				seenMatches[key] = lisLeaf
+			}
+
+			if _, ok = lisLeaf[mm.IsLeaf]; !ok {
+				lisLeaf[mm.IsLeaf] = struct{}{}
 				first.Response.Metrics[i].Matches = append(first.Response.Metrics[i].Matches, mm)
 			}
 		}
