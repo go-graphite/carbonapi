@@ -22,36 +22,42 @@ func init() {
 	}
 }
 
-func TestDerivative(t *testing.T) {
-	now32 := int64(time.Now().Unix())
+func TestTransformNull(t *testing.T) {
+	now := time.Now().Unix()
 
 	tests := []th.EvalTestItem{
 		{
 			`transformNull(metric1)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now)},
 			},
 			[]*types.MetricData{types.MakeMetricData("transformNull(metric1)",
-				[]float64{1, 0, 0, 3, 4, 12}, 1, now32)},
+				[]float64{1, 0, 0, 3, 4, 12}, 1, now)},
 		},
 		{
 			`transformNull(metric1, default=5)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now)},
 			},
 			[]*types.MetricData{types.MakeMetricData("transformNull(metric1,5)",
-				[]float64{1, 5, 5, 3, 4, 12}, 1, now32)},
+				[]float64{1, 5, 5, 3, 4, 12}, 1, now)},
 		},
 		{
 			`transformNull(metric1, default=5, referenceSeries=metric2.*)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), math.NaN(), 4, 12}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), math.NaN(), 4, 12}, 1, now)},
 				{"metric2.*", 0, 1}: {
-					types.MakeMetricData("metric2.foo", []float64{math.NaN(), 3, math.NaN(), 3, math.NaN(), 12}, 1, now32),
-					types.MakeMetricData("metric2.bar", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
+					types.MakeMetricData("metric2.foo", []float64{math.NaN(), 3, math.NaN(), 3, math.NaN(), 12}, 1, now),
+					types.MakeMetricData("metric2.bar", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now)},
 			},
 			[]*types.MetricData{types.MakeMetricData("transformNull(metric1,5)",
-				[]float64{1, 5, math.NaN(), 5, 4, 12}, 1, now32)},
+				[]float64{1, 5, math.NaN(), 5, 4, 12}, 1, now)},
+		},
+		{
+			`transformNull(metric1, default=5, defaultOnAbsent=True)`,
+			map[parser.MetricRequest][]*types.MetricData{},
+			[]*types.MetricData{types.MakeMetricData("transformNull(metric1, default=5, defaultOnAbsent=True)",
+				[]float64{5, 5}, 1, 0)},
 		},
 	}
 
@@ -61,5 +67,4 @@ func TestDerivative(t *testing.T) {
 			th.TestEvalExpr(t, &tt)
 		})
 	}
-
 }
