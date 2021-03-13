@@ -18,6 +18,12 @@ Changes
 CHANGELOG
 ---------
 
+**0.15.2**
+ - [Fix] Honor isLeaf attribute in replies (makes possible to have metric called "metric.foo" and metric called "metric.foo.bar" and see both in find queries (thx to @tantra35)
+ - [Fix] Fix bootstrapInterval paramter handling in holtWinters functions
+ - [Fix] Fix potential panics when metirc do not have required amount of data for `holtWinters` functions
+ - [Fix] Fix panics with several functions if they are applied before `alias` function (mostly `holtWinter` functions)
+
 **0.15.1**
  - [Fix] Fix back compatibility for default listen on `localhost:8081` (thx to @Felixoid)
 

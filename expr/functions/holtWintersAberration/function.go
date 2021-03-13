@@ -32,8 +32,12 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	var results []*types.MetricData
-	args, err := helper.GetSeriesArg(e.Args()[0], from-7*86400, until, values)
+	bootstrapInterval, err := e.GetIntervalNamedOrPosArgDefault("bootstrapInterval", 2, 1, 7*86400)
+	if err != nil {
+		return nil, err
+	}
+
+	args, err := helper.GetSeriesArg(e.Args()[0], from-bootstrapInterval, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -43,15 +47,21 @@ func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, unt
 		return nil, err
 	}
 
+	results := make([]*types.MetricData, 0, len(args))
 	for _, arg := range args {
-		var aberration []float64
+		var (
+			aberration []float64
+			series []float64
+		)
 
 		stepTime := arg.StepTime
 
-		lowerBand, upperBand := holtwinters.HoltWintersConfidenceBands(arg.Values, stepTime, delta)
+		lowerBand, upperBand := holtwinters.HoltWintersConfidenceBands(arg.Values, stepTime, delta, bootstrapInterval/86400)
 
-		windowPoints := 7 * 86400 / stepTime
-		series := arg.Values[windowPoints:]
+		windowPoints := int(bootstrapInterval / stepTime)
+		if len(arg.Values) > windowPoints {
+			series = arg.Values[windowPoints:]
+		}
 
 		for i := range series {
 			if math.IsNaN(series[i]) {
@@ -65,16 +75,19 @@ func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, unt
 			}
 		}
 
-		r := types.MetricData{FetchResponse: pb.FetchResponse{
-			Name:              fmt.Sprintf("holtWintersAberration(%s)", arg.Name),
-			Values:            aberration,
-			StepTime:          arg.StepTime,
-			StartTime:         arg.StartTime + 7*86400,
-			StopTime:          arg.StopTime,
-			PathExpression:    fmt.Sprintf("holtWintersAberration(%s)", arg.Name),
-			ConsolidationFunc: arg.ConsolidationFunc,
-			XFilesFactor:      arg.XFilesFactor,
-		}}
+		r := types.MetricData{
+			FetchResponse: pb.FetchResponse{
+				Name:              fmt.Sprintf("holtWintersAberration(%s)", arg.Name),
+				Values:            aberration,
+				StepTime:          arg.StepTime,
+				StartTime:         arg.StartTime + bootstrapInterval,
+				StopTime:          arg.StopTime,
+				PathExpression:    fmt.Sprintf("holtWintersAberration(%s)", arg.Name),
+				ConsolidationFunc: arg.ConsolidationFunc,
+				XFilesFactor:      arg.XFilesFactor,
+			},
+			Tags: arg.Tags,
+		}
 
 		results = append(results, &r)
 	}

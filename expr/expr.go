@@ -136,7 +136,13 @@ func EvalExpr(ctx context.Context, e parser.Expr, from, until int64, values map[
 	if e.IsName() {
 		return values[parser.MetricRequest{Metric: e.Target(), From: from, Until: until}], nil
 	} else if e.IsConst() {
-		p := types.MetricData{FetchResponse: pb.FetchResponse{Name: e.Target(), Values: []float64{e.FloatValue()}}}
+		p := types.MetricData{
+			FetchResponse: pb.FetchResponse{
+				Name: e.Target(),
+				Values: []float64{e.FloatValue()},
+			},
+			Tags: map[string]string{"name": e.Target()},
+		}
 		return []*types.MetricData{&p}, nil
 	}
 	// evaluate the function

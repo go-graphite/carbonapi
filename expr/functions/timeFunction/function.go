@@ -64,6 +64,7 @@ func (f *timeFunction) Do(ctx context.Context, e parser.Expr, from, until int64,
 			Values:            newValues,
 			ConsolidationFunc: "max",
 		},
+		Tags: map[string]string{"name": name},
 	}
 
 	return []*types.MetricData{&p}, nil

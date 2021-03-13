@@ -197,6 +197,7 @@ func TestEvalExpr(t *testing.T) {
 					ConsolidationFunc: "average",
 					PathExpression:    request.Metric,
 				},
+				Tags: map[string]string{"name": request.Metric},
 			}
 
 			metricMap[request] = []*types.MetricData{

@@ -31,8 +31,12 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *holtWintersConfidenceBands) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	var results []*types.MetricData
-	args, err := helper.GetSeriesArg(e.Args()[0], from-7*86400, until, values)
+	bootstrapInterval, err := e.GetIntervalNamedOrPosArgDefault("bootstrapInterval", 2, 1, 7*86400)
+	if err != nil {
+		return nil, err
+	}
+
+	args, err := helper.GetSeriesArg(e.Args()[0], from-bootstrapInterval, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -42,37 +46,43 @@ func (f *holtWintersConfidenceBands) Do(ctx context.Context, e parser.Expr, from
 		return nil, err
 	}
 
+	results := make([]*types.MetricData, 0, len(args)*2)
 	for _, arg := range args {
 		stepTime := arg.StepTime
 
-		lowerBand, upperBand := holtwinters.HoltWintersConfidenceBands(arg.Values, stepTime, delta)
+		lowerBand, upperBand := holtwinters.HoltWintersConfidenceBands(arg.Values, stepTime, delta, bootstrapInterval/86400)
 
-		lowerSeries := types.MetricData{FetchResponse: pb.FetchResponse{
-			Name:              fmt.Sprintf("holtWintersConfidenceLower(%s)", arg.Name),
-			Values:            lowerBand,
-			StepTime:          arg.StepTime,
-			StartTime:         arg.StartTime + 7*86400,
-			StopTime:          arg.StopTime,
-			ConsolidationFunc: arg.ConsolidationFunc,
-			XFilesFactor:      arg.XFilesFactor,
-			PathExpression:    fmt.Sprintf("holtWintersConfidenceLower(%s)", arg.Name),
-		}}
+		lowerSeries := types.MetricData{
+			FetchResponse: pb.FetchResponse{
+				Name:              fmt.Sprintf("holtWintersConfidenceLower(%s)", arg.Name),
+				Values:            lowerBand,
+				StepTime:          arg.StepTime,
+				StartTime:         arg.StartTime + bootstrapInterval,
+				StopTime:          arg.StopTime,
+				ConsolidationFunc: arg.ConsolidationFunc,
+				XFilesFactor:      arg.XFilesFactor,
+				PathExpression:    fmt.Sprintf("holtWintersConfidenceLower(%s)", arg.Name),
+			},
+			Tags: arg.Tags,
+		}
 
-		upperSeries := types.MetricData{FetchResponse: pb.FetchResponse{
-			Name:              fmt.Sprintf("holtWintersConfidenceUpper(%s)", arg.Name),
-			Values:            upperBand,
-			StepTime:          arg.StepTime,
-			StartTime:         arg.StartTime + 7*86400,
-			StopTime:          arg.StopTime,
-			ConsolidationFunc: arg.ConsolidationFunc,
-			XFilesFactor:      arg.XFilesFactor,
-			PathExpression:    fmt.Sprintf("holtWintersConfidenceLower(%s)", arg.Name),
-		}}
+		upperSeries := types.MetricData{
+			FetchResponse: pb.FetchResponse{
+				Name:              fmt.Sprintf("holtWintersConfidenceUpper(%s)", arg.Name),
+				Values:            upperBand,
+				StepTime:          arg.StepTime,
+				StartTime:         arg.StartTime + bootstrapInterval,
+				StopTime:          arg.StopTime,
+				ConsolidationFunc: arg.ConsolidationFunc,
+				XFilesFactor:      arg.XFilesFactor,
+				PathExpression:    fmt.Sprintf("holtWintersConfidenceLower(%s)", arg.Name),
+			},
+			Tags: arg.Tags,
+		}
 
 		results = append(results, &lowerSeries, &upperSeries)
 	}
 	return results, nil
-
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
