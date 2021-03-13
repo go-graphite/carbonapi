@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math"
 
+	pbv3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -36,6 +38,10 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 		return nil, err
 	}
 	defv, err := e.GetFloatNamedOrPosArgDefault("default", 1, 0)
+	if err != nil {
+		return nil, err
+	}
+	defaultOnAbsent, err := e.GetBoolNamedOrPosArgDefault("defaultOnAbsent", 2, false)
 	if err != nil {
 		return nil, err
 	}
@@ -71,10 +77,8 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 		}
 	}
 
-	var results []*types.MetricData
-
+	results := make([]*types.MetricData, 0, len(arg))
 	for _, a := range arg {
-
 		var name string
 		if ok {
 			name = fmt.Sprintf("transformNull(%s,%g)", a.Name, defv)
@@ -100,6 +104,20 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 
 		results = append(results, &r)
 	}
+	if len(arg) == 0 && defaultOnAbsent {
+		values := []float64{defv, defv}
+		step := until-from
+		results = append(results, &types.MetricData{
+			FetchResponse: pbv3.FetchResponse{
+				Name: e.ToString(),
+				StartTime: from,
+				StopTime: from+step*int64(len(values)),
+				StepTime: step,
+				Values: values,
+			},
+			Tags: map[string]string{"name": e.ToString()},
+		})
+	}
 	return results, nil
 }
 
@@ -114,6 +132,7 @@ func (f *transformNull) Description() map[string]types.FunctionDescription {
   only in intervals where a non-null is found for the same interval in any of
   referenceSeries.  This method compliments the drawNullAsZero function in
   graphical mode, but also works in text-only mode.
+  defaultOnAbsent if specified, would produce a constant line if no metrics will be returned by backends.
   Example:
   .. code-block:: none
     &target=transformNull(webapp.pages.*.views,-1)
@@ -138,6 +157,10 @@ func (f *transformNull) Description() map[string]types.FunctionDescription {
 				{
 					Name: "referenceSeries",
 					Type: types.SeriesList,
+				},
+				{
+					Name: "defaultOnAbsent",
+					Type: types.Boolean,
 				},
 			},
 		},
