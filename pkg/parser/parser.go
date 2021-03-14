@@ -350,6 +350,24 @@ func (e *expr) GetIntArgDefault(n, d int) (int, error) {
 	return e.args[n].doGetIntArg()
 }
 
+func (e *expr) GetIntArgWithIndication(n int) (int, bool, error) {
+	if len(e.args) <= n {
+		return 0, false, nil
+	}
+
+	v, err := e.args[n].doGetIntArg()
+	return v, true, err
+}
+
+func (e *expr) GetIntNamedOrPosArgWithIndication(k string, n int) (int, bool, error) {
+	if a := e.getNamedArg(k); a != nil {
+		v, err := a.doGetIntArg()
+		return v, true, err
+	}
+
+	return e.GetIntArgWithIndication(n)
+}
+
 func (e *expr) GetIntNamedOrPosArgDefault(k string, n, d int) (int, error) {
 	if a := e.getNamedArg(k); a != nil {
 		return a.doGetIntArg()

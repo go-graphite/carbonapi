@@ -19,7 +19,7 @@ func GetOrder() interfaces.Order {
 	return interfaces.Any
 }
 
-func New(configFile string) []interfaces.FunctionMetadata {
+func New(_ string) []interfaces.FunctionMetadata {
 	res := make([]interfaces.FunctionMetadata, 0)
 	f := &round{}
 	functions := []string{"round"}
@@ -36,18 +36,12 @@ func (f *round) Do(ctx context.Context, e parser.Expr, from, until int64, values
 		return nil, err
 	}
 	var withPrecision bool
-	precision, err := e.GetIntArg(1)
-	switch err {
-	case nil:
-		withPrecision = true
-	case parser.ErrMissingArgument:
-		// precision is already 0
-		withPrecision = false
-	default:
+	precision, withPrecision, err := e.GetIntNamedOrPosArgWithIndication("precision", 1)
+	if err != nil {
 		return nil, err
 	}
-	var results []*types.MetricData
 
+	results := make([]*types.MetricData, 0, len(arg))
 	for _, a := range arg {
 		r := *a
 		if withPrecision {
