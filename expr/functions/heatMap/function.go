@@ -77,7 +77,11 @@ All metrics are assigned weights, based on the sum of their first 5 values and t
 After that for the sorted metrics, diff with the previous one will be computed.
 
 Assuming seriesList has values N series in total (sorted by sum of the first 5 values):
-(a[1], a[2], ..., a[N]). Then heatMap will output N-1 series: (a[2] - a[1], a[3] - a[2], ..., a[N] - a[N-1]).`
+(a[1], a[2], ..., a[N]). Then heatMap will output N-1 series: (a[2] - a[1], a[3] - a[2], ..., a[N] - a[N-1]).
+
+That function produce similar result to prometheus heatmaps for any list of incrementing counters and plays well with
+grafana heatmap graph type.'
+`
 
 func (f *heatMap) Description() map[string]types.FunctionDescription {
 	return map[string]types.FunctionDescription{
