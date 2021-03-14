@@ -132,6 +132,10 @@ type Expr interface {
 	GetIntArgs(n int) ([]int, error)
 	// GetIntArgDefault returns n-th argument as int. It will replace it with Default value if none present.
 	GetIntArgDefault(n int, d int) (int, error)
+	// GetIntArgWithIndication returns n-th argument as int. If argument wasn't present, second return value will be `false`. Even if there was error in parsing data, but it was there, second value will be `true`
+	GetIntArgWithIndication(n int) (int, bool, error)
+	// GetIntNamedOrPosArgWithIndication returns specific positioned int-typed argument. If argument wasn't present, second return value will be `false`. Even if there was error in parsing data, but it was there, second value will be `true`
+	GetIntNamedOrPosArgWithIndication(k string, n int) (int, bool, error)
 	// GetIntNamedOrPosArgDefault returns specific positioned int-typed argument or replace it with default if none found.
 	GetIntNamedOrPosArgDefault(k string, n int, d int) (int, error)
 
