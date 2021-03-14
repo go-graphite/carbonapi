@@ -63,6 +63,90 @@ func TestFunction(t *testing.T) {
 				types.MakeMetricData("metric1234567890", []float64{0, 0, 0, 5, 0, 0}, 1, now32),
 			},
 		},
+		{
+			"sortByName(metric.foo.*)",
+			map[parser.MetricRequest][]*types.MetricData{
+				parser.MetricRequest{
+					Metric: "metric.foo.*",
+					From:   0,
+					Until:  1,
+				}: {
+					types.MakeMetricData("metric.foo.x99", []float64{1}, 1, now32),
+					types.MakeMetricData("metric.foo.x1", []float64{1}, 1, now32),
+					types.MakeMetricData("metric.foo.x2", []float64{1}, 1, now32),
+					types.MakeMetricData("metric.foo.x100", []float64{1}, 1, now32),
+				},
+			},
+			[]*types.MetricData{ // 100 is placed between 1 and 2 because it is alphabetical sort
+				types.MakeMetricData("metric.foo.x1", []float64{1}, 1, now32),
+				types.MakeMetricData("metric.foo.x100", []float64{1}, 1, now32),
+				types.MakeMetricData("metric.foo.x2", []float64{1}, 1, now32),
+				types.MakeMetricData("metric.foo.x99", []float64{1}, 1, now32),
+			},
+		},
+		{
+			"sortByName(metric.foo.*, true)",
+			map[parser.MetricRequest][]*types.MetricData{
+				parser.MetricRequest{
+					Metric: "metric.foo.*",
+					From:   0,
+					Until:  1,
+				}: {
+					types.MakeMetricData("metric.foo.x99", []float64{1}, 1, now32),
+					types.MakeMetricData("metric.foo.x1", []float64{1}, 1, now32),
+					types.MakeMetricData("metric.foo.x2", []float64{1}, 1, now32),
+					types.MakeMetricData("metric.foo.x100", []float64{1}, 1, now32),
+				},
+			},
+			[]*types.MetricData{ // "natural" sort method considers that metrics contain numbers
+				types.MakeMetricData("metric.foo.x1", []float64{1}, 1, now32),
+				types.MakeMetricData("metric.foo.x2", []float64{1}, 1, now32),
+				types.MakeMetricData("metric.foo.x99", []float64{1}, 1, now32),
+				types.MakeMetricData("metric.foo.x100", []float64{1}, 1, now32),
+			},
+		},
+		{
+			"sortByName(metric.foo.*, natural=false, reverse=true)",
+			map[parser.MetricRequest][]*types.MetricData{
+				parser.MetricRequest{
+					Metric: "metric.foo.*",
+					From:   0,
+					Until:  1,
+				}: {
+					types.MakeMetricData("metric.foo.x99", []float64{1}, 1, now32),
+					types.MakeMetricData("metric.foo.x1", []float64{1}, 1, now32),
+					types.MakeMetricData("metric.foo.x2", []float64{1}, 1, now32),
+					types.MakeMetricData("metric.foo.x100", []float64{1}, 1, now32),
+				},
+			},
+			[]*types.MetricData{ // alphabetical reverse sort
+				types.MakeMetricData("metric.foo.x99", []float64{1}, 1, now32),
+				types.MakeMetricData("metric.foo.x2", []float64{1}, 1, now32),
+				types.MakeMetricData("metric.foo.x100", []float64{1}, 1, now32),
+				types.MakeMetricData("metric.foo.x1", []float64{1}, 1, now32),
+			},
+		},
+		{
+			"sortByName(metric.foo.*, true, true)",
+			map[parser.MetricRequest][]*types.MetricData{
+				parser.MetricRequest{
+					Metric: "metric.foo.*",
+					From:   0,
+					Until:  1,
+				}: {
+					types.MakeMetricData("metric.foo.x99", []float64{1}, 1, now32),
+					types.MakeMetricData("metric.foo.x1", []float64{1}, 1, now32),
+					types.MakeMetricData("metric.foo.x2", []float64{1}, 1, now32),
+					types.MakeMetricData("metric.foo.x100", []float64{1}, 1, now32),
+				},
+			},
+			[]*types.MetricData{ // "natural" reverse sort
+				types.MakeMetricData("metric.foo.x100", []float64{1}, 1, now32),
+				types.MakeMetricData("metric.foo.x99", []float64{1}, 1, now32),
+				types.MakeMetricData("metric.foo.x2", []float64{1}, 1, now32),
+				types.MakeMetricData("metric.foo.x1", []float64{1}, 1, now32),
+			},
+		},
 	}
 
 	for _, tt := range tests {
