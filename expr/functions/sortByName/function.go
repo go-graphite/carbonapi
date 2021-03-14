@@ -35,19 +35,30 @@ func (f *sortByName) Do(ctx context.Context, e parser.Expr, from, until int64, v
 		return nil, err
 	}
 
-	natSort, err := e.GetBoolNamedOrPosArgDefault("natural", 1, false)
+	isNatSort, err := e.GetBoolNamedOrPosArgDefault("natural", 1, false)
+	if err != nil {
+		return nil, err
+	}
+
+	isReverseSort, err := e.GetBoolNamedOrPosArgDefault("reverse", 2, false)
 	if err != nil {
 		return nil, err
 	}
 
 	arg := make([]*types.MetricData, len(original))
 	copy(arg, original)
-	if natSort {
-		sort.Sort(helper.ByNameNatural(arg))
+	var dataToSort sort.Interface
+	if isNatSort {
+		dataToSort = helper.ByNameNatural(arg)
 	} else {
-		sort.Sort(helper.ByName(arg))
+		dataToSort = helper.ByName(arg)
 	}
 
+	if isReverseSort {
+		dataToSort = sort.Reverse(dataToSort)
+	}
+
+	sort.Sort(dataToSort)
 	return arg, nil
 }
 
