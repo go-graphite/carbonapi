@@ -56,6 +56,36 @@ func TestHighestMultiReturn(t *testing.T) {
 			},
 		},
 		{
+			"highestMax(metric1, 2)",
+			map[parser.MetricRequest][]*types.MetricData{
+				parser.MetricRequest{"metric1", 0, 1}: {
+					types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 4, 12, 9}, 1, now32),
+					types.MakeMetricData("metricB", []float64{1, 5, 5, 5, 5, 5, 3}, 1, now32),
+					types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 10, 10}, 1, now32),
+				},
+			},
+			"highestMax",
+			map[string][]*types.MetricData{
+				"metricA": {types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 4, 12, 9}, 1, now32)},
+				"metricC": {types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 10, 10}, 1, now32)},
+			},
+		},
+		{
+			"highestMin(metric1, 2)",
+			map[parser.MetricRequest][]*types.MetricData{
+				parser.MetricRequest{"metric1", 0, 1}: {
+					types.MakeMetricData("metricA", []float64{6, 1, 3, 3, 4, 12}, 1, now32),
+					types.MakeMetricData("metricB", []float64{2, 5, 5, 5, 5, 5}, 1, now32),
+					types.MakeMetricData("metricC", []float64{3, 2, 3, 3, 4, 10}, 1, now32),
+				},
+			},
+			"highestMin",
+			map[string][]*types.MetricData{
+				"metricB": {types.MakeMetricData("metricB", []float64{2, 5, 5, 5, 5, 5}, 1, now32)},
+				"metricC": {types.MakeMetricData("metricC", []float64{3, 2, 3, 3, 4, 10}, 1, now32)},
+			},
+		},
+		{
 			"highest(metric1, 2, \"max\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
@@ -189,6 +219,18 @@ func TestHighest(t *testing.T) {
 				[]float64{1, 1, 3, 3, 12, 11}, 1, now32)},
 		},
 		{
+			"highestMin(metric1,1)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", 0, 1}: {
+					types.MakeMetricData("metricA", []float64{6, 1, 3, 3, 4, 12}, 1, now32),
+					types.MakeMetricData("metricB", []float64{2, 5, 5, 5, 5, 5}, 1, now32),
+					types.MakeMetricData("metricC", []float64{3, 1, 3, 3, 4, 10}, 1, now32),
+				},
+			},
+			[]*types.MetricData{types.MakeMetricData("metricB", // NOTE(dgryski): not sure if this matches graphite
+				[]float64{2, 5, 5, 5, 5, 5}, 1, now32)},
+		},
+		{
 			"highest(metric1,\"max\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
@@ -213,7 +255,6 @@ func TestHighest(t *testing.T) {
 				types.MakeMetricData("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
 			},
 		},
-
 		{
 			"lowestCurrent(metric1,1)",
 			map[parser.MetricRequest][]*types.MetricData{
