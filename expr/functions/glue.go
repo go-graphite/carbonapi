@@ -46,6 +46,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/ifft"
 	"github.com/go-graphite/carbonapi/expr/functions/integral"
 	"github.com/go-graphite/carbonapi/expr/functions/integralByInterval"
+	"github.com/go-graphite/carbonapi/expr/functions/integralWithReset"
 	"github.com/go-graphite/carbonapi/expr/functions/invert"
 	"github.com/go-graphite/carbonapi/expr/functions/isNotNull"
 	"github.com/go-graphite/carbonapi/expr/functions/keepLastValue"
@@ -149,6 +150,7 @@ func New(configs map[string]string) {
 		{name: "ifft", filename: "ifft", order: ifft.GetOrder(), f: ifft.New},
 		{name: "integral", filename: "integral", order: integral.GetOrder(), f: integral.New},
 		{name: "integralByInterval", filename: "integralByInterval", order: integralByInterval.GetOrder(), f: integralByInterval.New},
+		{name: "integralWithReset", filename: "integralWithReset", order: integralWithReset.GetOrder(), f: integralWithReset.New},
 		{name: "invert", filename: "invert", order: invert.GetOrder(), f: invert.New},
 		{name: "isNotNull", filename: "isNotNull", order: isNotNull.GetOrder(), f: isNotNull.New},
 		{name: "keepLastValue", filename: "keepLastValue", order: keepLastValue.GetOrder(), f: keepLastValue.New},
