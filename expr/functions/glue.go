@@ -81,6 +81,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/scaleToSeconds"
 	"github.com/go-graphite/carbonapi/expr/functions/seriesByTag"
 	"github.com/go-graphite/carbonapi/expr/functions/seriesList"
+	"github.com/go-graphite/carbonapi/expr/functions/slo"
 	"github.com/go-graphite/carbonapi/expr/functions/smartSummarize"
 	"github.com/go-graphite/carbonapi/expr/functions/sortBy"
 	"github.com/go-graphite/carbonapi/expr/functions/sortByName"
@@ -185,6 +186,7 @@ func New(configs map[string]string) {
 		{name: "scaleToSeconds", filename: "scaleToSeconds", order: scaleToSeconds.GetOrder(), f: scaleToSeconds.New},
 		{name: "seriesByTag", filename: "seriesByTag", order: seriesByTag.GetOrder(), f: seriesByTag.New},
 		{name: "seriesList", filename: "seriesList", order: seriesList.GetOrder(), f: seriesList.New},
+		{name: "slo", filename: "slo", order: slo.GetOrder(), f: slo.New},
 		{name: "smartSummarize", filename: "smartSummarize", order: smartSummarize.GetOrder(), f: smartSummarize.New},
 		{name: "sortBy", filename: "sortBy", order: sortBy.GetOrder(), f: sortBy.New},
 		{name: "sortByName", filename: "sortByName", order: sortByName.GetOrder(), f: sortByName.New},
