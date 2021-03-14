@@ -37,6 +37,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/group"
 	"github.com/go-graphite/carbonapi/expr/functions/groupByNode"
 	"github.com/go-graphite/carbonapi/expr/functions/groupByTags"
+	"github.com/go-graphite/carbonapi/expr/functions/heatMap"
 	"github.com/go-graphite/carbonapi/expr/functions/highestLowest"
 	"github.com/go-graphite/carbonapi/expr/functions/hitcount"
 	"github.com/go-graphite/carbonapi/expr/functions/holtWintersAberration"
@@ -139,6 +140,7 @@ func New(configs map[string]string) {
 		{name: "group", filename: "group", order: group.GetOrder(), f: group.New},
 		{name: "groupByNode", filename: "groupByNode", order: groupByNode.GetOrder(), f: groupByNode.New},
 		{name: "groupByTags", filename: "groupByTags", order: groupByTags.GetOrder(), f: groupByTags.New},
+		{name: "heatMap", filename: "heatMap", order: heatMap.GetOrder(), f: heatMap.New},
 		{name: "highestLowest", filename: "highestLowest", order: highestLowest.GetOrder(), f: highestLowest.New},
 		{name: "hitcount", filename: "hitcount", order: hitcount.GetOrder(), f: hitcount.New},
 		{name: "holtWintersAberration", filename: "holtWintersAberration", order: holtWintersAberration.GetOrder(), f: holtWintersAberration.New},
