@@ -25,7 +25,7 @@ func GetOrder() interfaces.Order {
 func New(configFile string) []interfaces.FunctionMetadata {
 	res := make([]interfaces.FunctionMetadata, 0)
 	f := &highest{}
-	functions := []string{"highestAverage", "highestCurrent", "highestMax", "highest", "lowestMax", "lowestAverage", "lowestCurrent", "lowest"}
+	functions := []string{"highestAverage", "highestCurrent", "highestMax", "highestMin", "highest", "lowestMax", "lowestMin", "lowestAverage", "lowestCurrent", "lowest"}
 	for _, n := range functions {
 		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
 	}
@@ -96,6 +96,8 @@ func (f *highest) Do(ctx context.Context, e parser.Expr, from, until int64, valu
 		compute = consolidations.AvgValue
 	case "highestCurrent", "lowestCurrent":
 		compute = consolidations.CurrentValue
+	case "highestMin", "lowestMin":
+		compute = consolidations.MinValue
 	default:
 		return nil, fmt.Errorf("unsupported function %v", e.Target())
 	}
@@ -231,6 +233,25 @@ func (f *highest) Description() map[string]types.FunctionDescription {
 				},
 			},
 		},
+		"highestMin": {
+			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\n\nOut of all metrics passed, draws only the N metrics with the highest minimum\nvalue in the time period specified.\n\nExample:\n\n.. code-block:: none\n\n  &target=highestMin(server*.instance*.threads.busy,5)\n\nDraws the top 5 servers who have had the highest minimum of all the values during the time\nperiod specified.\n\nThis is an alias for :py:func:`highest <highest>` with aggregation ``min``.",
+			Function:    "highestMin(seriesList, n)",
+			Group:       "Filter Series",
+			Module:      "graphite.render.functions",
+			Name:        "highestMin",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "n",
+					Required: true,
+					Type:     types.Integer,
+				},
+			},
+		},
 		"lowest": {
 			Name:        "lowest",
 			Function:    "lowest(seriesList, n=1, func='average')",
@@ -303,6 +324,25 @@ func (f *highest) Description() map[string]types.FunctionDescription {
 			Group:       "Filter Series",
 			Module:      "graphite.render.functions",
 			Name:        "lowestMax",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "n",
+					Required: true,
+					Type:     types.Integer,
+				},
+			},
+		},
+		"lowestMin": {
+			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\nOut of all metrics passed, draws only the bottom N metrics with the lowest\nminimum value for the time period specified.\n\nExample:\n\n.. code-block:: none\n\n  &target=lowestMin(server*.instance*.threads.busy,5)\n\nDraws the bottom 5 servers with the lowest minimum value.\n\nThis is an alias for :py:func:`lowest <lowest>` with aggregation ``min``.",
+			Function:    "lowestMin(seriesList, n)",
+			Group:       "Filter Series",
+			Module:      "graphite.render.functions",
+			Name:        "lowestMin",
 			Params: []types.FunctionParam{
 				{
 					Name:     "seriesList",
