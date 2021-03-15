@@ -21,7 +21,7 @@ func GetOrder() interfaces.Order {
 func New(configFile string) []interfaces.FunctionMetadata {
 	res := make([]interfaces.FunctionMetadata, 0)
 	f := &scale{}
-	functions := []string{"scale"}
+	functions := []string{"scale", "scaleAfterTimestamp"}
 	for _, n := range functions {
 		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
 	}
@@ -38,15 +38,29 @@ func (f *scale) Do(ctx context.Context, e parser.Expr, from, until int64, values
 	if err != nil {
 		return nil, err
 	}
-	var results []*types.MetricData
+	timestamp, err := e.GetIntArgDefault(2, 0)
+	if err != nil {
+		return nil, err
+	}
 
+	results := make([]*types.MetricData, 0, len(arg))
 	for _, a := range arg {
 		r := *a
-		r.Name = fmt.Sprintf("scale(%s,%g)", a.Name, scale)
+		if timestamp == 0 {
+			r.Name = fmt.Sprintf("scale(%s,%g)", a.Name, scale)
+		} else {
+			r.Name = fmt.Sprintf("scale(%s,%g,%d)", a.Name, scale, timestamp)
+		}
 		r.Values = make([]float64, len(a.Values))
 
+		currentTimestamp := a.StartTime
 		for i, v := range a.Values {
-			r.Values[i] = v * scale
+			r.Values[i] = v
+			if currentTimestamp >= int64(timestamp) {
+				r.Values[i] *= scale
+			}
+
+			currentTimestamp += a.StepTime
 		}
 		results = append(results, &r)
 	}
@@ -57,7 +71,10 @@ func (f *scale) Do(ctx context.Context, e parser.Expr, from, until int64, values
 func (f *scale) Description() map[string]types.FunctionDescription {
 	return map[string]types.FunctionDescription{
 		"scale": {
-			Description: "Takes one metric or a wildcard seriesList followed by a constant, and multiplies the datapoint\nby the constant provided at each point.\n\nExample:\n\n.. code-block:: none\n\n  &target=scale(Server.instance01.threads.busy,10)\n  &target=scale(Server.instance*.threads.busy,10)",
+			Description: "Takes one metric or a wildcard seriesList followed by a constant, and multiplies the datapoint\n" +
+				"by the constant provided at each point.\n"+
+				"carbonapi extends this function by optional 3-rd parameter that accepts unix-timestamp. If provided, only values with timestamp newer than it will be scaled\n\n"+
+				"Example:\n\n.. code-block:: none\n\n  &target=scale(Server.instance01.threads.busy,10)\n  &target=scale(Server.instance*.threads.busy,10)",
 			Function:    "scale(seriesList, factor)",
 			Group:       "Transform",
 			Module:      "graphite.render.functions",
@@ -72,6 +89,12 @@ func (f *scale) Description() map[string]types.FunctionDescription {
 					Name:     "factor",
 					Required: true,
 					Type:     types.Float,
+				},
+				{
+					Name:     "timestamp",
+					Required: false,
+					Type:     types.Integer,
+					Default:  types.NewSuggestion(0),
 				},
 			},
 		},
