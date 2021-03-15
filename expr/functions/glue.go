@@ -92,6 +92,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/summarize"
 	"github.com/go-graphite/carbonapi/expr/functions/timeFunction"
 	"github.com/go-graphite/carbonapi/expr/functions/timeShift"
+	"github.com/go-graphite/carbonapi/expr/functions/timeShiftByMetric"
 	"github.com/go-graphite/carbonapi/expr/functions/timeStack"
 	"github.com/go-graphite/carbonapi/expr/functions/transformNull"
 	"github.com/go-graphite/carbonapi/expr/functions/tukey"
@@ -197,6 +198,7 @@ func New(configs map[string]string) {
 		{name: "summarize", filename: "summarize", order: summarize.GetOrder(), f: summarize.New},
 		{name: "timeFunction", filename: "timeFunction", order: timeFunction.GetOrder(), f: timeFunction.New},
 		{name: "timeShift", filename: "timeShift", order: timeShift.GetOrder(), f: timeShift.New},
+		{name: "timeShiftByMetric", filename: "timeShiftByMetric", order: timeShiftByMetric.GetOrder(), f: timeShiftByMetric.New},
 		{name: "timeStack", filename: "timeStack", order: timeStack.GetOrder(), f: timeStack.New},
 		{name: "transformNull", filename: "transformNull", order: transformNull.GetOrder(), f: transformNull.New},
 		{name: "tukey", filename: "tukey", order: tukey.GetOrder(), f: tukey.New},

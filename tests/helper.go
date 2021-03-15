@@ -13,6 +13,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
+	"github.com/ansel1/merry"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
@@ -42,9 +43,9 @@ func (evaluator *FuncEvaluator) Eval(ctx context.Context, e parser.Expr, from, u
 
 	if evaluator.eval != nil {
 		return evaluator.eval(context.Background(), e, from, until, values)
-	} else {
-		return nil, helper.ErrUnknownFunction(e.Target())
 	}
+
+	return nil, helper.ErrUnknownFunction(e.Target())
 }
 
 func DummyEvaluator() interfaces.Evaluator {
@@ -472,22 +473,28 @@ type EvalTestItem struct {
 	Want   []*types.MetricData
 }
 
-func TestEvalExprModifiedOrigin(t *testing.T, tt *EvalTestItem) {
+type EvalTestItemWithError struct {
+	Target string
+	M      map[parser.MetricRequest][]*types.MetricData
+	Want   []*types.MetricData
+	Error  error
+}
+
+func TestEvalExprModifiedOrigin(t *testing.T, tt *EvalTestItem, from, until int64, strictOrder bool) error {
 	evaluator := metadata.GetEvaluator()
 	testName := tt.Target
 	exp, _, err := parser.ParseExpr(tt.Target)
 	if err != nil {
 		t.Errorf("failed to parse %s: %+v", tt.Target, err)
-		return
+		return nil
 	}
-	g, err := evaluator.Eval(context.Background(), exp, 0, 1, tt.M)
+	g, err := evaluator.Eval(context.Background(), exp, from, until, tt.M)
 	if err != nil {
-		t.Errorf("failed to eval %s: %+v", testName, err)
-		return
+		return err
 	}
 	if len(g) != len(tt.Want) {
 		t.Errorf("%s returned a different number of metrics, actual %v, Want %v", testName, len(g), len(tt.Want))
-		return
+		return nil
 	}
 
 	for i, want := range tt.Want {
@@ -497,7 +504,7 @@ func TestEvalExprModifiedOrigin(t *testing.T, tt *EvalTestItem) {
 		}
 		if actual == nil {
 			t.Errorf("returned no value %v", tt.Target)
-			return
+			return nil
 		}
 		if actual.StepTime == 0 {
 			t.Errorf("missing Step for %+v", g)
@@ -507,7 +514,7 @@ func TestEvalExprModifiedOrigin(t *testing.T, tt *EvalTestItem) {
 		}
 		if !NearlyEqualMetrics(actual, want) {
 			t.Errorf("different values for %s metric %s: got %v, Want %v", testName, actual.Name, actual.Values, want.Values)
-			return
+			return nil
 		}
 		if actual.StepTime != want.StepTime {
 			t.Errorf("different StepTime for %s metric %s: got %v, Want %v", testName, actual.Name, actual.StepTime, want.StepTime)
@@ -519,10 +526,40 @@ func TestEvalExprModifiedOrigin(t *testing.T, tt *EvalTestItem) {
 			t.Errorf("different StopTime for %s metric %s: got %v, Want %v", testName, actual.Name, actual.StopTime, want.StopTime)
 		}
 	}
+	return nil
 }
 
 func TestEvalExpr(t *testing.T, tt *EvalTestItem) {
 	originalMetrics := DeepClone(tt.M)
-	TestEvalExprModifiedOrigin(t, tt)
+	err := TestEvalExprModifiedOrigin(t, tt, 0, 1, false)
+	if err != nil {
+		t.Errorf("unexpected error while evaluating %s: got `%+v`", tt.Target, err)
+		return
+	}
+	DeepEqual(t, tt.Target, originalMetrics, tt.M, false)
+}
+
+func TestEvalExprWithError(t *testing.T, tt *EvalTestItemWithError) {
+	originalMetrics := DeepClone(tt.M)
+	tt2 := &EvalTestItem{
+		Target: tt.Target,
+		M: tt.M,
+		Want: tt.Want,
+	}
+	err := TestEvalExprModifiedOrigin(t, tt2, 0, 1, false)
+	if !merry.Is(err, tt.Error) {
+		t.Errorf("unexpected error while evaluating %s: got `%+v`, expected `%+v`", tt.Target, err, tt.Error)
+		return
+	}
+	DeepEqual(t, tt.Target, originalMetrics, tt.M, false)
+}
+
+func TestEvalExprOrdered(t *testing.T, tt *EvalTestItem) {
+	originalMetrics := DeepClone(tt.M)
+	err := TestEvalExprModifiedOrigin(t, tt, 0, 1, true)
+	if err != nil {
+		t.Errorf("unexpected error while evaluating %s: got `%+v`", tt.Target, err)
+		return
+	}
 	DeepEqual(t, tt.Target, originalMetrics, tt.M, false)
 }
