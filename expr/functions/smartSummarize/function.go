@@ -154,7 +154,7 @@ func (f *smartSummarize) Description() map[string]types.FunctionDescription {
 				{
 					Default: types.NewSuggestion("sum"),
 					Name:    "func",
-					Options: consolidations.AvailableSummarizers,
+					Options: types.StringsToSuggestionList(consolidations.AvailableSummarizers),
 					Type:    types.AggFunc,
 				},
 				{

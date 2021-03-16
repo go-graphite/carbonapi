@@ -15,9 +15,9 @@ import (
 )
 
 // It's ok to ignore values that's only in 'capi' as currently I don't care about superset of features.
-func isUnsortedStringSlicesEqual(capi, grWeb []string) []string {
-	capiMap := make(map[string]struct{})
-	var diff []string
+func isUnsortedSuggestionSlicesEqual(capi, grWeb []types.Suggestion) []types.Suggestion {
+	capiMap := make(map[types.Suggestion]struct{})
+	var diff []types.Suggestion
 
 	for _, v := range capi {
 		capiMap[v] = struct{}{}
@@ -33,11 +33,15 @@ func isUnsortedStringSlicesEqual(capi, grWeb []string) []string {
 
 func isFunctionParamEqual(fp1, fp2 types.FunctionParam) []string {
 	var incompatibilities []string
-	diffParams := isUnsortedStringSlicesEqual(fp1.Options, fp2.Options)
+	diffParams := isUnsortedSuggestionSlicesEqual(fp1.Options, fp2.Options)
 	if len(diffParams) > 0 {
-		// TODO(civil): Distingush and flag supersets (where we support more)
+		// TODO(civil): Distingush and flag supersets (where we support more)\
+		diffStr := make([]string, 0, len(diffParams))
+		for _, v := range diffParams {
+			diffStr = append(diffStr, fmt.Sprintf("%v", v.Value))
+		}
 		if len(fp1.Options) < len(fp2.Options) {
-			incompatibilities = append(incompatibilities, fmt.Sprintf("%v: different amount of parameters, `%+v` are missing", fp1.Name, diffParams))
+			incompatibilities = append(incompatibilities, fmt.Sprintf("%v: different amount of parameters, `%+v` are missing", fp1.Name, diffStr))
 		}
 	}
 
@@ -50,14 +54,16 @@ func isFunctionParamEqual(fp1, fp2 types.FunctionParam) []string {
 	}
 
 	if fp1.Type != fp2.Type {
-		v1, _ := fp1.Type.MarshalJSON()
-		v2, _ := fp2.Type.MarshalJSON()
-		incompatibilities = append(incompatibilities, fmt.Sprintf("%v: type mismatch: got %v, should be %v", fp1.Name, string(v1), string(v2)))
+		v1 := types.FunctionTypeToStr[fp1.Type]
+		v2 := types.FunctionTypeToStr[fp2.Type]
+		incompatibilities = append(incompatibilities, fmt.Sprintf("%v: type mismatch: got %v, should be %v", fp1.Name, v1, v2))
 	}
 
 	if fp1.Default != nil && fp2.Default != nil {
 		if fp1.Default.Type != fp2.Default.Type {
-			incompatibilities = append(incompatibilities, fmt.Sprintf("%v: default value's type mismatch: got %v, should be %v", fp1.Name, fp1.Default.Type, fp2.Default.Type))
+			v1, _ := fp1.Default.MarshalJSON()
+			v2, _ := fp1.Default.MarshalJSON()
+			incompatibilities = append(incompatibilities, fmt.Sprintf("%v: default value's type mismatch: got %v, should be %v", fp1.Name, string(v1), string(v2)))
 		}
 		v1, _ := fp1.Default.MarshalJSON()
 		v2, _ := fp2.Default.MarshalJSON()
@@ -112,19 +118,19 @@ func isFunctionParamsEqual(carbonapi, graphiteweb []types.FunctionParam) []strin
 }
 
 func main() {
-	srv1 := flag.String("carbonapi", "http://localhost:8079", "first server base url")
-	srv2 := flag.String("graphiteweb", "http://localhost:8082", "second server base url")
+	carbonapiURL := flag.String("carbonapi", "http://localhost:8079", "first server base url")
+	graphiteWebURL := flag.String("graphiteweb", "http://localhost:8082", "second server base url")
 
 	flag.Parse()
 
-	res, err := http.Get(*srv1 + "/functions/")
+	res, err := http.Get(*carbonapiURL + "/functions/")
 	if err != nil {
-		log.Fatal("failed to get response from server 1", err)
+		log.Fatal("failed to get response from carbonapi", err)
 	}
 
 	resp1, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Fatalf("failed to read response body for %v: %v", *srv1, err)
+		log.Fatalf("failed to read response body for %v: %v", *carbonapiURL, err)
 	}
 
 	_ = res.Body.Close()
@@ -133,25 +139,33 @@ func main() {
 
 	err = json.Unmarshal(resp1, &firstDescription)
 	if err != nil {
-		log.Fatal("failed to Unmarshal first description", err)
+		if e, ok := err.(*json.SyntaxError); ok {
+			log.Printf("syntax error at byte offset `%d`, error: %+v", e.Offset, e)
+		}
+		log.Fatalf("failed to Unmarshal carbonapi's description: `%v`", err)
 	}
 
-	res, err = http.Get(*srv2 + "/functions/")
+	res, err = http.Get(*graphiteWebURL + "/functions/?pretty=1")
 	if err != nil {
-		log.Fatalf("failed to read response body for %v: %v", *srv2, err)
+		log.Fatalf("failed to read response body for %v: %v", *graphiteWebURL, err)
 	}
 
 	resp2, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Fatal("failed to read response body", err)
+		log.Fatal("failed to read response body for graphiteWeb", err)
 	}
 	_ = res.Body.Close()
 
 	var secondDescription map[string]types.FunctionDescription
 
+	// resp2 = bytes.ReplaceAll(resp2, []byte(" Infinity}"), []byte(" \"Infinity\"}"))
+
 	err = json.Unmarshal(resp2, &secondDescription)
 	if err != nil {
-		log.Fatal("failed to Unmarshal second description", err)
+		if e, ok := err.(*json.SyntaxError); ok {
+			log.Printf("syntax error at byte offset `%d`, error: %+v", e.Offset, e)
+		}
+		log.Fatalf("failed to Unmarshal graphite-web's description: `%v`", err)
 	}
 
 	var carbonapiFunctions []string

@@ -100,7 +100,7 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 					Name:     "func",
 					Type:     types.AggFunc,
 					Required: true,
-					Options:  consolidations.AvailableConsolidationFuncs(),
+					Options:  types.StringsToSuggestionList(consolidations.AvailableConsolidationFuncs()),
 				},
 				/*
 					{

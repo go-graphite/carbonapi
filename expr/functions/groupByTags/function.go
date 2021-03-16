@@ -128,7 +128,7 @@ func (f *groupByTags) Description() map[string]types.FunctionDescription {
 				},
 				{
 					Name:     "callback",
-					Options:  consolidations.AvailableSummarizers,
+					Options:  types.StringsToSuggestionList(consolidations.AvailableSummarizers),
 					Required: true,
 					Type:     types.AggFunc,
 				},

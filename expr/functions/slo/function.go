@@ -226,12 +226,12 @@ func (f *slo) Description() map[string]types.FunctionDescription {
 				{
 					Default: types.NewSuggestion("above"),
 					Name:    "method",
-					Options: []string{
+					Options: types.StringsToSuggestionList([]string{
 						"above",
 						"aboveOrEqual",
 						"below",
 						"belowOrEqual",
-					},
+					}),
 					Required: true,
 					Type:     types.String,
 				},
@@ -268,12 +268,12 @@ func (f *slo) Description() map[string]types.FunctionDescription {
 				{
 					Default: types.NewSuggestion("above"),
 					Name:    "method",
-					Options: []string{
+					Options: types.StringsToSuggestionList([]string{
 						"above",
 						"aboveOrEqual",
 						"below",
 						"belowOrEqual",
-					},
+					}),
 					Required: true,
 					Type:     types.String,
 				},
