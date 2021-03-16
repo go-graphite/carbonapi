@@ -88,11 +88,11 @@ func (f *fft) Description() map[string]types.FunctionDescription {
 					Name:     "mode",
 					Required: false,
 					Type:     types.String,
-					Options: []string{
+					Options: types.StringsToSuggestionList([]string{
 						"abs",
 						"phase",
 						"both",
-					},
+					}),
 				},
 			},
 		},

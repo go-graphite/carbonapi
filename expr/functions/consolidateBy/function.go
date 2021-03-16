@@ -69,7 +69,7 @@ func (f *consolidateBy) Description() map[string]types.FunctionDescription {
 				},
 				{
 					Name:     "consolidationFunc",
-					Options:  consolidations.AvailableConsolidationFuncs(),
+					Options:  types.StringsToSuggestionList(consolidations.AvailableConsolidationFuncs()),
 					Required: true,
 					Type:     types.String,
 				},

@@ -3,6 +3,7 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -36,43 +37,56 @@ const (
 	String
 	// Tag is a constant for Tag type
 	Tag
+	// Any is a constant for `Any` type
+	Any
+	// AggOrSeriesFunc is a constant for AggregationFunction or SeriesList
+	AggOrSeriesFunc
+	// IntOrInf is a constant for Integer that can be infinity
+	IntOrInf
 )
 
 var strToFunctionType = map[string]FunctionType{
-	"aggFunc":       AggFunc,
-	"boolean":       Boolean,
-	"date":          Date,
-	"float":         Float,
-	"intOrInterval": IntOrInterval,
-	"integer":       Integer,
-	"interval":      Interval,
-	"node":          Node,
-	"nodeOrTag":     NodeOrTag,
-	"seriesList":    SeriesList,
-	"seriesLists":   SeriesLists,
-	"string":        String,
-	"tag":           Tag,
+	"aggFunc":         AggFunc,
+	"boolean":         Boolean,
+	"date":            Date,
+	"float":           Float,
+	"intOrInterval":   IntOrInterval,
+	"integer":         Integer,
+	"interval":        Interval,
+	"node":            Node,
+	"nodeOrTag":       NodeOrTag,
+	"seriesList":      SeriesList,
+	"seriesLists":     SeriesLists,
+	"string":          String,
+	"tag":             Tag,
+	"any":             Any,
+	"aggOrSeriesFunc": AggOrSeriesFunc,
+	"intOrInf":        IntOrInf,
 }
 
-var functionTypeToStr = map[FunctionType]string{
-	AggFunc:       "aggFunc",
-	Boolean:       "boolean",
-	Date:          "date",
-	Float:         "float",
-	IntOrInterval: "intOrInterval",
-	Integer:       "integer",
-	Interval:      "interval",
-	Node:          "node",
-	NodeOrTag:     "nodeOrTag",
-	SeriesList:    "seriesList",
-	SeriesLists:   "seriesLists",
-	String:        "string",
-	Tag:           "tag",
+// FunctionTypeToStr provides a mapping between internal type constants and graphite-friendly string that have a name of a type
+var FunctionTypeToStr = map[FunctionType]string{
+	AggFunc:         "aggFunc",
+	Boolean:         "boolean",
+	Date:            "date",
+	Float:           "float",
+	IntOrInterval:   "intOrInterval",
+	Integer:         "integer",
+	Interval:        "interval",
+	Node:            "node",
+	NodeOrTag:       "nodeOrTag",
+	SeriesList:      "seriesList",
+	SeriesLists:     "seriesLists",
+	String:          "string",
+	Tag:             "tag",
+	Any:             "any",
+	AggOrSeriesFunc: "aggOrSeriesFunc",
+	IntOrInf:        "intOrInf",
 }
 
 // MarshalJSON marshals metric data to JSON
 func (t FunctionType) MarshalJSON() ([]byte, error) {
-	v, ok := functionTypeToStr[t]
+	v, ok := FunctionTypeToStr[t]
 	if ok {
 		return json.Marshal(v)
 	}
@@ -185,7 +199,12 @@ func (t *Suggestion) UnmarshalJSON(d []byte) error {
 	var res interface{}
 	err := json.Unmarshal(d, &res)
 	if err != nil {
-		return err
+		switch string(d) {
+		case "1e9999":
+			res = math.Inf(1)
+		default:
+			return err
+		}
 	}
 	switch v := res.(type) {
 	case int:
@@ -206,11 +225,28 @@ func (t *Suggestion) UnmarshalJSON(d []byte) error {
 	case bool:
 		t.Type = SBool
 		t.Value = v
+	case nil:
+		t.Type = SNone
+		t.Value = nil
 	default:
-		return fmt.Errorf("unknown type for suggestion")
+		return fmt.Errorf("unknown type for suggestion: %v, %T", string(d), v)
 	}
 
 	return nil
+}
+
+type Option struct {
+	Type  SuggestionTypes
+	Value interface{}
+}
+
+func StringsToSuggestionList(in []string) []Suggestion {
+	res := make([]Suggestion, 0, len(in))
+
+	for _, v := range in {
+		res = append(res, Suggestion{Type: SString, Value: v})
+	}
+	return res
 }
 
 // FunctionParam contains list of all available parameters of function
@@ -219,7 +255,7 @@ type FunctionParam struct {
 	Multiple    bool          `json:"multiple,omitempty"`
 	Required    bool          `json:"required,omitempty"`
 	Type        FunctionType  `json:"type,omitempty"`
-	Options     []string      `json:"options,omitempty"`
+	Options     []Suggestion  `json:"options,omitempty"`
 	Suggestions []*Suggestion `json:"suggestions,omitempty"`
 	Default     *Suggestion   `json:"default,omitempty"`
 }

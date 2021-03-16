@@ -143,7 +143,7 @@ func (f *groupByNode) Description() map[string]types.FunctionDescription {
 				{
 					Default:  types.NewSuggestion("average"),
 					Name:     "callback",
-					Options:  consolidations.AvailableSummarizers,
+					Options:  types.StringsToSuggestionList(consolidations.AvailableSummarizers),
 					Required: true,
 					Type:     types.AggFunc,
 				},
@@ -163,7 +163,7 @@ func (f *groupByNode) Description() map[string]types.FunctionDescription {
 				},
 				{
 					Name:     "callback",
-					Options:  consolidations.AvailableSummarizers,
+					Options:  types.StringsToSuggestionList(consolidations.AvailableSummarizers),
 					Required: true,
 					Type:     types.AggFunc,
 				},

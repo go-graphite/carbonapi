@@ -150,10 +150,10 @@ func (f *cactiStyle) Description() map[string]types.FunctionDescription {
 				},
 				{
 					Name: "system",
-					Options: []string{
+					Options: types.StringsToSuggestionList([]string{
 						"si",
 						"binary",
-					},
+					}),
 					Type: types.String,
 				},
 				{

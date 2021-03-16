@@ -122,7 +122,7 @@ func (f *aggregateLine) Description() map[string]types.FunctionDescription {
 					Name:     "func",
 					Type:     types.AggFunc,
 					Required: false,
-					Options:  consolidations.AvailableConsolidationFuncs(),
+					Options:  types.StringsToSuggestionList(consolidations.AvailableConsolidationFuncs()),
 					Default: &types.Suggestion{
 						Value: "average",
 						Type:  types.SString,

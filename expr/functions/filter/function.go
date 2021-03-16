@@ -127,20 +127,20 @@ func (f *filterSeries) Description() map[string]types.FunctionDescription {
 					Name:     "func",
 					Type:     types.AggFunc,
 					Required: true,
-					Options:  consolidations.AvailableConsolidationFuncs(),
+					Options:  types.StringsToSuggestionList(consolidations.AvailableConsolidationFuncs()),
 				},
 				{
 					Name:     "operator",
 					Type:     types.String,
 					Required: true,
-					Options: []string{
+					Options: types.StringsToSuggestionList([]string{
 						"!=",
 						"<",
 						"<=",
 						"=",
 						">",
 						">=",
-					},
+					}),
 				},
 				{
 					Name:     "threshold",

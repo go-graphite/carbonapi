@@ -175,11 +175,11 @@ and will manifest as if the entire window/series had missing values.`,
 				{
 					Name:     "direction",
 					Required: true,
-					Options: []string{
+					Options: types.StringsToSuggestionList([]string{
 						"abs",
 						"pos",
 						"neg",
-					},
+					}),
 					Type: types.String,
 				},
 			},
