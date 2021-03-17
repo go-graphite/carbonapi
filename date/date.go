@@ -74,8 +74,8 @@ func DateParamToEpoch(s, qtz string, d int64, defaultTimeZone *time.Location) in
 	}
 
 	sint, err := strconv.Atoi(s)
-	// need to check that len(s) > 8 to avoid turning 20060102 into seconds
-	if err == nil && len(s) > 8 {
+	// need to check that len(s) != 8 to avoid turning 20060102 into seconds
+	if err == nil && len(s) != 8 {
 		return int64(sint) // We got a timestamp so returning it
 	}
 
