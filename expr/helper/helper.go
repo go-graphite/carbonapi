@@ -147,6 +147,17 @@ func AggregateSeries(e parser.Expr, args []*types.MetricData, function Aggregate
 	r.Name = fmt.Sprintf("%s(%s)", e.Target(), e.RawArgs())
 	r.Values = make([]float64, length)
 
+	needScale := false
+	for i := 1; i < len(args); i++ {
+		if args[i].StartTime != r.StepTime {
+			needScale = true
+			break
+		}
+	}
+	if needScale {
+		ScaleToCommonStep(args, 0)
+	}
+
 	for i := range args[0].Values {
 		var values []float64
 		for _, arg := range args {
