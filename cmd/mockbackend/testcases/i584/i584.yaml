@@ -14,6 +14,11 @@ test:
               expectedResponse:
                   httpCode: 200
                   contentType: "application/json"
+                  expectedResults:
+                          - metrics:
+                                  - target: "diffSeries(time(\"t\"), some.metric)"
+                                    datapoints: [[57,0],[177,120],[297,240]]
+
 listeners:
         - address: ":9070"
           expressions:
