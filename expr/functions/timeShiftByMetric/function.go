@@ -57,7 +57,6 @@ func (f *timeShiftByMetric) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
-			Proxied: true,
 		},
 	}
 }

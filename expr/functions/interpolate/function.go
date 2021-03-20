@@ -114,7 +114,6 @@ func (f *interpolate) Description() map[string]types.FunctionDescription {
 					Type:     types.Float,
 				},
 			},
-			Proxied: true,
 		},
 	}
 }
