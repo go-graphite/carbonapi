@@ -158,7 +158,8 @@ func main() {
 
 	var secondDescription map[string]types.FunctionDescription
 
-	// resp2 = bytes.ReplaceAll(resp2, []byte(" Infinity}"), []byte(" \"Infinity\"}"))
+	// Workaround for a case in json where parameter is set to `Infinity` which is not supported by GoLang's json parser
+	resp2 = bytes.ReplaceAll(resp2, []byte("\"default\": Infinity,"), []byte("\"default\": \"Infinity\","))
 
 	err = json.Unmarshal(resp2, &secondDescription)
 	if err != nil {
@@ -195,6 +196,18 @@ func main() {
 	sort.Strings(unsupportedFunctions)
 	sort.Strings(supportedFunctions)
 
+	res, err = http.Get(*graphiteWebURL + "/version/")
+	if err != nil {
+		log.Fatalf("failed to read response body for %v: %v", *graphiteWebURL, err)
+	}
+
+	resp2, err = ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Fatal("failed to read response body for graphiteWeb", err)
+	}
+	_ = res.Body.Close()
+	version := strings.Trim(string(resp2), "\n")
+
 	fmt.Printf(`# CarbonAPI compatibility with Graphite
 
 Topics:
@@ -208,7 +221,7 @@ Topics:
 ## Default Settings
 
 ### Default Line Colors
-Default colors for png or svg rendering intentionally specified like it is in graphite-web 1.1.0
+Default colors for png or svg rendering intentionally specified like it is in graphite-web %s
 
 You can redefine that in config to be more more precise. In default config example they are defined in the same way as in [original graphite PR to make them right](https://github.com/graphite-project/graphite-web/pull/2239)
 
@@ -296,13 +309,14 @@ _When ` + "`format=png`_ (default if not specified)\n" +
 		"* `jsonp` : ...\n" +
 		"* `query` : the metric or glob-pattern to find\n" + `
 
-`)
-	fmt.Println(`
+`, version)
+	fmt.Printf(`
 
-## Graphite-web 1.1 compatibility
+## Graphite-web %s compatibility
 ### Unsupported functions
 | Function                                                                  |
-| :------------------------------------------------------------------------ |`)
+| :------------------------------------------------------------------------ |
+`, version)
 	for _, f := range unsupportedFunctions {
 		fmt.Printf("| %v |\n", f)
 	}
