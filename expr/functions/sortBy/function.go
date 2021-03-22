@@ -78,7 +78,7 @@ func doSort(aggFuncName string, ascending bool, original []*types.MetricData) []
 	vals := make([]float64, len(arg))
 
 	for i, a := range arg {
-		vals[i] = consolidations.SummarizeValues(aggFuncName, a.Values)
+		vals[i] = consolidations.SummarizeValues(aggFuncName, a.Values, a.XFilesFactor)
 	}
 
 	if ascending {

@@ -51,7 +51,7 @@ func (f *legendValue) Do(ctx context.Context, e parser.Expr, from, until int64, 
 	for _, a := range arg {
 		r := *a
 		for _, method := range methods {
-			summary := consolidations.SummarizeValues(method, a.Values)
+			summary := consolidations.SummarizeValues(method, a.Values, a.XFilesFactor)
 			r.Name = fmt.Sprintf("%s (%s: %f)", r.Name, method, summary)
 		}
 
