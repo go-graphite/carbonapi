@@ -26,39 +26,10 @@ func GetOrder() interfaces.Order {
 }
 
 func New(configFile string) []interfaces.FunctionMetadata {
-	return []interfaces.FunctionMetadata{interfaces.FunctionMetadata{
+	return []interfaces.FunctionMetadata{{
 		F:    &timeShiftByMetric{},
 		Name: "timeShiftByMetric",
 	}}
-}
-
-func (f *timeShiftByMetric) Description() map[string]types.FunctionDescription {
-	return map[string]types.FunctionDescription{
-		"timeShiftByMetric": types.FunctionDescription{
-			Description: "Takes a seriesList with wildcard in versionRankIndex rank and applies shift to the closest version from markSource\n\n.. code-block:: none\n\n  &target=timeShiftByMetric(carbon.agents.graphite.creates)",
-			Function:    "timeShiftByMetric(seriesList, markSource, versionRankIndex)",
-			Group:       "Transform",
-			Module:      "graphite.render.functions",
-			Name:        "timeShiftByMetric",
-			Params: []types.FunctionParam{
-				types.FunctionParam{
-					Name:     "seriesList",
-					Required: true,
-					Type:     types.SeriesList,
-				},
-				types.FunctionParam{
-					Name:     "markSource",
-					Required: true,
-					Type:     types.SeriesList,
-				},
-				types.FunctionParam{
-					Name:     "versionRankIndex",
-					Required: true,
-					Type:     types.Integer,
-				},
-			},
-		},
-	}
 }
 
 // timeShiftByMetric(seriesList, markSource, versionRankIndex)
@@ -239,5 +210,34 @@ func (f *timeShiftByMetric) locateLatestMarks(params *callParams) (versionInfos,
 		return nil, merry.WithMessagef(errLessThan2Marks, "bad data: could not find 2 marks, only %d found", len(result))
 	} else {
 		return result, nil
+	}
+}
+
+func (f *timeShiftByMetric) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
+		"timeShiftByMetric": types.FunctionDescription{
+			Description: "Takes a seriesList with wildcard in versionRankIndex rank and applies shift to the closest version from markSource\n\n.. code-block:: none\n\n  &target=timeShiftByMetric(carbon.agents.graphite.creates)",
+			Function:    "timeShiftByMetric(seriesList, markSource, versionRankIndex)",
+			Group:       "Transform",
+			Module:      "graphite.render.functions",
+			Name:        "timeShiftByMetric",
+			Params: []types.FunctionParam{
+				types.FunctionParam{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				types.FunctionParam{
+					Name:     "markSource",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				types.FunctionParam{
+					Name:     "versionRankIndex",
+					Required: true,
+					Type:     types.Integer,
+				},
+			},
+		},
 	}
 }
