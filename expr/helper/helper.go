@@ -142,6 +142,18 @@ type AggregateFunc func([]float64) float64
 // AggregateSeries aggregates series
 func AggregateSeries(e parser.Expr, args []*types.MetricData, function AggregateFunc) ([]*types.MetricData, error) {
 	args = AlignSeries(args)
+
+	needScale := false
+	for i := 1; i < len(args); i++ {
+		if args[i].StepTime != args[0].StepTime {
+			needScale = true
+			break
+		}
+	}
+	if needScale {
+		ScaleToCommonStep(args, 0)
+	}
+
 	length := len(args[0].Values)
 	r := *args[0]
 	r.Name = fmt.Sprintf("%s(%s)", e.Target(), e.RawArgs())

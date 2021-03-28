@@ -105,7 +105,7 @@ func (f *smartSummarize) Do(ctx context.Context, e parser.Expr, from, until int6
 			}
 
 			if t >= bucketEnd {
-				rv := consolidations.SummarizeValues(summarizeFunction, values)
+				rv := consolidations.SummarizeValues(summarizeFunction, values, arg.XFilesFactor)
 
 				r.Values[ridx] = rv
 				ridx++
@@ -117,7 +117,7 @@ func (f *smartSummarize) Do(ctx context.Context, e parser.Expr, from, until int6
 
 		// last partial bucket
 		if bucketItems > 0 {
-			rv := consolidations.SummarizeValues(summarizeFunction, values)
+			rv := consolidations.SummarizeValues(summarizeFunction, values, arg.XFilesFactor)
 			r.Values[ridx] = rv
 		}
 

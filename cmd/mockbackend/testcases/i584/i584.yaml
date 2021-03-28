@@ -1,0 +1,41 @@
+version: "v1"
+test:
+    apps:
+        - name: "carbonapi"
+          binary: "./carbonapi"
+          args:
+              - "-config"
+              - "./cmd/mockbackend/carbonapi_singlebackend.yaml"
+    queries:
+            - endpoint: "http://127.0.0.1:8081"
+              delay: 1
+              type: "GET"
+              URL: "/render?format=json&maxDataPoints=3&target=diffSeries(time(\"t\"), some.metric)&from=120&until=361"
+              expectedResponse:
+                  httpCode: 200
+                  contentType: "application/json"
+                  expectedResults:
+                          - metrics:
+                                  - target: "diffSeries(time(\"t\"), some.metric)"
+                                    datapoints: [[177,120],[297,240],[357,360]]
+            - endpoint: "http://127.0.0.1:8081"
+              delay: 1
+              type: "GET"
+              URL: "/render?format=json&maxDataPoints=3&target=diffSeries(time(\"t\", 1), some.metric)&from=120&until=361"
+              expectedResponse:
+                  httpCode: 200
+                  contentType: "application/json"
+                  expectedResults:
+                          - metrics:
+                                  - target: "diffSeries(time(\"t\", 1), some.metric)"
+                                    datapoints: [[236,120],[356,240],[357,360]]
+
+listeners:
+        - address: ":9070"
+          expressions:
+                     "some.metric":
+                         pathExpression: "some.metric"
+                         data:
+                             - metricName: "some.metric"
+                               values: [3.0, 3.0, 3.0]
+                               step: 120

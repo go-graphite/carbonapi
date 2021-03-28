@@ -112,13 +112,13 @@ func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
 			time.Sleep(delay)
 		}
 		for _, m := range response.Data {
-			startTime := m.StartTime
-			if startTime == 0 {
-				startTime = 1
-			}
 			step := m.Step
 			if step == 0 {
 				step = 1
+			}
+			startTime := m.StartTime
+			if startTime == 0 {
+				startTime = step
 			}
 			isAbsent := make([]bool, 0, len(m.Values))
 			protov2Values := make([]float64, 0, len(m.Values))
@@ -134,7 +134,7 @@ func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
 			fr2 := carbonapi_v2_pb.FetchResponse{
 				Name:      m.MetricName,
 				StartTime: int32(startTime),
-				StopTime:  int32(step * (startTime + len(protov2Values) - 1)),
+				StopTime:  int32(startTime + step*len(protov2Values)),
 				StepTime:  int32(step),
 				Values:    protov2Values,
 				IsAbsent:  isAbsent,
@@ -145,13 +145,13 @@ func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
 				PathExpression:          target,
 				ConsolidationFunc:       "avg",
 				StartTime:               int64(startTime),
-				StopTime:                int64(step * (startTime + len(m.Values) - 1)),
+				StopTime:                int64(startTime + step*len(m.Values)),
 				StepTime:                int64(step),
 				XFilesFactor:            0,
 				HighPrecisionTimestamps: false,
 				Values:                  m.Values,
 				RequestStartTime:        1,
-				RequestStopTime:         int64(step * (startTime + len(m.Values) - 1)),
+				RequestStopTime:         int64(startTime + step*len(m.Values)),
 			}
 
 			multiv2.Metrics = append(multiv2.Metrics, fr2)

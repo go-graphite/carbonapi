@@ -104,13 +104,24 @@ func Percentile(data []float64, percent float64, interpolate bool) float64 {
 
 func summarizeToAggregate(f string) func([]float64) float64 {
 	return func(v []float64) float64 {
-		return SummarizeValues(f, v)
+		return SummarizeValues(f, v, 0)
 	}
 }
 
 // SummarizeValues summarizes values
-func SummarizeValues(f string, values []float64) float64 {
+func SummarizeValues(f string, values []float64, XFilesFactor float32) float64 {
 	rv := 0.0
+	total := 0
+
+	notNans := func(values []float64) int {
+		t := 0
+		for _, av := range values {
+			if !math.IsNaN(av) {
+				t++
+			}
+		}
+		return t
+	}
 
 	if len(values) == 0 {
 		return math.NaN()
@@ -119,36 +130,53 @@ func SummarizeValues(f string, values []float64) float64 {
 	switch f {
 	case "sum", "total":
 		for _, av := range values {
-			rv += av
+			if !math.IsNaN(av) {
+				rv += av
+				total++
+			}
 		}
 
 	case "avg", "average", "avg_zero":
 		for _, av := range values {
-			rv += av
+			if !math.IsNaN(av) {
+				rv += av
+				total++
+			}
 		}
-		rv /= float64(len(values))
+		if total == 0 {
+			return math.NaN()
+		}
+		rv /= float64(total)
 	case "max":
 		rv = math.Inf(-1)
 		for _, av := range values {
-			if av > rv {
-				rv = av
+			if !math.IsNaN(av) {
+				total++
+				if av > rv {
+					rv = av
+				}
 			}
 		}
 	case "min":
 		rv = math.Inf(1)
 		for _, av := range values {
-			if av < rv {
-				rv = av
+			if !math.IsNaN(av) {
+				total++
+				if av < rv {
+					rv = av
+				}
 			}
 		}
 	case "last":
 		rv = values[len(values)-1]
+		total = notNans(values)
 	case "range":
 		vMax := math.Inf(-1)
 		vMin := math.Inf(1)
 		isNaN := true
 		for _, av := range values {
 			if !math.IsNaN(av) {
+				total++
 				isNaN = false
 			}
 			if av > vMax {
@@ -165,26 +193,40 @@ func SummarizeValues(f string, values []float64) float64 {
 		}
 	case "median":
 		rv = Percentile(values, 50, true)
+		total = notNans(values)
 	case "multiply":
 		rv = values[0]
 		for _, av := range values[1:] {
-			rv *= av
+			if !math.IsNaN(av) {
+				total++
+				rv *= av
+			}
 		}
 	case "diff":
 		rv = values[0]
 		for _, av := range values[1:] {
-			rv -= av
+			if !math.IsNaN(av) {
+				total++
+				rv -= av
+			}
 		}
 	case "count":
 		rv = float64(len(values))
+		total = notNans(values)
 	case "stddev":
 		rv = math.Sqrt(VarianceValue(values))
+		total = notNans(values)
 	default:
 		f = strings.Split(f, "p")[1]
 		percent, err := strconv.ParseFloat(f, 64)
 		if err == nil {
+			total = notNans(values)
 			rv = Percentile(values, percent, true)
 		}
+	}
+
+	if float32(total)/float32(len(values)) < XFilesFactor {
+		return math.NaN()
 	}
 
 	return rv
