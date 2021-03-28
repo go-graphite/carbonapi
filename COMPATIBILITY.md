@@ -112,8 +112,6 @@ _When `format=png`_ (default if not specified)
 | aggregateWithWildcards |
 | aliasQuery |
 | averageOutsidePercentile |
-| countSeries |
-| diffSeries |
 | events |
 | exp |
 | exponentialMovingAverage |
@@ -122,7 +120,6 @@ _When `format=png`_ (default if not specified)
 | logit |
 | minMax |
 | movingWindow |
-| multiplySeries |
 | pct |
 | powSeries |
 | removeBetweenPercentile |
@@ -209,12 +206,14 @@ reverse: default value mismatch: got (empty), should be false |
 | color(seriesList, theColor) | no |
 | consolidateBy(seriesList, consolidationFunc) | no |
 | constantLine(value) | no |
+| countSeries(*seriesLists) | no |
 | cumulative(seriesList) | no |
 | currentAbove(seriesList, n) | no |
 | currentBelow(seriesList, n) | no |
 | dashed(seriesList, dashLength=5) | no |
 | delay(seriesList, steps) | no |
 | derivative(seriesList) | no |
+| diffSeries(*seriesLists) | no |
 | divideSeries(dividendSeriesList, divisorSeries) | no |
 | divideSeriesLists(dividendSeriesList, divisorSeriesList) | no |
 | drawAsInfinite(seriesList) | no |
@@ -262,6 +261,7 @@ reverse: default value mismatch: got (empty), should be false |
 | movingMedian(seriesList, windowSize, xFilesFactor=None) | no |
 | movingMin(seriesList, windowSize, xFilesFactor=None) | no |
 | movingSum(seriesList, windowSize, xFilesFactor=None) | no |
+| multiplySeries(*seriesLists) | no |
 | multiplySeriesWithWildcards(seriesList, *position) | no |
 | nPercentile(seriesList, n) | no |
 | nonNegativeDerivative(seriesList, maxValue=None) | no |
@@ -314,6 +314,8 @@ reverse: default value mismatch: got (empty), should be false |
 | aliasByRedis(seriesList. keyName) | yes |
 | baseline(seriesList, timeShiftUnit, timeShiftStart, timeShiftEnd, [maxAbsentPercent, minAvg]) | yes |
 | baselineAberration(seriesList, timeShiftUnit, timeShiftStart, timeShiftEnd, [maxAbsentPercent, minAvg]) | yes |
+| count(*seriesLists) | yes |
+| diff(*seriesLists) | yes |
 | diffSeriesLists(firstSeriesList, secondSeriesList) | yes |
 | exponentialWeightedMovingAverage(seriesList, alpha) | yes |
 | exponentialWeightedMovingAverage(seriesList, alpha) | yes |
@@ -332,14 +334,17 @@ reverse: default value mismatch: got (empty), should be false |
 | lpf(seriesList, cutPercent) | yes |
 | maxSeries(*seriesLists) | yes |
 | minSeries(*seriesLists) | yes |
+| multiply(*seriesLists) | yes |
 | multiplySeriesLists(sourceSeriesList, factorSeriesList) | yes |
 | pearson(seriesList, seriesList, windowSize) | yes |
 | pearsonClosest(seriesList, seriesList, n, direction) | yes |
 | polyfit(seriesList, degree=1, offset="0d") | yes |
 | powSeriesLists(sourceSeriesList, factorSeriesList) | yes |
 | removeZeroSeries(seriesList, xFilesFactor=None) | yes |
+| scale(seriesList, factor) | yes |
 | slo(seriesList, interval, method, value) | yes |
 | sloErrorBudget(seriesList, interval, method, value, objective) | yes |
+| stddev(*seriesLists) | yes |
 | timeShiftByMetric(seriesList, markSource, versionRankIndex) | yes |
 | tukeyAbove(seriesList, basis, n, interval=0) | yes |
 | tukeyBelow(seriesList, basis, n, interval=0) | yes |
