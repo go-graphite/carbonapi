@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
 
 	"go.uber.org/zap"
@@ -41,9 +42,10 @@ func (r *runner) Run() {
 	if err != nil {
 		r.logger.Error("error running program",
 			zap.Any("config", r.App),
-			zap.String("output", string(out)),
+			zap.String("output", "will follow next"),
 			zap.Error(err),
 		)
+		fmt.Print(string(out))
 	}
 
 	r.isRunning = true
