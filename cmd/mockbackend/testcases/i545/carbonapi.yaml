@@ -1,0 +1,64 @@
+listen: "localhost:8081"
+notFoundStatusCode: 200
+
+cache:
+   type: "mem"
+   size_mb: 0
+   defaultTimeoutSec: 1
+
+backendCache:
+   type: "mem"
+   size_mb: 0
+   defaultTimeoutSec: 1
+
+upstreams:
+    graphite09compat: false
+    buckets: 10
+
+    concurrencyLimitPerServer: 0
+    keepAliveInterval: "3s"
+    maxIdleConnsPerHost: 100
+    timeouts:
+        find: "500ms"
+        render: "500ms"
+        connect: "250ms"
+
+    backendsv2:
+        backends:
+          -
+            groupName: "go-carbon-1"
+            protocol: "carbonapi_v3_pb"
+            lbMethod: "broadcast"
+            maxTries: 4
+            keepAliveInterval: "10s"
+            concurrencyLimit: 0
+            servers:
+                - "http://127.0.0.1:9070"
+                - "http://127.0.0.1:9071"
+          -
+            groupName: "go-carbon-2"
+            protocol: "carbonapi_v3_pb"
+            lbMethod: "broadcast"
+            maxTries: 4
+            keepAliveInterval: "10s"
+            concurrencyLimit: 0
+            servers:
+                - "http://127.0.0.1:9072"
+                - "http://127.0.0.1:9073"
+          -
+            groupName: "go-carbon-3"
+            protocol: "carbonapi_v3_pb"
+            lbMethod: "broadcast"
+            maxTries: 4
+            keepAliveInterval: "10s"
+            concurrencyLimit: 0
+            servers:
+                - "http://127.0.0.1:9074"
+                - "http://127.0.0.1:9075"
+logger:
+    - logger: ""
+      file: "stdout"
+      level: "debug"
+      encoding: "json"
+      encodingTime: "iso8601"
+      encodingDuration: "seconds"

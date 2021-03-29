@@ -211,6 +211,7 @@ func (bg BroadcastGroup) MaxMetricsPerRequest() int {
 }
 
 func (bg *BroadcastGroup) doMultiFetch(ctx context.Context, logger *zap.Logger, backend types.BackendServer, reqs interface{}, resCh chan types.ServerFetcherResponse) {
+	logger = logger.With(zap.Bool("multi_fetch", true))
 	request, ok := reqs.(*protov3.MultiFetchRequest)
 	if !ok {
 		logger.Fatal("unhandled error in doMultiFetch",
@@ -221,7 +222,7 @@ func (bg *BroadcastGroup) doMultiFetch(ctx context.Context, logger *zap.Logger, 
 	}
 
 	requests, err := bg.splitRequest(ctx, request, backend)
-	if len(requests) == 0 || err != nil {
+	if len(requests) == 0 && err != nil {
 		response := types.NewServerFetchResponse()
 		response.Server = backend.Name()
 		response.AddError(err)
@@ -262,6 +263,7 @@ func (bg *BroadcastGroup) doMultiFetch(ctx context.Context, logger *zap.Logger, 
 }
 
 func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger, backend types.BackendServer, reqs interface{}, resCh chan types.ServerFetcherResponse) {
+	logger = logger.With(zap.Bool("multi_fetch", false))
 	request, ok := reqs.(*protov3.MultiFetchRequest)
 	if !ok {
 		logger.Fatal("unhandled error in doSingleFetch",
@@ -273,7 +275,7 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 
 	//TODO(Civil): migrate limiter to merry
 	requests, splitErr := bg.splitRequest(ctx, request, backend)
-	if len(requests) == 0 || splitErr != nil {
+	if len(requests) == 0 && splitErr != nil {
 		response := types.NewServerFetchResponse()
 		response.Server = backend.Name()
 		response.AddError(splitErr)
