@@ -13,6 +13,9 @@ import (
 func ConvertGraphiteTargetToPromQL(query string) string {
 	var sb strings.Builder
 
+	query = strings.ReplaceAll(query, ".", ":::")
+	query = strings.ReplaceAll(query, "-", "___")
+
 	for {
 		n := strings.IndexAny(query, "*[{")
 		if n < 0 {
@@ -171,6 +174,9 @@ func SplitTagValues(query string) map[string]types.Tag {
 // PromMetricToGraphite converts prometheus metric name to a format expected by graphite
 func PromMetricToGraphite(metric map[string]string) string {
 	var res strings.Builder
+
+	metric["__name__"] = strings.ReplaceAll(metric["__name__"], ":::", ".")
+	metric["__name__"] = strings.ReplaceAll(metric["__name__"], "___", "-")
 
 	res.WriteString(metric["__name__"])
 	delete(metric, "__name__")
