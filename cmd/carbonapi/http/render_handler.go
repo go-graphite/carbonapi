@@ -20,6 +20,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	utilctx "github.com/go-graphite/carbonapi/util/ctx"
+	"github.com/go-graphite/carbonapi/zipper/helper"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
 	uuid "github.com/satori/go.uuid"
@@ -293,22 +294,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		// Obtain error code from the errors
 		// In case we have only "Not Found" errors, result should be 404
 		// Otherwise it should be 500
-		returnCode = http.StatusNotFound
-		errMsgs := make([]string, 0)
-		for _, err := range errors {
-			if merry.HTTPCode(err) == 404 || merry.Is(err, parser.ErrSeriesDoesNotExist) {
-				continue
-			}
-			errMsgs = append(errMsgs, err.Error())
-			if merry.HTTPCode(err) == 400 {
-				// The 400 is returned on wrong requests, e.g. non-existent functions
-				returnCode = merry.HTTPCode(err)
-				continue
-			}
-			if returnCode < 500 {
-				returnCode = merry.HTTPCode(err)
-			}
-		}
+		returnCode, errMsgs := helper.MergeHttpErrorMap(errors)
 		logger.Debug("error response or no response", zap.Strings("error", errMsgs))
 		// Allow override status code for 404-not-found replies.
 		if returnCode == 404 {

@@ -5,16 +5,115 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"sync/atomic"
 
 	"github.com/ansel1/merry"
 	"github.com/go-graphite/carbonapi/limiter"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 	util "github.com/go-graphite/carbonapi/util/ctx"
 	"github.com/go-graphite/carbonapi/zipper/types"
 	"go.uber.org/zap"
 )
+
+func HttpCode(err error) int {
+	if err == nil {
+		return http.StatusOK
+	}
+	if _, ok := err.(*net.OpError); ok {
+		return http.StatusServiceUnavailable
+	}
+	if urlErr, ok := err.(*url.Error); ok {
+		if _, ok = urlErr.Err.(*net.OpError); ok {
+			return http.StatusServiceUnavailable
+		}
+	}
+	return http.StatusInternalServerError
+}
+
+func MergeHttpErrors(errors []merry.Error) (int, []string) {
+	returnCode := http.StatusNotFound
+	errMsgs := make([]string, 0)
+	for _, err := range errors {
+		var code int
+		c := merry.RootCause(err)
+		if c == nil {
+			c = err
+		}
+		code = merry.HTTPCode(c)
+		u := merry.Unwrap(c)
+		_ = u
+
+		if merry.HTTPCode(c) == 404 || merry.Is(c, parser.ErrSeriesDoesNotExist) {
+			continue
+		}
+		errMsgs = append(errMsgs, c.Error())
+		if code == 400 {
+			// The 400 is returned on wrong requests, e.g. non-existent functions
+			returnCode = code
+		} else if returnCode == 404 {
+			// First error
+			returnCode = code
+		} else if code == 503 && (returnCode == 504 || returnCode == 502) {
+			returnCode = 503
+		} else if (code < 502 || code > 504) && (returnCode >= 502 || returnCode <= 504) {
+			returnCode = code
+		}
+	}
+
+	return returnCode, errMsgs
+}
+
+func MergeHttpErrorMap(errors map[string]merry.Error) (int, []string) {
+	returnCode := http.StatusNotFound
+	errMsgs := make([]string, 0)
+	for _, err := range errors {
+		var code int
+		c := merry.RootCause(err)
+		if c == nil {
+			c = err
+		}
+		code = merry.HTTPCode(c)
+
+		if merry.HTTPCode(c) == 404 || merry.Is(c, parser.ErrSeriesDoesNotExist) {
+			continue
+		}
+		errMsgs = append(errMsgs, c.Error())
+		if code == 400 {
+			// The 400 is returned on wrong requests, e.g. non-existent functions
+			returnCode = code
+		} else if returnCode == 404 {
+			// First error
+			returnCode = code
+		} else if code == 503 && (returnCode == 504 || returnCode == 502) {
+			returnCode = 503
+		} else if (code < 502 || code > 504) && (returnCode >= 502 || returnCode <= 504) {
+			returnCode = code
+		}
+	}
+
+	return returnCode, errMsgs
+}
+
+func HttpErrorByCode(err merry.Error) merry.Error {
+	var returnErr merry.Error
+	if err == nil {
+		returnErr = types.ErrNoMetricsFetched.WithHTTPCode(404)
+	} else {
+		code := merry.HTTPCode(err)
+		if code == 403 {
+			returnErr = types.ErrForbidden.WithHTTPCode(403)
+		} else if code >= 502 || code <= 504 {
+			returnErr = types.ErrFailedToFetch.WithHTTPCode(code)
+		} else {
+			returnErr = types.ErrNoMetricsFetched.WithHTTPCode(code)
+		}
+	}
+
+	return returnErr
+}
 
 type ServerResponse struct {
 	Server   string
@@ -120,7 +219,7 @@ func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, server, u
 		logger.Debug("error fetching result",
 			zap.Error(err),
 		)
-		return nil, merry.Here(err).WithValue("server", server)
+		return nil, merry.Here(err).WithValue("server", server).WithHTTPCode(HttpCode(err))
 	}
 	defer func() {
 		_ = resp.Body.Close()
