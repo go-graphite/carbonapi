@@ -15,6 +15,7 @@ import (
 
 	"github.com/go-graphite/carbonapi/internal/dns"
 	"github.com/go-graphite/carbonapi/limiter"
+	utilctx "github.com/go-graphite/carbonapi/util/ctx"
 	"github.com/go-graphite/carbonapi/zipper/helper"
 	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 	"github.com/go-graphite/carbonapi/zipper/metadata"
@@ -120,7 +121,7 @@ type queryBatch struct {
 }
 
 func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, merry.Error) {
-	logger := c.logger.With(zap.String("type", "fetch"), zap.String("request", request.String()))
+	logger := c.logger.With(zap.String("type", "fetch"), zap.String("request", request.String()), zap.String("context_uuid", utilctx.GetUUID(ctx)))
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/render/")
 
@@ -204,7 +205,7 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 }
 
 func (c *ClientProtoV2Group) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
-	logger := c.logger.With(zap.String("type", "find"), zap.Strings("request", request.Metrics))
+	logger := c.logger.With(zap.String("type", "find"), zap.Strings("request", request.Metrics), zap.String("context_uuid", utilctx.GetUUID(ctx)))
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/metrics/find/")
 
@@ -272,7 +273,7 @@ func (c *ClientProtoV2Group) Find(ctx context.Context, request *protov3.MultiGlo
 }
 
 func (c *ClientProtoV2Group) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, merry.Error) {
-	logger := c.logger.With(zap.String("type", "info"))
+	logger := c.logger.With(zap.String("type", "info"), zap.String("context_uuid", utilctx.GetUUID(ctx)))
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/info/")
 
@@ -360,10 +361,10 @@ func (c *ClientProtoV2Group) doTagQuery(ctx context.Context, isTagName bool, que
 	logger := c.logger
 	var rewrite *url.URL
 	if isTagName {
-		logger = logger.With(zap.String("type", "tagName"))
+		logger = logger.With(zap.String("type", "tagName"), zap.String("context_uuid", utilctx.GetUUID(ctx)))
 		rewrite, _ = url.Parse("http://127.0.0.1/tags/autoComplete/tags")
 	} else {
-		logger = logger.With(zap.String("type", "tagValues"))
+		logger = logger.With(zap.String("type", "tagValues"), zap.String("context_uuid", utilctx.GetUUID(ctx)))
 		rewrite, _ = url.Parse("http://127.0.0.1/tags/autoComplete/values")
 	}
 

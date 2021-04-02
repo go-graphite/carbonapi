@@ -192,7 +192,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.Form["query"]
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
 
-	accessLogger := zapwriter.Logger("access")
+	accessLogger := zapwriter.Logger("find")
 	var accessLogDetails = carbonapipb.AccessLogDetails{
 		Handler:        "find",
 		Username:       username,
