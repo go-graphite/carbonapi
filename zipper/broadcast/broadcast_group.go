@@ -450,13 +450,9 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	}
 
 	if len(result.Response.Metrics) == 0 {
-		nonNotFoundErrors := types.ReturnNonNotFoundError(result.Err)
-		if nonNotFoundErrors != nil {
-			code, errors := helper.MergeHttpErrors(result.Err)
-			err := types.ErrFailedToFetch.WithHTTPCode(code)
-			for _, e := range nonNotFoundErrors {
-				err = err.WithCause(e)
-			}
+		code, errors := helper.MergeHttpErrors(result.Err)
+		if len(errors) > 0 {
+			err := types.ErrFailedToFetch.WithHTTPCode(code).WithMessage(strings.Join(errors, "\n"))
 			logger.Debug("errors while fetching data from backends",
 				zap.Int("httpCode", code),
 				zap.Strings("errors", errors),
