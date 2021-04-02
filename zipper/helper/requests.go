@@ -43,8 +43,6 @@ func MergeHttpErrors(errors []merry.Error) (int, []string) {
 			c = err
 		}
 		code = merry.HTTPCode(c)
-		u := merry.Unwrap(c)
-		_ = u
 
 		if merry.HTTPCode(c) == 404 || merry.Is(c, parser.ErrSeriesDoesNotExist) {
 			continue
