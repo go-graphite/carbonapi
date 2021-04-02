@@ -44,19 +44,23 @@ func MergeHttpErrors(errors []merry.Error) (int, []string) {
 		}
 		code = merry.HTTPCode(c)
 
-		if merry.HTTPCode(c) == 404 || merry.Is(c, parser.ErrSeriesDoesNotExist) {
+		if code == http.StatusNotFound || merry.Is(c, parser.ErrSeriesDoesNotExist) {
 			continue
 		}
 		errMsgs = append(errMsgs, c.Error())
-		if code == 400 {
+
+		if code == http.StatusGatewayTimeout || code == http.StatusBadGateway {
+			// simplify code, one error type for communications errors, all we can retry
+			code = http.StatusServiceUnavailable
+		}
+
+		if code == http.StatusBadRequest {
 			// The 400 is returned on wrong requests, e.g. non-existent functions
 			returnCode = code
-		} else if returnCode == 404 {
-			// First error
+		} else if returnCode == http.StatusNotFound || code == http.StatusForbidden {
+			// First error or access denied (may be limits or other)
 			returnCode = code
-		} else if code == 503 && (returnCode == 504 || returnCode == 502) {
-			returnCode = 503
-		} else if (code < 502 || code > 504) && (returnCode >= 502 || returnCode <= 504) {
+		} else if code != http.StatusServiceUnavailable {
 			returnCode = code
 		}
 	}
@@ -64,35 +68,15 @@ func MergeHttpErrors(errors []merry.Error) (int, []string) {
 	return returnCode, errMsgs
 }
 
-func MergeHttpErrorMap(errors map[string]merry.Error) (int, []string) {
-	returnCode := http.StatusNotFound
-	errMsgs := make([]string, 0)
-	for _, err := range errors {
-		var code int
-		c := merry.RootCause(err)
-		if c == nil {
-			c = err
-		}
-		code = merry.HTTPCode(c)
-
-		if merry.HTTPCode(c) == 404 || merry.Is(c, parser.ErrSeriesDoesNotExist) {
-			continue
-		}
-		errMsgs = append(errMsgs, c.Error())
-		if code == 400 {
-			// The 400 is returned on wrong requests, e.g. non-existent functions
-			returnCode = code
-		} else if returnCode == 404 {
-			// First error
-			returnCode = code
-		} else if code == 503 && (returnCode == 504 || returnCode == 502) {
-			returnCode = 503
-		} else if (code < 502 || code > 504) && (returnCode >= 502 || returnCode <= 504) {
-			returnCode = code
-		}
+func MergeHttpErrorMap(errorsMap map[string]merry.Error) (int, []string) {
+	errors := make([]merry.Error, len(errorsMap))
+	i := 0
+	for _, err := range errorsMap {
+		errors[i] = err
+		i++
 	}
 
-	return returnCode, errMsgs
+	return MergeHttpErrors(errors)
 }
 
 func HttpErrorByCode(err merry.Error) merry.Error {
