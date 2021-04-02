@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync/atomic"
 
 	"github.com/ansel1/merry"
@@ -34,7 +35,7 @@ func HttpCode(err error) int {
 			return http.StatusServiceUnavailable
 		}
 	}
-	return http.StatusInternalServerError
+	return merry.HTTPCode(err)
 }
 
 func MergeHttpErrors(errors []merry.Error) (int, []string) {
@@ -49,13 +50,17 @@ func MergeHttpErrors(errors []merry.Error) (int, []string) {
 		if merry.Is(c, zipper_errors.ErrTimeout) {
 			code = http.StatusGatewayTimeout
 		} else {
-			code = merry.HTTPCode(c)
+			code = HttpCode(c)
 		}
 
 		if code == http.StatusNotFound || merry.Is(c, parser.ErrSeriesDoesNotExist) {
 			continue
 		}
-		errMsgs = append(errMsgs, c.Error())
+		if msg := merry.Message(c); len(msg) > 0 {
+			errMsgs = append(errMsgs, strings.TrimRight(msg, "\n"))
+		} else {
+			errMsgs = append(errMsgs, c.Error())
+		}
 
 		if code == http.StatusGatewayTimeout || code == http.StatusBadGateway {
 			// simplify code, one error type for communications errors, all we can retry
@@ -93,12 +98,17 @@ func HttpErrorByCode(err merry.Error) merry.Error {
 		returnErr = types.ErrNoMetricsFetched.WithHTTPCode(404)
 	} else {
 		code := merry.HTTPCode(err)
-		if code == 403 {
+		msg := merry.Message(err)
+		if code == http.StatusForbidden {
 			returnErr = types.ErrForbidden.WithHTTPCode(403)
-		} else if code >= 502 || code <= 504 {
+			if len(msg) > 0 {
+				// pass message to caller
+				returnErr = returnErr.WithMessage(msg)
+			}
+		} else if code == http.StatusServiceUnavailable || code == http.StatusBadGateway || code == http.StatusGatewayTimeout {
 			returnErr = types.ErrFailedToFetch.WithHTTPCode(code)
 		} else {
-			returnErr = types.ErrNoMetricsFetched.WithHTTPCode(code)
+			returnErr = types.ErrFailed.WithHTTPCode(code)
 		}
 	}
 
@@ -236,8 +246,8 @@ func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, server, u
 		return nil, merry.Here(err).WithValue("server", server)
 	}
 
-	if resp.StatusCode >= http.StatusInternalServerError {
-		return nil, types.ErrFailedToFetch.Here().WithValue("group", c.groupName).WithValue("status_code", resp.StatusCode).WithValue("body", string(body))
+	if resp.StatusCode != http.StatusOK {
+		return nil, types.ErrFailedToFetch.WithValue("server", server).WithMessage(string(body)).WithHTTPCode(resp.StatusCode)
 	}
 
 	return &ServerResponse{Server: server, Response: body}, nil
