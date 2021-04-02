@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"net/http"
 	"reflect"
 	"testing"
 
@@ -17,80 +18,80 @@ func TestMergeHttpErrors(t *testing.T) {
 		want     []string
 	}{
 		{
-			name:     "404 (empty)",
+			name:     "NotFound",
 			errors:   []merry.Error{},
-			wantCode: 404,
+			wantCode: http.StatusNotFound,
 			want:     []string{},
 		},
 		{
-			name: "503",
+			name: "ServiceUnavailable",
 			errors: []merry.Error{
-				merry.New("unavaliable").WithHTTPCode(503),
+				merry.New("unavaliable").WithHTTPCode(http.StatusServiceUnavailable),
 			},
-			wantCode: 503,
+			wantCode: http.StatusServiceUnavailable,
 			want:     []string{"unavaliable"},
 		},
 		{
-			name: "504 and 503",
+			name: "GatewayTimeout and ServiceUnavailable",
 			errors: []merry.Error{
-				merry.New("timeout").WithHTTPCode(504),
-				merry.New("unavaliable").WithHTTPCode(503),
+				merry.New("timeout").WithHTTPCode(http.StatusGatewayTimeout),
+				merry.New("unavaliable").WithHTTPCode(http.StatusServiceUnavailable),
 			},
-			wantCode: 503,
+			wantCode: http.StatusServiceUnavailable,
 			want:     []string{"timeout", "unavaliable"},
 		},
 		{
-			name: "503 and 504",
+			name: "ServiceUnavailable and GatewayTimeout",
 			errors: []merry.Error{
-				merry.New("unavaliable").WithHTTPCode(503),
-				merry.New("timeout").WithHTTPCode(504),
+				merry.New("unavaliable").WithHTTPCode(http.StatusServiceUnavailable),
+				merry.New("timeout").WithHTTPCode(http.StatusGatewayTimeout),
 			},
-			wantCode: 503,
+			wantCode: http.StatusServiceUnavailable,
 			want:     []string{"unavaliable", "timeout"},
 		},
 		{
-			name: "403 and 504",
+			name: "Forbidden and GatewayTimeout",
 			errors: []merry.Error{
-				merry.New("limit").WithHTTPCode(403),
-				merry.New("timeout").WithHTTPCode(504),
+				merry.New("limit").WithHTTPCode(http.StatusForbidden),
+				merry.New("timeout").WithHTTPCode(http.StatusGatewayTimeout),
 			},
-			wantCode: 403,
+			wantCode: http.StatusForbidden,
 			want:     []string{"limit", "timeout"},
 		},
 		{
-			name: "504 and 403",
+			name: "GatewayTimeout and Forbidden",
 			errors: []merry.Error{
-				merry.New("timeout").WithHTTPCode(504),
-				merry.New("limit").WithHTTPCode(403),
+				merry.New("timeout").WithHTTPCode(http.StatusGatewayTimeout),
+				merry.New("limit").WithHTTPCode(http.StatusForbidden),
 			},
-			wantCode: 403,
+			wantCode: http.StatusForbidden,
 			want:     []string{"timeout", "limit"},
 		},
 		{
-			name: "500 and 403",
+			name: "InternalServerError and Forbidden",
 			errors: []merry.Error{
-				merry.New("error").WithHTTPCode(500),
-				merry.New("limit").WithHTTPCode(403),
+				merry.New("error").WithHTTPCode(http.StatusInternalServerError),
+				merry.New("limit").WithHTTPCode(http.StatusForbidden),
 			},
-			wantCode: 403,
+			wantCode: http.StatusForbidden,
 			want:     []string{"error", "limit"},
 		},
 		{
-			name: "500 and 504",
+			name: "InternalServerError and http.StatusGatewayTimeout",
 			errors: []merry.Error{
-				merry.New("error").WithHTTPCode(500),
-				merry.New("timeout").WithHTTPCode(504),
+				merry.New("error").WithHTTPCode(http.StatusInternalServerError),
+				merry.New("timeout").WithHTTPCode(http.StatusGatewayTimeout),
 			},
-			wantCode: 500,
+			wantCode: http.StatusInternalServerError,
 			want:     []string{"error", "timeout"},
 		},
 		{
-			name: "504 and 500",
+			name: "http.StatusGatewayTimeout and InternalServerError",
 			errors: []merry.Error{
-				merry.New("timeout").WithHTTPCode(504),
-				merry.New("error").WithHTTPCode(500),
+				merry.New("timeout").WithHTTPCode(http.StatusGatewayTimeout),
+				merry.New("error").WithHTTPCode(http.StatusInternalServerError),
 			},
-			wantCode: 500,
+			wantCode: http.StatusInternalServerError,
 			want:     []string{"timeout", "error"},
 		},
 	}
