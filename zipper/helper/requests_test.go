@@ -77,7 +77,7 @@ func TestMergeHttpErrors(t *testing.T) {
 			want:     []string{"error", "limit"},
 		},
 		{
-			name: "InternalServerError and http.StatusGatewayTimeout",
+			name: "InternalServerError and GatewayTimeout",
 			errors: []merry.Error{
 				merry.New("error").WithHTTPCode(http.StatusInternalServerError),
 				merry.New("timeout").WithHTTPCode(http.StatusGatewayTimeout),
@@ -86,13 +86,31 @@ func TestMergeHttpErrors(t *testing.T) {
 			want:     []string{"error", "timeout"},
 		},
 		{
-			name: "http.StatusGatewayTimeout and InternalServerError",
+			name: "GatewayTimeout and InternalServerError",
 			errors: []merry.Error{
 				merry.New("timeout").WithHTTPCode(http.StatusGatewayTimeout),
 				merry.New("error").WithHTTPCode(http.StatusInternalServerError),
 			},
 			wantCode: http.StatusInternalServerError,
 			want:     []string{"timeout", "error"},
+		},
+		{
+			name: "BadRequest and Forbidden",
+			errors: []merry.Error{
+				merry.New("error").WithHTTPCode(http.StatusBadRequest),
+				merry.New("limit").WithHTTPCode(http.StatusForbidden),
+			},
+			wantCode: http.StatusForbidden, // Last win
+			want:     []string{"error", "limit"},
+		},
+		{
+			name: "Forbidden and BadRequest",
+			errors: []merry.Error{
+				merry.New("limit").WithHTTPCode(http.StatusForbidden),
+				merry.New("error").WithHTTPCode(http.StatusBadRequest),
+			},
+			wantCode: http.StatusBadRequest, // Last win
+			want:     []string{"limit", "error"},
 		},
 	}
 	for _, tt := range tests {

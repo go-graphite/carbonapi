@@ -1,0 +1,25 @@
+version: "v1"
+test:
+    apps:
+        - name: "carbonapi"
+          binary: "./carbonapi"
+          args:
+              - "-config"
+              - "./cmd/mockbackend/testcases/pr594-403-504/carbonapi.yaml"
+    queries:
+            - endpoint: "http://127.0.0.1:8081"
+              delay: 1
+              type: "GET"
+              URL: "/render/?target=a.b.c.d.e&format=json"
+              expectedResponse:
+                  httpCode: 403
+                  contentType: "text/plain; charset=utf-8"
+
+listeners:
+        - address: ":9070"
+          httpCode: 403
+          emptyBody: true
+
+        - address: ":9071"
+          httpCode: 504
+          emptyBody: true
