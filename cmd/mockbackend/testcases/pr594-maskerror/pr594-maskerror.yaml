@@ -1,0 +1,40 @@
+version: "v1"
+test:
+    apps:
+        - name: "carbonapi"
+          binary: "./carbonapi"
+          args:
+              - "-config"
+              - "./cmd/mockbackend/testcases/pr594-maskerror/carbonapi.yaml"
+    queries:
+            - endpoint: "http://127.0.0.1:8081"
+              delay: 1
+              type: "GET"
+              URL: "/render?target=aliasbyNode()"
+              expectedResponse:
+                  httpCode: 400
+                  contentType: "text/plain; charset=utf-8"
+            - endpoint: "http://127.0.0.1:8081"
+              delay: 1
+              type: "GET"
+              URL: "/render/?target=a.b.c.d.e&format=json"
+              expectedResponse:
+                  httpCode: 200
+                  contentType: "application/json"
+                  expectedResults:
+                          - metrics:
+                                  - target: "a.b.c.d.e"
+                                    datapoints: [[1,1],[3,2],[2,3]]
+
+listeners:
+        - address: ":9070"
+          httpCode: 403
+          emptyBody: true
+
+        - address: ":9071"
+          expressions:
+                     "a.b.c.d.e":
+                         pathExpression: "a.b.c.d.e"
+                         data:
+                             - metricName: "a.b.c.d.e"
+                               values: [1.0, 3.0, 2.0]
