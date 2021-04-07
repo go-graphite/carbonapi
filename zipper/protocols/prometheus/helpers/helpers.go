@@ -63,7 +63,7 @@ func ConvertGraphiteTargetToPromQL(query string) string {
 func AlignValues(startTime, stopTime, step int64, promValues []types.Value) []float64 {
 	var (
 		promValuesCtr = 0
-		resValues     = make([]float64, (stopTime-startTime)/step)
+		resValues     = make([]float64, (stopTime-startTime)/step+1)
 	)
 
 	for i := range resValues {
