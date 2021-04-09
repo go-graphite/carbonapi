@@ -167,7 +167,7 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 		if marshalErr != nil {
 			stats.RenderErrors += 1
 			if e == nil {
-				e = err
+				e = types.ErrUnmarshalFailed.WithCause(marshalErr)
 			} else {
 				e = e.WithCause(marshalErr)
 			}
@@ -241,7 +241,7 @@ func (c *ClientProtoV2Group) Find(ctx context.Context, request *protov3.MultiGlo
 		if marshalErr != nil {
 			stats.FindErrors += 1
 			if e == nil {
-				e = err
+				e = types.ErrUnmarshalFailed.WithCause(marshalErr)
 			} else {
 				e = e.WithCause(marshalErr)
 			}
@@ -313,7 +313,7 @@ func (c *ClientProtoV2Group) Info(ctx context.Context, request *protov3.MultiMet
 		if marshalErr != nil {
 			stats.InfoErrors += 1
 			if e == nil {
-				e = err
+				e = types.ErrUnmarshalFailed.WithCause(marshalErr)
 			} else {
 				e = e.WithCause(marshalErr)
 			}
