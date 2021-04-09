@@ -138,7 +138,7 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	if err2 != nil {
 		stats.FailedServers = []string{res.Server}
 		stats.RenderErrors++
-		return nil, stats, merry.Wrap(err)
+		return nil, stats, merry.Wrap(err2)
 	}
 
 	return &r, stats, nil
