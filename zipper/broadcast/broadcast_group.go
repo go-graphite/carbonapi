@@ -428,7 +428,7 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	for i := range request.Metrics {
 		requestNames = append(requestNames, request.Metrics[i].Name)
 	}
-	logger := bg.logger.With(zap.String("type", "fetch"), zap.Strings("request", requestNames), zap.String("context_uuid", utilctx.GetUUID(ctx)))
+	logger := bg.logger.With(zap.String("type", "fetch"), zap.Strings("request", requestNames), zap.String("carbonapi_uuid", utilctx.GetUUID(ctx)))
 	logger.Debug("will try to fetch data")
 
 	backends := bg.filterServersByTLD(requestNames, bg.Children())
