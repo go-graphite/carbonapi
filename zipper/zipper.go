@@ -239,7 +239,7 @@ func (z *Zipper) probeTlds() {
 
 // GRPC-compatible methods
 func (z Zipper) FetchProtoV3(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, merry.Error) {
-	logger := z.logger.With(zap.String("function", "FetchProtoV3"), zap.String("context_uuid", utilctx.GetUUID(ctx)))
+	logger := z.logger.With(zap.String("function", "FetchProtoV3"), zap.String("carbonapi_uuid", utilctx.GetUUID(ctx)))
 
 	res, stats, e := z.backend.Fetch(ctx, request)
 
@@ -263,7 +263,7 @@ func (z Zipper) FetchProtoV3(ctx context.Context, request *protov3.MultiFetchReq
 }
 
 func (z Zipper) FindProtoV3(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
-	logger := z.logger.With(zap.String("function", "FindProtoV3"), zap.String("context_uuid", utilctx.GetUUID(ctx)))
+	logger := z.logger.With(zap.String("function", "FindProtoV3"), zap.String("carbonapi_uuid", utilctx.GetUUID(ctx)))
 
 	res, stats, err := z.backend.Find(ctx, request)
 
@@ -300,7 +300,7 @@ func (z Zipper) FindProtoV3(ctx context.Context, request *protov3.MultiGlobReque
 }
 
 func (z Zipper) InfoProtoV3(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.ZipperInfoResponse, *types.Stats, merry.Error) {
-	logger := z.logger.With(zap.String("function", "InfoProtoV3"), zap.String("context_uuid", utilctx.GetUUID(ctx)))
+	logger := z.logger.With(zap.String("function", "InfoProtoV3"), zap.String("carbonapi_uuid", utilctx.GetUUID(ctx)))
 	realRequest := &protov3.MultiMetricsInfoRequest{Names: make([]string, 0, len(request.Metrics))}
 	res, _, err := z.FindProtoV3(ctx, request)
 	if err == nil || merry.Is(err, types.ErrNonFatalErrors) {
@@ -331,7 +331,7 @@ func (z Zipper) InfoProtoV3(ctx context.Context, request *protov3.MultiGlobReque
 }
 
 func (z Zipper) ListProtoV3(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, merry.Error) {
-	logger := z.logger.With(zap.String("function", "ListProtoV3"), zap.String("context_uuid", utilctx.GetUUID(ctx)))
+	logger := z.logger.With(zap.String("function", "ListProtoV3"), zap.String("carbonapi_uuid", utilctx.GetUUID(ctx)))
 	r, stats, e := z.backend.List(ctx)
 	if e != nil {
 		if merry.Is(e, types.ErrNotFound) {
@@ -347,7 +347,7 @@ func (z Zipper) ListProtoV3(ctx context.Context) (*protov3.ListMetricsResponse, 
 	return r, stats, e
 }
 func (z Zipper) StatsProtoV3(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, merry.Error) {
-	logger := z.logger.With(zap.String("function", "StatsProtoV3"), zap.String("context_uuid", utilctx.GetUUID(ctx)))
+	logger := z.logger.With(zap.String("function", "StatsProtoV3"), zap.String("carbonapi_uuid", utilctx.GetUUID(ctx)))
 	r, stats, e := z.backend.Stats(ctx)
 	if e != nil {
 		if merry.Is(e, types.ErrNotFound) {
@@ -366,7 +366,7 @@ func (z Zipper) StatsProtoV3(ctx context.Context) (*protov3.MetricDetailsRespons
 // Tags
 
 func (z Zipper) TagNames(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
-	logger := z.logger.With(zap.String("function", "TagNames"), zap.String("context_uuid", utilctx.GetUUID(ctx)))
+	logger := z.logger.With(zap.String("function", "TagNames"), zap.String("carbonapi_uuid", utilctx.GetUUID(ctx)))
 	data, err := z.backend.TagNames(ctx, query, limit)
 	if err != nil {
 		logger.Debug("had errors while fetching result",
@@ -379,7 +379,7 @@ func (z Zipper) TagNames(ctx context.Context, query string, limit int64) ([]stri
 }
 
 func (z Zipper) TagValues(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
-	logger := z.logger.With(zap.String("function", "TagValues"), zap.String("context_uuid", utilctx.GetUUID(ctx)))
+	logger := z.logger.With(zap.String("function", "TagValues"), zap.String("carbonapi_uuid", utilctx.GetUUID(ctx)))
 	data, err := z.backend.TagValues(ctx, query, limit)
 	if err != nil {
 		logger.Debug("had errors while fetching result",
