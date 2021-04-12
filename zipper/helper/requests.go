@@ -3,7 +3,6 @@ package helper
 import (
 	"bytes"
 	"context"
-	"errors"
 	"io"
 	"io/ioutil"
 	"net"
@@ -21,6 +20,17 @@ import (
 	"go.uber.org/zap"
 )
 
+func requestError(err error, server string) merry.Error {
+	if urlErr, ok := err.(*url.Error); ok {
+		if netErr, ok := urlErr.Err.(*net.OpError); ok {
+			return merry.Here(err).WithValue("server", server).WithCause(netErr)
+		} else if merry.Is(urlErr, context.DeadlineExceeded) {
+			return merry.Here(err).WithValue("server", server).WithCause(urlErr)
+		}
+	}
+	return merry.Here(err).WithValue("server", server).WithHTTPCode(HttpCode(err))
+}
+
 func HttpCode(err error) int {
 	if err == nil {
 		return http.StatusOK
@@ -31,7 +41,7 @@ func HttpCode(err error) int {
 	if urlErr, ok := err.(*url.Error); ok {
 		if _, ok = urlErr.Err.(*net.OpError); ok {
 			return http.StatusServiceUnavailable
-		} else if errors.Is(err, context.DeadlineExceeded) {
+		} else if merry.Is(err, context.DeadlineExceeded) {
 			return http.StatusServiceUnavailable
 		}
 	}
@@ -220,14 +230,8 @@ func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, server, u
 			zap.Error(err),
 		)
 
-		if urlErr, ok := err.(*url.Error); ok {
-			if netErr, ok := urlErr.Err.(*net.OpError); ok {
-				return nil, merry.Here(err).WithValue("server", server).WithCause(netErr)
-			} else if merry.Is(urlErr, context.DeadlineExceeded) {
-				return nil, merry.Here(err).WithValue("server", server).WithCause(urlErr)
-			}
-		}
-		return nil, merry.Here(err).WithValue("server", server).WithHTTPCode(HttpCode(err))
+		return nil, requestError(err, server)
+
 	}
 	defer func() {
 		_ = resp.Body.Close()
