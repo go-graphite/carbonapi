@@ -28,6 +28,9 @@ func requestError(err error, server string) merry.Error {
 			return merry.Here(err).WithValue("server", server).WithCause(urlErr)
 		}
 	}
+	if netErr, ok := err.(*net.OpError); ok {
+		return merry.Here(err).WithValue("server", server).WithCause(netErr)
+	}
 	return merry.Here(err).WithValue("server", server).WithHTTPCode(HttpCode(err))
 }
 
