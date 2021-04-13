@@ -15,40 +15,24 @@ import (
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	util "github.com/go-graphite/carbonapi/util/ctx"
-	zipper_errors "github.com/go-graphite/carbonapi/zipper/errors"
 	"github.com/go-graphite/carbonapi/zipper/types"
 	"go.uber.org/zap"
 )
 
 func requestError(err error, server string) merry.Error {
+	// with code InternalServerError by default, overwritten by custom error
+	if merry.Is(err, context.DeadlineExceeded) {
+		return types.ErrTimeoutExceeded.WithValue("server", server).WithCause(err)
+	}
 	if urlErr, ok := err.(*url.Error); ok {
 		if netErr, ok := urlErr.Err.(*net.OpError); ok {
-			return merry.Here(err).WithValue("server", server).WithCause(netErr)
-		} else if merry.Is(urlErr, context.DeadlineExceeded) {
-			return merry.Here(err).WithValue("server", server).WithCause(urlErr)
+			return types.ErrBackendError.WithValue("server", server).WithCause(netErr)
 		}
 	}
 	if netErr, ok := err.(*net.OpError); ok {
-		return merry.Here(err).WithValue("server", server).WithCause(netErr)
+		return types.ErrBackendError.WithValue("server", server).WithCause(netErr)
 	}
-	return merry.Here(err).WithValue("server", server).WithHTTPCode(HttpCode(err))
-}
-
-func HttpCode(err error) int {
-	if err == nil {
-		return http.StatusOK
-	}
-	if _, ok := err.(*net.OpError); ok {
-		return http.StatusServiceUnavailable
-	}
-	if urlErr, ok := err.(*url.Error); ok {
-		if _, ok = urlErr.Err.(*net.OpError); ok {
-			return http.StatusServiceUnavailable
-		} else if merry.Is(err, context.DeadlineExceeded) {
-			return http.StatusServiceUnavailable
-		}
-	}
-	return merry.HTTPCode(err)
+	return types.ErrResponceError.WithValue("server", server)
 }
 
 func MergeHttpErrors(errors []merry.Error) (int, []string) {
@@ -60,11 +44,7 @@ func MergeHttpErrors(errors []merry.Error) (int, []string) {
 		if c == nil {
 			c = err
 		}
-		if merry.Is(c, zipper_errors.ErrTimeout) {
-			code = http.StatusGatewayTimeout
-		} else {
-			code = HttpCode(c)
-		}
+		code = merry.HTTPCode(c)
 
 		if code == http.StatusNotFound || merry.Is(c, parser.ErrSeriesDoesNotExist) {
 			continue
@@ -108,12 +88,12 @@ func MergeHttpErrorMap(errorsMap map[string]merry.Error) (int, []string) {
 func HttpErrorByCode(err merry.Error) merry.Error {
 	var returnErr merry.Error
 	if err == nil {
-		returnErr = types.ErrNoMetricsFetched.WithHTTPCode(404)
+		returnErr = types.ErrNoMetricsFetched
 	} else {
 		code := merry.HTTPCode(err)
 		msg := merry.Message(err)
 		if code == http.StatusForbidden {
-			returnErr = types.ErrForbidden.WithHTTPCode(403)
+			returnErr = types.ErrForbidden
 			if len(msg) > 0 {
 				// pass message to caller
 				returnErr = returnErr.WithMessage(msg)
