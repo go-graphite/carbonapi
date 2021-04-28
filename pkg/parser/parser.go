@@ -683,6 +683,23 @@ func parseConst(s string) (float64, string, string, error) {
 // RangeTables is an array of *unicode.RangeTable
 var RangeTables []*unicode.RangeTable
 
+var disallowedCharactersInMetricName = map[rune]struct{}{
+	'(': struct{}{},
+	')': struct{}{},
+	'"': struct{}{},
+	'\'': struct{}{},
+	' ': struct{}{},
+	'/': struct{}{},
+}
+
+func unicodeRuneAllowedInName(r rune) bool {
+	if _, ok := disallowedCharactersInMetricName[r]; ok {
+		return false
+	}
+
+	return true
+}
+
 func parseName(s string) (string, string) {
 	var (
 		braces, i, w int
@@ -719,7 +736,7 @@ FOR:
 		/* */
 		default:
 			r, w = utf8.DecodeRuneInString(s[i:])
-			if unicode.In(r, RangeTables...) {
+			if unicodeRuneAllowedInName(r) && unicode.In(r, RangeTables...) {
 				continue
 			}
 			break FOR
