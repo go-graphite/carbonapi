@@ -64,8 +64,12 @@ func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 		return nil, errors.New("must be called with 2 series or a wildcard that matches exactly 2 series")
 	}
 
+	alignedSeries := helper.AlignSeries(append(numerators, denominator))
+	numerators = alignedSeries[:len(numerators)]
+	denominator = alignedSeries[len(numerators)]
+
 	for _, numerator := range numerators {
-		if numerator.StepTime != denominator.StepTime || len(numerator.Values) != len(denominator.Values) {
+		if numerator.StepTime != denominator.StepTime {
 			return nil, fmt.Errorf("series %s must have the same length as %s", numerator.Name, denominator.Name)
 		}
 	}
