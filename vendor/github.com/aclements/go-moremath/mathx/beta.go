@@ -18,7 +18,7 @@ func Beta(a, b float64) float64 {
 }
 
 // BetaInc returns the value of the regularized incomplete beta
-// function Iₓ(a, b).
+// function Iₓ(a, b) = 1 / B(a, b) * ∫₀ˣ tᵃ⁻¹ (1-t)ᵇ⁻¹ dt.
 //
 // This is not to be confused with the "incomplete beta function",
 // which can be computed as BetaInc(x, a, b)*Beta(a, b).
