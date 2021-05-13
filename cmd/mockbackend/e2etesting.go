@@ -261,7 +261,7 @@ func doTest(logger *zap.Logger, t *Query) []string {
 		for i := range res {
 			err := isMetricsEqual(res[i], t.ExpectedResponse.ExpectedResults[0].Metrics[i])
 			if err != nil {
-				failures = append(failures, fmt.Sprintf("metrics are not equal: %v", err))
+				failures = append(failures, fmt.Sprintf("metrics are not equal, err=`%v`, got=`%+v`, expected=`%+v`", err, res[i], t.ExpectedResponse.ExpectedResults[0].Metrics[i]))
 			}
 		}
 
