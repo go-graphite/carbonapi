@@ -229,7 +229,11 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	start := request.Metrics[0].StartTime
 	stop := request.Metrics[0].StopTime
 
-	step := helpers.AdjustStep(start, stop, c.maxPointsPerQuery, c.step)
+	maxPointsPerQuery := c.maxPointsPerQuery
+	if len(request.Metrics) > 0 && request.Metrics[0].MaxDataPoints != 0 {
+		maxPointsPerQuery = request.Metrics[0].MaxDataPoints
+	}
+	step := helpers.AdjustStep(start, stop, maxPointsPerQuery, c.step)
 
 	stepStr := strconv.FormatInt(step, 10)
 	for pathExpr, targets := range pathExprToTargets {
