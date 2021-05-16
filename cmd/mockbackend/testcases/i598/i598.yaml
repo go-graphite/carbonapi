@@ -1,0 +1,40 @@
+version: "v1"
+test:
+    apps:
+        - name: "carbonapi"
+          binary: "./carbonapi"
+          args:
+              - "-config"
+              - "./cmd/mockbackend/testcases/i598/carbonapi.yaml"
+    queries:
+            - endpoint: "http://127.0.0.1:8081"
+              delay: 1
+              type: "GET"
+              URL: "/render/?target=sum(a.*)&format=json"
+              expectedResponse:
+                  httpCode: 200
+                  contentType: "application/json"
+                  expectedResults:
+                          - metrics:
+                                  - target: "sumSeries(a.*)"
+                                    datapoints: [[100,1],[111,2],[112,3],[112,4],[153,5]]
+listeners:
+  - address: ":9070"
+    expressions:
+      "a.open":
+        pathExpression: "a.open"
+        data:
+            - metricName: "a.open"
+              values: [0,1,2,2,3]
+      "a.waiting":
+        pathExpression: "a.waiting"
+        data:
+            - metricName: "a.waiting"
+              values: [100,110,110,110,150]
+      "a.*":
+        pathExpression: "a.*"
+        data:
+            - metricName: "a.waiting"
+              values: [100,110,110,110,150]
+            - metricName: "a.open"
+              values: [0,1,2,2,3]

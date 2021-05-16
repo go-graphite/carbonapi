@@ -57,20 +57,37 @@ func main() {
 		l := &net.ListenConfig{Control: helper.ReusePort}
 		h, p, err := net.SplitHostPort(listen.Address)
 		if err != nil {
-			logger.Fatal("failed to split adress",
+			logger.Fatal("failed to split address",
+				zap.String("address", listen.Address),
 				zap.Error(err),
 			)
 		}
+		any := false
+		if h == "" {
+			h = "[::]"
+			any = true
+		}
 		ips, err := net.LookupIP(h)
 		if err != nil {
-			logger.Fatal("failed to resolve adress",
-				zap.Error(err),
-			)
+			// Fallback for a case where machine doesn't have ipv6 at all
+			if any {
+				h = "0.0.0.0"
+				ips, err = net.LookupIP(h)
+			}
+			if err != nil {
+				logger.Fatal("failed to resolve address",
+					zap.String("address", h),
+					zap.String("port", p),
+					zap.Error(err),
+				)
+			}
 		}
 		// Resolve named ports
 		port, err := net.LookupPort("tcp", p)
 		if err != nil {
 			logger.Fatal("failed to resolve port",
+				zap.String("address", h),
+				zap.String("port", p),
 				zap.Error(err),
 			)
 		}
