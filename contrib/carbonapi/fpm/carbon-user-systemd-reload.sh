@@ -34,12 +34,7 @@ fi
 
 if [ ! -e "${CONF}" ]; then
   echo "For use this software you have to create ${CONF} file. You could use /usr/share/carbonapi/carbonapi.example.yaml as default"
-else
-  # On debian jessie (systemd 215) it fails if symlink already exists
-  systemctl is-enabled carbonapi || systemctl enable carbonapi
-  # Check if systemd is up and running, e.g. not in chroot
-  if systemctl 1>/dev/null 2>&1; then
-    systemctl daemon-reload
-    systemctl restart carbonapi.service
-  fi
 fi
+
+# reload systemd
+[[ -e /bin/systemctl ]] && /bin/systemctl daemon-reload ||:
