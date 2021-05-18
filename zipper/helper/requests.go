@@ -5,16 +5,108 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync/atomic"
 
 	"github.com/ansel1/merry"
 	"github.com/go-graphite/carbonapi/limiter"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 	util "github.com/go-graphite/carbonapi/util/ctx"
 	"github.com/go-graphite/carbonapi/zipper/types"
 	"go.uber.org/zap"
 )
+
+func requestError(err error, server string) merry.Error {
+	// with code InternalServerError by default, overwritten by custom error
+	if merry.Is(err, context.DeadlineExceeded) {
+		return types.ErrTimeoutExceeded.WithValue("server", server).WithCause(err)
+	}
+	if urlErr, ok := err.(*url.Error); ok {
+		if netErr, ok := urlErr.Err.(*net.OpError); ok {
+			return types.ErrBackendError.WithValue("server", server).WithCause(netErr)
+		}
+	}
+	if netErr, ok := err.(*net.OpError); ok {
+		return types.ErrBackendError.WithValue("server", server).WithCause(netErr)
+	}
+	return types.ErrResponceError.WithValue("server", server)
+}
+
+func MergeHttpErrors(errors []merry.Error) (int, []string) {
+	returnCode := http.StatusNotFound
+	errMsgs := make([]string, 0)
+	for _, err := range errors {
+		var code int
+		c := merry.RootCause(err)
+		if c == nil {
+			c = err
+		}
+		code = merry.HTTPCode(c)
+
+		if code == http.StatusNotFound || merry.Is(c, parser.ErrSeriesDoesNotExist) {
+			continue
+		}
+		if msg := merry.Message(c); len(msg) > 0 {
+			errMsgs = append(errMsgs, strings.TrimRight(msg, "\n"))
+		} else {
+			errMsgs = append(errMsgs, c.Error())
+		}
+
+		if code == http.StatusGatewayTimeout || code == http.StatusBadGateway {
+			// simplify code, one error type for communications errors, all we can retry
+			code = http.StatusServiceUnavailable
+		}
+
+		if code == http.StatusBadRequest {
+			// The 400 is returned on wrong requests, e.g. non-existent functions
+			returnCode = code
+		} else if returnCode == http.StatusNotFound || code == http.StatusForbidden {
+			// First error or access denied (may be limits or other)
+			returnCode = code
+		} else if code != http.StatusServiceUnavailable {
+			returnCode = code
+		}
+	}
+
+	return returnCode, errMsgs
+}
+
+func MergeHttpErrorMap(errorsMap map[string]merry.Error) (int, []string) {
+	errors := make([]merry.Error, len(errorsMap))
+	i := 0
+	for _, err := range errorsMap {
+		errors[i] = err
+		i++
+	}
+
+	return MergeHttpErrors(errors)
+}
+
+func HttpErrorByCode(err merry.Error) merry.Error {
+	var returnErr merry.Error
+	if err == nil {
+		returnErr = types.ErrNoMetricsFetched
+	} else {
+		code := merry.HTTPCode(err)
+		msg := merry.Message(err)
+		if code == http.StatusForbidden {
+			returnErr = types.ErrForbidden
+			if len(msg) > 0 {
+				// pass message to caller
+				returnErr = returnErr.WithMessage(msg)
+			}
+		} else if code == http.StatusServiceUnavailable || code == http.StatusBadGateway || code == http.StatusGatewayTimeout {
+			returnErr = types.ErrFailedToFetch.WithHTTPCode(code)
+		} else {
+			returnErr = types.ErrFailed.WithHTTPCode(code)
+		}
+	}
+
+	return returnErr
+}
 
 type ServerResponse struct {
 	Server   string
@@ -120,7 +212,9 @@ func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, server, u
 		logger.Debug("error fetching result",
 			zap.Error(err),
 		)
-		return nil, merry.Here(err).WithValue("server", server)
+
+		return nil, requestError(err, server)
+
 	}
 	defer func() {
 		_ = resp.Body.Close()
@@ -139,8 +233,8 @@ func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, server, u
 		return nil, merry.Here(err).WithValue("server", server)
 	}
 
-	if resp.StatusCode >= http.StatusInternalServerError {
-		return nil, types.ErrFailedToFetch.Here().WithValue("group", c.groupName).WithValue("status_code", resp.StatusCode).WithValue("body", string(body))
+	if resp.StatusCode != http.StatusOK {
+		return nil, types.ErrFailedToFetch.WithValue("server", server).WithMessage(string(body)).WithHTTPCode(resp.StatusCode)
 	}
 
 	return &ServerResponse{Server: server, Response: body}, nil

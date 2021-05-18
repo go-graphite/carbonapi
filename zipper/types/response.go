@@ -6,7 +6,6 @@ import (
 
 	"github.com/ansel1/merry"
 
-	"github.com/go-graphite/carbonapi/zipper/errors"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
@@ -57,7 +56,7 @@ GATHER:
 			responseCount++
 
 		case <-ctx.Done():
-			err := errors.ErrTimeout.WithValue("timedout_backends", NoAnswerBackends(clients, answeredServers))
+			err := ErrTimeoutExceeded.WithValue("timedout_backends", NoAnswerBackends(clients, answeredServers))
 			result.AddError(err)
 
 			break GATHER
@@ -90,7 +89,7 @@ func (first *ServerTagResponse) MergeI(second ServerFetcherResponse) merry.Error
 	secondSelf := second.Self()
 	s, ok := secondSelf.(*ServerTagResponse)
 	if !ok {
-		return errors.ErrResponseTypeMismatch.Here().WithMessagef("got '%T', expected '%T'", secondSelf, first)
+		return ErrResponseTypeMismatch.Here().WithMessagef("got '%T', expected '%T'", secondSelf, first)
 	}
 	return first.Merge(s)
 }
@@ -166,7 +165,7 @@ func (first *ServerInfoResponse) MergeI(second ServerFetcherResponse) merry.Erro
 	secondSelf := second.Self()
 	s, ok := secondSelf.(*ServerInfoResponse)
 	if !ok {
-		return errors.ErrResponseTypeMismatch.Here().WithMessagef("got '%T', expected '%T'", secondSelf, first)
+		return ErrResponseTypeMismatch.Here().WithMessagef("got '%T', expected '%T'", secondSelf, first)
 	}
 	return first.Merge(s)
 }
@@ -238,7 +237,7 @@ func (first *ServerFindResponse) MergeI(second ServerFetcherResponse) merry.Erro
 	secondSelf := second.Self()
 	s, ok := secondSelf.(*ServerFindResponse)
 	if !ok {
-		return errors.ErrResponseTypeMismatch.Here().WithMessagef("got '%T', expected '%T'", secondSelf, first)
+		return ErrResponseTypeMismatch.Here().WithMessagef("got '%T', expected '%T'", secondSelf, first)
 	}
 	return first.Merge(s)
 }
@@ -381,7 +380,7 @@ func (first *ServerFetchResponse) MergeI(second ServerFetcherResponse) merry.Err
 	secondSelf := second.Self()
 	s, ok := secondSelf.(*ServerFetchResponse)
 	if !ok {
-		return errors.ErrResponseTypeMismatch.Here().WithMessagef("got '%T', expected '%T'", secondSelf, first)
+		return ErrResponseTypeMismatch.Here().WithMessagef("got '%T', expected '%T'", secondSelf, first)
 	}
 	return first.Merge(s)
 }

@@ -286,6 +286,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 				// We don't want to log this as an error if it's something normal
 				// Normal is everything that is >= 500. So if config.Config.NotFoundStatusCode is 500 - this will be
 				// logged as error
+
 				if returnCode >= 500 {
 					logAsError = true
 				}

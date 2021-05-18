@@ -126,6 +126,9 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 			stats.Timeouts = 1
 			stats.RenderTimeouts = 1
 		}
+		logger.Warn("errors occurred while getting results",
+			zap.Any("errors", err),
+		)
 		return nil, stats, err
 	}
 
@@ -138,7 +141,10 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	if err2 != nil {
 		stats.FailedServers = []string{res.Server}
 		stats.RenderErrors++
-		return nil, stats, merry.Wrap(err)
+		logger.Warn("errors occurred while getting results",
+			zap.Any("errors", err2),
+		)
+		return nil, stats, merry.Wrap(err2)
 	}
 
 	return &r, stats, nil
