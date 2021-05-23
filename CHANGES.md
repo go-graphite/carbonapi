@@ -17,6 +17,20 @@ Changes
 
 CHANGELOG
 ---------
+**0.15.3**
+ - [Fix] Time parsing is now closer to how graphite do it
+ - [Fix] Aggregation functions now scale input to common step (thx to @Felixoid)
+ - [Fix] Fix the way how partialy retrived requests that had globs were handled
+ - [Fix] Fix resolver to accept `0.0.0.0` and `[::]` as valid addresses for listeners
+ - [Fix] Handling of unicode characters when common table is added.
+ - [Fix] AlignVluaes in Prometheus and VictoriaMetrics backends shouldn't drop last value (thx to @limpasha)
+ - [Fix] maxDataPoints should be passed to Prometheus and VictoriaMetrics\
+ - [Fix] Various packaging problems (e.x. logrotate) (thx to @deniszh)
+ - [Improvement] xFilesFactor support in SUmmarizeValues
+ - [Improvement] Port functions that were implemented in avito's fork of carbonapi (aliasByHash, lowestMin, highestMin, integralWithReset and much more): https://github.com/go-graphite/carbonapi/commit/322dae560e1f4c79aa4b410cf3701c9c677c386b for the diff for COMPATIBILITY.md file
+ - [Improvement] Refactor error handling (thx to @msaf1980)
+ - [Improvement] Default systemd unit should drop privileges (thx to @deniszh)
+ - [Improvement] Enable cairo support for docker images (thx to @deniszh)
 
 **0.15.2**
  - [Fix] Honor isLeaf attribute in replies (makes possible to have metric called "metric.foo" and metric called "metric.foo.bar" and see both in find queries (thx to @tantra35)
