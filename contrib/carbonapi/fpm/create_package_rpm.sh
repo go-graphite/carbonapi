@@ -1,11 +1,14 @@
-#!/bin/bash -x
+#!/bin/bash
+
+FPM="${FPM:-fpm}"
+
 die() {
-    if [[ $1 -eq 0 ]]; then
+    if [ $1 -eq 0 ]; then
         rm -rf "${TMPDIR}"
     else
-        echo "Temporary data stored at '${TMPDIR}'"
+        echo "Temporary data stored at '${TMPDIR}'" >&2
     fi
-    echo "$2"
+    echo "$2" >&2
     exit $1
 }
 
@@ -58,10 +61,10 @@ make || die 1 "Can't build package"
 make DESTDIR="${TMPDIR}" install || die 1 "Can't install package"
 mkdir -p "${TMPDIR}"/etc/systemd/system/
 mkdir -p "${TMPDIR}"/etc/sysconfig/
-cp ./contrib/carbonapi/rhel/carbonapi.service "${TMPDIR}"/etc/systemd/system/
-cp ./contrib/carbonapi/common/carbonapi.env "${TMPDIR}"/etc/sysconfig/carbonapi
+cp ./contrib/carbonapi/rhel/carbonapi.service "${TMPDIR}"/etc/systemd/system/ || die 1 "Copy error"
+cp ./contrib/carbonapi/common/carbonapi.env "${TMPDIR}"/etc/sysconfig/carbonapi || die 1 "Copy error"
 
-fpm -s dir -t rpm -n carbonapi -v ${VERSION} -C ${TMPDIR} \
+${FPM} -s dir -t rpm -n carbonapi -v ${VERSION} -C ${TMPDIR} \
     --iteration ${RELEASE} \
     -p carbonapi-VERSION-ITERATION.ARCH.rpm \
     -d "cairo" \
@@ -70,6 +73,6 @@ fpm -s dir -t rpm -n carbonapi -v ${VERSION} -C ${TMPDIR} \
     --license BSD-2 \
     --url "https://github.com/go-graphite/carbonapi" \
     "${@}" \
-    etc usr/bin usr/share || die "Can't create package!"
+    etc usr/bin usr/share || die 1 "Can't create package!"
 
 die 0 "Success"
