@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+
+FPM="${FPM:-fpm}"
+
 VERSION=$(git describe --abbrev=4 --always --tags)
 TMPDIR=$(mktemp -d)
 
@@ -7,12 +10,12 @@ RELEASE=$(lsb_release -r -s)
 NAME="carbonzipper"
 
 die() {
-    if [[ $1 -eq 0 ]]; then
+    if [ $1 -eq 0 ]; then
         rm -rf "${TMPDIR}"
     else
-        echo "Temporary data stored at '${TMPDIR}'"
+        echo "Temporary data stored at '${TMPDIR}'"  >&2
     fi
-    echo "$2"
+    echo "$2" >&2
     exit $1
 }
 
@@ -29,14 +32,14 @@ fi
 if [[ ${is_upstart} -eq 0 ]]; then
        mkdir -p "${TMPDIR}"/etc/systemd/system/
        mkdir -p "${TMPDIR}"/etc/default/
-       cp ./contrib/carbonzipper/deb/${NAME}.service "${TMPDIR}"/etc/systemd/system/
-       cp ./contrib/carbonzipper/common/${NAME}.env "${TMPDIR}"/etc/default/${NAME}
+       cp ./contrib/carbonzipper/deb/${NAME}.service "${TMPDIR}"/etc/systemd/system/ || die 1 "Copy error"
+       cp ./contrib/carbonzipper/common/${NAME}.env "${TMPDIR}"/etc/default/${NAME} || die 1 "Copy error"
 else
        mkdir -p "${TMPDIR}"/etc/init/
-       cp ./contrib/carbonzipper/deb/${NAME}.conf "${TMPDIR}"/etc/init/
+       cp ./contrib/carbonzipper/deb/${NAME}.conf "${TMPDIR}"/etc/init/ || die 1 "Copy error"
 fi
 
-fpm -s dir -t deb -n ${NAME} -v ${VERSION} -C ${TMPDIR} \
+${FPM} -s dir -t deb -n ${NAME} -v ${VERSION} -C ${TMPDIR} \
     -p ${NAME}_VERSION_ARCH.deb \
     --no-deb-systemd-restart-after-upgrade \
     --after-install contrib/carbonzipper/fpm/systemd-reload.sh \
