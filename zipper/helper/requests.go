@@ -39,13 +39,12 @@ func MergeHttpErrors(errors []merry.Error) (int, []string) {
 	returnCode := http.StatusNotFound
 	errMsgs := make([]string, 0)
 	for _, err := range errors {
-		var code int
 		c := merry.RootCause(err)
 		if c == nil {
 			c = err
 		}
-		code = merry.HTTPCode(c)
 
+		code := merry.HTTPCode(err)
 		if code == http.StatusNotFound || merry.Is(c, parser.ErrSeriesDoesNotExist) {
 			continue
 		}
@@ -247,6 +246,7 @@ func (c *HttpQuery) DoQuery(ctx context.Context, logger *zap.Logger, uri string,
 	}
 
 	e := types.ErrFailedToFetch.WithValue("uri", uri)
+	code := http.StatusInternalServerError
 	for try := 0; try < maxTries; try++ {
 		server := c.pickServer(logger)
 		res, err := c.doRequest(ctx, logger, server, uri, r)
@@ -255,14 +255,15 @@ func (c *HttpQuery) DoQuery(ctx context.Context, logger *zap.Logger, uri string,
 				zap.Error(err),
 			)
 
-			e = e.WithCause(err)
+			e = e.WithCause(err).WithHTTPCode(merry.HTTPCode(err))
+			code = merry.HTTPCode(err)
 			continue
 		}
 
 		return res, nil
 	}
 
-	return nil, types.ErrMaxTriesExceeded.WithCause(e)
+	return nil, types.ErrMaxTriesExceeded.WithCause(e).WithHTTPCode(code)
 }
 
 func (c *HttpQuery) DoQueryToAll(ctx context.Context, logger *zap.Logger, uri string, r types.Request) ([]*ServerResponse, merry.Error) {
@@ -274,6 +275,7 @@ func (c *HttpQuery) DoQueryToAll(ctx context.Context, logger *zap.Logger, uri st
 	res := make([]*ServerResponse, len(c.servers))
 	e := types.ErrFailedToFetch.WithValue("uri", uri)
 	responseCount := 0
+	code := http.StatusInternalServerError
 	for i := range c.servers {
 		for try := 0; try < maxTries; try++ {
 			response, err := c.doRequest(ctx, logger, c.servers[i], uri, r)
@@ -283,6 +285,7 @@ func (c *HttpQuery) DoQueryToAll(ctx context.Context, logger *zap.Logger, uri st
 				)
 
 				e = e.WithCause(err)
+				code = merry.HTTPCode(err)
 				continue
 			}
 
@@ -296,5 +299,5 @@ func (c *HttpQuery) DoQueryToAll(ctx context.Context, logger *zap.Logger, uri st
 		return res, nil
 	}
 
-	return res, types.ErrMaxTriesExceeded.WithCause(e)
+	return res, types.ErrMaxTriesExceeded.WithCause(e).WithHTTPCode(code)
 }
