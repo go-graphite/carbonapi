@@ -12,22 +12,25 @@ die() {
     exit $1
 }
 
-VERSION=$(git describe --abbrev=6 --always --tags)
-echo "version: ${VERSION}"
-grep '^[0-9]\+\.[0-9]\+\.' <<< ${VERSION} || {
-	echo "Revision: $(git rev-parse HEAD)";
-	echo "Version: $(git describe --abbrev=6 --always --tags)";
-	echo "Known tags: $(git tag)";
-	echo;
-	echo;
-	die 1 "Can't get latest version from git";
+GIT_VERSION="$(git describe --always --tags)" && {
+    set -f; IFS='-' ; set -- ${GIT_VERSION}
+    VERSION=$1; [ -z "$3" ] && RELEASE=$2 || RELEASE=$2.$3
+    set +f; unset IFS
+
+    [ "$RELEASE" == "" -a "$VERSION" != "" ] && RELEASE=0 
+
+    if echo $VERSION | egrep '^v[0-9]+\.[0-9]+(\.[0-9]+)?$' >/dev/null; then
+      VERSION=${VERSION:1:${#VERSION}}
+      printf "'%s' '%s'\n" "$VERSION" "$RELEASE"
+    fi
+} || {
+    exit 1
 }
 
 TMPDIR=$(mktemp -d)
 
 DISTRO=$(lsb_release -i -s)
-RELEASE=$(lsb_release -r -s)
-
+DRELEASE=$(lsb_release -r -s)
 
 make || die 1 "Can't build package"
 make DESTDIR="${TMPDIR}" install || die 1 "Can't install package"
@@ -35,7 +38,7 @@ make DESTDIR="${TMPDIR}" install || die 1 "Can't install package"
 # Determine if we are building for Ubuntu <15.04 and need to provide upstart script
 is_upstart=0
 if [[ "${DISTRO}" == "Ubuntu" ]]; then
-	egrep -v -q '^(8|1[01234])\.' <<< ${RELEASE}
+	egrep -v -q '^(8|1[01234])\.' <<< ${DRELEASE}
 	is_upstart=$?
 fi
 
@@ -54,14 +57,14 @@ mkdir -p "${TMPDIR}"/etc/logrotate.d/
 cp ./contrib/carbonapi/deb/carbonapi.logrotate "${TMPDIR}"/etc/logrotate.d/carbonapi || die 1 "Copy error"
 
 ${FPM} -s dir -t deb -n carbonapi -v ${VERSION} -C ${TMPDIR} \
-    -p carbonapi-VERSION.ARCH.deb \
+    --iteration ${RELEASE} \
+    -p carbonapi_VERSION-ITERATION.ARCH.deb \
     -d "libcairo2 > 1.11" \
     --no-deb-systemd-restart-after-upgrade \
     --after-install contrib/carbonapi/fpm/systemd-reload.sh \
     --description "carbonapi: replacement graphite API server" \
     --license BSD-2 \
     --url "https://github.com/go-graphite/carbonapi" \
-    "${@}" \
     etc usr/bin usr/share || die 1 "Can't create package!"
 
 die 0 "Success"
