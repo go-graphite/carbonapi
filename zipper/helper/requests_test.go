@@ -1,11 +1,14 @@
 package helper
 
 import (
+	"fmt"
+	"net"
 	"net/http"
 	"reflect"
 	"testing"
 
 	"github.com/ansel1/merry"
+	"github.com/go-graphite/carbonapi/zipper/types"
 )
 
 func TestMergeHttpErrors(t *testing.T) {
@@ -22,6 +25,22 @@ func TestMergeHttpErrors(t *testing.T) {
 			errors:   []merry.Error{},
 			wantCode: http.StatusNotFound,
 			want:     []string{},
+		},
+		{
+			name: "NetErr",
+			errors: []merry.Error{
+				types.ErrBackendError.WithValue("server", "test").WithCause(&net.OpError{Op: "connect", Err: fmt.Errorf("refused")}).WithHTTPCode(http.StatusServiceUnavailable),
+			},
+			wantCode: http.StatusServiceUnavailable,
+			want:     []string{"connect: refused"},
+		},
+		{
+			name: "NetErr (incapsulated)",
+			errors: []merry.Error{
+				types.ErrMaxTriesExceeded.WithCause(types.ErrBackendError.WithValue("server", "test").WithCause(&net.OpError{Op: "connect", Err: fmt.Errorf("refused")})).WithHTTPCode(http.StatusServiceUnavailable),
+			},
+			wantCode: http.StatusServiceUnavailable,
+			want:     []string{"connect: refused"},
 		},
 		{
 			name: "ServiceUnavailable",
