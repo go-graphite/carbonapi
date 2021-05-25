@@ -12,47 +12,19 @@ die() {
     exit $1
 }
 
-pwd
-VERSION_GIT=$(git describe --abbrev=6 --always --tags | rev | sed 's/-/./' | rev)
-VERSION=$(cut -d'-' -f 1 <<< ${VERSION_GIT})
-RELEASE=$(cut -d'-' -f 2 <<< ${VERSION_GIT})
-COMMIT=$(cut -d'-' -f 3 <<< ${VERSION_GIT})
+GIT_VERSION="$(git describe --always --tags)" && {
+    set -f; IFS='-' ; set -- ${GIT_VERSION}
+    VERSION=$1; [ -z "$3" ] && RELEASE=$2 || RELEASE=$2.$3
+    set +f; unset IFS
 
-REL_VERSION=""
-REL_COMMIT=""
-if [[ "${VERSION}" == "${RELEASE}" ]]; then
-       RELEASE="1"
-else
-       REL_VERSION=$(cut -d'.' -f 1 <<< ${RELEASE})
-       REL_COMMIT=$(cut -d'.' -f 2 <<< ${RELEASE})
-       if [[ ! -z "${COMMIT}" ]]; then
-           REL_COMMIT=${COMMIT}
-       fi
-       case "${REL_VERSION}" in
-           "beta")
-               RELEASE="0.2.${RELEASE/./}"
-               if [[ ! -z "${REL_COMMIT}" ]]; then
-                   RELEASE="${RELEASE}.${REL_COMMIT}"
-               fi
-               ;;
-           "rc")
-               RELEASE="0.3.${RELEASE/./}"
-               if [[ ! -z "${REL_COMMIT}" ]]; then
-                   RELEASE="${RELEASE}.${REL_COMMIT}"
-               fi
-               ;;
-           *)
-               RELEASE="1.0.post$((REL_COMMIT+1))"
-               ;;
-       esac
-fi
-grep '^[0-9]\+\.[0-9]\+\.' <<< ${VERSION} || {
-	echo "Revision: $(git rev-parse HEAD)";
-	echo "Version: $(git describe --abbrev=6 --always --tags)";
-	echo "Known tags: $(git tag)";
-	echo;
-	echo;
-	die 1 "Can't get latest version from git";
+    [ "$RELEASE" == "" -a "$VERSION" != "" ] && RELEASE=0 
+
+    if echo $VERSION | egrep '^v[0-9]+\.[0-9]+(\.[0-9]+)?$' >/dev/null; then
+      VERSION=${VERSION:1:${#VERSION}}
+      printf "'%s' '%s'\n" "$VERSION" "$RELEASE"
+    fi
+} || {
+    exit 1
 }
 
 TMPDIR=$(mktemp -d)
@@ -72,7 +44,6 @@ ${FPM} -s dir -t rpm -n carbonapi -v ${VERSION} -C ${TMPDIR} \
     --description "carbonapi: replacement graphite API server" \
     --license BSD-2 \
     --url "https://github.com/go-graphite/carbonapi" \
-    "${@}" \
     etc usr/bin usr/share || die 1 "Can't create package!"
 
 die 0 "Success"
