@@ -86,7 +86,7 @@ func (eval evaluator) FetchAndEvalExp(ctx context.Context, exp parser.Expr, from
 	}
 
 	for m := range targetValues {
-		targetValues[m] = values[m]
+		targetValues[m] = types.CopyMetricDataSlice(values[m])
 	}
 
 	if config.Config.ZipperInstance.ScaleToCommonStep() {
@@ -138,7 +138,7 @@ func EvalExpr(ctx context.Context, e parser.Expr, from, until int64, values map[
 	} else if e.IsConst() {
 		p := types.MetricData{
 			FetchResponse: pb.FetchResponse{
-				Name: e.Target(),
+				Name:   e.Target(),
 				Values: []float64{e.FloatValue()},
 			},
 			Tags: map[string]string{"name": e.Target()},
