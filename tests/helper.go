@@ -376,7 +376,7 @@ func TestMultiReturnEvalExpr(t *testing.T, tt *MultiReturnEvalTestItem) {
 		t.Errorf("failed to eval %v: %+v", tt.Name, err)
 		return
 	}
-	DeepEqual(t, tt.Name, originalMetrics, tt.M, false)
+	DeepEqual(t, tt.Name, originalMetrics, tt.M, true)
 	if len(g) == 0 {
 		t.Errorf("returned no data %v", tt.Name)
 		return
