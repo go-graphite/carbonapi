@@ -24,7 +24,7 @@ func prepareMetric(metric string) string {
 	return strings.Trim(prefix, ")")
 }
 
-func redisGetHash(name string, key string, c redis.Conn, timeout time.Duration) (string, error) {
+func redisGetHash(name, key string, c redis.Conn, timeout time.Duration) (string, error) {
 	v, err := redis.DoWithTimeout(c, timeout, "HGET", key, name)
 	return redis.String(v, err)
 }
