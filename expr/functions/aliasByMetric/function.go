@@ -32,11 +32,12 @@ func (f *aliasByMetric) Do(ctx context.Context, e parser.Expr, from, until int64
 	return helper.ForEachSeriesDo(e, from, until, values, func(a *types.MetricData, r *types.MetricData) *types.MetricData {
 		metric := helper.ExtractMetric(a.Name)
 		part := strings.Split(metric, ".")
-		r.Name = part[len(part)-1]
-		r.Tags["name"] = r.Name
-		r.PathExpression = r.Name
-		r.Values = a.Values
-		return r
+		ret := r.Copy(false)
+		ret.Name = part[len(part)-1]
+		ret.Tags["name"] = r.Name
+		ret.PathExpression = ret.Name
+		ret.Values = a.Values
+		return ret
 	})
 }
 
