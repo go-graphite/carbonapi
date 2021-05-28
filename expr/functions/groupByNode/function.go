@@ -105,15 +105,19 @@ func (f *groupByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		nvalues := values
 		if e.Target() == "groupByNode" || e.Target() == "groupByNodes" {
 			nvalues = map[parser.MetricRequest][]*types.MetricData{
-				parser.MetricRequest{k, from, until}: v,
+				{Metric: k, From: from, Until: until}: v,
 			}
 		}
 
 		r, _ := f.Evaluator.Eval(ctx, nexpr, from, until, nvalues)
 		if r != nil {
-			r[0].Name = k
-			r[0].Tags["name"] = k
-			results = append(results, r...)
+			// avoid overwriting, do copy-on-write
+			rg := make([]*types.MetricData, len(r))
+			copy(rg, r)
+			rg[0] = r[0].CopyLink()
+			rg[0].Name = k
+			rg[0].Tags["name"] = k
+			results = append(results, rg...)
 		}
 	}
 

@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ansel1/merry"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"github.com/ansel1/merry"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
@@ -27,7 +27,7 @@ func (evaluator *FuncEvaluator) Eval(ctx context.Context, e parser.Expr, from, u
 	} else if e.IsConst() {
 		p := types.MetricData{
 			FetchResponse: pb.FetchResponse{
-				Name: e.Target(),
+				Name:   e.Target(),
 				Values: []float64{e.FloatValue()},
 			},
 			Tags: map[string]string{"name": e.Target()},
@@ -83,18 +83,18 @@ func DeepClone(original map[parser.MetricRequest][]*types.MetricData) map[parser
 		for _, originalMetric := range originalMetrics {
 			copiedMetric := types.MetricData{
 				FetchResponse: pb.FetchResponse{
-					Name:      originalMetric.Name,
-					StartTime: originalMetric.StartTime,
-					StopTime:  originalMetric.StopTime,
-					StepTime:  originalMetric.StepTime,
-					Values:    make([]float64, len(originalMetric.Values)),
-					PathExpression: originalMetric.PathExpression,
-					ConsolidationFunc: originalMetric.ConsolidationFunc,
-					XFilesFactor: originalMetric.XFilesFactor,
+					Name:                    originalMetric.Name,
+					StartTime:               originalMetric.StartTime,
+					StopTime:                originalMetric.StopTime,
+					StepTime:                originalMetric.StepTime,
+					Values:                  make([]float64, len(originalMetric.Values)),
+					PathExpression:          originalMetric.PathExpression,
+					ConsolidationFunc:       originalMetric.ConsolidationFunc,
+					XFilesFactor:            originalMetric.XFilesFactor,
 					HighPrecisionTimestamps: originalMetric.HighPrecisionTimestamps,
-					AppliedFunctions: make([]string, len(originalMetric.AppliedFunctions)),
-					RequestStartTime: originalMetric.RequestStartTime,
-					RequestStopTime: originalMetric.RequestStopTime,
+					AppliedFunctions:        make([]string, len(originalMetric.AppliedFunctions)),
+					RequestStartTime:        originalMetric.RequestStartTime,
+					RequestStopTime:         originalMetric.RequestStopTime,
 				},
 				GraphOptions:      originalMetric.GraphOptions,
 				ValuesPerPoint:    originalMetric.ValuesPerPoint,
@@ -376,7 +376,7 @@ func TestMultiReturnEvalExpr(t *testing.T, tt *MultiReturnEvalTestItem) {
 		t.Errorf("failed to eval %v: %+v", tt.Name, err)
 		return
 	}
-	DeepEqual(t, tt.Name, originalMetrics, tt.M, false)
+	DeepEqual(t, tt.Name, originalMetrics, tt.M, true)
 	if len(g) == 0 {
 		t.Errorf("returned no data %v", tt.Name)
 		return
@@ -536,22 +536,22 @@ func TestEvalExpr(t *testing.T, tt *EvalTestItem) {
 		t.Errorf("unexpected error while evaluating %s: got `%+v`", tt.Target, err)
 		return
 	}
-	DeepEqual(t, tt.Target, originalMetrics, tt.M, false)
+	DeepEqual(t, tt.Target, originalMetrics, tt.M, true)
 }
 
 func TestEvalExprWithError(t *testing.T, tt *EvalTestItemWithError) {
 	originalMetrics := DeepClone(tt.M)
 	tt2 := &EvalTestItem{
 		Target: tt.Target,
-		M: tt.M,
-		Want: tt.Want,
+		M:      tt.M,
+		Want:   tt.Want,
 	}
 	err := TestEvalExprModifiedOrigin(t, tt2, 0, 1, false)
 	if !merry.Is(err, tt.Error) {
 		t.Errorf("unexpected error while evaluating %s: got `%+v`, expected `%+v`", tt.Target, err, tt.Error)
 		return
 	}
-	DeepEqual(t, tt.Target, originalMetrics, tt.M, false)
+	DeepEqual(t, tt.Target, originalMetrics, tt.M, true)
 }
 
 func TestEvalExprOrdered(t *testing.T, tt *EvalTestItem) {
@@ -561,5 +561,5 @@ func TestEvalExprOrdered(t *testing.T, tt *EvalTestItem) {
 		t.Errorf("unexpected error while evaluating %s: got `%+v`", tt.Target, err)
 		return
 	}
-	DeepEqual(t, tt.Target, originalMetrics, tt.M, false)
+	DeepEqual(t, tt.Target, originalMetrics, tt.M, true)
 }

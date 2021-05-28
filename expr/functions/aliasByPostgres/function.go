@@ -213,7 +213,7 @@ func (f *aliasByPostgres) Do(ctx context.Context, e parser.Expr, from, until int
 		}
 		if len(res) > 0 {
 			if matchString.MatchString(res) {
-				r := *a
+				r := *a.CopyLink()
 				r.Name = strings.Join(name, ".")
 				if len(name) > 0 {
 					r.Name = res + "." + r.Name

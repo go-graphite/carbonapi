@@ -24,7 +24,7 @@ func prepareMetric(metric string) string {
 	return strings.Trim(prefix, ")")
 }
 
-func redisGetHash(name string, key string, c redis.Conn, timeout time.Duration) (string, error) {
+func redisGetHash(name, key string, c redis.Conn, timeout time.Duration) (string, error) {
 	v, err := redis.DoWithTimeout(c, timeout, "HGET", key, name)
 	return redis.String(v, err)
 }
@@ -188,7 +188,7 @@ func (f *aliasByRedis) Do(ctx context.Context, e parser.Expr, from, until int64,
 	results := make([]*types.MetricData, 0, len(args))
 
 	for _, a := range args {
-		r := *a
+		r := *a.CopyLink()
 		r.Name = prepareMetric(r.Name)
 		redisName, err := redisGetHash(r.Name, redisHashName, redisConnection, f.queryTimeout)
 		if err == nil {

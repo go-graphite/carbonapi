@@ -45,7 +45,7 @@ func (f *alias) Do(ctx context.Context, e parser.Expr, from, until int64, values
 
 	results := make([]*types.MetricData, 0, len(args))
 	for _, arg := range args {
-		r := *arg
+		r := *arg.CopyLink()
 
 		r.Name = alias
 		if allowFormatStr {

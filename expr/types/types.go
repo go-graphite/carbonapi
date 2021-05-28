@@ -393,6 +393,36 @@ func (r *MetricData) Copy(includeValues bool) *MetricData {
 	}
 }
 
+// Copy returns the copy of r. Values not copied and link from parent.
+func (r *MetricData) CopyLink() *MetricData {
+	tags := make(map[string]string)
+	for k, v := range r.Tags {
+		tags[k] = v
+	}
+
+	return &MetricData{
+		FetchResponse: pb.FetchResponse{
+			Name:                    r.Name,
+			PathExpression:          r.PathExpression,
+			ConsolidationFunc:       r.ConsolidationFunc,
+			StartTime:               r.StartTime,
+			StopTime:                r.StopTime,
+			StepTime:                r.StepTime,
+			XFilesFactor:            r.XFilesFactor,
+			HighPrecisionTimestamps: r.HighPrecisionTimestamps,
+			Values:                  r.Values,
+			AppliedFunctions:        r.AppliedFunctions,
+			RequestStartTime:        r.RequestStartTime,
+			RequestStopTime:         r.RequestStopTime,
+		},
+		GraphOptions:      r.GraphOptions,
+		ValuesPerPoint:    r.ValuesPerPoint,
+		aggregatedValues:  r.aggregatedValues,
+		Tags:              tags,
+		AggregateFunction: r.AggregateFunction,
+	}
+}
+
 // CopyMetricDataSlice returns the slice of metrics that should be changed later.
 // It allows to avoid a changing of source data, e.g. by AlignMetrics
 func CopyMetricDataSlice(args []*MetricData) (newData []*MetricData) {
