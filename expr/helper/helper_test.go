@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-graphite/carbonapi/expr/tags"
 	"github.com/go-graphite/carbonapi/expr/types"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
 func TestExtractTags(t *testing.T) {
@@ -46,6 +47,40 @@ func TestExtractTags(t *testing.T) {
 				} else if vExpected != value {
 					t.Errorf("unexpected tag-value, got %v, expected %v", value, vExpected)
 				}
+			}
+		})
+	}
+}
+
+func TestAggKey(t *testing.T) {
+	var tests = []struct {
+		input  string
+		nodes  []parser.NodeOrTag
+		metric string
+	}{
+		{
+			"movingAverage(foo.bar.baz,10)",
+			[]parser.NodeOrTag{{false, 1}},
+			"bar",
+		},
+		{
+			"movingAverage(foo.bar.baz,10)",
+			[]parser.NodeOrTag{{false, 0}, {false, 1}},
+			"foo.bar",
+		},
+		{
+			"movingAverage(foo.bar.baz,10)",
+			[]parser.NodeOrTag{{false, 2}},
+			"baz",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			var arg types.MetricData
+			arg.Tags = map[string]string{"name": tt.input}
+			if m := AggKey(&arg, tt.nodes); m != tt.metric {
+				t.Errorf("AddKey(%q, {%v})=%q, want %q", tt.input, tt.nodes, m, tt.metric)
 			}
 		})
 	}
