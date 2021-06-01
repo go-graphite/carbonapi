@@ -11,12 +11,22 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
 
+	"github.com/go-graphite/carbonapi/expr/functions/aliasSub"
 	"github.com/go-graphite/carbonapi/expr/functions/perSecond"
+	"github.com/go-graphite/carbonapi/expr/functions/transformNull"
 )
 
 func init() {
 	md := New("")
 	for _, m := range md {
+		metadata.RegisterFunction(m.Name, m.F)
+	}
+	asFunc := aliasSub.New("")
+	for _, m := range asFunc {
+		metadata.RegisterFunction(m.Name, m.F)
+	}
+	tnFunc := transformNull.New("")
+	for _, m := range tnFunc {
 		metadata.RegisterFunction(m.Name, m.F)
 	}
 	psFunc := perSecond.New("")
@@ -33,6 +43,13 @@ func TestAliasByNode(t *testing.T) {
 	now32 := int64(time.Now().Unix())
 
 	tests := []th.EvalTestItem{
+		{
+			"aliasByNode(aliasSub(transformNull(metric1.foo.bar.ba*, 0), 'baz', 'word'), 2, 3)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1.foo.bar.ba*", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData("bar.word", []float64{1, 2, 3, 4, 5}, 1, now32)},
+		},
 		{
 			"aliasByNode(metric1.foo.bar.baz,1)",
 			map[parser.MetricRequest][]*types.MetricData{
