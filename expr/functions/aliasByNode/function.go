@@ -40,8 +40,8 @@ func (f *aliasByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 	var results []*types.MetricData
 
 	for _, a := range args {
-		name := helper.AggKey(a, nodesOrTags)
 		r := *a.CopyLink()
+		name := helper.ExtractMetric(helper.AggKey(a, nodesOrTags))
 		if len(name) > 0 {
 			r.Name = name
 			r.Tags["name"] = r.Name
