@@ -95,7 +95,8 @@ func GetSeriesArgsAndRemoveNonExisting(e parser.Expr, from, until int64, values 
 func AggKey(arg *types.MetricData, nodesOrTags []parser.NodeOrTag) string {
 	var matched []string
 	metricTags := arg.Tags
-	nodes := strings.Split(metricTags["name"], ".")
+	metric := ExtractMetric(metricTags["name"])
+	nodes := strings.Split(metric, ".")
 	for _, nt := range nodesOrTags {
 		if nt.IsTag {
 			tagStr := nt.Value.(string)
