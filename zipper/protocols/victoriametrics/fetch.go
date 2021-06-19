@@ -25,7 +25,13 @@ func (c *VictoriaMetricsGroup) Fetch(ctx context.Context, request *protov3.Multi
 	}
 	logger := c.logger.With(zap.String("type", "fetch"), zap.String("request", request.String()))
 	stats := &types.Stats{}
-	rewrite, _ := url.Parse("http://127.0.0.1/api/v1/query_range")
+	var serverUrl string
+	if c.vmClusterTenantId >= 0 {
+		serverUrl = fmt.Sprintf("http://127.0.0.1/select/%d/prometheus/api/v1/query_range", c.vmClusterTenantId)
+	} else {
+		serverUrl = "http://127.0.0.1/api/v1/query_range"
+	}
+	rewrite, _ := url.Parse(serverUrl)
 
 	pathExprToTargets := make(map[string][]string)
 	for _, m := range request.Metrics {

@@ -3,6 +3,7 @@ package victoriametrics
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net/url"
 
 	"github.com/ansel1/merry"
@@ -28,7 +29,13 @@ func (c *VictoriaMetricsGroup) Find(ctx context.Context, request *protov3.MultiG
 		zap.Any("supported_features", supportedFeatures),
 	)
 	stats := &types.Stats{}
-	rewrite, _ := url.Parse("http://127.0.0.1/metrics/expand/")
+	var serverUrl string
+	if c.vmClusterTenantId >= 0 {
+		serverUrl = fmt.Sprintf("http://127.0.0.1/select/%d/prometheus/api/v1/query_range", c.vmClusterTenantId)
+	} else {
+		serverUrl = "http://127.0.0.1/api/v1/query_range"
+	}
+	rewrite, _ := url.Parse(serverUrl)
 
 	r.Metrics = make([]protov3.GlobResponse, 0)
 	parser := c.parserPool.Get()
