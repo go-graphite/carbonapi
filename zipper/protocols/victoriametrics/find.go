@@ -30,8 +30,8 @@ func (c *VictoriaMetricsGroup) Find(ctx context.Context, request *protov3.MultiG
 	)
 	stats := &types.Stats{}
 	var serverUrl string
-	if c.vmClusterTenantId >= 0 {
-		serverUrl = fmt.Sprintf("http://127.0.0.1/select/%d/prometheus/api/v1/query_range", c.vmClusterTenantId)
+	if len(c.vmClusterTenantID) > 0 {
+		serverUrl = fmt.Sprintf("http://127.0.0.1/select/%s/prometheus/api/v1/query_range", c.vmClusterTenantID)
 	} else {
 		serverUrl = "http://127.0.0.1/api/v1/query_range"
 	}

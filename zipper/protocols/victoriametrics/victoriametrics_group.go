@@ -52,7 +52,7 @@ type VictoriaMetricsGroup struct {
 
 	step              int64
 	maxPointsPerQuery int64
-	vmClusterTenantId int
+	vmClusterTenantID string
 
 	startDelay           prometheus.StartDelay
 	probeVersionInterval time.Duration
@@ -74,10 +74,10 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 	}
 
 	step := int64(15)
-	var vmClusterTenantId int = -1
-	vmClusterTenantIdI, ok := config.BackendOptions["vmClusterTenantId"]
+	var vmClusterTenantID string = ""
+	vmClusterTenantIDI, ok := config.BackendOptions["vmClusterTenantID"]
 	if ok {
-		vmClusterTenantId = vmClusterTenantIdI.(int)
+		vmClusterTenantID = vmClusterTenantIDI.(string)
 	}
 	stepI, ok := config.BackendOptions["step"]
 	if ok {
@@ -197,7 +197,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 
 		step:                 step,
 		maxPointsPerQuery:    maxPointsPerQuery,
-		vmClusterTenantId:    vmClusterTenantId,
+		vmClusterTenantID:    vmClusterTenantID,
 		startDelay:           delay,
 		probeVersionInterval: probeVersionInterval,
 		fallbackVersion:      fallbackVersion,
