@@ -80,6 +80,22 @@ func TestGroupByNode(t *testing.T) {
 			},
 		},
 		{
+			"groupByNode(metric1.foo.*.*,-2,\"sum\")",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1.foo.*.*", 0, 1}: {
+					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11}, 1, now32),
+				},
+			},
+			"groupByNode_with_negative_index",
+			map[string][]*types.MetricData{
+				"bar1": {types.MakeMetricData("bar1", []float64{7, 9, 11, 13, 15}, 1, now32)},
+				"bar2": {types.MakeMetricData("bar2", []float64{18, 20, 22, 24, 26}, 1, now32)},
+			},
+		},
+		{
 			"groupByNodes(metric1.foo.*.*,\"sum\",0,1,3)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.*.*", 0, 1}: {
