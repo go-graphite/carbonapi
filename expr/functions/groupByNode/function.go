@@ -74,6 +74,10 @@ func (f *groupByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		nodes := strings.Split(metric, ".")
 		nodeKey := make([]string, 0, len(fields))
 		for _, f := range fields {
+			if f < 0 {
+				// Backward compatibility with python negative indecies
+				f += len(nodes)
+			}
 			nodeKey = append(nodeKey, nodes[f])
 		}
 		node := strings.Join(nodeKey, ".")
