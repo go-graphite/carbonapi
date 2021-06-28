@@ -40,7 +40,8 @@ func cleanupParams(r *http.Request) {
 	r.Form.Del("_t") // Used by jquery.graphite.js
 }
 
-func setError(w http.ResponseWriter, accessLogDetails *carbonapipb.AccessLogDetails, msg string, status int) {
+func setError(w http.ResponseWriter, accessLogDetails *carbonapipb.AccessLogDetails, msg string, status int, carbonapiUUID string) {
+	w.Header().Set(ctxHeaderUUID, carbonapiUUID)
 	http.Error(w, http.StatusText(status)+": "+msg, status)
 	accessLogDetails.Reason = msg
 	accessLogDetails.HTTPCode = int32(status)
@@ -103,7 +104,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := r.ParseForm()
 	if err != nil {
-		setError(w, accessLogDetails, err.Error(), http.StatusBadRequest)
+		setError(w, accessLogDetails, err.Error(), http.StatusBadRequest, uid.String())
 		logAsError = true
 		return
 	}
@@ -142,7 +143,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	case "ns", "nanosecond", "nanoseconds":
 		timestampMultiplier = 1000000000
 	default:
-		setError(w, accessLogDetails, "unsupported timestamp format, supported: 's', 'ms', 'us', 'ns'", http.StatusBadRequest)
+		setError(w, accessLogDetails, "unsupported timestamp format, supported: 's', 'ms', 'us', 'ns'", http.StatusBadRequest, uid.String())
 		logAsError = true
 		return
 	}
@@ -170,7 +171,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	accessLogDetails.Targets = targets
 
 	if !ok || !format.ValidRenderFormat() {
-		setError(w, accessLogDetails, "unsupported format specified: "+formatRaw, http.StatusBadRequest)
+		setError(w, accessLogDetails, "unsupported format specified: "+formatRaw, http.StatusBadRequest, uid.String())
 		logAsError = true
 		return
 	}
@@ -213,7 +214,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 		if err == nil {
 			ApiMetrics.RequestCacheHits.Add(1)
-			writeResponse(w, http.StatusOK, response, format, jsonp)
+			writeResponse(w, http.StatusOK, response, format, jsonp, uid.String())
 			accessLogDetails.FromCache = true
 			return
 		}
@@ -221,7 +222,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if from32 == until32 {
-		setError(w, accessLogDetails, "Invalid or empty time range", http.StatusBadRequest)
+		setError(w, accessLogDetails, "Invalid or empty time range", http.StatusBadRequest, uid.String())
 		logAsError = true
 		return
 	}
@@ -240,7 +241,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			} else {
 				answer = fmt.Sprint(r)
 			}
-			setError(w, accessLogDetails, answer, http.StatusInternalServerError)
+			setError(w, accessLogDetails, answer, http.StatusInternalServerError, uid.String())
 		}
 	}()
 
@@ -258,7 +259,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			exp, e, err := parser.ParseExpr(target)
 			if err != nil || e != "" {
 				msg := buildParseErrorString(target, e, err)
-				setError(w, accessLogDetails, msg, http.StatusBadRequest)
+				setError(w, accessLogDetails, msg, http.StatusBadRequest, uid.String())
 				logAsError = true
 				return
 			}
@@ -302,7 +303,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if returnCode == 400 || returnCode == http.StatusForbidden || returnCode >= 500 {
-			setError(w, accessLogDetails, strings.Join(errMsgs, ","), returnCode)
+			setError(w, accessLogDetails, strings.Join(errMsgs, ","), returnCode, uid.String())
 			logAsError = true
 			return
 		}
@@ -319,14 +320,14 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	case protoV2Format:
 		body, err = types.MarshalProtobufV2(results)
 		if err != nil {
-			setError(w, accessLogDetails, err.Error(), http.StatusInternalServerError)
+			setError(w, accessLogDetails, err.Error(), http.StatusInternalServerError, uid.String())
 			logAsError = true
 			return
 		}
 	case protoV3Format:
 		body, err = types.MarshalProtobufV3(results)
 		if err != nil {
-			setError(w, accessLogDetails, err.Error(), http.StatusInternalServerError)
+			setError(w, accessLogDetails, err.Error(), http.StatusInternalServerError, uid.String())
 			logAsError = true
 			return
 		}
@@ -346,7 +347,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	accessLogDetails.CarbonzipperResponseSizeBytes = int64(size)
 	accessLogDetails.CarbonapiResponseSizeBytes = int64(len(body))
 
-	writeResponse(w, returnCode, body, format, jsonp)
+	writeResponse(w, returnCode, body, format, jsonp, uid.String())
 
 	if len(results) != 0 {
 		tc := time.Now()

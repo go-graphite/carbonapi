@@ -117,6 +117,7 @@ func tagHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", contentTypeJSON)
+	w.Header().Set(ctxHeaderUUID, uuid.String())
 	_, _ = w.Write(b)
 	accessLogDetails.Runtime = time.Since(t0).Seconds()
 	accessLogDetails.HTTPCode = http.StatusOK

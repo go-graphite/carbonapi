@@ -98,6 +98,7 @@ func infoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set(ctxHeaderUUID, uuid.String())
 	_, _ = w.Write(b)
 	accessLogDetails.Runtime = time.Since(t0).Seconds()
 	accessLogDetails.HTTPCode = http.StatusOK
