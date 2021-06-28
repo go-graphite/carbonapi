@@ -369,5 +369,5 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeResponse(w, http.StatusOK, b, format, jsonp)
+	writeResponse(w, http.StatusOK, b, format, jsonp, uid.String())
 }
