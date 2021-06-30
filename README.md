@@ -22,7 +22,7 @@ Autobuilds (master, might be unstable): [Autobuild repo](https://packagecloud.io
 
 Configuration guides: [docs/configuration.md](https://github.com/go-graphite/carbonapi/blob/master/doc/configuration.md) and [example config](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.yaml).
 
-There are multiple example configurations available for different backends: [prometheus](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.prometheus.yaml), [graphite-clickhouse](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.clickhouse.yaml), [go-carbon](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.yaml)
+There are multiple example configurations available for different backends: [prometheus](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.prometheus.yaml), [graphite-clickhouse](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.clickhouse.yaml), [go-carbon](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.yaml), [victoriametrics](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.victoriametrics.yaml), [IRONdb](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.irondb.yaml)
 
 General information
 -------------------
@@ -99,11 +99,13 @@ Supported protocols
 -------------------
 
  * `auto` - carbonapi will do it's best to determine backend's protocol. Currently it can identify only `carbonapi_v2_pb` or `carbonapi_v3_pb`
- * `carbonapi_v2_pb`, `pb`, `pb3`, `protobuf` - carbonapi <0.11 style protocol. Supported by go-carbon, graphite-clickhouse
- * `carbonapi_v3_pb` - new carbonapi protocol, that supports passing metadata through. Supported by carbonzipper >=1.0.0.alpha.3. Implementing support for that is in-progress for go-carbon
+ * `carbonapi_v2_pb`, `pb`, `pb3`, `protobuf` - carbonapi <0.11 style protocol. Supported by [go-carbon](https://github.com/go-graphite/go-carbon) and [graphite-clickhouse](https://github.com/lomik/graphite-clickhouse) older or equal version v0.11.7
+ * `carbonapi_v3_pb` - new carbonapi protocol, that supports passing metadata through. Supported by carbonzipper >=1.0.0.alpha.3 and [graphite-clickhouse](https://github.com/lomik/graphite-clickhouse) newer then v0.12.0. Implementing support for that is TODO for go-carbon
  * `carbonapi_v3_grpc` - grpc version of new carbonapi protocol. Currently no known implementation exists.
  * `msgpack` - messagepack based protocol, used in graphite-web 1.1 and metrictank. It's still experimental and might contain bugs.
  * `prometheus` - prometheus HTTP API
+ * `victoriametrics` - special version of prometheus backend to use with [VictoriaMetrics](https://github.com/VictoriaMetrics/VictoriaMetrics).
+ * `irondb` - supports reading Graphite-compatible metrics from [IRONdb](https://docs.circonus.com/irondb/) from [Circonus](https://www.circonus.com/).
 
 
 Requirements
