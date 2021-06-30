@@ -13,6 +13,12 @@ github.com/ansel1/merry
 # github.com/bradfitz/gomemcache v0.0.0-20190913173617-a41fca850d0b
 ## explicit
 github.com/bradfitz/gomemcache/memcache
+# github.com/circonus-labs/gosnowth v1.10.0
+## explicit
+github.com/circonus-labs/gosnowth
+github.com/circonus-labs/gosnowth/fb/fetch
+github.com/circonus-labs/gosnowth/fb/nntbs
+github.com/circonus-labs/gosnowth/fb/noit
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/dgryski/go-expirecache v0.0.0-20170314133854-743ef98b2adb
@@ -63,6 +69,10 @@ github.com/golang/protobuf/ptypes/timestamp
 # github.com/gomodule/redigo v1.8.4
 ## explicit
 github.com/gomodule/redigo/redis
+# github.com/google/flatbuffers v1.12.0
+github.com/google/flatbuffers/go
+# github.com/google/uuid v1.1.2
+github.com/google/uuid
 # github.com/gorilla/handlers v1.5.1
 ## explicit
 github.com/gorilla/handlers
@@ -101,6 +111,8 @@ github.com/mitchellh/mapstructure
 ## explicit
 github.com/mjibson/go-dsp/dsputils
 github.com/mjibson/go-dsp/fft
+# github.com/openhistogram/circonusllhist v0.2.1
+github.com/openhistogram/circonusllhist
 # github.com/pelletier/go-toml v1.9.0
 ## explicit
 github.com/pelletier/go-toml
