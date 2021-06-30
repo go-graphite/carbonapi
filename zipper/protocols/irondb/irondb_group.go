@@ -652,7 +652,7 @@ func (c *IronDBGroup) doTagQuery(ctx context.Context, isTagName bool, query stri
 	for _, metric := range tag_result {
 		// if metric name contain tags
 		if strings.Contains(metric.Name, ";") {
-			namex := strings.SplitN(metric.Name, ";", -1)
+			namex := strings.Split(metric.Name, ";")
 			for i := 1; i < len(namex); i++ {
 				tag := strings.SplitN(namex[i], "=", 2)
 				// tag[0] is tag category and tag[1] is tag value
