@@ -260,36 +260,32 @@ func (c IronDBGroup) Backends() []string {
 	return c.servers
 }
 
-func processFindErrors(e merry.Error, stats *types.Stats, query string, err error) (merry.Error, error) {
-	if err != nil {
-		stats.FindErrors++
-		if merry.Is(err, types.ErrTimeoutExceeded) {
-			stats.Timeouts++
-			stats.FindTimeouts++
-		}
-		if e == nil {
-			e = merry.Wrap(err).WithValue("query", query)
-		} else {
-			e = e.WithCause(err)
-		}
+func processFindErrors(err error, e merry.Error, stats *types.Stats, query string) merry.Error {
+	stats.FindErrors++
+	if merry.Is(err, types.ErrTimeoutExceeded) {
+		stats.Timeouts++
+		stats.FindTimeouts++
 	}
-	return e, err
+	if e == nil {
+		e = merry.Wrap(err).WithValue("query", query)
+	} else {
+		e = e.WithCause(err)
+	}
+	return e
 }
 
-func processRenderErrors(e merry.Error, stats *types.Stats, query string, err error) (merry.Error, error) {
-	if err != nil {
-		stats.RenderErrors++
-		if merry.Is(err, types.ErrTimeoutExceeded) {
-			stats.Timeouts++
-			stats.RenderTimeouts++
-		}
-		if e == nil {
-			e = merry.Wrap(err).WithValue("query", query)
-		} else {
-			e = e.WithCause(err)
-		}
+func processRenderErrors(err error, e merry.Error, stats *types.Stats, query string) merry.Error {
+	stats.RenderErrors++
+	if merry.Is(err, types.ErrTimeoutExceeded) {
+		stats.Timeouts++
+		stats.RenderTimeouts++
 	}
-	return e, err
+	if e == nil {
+		e = merry.Wrap(err).WithValue("query", query)
+	} else {
+		e = e.WithCause(err)
+	}
+	return e
 }
 
 func (c *IronDBGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, merry.Error) {
@@ -352,8 +348,8 @@ func (c *IronDBGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequ
 				)
 				stats.FindRequests++
 				tag_metrics, err := c.client.FindTags(c.accountID, query, findTagOptions)
-				e, err = processFindErrors(e, stats, query, err)
 				if err != nil {
+					e = processFindErrors(err, e, stats, query)
 					continue
 				}
 				logger.Debug("got tag find result from irondb",
@@ -379,8 +375,8 @@ func (c *IronDBGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequ
 							Method: "pass",
 						}},
 					})
-					e, err2 = processRenderErrors(e, stats, query, err2)
 					if err2 != nil {
+						e = processRenderErrors(err2, e, stats, query)
 						continue
 					}
 					responses = append(responses, res)
@@ -429,8 +425,8 @@ func (c *IronDBGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequ
 				)
 				stats.FindRequests++
 				metrics, err := c.client.GraphiteFindMetrics(c.accountID, c.graphite_prefix, query, nil)
-				e, err = processFindErrors(e, stats, query, err)
 				if err != nil {
+					e = processFindErrors(err, e, stats, query)
 					continue
 				}
 				logger.Debug("got find result from irondb",
@@ -456,8 +452,8 @@ func (c *IronDBGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequ
 					zap.Any("lookup", lookup),
 				)
 				response, err2 := c.client.GraphiteGetDatapoints(c.accountID, c.graphite_prefix, lookup, nil)
-				e, err2 = processRenderErrors(e, stats, query, err2)
 				if err2 != nil {
+					e = processRenderErrors(err2, e, stats, query)
 					continue
 				}
 				logger.Debug("got fetch result from irondb",
@@ -528,8 +524,8 @@ func (c *IronDBGroup) Find(ctx context.Context, request *protov3.MultiGlobReques
 		)
 		stats.FindRequests++
 		find_result, err := c.client.GraphiteFindMetrics(c.accountID, c.graphite_prefix, query, nil)
-		e, err = processFindErrors(e, stats, query, err)
 		if err != nil {
+			e = processFindErrors(err, e, stats, query)
 			continue
 		}
 		logger.Debug("got find result from irondb",
