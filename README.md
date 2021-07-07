@@ -100,7 +100,7 @@ Supported protocols
 
  * `auto` - carbonapi will do it's best to determine backend's protocol. Currently it can identify only `carbonapi_v2_pb` or `carbonapi_v3_pb`
  * `carbonapi_v2_pb`, `pb`, `pb3`, `protobuf` - carbonapi <0.11 style protocol. Supported by [go-carbon](https://github.com/go-graphite/go-carbon) and [graphite-clickhouse](https://github.com/lomik/graphite-clickhouse) older or equal version v0.11.7
- * `carbonapi_v3_pb` - new carbonapi protocol, that supports passing metadata through. Supported by carbonzipper >=1.0.0.alpha.3 and [graphite-clickhouse](https://github.com/lomik/graphite-clickhouse) newer then v0.12.0. Implementing support for that is TODO for go-carbon
+ * `carbonapi_v3_pb` - new carbonapi protocol, that supports passing metadata through. Supported by carbonzipper >=1.0.0.alpha.3, [graphite-clickhouse](https://github.com/lomik/graphite-clickhouse) newer then v0.12.0 and go-carbon newer then v0.13.0
  * `carbonapi_v3_grpc` - grpc version of new carbonapi protocol. Currently no known implementation exists.
  * `msgpack` - messagepack based protocol, used in graphite-web 1.1 and metrictank. It's still experimental and might contain bugs.
  * `prometheus` - prometheus HTTP API
