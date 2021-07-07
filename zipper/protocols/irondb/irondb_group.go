@@ -44,9 +44,9 @@ type IronDBGroup struct {
 	maxTries             int
 	maxMetricsPerRequest int
 
-	accountID       int64
-	graphite_rollup int64
-	graphite_prefix string
+	accountID      int64
+	graphiteRollup int64
+	graphitePrefix string
 }
 
 func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool, limiter limiter.ServerLimiter) (types.BackendServer, merry.Error) {
@@ -65,31 +65,28 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 	cfg.SetDiscover(true)
 
 	// parse backend options
+	var tmpInt int
 	accountID := int64(1)
-	accountID_opt, ok := config.BackendOptions["irondb_account_id"]
-	if ok {
-		accountID_tmp, ok := accountID_opt.(int)
-		if !ok {
+	if accountIDOpt, ok := config.BackendOptions["irondb_account_id"]; ok {
+		if tmpInt, ok = accountIDOpt.(int); !ok {
 			logger.Fatal("failed to parse irondb_account_id",
-				zap.String("type_parsed", fmt.Sprintf("%T", accountID_opt)),
+				zap.String("type_parsed", fmt.Sprintf("%T", accountIDOpt)),
 				zap.String("type_expected", "int"),
 			)
 		}
-		accountID = int64(accountID_tmp)
+		accountID = int64(tmpInt)
 	}
 
 	maxTries := int64(*config.MaxTries)
 	retries := int64(0)
-	retries_opt, ok := config.BackendOptions["irondb_retries"]
-	if ok {
-		retries_tmp, ok := retries_opt.(int)
-		if !ok {
+	if retriesOpt, ok := config.BackendOptions["irondb_retries"]; ok {
+		if tmpInt, ok = retriesOpt.(int); !ok {
 			logger.Fatal("failed to parse irondb_retries",
-				zap.String("type_parsed", fmt.Sprintf("%T", retries_opt)),
+				zap.String("type_parsed", fmt.Sprintf("%T", retriesOpt)),
 				zap.String("type_expected", "int"),
 			)
 		}
-		retries = int64(retries_tmp)
+		retries = int64(tmpInt)
 	}
 	if maxTries > retries {
 		retries = maxTries
@@ -97,29 +94,26 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 	cfg.SetRetries(retries)
 
 	connectRetries := int64(-1)
-	connectRetries_opt, ok := config.BackendOptions["irondb_connect_retries"]
-	if ok {
-		connectRetries_tmp, ok := connectRetries_opt.(int)
-		if !ok {
+	if connectRetriesOpt, ok := config.BackendOptions["irondb_connect_retries"]; ok {
+		if tmpInt, ok = connectRetriesOpt.(int); !ok {
 			logger.Fatal("failed to parse irondb_connect_retries",
-				zap.String("type_parsed", fmt.Sprintf("%T", connectRetries_opt)),
+				zap.String("type_parsed", fmt.Sprintf("%T", connectRetriesOpt)),
 				zap.String("type_expected", "int"),
 			)
 		}
-		connectRetries = int64(connectRetries_tmp)
+		connectRetries = int64(tmpInt)
 	}
 	cfg.SetConnectRetries(connectRetries)
 
+	var tmpStr string
 	dialTimeout := 500 * time.Millisecond
-	dialTimeout_opt, ok := config.BackendOptions["irondb_dial_timeout"]
-	if ok {
-		dialTimeout_str, ok := dialTimeout_opt.(string)
-		if ok {
-			interval, err := time.ParseDuration(dialTimeout_str)
+	if dialTimeoutOpt, ok := config.BackendOptions["irondb_dial_timeout"]; ok {
+		if tmpStr, ok = dialTimeoutOpt.(string); ok {
+			interval, err := time.ParseDuration(tmpStr)
 			if err != nil {
 				logger.Fatal("failed to parse option",
 					zap.String("option_name", "irondb_dial_timeout"),
-					zap.String("option_value", dialTimeout_str),
+					zap.String("option_value", tmpStr),
 					zap.Errors("errors", []error{err}),
 				)
 			}
@@ -127,7 +121,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		} else {
 			logger.Fatal("failed to parse option",
 				zap.String("option_name", "irondb_dial_timeout"),
-				zap.Any("option_value", dialTimeout_str),
+				zap.Any("option_value", tmpStr),
 				zap.Errors("errors", []error{fmt.Errorf("not a string")}),
 			)
 		}
@@ -135,15 +129,13 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 	cfg.SetDialTimeout(dialTimeout)
 
 	irondbTimeout := 10 * time.Second
-	irondbTimeout_opt, ok := config.BackendOptions["irondb_timeout"]
-	if ok {
-		irondbTimeout_str, ok := irondbTimeout_opt.(string)
-		if ok {
-			interval, err := time.ParseDuration(irondbTimeout_str)
+	if irondbTimeoutOpt, ok := config.BackendOptions["irondb_timeout"]; ok {
+		if tmpStr, ok = irondbTimeoutOpt.(string); ok {
+			interval, err := time.ParseDuration(tmpStr)
 			if err != nil {
 				logger.Fatal("failed to parse option",
 					zap.String("option_name", "irondb_timeout"),
-					zap.String("option_value", irondbTimeout_str),
+					zap.String("option_value", tmpStr),
 					zap.Errors("errors", []error{err}),
 				)
 			}
@@ -151,7 +143,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		} else {
 			logger.Fatal("failed to parse option",
 				zap.String("option_name", "irondb_timeout"),
-				zap.Any("option_value", irondbTimeout_str),
+				zap.Any("option_value", tmpStr),
 				zap.Errors("errors", []error{fmt.Errorf("not a string")}),
 			)
 		}
@@ -159,15 +151,13 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 	cfg.SetTimeout(irondbTimeout)
 
 	watchInterval := 30 * time.Second
-	watchInterval_opt, ok := config.BackendOptions["irondb_watch_interval"]
-	if ok {
-		watchInterval_str, ok := watchInterval_opt.(string)
-		if ok {
-			interval, err := time.ParseDuration(watchInterval_str)
+	if watchIntervalOpt, ok := config.BackendOptions["irondb_watch_interval"]; ok {
+		if tmpStr, ok = watchIntervalOpt.(string); ok {
+			interval, err := time.ParseDuration(tmpStr)
 			if err != nil {
 				logger.Fatal("failed to parse option",
 					zap.String("option_name", "irondb_watch_interval"),
-					zap.String("option_value", watchInterval_str),
+					zap.String("option_value", tmpStr),
 					zap.Errors("errors", []error{err}),
 				)
 			}
@@ -175,37 +165,33 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		} else {
 			logger.Fatal("failed to parse option",
 				zap.String("option_name", "irondb_watch_interval"),
-				zap.Any("option_value", watchInterval_str),
+				zap.Any("option_value", tmpStr),
 				zap.Errors("errors", []error{fmt.Errorf("not a string")}),
 			)
 		}
 	}
 	cfg.SetWatchInterval(watchInterval)
 
-	graphite_rollup := int64(60)
-	graphite_rollup_opt, ok := config.BackendOptions["irondb_graphite_rollup"]
-	if ok {
-		graphite_rollup_tmp, ok := graphite_rollup_opt.(int)
-		if !ok {
+	graphiteRollup := int64(60)
+	if graphiteRollupOpt, ok := config.BackendOptions["irondb_graphite_rollup"]; ok {
+		if tmpInt, ok = graphiteRollupOpt.(int); !ok {
 			logger.Fatal("failed to parse irondb_graphite_rollup",
-				zap.String("type_parsed", fmt.Sprintf("%T", graphite_rollup_opt)),
+				zap.String("type_parsed", fmt.Sprintf("%T", graphiteRollupOpt)),
 				zap.String("type_expected", "int"),
 			)
 		}
-		graphite_rollup = int64(graphite_rollup_tmp)
+		graphiteRollup = int64(tmpInt)
 	}
 
-	graphite_prefix := ""
-	graphite_prefix_opt, ok := config.BackendOptions["irondb_graphite_prefix"]
-	if ok {
-		graphite_prefix_tmp, ok := graphite_prefix_opt.(string)
-		if !ok {
+	graphitePrefix := ""
+	if graphitePrefixOpt, ok := config.BackendOptions["irondb_graphite_prefix"]; ok {
+		if tmpStr, ok = graphitePrefixOpt.(string); !ok {
 			logger.Fatal("failed to parse irondb_graphite_prefix",
-				zap.String("type_parsed", fmt.Sprintf("%T", graphite_prefix_opt)),
+				zap.String("type_parsed", fmt.Sprintf("%T", graphitePrefixOpt)),
 				zap.String("type_expected", "string"),
 			)
 		}
-		graphite_prefix = string(graphite_prefix_tmp)
+		graphitePrefix = string(tmpStr)
 	}
 
 	snowthClient, err := gosnowth.NewClient(cfg)
@@ -223,8 +209,8 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		maxMetricsPerRequest: *config.MaxBatchSize,
 		client:               snowthClient,
 		accountID:            accountID,
-		graphite_rollup:      graphite_rollup,
-		graphite_prefix:      graphite_prefix,
+		graphiteRollup:       graphiteRollup,
+		graphitePrefix:       graphitePrefix,
 		limiter:              limiter,
 		logger:               logger,
 	}
@@ -303,12 +289,12 @@ func (c *IronDBGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequ
 
 	start := request.Metrics[0].StartTime
 	stop := request.Metrics[0].StopTime
-	step := c.graphite_rollup
+	step := c.graphiteRollup
 	count := int64((stop-start)/step) + 1
-	max_count := request.Metrics[0].MaxDataPoints
-	if count > max_count && max_count > 0 {
-		count = max_count
-		step = adjustStep(start, stop, max_count, step)
+	maxCount := request.Metrics[0].MaxDataPoints
+	if count > maxCount && maxCount > 0 {
+		count = maxCount
+		step = adjustStep(start, stop, maxCount, step)
 	}
 	if count <= 0 {
 		logger.Fatal("stop time should be less then start",
@@ -424,7 +410,7 @@ func (c *IronDBGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequ
 					zap.String("query", query),
 				)
 				stats.FindRequests++
-				metrics, err := c.client.GraphiteFindMetrics(c.accountID, c.graphite_prefix, query, nil)
+				metrics, err := c.client.GraphiteFindMetrics(c.accountID, c.graphitePrefix, query, nil)
 				if err != nil {
 					e = processFindErrors(err, e, stats, query)
 					continue
@@ -451,7 +437,7 @@ func (c *IronDBGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequ
 					zap.String("query", query),
 					zap.Any("lookup", lookup),
 				)
-				response, err2 := c.client.GraphiteGetDatapoints(c.accountID, c.graphite_prefix, lookup, nil)
+				response, err2 := c.client.GraphiteGetDatapoints(c.accountID, c.graphitePrefix, lookup, nil)
 				if err2 != nil {
 					e = processRenderErrors(err2, e, stats, query)
 					continue
@@ -520,10 +506,10 @@ func (c *IronDBGroup) Find(ctx context.Context, request *protov3.MultiGlobReques
 		logger.Debug("will do find query",
 			zap.Int64("accountID", c.accountID),
 			zap.String("query", query),
-			zap.String("prefix", c.graphite_prefix),
+			zap.String("prefix", c.graphitePrefix),
 		)
 		stats.FindRequests++
-		find_result, err := c.client.GraphiteFindMetrics(c.accountID, c.graphite_prefix, query, nil)
+		find_result, err := c.client.GraphiteFindMetrics(c.accountID, c.graphitePrefix, query, nil)
 		if err != nil {
 			e = processFindErrors(err, e, stats, query)
 			continue
@@ -621,18 +607,18 @@ func (c *IronDBGroup) doTagQuery(ctx context.Context, isTagName bool, query stri
 
 	logger.Debug("sending GraphiteFindTags request to irondb",
 		zap.Int64("accountID", c.accountID),
-		zap.String("prefix", c.graphite_prefix),
+		zap.String("prefix", c.graphitePrefix),
 		zap.String("target", target),
 	)
-	tag_result, err := c.client.GraphiteFindTags(c.accountID, c.graphite_prefix, target, nil)
+	tagResult, err := c.client.GraphiteFindTags(c.accountID, c.graphitePrefix, target, nil)
 	if err != nil {
 		return []string{}, merry.New("request returned an error").WithValue("error", err)
 	}
 	logger.Debug("got GraphiteFindTags result from irondb",
 		zap.String("target", target),
-		zap.Any("tag_result", tag_result),
+		zap.Any("tag_result", tagResult),
 	)
-	for _, metric := range tag_result {
+	for _, metric := range tagResult {
 		// if metric name contain tags
 		if strings.Contains(metric.Name, ";") {
 			namex := strings.Split(metric.Name, ";")
