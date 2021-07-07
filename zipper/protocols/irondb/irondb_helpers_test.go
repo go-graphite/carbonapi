@@ -6,9 +6,9 @@ import (
 
 func TestGraphiteExprListToIronDBTagQuery(t *testing.T) {
 	cases := []struct {
-		desc            string
-		input           []string
-		expected_output string
+		desc           string
+		input          []string
+		expectedOutput string
 	}{
 		{"TestEmpty", []string{}, ""},
 		{"TestNameEq", []string{"name=host"}, "and(__name:host)"},
@@ -21,18 +21,18 @@ func TestGraphiteExprListToIronDBTagQuery(t *testing.T) {
 	}
 	for _, tc := range cases {
 		output := graphiteExprListToIronDBTagQuery(tc.input)
-		if output != tc.expected_output {
+		if output != tc.expectedOutput {
 			t.Fatalf("%s: expected value: %s got: %s for input: %s",
-				tc.desc, tc.expected_output, output, tc.input)
+				tc.desc, tc.expectedOutput, output, tc.input)
 		}
 	}
 }
 
 func TestConvertNameToGraphite(t *testing.T) {
 	cases := []struct {
-		desc            string
-		input           string
-		expected_output string
+		desc           string
+		input          string
+		expectedOutput string
 	}{
 		{"TestEmpty", "", ""},
 		{"Test1", "name|ST[c1=v1,c2=v2,c3=v3]", "name;c1=v1;c2=v2;c3=v3"},
@@ -43,9 +43,9 @@ func TestConvertNameToGraphite(t *testing.T) {
 	}
 	for _, tc := range cases {
 		output := convertNameToGraphite(tc.input)
-		if output != tc.expected_output {
+		if output != tc.expectedOutput {
 			t.Fatalf("%s: expected value: %s got: %s for input: %s",
-				tc.desc, tc.expected_output, output, tc.input)
+				tc.desc, tc.expectedOutput, output, tc.input)
 		}
 	}
 }
@@ -60,7 +60,7 @@ func TestAdjustStep(t *testing.T) {
 	cases := []struct {
 		desc                                    string
 		start, stop, maxPointsPerQuery, minStep int64
-		expected_output                         int64
+		expectedOutput                          int64
 	}{
 		{"TestZero", 0, 600, 0, 60, 60},
 		{"Test10", 0, 600, 10, 10, 60},
@@ -72,9 +72,9 @@ func TestAdjustStep(t *testing.T) {
 	}
 	for _, tc := range cases {
 		output := adjustStep(tc.start, tc.stop, tc.maxPointsPerQuery, tc.minStep)
-		if output != tc.expected_output {
+		if output != tc.expectedOutput {
 			t.Fatalf("%s: expected value: %d got: %d for input: %d %d %d %d",
-				tc.desc, tc.expected_output, output, tc.start, tc.stop, tc.maxPointsPerQuery, tc.minStep)
+				tc.desc, tc.expectedOutput, output, tc.start, tc.stop, tc.maxPointsPerQuery, tc.minStep)
 		}
 	}
 }

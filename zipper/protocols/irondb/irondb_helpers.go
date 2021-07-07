@@ -10,54 +10,43 @@ import (
 // graphiteExprListToIronDBTagQuery - converts list of Graphite Tag expressions to IronDB Tag query
 // e.g. ["name=~cpu\..*", "tag1!=value1"] => and(__name:/cpu\..*/,not(tag1:value1))
 func graphiteExprListToIronDBTagQuery(exprList []string) string {
-	//r := make([]string, len(exprList))
 	var r []string
-
+	var irondbOp string
 	for _, expr := range exprList {
 		// remove escaped quotes
 		expr = strings.ReplaceAll(expr, "\"", "")
-		eq_idx := strings.Index(expr, "=")
-		if eq_idx > 0 {
-			tag_name := expr[:eq_idx]
-			ne_idx := strings.Index(expr, "!")
-			if ne_idx != -1 {
-				tag_name = expr[:ne_idx]
-			}
-			if tag_name == "name" {
-				tag_name = "__name"
-			}
-			if ne_idx == -1 {
-				// Handle = and =~
-				if expr[eq_idx+1] == '~' {
-					// op = "=~"
-					// tag_value = expr[eq_idx+2:]
-					r = append(r, fmt.Sprintf("and(%s:/%s/)", tag_name, expr[eq_idx+2:]))
-				} else {
-					// op = "="
-					// tag_value = expr[eq_idx+1:]
-					r = append(r, fmt.Sprintf("and(%s:%s)", tag_name, expr[eq_idx+1:]))
-				}
+		eqIdx := strings.Index(expr, "=")
+		if eqIdx > 0 {
+			tagName := expr[:eqIdx]
+			neqIdx := strings.Index(expr, "!")
+			if neqIdx == -1 {
+				irondbOp = "and"
 			} else {
-				// Handle != and !=~
-				if expr[eq_idx+1] == '~' {
-					// op = "!~"
-					// tag_value = expr[eq_idx+2:]
-					r = append(r, fmt.Sprintf("not(%s:/%s/)", tag_name, expr[eq_idx+2:]))
-				} else {
-					// op = "!="
-					// tag_value = expr[idx+1:]
-					r = append(r, fmt.Sprintf("not(%s:%s)", tag_name, expr[eq_idx+1:]))
-				}
+				irondbOp = "not"
+				tagName = expr[:neqIdx]
+			}
+			if tagName == "name" {
+				tagName = "__name"
+			}
+			if expr[eqIdx+1] == '~' {
+				// op = "=~" or op = "!~"
+				// tagValue = expr[eq_idx+2:]
+				r = append(r, fmt.Sprintf("%s(%s:/%s/)", irondbOp, tagName, expr[eqIdx+2:]))
+			} else {
+				// op = "=" or op = "!="
+				// tagValue = expr[eq_idx+1:]
+				r = append(r, fmt.Sprintf("%s(%s:%s)", irondbOp, tagName, expr[eqIdx+1:]))
 			}
 		}
 	}
-	if len(r) > 0 {
-		if len(r) > 1 {
-			return fmt.Sprintf("and(%s)", strings.Join(r, ","))
-		}
+	switch len(r) {
+	case 0:
+		return ""
+	case 1:
 		return r[0]
+	default:
+		return fmt.Sprintf("and(%s)", strings.Join(r, ","))
 	}
-	return ""
 }
 
 // convertNameToGraphite - convert IronDB tagged name to Graphite-web
@@ -65,8 +54,8 @@ func convertNameToGraphite(name string) string {
 	// if name contains tags - convert to same format as python graphite-irondb uses
 	// remove all MT tags
 	if strings.Contains(name, "|MT{") {
-		mt_re := regexp.MustCompile(`\|MT{([^}]*)}`)
-		name = mt_re.ReplaceAllString(name, "")
+		mtRe := regexp.MustCompile(`\|MT{([^}]*)}`)
+		name = mtRe.ReplaceAllString(name, "")
 	}
 	if strings.Contains(name, "|ST[") {
 		name = strings.ReplaceAll(name, "|ST[", ";")
