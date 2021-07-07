@@ -560,7 +560,7 @@ func (c *IronDBGroup) doTagQuery(ctx context.Context, isTagName bool, query stri
 	params := make(map[string][]string)
 	var result []string
 	var target string
-	var tag_category string
+	var tagCategory string
 
 	// decoding query
 	queryDecoded, _ := url.QueryUnescape(query)
@@ -599,7 +599,7 @@ func (c *IronDBGroup) doTagQuery(ctx context.Context, isTagName bool, query stri
 		logger = logger.With(zap.String("type", "tagValues"))
 		// get tag category (if present and we're looking for values instead categories)
 		if tag, ok := params["tag"]; ok {
-			tag_category = tag[0]
+			tagCategory = tag[0]
 		} else {
 			return []string{}, types.ErrNoTagSpecified
 		}
@@ -616,41 +616,39 @@ func (c *IronDBGroup) doTagQuery(ctx context.Context, isTagName bool, query stri
 	}
 	logger.Debug("got GraphiteFindTags result from irondb",
 		zap.String("target", target),
-		zap.Any("tag_result", tagResult),
+		zap.Any("tagResult", tagResult),
 	)
 	for _, metric := range tagResult {
-		// if metric name contain tags
-		if strings.Contains(metric.Name, ";") {
-			namex := strings.Split(metric.Name, ";")
-			for i := 1; i < len(namex); i++ {
-				tag := strings.SplitN(namex[i], "=", 2)
-				// tag[0] is tag category and tag[1] is tag value
-				if isTagName {
-					// if filtering by tag prefix
-					if v, ok := params["tagPrefix"]; ok {
-						// and prefix match
-						if strings.HasPrefix(tag[0], v[0]) {
-							// append tag name to result
-							result = append(result, tag[0])
-						}
-					} else {
-						// if not filtering by tag prefix - append all tags
+		tagList := strings.Split(metric.Name, ";")
+		// skipping first element (metric name)
+		for i := 1; i < len(tagList); i++ {
+			// tag[0] is tag category and tag[1] is tag value
+			tag := strings.SplitN(tagList[i], "=", 2)
+			if isTagName {
+				// if filtering by tag prefix
+				if v, ok := params["tagPrefix"]; ok {
+					// and prefix match
+					if strings.HasPrefix(tag[0], v[0]) {
+						// append tag name to result
 						result = append(result, tag[0])
 					}
 				} else {
-					// if filtering by value prefix
-					if v, ok := params["valuePrefix"]; ok {
-						// and prefix match
-						if strings.HasPrefix(tag[1], v[0]) {
-							// append tag value to result
-							result = append(result, tag[1])
-						}
-					} else {
-						// if not filtering by value prefix
-						// append only values belong to requested tag category to result
-						if tag[0] == tag_category {
-							result = append(result, tag[1])
-						}
+					// if not filtering by tag prefix - append all tags
+					result = append(result, tag[0])
+				}
+			} else {
+				// if filtering by value prefix
+				if v, ok := params["valuePrefix"]; ok {
+					// and prefix match
+					if strings.HasPrefix(tag[1], v[0]) {
+						// append tag value to result
+						result = append(result, tag[1])
+					}
+				} else {
+					// if not filtering by value prefix
+					// append only values belong to requested tag category to result
+					if tag[0] == tagCategory {
+						result = append(result, tag[1])
 					}
 				}
 			}
