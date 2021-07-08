@@ -333,17 +333,17 @@ func (c *IronDBGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequ
 					zap.Any("findTagOptions", findTagOptions),
 				)
 				stats.FindRequests++
-				tag_metrics, err := c.client.FindTags(c.accountID, query, findTagOptions)
+				tagMetrics, err := c.client.FindTags(c.accountID, query, findTagOptions)
 				if err != nil {
 					e = processFindErrors(err, e, stats, query)
 					continue
 				}
 				logger.Debug("got tag find result from irondb",
 					zap.String("query", query),
-					zap.Any("tag_metrics", tag_metrics),
+					zap.Any("tagMetrics", tagMetrics),
 				)
 				responses := []*gosnowth.DF4Response{}
-				for _, metric := range tag_metrics.Items {
+				for _, metric := range tagMetrics.Items {
 					stats.RenderRequests++
 					res, err2 := c.client.FetchValues(&gosnowth.FetchQuery{
 						Start:  time.Unix(start, 0),
@@ -509,17 +509,17 @@ func (c *IronDBGroup) Find(ctx context.Context, request *protov3.MultiGlobReques
 			zap.String("prefix", c.graphitePrefix),
 		)
 		stats.FindRequests++
-		find_result, err := c.client.GraphiteFindMetrics(c.accountID, c.graphitePrefix, query, nil)
+		findResult, err := c.client.GraphiteFindMetrics(c.accountID, c.graphitePrefix, query, nil)
 		if err != nil {
 			e = processFindErrors(err, e, stats, query)
 			continue
 		}
 		logger.Debug("got find result from irondb",
 			zap.String("query", query),
-			zap.Any("result", find_result),
+			zap.Any("result", findResult),
 		)
 
-		for _, metric := range find_result {
+		for _, metric := range findResult {
 			name := convertNameToGraphite(metric.Name)
 			resp.Matches = append(resp.Matches, protov3.GlobMatch{
 				IsLeaf: metric.Leaf,
