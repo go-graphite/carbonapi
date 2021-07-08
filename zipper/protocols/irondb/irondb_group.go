@@ -659,8 +659,8 @@ func (c *IronDBGroup) doTagQuery(ctx context.Context, isTagName bool, query stri
 	}
 
 	// cut result if needed
-	if limit > 0 && len(result) > int(limit) {
-		result = result[:int(limit)]
+	if limit > 0 && int64(len(result)) > limit {
+		result = result[:limit]
 	}
 
 	return result, nil
