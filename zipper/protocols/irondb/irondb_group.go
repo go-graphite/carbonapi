@@ -593,13 +593,22 @@ func (c *IronDBGroup) doTagQuery(ctx context.Context, isTagName bool, query stri
 	if len(params["expr"]) > 0 {
 		target = strings.Join(params["expr"], ",")
 	}
+	tagPrefix := ""
+	valuePrefix := ""
+	if v, ok := params["tagPrefix"]; ok {
+		tagPrefix = v[0]
+	}
+	if v, ok := params["valuePrefix"]; ok {
+		valuePrefix = v[0]
+	}
 	if isTagName {
 		logger = logger.With(zap.String("type", "tagName"))
 	} else {
 		logger = logger.With(zap.String("type", "tagValues"))
-		// get tag category (if present and we're looking for values instead categories)
-		if tag, ok := params["tag"]; ok {
-			tagCategory = tag[0]
+		// get tag category from tag parameter
+		// if it's present and we're looking for values instead categories
+		if tagParam, ok := params["tag"]; ok {
+			tagCategory = tagParam[0]
 		} else {
 			return []string{}, types.ErrNoTagSpecified
 		}
@@ -618,55 +627,36 @@ func (c *IronDBGroup) doTagQuery(ctx context.Context, isTagName bool, query stri
 		zap.String("target", target),
 		zap.Any("tagResult", tagResult),
 	)
+
+	// struct for dedup
+	seen := make(map[string]struct{})
 	for _, metric := range tagResult {
 		tagList := strings.Split(metric.Name, ";")
 		// skipping first element (metric name)
 		for i := 1; i < len(tagList); i++ {
-			// tag[0] is tag category and tag[1] is tag value
-			tag := strings.SplitN(tagList[i], "=", 2)
+			// tags[0] is tag category and tags[1] is tag value
+			tags := strings.SplitN(tagList[i], "=", 2)
+			r := ""
 			if isTagName {
-				// if filtering by tag prefix
-				if v, ok := params["tagPrefix"]; ok {
-					// and prefix match
-					if strings.HasPrefix(tag[0], v[0]) {
-						// append tag name to result
-						result = append(result, tag[0])
-					}
-				} else {
-					// if not filtering by tag prefix - append all tags
-					result = append(result, tag[0])
+				// this is true for empty prefix too
+				if strings.HasPrefix(tags[0], tagPrefix) {
+					r = tags[0]
 				}
 			} else {
-				// if filtering by value prefix
-				if v, ok := params["valuePrefix"]; ok {
-					// and prefix match
-					if strings.HasPrefix(tag[1], v[0]) {
-						// append tag value to result
-						result = append(result, tag[1])
-					}
-				} else {
-					// if not filtering by value prefix
-					// append only values belong to requested tag category to result
-					if tag[0] == tagCategory {
-						result = append(result, tag[1])
-					}
+				if tags[0] == tagCategory && strings.HasPrefix(tags[1], valuePrefix) {
+					r = tags[1]
 				}
+			}
+			// if we got something - append to result if unique
+			if len(r) > 0 {
+				if _, ok := seen[r]; ok {
+					continue
+				}
+				seen[r] = struct{}{}
+				result = append(result, r)
 			}
 		}
 	}
-
-	// removing duplicates from result list
-	seen := make(map[string]struct{}, len(result))
-	i := 0
-	for _, v := range result {
-		if _, ok := seen[v]; ok {
-			continue
-		}
-		seen[v] = struct{}{}
-		result[i] = v
-		i++
-	}
-	result = result[:i]
 
 	// cut result if needed
 	if limit > 0 && len(result) > int(limit) {
