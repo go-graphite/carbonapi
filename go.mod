@@ -8,6 +8,7 @@ require (
 	github.com/aclements/go-moremath v0.0.0-20210112150236-f10218a38794 // indirect
 	github.com/ansel1/merry v1.5.1
 	github.com/bradfitz/gomemcache v0.0.0-20190913173617-a41fca850d0b
+	github.com/circonus-labs/gosnowth v1.10.0
 	github.com/dgryski/go-expirecache v0.0.0-20170314133854-743ef98b2adb
 	github.com/dgryski/go-onlinestats v0.0.0-20170612111826-1c7d19468768
 	github.com/dgryski/httputil v0.0.0-20160116060654-189c2918cd08

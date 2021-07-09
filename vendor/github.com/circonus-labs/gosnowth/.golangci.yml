@@ -1,0 +1,54 @@
+run:
+    timeout: 10m
+    skip-dirs:
+        - pkg/pb
+    skip-files:
+        - internal/api/static.go
+    modules-download-mode: vendor
+linters-settings:
+    golint:
+        min-confidence: 0
+linters:
+    fast: true
+    enable:
+      - bodyclose
+      - deadcode
+      - depguard
+      - dogsled
+        #- dupl
+      - errcheck
+        #- funlen
+      - gochecknoglobals
+      - gochecknoinits
+        #- gocognit
+        #- goconst
+      - gocritic
+      - gocyclo
+        #- godox
+      - gofmt
+      - goimports
+      - golint
+        #- gomnd
+      - goprintffuncname
+      - gosec
+      - gosimple
+      - govet
+      - ineffassign
+      - interfacer
+      - lll
+        #- maligned
+      - misspell
+      - nakedret
+      - prealloc
+      - rowserrcheck
+      - scopelint
+      - staticcheck
+      - structcheck
+      - stylecheck
+      - typecheck
+      - unconvert
+      - unparam
+      - unused
+      - varcheck
+      - whitespace
+        #- wsl
