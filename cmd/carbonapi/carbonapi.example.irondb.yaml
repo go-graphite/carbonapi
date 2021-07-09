@@ -1,150 +1,65 @@
-# Need to be URL, http or https
-# This url specifies the backend or a loadbalancer
-#
-# If you are using carbonzipper you should set it to
-# zipper's url
-#
-# If you are using plain go-carbon or graphite-clickhouse
-# you should set it to URL of go-carbon's carbonserver module
-# or graphite-clickhouse's http url.
-# Listen address, should always include hostname or ip address and a port.
-listeners:
-        - address: "127.0.0.1:8081"
-        - address: "[::1]:8081"
-        # OR
-        - address: "localhost:8081"
-# OR
 listen: "localhost:8081"
-
-# Specify URL Prefix for all handlers
-prefix: ""
-# Use custom caching DNS resolver instead of default one. You shouldn't use it unless you know what you are doing.
-useCachingDNSResolver: false
-# TTL for DNS records in DNS cache. Only matters if `useCachingDNSResolver` is enabled.
-cachingDNSRefreshTime: "1m"
-# Specify if metrics are exported over HTTP and if they are available on the same address or not
-# pprofEnabled controls if extra HTTP Handlers to profile and debug application will be available
-expvar:
-  enabled: true
-  pprofEnabled: false
-  listen: ""
-# Allow extra charsets in metric names. By default only "Latin" is allowed
-# Please note that each unicodeRangeTables will slow down metric parsing a bit
-#   For list of supported tables, see: https://golang.org/src/unicode/tables.go?#L3437
-#   Special name "all" reserved to append all tables that's currently supported by Go
-#unicodeRangeTables:
-#   - "Latin"
-#   - "Cyrillic"
-#   - "Hiragana"
-#   - "Katakana"
-#   - "Han"
-##   - "all"
-# Controls headers that would be passed to the backend
+concurency: 1000
+cache:
+   type: "mem"
+   size_mb: 0
+   defaultTimeoutSec: 60
+   memcachedServers:
+       - "127.0.0.1:1234"
+       - "127.0.0.2:1235"
+cpus: 0
+tz: ""
 headersToPass:
   - "X-Dashboard-Id"
   - "X-Grafana-Org-Id"
   - "X-Panel-Id"
-headersToLog:
-  - "X-Dashboard-Id"
-  - "X-Grafana-Org-Id"
-  - "X-Panel-Id"
-# Specify custom function aliases.
-# This is example for alias "perMinute(metrics)" that will behave as "perSecond(metric)|scale(60)"
-define:
-  -
-    name: "perMinute"
-    template: "perSecond({{.argString}})|scale(60)"
-# Control what status code will be returned where /render or find query do not return any metric. Default is 200
-notFoundStatusCode: 200
-# Max concurrent requests to CarbonZipper
-concurency: 1000
-cache:
-   # Type of caching. Valid: "mem", "memcache", "null"
-   type: "mem"
-   # Cache limit in megabytes
-   size_mb: 0
-   # Default cache timeout value. Identical to DEFAULT_CACHE_DURATION in graphite-web.
-   defaultTimeoutSec: 60
-   # Only used by memcache type of cache. List of memcache servers.
-   memcachedServers:
-       - "127.0.0.1:1234"
-       - "127.0.0.2:1235"
-# Amount of CPUs to use. 0 - unlimited
-cpus: 0
-# Timezone, default - local
-tz: ""
-
 functionsConfig:
     graphiteWeb: ./graphiteWeb.example.yaml
-    timeShift: ./timeShift.example.yaml
-#    aliasByRedis: ./aliasByRedis.example.yaml
-maxBatchSize: 100
+maxBatchSize: 0
 graphite:
-    # Host:port where to send internal metrics
-    # Empty = disabled
     host: ""
     interval: "60s"
     prefix: "carbon.api"
-    # rules on how to construct metric name. For now only {prefix} and {fqdn} is supported.
-    # {prefix} will be replaced with the content of {prefix}
-    # {fqdn} will be repalced with fqdn
     pattern: "{prefix}.{fqdn}"
-# Maximium idle connections to carbonzipper
 idleConnections: 10
 pidFile: ""
-# See https://github.com/go-graphite/carbonzipper/blob/master/example.conf#L70-L108 for format explanation
 upstreams:
-  graphite09compat: false
-  buckets: 10
-
-  concurrencyLimitPerServer: 0
-  keepAliveInterval: "30s"
-  maxIdleConnsPerHost: 100
-  timeouts:
-      find: "2s"
-      render: "10s"
-      connect: "200ms"
-
-  #backends section will override this one!
-  backendsv2:
-      backends:
-        -
-          groupName: "snowthd"
-          protocol: "irondb"
-          lbMethod: "rr" # please use "roundrobin" - broadcast has not much sense here
-          maxTries: 3
-          maxBatchSize: 0 # recommended value
-          keepAliveInterval: "10s"
-          concurrencyLimit: 0
-          maxIdleConnsPerHost: 1000
-          doMultipleRequestsIfSplit: false # recommended value
-          backendOptions:
-            irondb_account_id: 1
-            irondb_timeout: "5s" # ideally shold be less then find or render timeout
-            irondb_graphite_rollup: 60
-          servers:
-              - "http://192.168.0.1:8112"
-              - "http://192.168.0.2:8112"
-              - "http://192.168.0.3:8112"
-
-    # Enable compatibility with graphite-web 0.9
-    # This will affect graphite-web 1.0+ with multiple cluster_servers
-    # Default: disabled
     graphite09compat: false
-# If not zero, enabled cache for find requests
-# This parameter controls when it will expire (in seconds)
-# Default: 600 (10 minutes)
+    buckets: 10
+
+    concurrencyLimitPerServer: 0
+    keepAliveInterval: "30s"
+    maxIdleConnsPerHost: 100
+    timeouts:
+        find: "2s"
+        render: "10s"
+        connect: "200ms"
+
+    #backends section will override this one!
+    backendsv2:
+        backends:
+          -
+            groupName: "snowthd"
+            protocol: "irondb"
+            lbMethod: "rr" # please use "roundrobin" - broadcast has not much sense here
+            maxTries: 3
+            maxBatchSize: 0 # recommended value
+            keepAliveInterval: "10s"
+            concurrencyLimit: 0
+            maxIdleConnsPerHost: 1000
+            doMultipleRequestsIfSplit: false # recommended value
+            backendOptions:
+              irondb_account_id: 1
+              irondb_timeout: "5s" # ideally shold be less then find or render timeout
+              irondb_graphite_rollup: 60
+            servers:
+                - "http://192.168.0.1:8112"
+                - "http://192.168.0.2:8112"
+                - "http://192.168.0.3:8112"
+
+    graphite09compat: false
 graphTemplates: graphTemplates.example.yaml
 expireDelaySec: 10
-# Uncomment this to get the behavior of graphite-web as proposed in https://github.com/graphite-project/graphite-web/pull/2239
-# Beware this will make darkbackground graphs less readable
-#defaultColors:
-#      "red": "ff0000"
-#      "green": "00ff00"
-#      "blue": "#0000ff"
-#      "darkred": "#c80032"
-#      "darkgreen": "00c800"
-#      "darkblue": "002173"
 logger:
     - logger: ""
       file: "stderr"
