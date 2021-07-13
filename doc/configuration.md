@@ -51,6 +51,7 @@ Table of Contents
       * [For VictoriaMetrics](#for-victoriametrics)
       * [For graphite\-clickhouse](#for-graphite-clickhouse)
       * [For metrictank](#for-metrictank)
+      * [For IRONdb](#for-irondb)
   * [expireDelaySec](#expiredelaysec)
     * [Example](#example-20)
 
@@ -528,6 +529,14 @@ Supported options:
       - `probe_version_interval` - (`victoriametrics` only) define how often VictoriaMetrics version will be checked (as VM supports certain API endpoints starting from a specific version). Special value to disable: `never`. Default: `600s`.
       - `fallback_version` - (`victoriametrics` only) define version string that will be used as a fallback if version_short will be empty (useful when you run master builds, as they will have it empty). Format: "vX.Y.Z", Default: `v0.0.0` (all special VM optimizations will be disabled)
       - `vmClusterTenantID` - `victoriametrics` in **cluster mode** only. Use this option to configure `accountID` and `projectID` in the VM-cluster API urls. Tenants are identified by "accountID" or "accountID:projectID". Type: `string`. Default: none (single node VictoriaMetrics).
+      - `irondb_account_id` - (`irondb` only) Client AccountID, default - `1`
+      - `irondb_graphite_rollup`- (`irondb` only) Graphite rollup for IRONdb, in seconds. Default - `60`
+      - `irondb_graphite_prefix`- (`irondb` only) Optional Graphite prefix for IRONdb. Default - `` (empty)
+      - `irondb_timeout` - (`irondb` only) Timeout gets the timeout duration for HTTP requests to IRONdb. The default value is `10s`, but please make it lower than top level `find` and `render` timeouts.
+      - `irondb_dial_timeout` - (`irondb` only) DialTimeout gets the initial connection timeout duration for attempts to connect to IRONdb. The default value is `500ms`.
+      - `irondb_watch_interval` - (`irondb` only) WatchInterval gets the frequency at which a SnowthClient will check for updates to the active status of its nodes if WatchAndUpdate() is called. Default value - `30s`
+      `irondb_connect_retries` - (`irondb` only) ConnectRetries gets the number of times requests will be retried on other nodes when network errors occur. Default - `-1`, that means unlimited.
+      `irondb_retries`- (`irondb` only) Retries gets the number of times requests will be retried. Default is taken from `retries` value.
   - `concurrencyLimitPerServer` - limit of max connections per server. Likely should be >= maxIdleConnsPerHost. Default: 0 - unlimited
   - `maxIdleConnsPerHost` - as we use KeepAlive to keep connections opened, this limits amount of connections that will be left opened. Tune with care as some backends might have issues handling larger number of connections.
   - `keepAliveInterval` - KeepAlive interval
@@ -591,6 +600,7 @@ Supported options:
                * `msgpack` - message pack encoding, supported by [graphite-project/graphite-web](https://github.com/graphite-project/graphite-web) and [grafana/metrictank](https://github.com/grafana/metrictank)
                * `prometheus` - prometheus HTTP Request API. Can be used with [prometheus](https://prometheus.io) and should be usable with other backends that supports PromQL (backend can do basic fetching at this moment and doesn't offload any functions to the backend).
                * `victoriametrics`, `vm` - special version of prometheus backend, that take advantage of some APIs that's not supported by prometheus. Can be used with [VictoriaMetrics](https://github.com/VictoriaMetrics/VictoriaMetrics).
+               * `snowthd`, `irondb` - supports reading Graphite-compatible metrics from [IRONdb](https://docs.circonus.com/irondb/) from [Circonus](https://www.circonus.com/).
                * `auto` - attempts to detect if carbonapi can use `carbonapi_v3_pb` or `carbonapi_v2_pb`
            * `lbMethod` - load-balancing method.
            
@@ -835,6 +845,44 @@ upstreams:
                 - "http://192.168.0.3:8080?format=msgpack"
                 - "http://192.168.0.4:8080?format=msgpack"
 ```
+#### For IronDB
+```yaml
+upstreams:
+    graphite09compat: false
+    buckets: 10
+
+    concurrencyLimitPerServer: 0
+    keepAliveInterval: "30s"
+    maxIdleConnsPerHost: 100
+    timeouts:
+        find: "2s"
+        render: "10s"
+        connect: "200ms"
+
+    #backends section will override this one!
+    backendsv2:
+        backends:
+          -
+            groupName: "snowthd"
+            protocol: "irondb"
+            lbMethod: "rr" # please use "roundrobin" - broadcast has not much sense here
+            maxTries: 3
+            maxBatchSize: 0 # recommended value
+            keepAliveInterval: "10s"
+            concurrencyLimit: 0
+            maxIdleConnsPerHost: 1000
+            doMultipleRequestsIfSplit: false # recommended value
+            backendOptions:
+              irondb_account_id: 1
+              irondb_timeout: "5s" # ideally shold be less then find or render timeout
+              irondb_graphite_rollup: 60
+            servers:
+                - "http://192.168.0.1:8112"
+                - "http://192.168.0.2:8112"
+                - "http://192.168.0.3:8112"
+
+```
+
 
 ***
 ## expireDelaySec
