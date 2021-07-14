@@ -280,8 +280,7 @@ func (c *IronDBGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequ
 
 	pathExprToTargets := make(map[string][]string)
 	for _, m := range request.Metrics {
-		targets := pathExprToTargets[m.PathExpression]
-		pathExprToTargets[m.PathExpression] = append(targets, m.Name)
+		pathExprToTargets[m.PathExpression] = append(pathExprToTargets[m.PathExpression], m.Name)
 	}
 
 	var r protov3.MultiFetchResponse
@@ -315,7 +314,7 @@ func (c *IronDBGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequ
 
 			var query string
 			if strings.HasPrefix(target, "seriesByTag") {
-				query = target[len("seriesByTag(") : len(target)-1]
+				query = target[12 : len(target)-1] // 12 is len("seriesByTag(")
 				// d-oh, fetch_multi graphite compatible API not working with tags
 				// fallback to IRONdb Fetch API
 				query = graphiteExprListToIronDBTagQuery(strings.Split(query, ","))
@@ -403,78 +402,79 @@ func (c *IronDBGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequ
 						})
 					}
 				}
-			} else {
-				// we can use graphite compatible API to fetch non-tagged metrics
-				query = target
-				logger.Debug("send metric find result to irondb",
-					zap.String("query", query),
-				)
-				stats.FindRequests++
-				metrics, err := c.client.GraphiteFindMetrics(c.accountID, c.graphitePrefix, query, nil)
-				if err != nil {
-					e = processFindErrors(err, e, stats, query)
-					continue
-				}
-				logger.Debug("got find result from irondb",
-					zap.String("target", query),
-					zap.Any("metrics", metrics),
-				)
-				// if we found no metrics - good luck with next target
-				if len(metrics) == 0 {
-					continue
-				}
-				names := make([]string, 0, len(metrics)+1)
-				for _, metric := range metrics {
-					names = append(names, metric.Name)
-				}
-				lookup := &gosnowth.GraphiteLookup{
-					Start: start,
-					End:   stop,
-					Names: names,
-				}
-				stats.RenderRequests++
-				logger.Debug("send render request to irondb",
-					zap.String("query", query),
-					zap.Any("lookup", lookup),
-				)
-				response, err2 := c.client.GraphiteGetDatapoints(c.accountID, c.graphitePrefix, lookup, nil)
-				if err2 != nil {
-					e = processRenderErrors(err2, e, stats, query)
-					continue
-				}
-				logger.Debug("got fetch result from irondb",
-					zap.String("query", query),
-					zap.Any("response", response),
-				)
-				// We always should trust backend's response (to mimic behavior of graphite for grahpite native protoocols)
-				// See https://github.com/go-graphite/carbonapi/issues/504 and https://github.com/go-graphite/carbonapi/issues/514
-				realStart := start
-				realStop := stop
-				if len(response.Series) > 0 {
-					realStart = response.From
-					realStop = response.To
-				}
-				for name, values := range response.Series {
-					label := convertNameToGraphite(name)
-					vals := make([]float64, 0, (realStop-realStart)/step+1)
-					for _, data := range values {
-						if data != nil {
-							vals = append(vals, *data)
-						} else {
-							vals = append(vals, math.NaN())
-						}
+				continue
+			}
+			// target is not starting with seriesByTag
+			// we can use graphite compatible API to fetch non-tagged metrics
+			query = target
+			logger.Debug("send metric find result to irondb",
+				zap.String("query", query),
+			)
+			stats.FindRequests++
+			metrics, err := c.client.GraphiteFindMetrics(c.accountID, c.graphitePrefix, query, nil)
+			if err != nil {
+				e = processFindErrors(err, e, stats, query)
+				continue
+			}
+			logger.Debug("got find result from irondb",
+				zap.String("target", query),
+				zap.Any("metrics", metrics),
+			)
+			// if we found no metrics - good luck with next target
+			if len(metrics) == 0 {
+				continue
+			}
+			names := make([]string, 0, len(metrics)+1)
+			for _, metric := range metrics {
+				names = append(names, metric.Name)
+			}
+			lookup := &gosnowth.GraphiteLookup{
+				Start: start,
+				End:   stop,
+				Names: names,
+			}
+			stats.RenderRequests++
+			logger.Debug("send render request to irondb",
+				zap.String("query", query),
+				zap.Any("lookup", lookup),
+			)
+			response, err2 := c.client.GraphiteGetDatapoints(c.accountID, c.graphitePrefix, lookup, nil)
+			if err2 != nil {
+				e = processRenderErrors(err2, e, stats, query)
+				continue
+			}
+			logger.Debug("got fetch result from irondb",
+				zap.String("query", query),
+				zap.Any("response", response),
+			)
+			// We always should trust backend's response (to mimic behavior of graphite for grahpite native protoocols)
+			// See https://github.com/go-graphite/carbonapi/issues/504 and https://github.com/go-graphite/carbonapi/issues/514
+			realStart := start
+			realStop := stop
+			if len(response.Series) > 0 {
+				realStart = response.From
+				realStop = response.To
+			}
+			for name, values := range response.Series {
+				label := convertNameToGraphite(name)
+				vals := make([]float64, 0, (realStop-realStart)/step+1)
+				for _, data := range values {
+					if data != nil {
+						vals = append(vals, *data)
+					} else {
+						vals = append(vals, math.NaN())
 					}
-					r.Metrics = append(r.Metrics, protov3.FetchResponse{
-						Name:              label,
-						PathExpression:    pathExpr,
-						ConsolidationFunc: "Average",
-						StartTime:         realStart,
-						StopTime:          realStop,
-						StepTime:          response.Step,
-						Values:            vals,
-						XFilesFactor:      0.0,
-					})
 				}
+				r.Metrics = append(r.Metrics, protov3.FetchResponse{
+					Name:              label,
+					PathExpression:    pathExpr,
+					ConsolidationFunc: "Average",
+					StartTime:         realStart,
+					StopTime:          realStop,
+					StepTime:          response.Step,
+					Values:            vals,
+					XFilesFactor:      0.0,
+				})
 			}
 		}
 	}
