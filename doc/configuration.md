@@ -307,7 +307,11 @@ tz: "Europe/Zurich,7200"
 
 Extra config files for specific functions
 
-Currently only `grpahiteWeb` and `aliasByPostgres` supports it's own config
+Only the following functions currently support having their own config:
+  - `graphiteWeb`
+  - `aliasByPostgres`
+  - `movingMedian`
+  - `moving` (applies to `movingAverage`, `movingMin`, `movingMax`, `movingSum`)
 
 ### Example
 ```yaml

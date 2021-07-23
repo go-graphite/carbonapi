@@ -77,6 +77,8 @@ tz: ""
 functionsConfig:
     graphiteWeb: ./graphiteWeb.example.yaml
     timeShift: ./timeShift.example.yaml
+#    moving: ./moving.example.yaml
+#    movingMedian: ./moving.example.yaml
 #    aliasByRedis: ./aliasByRedis.example.yaml
 maxBatchSize: 100
 graphite:
