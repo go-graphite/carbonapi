@@ -59,7 +59,7 @@ func TestMovingMedian(t *testing.T) {
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", -5, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3}, 10, now32)}, // step > windowSize
 			},
-			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,\"5s\")", []float64{1, 2, 3}, 10, now32)}, // StartTime = from
+			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,\"5s\")", []float64{math.NaN(), math.NaN(), math.NaN()}, 10, now32)}, // StartTime = from
 		},
 	}
 

@@ -6,6 +6,10 @@ import (
 	"math"
 	"strconv"
 
+	"github.com/lomik/zapwriter"
+	"github.com/spf13/viper"
+	"go.uber.org/zap"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -14,18 +18,49 @@ import (
 
 type moving struct {
 	interfaces.FunctionBase
+
+	config movingConfig
 }
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
 }
 
+type movingConfig struct {
+	ReturnNaNsIfStepMismatch *bool
+}
+
 func New(configFile string) []interfaces.FunctionMetadata {
+	logger := zapwriter.Logger("functionInit").With(zap.String("function", "moving"))
 	res := make([]interfaces.FunctionMetadata, 0)
 	f := &moving{}
 	functions := []string{"movingAverage", "movingMin", "movingMax", "movingSum"}
 	for _, n := range functions {
 		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
+	}
+
+	cfg := movingConfig{}
+	v := viper.New()
+	v.SetConfigFile(configFile)
+	err := v.ReadInConfig()
+	if err != nil {
+		logger.Info("failed to read config file, using default",
+			zap.Error(err),
+		)
+	} else {
+		err = v.Unmarshal(&cfg)
+		if err != nil {
+			logger.Fatal("failed to parse config",
+				zap.Error(err),
+			)
+			return nil
+		}
+		f.config = cfg
+	}
+
+	if cfg.ReturnNaNsIfStepMismatch == nil {
+		v := true
+		f.config.ReturnNaNsIfStepMismatch = &v
 	}
 	return res
 }
@@ -92,6 +127,12 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		r.Name = fmt.Sprintf("%s(%s,%s)", e.Target(), a.Name, argstr)
 
 		if windowSize == 0 {
+			if *f.config.ReturnNaNsIfStepMismatch {
+				r.Values = make([]float64, len(a.Values))
+				for i := range a.Values {
+					r.Values[i] = math.NaN()
+				}
+			}
 			result = append(result, &r)
 			continue
 		}
