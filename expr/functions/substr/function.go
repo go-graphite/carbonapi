@@ -65,7 +65,7 @@ func (f *substr) Do(ctx context.Context, e parser.Expr, from, until int64, value
 			}
 			nodes = nodes[realStartField:]
 		}
-		if stopField != 0 {
+		if stopField != 0 && stopField < len(nodes) + realStartField {
 			realStopField := stopField
 			if stopField < 0 {
 				realStopField = len(nodes) + stopField
