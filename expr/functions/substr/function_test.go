@@ -37,6 +37,8 @@ func TestSubstr(t *testing.T) {
 		['metric1', 'foo', 'bar']
 		>>> a[0:-1]
 		['metric1', 'foo', 'bar']
+		>>> a[0:10]
+		['metric1', 'foo', 'bar', 'baz']
 	*/
 	tests := []th.EvalTestItem{
 		{
@@ -77,6 +79,30 @@ func TestSubstr(t *testing.T) {
 				{"metric1.foo.bar.baz", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("metric1.foo.bar",
+				[]float64{1, 2, 3, 4, 5}, 1, now32)},
+		},
+		{
+			"substr(metric1.foo.bar.baz, 0, 10)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1.foo.bar.baz", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData("metric1.foo.bar.baz",
+				[]float64{1, 2, 3, 4, 5}, 1, now32)},
+		},
+		{
+			"substr(metric1.foo.bar.baz, 2, 4)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1.foo.bar.baz", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData("bar.baz",
+				[]float64{1, 2, 3, 4, 5}, 1, now32)},
+		},
+		{
+			"substr(metric1.foo.bar.baz, 2, 6)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1.foo.bar.baz", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData("bar.baz",
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 	}
