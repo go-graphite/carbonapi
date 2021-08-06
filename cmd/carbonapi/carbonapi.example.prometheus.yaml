@@ -49,6 +49,7 @@ upstreams:
                 step: "60"
                 start: "-5m"
                 max_points_per_query: 5000
+                force_min_step_interval: 1h
             timeouts:
                 find: "2s"
                 render: "50s"
