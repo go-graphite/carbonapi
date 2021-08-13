@@ -28,7 +28,7 @@ func TestTimeShift(t *testing.T) {
 		{
 			Target: `timeShift(metric1, "0s", true)`,
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", startTime, startTime + 6}: {types.MakeMetricData("metric1", []float64{0, 1, 2, 3, 4, 5}, 1, startTime)},
+				{Metric: "metric1", From: startTime, Until: startTime + 6}: {types.MakeMetricData("metric1", []float64{0, 1, 2, 3, 4, 5}, 1, startTime)},
 			},
 			Want: []*types.MetricData{types.MakeMetricData("timeShift(metric1,'0',true)",
 				[]float64{0, 1, 2, 3, 4, 5}, 1, startTime)},
@@ -38,7 +38,7 @@ func TestTimeShift(t *testing.T) {
 		{
 			Target: `timeShift(metric1, "1s", false)`,
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", startTime - 1, startTime + 5}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, startTime-1)},
+				{Metric: "metric1", From: startTime - 1, Until: startTime + 5}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, startTime-1)},
 			},
 			Want: []*types.MetricData{types.MakeMetricData("timeShift(metric1,'-1',false)",
 				[]float64{-1, 0, 1, 2, 3, 4}, 1, startTime)},
@@ -48,7 +48,7 @@ func TestTimeShift(t *testing.T) {
 		{
 			Target: `timeShift(metric1, "1s", true)`,
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", startTime - 1, startTime + 5}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3}, 1, startTime-1)},
+				{Metric: "metric1", From: startTime - 1, Until: startTime + 5}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3}, 1, startTime-1)},
 			},
 			Want: []*types.MetricData{types.MakeMetricData("timeShift(metric1,'-1',true)",
 				[]float64{-1, 0, 1, 2, 3}, 1, startTime)},
@@ -58,7 +58,7 @@ func TestTimeShift(t *testing.T) {
 		{
 			Target: `timeShift(metric1, "1h", false)`,
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", startTime - 60*60, startTime - 60*60 + 6}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, startTime-60*60)},
+				{Metric: "metric1", From: startTime - 60*60, Until: startTime - 60*60 + 6}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, startTime-60*60)},
 			},
 			Want: []*types.MetricData{types.MakeMetricData("timeShift(metric1,'-3600',false)",
 				[]float64{-1, 0, 1, 2, 3, 4}, 1, startTime)},
@@ -68,7 +68,7 @@ func TestTimeShift(t *testing.T) {
 		{
 			Target: `timeShift(metric1, "1h", true)`,
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", startTime - 60*60, startTime - 60*60 + 6}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, startTime-60*60)},
+				{Metric: "metric1", From: startTime - 60*60, Until: startTime - 60*60 + 6}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, startTime-60*60)},
 			},
 			Want: []*types.MetricData{types.MakeMetricData("timeShift(metric1,'-3600',true)",
 				[]float64{-1, 0, 1, 2, 3, 4}, 1, startTime)},
@@ -78,7 +78,7 @@ func TestTimeShift(t *testing.T) {
 		{
 			Target: `timeShift(metric1, "1d", false)`,
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", startTime - 86400, startTime - 86400 + 6}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, startTime-86400)},
+				{Metric: "metric1", From: startTime - 86400, Until: startTime - 86400 + 6}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, startTime-86400)},
 			},
 			Want: []*types.MetricData{types.MakeMetricData("timeShift(metric1,'-86400',false)",
 				[]float64{-1, 0, 1, 2, 3, 4}, 1, startTime)},
@@ -88,7 +88,7 @@ func TestTimeShift(t *testing.T) {
 		{
 			Target: `timeShift(metric1, "1d", true)`,
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", startTime - 86400, startTime - 86400 + 6}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, startTime-86400)},
+				{Metric: "metric1", From: startTime - 86400, Until: startTime - 86400 + 6}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, startTime-86400)},
 			},
 			Want: []*types.MetricData{types.MakeMetricData("timeShift(metric1,'-86400',true)",
 				[]float64{-1, 0, 1, 2, 3, 4}, 1, startTime)},
