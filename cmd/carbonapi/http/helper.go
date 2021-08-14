@@ -252,3 +252,18 @@ func deferredAccessLogging(accessLogger *zap.Logger, accessLogDetails *carbonapi
 		accessLogger.Info("request served", zap.Any("data", *accessLogDetails))
 	}
 }
+
+// durations slice is small, so no need ordered tree or other complex structure
+func timestampTruncate(ts int64, duration time.Duration, durations []config.DurationTruncate) int64 {
+	tm := time.Unix(ts, 0).UTC()
+	for _, d := range durations {
+		if duration >= d.Duration {
+			if d.Truncate > 0 {
+				// prevent missconfiguration
+				return tm.Truncate(d.Truncate).UTC().Unix()
+			}
+			break
+		}
+	}
+	return ts
+}

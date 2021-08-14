@@ -153,8 +153,6 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	cleanupParams(r)
 
-	responseCacheKey := r.Form.Encode()
-
 	// normalize from and until values
 	qtz := r.FormValue("tz")
 	from32 := date.DateParamToEpoch(from, qtz, timeNow().Add(-24*time.Hour).Unix(), config.Config.DefaultTimeZone)
@@ -203,6 +201,19 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var responseCacheKey string
+
+	if len(config.Config.TruncateTime) > 0 {
+		duration := time.Second * time.Duration(until32-from32)
+		from32 = timestampTruncate(from32, duration, config.Config.TruncateTime)
+		until32 = timestampTruncate(until32, duration, config.Config.TruncateTime)
+		accessLogDetails.From = from32
+		accessLogDetails.Until = until32
+		responseCacheKey = responseCacheComputeKey(from32, until32, targets, formatRaw, maxDataPoints, noNullPoints, template)
+	} else {
+		responseCacheKey = r.Form.Encode()
+	}
+
 	if useCache {
 		tc := time.Now()
 		response, err := config.Config.ResponseCache.Get(responseCacheKey)
@@ -246,7 +257,14 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	errors := make(map[string]merry.Error)
-	backendCacheKey := backendCacheComputeKey(from, until, targets)
+
+	var backendCacheKey string
+	if len(config.Config.TruncateTime) > 0 {
+		backendCacheKey = backendCacheComputeKeyInt(from32, until32, targets)
+	} else {
+		backendCacheKey = backendCacheComputeKey(from, until, targets)
+	}
+
 	results, err := backendCacheFetchResults(logger, useCache, backendCacheKey, accessLogDetails)
 
 	if err != nil {
@@ -360,12 +378,47 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	accessLogDetails.HaveNonFatalErrors = gotErrors
 }
 
+func responseCacheComputeKey(from, until int64, targets []string, format string, maxDataPoints int64, noNullPoints bool, template string) string {
+	var responseCacheKey bytes.Buffer
+	responseCacheKey.WriteString("from:")
+	responseCacheKey.WriteString(strconv.FormatInt(from, 10))
+	responseCacheKey.WriteString(" until:")
+	responseCacheKey.WriteString(strconv.FormatInt(until, 10))
+	responseCacheKey.WriteString(" targets:")
+	responseCacheKey.WriteString(strings.Join(targets, ","))
+	responseCacheKey.WriteString(" format:")
+	responseCacheKey.WriteString(format)
+	if maxDataPoints > 0 {
+		responseCacheKey.WriteString(" maxDataPoints:")
+		responseCacheKey.WriteString(strconv.FormatInt(maxDataPoints, 10))
+	}
+	if noNullPoints {
+		responseCacheKey.WriteString(" noNullPoints")
+	}
+	if len(template) > 0 {
+		responseCacheKey.WriteString(" template:")
+		responseCacheKey.WriteString(template)
+	}
+	return responseCacheKey.String()
+}
+
 func backendCacheComputeKey(from, until string, targets []string) string {
 	var backendCacheKey bytes.Buffer
 	backendCacheKey.WriteString("from:")
 	backendCacheKey.WriteString(from)
 	backendCacheKey.WriteString(" until:")
 	backendCacheKey.WriteString(until)
+	backendCacheKey.WriteString(" targets:")
+	backendCacheKey.WriteString(strings.Join(targets, ","))
+	return backendCacheKey.String()
+}
+
+func backendCacheComputeKeyInt(from, until int64, targets []string) string {
+	var backendCacheKey bytes.Buffer
+	backendCacheKey.WriteString("from:")
+	backendCacheKey.WriteString(strconv.FormatInt(from, 10))
+	backendCacheKey.WriteString(" until:")
+	backendCacheKey.WriteString(strconv.FormatInt(until, 10))
 	backendCacheKey.WriteString(" targets:")
 	backendCacheKey.WriteString(strings.Join(targets, ","))
 	return backendCacheKey.String()
