@@ -5,6 +5,7 @@ import (
 	"expvar"
 	"io/ioutil"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -28,6 +29,22 @@ import (
 )
 
 var graphTemplates map[string]png.PictureParams
+
+func truncateTimeSlice(m map[time.Duration]time.Duration) []DurationTruncate {
+	s := make([]DurationTruncate, len(m))
+	i := 0
+	for k, v := range m {
+		s[i] = DurationTruncate{Duration: k, Truncate: v}
+		i++
+	}
+
+	// sort in reverse order
+	sort.Slice(s, func(i, j int) bool {
+		return s[i].Duration > s[j].Duration
+	})
+
+	return s
+}
 
 func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 	Config.ResponseCacheConfig.MemcachedServers = viper.GetStringSlice("cache.memcachedServers")
@@ -421,4 +438,6 @@ func SetUpConfigUpstreams(logger *zap.Logger) {
 		logger.Warn("`buckets` config option was moved to `upstreams` section, this will be removed in future releases, please migrate your configuration")
 		Config.Upstreams.Buckets = Config.Buckets
 	}
+
+	Config.TruncateTime = truncateTimeSlice(Config.TruncateTimeMap)
 }

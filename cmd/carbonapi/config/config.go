@@ -52,6 +52,11 @@ type Listener struct {
 	// TODO(civil): implement TLS and mTLS
 }
 
+type DurationTruncate struct {
+	Duration time.Duration
+	Truncate time.Duration
+}
+
 type ConfigType struct {
 	ExtrapolateExperiment      bool               `mapstructure:"extrapolateExperiment"`
 	Logger                     []zapwriter.Config `mapstructure:"logger"`
@@ -87,6 +92,9 @@ type ConfigType struct {
 	HTTPResponseStackTrace     bool               `mapstructure:"httpResponseStackTrace"`
 	UseCachingDNSResolver      bool               `mapstructure:"useCachingDNSResolver"`
 	CachingDNSRefreshTime      time.Duration      `mapstructure:"cachingDNSRefreshTime"`
+
+	TruncateTimeMap map[time.Duration]time.Duration `mapstructure:"truncateTime"`
+	TruncateTime    []DurationTruncate              `mapstructure:"-" json:"-"` // produce from TruncateTimeMap and sort in reverse order
 
 	ResponseCache cache.BytesCache `mapstructure:"-" json:"-"`
 	BackendCache  cache.BytesCache `mapstructure:"-" json:"-"`
