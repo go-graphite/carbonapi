@@ -159,6 +159,17 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	from32 := date.DateParamToEpoch(from, qtz, timeNow().Add(-24*time.Hour).Unix(), config.Config.DefaultTimeZone)
 	until32 := date.DateParamToEpoch(until, qtz, timeNow().Unix(), config.Config.DefaultTimeZone)
 
+	var responseCacheKey string
+
+	if len(config.Config.TruncateTime) > 0 {
+		duration := time.Second * time.Duration(until32-from32)
+		from32 = timestampTruncate(from32, duration, config.Config.TruncateTime)
+		until32 = timestampTruncate(until32, duration, config.Config.TruncateTime)
+		responseCacheKey = responseCacheComputeKey(from32, until32, targets, formatRaw, maxDataPoints, noNullPoints, template)
+	} else {
+		responseCacheKey = r.Form.Encode()
+	}
+
 	accessLogDetails.UseCache = useCache
 	accessLogDetails.FromRaw = from
 	accessLogDetails.From = from32
@@ -200,19 +211,6 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		for i, r := range pv3Request.Metrics {
 			targets[i] = r.PathExpression
 		}
-	}
-
-	var responseCacheKey string
-
-	if len(config.Config.TruncateTime) > 0 {
-		duration := time.Second * time.Duration(until32-from32)
-		from32 = timestampTruncate(from32, duration, config.Config.TruncateTime)
-		until32 = timestampTruncate(until32, duration, config.Config.TruncateTime)
-		accessLogDetails.From = from32
-		accessLogDetails.Until = until32
-		responseCacheKey = responseCacheComputeKey(from32, until32, targets, formatRaw, maxDataPoints, noNullPoints, template)
-	} else {
-		responseCacheKey = r.Form.Encode()
 	}
 
 	if useCache {
