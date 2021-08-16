@@ -23,6 +23,7 @@ import (
 	"github.com/go-graphite/carbonapi/zipper/helper"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
+	stringutils "github.com/msaf1980/go-stringutils"
 	uuid "github.com/satori/go.uuid"
 	"go.uber.org/zap"
 )
@@ -379,18 +380,19 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func responseCacheComputeKey(from, until int64, targets []string, format string, maxDataPoints int64, noNullPoints bool, template string) string {
-	var responseCacheKey bytes.Buffer
+	var responseCacheKey stringutils.Builder
+	responseCacheKey.Grow(256)
 	responseCacheKey.WriteString("from:")
-	responseCacheKey.WriteString(strconv.FormatInt(from, 10))
+	responseCacheKey.WriteInt(from, 10)
 	responseCacheKey.WriteString(" until:")
-	responseCacheKey.WriteString(strconv.FormatInt(until, 10))
+	responseCacheKey.WriteInt(until, 10)
 	responseCacheKey.WriteString(" targets:")
 	responseCacheKey.WriteString(strings.Join(targets, ","))
 	responseCacheKey.WriteString(" format:")
 	responseCacheKey.WriteString(format)
 	if maxDataPoints > 0 {
 		responseCacheKey.WriteString(" maxDataPoints:")
-		responseCacheKey.WriteString(strconv.FormatInt(maxDataPoints, 10))
+		responseCacheKey.WriteInt(maxDataPoints, 10)
 	}
 	if noNullPoints {
 		responseCacheKey.WriteString(" noNullPoints")
@@ -414,11 +416,12 @@ func backendCacheComputeKey(from, until string, targets []string) string {
 }
 
 func backendCacheComputeKeyInt(from, until int64, targets []string) string {
-	var backendCacheKey bytes.Buffer
+	var backendCacheKey stringutils.Builder
+	backendCacheKey.Grow(128)
 	backendCacheKey.WriteString("from:")
-	backendCacheKey.WriteString(strconv.FormatInt(from, 10))
+	backendCacheKey.WriteInt(from, 10)
 	backendCacheKey.WriteString(" until:")
-	backendCacheKey.WriteString(strconv.FormatInt(until, 10))
+	backendCacheKey.WriteInt(until, 10)
 	backendCacheKey.WriteString(" targets:")
 	backendCacheKey.WriteString(strings.Join(targets, ","))
 	return backendCacheKey.String()
