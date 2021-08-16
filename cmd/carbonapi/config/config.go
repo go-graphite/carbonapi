@@ -27,6 +27,7 @@ type CacheConfig struct {
 	Size              int      `mapstructure:"size_mb"`
 	MemcachedServers  []string `mapstructure:"memcachedServers"`
 	DefaultTimeoutSec int32    `mapstructure:"defaultTimeoutSec"`
+	ShortTimeoutSec   int32    `mapstructure:"shortTimeoutSec"`
 }
 
 type GraphiteConfig struct {
@@ -126,10 +127,12 @@ var Config = ConfigType{
 	ResponseCacheConfig: CacheConfig{
 		Type:              "mem",
 		DefaultTimeoutSec: 60,
+		ShortTimeoutSec:   60,
 	},
 	BackendCacheConfig: CacheConfig{
 		Type:              "null",
 		DefaultTimeoutSec: 0,
+		ShortTimeoutSec:   0,
 	},
 	TimezoneString: "",
 	Graphite: GraphiteConfig{

@@ -155,9 +155,11 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	cleanupParams(r)
 
 	// normalize from and until values
+	now := timeNow()
+	now32 := now.Unix()
 	qtz := r.FormValue("tz")
-	from32 := date.DateParamToEpoch(from, qtz, timeNow().Add(-24*time.Hour).Unix(), config.Config.DefaultTimeZone)
-	until32 := date.DateParamToEpoch(until, qtz, timeNow().Unix(), config.Config.DefaultTimeZone)
+	from32 := date.DateParamToEpoch(from, qtz, now.Add(-24*time.Hour).Unix(), config.Config.DefaultTimeZone)
+	until32 := date.DateParamToEpoch(until, qtz, now.Unix(), config.Config.DefaultTimeZone)
 
 	var responseCacheKey string
 
@@ -166,6 +168,11 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		from32 = timestampTruncate(from32, duration, config.Config.TruncateTime)
 		until32 = timestampTruncate(until32, duration, config.Config.TruncateTime)
 		responseCacheKey = responseCacheComputeKey(from32, until32, targets, formatRaw, maxDataPoints, noNullPoints, template)
+		if duration <= time.Hour && now32-until32 < 60 {
+			// short cache ttl
+			responseCacheTimeout = config.Config.ResponseCacheConfig.ShortTimeoutSec
+			backendCacheTimeout = config.Config.BackendCacheConfig.ShortTimeoutSec
+		}
 	} else {
 		responseCacheKey = r.Form.Encode()
 	}
