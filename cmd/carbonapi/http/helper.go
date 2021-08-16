@@ -257,7 +257,7 @@ func deferredAccessLogging(accessLogger *zap.Logger, accessLogDetails *carbonapi
 func timestampTruncate(ts int64, duration time.Duration, durations []config.DurationTruncate) int64 {
 	tm := time.Unix(ts, 0).UTC()
 	for _, d := range durations {
-		if duration >= d.Duration {
+		if duration > d.Duration || d.Duration == 0 {
 			if d.Truncate > 0 {
 				// prevent missconfiguration
 				return tm.Truncate(d.Truncate).UTC().Unix()

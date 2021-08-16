@@ -14,6 +14,7 @@ func Test_timestampTruncate(t *testing.T) {
 		{Duration: 30 * 24 * time.Hour, Truncate: 10 * time.Minute},
 		{Duration: time.Hour, Truncate: time.Minute},
 		{Duration: 10 * time.Minute, Truncate: 10 * time.Second},
+		{Duration: 0, Truncate: 2 * time.Second},
 	}
 
 	tests := []struct {
@@ -26,17 +27,17 @@ func Test_timestampTruncate(t *testing.T) {
 			ts:        1628876563,
 			duration:  5 * time.Minute,
 			durations: durations,
-			want:      1628876563, // no truncation
+			want:      1628876562, // truncation to 2s
 		},
 		{
 			ts:        1628876563,
 			duration:  10 * time.Minute,
 			durations: durations,
-			want:      1628876560, // truncate to 10s
+			want:      1628876562, // truncate to 2s
 		},
 		{
 			ts:        1628876563,
-			duration:  11 * time.Minute,
+			duration:  10*time.Minute + time.Second,
 			durations: durations,
 			want:      1628876560, // truncate to 10s
 		},
@@ -50,7 +51,13 @@ func Test_timestampTruncate(t *testing.T) {
 			ts:        1628876563,
 			duration:  30 * 24 * time.Hour,
 			durations: durations,
-			want:      1628876400, // truncate to 1m
+			want:      1628876520, // truncate to 1m
+		},
+		{
+			ts:        1628876563,
+			duration:  30*24*time.Hour + time.Second,
+			durations: durations,
+			want:      1628876400, // truncate to 10m
 		},
 	}
 	for _, tt := range tests {
