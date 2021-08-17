@@ -69,17 +69,13 @@ func (f *substr) Do(ctx context.Context, e parser.Expr, from, until int64, value
 			realStopField := stopField
 			if stopField < 0 {
 				realStopField = len(nodes) + stopField
-				if realStopField < 0 {
-					return nil, errors.New("stop out of range")
-				}
-				nodes = nodes[:realStopField]
 			} else{ 
 				realStopField = realStopField - realStartField
-				if realStopField < 0 {
-					return nil, errors.New("stop out of range")
-				}
-				nodes = nodes[:realStopField]
 			}
+			if realStopField < 0 {
+				return nil, errors.New("stop out of range")
+			}
+			nodes = nodes[:realStopField]
 		}
 
 		r := *a
