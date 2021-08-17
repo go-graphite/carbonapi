@@ -49,7 +49,7 @@ func (c *VictoriaMetricsGroup) Fetch(ctx context.Context, request *protov3.Multi
 	if len(request.Metrics) > 0 && request.Metrics[0].MaxDataPoints != 0 {
 		maxPointsPerQuery = request.Metrics[0].MaxDataPoints
 	}
-	step := helpers.AdjustStep(start, stop, maxPointsPerQuery, c.step)
+	step := helpers.AdjustStep(start, stop, maxPointsPerQuery, c.step, c.forceMinStepInterval)
 
 	stepStr := strconv.FormatInt(step, 10)
 	for pathExpr, targets := range pathExprToTargets {

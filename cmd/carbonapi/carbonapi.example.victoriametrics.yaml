@@ -51,6 +51,7 @@ upstreams:
                 max_points_per_query: 5000
                 probe_version_interval: "600s"
                 fallback_version: "v0.0.0"
+                force_min_step_interval: 0s
                 # vmClusterTenantID: "0" # use vmClisterTenantID for VM-cluster only
             timeouts:
                 find: "2s"

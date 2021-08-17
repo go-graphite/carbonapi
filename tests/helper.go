@@ -273,6 +273,9 @@ func NearlyEqual(a, b []float64) bool {
 }
 
 func NearlyEqualMetrics(a, b *types.MetricData) bool {
+	if len(a.Values) != len(b.Values) {
+		return false
+	}
 	for i := range a.Values {
 		if (math.IsNaN(a.Values[i]) && !math.IsNaN(b.Values[i])) || (!math.IsNaN(a.Values[i]) && math.IsNaN(b.Values[i])) {
 			return false
@@ -480,6 +483,22 @@ type EvalTestItemWithError struct {
 	Error  error
 }
 
+type EvalTestItemWithRange struct {
+	Target string
+	M      map[parser.MetricRequest][]*types.MetricData
+	Want   []*types.MetricData
+	From   int64
+	Until  int64
+}
+
+func (r *EvalTestItemWithRange) TestItem() *EvalTestItem {
+	return &EvalTestItem{
+		Target: r.Target,
+		M:      r.M,
+		Want:   r.Want,
+	}
+}
+
 func TestEvalExprModifiedOrigin(t *testing.T, tt *EvalTestItem, from, until int64, strictOrder bool) error {
 	evaluator := metadata.GetEvaluator()
 	testName := tt.Target
@@ -532,6 +551,17 @@ func TestEvalExprModifiedOrigin(t *testing.T, tt *EvalTestItem, from, until int6
 func TestEvalExpr(t *testing.T, tt *EvalTestItem) {
 	originalMetrics := DeepClone(tt.M)
 	err := TestEvalExprModifiedOrigin(t, tt, 0, 1, false)
+	if err != nil {
+		t.Errorf("unexpected error while evaluating %s: got `%+v`", tt.Target, err)
+		return
+	}
+	DeepEqual(t, tt.Target, originalMetrics, tt.M, true)
+}
+
+func TestEvalExprWithRange(t *testing.T, tt *EvalTestItemWithRange) {
+	originalMetrics := DeepClone(tt.M)
+	tt2 := tt.TestItem()
+	err := TestEvalExprModifiedOrigin(t, tt2, tt.From, tt.Until, false)
 	if err != nil {
 		t.Errorf("unexpected error while evaluating %s: got `%+v`", tt.Target, err)
 		return

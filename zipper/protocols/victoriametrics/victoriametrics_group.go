@@ -50,9 +50,10 @@ type VictoriaMetricsGroup struct {
 	maxTries             int
 	maxMetricsPerRequest int
 
-	step              int64
-	maxPointsPerQuery int64
-	vmClusterTenantID string
+	step                 int64
+	maxPointsPerQuery    int64
+	forceMinStepInterval time.Duration
+	vmClusterTenantID    string
 
 	startDelay           prometheus.StartDelay
 	probeVersionInterval time.Duration
@@ -115,6 +116,26 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		}
 
 		maxPointsPerQuery = int64(mppq)
+	}
+
+	var forceMinStepInterval time.Duration
+	fmsiI, ok := config.BackendOptions["force_min_step_interval"]
+	if ok {
+		fmsiS, ok := fmsiI.(string)
+		if !ok {
+			logger.Fatal("failed to parse force_min_step_interval",
+				zap.String("type_parsed", fmt.Sprintf("%T", fmsiI)),
+				zap.String("type_expected", "time.Duration"),
+			)
+		}
+		var err error
+		forceMinStepInterval, err = time.ParseDuration(fmsiS)
+		if err != nil {
+			logger.Fatal("failed to parse force_min_step_interval",
+				zap.String("value_provided", fmsiS),
+				zap.String("type_expected", "time.Duration"),
+			)
+		}
 	}
 
 	delay := prometheus.StartDelay{
@@ -210,7 +231,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 	}
 
 	promLogger := logger.With(zap.String("subclass", "prometheus"))
-	c.BackendServer, _ = prometheus.NewWithEverythingInitialized(promLogger, config, tldCacheDisabled, limiter, step, maxPointsPerQuery, delay, httpQuery, httpClient)
+	c.BackendServer, _ = prometheus.NewWithEverythingInitialized(promLogger, config, tldCacheDisabled, limiter, step, maxPointsPerQuery, forceMinStepInterval, delay, httpQuery, httpClient)
 
 	c.updateFeatureSet(context.Background())
 
