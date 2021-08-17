@@ -46,6 +46,9 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	var denominators []*types.MetricData
 
 	var results []*types.MetricData
+	if len(arg) == 0 {
+		return results, nil
+	}
 
 	if len(e.Args()) == 1 {
 		arg = helper.AlignSeries(types.CopyMetricDataSlice(arg))
