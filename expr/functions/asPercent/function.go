@@ -37,6 +37,9 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	if err != nil {
 		return nil, err
 	}
+	if len(arg) == 0 {
+		return nil, nil
+	}
 
 	var getTotal func(i int) float64
 	var formatName func(a, b string) string
