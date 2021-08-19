@@ -88,12 +88,14 @@ func (c *VictoriaMetricsGroup) Fetch(ctx context.Context, request *protov3.Multi
 				zap.Int64("start", start),
 				zap.Int64("stop", stop),
 				zap.String("step", stepLocalStr),
+				zap.String("max_lookback", stepLocalStr),
 			)
 			v := url.Values{
-				"query": []string{target},
-				"start": []string{strconv.Itoa(int(start))},
-				"end":   []string{strconv.Itoa(int(stop))},
-				"step":  []string{stepLocalStr},
+				"query":        []string{target},
+				"start":        []string{strconv.Itoa(int(start))},
+				"end":          []string{strconv.Itoa(int(stop))},
+				"step":         []string{stepLocalStr},
+				"max_lookback": []string{stepLocalStr},
 			}
 
 			rewrite.RawQuery = v.Encode()
