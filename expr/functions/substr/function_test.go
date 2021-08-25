@@ -105,6 +105,14 @@ func TestSubstr(t *testing.T) {
 			[]*types.MetricData{types.MakeMetricData("bar.baz",
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
+		{
+			"substr(metric1.foo.bar.baz, -2, -1)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1.foo.bar.baz", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData("bar",
+				[]float64{1, 2, 3, 4, 5}, 1, now32)},
+		},
 	}
 
 	for _, tt := range tests {
