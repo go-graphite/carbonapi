@@ -256,7 +256,18 @@ func (bg *BroadcastGroup) doMultiFetch(ctx context.Context, logger *zap.Logger, 
 			logger.Debug("sending request")
 			response.Response, response.Stats, err = backend.Fetch(ctx, req)
 			response.AddError(err)
-			logger.Debug("got response")
+			logger.Debug("got response",
+				zap.Int("metrics_in_response", len(response.Response.Metrics)),
+				zap.Int("errors_count", len(response.Err)),
+				zap.Int64("timeouts_count", response.Stats.Timeouts),
+				zap.Int64("render_requests_count", response.Stats.RenderRequests),
+				zap.Int64("render_errors_count", response.Stats.RenderErrors),
+				zap.Int64("render_timeouts_count", response.Stats.RenderTimeouts),
+				zap.Int64("zipper_requests_count", response.Stats.ZipperRequests),
+				zap.Int64("total_metric_count", response.Stats.TotalMetricsCount),
+				zap.Int("servers_count", len(response.Stats.Servers)),
+				zap.Int("failed_servers_count", len(response.Stats.FailedServers)),
+			)
 
 			resCh <- response
 		}(req)
@@ -309,9 +320,32 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 		r := types.NewServerFetchResponse()
 		r.Response, r.Stats, err = backend.Fetch(ctx, req)
 		r.AddError(err)
-		logger.Debug("got response")
+		logger.Debug("got response",
+			zap.Int("metrics_in_response", len(r.Response.Metrics)),
+			zap.Int("errors_count", len(r.Err)),
+			zap.Int64("timeouts_count", r.Stats.Timeouts),
+			zap.Int64("render_requests_count", r.Stats.RenderRequests),
+			zap.Int64("render_errors_count", r.Stats.RenderErrors),
+			zap.Int64("render_timeouts_count", r.Stats.RenderTimeouts),
+			zap.Int64("zipper_requests_count", r.Stats.ZipperRequests),
+			zap.Int64("total_metric_count", r.Stats.TotalMetricsCount),
+			zap.Int("servers_count", len(r.Stats.Servers)),
+			zap.Int("failed_servers_count", len(r.Stats.FailedServers)),
+		)
 		_ = response.Merge(r)
 	}
+	logger.Debug("got response (after merge)",
+		zap.Int("metrics_in_response", len(response.Response.Metrics)),
+		zap.Int("errors_count", len(response.Err)),
+		zap.Int64("timeouts_count", response.Stats.Timeouts),
+		zap.Int64("render_requests_count", response.Stats.RenderRequests),
+		zap.Int64("render_errors_count", response.Stats.RenderErrors),
+		zap.Int64("render_timeouts_count", response.Stats.RenderTimeouts),
+		zap.Int64("zipper_requests_count", response.Stats.ZipperRequests),
+		zap.Int64("total_metric_count", response.Stats.TotalMetricsCount),
+		zap.Int("servers_count", len(response.Stats.Servers)),
+		zap.Int("failed_servers_count", len(response.Stats.FailedServers)),
+	)
 
 	resCh <- response
 }
@@ -472,7 +506,7 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 		zap.Int("response_count", responseCount),
 		zap.Bool("have_errors", len(result.Err) != 0),
 		zap.Any("errors", result.Err),
-		zap.Int("response_count", len(result.Response.Metrics)),
+		zap.Int("metrics_in_response", len(result.Response.Metrics)),
 	)
 
 	var err merry.Error
