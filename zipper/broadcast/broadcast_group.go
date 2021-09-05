@@ -256,18 +256,26 @@ func (bg *BroadcastGroup) doMultiFetch(ctx context.Context, logger *zap.Logger, 
 			logger.Debug("sending request")
 			response.Response, response.Stats, err = backend.Fetch(ctx, req)
 			response.AddError(err)
-			logger.Debug("got response",
-				zap.Int("metrics_in_response", len(response.Response.Metrics)),
-				zap.Int("errors_count", len(response.Err)),
-				zap.Int64("timeouts_count", response.Stats.Timeouts),
-				zap.Int64("render_requests_count", response.Stats.RenderRequests),
-				zap.Int64("render_errors_count", response.Stats.RenderErrors),
-				zap.Int64("render_timeouts_count", response.Stats.RenderTimeouts),
-				zap.Int64("zipper_requests_count", response.Stats.ZipperRequests),
-				zap.Int64("total_metric_count", response.Stats.TotalMetricsCount),
-				zap.Int("servers_count", len(response.Stats.Servers)),
-				zap.Int("failed_servers_count", len(response.Stats.FailedServers)),
-			)
+			if response.Response != nil && response.Stats != nil {
+				logger.Debug("got response",
+					zap.Int("metrics_in_response", len(response.Response.Metrics)),
+					zap.Int("errors_count", len(response.Err)),
+					zap.Int64("timeouts_count", response.Stats.Timeouts),
+					zap.Int64("render_requests_count", response.Stats.RenderRequests),
+					zap.Int64("render_errors_count", response.Stats.RenderErrors),
+					zap.Int64("render_timeouts_count", response.Stats.RenderTimeouts),
+					zap.Int64("zipper_requests_count", response.Stats.ZipperRequests),
+					zap.Int64("total_metric_count", response.Stats.TotalMetricsCount),
+					zap.Int("servers_count", len(response.Stats.Servers)),
+					zap.Int("failed_servers_count", len(response.Stats.FailedServers)),
+				)
+			} else {
+				logger.Debug("got response",
+					zap.Bool("response_is_nil", response.Response == nil),
+					zap.Bool("stats_is_nil", response.Stats == nil),
+					zap.Any("err", err),
+				)
+			}
 
 			resCh <- response
 		}(req)
@@ -320,18 +328,26 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 		r := types.NewServerFetchResponse()
 		r.Response, r.Stats, err = backend.Fetch(ctx, req)
 		r.AddError(err)
-		logger.Debug("got response",
-			zap.Int("metrics_in_response", len(r.Response.Metrics)),
-			zap.Int("errors_count", len(r.Err)),
-			zap.Int64("timeouts_count", r.Stats.Timeouts),
-			zap.Int64("render_requests_count", r.Stats.RenderRequests),
-			zap.Int64("render_errors_count", r.Stats.RenderErrors),
-			zap.Int64("render_timeouts_count", r.Stats.RenderTimeouts),
-			zap.Int64("zipper_requests_count", r.Stats.ZipperRequests),
-			zap.Int64("total_metric_count", r.Stats.TotalMetricsCount),
-			zap.Int("servers_count", len(r.Stats.Servers)),
-			zap.Int("failed_servers_count", len(r.Stats.FailedServers)),
-		)
+		if r.Stats != nil && r.Response != nil {
+			logger.Debug("got response",
+				zap.Int("metrics_in_response", len(r.Response.Metrics)),
+				zap.Int("errors_count", len(r.Err)),
+				zap.Int64("timeouts_count", r.Stats.Timeouts),
+				zap.Int64("render_requests_count", r.Stats.RenderRequests),
+				zap.Int64("render_errors_count", r.Stats.RenderErrors),
+				zap.Int64("render_timeouts_count", r.Stats.RenderTimeouts),
+				zap.Int64("zipper_requests_count", r.Stats.ZipperRequests),
+				zap.Int64("total_metric_count", r.Stats.TotalMetricsCount),
+				zap.Int("servers_count", len(r.Stats.Servers)),
+				zap.Int("failed_servers_count", len(r.Stats.FailedServers)),
+			)
+		} else {
+			logger.Debug("got response",
+				zap.Bool("response_is_nil", r.Response == nil),
+				zap.Bool("stats_is_nil", r.Stats == nil),
+				zap.Any("err", err),
+			)
+		}
 		_ = response.Merge(r)
 	}
 	logger.Debug("got response (after merge)",
