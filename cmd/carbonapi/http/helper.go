@@ -150,7 +150,7 @@ func getFormat(r *http.Request, defaultFormat responseFormat) (responseFormat, b
 	return f, ok, format
 }
 
-func writeResponse(w http.ResponseWriter, returnCode int, b []byte, format responseFormat, jsonp string, carbonapiUUID string) {
+func writeResponse(w http.ResponseWriter, returnCode int, b []byte, format responseFormat, jsonp, carbonapiUUID string) {
 	//TODO: Simplify that switch
 	w.Header().Set(ctxHeaderUUID, carbonapiUUID)
 	switch format {
