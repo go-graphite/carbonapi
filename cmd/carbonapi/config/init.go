@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"expvar"
+	"fmt"
 	"io/ioutil"
 	"runtime"
 	"sort"
@@ -30,20 +31,24 @@ import (
 
 var graphTemplates map[string]png.PictureParams
 
-func truncateTimeSlice(m map[time.Duration]time.Duration) []DurationTruncate {
+func truncateTimeSlice(m map[time.Duration]time.Duration) ([]DurationTruncate, error) {
 	s := make([]DurationTruncate, len(m))
-	i := 0
+	n := 0
 	for k, v := range m {
-		s[i] = DurationTruncate{Duration: k, Truncate: v}
-		i++
+		if v <= 0 || k < 0 {
+			return nil, fmt.Errorf("invalid duration truncate: %v:%v", k, v)
+		}
+		s[n] = DurationTruncate{Duration: k, Truncate: v}
+		n++
 	}
 
+	s = s[0:n]
 	// sort in reverse order
 	sort.Slice(s, func(i, j int) bool {
 		return s[i].Duration > s[j].Duration
 	})
 
-	return s
+	return s, nil
 }
 
 func SetUpConfig(logger *zap.Logger, BuildVersion string) {
@@ -282,13 +287,11 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 }
 
 func createCache(logger *zap.Logger, cacheName string, cacheConfig CacheConfig) cache.BytesCache {
-	if cacheConfig.DefaultTimeoutSec == 0 {
+	if cacheConfig.DefaultTimeoutSec <= 0 {
 		return cache.NullCache{}
 	}
-	if cacheConfig.DefaultTimeoutSec < cacheConfig.ShortTimeoutSec {
+	if cacheConfig.DefaultTimeoutSec < cacheConfig.ShortTimeoutSec || cacheConfig.ShortTimeoutSec <= 0 {
 		cacheConfig.ShortTimeoutSec = cacheConfig.DefaultTimeoutSec
-	} else if cacheConfig.ShortTimeoutSec == 0 {
-		cacheConfig.ShortTimeoutSec = 60
 	}
 	switch cacheConfig.Type {
 	case "memcache":
@@ -447,5 +450,9 @@ func SetUpConfigUpstreams(logger *zap.Logger) {
 		Config.Upstreams.Buckets = Config.Buckets
 	}
 
-	Config.TruncateTime = truncateTimeSlice(Config.TruncateTimeMap)
+	var err error
+	Config.TruncateTime, err = truncateTimeSlice(Config.TruncateTimeMap)
+	if err != nil {
+		logger.Warn("`truncateTime` config option is invalid", zap.Error(err))
+	}
 }

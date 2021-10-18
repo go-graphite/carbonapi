@@ -258,11 +258,7 @@ func timestampTruncate(ts int64, duration time.Duration, durations []config.Dura
 	tm := time.Unix(ts, 0).UTC()
 	for _, d := range durations {
 		if duration > d.Duration || d.Duration == 0 {
-			if d.Truncate > 0 {
-				// prevent missconfiguration
-				return tm.Truncate(d.Truncate).UTC().Unix()
-			}
-			break
+			return tm.Truncate(d.Truncate).UTC().Unix()
 		}
 	}
 	return ts
