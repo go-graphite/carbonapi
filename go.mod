@@ -29,7 +29,7 @@ require (
 	github.com/maruel/natural v1.0.0
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/mjibson/go-dsp v0.0.0-20180508042940-11479a337f12
-	github.com/msaf1980/go-stringutils v0.0.10
+	github.com/msaf1980/go-stringutils v0.0.11
 	github.com/pelletier/go-toml v1.9.0 // indirect
 	github.com/peterbourgon/g2g v0.0.0-20161124161852-0c2bab2b173d
 	github.com/rs/dnscache v0.0.0-20210201191234-295bba877686
