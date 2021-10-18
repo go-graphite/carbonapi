@@ -111,7 +111,7 @@ github.com/mitchellh/mapstructure
 ## explicit
 github.com/mjibson/go-dsp/dsputils
 github.com/mjibson/go-dsp/fft
-# github.com/msaf1980/go-stringutils v0.0.10
+# github.com/msaf1980/go-stringutils v0.0.11
 ## explicit
 github.com/msaf1980/go-stringutils
 # github.com/openhistogram/circonusllhist v0.2.1
