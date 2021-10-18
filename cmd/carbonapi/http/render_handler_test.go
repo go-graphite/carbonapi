@@ -34,7 +34,7 @@ func BenchmarkBackendCacheComputeKey(b *testing.B) {
 	}
 }
 
-func BenchmarkBackendCacheComputeKeyInt(b *testing.B) {
+func BenchmarkBackendCacheComputeKeyAbs(b *testing.B) {
 	var from int64 = 1628876560
 	var until int64 = 1628876620
 	targets := []string{
@@ -43,6 +43,6 @@ func BenchmarkBackendCacheComputeKeyInt(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		_ = backendCacheComputeKeyInt(from, until, targets)
+		_ = backendCacheComputeKeyAbs(from, until, targets)
 	}
 }

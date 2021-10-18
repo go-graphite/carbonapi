@@ -266,7 +266,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	var backendCacheKey string
 	if len(config.Config.TruncateTime) > 0 {
-		backendCacheKey = backendCacheComputeKeyInt(from32, until32, targets)
+		backendCacheKey = backendCacheComputeKeyAbs(from32, until32, targets)
 	} else {
 		backendCacheKey = backendCacheComputeKey(from, until, targets)
 	}
@@ -420,7 +420,7 @@ func backendCacheComputeKey(from, until string, targets []string) string {
 	return backendCacheKey.String()
 }
 
-func backendCacheComputeKeyInt(from, until int64, targets []string) string {
+func backendCacheComputeKeyAbs(from, until int64, targets []string) string {
 	var backendCacheKey stringutils.Builder
 	backendCacheKey.Grow(128)
 	backendCacheKey.WriteString("from:")
