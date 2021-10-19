@@ -259,21 +259,6 @@ cache:
        - "127.0.0.2:1235"
 ```
 
-### Example for 2-level cache lifetime (short timeout on 1-hour window and long timeout for other) and round timestamps for tune cache efficience
-```yaml
-cache:
-   type: "mem"
-   size_mb: 0
-   defaultTimeoutSec: 10800 # Default cache timeout
-   shortTimeoutSec: 60 # if until - from <= 1hour && now-until < 1min, by default is equal to defaultTimeoutSec
-
-truncateTime: # truncate from/until for identifical results between carbonapi instances. Also reduce load on long-range queries
-  "8760h": "1h"     # Timestamp will be truncated to 1 hour round if (until - from) > 365 days
-  "2160h": "10m"     # Timestamp will be truncated to 10 minute round if (until - from) > 90 days
-  "1h": "1m"         # Timestamp will be truncated to 1 minute round if (until - from) > 1 hour
-  "0": "10s"         # Timestamp will be truncated to 10 seconds round by default
-```
-
 ## backendCache
 Specify what storage to use for backend cache. This cache stores the responses
 from the backends. It should have more cache hits than the response cache since
@@ -292,6 +277,27 @@ backendCache:
        - "127.0.0.1:1234"
        - "127.0.0.2:1235"
 ```
+
+### Example for 2-level cache lifetime (short timeout on 1-hour window and long timeout for other) and round timestamps for tune cache efficience
+```yaml
+cache:
+   type: "mem"
+   size_mb: 0
+   defaultTimeoutSec: 10800 # Default cache timeout
+   shortTimeoutSec: 60 # if until - from <= 1hour && now-until < 1min, by default is equal to defaultTimeoutSec
+backendCache:
+   type: "mem"
+   size_mb: 0
+   defaultTimeoutSec: 10800 # Default cache timeout
+   shortTimeoutSec: 60 # if until - from <= 1hour && now-until < 1min, by default is equal to defaultTimeoutSec
+
+truncateTime: # truncate from/until for identifical results between carbonapi instances. Also reduce load on long-range queries
+  "8760h": "1h"     # Timestamp will be truncated to 1 hour round if (until - from) > 365 days
+  "2160h": "10m"     # Timestamp will be truncated to 10 minute round if (until - from) > 90 days
+  "1h": "1m"         # Timestamp will be truncated to 1 minute round if (until - from) > 1 hour
+  "0": "10s"         # Timestamp will be truncated to 10 seconds round by default
+```
+
 ***
 ## cpus
 
