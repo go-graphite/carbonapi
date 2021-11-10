@@ -179,8 +179,8 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 
 	Config.Limiter = limiter.NewSimpleLimiter(Config.Concurency)
 
-	Config.ResponseCache = createCache(logger, "cache", Config.ResponseCacheConfig)
-	Config.BackendCache = createCache(logger, "backendCache", Config.BackendCacheConfig)
+	Config.ResponseCache = createCache(logger, "cache", &Config.ResponseCacheConfig)
+	Config.BackendCache = createCache(logger, "backendCache", &Config.BackendCacheConfig)
 
 	if Config.TimezoneString != "" {
 		fields := strings.Split(Config.TimezoneString, ",")
@@ -286,7 +286,7 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 	}
 }
 
-func createCache(logger *zap.Logger, cacheName string, cacheConfig CacheConfig) cache.BytesCache {
+func createCache(logger *zap.Logger, cacheName string, cacheConfig *CacheConfig) cache.BytesCache {
 	if cacheConfig.DefaultTimeoutSec <= 0 {
 		return cache.NullCache{}
 	}
