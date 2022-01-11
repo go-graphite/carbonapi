@@ -37,7 +37,6 @@ func NoAnswerBackends(backends []BackendServer, answered map[string]struct{}) []
 // Helper function
 func DoRequest(ctx context.Context, logger *zap.Logger, clients []BackendServer, result ServerFetcherResponse, request interface{}, fetcher Fetcher) (ServerFetcherResponse, int) {
 	resCh := make(chan ServerFetcherResponse, len(clients))
-
 	for _, client := range clients {
 		logger.Debug("single fetch",
 			zap.Any("client", client),
@@ -206,6 +205,111 @@ func (first *ServerInfoResponse) Merge(second *ServerInfoResponse) merry.Error {
 
 	for k, v := range second.Response.Info {
 		first.Response.Info[k] = v
+	}
+
+	return nil
+}
+
+type ServerExpandResponse struct {
+	Server   string
+	Response *protov3.MultiGlobResponse
+	Stats    *Stats
+	Err      []merry.Error
+}
+
+func NewServerExpandResponse() *ServerExpandResponse {
+	return &ServerExpandResponse{
+		Response: new(protov3.MultiGlobResponse),
+		Stats:    new(Stats),
+	}
+}
+
+func (s *ServerExpandResponse) Self() interface{} {
+	return s
+}
+
+func (s ServerExpandResponse) GetServer() string {
+	return s.Server
+}
+
+func (first *ServerExpandResponse) MergeI(second ServerFetcherResponse) merry.Error {
+	secondSelf := second.Self()
+	s, ok := secondSelf.(*ServerExpandResponse)
+	if !ok {
+		return ErrResponseTypeMismatch.Here().WithMessagef("got '%T', expected '%T'", secondSelf, first)
+	}
+	return first.Merge(s)
+}
+
+func (s *ServerExpandResponse) AddError(err merry.Error) {
+	if err == nil {
+		return
+	}
+	if s.Err == nil {
+		s.Err = []merry.Error{err}
+	} else {
+		s.Err = append(s.Err, err)
+	}
+}
+
+func (first *ServerExpandResponse) Errors() []merry.Error {
+	return first.Err
+}
+
+func (first *ServerExpandResponse) Merge(second *ServerExpandResponse) merry.Error {
+	if second.Stats != nil {
+		first.Stats.Merge(second.Stats)
+	}
+
+	if first.Err == nil {
+		if second.Err != nil {
+			first.Err = second.Err
+		}
+	} else {
+		if second.Err != nil {
+			first.Err = append(first.Err, second.Err...)
+		}
+	}
+
+	if second.Response == nil {
+		return nil
+	}
+
+	var ok bool
+	seenMetrics := make(map[string]int)
+	seenMatches := make(map[string]map[bool]struct{})
+	for i, m := range first.Response.Metrics {
+		seenMetrics[m.Name] = i
+		for _, mm := range m.Matches {
+			lkey := m.Name + "." + mm.Path
+			if _, ok = seenMatches[lkey]; !ok {
+				seenMatches[lkey] = map[bool]struct{}{}
+			}
+
+			seenMatches[lkey][mm.IsLeaf] = struct{}{}
+		}
+	}
+
+	var i int
+	for _, m := range second.Response.Metrics {
+		if i, ok = seenMetrics[m.Name]; !ok {
+			first.Response.Metrics = append(first.Response.Metrics, m)
+			continue
+		}
+
+		for _, mm := range m.Matches {
+			key := first.Response.Metrics[i].Name + "." + mm.Path
+			lisLeaf := seenMatches[key]
+			if lisLeaf == nil {
+				lisLeaf = map[bool]struct{}{}
+				seenMatches[key] = lisLeaf
+			}
+
+			if _, ok = lisLeaf[mm.IsLeaf]; !ok {
+				lisLeaf[mm.IsLeaf] = struct{}{}
+				first.Response.Metrics[i].Matches = append(first.Response.Metrics[i].Matches, mm)
+			}
+		}
 	}
 
 	return nil

@@ -186,6 +186,36 @@ func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlo
 	return &globs, stats, nil
 }
 
+func (c *ClientProtoV3Group) Expand(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
+	logger := c.logger.With(zap.String("type", "expand"), zap.Strings("request", request.Metrics))
+	stats := &types.Stats{
+		ExpandRequests: 1,
+	}
+
+	rewrite, _ := url.Parse("http://127.0.0.1/metrics/expand/")
+	res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), types.MultiGlobRequestV3{MultiGlobRequest: *request})
+	if err != nil {
+		stats.ExpandErrors = 1
+		if merry.Is(err, types.ErrTimeoutExceeded) {
+			stats.Timeouts = 1
+			stats.ExpandTimeouts = 1
+		}
+		return nil, stats, err
+	}
+	if res == nil {
+		return nil, stats, types.ErrNotFound
+	}
+
+	var globs protov3.MultiGlobResponse
+	err2 := globs.Unmarshal(res.Response)
+	if err2 != nil {
+		stats.FailedServers = []string{res.Server}
+		stats.ExpandErrors = 1
+		return nil, nil, merry.Wrap(err2)
+	}
+	return &globs, stats, nil
+}
+
 func (c *ClientProtoV3Group) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, merry.Error) {
 	logger := c.logger.With(zap.String("type", "info"), zap.String("request", request.String()))
 	stats := &types.Stats{

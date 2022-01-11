@@ -272,6 +272,10 @@ func (c *ClientProtoV2Group) Find(ctx context.Context, request *protov3.MultiGlo
 	return &r, stats, nil
 }
 
+func (*ClientProtoV2Group) Expand(_ context.Context, _ *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
+	return nil, nil, types.ErrNotImplementedYet
+}
+
 func (c *ClientProtoV2Group) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, merry.Error) {
 	logger := c.logger.With(zap.String("type", "info"), zap.String("carbonapi_uuid", utilctx.GetUUID(ctx)))
 	stats := &types.Stats{}

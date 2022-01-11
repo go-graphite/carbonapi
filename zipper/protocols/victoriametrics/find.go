@@ -110,6 +110,100 @@ func (c *VictoriaMetricsGroup) Find(ctx context.Context, request *protov3.MultiG
 	return &r, stats, nil
 }
 
+func (c *VictoriaMetricsGroup) Expand(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
+	supportedFeatures, _ := c.featureSet.Load().(*vmSupportedFeatures)
+	if !supportedFeatures.SupportGraphiteFindAPI {
+		// VictoriaMetrics <1.41.0 doesn't support graphite find api, reverting back to prometheus code-path
+		return c.BackendServer.Expand(ctx, request)
+	}
+	var r protov3.MultiGlobResponse
+	var e merry.Error
+
+	logger := c.logger.With(
+		zap.String("type", "expand"),
+		zap.Strings("request", request.Metrics),
+		zap.Any("supported_features", supportedFeatures),
+	)
+	stats := &types.Stats{}
+	var serverUrl string
+	if len(c.vmClusterTenantID) > 0 {
+		serverUrl = fmt.Sprintf("http://127.0.0.1/select/%s/graphite/metrics/expand", c.vmClusterTenantID)
+	} else {
+		serverUrl = "http://127.0.0.1/metrics/expand"
+	}
+	rewrite, _ := url.Parse(serverUrl)
+
+	r.Metrics = make([]protov3.GlobResponse, 0)
+	parser := c.parserPool.Get()
+	defer c.parserPool.Put(parser)
+
+	for _, query := range request.Metrics {
+		v := url.Values{
+			"query": []string{query},
+		}
+
+		rewrite.RawQuery = v.Encode()
+		stats.ExpandRequests++
+		res, queryErr := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
+		if queryErr != nil {
+			stats.ExpandErrors++
+			if merry.Is(queryErr, types.ErrTimeoutExceeded) {
+				stats.Timeouts++
+				stats.ExpandTimeouts++
+			}
+			if e == nil {
+				e = merry.Wrap(queryErr).WithValue("query", query)
+			} else {
+				e = e.WithCause(queryErr)
+			}
+			continue
+		}
+		parsedJSON, err := parser.ParseBytes(res.Response)
+		if err != nil {
+			if e == nil {
+				e = merry.Wrap(err).WithValue("query", query)
+			} else {
+				e = e.WithCause(err)
+			}
+			continue
+		}
+
+		globs, err := parsedJSON.Array()
+		if err != nil {
+			if e == nil {
+				e = merry.Wrap(err).WithValue("query", query)
+			} else {
+				e = e.WithCause(err)
+			}
+			continue
+		}
+
+		stats.Servers = append(stats.Servers, res.Server)
+		matches := make([]protov3.GlobMatch, 0, len(globs))
+		for _, m := range globs {
+			path := string(m.GetStringBytes())
+			if len(path) > 1 && path[len(path)-1] == '.' {
+				path = path[0 : len(path)-1]
+			}
+			matches = append(matches, protov3.GlobMatch{
+				Path: path,
+			})
+		}
+		r.Metrics = append(r.Metrics, protov3.GlobResponse{
+			Name:    query,
+			Matches: matches,
+		})
+	}
+
+	if e != nil {
+		logger.Error("errors occurred while getting results",
+			zap.Any("errors", e),
+		)
+		return &r, stats, e
+	}
+	return &r, stats, nil
+}
+
 func (c *VictoriaMetricsGroup) ProbeTLDs(ctx context.Context) ([]string, merry.Error) {
 	logger := c.logger.With(zap.String("function", "prober"))
 	req := &protov3.MultiGlobRequest{

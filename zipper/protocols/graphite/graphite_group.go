@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/ansel1/merry"
+	"github.com/valyala/fastjson"
 
 	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
@@ -49,7 +50,8 @@ type GraphiteGroup struct {
 	maxTries             int
 	maxMetricsPerRequest int
 
-	httpQuery *helper.HttpQuery
+	httpQuery  *helper.HttpQuery
+	parserPool *fastjson.ParserPool
 }
 
 func (g *GraphiteGroup) Children() []types.BackendServer {
@@ -78,9 +80,10 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		maxTries:             *config.MaxTries,
 		maxMetricsPerRequest: *config.MaxBatchSize,
 
-		client:  httpClient,
-		limiter: limiter,
-		logger:  logger,
+		client:     httpClient,
+		limiter:    limiter,
+		logger:     logger,
+		parserPool: new(fastjson.ParserPool),
 
 		httpQuery: httpQuery,
 	}
@@ -238,6 +241,79 @@ func (c *GraphiteGroup) Find(ctx context.Context, request *protov3.MultiGlobRequ
 			matches = append(matches, protov3.GlobMatch{
 				Path:   m.Path,
 				IsLeaf: m.IsLeaf,
+			})
+		}
+		r.Metrics = append(r.Metrics, protov3.GlobResponse{
+			Name:    query,
+			Matches: matches,
+		})
+	}
+
+	if e != nil {
+		logger.Error("errors occurred while getting results",
+			zap.Any("errors", e),
+		)
+		return &r, stats, e
+	}
+	return &r, stats, nil
+}
+
+func (c *GraphiteGroup) Expand(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
+	logger := c.logger.With(zap.String("type", "expand"), zap.Strings("request", request.Metrics))
+	stats := &types.Stats{}
+	rewrite, _ := url.Parse("http://127.0.0.1/metrics/expand/")
+
+	var r protov3.MultiGlobResponse
+	r.Metrics = make([]protov3.GlobResponse, 0)
+	var e merry.Error
+
+	parser := c.parserPool.Get()
+	defer c.parserPool.Put(parser)
+
+	for _, query := range request.Metrics {
+		v := url.Values{
+			"query": []string{query},
+		}
+		rewrite.RawQuery = v.Encode()
+		stats.ExpandRequests++
+		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
+		if err != nil {
+			stats.ExpandErrors++
+			if merry.Is(err, types.ErrTimeoutExceeded) {
+				stats.Timeouts++
+				stats.ExpandErrors++
+			}
+			if e == nil {
+				e = err
+			} else {
+				e = e.WithCause(err)
+			}
+			continue
+		}
+		parsedJSON, perr := parser.ParseBytes(res.Response)
+		if perr != nil {
+			if e == nil {
+				e = merry.Wrap(perr).WithValue("query", query)
+			} else {
+				e = e.WithCause(perr)
+			}
+			continue
+		}
+		globs, perr := parsedJSON.Get("results").Array()
+		if perr != nil {
+			if e == nil {
+				e = merry.Wrap(perr).WithValue("query", query)
+			} else {
+				e = e.WithCause(perr)
+			}
+		}
+
+		stats.Servers = append(stats.Servers, res.Server)
+		matches := make([]protov3.GlobMatch, 0, len(globs))
+		for _, m := range globs {
+			path := string(m.GetStringBytes())
+			matches = append(matches, protov3.GlobMatch{
+				Path: path,
 			})
 		}
 		r.Metrics = append(r.Metrics, protov3.GlobResponse{

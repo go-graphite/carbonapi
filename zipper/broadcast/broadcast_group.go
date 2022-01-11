@@ -639,6 +639,107 @@ func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	return result.Response, result.Stats, err
 }
 
+func (bg *BroadcastGroup) doExpand(ctx context.Context, logger *zap.Logger, backend types.BackendServer, reqs interface{}, resCh chan types.ServerFetcherResponse) {
+	request, ok := reqs.(*protov3.MultiGlobRequest)
+	if !ok {
+		logger.Fatal("unhandled error",
+			zap.Stack("stack"),
+			zap.String("got_type", fmt.Sprintf("%T", reqs)),
+			zap.String("expected_type", fmt.Sprintf("%T", request)),
+		)
+	}
+	logger = logger.With(
+		zap.String("group_name", bg.groupName),
+		zap.String("backend_name", backend.Name()),
+	)
+	logger.Debug("waiting for a slot")
+
+	r := types.NewServerExpandResponse()
+	r.Server = backend.Name()
+
+	if err := bg.limiter.Enter(ctx, backend.Name()); err != nil {
+		logger.Debug("timeout waiting for a slot")
+		r.AddError(merry.Prepend(err, "timeout waiting for slot"))
+		resCh <- r
+		return
+	}
+
+	logger.Debug("got slot")
+	defer bg.limiter.Leave(ctx, backend.Name())
+
+	var err merry.Error
+	r.Response, r.Stats, err = backend.Expand(ctx, request)
+	r.AddError(err)
+	logger.Debug("fetched response",
+		zap.Any("response", r),
+	)
+	resCh <- r
+}
+
+func (bg *BroadcastGroup) Expand(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
+	logger := bg.logger.With(zap.String("type", "expand"), zap.Strings("request", request.Metrics))
+
+	backends := bg.Children()
+
+	logger.Debug("will do query with timeout",
+		zap.Any("backends", backends),
+		zap.Float64("timeout", bg.timeout.Expand.Seconds()),
+	)
+
+	ctxNew, cancel := context.WithTimeout(ctx, bg.timeout.Expand)
+	defer cancel()
+
+	result := types.NewServerExpandResponse()
+	result.Server = bg.Name()
+	result.Stats.ZipperRequests = int64(len(backends))
+	resultNew, responseCount := types.DoRequest(ctxNew, logger, backends, result, request, bg.doExpand)
+
+	result, ok := resultNew.Self().(*types.ServerExpandResponse)
+	if !ok {
+		logger.Fatal("unhandled error in Find",
+			zap.Stack("stack"),
+			zap.String("got_type", fmt.Sprintf("%T", resultNew.Self())),
+			zap.String("expected_type", fmt.Sprintf("%T", result)),
+		)
+	}
+
+	if len(result.Response.Metrics) == 0 {
+		nonNotFoundErrors := types.ReturnNonNotFoundError(result.Err)
+		if nonNotFoundErrors != nil {
+			err := types.ErrFailedToFetch.WithHTTPCode(500)
+			for _, e := range nonNotFoundErrors {
+				err = err.WithCause(e)
+			}
+			logger.Debug("non-404 errors while fetching data from backends",
+				zap.Any("errors", result.Err),
+			)
+			return &protov3.MultiGlobResponse{}, result.Stats, err
+		}
+
+		return &protov3.MultiGlobResponse{}, result.Stats, types.ErrNotFound.WithHTTPCode(404)
+	}
+	result.Stats.TotalMetricsCount = 0
+	for _, x := range result.Response.Metrics {
+		result.Stats.TotalMetricsCount += int64(len(x.Matches))
+	}
+	logger.Debug("got some find responses",
+		zap.Int("backends_count", len(backends)),
+		zap.Int("response_count", responseCount),
+		zap.Bool("have_errors", len(result.Err) != 0),
+		zap.Any("errors", result.Err),
+		zap.Any("response", result.Response),
+	)
+
+	var err merry.Error
+	if result.Err != nil {
+		err = types.ErrNonFatalErrors
+		for _, e := range result.Err {
+			err = err.WithCause(e)
+		}
+	}
+	return result.Response, result.Stats, err
+}
+
 // Info request handling
 func (bg *BroadcastGroup) doInfoRequest(ctx context.Context, logger *zap.Logger, backend types.BackendServer, reqs interface{}, resCh chan types.ServerFetcherResponse) {
 	logger = logger.With(

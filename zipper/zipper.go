@@ -300,6 +300,43 @@ func (z Zipper) FindProtoV3(ctx context.Context, request *protov3.MultiGlobReque
 	return findResponse.Response, findResponse.Stats, nil
 }
 
+func (z Zipper) ExpandProtoV3(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
+	logger := z.logger.With(zap.String("function", "ExpandProtoV3"), zap.String("carbonapi_uuid", utilctx.GetUUID(ctx)))
+
+	res, stats, err := z.backend.Expand(ctx, request)
+
+	var errs []merry.Error
+	if err != nil {
+		errs = []merry.Error{err}
+	}
+
+	expandResponse := &types.ServerExpandResponse{
+		Response: res,
+		Stats:    stats,
+		Err:      errs,
+	}
+
+	if len(expandResponse.Err) > 0 {
+		var e merry.Error
+		if len(expandResponse.Err) == 1 {
+			e = expandResponse.Err[0]
+		} else {
+			e = expandResponse.Err[1].WithCause(expandResponse.Err[0])
+		}
+		logger.Debug("had errors while fetching result",
+			zap.Any("errors", e),
+		)
+		// TODO(civil): Not Found error cases across all zipper code should be handled in the same way
+		// See FetchProtoV3 for more examples
+		if expandResponse.Response != nil && len(expandResponse.Response.Metrics) > 0 {
+			return expandResponse.Response, expandResponse.Stats, merry.WithHTTPCode(e, 200)
+		}
+		return nil, stats, e
+	}
+
+	return expandResponse.Response, expandResponse.Stats, nil
+}
+
 func (z Zipper) InfoProtoV3(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.ZipperInfoResponse, *types.Stats, merry.Error) {
 	logger := z.logger.With(zap.String("function", "InfoProtoV3"), zap.String("carbonapi_uuid", utilctx.GetUUID(ctx)))
 	realRequest := &protov3.MultiMetricsInfoRequest{Names: make([]string, 0, len(request.Metrics))}

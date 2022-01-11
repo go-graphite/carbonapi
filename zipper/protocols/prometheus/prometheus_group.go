@@ -494,6 +494,115 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	return &r, stats, nil
 }
 
+func (c *PrometheusGroup) Expand(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
+	logger := c.logger.With(zap.String("type", "expand"), zap.Strings("request", request.Metrics))
+	stats := &types.Stats{}
+	rewrite, _ := url.Parse("http://127.0.0.1/api/v1/series")
+
+	r := protov3.MultiGlobResponse{
+		Metrics: make([]protov3.GlobResponse, 0),
+	}
+	var e merry.Error
+	uniqueMetrics := make(map[string]bool)
+	for _, query := range request.Metrics {
+		// Convert query to Prometheus-compatible regex
+		if !strings.HasSuffix(query, "*") {
+			query = query + "*"
+		}
+
+		reQuery := helpers.ConvertGraphiteTargetToPromQL(query)
+		matchQuery := fmt.Sprintf("{__name__=~%q}", reQuery)
+		v := url.Values{
+			"match[]": []string{matchQuery},
+		}
+
+		if c.startDelay.IsSet {
+			v.Add("start", c.startDelay.String())
+		}
+
+		rewrite.RawQuery = v.Encode()
+		stats.ExpandRequests += 1
+		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
+		if err != nil {
+			stats.ExpandErrors += 1
+			if merry.Is(err, types.ErrTimeoutExceeded) {
+				stats.Timeouts += 1
+				stats.ExpandErrors += 1
+			}
+			if e == nil {
+				e = err
+			} else {
+				e = e.WithCause(err)
+			}
+			continue
+		}
+
+		var pr prometheusTypes.PrometheusFindResponse
+
+		err2 := json.Unmarshal(res.Response, &pr)
+		if err2 != nil {
+			stats.ExpandErrors += 1
+			if e == nil {
+				e = err
+			} else {
+				e = e.WithCause(err)
+			}
+			continue
+		}
+
+		if pr.Status != "success" {
+			stats.ExpandErrors += 1
+			if e == nil {
+				e = types.ErrFailedToFetch.WithMessage(pr.Error).WithValue("query", matchQuery).WithValue("error_type", pr.ErrorType).WithValue("error", pr.Error)
+			} else {
+				e = e.WithCause(err2).WithValue("query", matchQuery).WithValue("error_type", pr.ErrorType).WithValue("error", pr.Error)
+			}
+			continue
+		}
+
+		querySplit := strings.Split(query, ".")
+		resp := protov3.GlobResponse{
+			Name:    query,
+			Matches: make([]protov3.GlobMatch, 0),
+		}
+		for _, m := range pr.Data {
+			name, ok := m["__name__"]
+			if !ok {
+				continue
+			}
+			nameSplit := strings.Split(name, ".")
+
+			if len(querySplit) > len(nameSplit) {
+				continue
+			}
+
+			isLeaf := false
+			if len(nameSplit) == len(querySplit) {
+				isLeaf = true
+			}
+
+			uniqueMetrics[strings.Join(nameSplit[:len(querySplit)], ".")] = isLeaf
+		}
+
+		for k, v := range uniqueMetrics {
+			resp.Matches = append(resp.Matches, protov3.GlobMatch{
+				IsLeaf: v,
+				Path:   k,
+			})
+			r.Metrics = append(r.Metrics, resp)
+		}
+	}
+
+	if e != nil {
+		stats.FailedServers = []string{c.groupName}
+		logger.Error("errors occurred while getting results",
+			zap.Any("errors", e),
+		)
+		return &r, stats, e
+	}
+	return &r, stats, nil
+}
+
 func (c *PrometheusGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, merry.Error) {
 	return nil, nil, types.ErrNotSupportedByBackend
 }

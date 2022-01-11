@@ -6,6 +6,9 @@ type Stats struct {
 	FindRequests      int64
 	FindErrors        int64
 	FindTimeouts      int64
+	ExpandRequests    int64
+	ExpandErrors      int64
+	ExpandTimeouts    int64
 	RenderRequests    int64
 	RenderErrors      int64
 	RenderTimeouts    int64

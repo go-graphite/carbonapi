@@ -58,6 +58,21 @@ func (z zipper) Find(ctx context.Context, req pb.MultiGlobRequest) (*pb.MultiGlo
 	return res, stats, err
 }
 
+func (z zipper) Expand(ctx context.Context, req pb.MultiGlobRequest) (*pb.MultiGlobResponse, *zipperTypes.Stats, merry.Error) {
+	newCtx := ctx
+	if z.ignoreClientTimeout {
+		uuid := util.GetUUID(ctx)
+		hdrs := util.GetPassHeaders(ctx)
+		newCtx = util.SetUUID(context.Background(), uuid)
+		newCtx = util.SetPassHeaders(newCtx, hdrs)
+	}
+
+	res, stats, err := z.z.ExpandProtoV3(newCtx, &req)
+	z.statsSender(stats)
+
+	return res, stats, err
+}
+
 func (z zipper) Info(ctx context.Context, metrics []string) (*pb.ZipperInfoResponse, *zipperTypes.Stats, merry.Error) {
 	newCtx := ctx
 	if z.ignoreClientTimeout {

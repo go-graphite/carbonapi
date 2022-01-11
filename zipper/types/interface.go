@@ -19,6 +19,7 @@ type BackendServer interface {
 
 	Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *Stats, merry.Error)
 	Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *Stats, merry.Error)
+	Expand(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *Stats, merry.Error)
 	Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *Stats, merry.Error)
 
 	List(ctx context.Context) (*protov3.ListMetricsResponse, *Stats, merry.Error)

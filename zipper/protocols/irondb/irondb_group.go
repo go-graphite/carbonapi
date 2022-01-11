@@ -543,6 +543,10 @@ func (c *IronDBGroup) Find(ctx context.Context, request *protov3.MultiGlobReques
 	return &r, stats, nil
 }
 
+func (*IronDBGroup) Expand(_ context.Context, _ *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
+	return nil, nil, types.ErrNotImplementedYet
+}
+
 func (c *IronDBGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, merry.Error) {
 	return nil, nil, types.ErrNotSupportedByBackend
 }

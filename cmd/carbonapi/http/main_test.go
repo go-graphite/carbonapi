@@ -27,6 +27,10 @@ func (z mockCarbonZipper) Find(ctx context.Context, request pb.MultiGlobRequest)
 	return getGlobResponse(), nil, nil
 }
 
+func (z mockCarbonZipper) Expand(ctx context.Context, request pb.MultiGlobRequest) (*pb.MultiGlobResponse, *zipperTypes.Stats, merry.Error) {
+	return getGlobResponse(), nil, nil
+}
+
 func (z mockCarbonZipper) Info(ctx context.Context, metrics []string) (*pb.ZipperInfoResponse, *zipperTypes.Stats, merry.Error) {
 	response := getMockInfoResponse()
 

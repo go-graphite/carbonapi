@@ -43,6 +43,7 @@ func (cfg *Config) IsSanitized() bool {
 var defaultTimeouts = types.Timeouts{
 	Render:  10000 * time.Second,
 	Find:    100 * time.Second,
+	Expand:  100 * time.Second,
 	Connect: 200 * time.Millisecond,
 }
 
@@ -53,7 +54,9 @@ func sanitizeTimeouts(timeouts, defaultTimeouts types.Timeouts) types.Timeouts {
 	if timeouts.Find == 0 {
 		timeouts.Find = defaultTimeouts.Find
 	}
-
+	if timeouts.Expand == 0 {
+		timeouts.Expand = defaultTimeouts.Expand
+	}
 	if timeouts.Connect == 0 {
 		timeouts.Connect = defaultTimeouts.Connect
 	}

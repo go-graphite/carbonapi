@@ -189,6 +189,10 @@ func (c *DummyClient) Find(ctx context.Context, request *protov3.MultiGlobReques
 	return nil, nil, nil
 }
 
+func (c *DummyClient) Expand(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
+	return nil, nil, types.ErrNotImplementedYet
+}
+
 func (c *DummyClient) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, merry.Error) {
 	return nil, nil, types.ErrNotImplementedYet
 }

@@ -217,6 +217,10 @@ func (c *AutoGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest)
 	return nil, nil, merry.New("auto group doesn't support find")
 }
 
+func (*AutoGroup) Expand(_ context.Context, _ *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
+	return nil, nil, merry.New("auto group doesn't support expand")
+}
+
 func (c *AutoGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, merry.Error) {
 	return nil, nil, merry.New("auto group doesn't support info")
 }
