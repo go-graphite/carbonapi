@@ -258,6 +258,7 @@ cache:
        - "127.0.0.1:1234"
        - "127.0.0.2:1235"
 ```
+
 ## backendCache
 Specify what storage to use for backend cache. This cache stores the responses
 from the backends. It should have more cache hits than the response cache since
@@ -276,6 +277,27 @@ backendCache:
        - "127.0.0.1:1234"
        - "127.0.0.2:1235"
 ```
+
+### Example for 2-level cache lifetime (short timeout on 1-hour window and long timeout for other) and round timestamps for tune cache efficience
+```yaml
+cache:
+   type: "mem"
+   size_mb: 0
+   defaultTimeoutSec: 10800 # Default cache timeout
+   shortTimeoutSec: 60 # if until - from <= 1hour && now-until < 1min, by default is equal to defaultTimeoutSec
+backendCache:
+   type: "mem"
+   size_mb: 0
+   defaultTimeoutSec: 10800 # Default cache timeout
+   shortTimeoutSec: 60 # if until - from <= 1hour && now-until < 1min, by default is equal to defaultTimeoutSec
+
+truncateTime: # truncate from/until for identifical results between carbonapi instances. Also reduce load on long-range queries
+  "8760h": "1h"     # Timestamp will be truncated to 1 hour round if (until - from) > 365 days
+  "2160h": "10m"     # Timestamp will be truncated to 10 minute round if (until - from) > 90 days
+  "1h": "1m"         # Timestamp will be truncated to 1 minute round if (until - from) > 1 hour
+  "0": "10s"         # Timestamp will be truncated to 10 seconds round by default
+```
+
 ***
 ## cpus
 
@@ -307,7 +329,11 @@ tz: "Europe/Zurich,7200"
 
 Extra config files for specific functions
 
-Currently only `grpahiteWeb` and `aliasByPostgres` supports it's own config
+Only the following functions currently support having their own config:
+  - `graphiteWeb`
+  - `aliasByPostgres`
+  - `movingMedian`
+  - `moving` (applies to `movingAverage`, `movingMin`, `movingMax`, `movingSum`)
 
 ### Example
 ```yaml
@@ -526,6 +552,7 @@ Supported options:
 
         For example `-5m` will mean "5 minutes ago", time will be resolved every time you do find query.
       - `max_points_per_query` - (`prometheus` or `victoriametrics` only) define maximum datapoints per query. It will be used to adjust step for queries over big range. Default limit for Prometheus is 11000.
+      - `force_min_step_interval` - (`prometheus` or `victoriametrics` only) define to force using `step` in all requests ignoring MaxDataPoints param for given interval. Default value for Prometheus and VictoriaMetrics is `0s` so feature is disabled.
       - `probe_version_interval` - (`victoriametrics` only) define how often VictoriaMetrics version will be checked (as VM supports certain API endpoints starting from a specific version). Special value to disable: `never`. Default: `600s`.
       - `fallback_version` - (`victoriametrics` only) define version string that will be used as a fallback if version_short will be empty (useful when you run master builds, as they will have it empty). Format: "vX.Y.Z", Default: `v0.0.0` (all special VM optimizations will be disabled)
       - `vmClusterTenantID` - `victoriametrics` in **cluster mode** only. Use this option to configure `accountID` and `projectID` in the VM-cluster API urls. Tenants are identified by "accountID" or "accountID:projectID". Type: `string`. Default: none (single node VictoriaMetrics).

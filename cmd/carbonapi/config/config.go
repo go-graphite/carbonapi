@@ -27,6 +27,7 @@ type CacheConfig struct {
 	Size              int      `mapstructure:"size_mb"`
 	MemcachedServers  []string `mapstructure:"memcachedServers"`
 	DefaultTimeoutSec int32    `mapstructure:"defaultTimeoutSec"`
+	ShortTimeoutSec   int32    `mapstructure:"shortTimeoutSec"`
 }
 
 type GraphiteConfig struct {
@@ -50,6 +51,11 @@ type ExpvarConfig struct {
 type Listener struct {
 	Address string `mapstructure:"address"`
 	// TODO(civil): implement TLS and mTLS
+}
+
+type DurationTruncate struct {
+	Duration time.Duration
+	Truncate time.Duration
 }
 
 type ConfigType struct {
@@ -88,6 +94,9 @@ type ConfigType struct {
 	UseCachingDNSResolver      bool               `mapstructure:"useCachingDNSResolver"`
 	CachingDNSRefreshTime      time.Duration      `mapstructure:"cachingDNSRefreshTime"`
 
+	TruncateTimeMap map[time.Duration]time.Duration `mapstructure:"truncateTime"`
+	TruncateTime    []DurationTruncate              `mapstructure:"-" json:"-"` // produce from TruncateTimeMap and sort in reverse order
+
 	ResponseCache cache.BytesCache `mapstructure:"-" json:"-"`
 	BackendCache  cache.BytesCache `mapstructure:"-" json:"-"`
 
@@ -118,10 +127,12 @@ var Config = ConfigType{
 	ResponseCacheConfig: CacheConfig{
 		Type:              "mem",
 		DefaultTimeoutSec: 60,
+		ShortTimeoutSec:   60,
 	},
 	BackendCacheConfig: CacheConfig{
 		Type:              "null",
 		DefaultTimeoutSec: 0,
+		ShortTimeoutSec:   0,
 	},
 	TimezoneString: "",
 	Graphite: GraphiteConfig{

@@ -74,6 +74,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 // timeShift(seriesList, timeShift, resetEnd=True)
 func (f *timeShift) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// FIXME(civil): support alignDst
+
 	offs, err := e.GetIntervalArg(1, -1)
 	if err != nil {
 		return nil, err
@@ -88,15 +89,15 @@ func (f *timeShift) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	if err != nil {
 		return nil, err
 	}
-
 	results := make([]*types.MetricData, 0, len(arg))
 
 	for _, a := range arg {
 		r := *a
 		r.Name = fmt.Sprintf("timeShift(%s,'%d',%v)", a.Name, offs, resetEnd)
 		r.StartTime = a.StartTime - int64(offs)
-		if !resetEnd {
-			r.StopTime = a.StopTime - int64(offs)
+		r.StopTime = a.StopTime - int64(offs)
+		if resetEnd && r.StopTime > until {
+			r.StopTime = until
 		}
 		length := int((r.StopTime - r.StartTime) / r.StepTime)
 		if length < 0 {

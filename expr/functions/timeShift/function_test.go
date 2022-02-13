@@ -2,7 +2,6 @@ package timeShift
 
 import (
 	"testing"
-	"time"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/metadata"
@@ -22,56 +21,86 @@ func init() {
 }
 
 func TestTimeShift(t *testing.T) {
-	now32 := time.Now().Unix()
+	var startTime int64 = 86400
 
-	tests := []th.EvalTestItem{
+	tests := []th.EvalTestItemWithRange{
 		// TODO(civil): Do not pass `true` resetEnd parameter in 0.15
 		{
-			`timeShift(metric1, "0s", true)`,
-			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{0, 1, 2, 3, 4, 5}, 1, now32)},
+			Target: `timeShift(metric1, "0s", true)`,
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: startTime, Until: startTime + 6}: {types.MakeMetricData("metric1", []float64{0, 1, 2, 3, 4, 5}, 1, startTime)},
 			},
-			[]*types.MetricData{types.MakeMetricData("timeShift(metric1,'0',true)",
-				[]float64{0, 1, 2, 3, 4, 5}, 1, now32)},
+			Want: []*types.MetricData{types.MakeMetricData("timeShift(metric1,'0',true)",
+				[]float64{0, 1, 2, 3, 4, 5}, 1, startTime)},
+			From:  startTime,
+			Until: startTime + 6,
 		},
 		{
-			`timeShift(metric1, "1s", false)`,
-			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", -1, 0}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, now32-1)},
+			Target: `timeShift(metric1, "1s", false)`,
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: startTime - 1, Until: startTime + 5}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, startTime-1)},
 			},
-			[]*types.MetricData{types.MakeMetricData("timeShift(metric1,'-1',false)",
-				[]float64{-1, 0, 1, 2, 3, 4}, 1, now32)},
+			Want: []*types.MetricData{types.MakeMetricData("timeShift(metric1,'-1',false)",
+				[]float64{-1, 0, 1, 2, 3, 4}, 1, startTime)},
+			From:  startTime,
+			Until: startTime + 6,
 		},
 		{
-			`timeShift(metric1, "1s", true)`,
-			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", -1, 0}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, now32-1)},
+			Target: `timeShift(metric1, "1s", true)`,
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: startTime - 1, Until: startTime + 5}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3}, 1, startTime-1)},
 			},
-			[]*types.MetricData{types.MakeMetricData("timeShift(metric1,'-1',true)",
-				[]float64{-1, 0, 1, 2, 3}, 1, now32)},
+			Want: []*types.MetricData{types.MakeMetricData("timeShift(metric1,'-1',true)",
+				[]float64{-1, 0, 1, 2, 3}, 1, startTime)},
+			From:  startTime,
+			Until: startTime + 6,
 		},
 		{
-			`timeShift(metric1, "1h", false)`,
-			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", -60 * 60, -60*60 + 1}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, now32-60*60)},
+			Target: `timeShift(metric1, "1h", false)`,
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: startTime - 60*60, Until: startTime - 60*60 + 6}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, startTime-60*60)},
 			},
-			[]*types.MetricData{types.MakeMetricData("timeShift(metric1,'-3600',false)",
-				[]float64{-1, 0, 1, 2, 3, 4}, 1, now32)},
+			Want: []*types.MetricData{types.MakeMetricData("timeShift(metric1,'-3600',false)",
+				[]float64{-1, 0, 1, 2, 3, 4}, 1, startTime)},
+			From:  startTime,
+			Until: startTime + 6,
 		},
 		{
-			`timeShift(metric1, "1h", true)`,
-			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", -60 * 60, -60*60 + 1}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, now32-60*60)},
+			Target: `timeShift(metric1, "1h", true)`,
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: startTime - 60*60, Until: startTime - 60*60 + 6}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, startTime-60*60)},
 			},
-			[]*types.MetricData{},
+			Want: []*types.MetricData{types.MakeMetricData("timeShift(metric1,'-3600',true)",
+				[]float64{-1, 0, 1, 2, 3, 4}, 1, startTime)},
+			From:  startTime,
+			Until: startTime + 6,
+		},
+		{
+			Target: `timeShift(metric1, "1d", false)`,
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: startTime - 86400, Until: startTime - 86400 + 6}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, startTime-86400)},
+			},
+			Want: []*types.MetricData{types.MakeMetricData("timeShift(metric1,'-86400',false)",
+				[]float64{-1, 0, 1, 2, 3, 4}, 1, startTime)},
+			From:  startTime,
+			Until: startTime + 6,
+		},
+		{
+			Target: `timeShift(metric1, "1d", true)`,
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: startTime - 86400, Until: startTime - 86400 + 6}: {types.MakeMetricData("metric1", []float64{-1, 0, 1, 2, 3, 4}, 1, startTime-86400)},
+			},
+			Want: []*types.MetricData{types.MakeMetricData("timeShift(metric1,'-86400',true)",
+				[]float64{-1, 0, 1, 2, 3, 4}, 1, startTime)},
+			From:  startTime,
+			Until: startTime + 6,
 		},
 	}
 
 	for _, tt := range tests {
 		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
-			th.TestEvalExpr(t, &tt)
+			th.TestEvalExprWithRange(t, &tt)
 		})
 	}
-
 }

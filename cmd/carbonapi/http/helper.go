@@ -150,7 +150,7 @@ func getFormat(r *http.Request, defaultFormat responseFormat) (responseFormat, b
 	return f, ok, format
 }
 
-func writeResponse(w http.ResponseWriter, returnCode int, b []byte, format responseFormat, jsonp string, carbonapiUUID string) {
+func writeResponse(w http.ResponseWriter, returnCode int, b []byte, format responseFormat, jsonp, carbonapiUUID string) {
 	//TODO: Simplify that switch
 	w.Header().Set(ctxHeaderUUID, carbonapiUUID)
 	switch format {
@@ -251,4 +251,15 @@ func deferredAccessLogging(accessLogger *zap.Logger, accessLogDetails *carbonapi
 		accessLogDetails.HTTPCode = http.StatusOK
 		accessLogger.Info("request served", zap.Any("data", *accessLogDetails))
 	}
+}
+
+// durations slice is small, so no need ordered tree or other complex structure
+func timestampTruncate(ts int64, duration time.Duration, durations []config.DurationTruncate) int64 {
+	tm := time.Unix(ts, 0).UTC()
+	for _, d := range durations {
+		if duration > d.Duration || d.Duration == 0 {
+			return tm.Truncate(d.Truncate).UTC().Unix()
+		}
+	}
+	return ts
 }

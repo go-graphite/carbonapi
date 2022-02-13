@@ -3,6 +3,7 @@ package helpers
 import (
 	"math"
 	"testing"
+	"time"
 
 	th "github.com/go-graphite/carbonapi/tests"
 	"github.com/go-graphite/carbonapi/zipper/protocols/prometheus/types"
@@ -78,6 +79,84 @@ func TestAlignValues(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := AlignValues(tt.args.startTime, tt.args.stopTime, tt.args.step, tt.args.promValues); !th.NearlyEqual(got, tt.want) {
 				t.Errorf("AlignValues() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAdjustStep(t *testing.T) {
+	type args struct {
+		start                int64
+		stop                 int64
+		maxPointsPerQuery    int64
+		minStep              int64
+		forceMinStepInterval time.Duration
+	}
+	tests := []struct {
+		name string
+		args args
+		want int64
+	}{
+		{
+			"(interval/step) points is less than maxPointsPerQuery (not force min_step)",
+			args{
+				0,
+				60 * 60 * 24, // interval =  24h
+				60 * 24,      // maxDataPoints =  60 points for 1 hour x 24 hours
+				60,           // step = 1min
+				0,            // don't force min_step
+			},
+			60,
+		},
+		{
+			"(interval/step) points is more than maxPointsPerQuery (not force min_step)",
+			args{
+				0,
+				60 * 60 * 25, // interval = 25h
+				60 * 24,      // maxDataPoints = 60 points for 1 hour x 24 hours
+				60,           // step = 1min
+				0,            // don't force min_step
+			},
+			120,
+		},
+		{
+			"(interval/step) points is much more than maxPointsPerQuery (not force min_step)",
+			args{
+				0,
+				60 * 60 * 50, // interval = 50h
+				60 * 24,      // maxDataPoints = 60 points for 1 hour x 24 hours
+				60,           // step = 1min
+				0,            // don't force min_step
+			},
+			300,
+		},
+		{
+			"force min_step for more than interval while maxPointsPerQuery is less than (interval/step) points",
+			args{
+				0,
+				60 * 20,          // interval = 20min
+				15,               // maxDataPoints = 15 points
+				60,               // step = 1min
+				30 * time.Minute, // do(!) force min_step for 30min
+			},
+			60,
+		},
+		{
+			"force min_step for less than interval while maxPointsPerQuery is less than (interval/step) points",
+			args{
+				0,
+				60 * 20,          // interval = 20min
+				15,               // maxDataPoints = 15 points
+				60,               // step = 1min
+				10 * time.Minute, // do(!) force min_step for 10min
+			},
+			120,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := AdjustStep(tt.args.start, tt.args.stop, tt.args.maxPointsPerQuery, tt.args.minStep, tt.args.forceMinStepInterval); got != tt.want {
+				t.Errorf("AdjustStep() = %v, want %v", got, tt.want)
 			}
 		})
 	}

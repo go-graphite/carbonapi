@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/go-graphite/carbonapi/zipper/protocols/prometheus/types"
 )
@@ -84,8 +85,15 @@ func AlignValues(startTime, stopTime, step int64, promValues []types.Value) []fl
 // AdjustStep adjusts step keeping in mind default/configurable limit of maximum points per query
 // Steps sequence is aligned with Grafana. Step progresses in the following order:
 // minimal configured step if not default => 20 => 30 => 60 => 120 => 300 => 600 => 900 => 1200 => 1800 => 3600 => 7200 => 10800 => 21600 => 43200 => 86400
-func AdjustStep(start, stop, maxPointsPerQuery, minStep int64) int64 {
-	safeStep := int64(math.Ceil(float64(stop-start) / float64(maxPointsPerQuery)))
+func AdjustStep(start, stop, maxPointsPerQuery, minStep int64, forceMinStepInterval time.Duration) int64 {
+
+	interval := float64(stop - start)
+
+	if forceMinStepInterval.Seconds() > interval {
+		return minStep
+	}
+
+	safeStep := int64(math.Ceil(interval / float64(maxPointsPerQuery)))
 
 	step := minStep
 	if safeStep > minStep {

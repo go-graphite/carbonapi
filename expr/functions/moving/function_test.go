@@ -41,6 +41,13 @@ func TestMoving(t *testing.T) {
 			[]*types.MetricData{types.MakeMetricData("movingAverage(metric1,4)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), 1, 1.25, 1.5, 1.75, 2.5, 3.5, 4, 5}, 1, 0)}, // StartTime = from
 		},
 		{
+			"movingAverage(metric1,'5s')",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", -5, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3}, 10, now32)}, // step > windowSize
+			},
+			[]*types.MetricData{types.MakeMetricData(`movingAverage(metric1,"5s")`, []float64{math.NaN(), math.NaN(), math.NaN()}, 10, now32)}, // StartTime = from
+		},
+		{
 			"movingSum(metric1,2)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5, 6}, 1, now32)},

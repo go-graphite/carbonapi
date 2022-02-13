@@ -69,8 +69,9 @@ type PrometheusGroup struct {
 	maxTries             int
 	maxMetricsPerRequest int
 
-	step              int64
-	maxPointsPerQuery int64
+	step                 int64
+	maxPointsPerQuery    int64
+	forceMinStepInterval time.Duration
 
 	startDelay StartDelay
 
@@ -130,6 +131,26 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		maxPointsPerQuery = int64(mppq)
 	}
 
+	var forceMinStepInterval time.Duration
+	fmsiI, ok := config.BackendOptions["force_min_step_interval"]
+	if ok {
+		fmsiS, ok := fmsiI.(string)
+		if !ok {
+			logger.Fatal("failed to parse force_min_step_interval",
+				zap.String("type_parsed", fmt.Sprintf("%T", fmsiI)),
+				zap.String("type_expected", "time.Duration"),
+			)
+		}
+		var err error
+		forceMinStepInterval, err = time.ParseDuration(fmsiS)
+		if err != nil {
+			logger.Fatal("failed to parse force_min_step_interval",
+				zap.String("value_provided", fmsiS),
+				zap.String("type_expected", "time.Duration"),
+			)
+		}
+	}
+
 	delay := StartDelay{
 		IsSet:      false,
 		IsDuration: false,
@@ -160,10 +181,10 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 
 	httpQuery := helper.NewHttpQuery(config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv2PB)
 
-	return NewWithEverythingInitialized(logger, config, tldCacheDisabled, limiter, step, maxPointsPerQuery, delay, httpQuery, httpClient)
+	return NewWithEverythingInitialized(logger, config, tldCacheDisabled, limiter, step, maxPointsPerQuery, forceMinStepInterval, delay, httpQuery, httpClient)
 }
 
-func NewWithEverythingInitialized(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool, limiter limiter.ServerLimiter, step, maxPointsPerQuery int64, delay StartDelay, httpQuery *helper.HttpQuery, httpClient *http.Client) (types.BackendServer, merry.Error) {
+func NewWithEverythingInitialized(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool, limiter limiter.ServerLimiter, step, maxPointsPerQuery int64, forceMinStepInterval time.Duration, delay StartDelay, httpQuery *helper.HttpQuery, httpClient *http.Client) (types.BackendServer, merry.Error) {
 	c := &PrometheusGroup{
 		groupName:            config.GroupName,
 		servers:              config.Servers,
@@ -172,6 +193,7 @@ func NewWithEverythingInitialized(logger *zap.Logger, config types.BackendV2, tl
 		maxTries:             *config.MaxTries,
 		maxMetricsPerRequest: *config.MaxBatchSize,
 		step:                 step,
+		forceMinStepInterval: forceMinStepInterval,
 		maxPointsPerQuery:    maxPointsPerQuery,
 		startDelay:           delay,
 
@@ -233,7 +255,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	if len(request.Metrics) > 0 && request.Metrics[0].MaxDataPoints != 0 {
 		maxPointsPerQuery = request.Metrics[0].MaxDataPoints
 	}
-	step := helpers.AdjustStep(start, stop, maxPointsPerQuery, c.step)
+	step := helpers.AdjustStep(start, stop, maxPointsPerQuery, c.step, c.forceMinStepInterval)
 
 	stepStr := strconv.FormatInt(step, 10)
 	for pathExpr, targets := range pathExprToTargets {

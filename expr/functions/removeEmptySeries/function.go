@@ -56,7 +56,7 @@ func (f *removeEmptySeries) Do(ctx context.Context, e parser.Expr, from, until i
 				}
 			}
 		}
-		if nonNull/float64(len(arg.Values)) >= factor {
+		if nonNull != 0 && nonNull/float64(len(arg.Values)) >= factor {
 			results = append(results, arg)
 		}
 	}

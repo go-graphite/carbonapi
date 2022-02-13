@@ -23,7 +23,7 @@ func tagHandler(w http.ResponseWriter, r *http.Request) {
 	uuid := uuid.NewV4()
 
 	// TODO: Migrate to context.WithTimeout
-	ctx := r.Context()
+	ctx := utilctx.SetUUID(r.Context(), uuid.String())
 	requestHeaders := utilctx.GetLogHeaders(ctx)
 	username, _, _ := r.BasicAuth()
 

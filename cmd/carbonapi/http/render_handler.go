@@ -23,6 +23,7 @@ import (
 	"github.com/go-graphite/carbonapi/zipper/helper"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
+	stringutils "github.com/msaf1980/go-stringutils"
 	uuid "github.com/satori/go.uuid"
 	"go.uber.org/zap"
 )
@@ -153,12 +154,28 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	cleanupParams(r)
 
-	responseCacheKey := r.Form.Encode()
-
 	// normalize from and until values
+	now := timeNow()
+	now32 := now.Unix()
 	qtz := r.FormValue("tz")
-	from32 := date.DateParamToEpoch(from, qtz, timeNow().Add(-24*time.Hour).Unix(), config.Config.DefaultTimeZone)
-	until32 := date.DateParamToEpoch(until, qtz, timeNow().Unix(), config.Config.DefaultTimeZone)
+	from32 := date.DateParamToEpoch(from, qtz, now.Add(-24*time.Hour).Unix(), config.Config.DefaultTimeZone)
+	until32 := date.DateParamToEpoch(until, qtz, now.Unix(), config.Config.DefaultTimeZone)
+
+	var responseCacheKey string
+
+	if len(config.Config.TruncateTime) > 0 {
+		duration := time.Second * time.Duration(until32-from32)
+		from32 = timestampTruncate(from32, duration, config.Config.TruncateTime)
+		until32 = timestampTruncate(until32, duration, config.Config.TruncateTime)
+		responseCacheKey = responseCacheComputeKey(from32, until32, targets, formatRaw, maxDataPoints, noNullPoints, template)
+		if duration <= time.Hour && now32-until32 < 60 {
+			// short cache ttl
+			responseCacheTimeout = config.Config.ResponseCacheConfig.ShortTimeoutSec
+			backendCacheTimeout = config.Config.BackendCacheConfig.ShortTimeoutSec
+		}
+	} else {
+		responseCacheKey = r.Form.Encode()
+	}
 
 	accessLogDetails.UseCache = useCache
 	accessLogDetails.FromRaw = from
@@ -246,7 +263,14 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	errors := make(map[string]merry.Error)
-	backendCacheKey := backendCacheComputeKey(from, until, targets)
+
+	var backendCacheKey string
+	if len(config.Config.TruncateTime) > 0 {
+		backendCacheKey = backendCacheComputeKeyAbs(from32, until32, targets)
+	} else {
+		backendCacheKey = backendCacheComputeKey(from, until, targets)
+	}
+
 	results, err := backendCacheFetchResults(logger, useCache, backendCacheKey, accessLogDetails)
 
 	if err != nil {
@@ -360,12 +384,49 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	accessLogDetails.HaveNonFatalErrors = gotErrors
 }
 
+func responseCacheComputeKey(from, until int64, targets []string, format string, maxDataPoints int64, noNullPoints bool, template string) string {
+	var responseCacheKey stringutils.Builder
+	responseCacheKey.Grow(256)
+	responseCacheKey.WriteString("from:")
+	responseCacheKey.WriteInt(from, 10)
+	responseCacheKey.WriteString(" until:")
+	responseCacheKey.WriteInt(until, 10)
+	responseCacheKey.WriteString(" targets:")
+	responseCacheKey.WriteString(strings.Join(targets, ","))
+	responseCacheKey.WriteString(" format:")
+	responseCacheKey.WriteString(format)
+	if maxDataPoints > 0 {
+		responseCacheKey.WriteString(" maxDataPoints:")
+		responseCacheKey.WriteInt(maxDataPoints, 10)
+	}
+	if noNullPoints {
+		responseCacheKey.WriteString(" noNullPoints")
+	}
+	if len(template) > 0 {
+		responseCacheKey.WriteString(" template:")
+		responseCacheKey.WriteString(template)
+	}
+	return responseCacheKey.String()
+}
+
 func backendCacheComputeKey(from, until string, targets []string) string {
 	var backendCacheKey bytes.Buffer
 	backendCacheKey.WriteString("from:")
 	backendCacheKey.WriteString(from)
 	backendCacheKey.WriteString(" until:")
 	backendCacheKey.WriteString(until)
+	backendCacheKey.WriteString(" targets:")
+	backendCacheKey.WriteString(strings.Join(targets, ","))
+	return backendCacheKey.String()
+}
+
+func backendCacheComputeKeyAbs(from, until int64, targets []string) string {
+	var backendCacheKey stringutils.Builder
+	backendCacheKey.Grow(128)
+	backendCacheKey.WriteString("from:")
+	backendCacheKey.WriteInt(from, 10)
+	backendCacheKey.WriteString(" until:")
+	backendCacheKey.WriteInt(until, 10)
 	backendCacheKey.WriteString(" targets:")
 	backendCacheKey.WriteString(strings.Join(targets, ","))
 	return backendCacheKey.String()

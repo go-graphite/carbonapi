@@ -62,7 +62,7 @@ func versionToFeatureSet(logger *zap.Logger, version string) *vmSupportedFeature
 	}
 	res.versionParsed[2] = v3
 
-	if v2 >= 41 {
+	if v2 >= 42 {
 		res.SupportGraphiteFindAPI = true
 	}
 

@@ -17,6 +17,13 @@ import (
 	"go.uber.org/zap"
 )
 
+type fetchTarget struct {
+	name  string
+	start int64
+	stop  int64
+	step  string
+}
+
 func (c *VictoriaMetricsGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, merry.Error) {
 	supportedFeatures, _ := c.featureSet.Load().(*vmSupportedFeatures)
 	if !supportedFeatures.SupportOptimizedGraphiteFetch {
@@ -33,38 +40,44 @@ func (c *VictoriaMetricsGroup) Fetch(ctx context.Context, request *protov3.Multi
 	}
 	rewrite, _ := url.Parse(serverUrl)
 
-	pathExprToTargets := make(map[string][]string)
+	pathExprToTargets := make(map[string][]*fetchTarget)
 	for _, m := range request.Metrics {
+		var maxPointsPerQuery int64
+		if m.MaxDataPoints != 0 {
+			maxPointsPerQuery = m.MaxDataPoints
+		} else {
+			maxPointsPerQuery = c.maxPointsPerQuery
+		}
+
+		step := helpers.AdjustStep(m.StartTime, m.StopTime, maxPointsPerQuery, c.step, c.forceMinStepInterval)
+		stepStr := strconv.FormatInt(step, 10)
+
+		t := &fetchTarget{
+			name:  m.Name,
+			start: m.StartTime,
+			stop:  m.StopTime,
+			step:  stepStr,
+		}
 		targets := pathExprToTargets[m.PathExpression]
-		pathExprToTargets[m.PathExpression] = append(targets, m.Name)
+		pathExprToTargets[m.PathExpression] = append(targets, t)
 	}
 
 	var r protov3.MultiFetchResponse
 	var e merry.Error
 
-	start := request.Metrics[0].StartTime
-	stop := request.Metrics[0].StopTime
-
-	maxPointsPerQuery := c.maxPointsPerQuery
-	if len(request.Metrics) > 0 && request.Metrics[0].MaxDataPoints != 0 {
-		maxPointsPerQuery = request.Metrics[0].MaxDataPoints
-	}
-	step := helpers.AdjustStep(start, stop, maxPointsPerQuery, c.step)
-
-	stepStr := strconv.FormatInt(step, 10)
 	for pathExpr, targets := range pathExprToTargets {
 		for _, target := range targets {
 			logger.Debug("got some target to query",
 				zap.Any("pathExpr", pathExpr),
-				zap.Any("target", target),
+				zap.Any("target", target.name),
 			)
 			// rewrite metric for Tag
 			// Make local copy
-			stepLocalStr := stepStr
-			if strings.HasPrefix(target, "seriesByTag") {
-				stepLocalStr, target = helpers.SeriesByTagToPromQL(stepLocalStr, target)
+			stepLocalStr := target.step
+			if strings.HasPrefix(target.name, "seriesByTag") {
+				stepLocalStr, target.name = helpers.SeriesByTagToPromQL(stepLocalStr, target.name)
 			} else {
-				target = fmt.Sprintf("{__graphite__=%q}", target)
+				target.name = fmt.Sprintf("{__graphite__=%q}", target.name)
 			}
 			if stepLocalStr[len(stepLocalStr)-1] >= '0' && stepLocalStr[len(stepLocalStr)-1] <= '9' {
 				stepLocalStr += "s"
@@ -84,16 +97,18 @@ func (c *VictoriaMetricsGroup) Fetch(ctx context.Context, request *protov3.Multi
 			stepLocal := int64(t.Seconds())
 
 			logger.Debug("will do query",
-				zap.String("query", target),
-				zap.Int64("start", start),
-				zap.Int64("stop", stop),
+				zap.String("query", target.name),
+				zap.Int64("start", target.start),
+				zap.Int64("stop", target.stop),
 				zap.String("step", stepLocalStr),
+				zap.String("max_lookback", stepLocalStr),
 			)
 			v := url.Values{
-				"query": []string{target},
-				"start": []string{strconv.Itoa(int(start))},
-				"end":   []string{strconv.Itoa(int(stop))},
-				"step":  []string{stepLocalStr},
+				"query":        []string{target.name},
+				"start":        []string{strconv.Itoa(int(target.start))},
+				"end":          []string{strconv.Itoa(int(target.stop))},
+				"step":         []string{stepLocalStr},
+				"max_lookback": []string{stepLocalStr},
 			}
 
 			rewrite.RawQuery = v.Encode()
@@ -131,9 +146,9 @@ func (c *VictoriaMetricsGroup) Fetch(ctx context.Context, request *protov3.Multi
 			if response.Status != "success" {
 				stats.RenderErrors += 1
 				if e == nil {
-					e = types.ErrFailedToFetch.WithMessage(response.Status).WithValue("query", target).WithValue("status", response.Status)
+					e = types.ErrFailedToFetch.WithMessage(response.Status).WithValue("query", target.name).WithValue("status", response.Status)
 				} else {
-					e = e.WithCause(err2).WithValue("query", target).WithValue("status", response.Status)
+					e = e.WithCause(err2).WithValue("query", target.name).WithValue("status", response.Status)
 				}
 				continue
 			}
@@ -141,8 +156,8 @@ func (c *VictoriaMetricsGroup) Fetch(ctx context.Context, request *protov3.Multi
 			for _, m := range response.Data.Result {
 				// We always should trust backend's response (to mimic behavior of graphite for grahpite native protoocols)
 				// See https://github.com/go-graphite/carbonapi/issues/504 and https://github.com/go-graphite/carbonapi/issues/514
-				realStart := start
-				realStop := stop
+				realStart := target.start
+				realStop := target.stop
 				if len(m.Values) > 0 {
 					realStart = int64(m.Values[0].Timestamp)
 					realStop = int64(m.Values[len(m.Values)-1].Timestamp)
@@ -158,6 +173,8 @@ func (c *VictoriaMetricsGroup) Fetch(ctx context.Context, request *protov3.Multi
 					StepTime:          stepLocal,
 					Values:            alignedValues,
 					XFilesFactor:      0.0,
+					RequestStartTime:  target.start,
+					RequestStopTime:   target.stop,
 				})
 			}
 		}

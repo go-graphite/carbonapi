@@ -1,0 +1,4 @@
+# return NaNs when window size is smaller than data step, otherwise return data unmodified
+# e.g. movingAverage(metric1, "30sec") for data with 1 minute step
+# default is true for graphite-web compatibility
+returnNaNsIfStepMismatch: false
