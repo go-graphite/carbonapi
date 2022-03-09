@@ -37,7 +37,7 @@ func (f *pearsonClosest) Do(ctx context.Context, e parser.Expr, from, until int6
 		return nil, types.ErrTooManyArguments
 	}
 
-	ref, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
+	ref, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (f *pearsonClosest) Do(ctx context.Context, e parser.Expr, from, until int6
 		return nil, types.ErrWildcardNotAllowed
 	}
 
-	compare, err := helper.GetSeriesArg(e.Args()[1], from, until, values)
+	compare, err := helper.GetSeriesArg(ctx, e.Args()[1], from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,7 @@ Implementation of Pearson product-moment correlation coefficient (PMCC) function
 
 	pearsonClosest( series, seriesList, n, direction="abs" )
 
-    
+
 Return the n series in seriesList with closest Pearson score to the first series argument.
 An optional direction parameter may also be given:
 	"abs"   - (default) Series with any Pearson score + or - [-1 .. 1].

@@ -30,7 +30,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // scale(seriesList, factor)
 func (f *scale) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -72,14 +72,14 @@ func (f *scale) Description() map[string]types.FunctionDescription {
 	return map[string]types.FunctionDescription{
 		"scale": {
 			Description: "Takes one metric or a wildcard seriesList followed by a constant, and multiplies the datapoint\n" +
-				"by the constant provided at each point.\n"+
-				"carbonapi extends this function by optional 3-rd parameter that accepts unix-timestamp. If provided, only values with timestamp newer than it will be scaled\n\n"+
-				"Example:\n\n.. code-block:: none\n\n  &target=scale(Server.instance01.threads.busy,10)\n  &target=scale(Server.instance*.threads.busy,10)\n\n"+
+				"by the constant provided at each point.\n" +
+				"carbonapi extends this function by optional 3-rd parameter that accepts unix-timestamp. If provided, only values with timestamp newer than it will be scaled\n\n" +
+				"Example:\n\n.. code-block:: none\n\n  &target=scale(Server.instance01.threads.busy,10)\n  &target=scale(Server.instance*.threads.busy,10)\n\n" +
 				"Alias: scaleAfterTimestamp",
-			Function:    "scale(seriesList, factor)",
-			Group:       "Transform",
-			Module:      "graphite.render.functions",
-			Name:        "scale",
+			Function: "scale(seriesList, factor)",
+			Group:    "Transform",
+			Module:   "graphite.render.functions",
+			Name:     "scale",
 			Params: []types.FunctionParam{
 				{
 					Name:     "seriesList",
@@ -101,13 +101,13 @@ func (f *scale) Description() map[string]types.FunctionDescription {
 		},
 		"scaleAfterTimestamp": {
 			Description: "Takes one metric or a wildcard seriesList followed by a constant, and multiplies the datapoint\n" +
-				"by the constant provided at each point.\n"+
-				"carbonapi extends this function by optional 3-rd parameter that accepts unix-timestamp. If provided, only values with timestamp newer than it will be scaled\n\n"+
+				"by the constant provided at each point.\n" +
+				"carbonapi extends this function by optional 3-rd parameter that accepts unix-timestamp. If provided, only values with timestamp newer than it will be scaled\n\n" +
 				"Example:\n\n.. code-block:: none\n\n  &target=scale(Server.instance01.threads.busy,10)\n  &target=scale(Server.instance*.threads.busy,10)",
-			Function:    "scale(seriesList, factor)",
-			Group:       "Transform",
-			Module:      "graphite.render.functions",
-			Name:        "scale",
+			Function: "scale(seriesList, factor)",
+			Group:    "Transform",
+			Module:   "graphite.render.functions",
+			Name:     "scale",
 			Params: []types.FunctionParam{
 				{
 					Name:     "seriesList",

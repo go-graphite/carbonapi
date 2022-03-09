@@ -42,7 +42,7 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 		return nil, err
 	}
 
-	numerators, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
+	numerators, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
 	if err != nil {
 		if merry.Is(err, parser.ErrSeriesDoesNotExist) && !math.IsNaN(defaultValue) {
 			useConstant = true
@@ -61,7 +61,7 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 	}
 	sort.Slice(numerators, func(i, j int) bool { return numerators[i].Name < numerators[j].Name })
 
-	denominators, err := helper.GetSeriesArg(e.Args()[1], from, until, values)
+	denominators, err := helper.GetSeriesArg(ctx, e.Args()[1], from, until, values)
 	if err != nil {
 		if merry.Is(err, parser.ErrSeriesDoesNotExist) && !math.IsNaN(defaultValue) && !useConstant {
 			useConstant = true
