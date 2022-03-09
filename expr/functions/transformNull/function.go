@@ -33,7 +33,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // transformNull(seriesList, default=0)
 func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 	var valMap []bool
 	referenceSeriesExpr := e.GetNamedArg("referenceSeries")
 	if !referenceSeriesExpr.IsInterfaceNil() {
-		referenceSeries, err := helper.GetSeriesArg(referenceSeriesExpr, from, until, values)
+		referenceSeries, err := helper.GetSeriesArg(ctx, referenceSeriesExpr, from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -106,14 +106,14 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 	}
 	if len(arg) == 0 && defaultOnAbsent {
 		values := []float64{defv, defv}
-		step := until-from
+		step := until - from
 		results = append(results, &types.MetricData{
 			FetchResponse: pbv3.FetchResponse{
-				Name: e.ToString(),
+				Name:      e.ToString(),
 				StartTime: from,
-				StopTime: from+step*int64(len(values)),
-				StepTime: step,
-				Values: values,
+				StopTime:  from + step*int64(len(values)),
+				StepTime:  step,
+				Values:    values,
 			},
 			Tags: map[string]string{"name": e.ToString()},
 		})

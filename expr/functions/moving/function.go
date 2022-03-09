@@ -104,7 +104,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		start -= int64(n)
 	}
 
-	arg, err := helper.GetSeriesArg(e.Args()[0], start, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], start, until, values)
 	if err != nil {
 		return nil, err
 	}
