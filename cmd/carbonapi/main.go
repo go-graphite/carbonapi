@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/pprof"
+	"os"
 	"sync"
 
 	"github.com/gorilla/handlers"
@@ -31,6 +32,7 @@ func main() {
 	logger := zapwriter.Logger("main")
 
 	configPath := flag.String("config", "", "Path to the `config file`.")
+	checkConfig := flag.Bool("check-config", false, "Check config file and exit.")
 	envPrefix := flag.String("envprefix", "CARBONAPI", "Prefix for environment variables override")
 	if *envPrefix == "(empty)" {
 		*envPrefix = ""
@@ -40,6 +42,9 @@ func main() {
 	}
 	flag.Parse()
 	config.SetUpViper(logger, configPath, *envPrefix)
+	if *checkConfig {
+		os.Exit(0)
+	}
 	config.SetUpConfigUpstreams(logger)
 	config.SetUpConfig(logger, BuildVersion)
 	carbonapiHttp.SetupMetrics(logger)
