@@ -9,7 +9,6 @@ import (
 	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
-	"github.com/go-graphite/carbonapi/expr/tags"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
@@ -59,7 +58,7 @@ func (f *groupByTags) Do(ctx context.Context, e parser.Expr, from, until int64, 
 
 	// TODO(civil): Think how to optimize it, as it's ugly
 	for _, a := range args {
-		metricTags := tags.ExtractTags(a.Name)
+		metricTags := a.Tags
 		var keyBuilder strings.Builder
 		for _, tag := range tagNames {
 			value := metricTags[tag]
