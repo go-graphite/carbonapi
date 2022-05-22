@@ -48,12 +48,12 @@ github.com/felixge/httpsnoop
 # github.com/fsnotify/fsnotify v1.4.9
 ## explicit
 github.com/fsnotify/fsnotify
-# github.com/go-graphite/protocol v0.4.3
+# github.com/go-graphite/protocol v1.0.0
 ## explicit
 github.com/go-graphite/protocol/carbonapi_v2_pb
 github.com/go-graphite/protocol/carbonapi_v3_grpc
 github.com/go-graphite/protocol/carbonapi_v3_pb
-# github.com/gogo/protobuf v1.2.1
+# github.com/gogo/protobuf v1.3.2
 github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/protoc-gen-gogo/descriptor
@@ -178,8 +178,7 @@ go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
 # golang.org/x/mod v0.4.2
 ## explicit
-# golang.org/x/net v0.0.0-20210428140749-89ef3d95e781
-## explicit
+# golang.org/x/net v0.0.0-20210525063256-abc453219eb5
 golang.org/x/net/context
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
@@ -223,7 +222,7 @@ gonum.org/v1/gonum/mat
 # google.golang.org/genproto v0.0.0-20210429181445-86c259c2b4ab
 ## explicit
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.37.0
+# google.golang.org/grpc v1.38.0
 ## explicit
 google.golang.org/grpc
 google.golang.org/grpc/attributes
