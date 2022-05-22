@@ -18,6 +18,10 @@ jobs:
       uses: actions/setup-go@v3
       with:
         go-version: ${{ matrix.go }}
+    - name: Set up Ruby for package_cloud uploader to work
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '2.7' # Version range or exact version of a Ruby version to use, using semvers version range syntax.
     - name: Install packaging dependencies
       run: |
         sudo apt-get install libcairo2-dev mercurial pkg-config wget -y
