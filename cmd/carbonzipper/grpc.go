@@ -8,7 +8,7 @@ import (
 
 	protov3grpc "github.com/go-graphite/protocol/carbonapi_v3_grpc"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	gpb "github.com/golang/protobuf/ptypes/empty"
+	gpb "google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
