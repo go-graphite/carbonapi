@@ -93,6 +93,7 @@ type ConfigType struct {
 	HTTPResponseStackTrace     bool               `mapstructure:"httpResponseStackTrace"`
 	UseCachingDNSResolver      bool               `mapstructure:"useCachingDNSResolver"`
 	CachingDNSRefreshTime      time.Duration      `mapstructure:"cachingDNSRefreshTime"`
+	SortResponseMetrics        bool               `mapstructure:"sortResponseMetrics"`
 
 	TruncateTimeMap map[time.Duration]time.Duration `mapstructure:"truncateTime"`
 	TruncateTime    []DurationTruncate              `mapstructure:"-" json:"-"` // produce from TruncateTimeMap and sort in reverse order
@@ -175,4 +176,5 @@ var Config = ConfigType{
 	HTTPResponseStackTrace: true,
 	UseCachingDNSResolver:  false,
 	CachingDNSRefreshTime:  1 * time.Minute,
+	SortResponseMetrics:    true,
 }

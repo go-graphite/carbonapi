@@ -91,6 +91,13 @@ Please note that this DNS resolver is deliberately non-RFC compliant and will ig
 Default: false
 
 ***
+## sortResponseMetrics
+
+Sort response metrics. This option must be set to true for graphite-web compatibility, however in some cases that could provide substantial performance benefits if you are ok with reply that have random order of metrics
+
+Default: true
+
+***
 ## cachingDNSRefreshTime
 
 If `useCachingDNSResolver` is set to true, this is the TTL for DNS records to be valid.

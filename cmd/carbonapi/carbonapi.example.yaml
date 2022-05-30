@@ -22,6 +22,9 @@ prefix: ""
 useCachingDNSResolver: false
 # TTL for DNS records in DNS cache. Only matters if `useCachingDNSResolver` is enabled.
 cachingDNSRefreshTime: "1m"
+# sort response metrics. This option must be set to true for graphite-web compatibility, however in some cases that
+# could provide substantial performance benefits if you are ok with reply that have random order of metrics
+sortResponseMetrics: true
 # Specify if metrics are exported over HTTP and if they are available on the same address or not
 # pprofEnabled controls if extra HTTP Handlers to profile and debug application will be available
 expvar:

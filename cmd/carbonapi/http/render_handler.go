@@ -23,7 +23,7 @@ import (
 	"github.com/go-graphite/carbonapi/zipper/helper"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
-	stringutils "github.com/msaf1980/go-stringutils"
+	"github.com/msaf1980/go-stringutils"
 	uuid "github.com/satori/go.uuid"
 	"go.uber.org/zap"
 )
@@ -298,8 +298,10 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			results = append(results, result...)
 		}
 
-		for mFetch := range values {
-			expr.SortMetrics(values[mFetch], mFetch)
+		if config.Config.SortResponseMetrics {
+			for mFetch := range values {
+				expr.SortMetrics(values[mFetch], mFetch)
+			}
 		}
 
 		if len(errors) == 0 {
