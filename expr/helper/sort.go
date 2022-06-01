@@ -1,11 +1,8 @@
 package helper
 
 import (
-	"fmt"
-	"regexp"
-	"strconv"
-
 	"github.com/go-graphite/carbonapi/expr/types"
+	"github.com/maruel/natural"
 )
 
 // ByVals sorts by values
@@ -45,17 +42,6 @@ func (s ByName) Less(i, j int) bool { return s[i].Name < s[j].Name }
 // ByNameNatural sorts metric naturally by name
 type ByNameNatural []*types.MetricData
 
-var dre = regexp.MustCompile(`\d+`)
-
-func (s ByNameNatural) pad(str string) string {
-	f := func(match []byte) []byte {
-		n, _ := strconv.ParseInt(string(match), 10, 64)
-		return []byte(fmt.Sprintf("%010d", n))
-	}
-
-	return string(dre.ReplaceAllFunc([]byte(str), f))
-}
-
 // Len returns length, required to be sortable
 func (s ByNameNatural) Len() int { return len(s) }
 
@@ -63,4 +49,4 @@ func (s ByNameNatural) Len() int { return len(s) }
 func (s ByNameNatural) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 
 // Less compares two elements with specified IDs, required to be sortable
-func (s ByNameNatural) Less(i, j int) bool { return s.pad(s[i].Name) < s.pad(s[j].Name) }
+func (s ByNameNatural) Less(i, j int) bool { return natural.Less(s[i].Name, s[j].Name) }
