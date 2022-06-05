@@ -70,7 +70,10 @@ func convertNameToGraphite(name string) string {
 // Steps sequence is aligned with Grafana. Step progresses in the following order:
 // minimal configured step if not default => 20 => 30 => 60 => 120 => 300 => 600 => 900 => 1200 => 1800 => 3600 => 7200 => 10800 => 21600 => 43200 => 86400
 func adjustStep(start, stop, maxPointsPerQuery, minStep int64) int64 {
-	safeStep := int64(math.Ceil(float64(stop-start) / float64(maxPointsPerQuery)))
+	safeStep := minStep
+	if maxPointsPerQuery != 0 {
+		safeStep = int64(math.Ceil(float64(stop-start) / float64(maxPointsPerQuery)))
+	}
 
 	step := minStep
 	if safeStep > minStep {

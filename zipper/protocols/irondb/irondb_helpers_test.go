@@ -71,10 +71,12 @@ func TestAdjustStep(t *testing.T) {
 		{"Test86400", 0, 120000, 1, 60, 86400},
 	}
 	for _, tc := range cases {
-		output := adjustStep(tc.start, tc.stop, tc.maxPointsPerQuery, tc.minStep)
-		if output != tc.expectedOutput {
-			t.Fatalf("%s: expected value: %d got: %d for input: %d %d %d %d",
-				tc.desc, tc.expectedOutput, output, tc.start, tc.stop, tc.maxPointsPerQuery, tc.minStep)
-		}
+		t.Run(tc.desc, func(t *testing.T) {
+			output := adjustStep(tc.start, tc.stop, tc.maxPointsPerQuery, tc.minStep)
+			if output != tc.expectedOutput {
+				t.Fatalf("%s: expected value: %d got: %d for input: %d %d %d %d",
+					tc.desc, tc.expectedOutput, output, tc.start, tc.stop, tc.maxPointsPerQuery, tc.minStep)
+			}
+		})
 	}
 }
