@@ -36,7 +36,7 @@ linters:
       - ineffassign
       - interfacer
       - lll
-        #- maligned
+      - maligned
       - misspell
       - nakedret
       - prealloc

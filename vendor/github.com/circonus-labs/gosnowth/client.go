@@ -3,10 +3,10 @@ package gosnowth
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math/rand"
 	"net"
 	"net/http"
 	"net/http/httptrace"
@@ -156,11 +156,11 @@ func NewSnowthClient(discover bool, addrs ...string) (*SnowthClient, error) {
 		return nil, err
 	}
 
-	return NewClient(cfg)
+	return NewClient(context.Background(), cfg)
 }
 
 // NewClient creates and performs initial setup of a new SnowthClient.
-func NewClient(cfg *Config) (*SnowthClient, error) {
+func NewClient(ctx context.Context, cfg *Config) (*SnowthClient, error) {
 	client := &http.Client{
 		Timeout: cfg.Timeout(),
 		Transport: &http.Transport{
@@ -209,7 +209,7 @@ func NewClient(cfg *Config) (*SnowthClient, error) {
 
 		// Call get stats to populate the id of this node.
 		node := &SnowthNode{url: url}
-		stats, err := sc.GetStats(node)
+		stats, err := sc.GetStatsContext(ctx, node)
 		if err != nil {
 			// This node had an error, put on inactive list.
 			nErr.Add(fmt.Errorf("unable to get status of node: %w", err))
@@ -238,7 +238,7 @@ func NewClient(cfg *Config) (*SnowthClient, error) {
 		// For robustness, we will perform a discovery of associated nodes
 		// this works by pulling the topology information for given nodes
 		// and adding nodes discovered within the topology into the client.
-		if err := sc.discoverNodes(); err != nil {
+		if err := sc.discoverNodes(ctx); err != nil {
 			return nil, fmt.Errorf("failed discovery of new nodes: %w", err)
 		}
 	}
@@ -446,7 +446,7 @@ func (sc *SnowthClient) WatchAndUpdate(ctx context.Context) {
 				return
 			case <-tick.C:
 				sc.LogDebugf("firing watch and update")
-				if err := sc.discoverNodes(); err != nil {
+				if err := sc.discoverNodes(ctx); err != nil {
 					sc.LogErrorf("failed to perform watch discovery: %v", err)
 				}
 
@@ -491,12 +491,12 @@ func (sc *SnowthClient) WatchAndUpdate(ctx context.Context) {
 // This function will go through the active nodes and get the topology
 // information which shows all other nodes included in the cluster, then adds
 // them as nodes to this client's active node pool.
-func (sc *SnowthClient) discoverNodes() error {
+func (sc *SnowthClient) discoverNodes(ctx context.Context) error {
 	success := false
 	mErr := newMultiError()
 	for _, node := range sc.ListActiveNodes() {
 		// lookup the topology
-		topology, err := sc.GetTopologyInfo(node)
+		topology, err := sc.GetTopologyInfoContext(ctx, node)
 		if err != nil {
 			mErr.Add(fmt.Errorf("error getting topology info: %w", err))
 			continue
@@ -699,9 +699,11 @@ func (sc *SnowthClient) ListActiveNodes() []*SnowthNode {
 func (sc *SnowthClient) GetActiveNode(idsets ...[]string) *SnowthNode {
 	sc.RLock()
 	defer sc.RUnlock()
+
 	if len(sc.activeNodes) == 0 {
 		return nil
 	}
+
 	for _, ids := range idsets {
 		for _, id := range ids {
 			for _, node := range sc.activeNodes {
@@ -711,7 +713,8 @@ func (sc *SnowthClient) GetActiveNode(idsets ...[]string) *SnowthNode {
 			}
 		}
 	}
-	return sc.activeNodes[rand.Intn(len(sc.activeNodes))]
+
+	return sc.activeNodes[time.Now().UnixNano()%int64(len(sc.activeNodes))]
 }
 
 // DoRequest sends a request to IRONdb.
@@ -748,35 +751,46 @@ func (sc *SnowthClient) DoRequestContext(ctx context.Context, node *SnowthNode,
 	nodes := append([]*SnowthNode{node}, sc.ListActiveNodes()...)
 	var bdy io.Reader
 	var hdr http.Header
+
 	for r := int64(0); r < retries+1; r++ {
 		connRetries := cr
 		surl := url
-		sn := nodes[0]
-		for n := 0; n < len(nodes); n++ {
+		sns := nodes
+		for len(sns) > 0 {
+			n := int64(0)
+			if connRetries != cr {
+				n = time.Now().UnixNano() % int64(len(sns))
+			}
+
+			sn := sns[n]
+			sns[n] = sns[len(sns)-1]
+			sns = sns[:len(sns)-1]
+			if sn == nil {
+				continue
+			}
+
 			u := ""
 			if surl != "" {
 				u = strings.Replace(surl, sn.GetURL().String(), "", 1)
-			}
-
-			sn = nodes[n]
-			if sn == nil {
-				continue
 			}
 
 			if surl != "" && u != "" {
 				surl = sc.getURL(sn, u)
 			}
 
-			sc.LogDebugf("gosnowth attempting request: %s %s %v",
-				method, surl, sn)
+			traceID := time.Now().UnixNano()
+			sc.LogDebugf("gosnowth attempting request "+
+				"[retry: %d, connRetry: %d]: %s %s %v traceID: %d",
+				r, (cr - connRetries), method, surl, sn, traceID)
 			bdy, hdr, err = sc.do(ctx, sn, method, surl,
-				bytes.NewBuffer(bBody), headers)
+				bytes.NewBuffer(bBody), headers, traceID)
 			if err == nil {
 				return bdy, hdr, nil
 			}
 
-			sc.LogDebugf("gosnowth request error: %s %s %v",
-				method, surl, err)
+			sc.LogDebugf("gosnowth request error "+
+				"[retry: %d, connRetry: %d]: %s %s %v traceID: %d",
+				r, (cr - connRetries), method, surl, err, traceID)
 
 			// There are likely more types of IRONdb errors that need to be
 			// checked for and included in this section for errors which
@@ -786,8 +800,9 @@ func (sc *SnowthClient) DoRequestContext(ctx context.Context, node *SnowthNode,
 			}
 
 			// Stop retrying other nodes if this is not a network connection
-			// error.
-			if nerr, ok := err.(net.Error); ok && !nerr.Temporary() {
+			// error of if the context deadline was reached.
+			nerr, ok := err.(net.Error)
+			if !ok || errors.Is(nerr, context.DeadlineExceeded) {
 				break
 			}
 
@@ -796,15 +811,16 @@ func (sc *SnowthClient) DoRequestContext(ctx context.Context, node *SnowthNode,
 			}
 
 			connRetries--
-			if nerr, ok := err.(net.Error); ok && nerr.Timeout() &&
-				len(nodes) > 2 {
+			if nerr.Timeout() && len(nodes) > 2 {
 				// Don't deactivate the last node, and only deactivate if the
 				// failure is a network timeout / tarpit.
 				sc.DeactivateNodes(sn)
 			}
 		}
 
-		time.Sleep(time.Millisecond * time.Duration(100*2^r))
+		if r < retries {
+			time.Sleep(time.Millisecond * time.Duration(100*2^r))
+		}
 	}
 
 	return bdy, hdr, err
@@ -812,8 +828,8 @@ func (sc *SnowthClient) DoRequestContext(ctx context.Context, node *SnowthNode,
 
 // do sends a request to IRONdb.
 func (sc *SnowthClient) do(ctx context.Context, node *SnowthNode,
-	method, url string, body io.Reader, headers http.Header) (io.Reader,
-	http.Header, error) {
+	method, url string, body io.Reader, headers http.Header,
+	traceID int64) (io.Reader, http.Header, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -826,7 +842,6 @@ func (sc *SnowthClient) do(ctx context.Context, node *SnowthNode,
 	sc.RLock()
 	traceReq := sc.traceRequests != "" && (sc.traceRequests == "*" ||
 		strings.HasPrefix(r.URL.Path, sc.traceRequests))
-	traceID := time.Now().UTC().Nanosecond()
 	dumpReq := sc.dumpRequests != "" && (sc.dumpRequests == "*" ||
 		strings.HasPrefix(r.URL.Path, sc.dumpRequests))
 	sc.RUnlock()
@@ -841,7 +856,7 @@ func (sc *SnowthClient) do(ctx context.Context, node *SnowthNode,
 	// Send a header telling snowth to use the gosnowth timeout - 1 second.
 	if sc.timeout > 0 {
 		if (sc.timeout - time.Second) > 0 {
-			to := time.Duration(sc.timeout - time.Second)
+			to := sc.timeout - time.Second
 
 			r.Header.Set("X-Snowth-Timeout", to.String())
 		} else {
@@ -921,12 +936,12 @@ func (sc *SnowthClient) do(ctx context.Context, node *SnowthNode,
 	if dumpReq {
 		dump, err := httputil.DumpRequestOut(r, true)
 		if err != nil {
-			sc.LogErrorf("%v", err)
+			sc.LogErrorf("%v traceID: %d", err, traceID)
 		}
 		fmt.Println(string(dump))
 	}
 
-	sc.LogDebugf("gosnowth request: %+v", r)
+	sc.LogDebugf("gosnowth request: %+v traceID: %d", r, traceID)
 	var start = time.Now()
 	sc.RLock()
 	cli := sc.c
@@ -963,9 +978,11 @@ func (sc *SnowthClient) do(ctx context.Context, node *SnowthNode,
 		fmt.Printf("TRACE-%d: complete %s - %s\n", traceID, resp.Status, msg)
 	}
 
-	sc.LogDebugf("gosnowth response: %+v", resp)
+	sc.LogDebugf("gosnowth response: %+v traceID: %d", resp, traceID)
 	// sc.LogDebugf("gosnowth response body: %v", string(res))
-	sc.LogDebugf("gosnowth latency: %+v", time.Since(start))
+	sc.LogDebugf("gosnowth latency: %+v traceID: %d", time.Since(start),
+		traceID)
+
 	select {
 	case <-ctx.Done():
 		return nil, nil, fmt.Errorf("context terminated: %w", ctx.Err())
@@ -973,8 +990,8 @@ func (sc *SnowthClient) do(ctx context.Context, node *SnowthNode,
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		sc.LogWarnf("error returned from IRONdb: [%d] %s",
-			resp.StatusCode, string(res))
+		sc.LogWarnf("error returned from IRONdb: [%d] %s traceID: %d",
+			resp.StatusCode, string(res), traceID)
 		return bytes.NewBuffer(res), resp.Header,
 			fmt.Errorf("error returned from IRONdb (%s): [%d] %s",
 				r.URL.Host, resp.StatusCode, string(res))

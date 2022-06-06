@@ -282,7 +282,7 @@ func getBytesRequired(val uint64) (len int8) {
 	return int8(BVL1)
 }
 
-func writeBin(out io.Writer, in bin, idx int) (err error) {
+func writeBin(out io.Writer, in bin) (err error) {
 
 	err = binary.Write(out, binary.BigEndian, in.val)
 	if err != nil {
@@ -350,17 +350,13 @@ func readBin(in io.Reader) (out bin, err error) {
 }
 
 func Deserialize(in io.Reader) (h *Histogram, err error) {
-	h = New()
-	if h.bvs == nil {
-		h.bvs = make([]bin, 0, defaultHistSize)
-	}
-
 	var nbin int16
 	err = binary.Read(in, binary.BigEndian, &nbin)
 	if err != nil {
 		return
 	}
 
+	h = New(Size(uint16(nbin)))
 	for ii := int16(0); ii < nbin; ii++ {
 		bb, err := readBin(in)
 		if err != nil {
@@ -372,15 +368,22 @@ func Deserialize(in io.Reader) (h *Histogram, err error) {
 }
 
 func (h *Histogram) Serialize(w io.Writer) error {
+	var nbin int16
+	for i := range h.bvs {
+		if h.bvs[i].count != 0 {
+			nbin += 1
+		}
+	}
 
-	var nbin int16 = int16(len(h.bvs))
 	if err := binary.Write(w, binary.BigEndian, nbin); err != nil {
 		return err
 	}
-
-	for i := 0; i < len(h.bvs); i++ {
-		if err := writeBin(w, h.bvs[i], i); err != nil {
-			return err
+	
+	for _, bv := range h.bvs {
+		if bv.count != 0 {
+			if err := writeBin(w, bv); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -400,24 +403,52 @@ func (h *Histogram) SerializeB64(w io.Writer) error {
 	return encoder.Close()
 }
 
-// New returns a new Histogram
-func New() *Histogram {
-	return &Histogram{
-		allocd:   defaultHistSize,
-		used:     0,
-		bvs:      make([]bin, defaultHistSize),
-		useLocks: true,
+// Options are exposed options for initializing a histogram
+type Options struct {
+	// Size is the number of bins.
+	Size uint16
+
+	// UseLocks determines if the histogram should use locks
+	UseLocks bool
+}
+
+// Option knows how to mutate the Options to change initialization
+type Option func(*Options)
+
+// NoLocks configures a histogram to not use locks
+func NoLocks() Option {
+	return func(options *Options) {
+		options.UseLocks = false
 	}
 }
 
-// New returns a Histogram without locking
-func NewNoLocks() *Histogram {
-	return &Histogram{
-		allocd:   defaultHistSize,
-		used:     0,
-		bvs:      make([]bin, defaultHistSize),
-		useLocks: false,
+// Size configures a histogram to use a specific number of bins
+func Size(size uint16) Option {
+	return func(options *Options) {
+		options.Size = size
 	}
+}
+
+// New returns a new Histogram, respecting the passed Options.
+func New(options ...Option) *Histogram {
+	o := Options{
+		Size: defaultHistSize,
+		UseLocks: true,
+	}
+	for _, opt := range options {
+		opt(&o)
+	}
+	return &Histogram{
+		allocd:   o.Size,
+		used:     0,
+		bvs:      make([]bin, o.Size),
+		useLocks: o.UseLocks,
+	}
+}
+
+// Deprecated: use New(NoLocks()) instead
+func NewNoLocks() *Histogram {
+	return New(NoLocks())
 }
 
 // NewFromStrings returns a Histogram created from DecStrings strings

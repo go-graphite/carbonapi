@@ -14,7 +14,9 @@ import (
 
 const metricSourceGraphite = 0x2
 
-var nntMergeFileIdentifier = []byte("CINN")
+func nntMergeFileIdentifier() []byte {
+	return []byte("CINN")
+}
 
 // WriteNNTBSFlatbuffer writes flatbuffer format NNTBS data to an IRONdb node.
 func (sc *SnowthClient) WriteNNTBSFlatbuffer(merge *nntbs.NNTMergeT,
@@ -48,7 +50,7 @@ func (sc *SnowthClient) WriteNNTBSFlatbufferContext(ctx context.Context,
 	}
 
 	offset := nntbs.NNTMergePack(builder, merge)
-	builder.FinishWithFileIdentifier(offset, nntMergeFileIdentifier)
+	builder.FinishWithFileIdentifier(offset, nntMergeFileIdentifier())
 
 	data := builder.FinishedBytes()
 	hdrs := http.Header{"Content-Type": {"application/snowth-nntbs"}}

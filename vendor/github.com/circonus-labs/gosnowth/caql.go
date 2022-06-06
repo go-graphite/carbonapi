@@ -11,39 +11,39 @@ import (
 
 // CAQLQuery values represent CAQL queries and associated parameters.
 type CAQLQuery struct {
-	Format               string   `json:"format,omitempty"`
-	Query                string   `json:"q,omitempty"`
+	Explain              bool     `json:"explain"`
+	IgnoreDurationLimits bool     `json:"ignore_duration_limits,omitempty"`
+	Debug                byte     `json:"_debug,omitempty"`
 	Period               int64    `json:"period,omitempty"`
 	ID                   int64    `json:"_id,omitempty"`
-	IgnoreDurationLimits bool     `json:"ignore_duration_limits,omitempty"`
-	PrepareResults       string   `json:"prepare_results,omitempty"`
 	AccountID            int64    `json:"account_id,string,omitempty"`
-	Method               string   `json:"method,omitempty"`
 	Start                int64    `json:"start_time,omitempty"`
 	Timeout              int64    `json:"_timeout,omitempty"`
 	MinPrefill           int64    `json:"min_prefill,omitempty"`
-	Debug                byte     `json:"_debug,omitempty"`
-	Expansion            []string `json:"expansion,omitempty"`
 	End                  int64    `json:"end_time,omitempty"`
-	Explain              bool     `json:"explain"`
+	Format               string   `json:"format,omitempty"`
+	Query                string   `json:"q,omitempty"`
+	PrepareResults       string   `json:"prepare_results,omitempty"`
+	Method               string   `json:"method,omitempty"`
+	Expansion            []string `json:"expansion,omitempty"`
 }
 
 // CAQLErrorArgs values represent CAQL request arguments returned in an error.
 type CAQLErrorArgs struct {
-	Format               string   `json:"format"`
-	Query                string   `json:"q"`
+	IgnoreDurationLimits bool     `json:"ignore_duration_limits"`
+	Debug                byte     `json:"_debug"`
 	Period               int64    `json:"period"`
 	ID                   int64    `json:"_id"`
-	IgnoreDurationLimits bool     `json:"ignore_duration_limits"`
-	PrepareResults       string   `json:"prepare_results"`
 	AccountID            int64    `json:"account_id,string"`
-	Method               string   `json:"method"`
 	Start                int64    `json:"start_time"`
 	Timeout              int64    `json:"_timeout"`
 	MinPrefill           int64    `json:"min_prefill"`
-	Debug                byte     `json:"_debug"`
-	Expansion            []string `json:"expansion"`
 	End                  int64    `json:"end_time"`
+	Format               string   `json:"format"`
+	Query                string   `json:"q"`
+	PrepareResults       string   `json:"prepare_results"`
+	Method               string   `json:"method"`
+	Expansion            []string `json:"expansion"`
 }
 
 // CAQLUserError values contain messages describing a CAQL error for a user.
@@ -52,7 +52,7 @@ type CAQLUserError struct {
 }
 
 // CAQLError values contain information about an error returned by the CAQL
-//extension.
+// extension.
 type CAQLError struct {
 	Locals    []string      `json:"locals"`
 	Method    string        `json:"method"`
@@ -119,7 +119,8 @@ func (sc *SnowthClient) GetCAQLQueryContext(ctx context.Context, q *CAQLQuery,
 	}
 
 	r := &DF4Response{}
-	body, _, err := sc.DoRequestContext(ctx, node, "POST", u, bytes.NewBuffer(bBuf), nil)
+	body, _, err := sc.DoRequestContext(ctx, node, "POST", u,
+		bytes.NewBuffer(bBuf), nil)
 	if err != nil {
 		if body != nil {
 			cErr := &CAQLError{}

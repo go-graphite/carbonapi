@@ -43,12 +43,14 @@ type FindTagsCount struct {
 // FindTagsOptions values contain optional parameters to be passed to the
 // IRONdb find tags call by a FindTags operation.
 type FindTagsOptions struct {
-	Start     time.Time `json:"activity_start_secs"`
-	End       time.Time `json:"activity_end_secs"`
-	Activity  int64     `json:"activity"`
-	Latest    int64     `json:"latest"`
-	CountOnly int64     `json:"count_only"`
-	Limit     int64     `json:"limit"`
+	Start     time.Time
+	End       time.Time
+	StartStr  string `json:"activity_start_secs"`
+	EndStr    string `json:"activity_end_secs"`
+	Activity  int64  `json:"activity"`
+	Latest    int64  `json:"latest"`
+	CountOnly int64  `json:"count_only"`
+	Limit     int64  `json:"limit"`
 }
 
 // FindTagsLatest values contain the most recent data values for a metric.
@@ -216,21 +218,43 @@ func (sc *SnowthClient) FindTagsContext(ctx context.Context, accountID int64,
 	u := fmt.Sprintf("%s?query=%s",
 		sc.getURL(node, fmt.Sprintf("/find/%d/tags", accountID)),
 		url.QueryEscape(query))
-	if !options.Start.IsZero() && !options.End.IsZero() &&
-		options.Start.Unix() != 0 && options.End.Unix() != 0 {
-		u += fmt.Sprintf("&activity_start_secs=%s&activity_end_secs=%s",
-			formatTimestamp(options.Start), formatTimestamp(options.End))
+
+	starts, ends := "", ""
+	if !options.Start.IsZero() && options.Start.Unix() != 0 {
+		starts = formatTimestamp(options.Start)
+	}
+
+	if !options.End.IsZero() && options.End.Unix() != 0 {
+		ends = formatTimestamp(options.End)
+	}
+
+	if options.StartStr != "" {
+		starts = url.QueryEscape(options.StartStr)
+	}
+
+	if options.EndStr != "" {
+		ends = url.QueryEscape(options.EndStr)
+	}
+
+	if starts != "" {
+		u += fmt.Sprintf("&activity_start_secs=%s", starts)
+	}
+
+	if ends != "" {
+		u += fmt.Sprintf("&activity_end_secs=%s", ends)
 	}
 
 	u += fmt.Sprintf("&activity=%d", options.Activity)
 	u += fmt.Sprintf("&latest=%d", options.Latest)
+
 	if options.CountOnly != 0 {
 		u += fmt.Sprintf("&count_only=%d", options.CountOnly)
 	}
 
 	hdrs := http.Header{}
 	if options.Limit != 0 {
-		hdrs.Set("X-Snowth-Advisory-Limit", strconv.FormatInt(options.Limit, 10))
+		hdrs.Set("X-Snowth-Advisory-Limit",
+			strconv.FormatInt(options.Limit, 10))
 	}
 
 	r := &FindTagsResult{}
@@ -440,12 +464,14 @@ func (sc *SnowthClient) UpdateCheckTagsContext(ctx context.Context,
 
 	ex, ok := old[checkUUID]
 	if !ok {
-		return 0, fmt.Errorf("failed to retrive existing check tags: %v",
+		return 0, fmt.Errorf("failed to retrieve existing check tags: %v",
 			checkUUID)
 	}
 
 	if len(tags) == 0 {
-		sc.DeleteCheckTagsContext(ctx, checkUUID)
+		if err := sc.DeleteCheckTagsContext(ctx, checkUUID); err != nil {
+			return 0, err
+		}
 
 		return 0, nil
 	}
@@ -514,16 +540,8 @@ func (sc *SnowthClient) UpdateCheckTagsContext(ctx context.Context,
 
 // encodeTags performs base64 encoding on tags when needed.
 func encodeTags(tags []string) ([]string, error) {
-	keyTest, err := regexp.Compile("^[`+A-Za-z0-9!@#\\$%^&\"'\\/\\?\\._\\-]*$")
-	if err != nil {
-		return nil, fmt.Errorf("unable to compile key test regexp: %w", err)
-	}
-
-	valTest, err := regexp.Compile("^[`+A-Za-z0-9!@#\\$%^&\"'\\/\\?\\._\\-:=]*$")
-	if err != nil {
-		return nil, fmt.Errorf("unable to compile value test regexp: %w", err)
-	}
-
+	keyTest := regexp.MustCompile("^[`+A-Za-z0-9!@#\\$%^&\"'\\/\\?\\._\\-]*$")
+	valTest := regexp.MustCompile("^[`+A-Za-z0-9!@#\\$%^&\"'\\/\\?\\._\\-:=]*$")
 	res := []string{}
 
 	for _, tag := range tags {
@@ -550,8 +568,8 @@ func encodeTags(tags []string) ([]string, error) {
 
 			rk = string(key)
 
-			if keyTest.Match([]byte(key)) {
-				rk = `b"` + base64.StdEncoding.EncodeToString([]byte(key)) +
+			if keyTest.Match(key) {
+				rk = `b"` + base64.StdEncoding.EncodeToString(key) +
 					`"`
 			}
 		} else {
@@ -570,8 +588,8 @@ func encodeTags(tags []string) ([]string, error) {
 
 			rv = string(val)
 
-			if valTest.Match([]byte(val)) {
-				rv = `b"` + base64.StdEncoding.EncodeToString([]byte(val)) +
+			if valTest.Match(val) {
+				rv = `b"` + base64.StdEncoding.EncodeToString(val) +
 					`"`
 			}
 		} else {

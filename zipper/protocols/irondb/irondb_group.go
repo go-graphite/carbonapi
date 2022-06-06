@@ -10,11 +10,12 @@ import (
 
 	"github.com/ansel1/merry"
 	"github.com/circonus-labs/gosnowth"
+	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
+	"go.uber.org/zap"
+
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/zipper/metadata"
 	"github.com/go-graphite/carbonapi/zipper/types"
-	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"go.uber.org/zap"
 )
 
 func init() {
@@ -194,7 +195,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		graphitePrefix = string(tmpStr)
 	}
 
-	snowthClient, err := gosnowth.NewClient(cfg)
+	snowthClient, err := gosnowth.NewClient(context.Background(), cfg)
 	if err != nil {
 		logger.Fatal("failed to create snowth client",
 			zap.Error(err))
@@ -567,7 +568,7 @@ func (c *IronDBGroup) doTagQuery(ctx context.Context, isTagName bool, query stri
 	querySplit := strings.Split(queryDecoded, "&")
 	for _, qvRaw := range querySplit {
 		idx := strings.Index(qvRaw, "=")
-		//no parameters passed
+		// no parameters passed
 		if idx < 1 {
 			continue
 		}

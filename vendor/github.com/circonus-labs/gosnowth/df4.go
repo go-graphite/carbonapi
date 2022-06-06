@@ -63,37 +63,37 @@ func replaceInf(b []byte) []byte {
 	v := make([]byte, len(b))
 	copy(v, b)
 
-	v = bytes.Replace(v, []byte("+inf,"), []byte(
-		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+","), -1)
-	v = bytes.Replace(v, []byte("+inf]"), []byte(
-		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+"]"), -1)
-	v = bytes.Replace(v, []byte("+inf\n"), []byte(
-		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+"\n"), -1)
-	v = bytes.Replace(v, []byte("-inf,"), []byte(
-		strconv.FormatFloat(-math.MaxFloat64, 'g', -1, 64)+","), -1)
-	v = bytes.Replace(v, []byte("-inf]"), []byte(
-		strconv.FormatFloat(-math.MaxFloat64, 'g', -1, 64)+"]"), -1)
-	v = bytes.Replace(v, []byte("-inf\n"), []byte(
-		strconv.FormatFloat(-math.MaxFloat64, 'g', -1, 64)+"\n"), -1)
-	v = bytes.Replace(v, []byte("inf,"), []byte(
-		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+","), -1)
-	v = bytes.Replace(v, []byte("inf]"), []byte(
-		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+"]"), -1)
-	v = bytes.Replace(v, []byte("inf\n"), []byte(
-		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+"\n"), -1)
+	v = bytes.ReplaceAll(v, []byte("+inf,"), []byte(
+		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+","))
+	v = bytes.ReplaceAll(v, []byte("+inf]"), []byte(
+		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+"]"))
+	v = bytes.ReplaceAll(v, []byte("+inf\n"), []byte(
+		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+"\n"))
+	v = bytes.ReplaceAll(v, []byte("-inf,"), []byte(
+		strconv.FormatFloat(-math.MaxFloat64, 'g', -1, 64)+","))
+	v = bytes.ReplaceAll(v, []byte("-inf]"), []byte(
+		strconv.FormatFloat(-math.MaxFloat64, 'g', -1, 64)+"]"))
+	v = bytes.ReplaceAll(v, []byte("-inf\n"), []byte(
+		strconv.FormatFloat(-math.MaxFloat64, 'g', -1, 64)+"\n"))
+	v = bytes.ReplaceAll(v, []byte("inf,"), []byte(
+		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+","))
+	v = bytes.ReplaceAll(v, []byte("inf]"), []byte(
+		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+"]"))
+	v = bytes.ReplaceAll(v, []byte("inf\n"), []byte(
+		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+"\n"))
 
-	v = bytes.Replace(v, []byte("NaN,"), []byte(
-		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+","), -1)
-	v = bytes.Replace(v, []byte("NaN]"), []byte(
-		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+"]"), -1)
-	v = bytes.Replace(v, []byte("NaN\n"), []byte(
-		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+"\n"), -1)
-	v = bytes.Replace(v, []byte("nan,"), []byte(
-		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+","), -1)
-	v = bytes.Replace(v, []byte("nan]"), []byte(
-		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+"]"), -1)
-	v = bytes.Replace(v, []byte("nan\n"), []byte(
-		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+"\n"), -1)
+	v = bytes.ReplaceAll(v, []byte("NaN,"), []byte(
+		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+","))
+	v = bytes.ReplaceAll(v, []byte("NaN]"), []byte(
+		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+"]"))
+	v = bytes.ReplaceAll(v, []byte("NaN\n"), []byte(
+		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+"\n"))
+	v = bytes.ReplaceAll(v, []byte("nan,"), []byte(
+		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+","))
+	v = bytes.ReplaceAll(v, []byte("nan]"), []byte(
+		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+"]"))
+	v = bytes.ReplaceAll(v, []byte("nan\n"), []byte(
+		strconv.FormatFloat(math.MaxFloat64, 'g', -1, 64)+"\n"))
 
 	return v
 }

@@ -1,10 +1,38 @@
-merry [![Build Status](https://travis-ci.org/ansel1/merry.svg?branch=master)](https://travis-ci.org/ansel1/merry) [![GoDoc](https://godoc.org/github.com/ansel1/merry?status.png)](https://godoc.org/github.com/ansel1/merry) [![Go Report Card](https://goreportcard.com/badge/github.com/ansel1/merry)](https://goreportcard.com/report/github.com/ansel1/merry)
+merry [![Build](https://github.com/ansel1/merry/workflows/Build/badge.svg)](https://github.com/ansel1/merry/actions?query=branch%3Amaster+workflow%3ABuild+) [![GoDoc](https://godoc.org/github.com/ansel1/merry?status.png)](https://godoc.org/github.com/ansel1/merry) [![Go Report Card](https://goreportcard.com/badge/github.com/ansel1/merry)](https://goreportcard.com/report/github.com/ansel1/merry)
 =====
 
-Make your golang errors merry, with stacktraces, inheritance, and arbitrary additional context.
+Add context to errors, including automatic stack capture, cause chains, HTTP status code, user
+messages, and arbitrary values.
             
 The package is largely based on http://github.com/go-errors/errors, with additional
 inspiration from https://github.com/go-errgo/errgo and https://github.com/amattn/deeperror.
+
+V2
+-- 
+
+[github.com/ansel1/merry/v2](https://github.com/ansel1/merry/tree/master/v2) now replaces v1.  v1 will continue to be supported.  v1 has been re-implemented
+in terms of v2, and the two packages can be used together and interchangeably.
+
+There are some small enhancements and changes to v1 with the introduction of v2:
+
+- err.Error() now *always* just prints out the basic error message.  It no longer prints out details,
+  user message, or cause.  VerboseDefault() and SetVerboseDefault() no longer have any effect.  To 
+  print more detailed error information, you must use fmt:
+  
+        // print err message and cause chain
+        fmt.Printf("%v", err)    // %s works too
+  
+        // print details, same as Details(err)
+        fmt.Printf("%v+", err) 
+  
+- MaxStackDepth is no longer supported.  Setting it has no effect.  It has been replaced with
+  GetMaxStackDepth() and SetMaxStackDepth(), which delegate to corresponding v2 functions.
+- New, Errorf, Wrap, and WrapSkipping now accept v2.Wrapper arguments, allowing a mixture of 
+  v1's fluent API style and v2's option-func API style.
+- Compatibility with other error wrapping libraries is improved.  All functions which extract
+  a value from an error will now search the entire chain of errors, even if errors created by
+  other libraries are inserted in the middle of the chain, so long as those errors implement
+  Unwrap().
 
 Installation
 ------------

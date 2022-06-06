@@ -7,13 +7,15 @@ github.com/JaderDias/movingmedian
 # github.com/aclements/go-moremath v0.0.0-20210112150236-f10218a38794
 ## explicit
 github.com/aclements/go-moremath/mathx
-# github.com/ansel1/merry v1.5.1
+# github.com/ansel1/merry v1.6.2
 ## explicit
 github.com/ansel1/merry
-# github.com/bradfitz/gomemcache v0.0.0-20190913173617-a41fca850d0b
+# github.com/ansel1/merry/v2 v2.0.1
+github.com/ansel1/merry/v2
+# github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d
 ## explicit
 github.com/bradfitz/gomemcache/memcache
-# github.com/circonus-labs/gosnowth v1.10.0
+# github.com/circonus-labs/gosnowth v1.10.5
 ## explicit
 github.com/circonus-labs/gosnowth
 github.com/circonus-labs/gosnowth/fb/fetch
@@ -42,11 +44,10 @@ github.com/facebookgo/atomicfile
 # github.com/facebookgo/pidfile v0.0.0-20150612191647-f242e2999868
 ## explicit
 github.com/facebookgo/pidfile
-# github.com/felixge/httpsnoop v1.0.2
+# github.com/felixge/httpsnoop v1.0.3
 ## explicit
 github.com/felixge/httpsnoop
-# github.com/fsnotify/fsnotify v1.4.9
-## explicit
+# github.com/fsnotify/fsnotify v1.5.4
 github.com/fsnotify/fsnotify
 # github.com/go-graphite/protocol v1.0.0
 ## explicit
@@ -67,12 +68,14 @@ github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/empty
 github.com/golang/protobuf/ptypes/timestamp
-# github.com/gomodule/redigo v1.8.4
+# github.com/gomodule/redigo v1.8.8
 ## explicit
 github.com/gomodule/redigo/redis
-# github.com/google/flatbuffers v1.12.0
+# github.com/google/flatbuffers v2.0.6+incompatible
+## explicit
 github.com/google/flatbuffers/go
-# github.com/google/uuid v1.1.2
+# github.com/google/uuid v1.3.0
+## explicit
 github.com/google/uuid
 # github.com/gorilla/handlers v1.5.1
 ## explicit
@@ -88,7 +91,7 @@ github.com/hashicorp/hcl/hcl/token
 github.com/hashicorp/hcl/json/parser
 github.com/hashicorp/hcl/json/scanner
 github.com/hashicorp/hcl/json/token
-# github.com/lib/pq v1.10.1
+# github.com/lib/pq v1.10.6
 ## explicit
 github.com/lib/pq
 github.com/lib/pq/oid
@@ -96,30 +99,33 @@ github.com/lib/pq/scram
 # github.com/lomik/og-rek v0.0.0-20170411191824-628eefeb8d80
 ## explicit
 github.com/lomik/og-rek
-# github.com/lomik/zapwriter v0.0.0-20201002100138-f85a75186af0
+# github.com/lomik/zapwriter v0.0.0-20210624082824-c1161d1eb463
 ## explicit
 github.com/lomik/zapwriter
-# github.com/magiconair/properties v1.8.5
-## explicit
+# github.com/magiconair/properties v1.8.6
 github.com/magiconair/properties
-# github.com/maruel/natural v1.0.0
+# github.com/maruel/natural v1.1.0
 ## explicit
 github.com/maruel/natural
-# github.com/mitchellh/mapstructure v1.4.1
-## explicit
+# github.com/mitchellh/mapstructure v1.5.0
 github.com/mitchellh/mapstructure
 # github.com/mjibson/go-dsp v0.0.0-20180508042940-11479a337f12
 ## explicit
 github.com/mjibson/go-dsp/dsputils
 github.com/mjibson/go-dsp/fft
-# github.com/msaf1980/go-stringutils v0.0.11
+# github.com/msaf1980/go-stringutils v0.0.15
 ## explicit
 github.com/msaf1980/go-stringutils
-# github.com/openhistogram/circonusllhist v0.2.1
-github.com/openhistogram/circonusllhist
-# github.com/pelletier/go-toml v1.9.0
+# github.com/openhistogram/circonusllhist v0.3.0
 ## explicit
+github.com/openhistogram/circonusllhist
+# github.com/pelletier/go-toml v1.9.5
 github.com/pelletier/go-toml
+# github.com/pelletier/go-toml/v2 v2.0.1
+github.com/pelletier/go-toml/v2
+github.com/pelletier/go-toml/v2/internal/ast
+github.com/pelletier/go-toml/v2/internal/danger
+github.com/pelletier/go-toml/v2/internal/tracker
 # github.com/peterbourgon/g2g v0.0.0-20161124161852-0c2bab2b173d
 ## explicit
 github.com/peterbourgon/g2g
@@ -127,34 +133,39 @@ github.com/peterbourgon/g2g
 github.com/philhofer/fwd
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/rs/dnscache v0.0.0-20210201191234-295bba877686
+# github.com/rs/dnscache v0.0.0-20211102005908-e0241e321417
 ## explicit
 github.com/rs/dnscache
 # github.com/satori/go.uuid v1.2.0
 ## explicit
 github.com/satori/go.uuid
-# github.com/spf13/afero v1.6.0
-## explicit
+# github.com/spf13/afero v1.8.2
 github.com/spf13/afero
 github.com/spf13/afero/mem
-# github.com/spf13/cast v1.3.1
-## explicit
+# github.com/spf13/cast v1.5.0
 github.com/spf13/cast
 # github.com/spf13/jwalterweatherman v1.1.0
-## explicit
 github.com/spf13/jwalterweatherman
 # github.com/spf13/pflag v1.0.5
-## explicit
 github.com/spf13/pflag
-# github.com/spf13/viper v1.7.1
+# github.com/spf13/viper v1.12.0
 ## explicit
 github.com/spf13/viper
-# github.com/stretchr/testify v1.7.0
+github.com/spf13/viper/internal/encoding
+github.com/spf13/viper/internal/encoding/dotenv
+github.com/spf13/viper/internal/encoding/hcl
+github.com/spf13/viper/internal/encoding/ini
+github.com/spf13/viper/internal/encoding/javaproperties
+github.com/spf13/viper/internal/encoding/json
+github.com/spf13/viper/internal/encoding/toml
+github.com/spf13/viper/internal/encoding/yaml
+# github.com/stretchr/testify v1.7.1
 ## explicit
 github.com/stretchr/testify/assert
-# github.com/subosito/gotenv v1.2.0
+# github.com/subosito/gotenv v1.4.0
+## explicit
 github.com/subosito/gotenv
-# github.com/tinylib/msgp v1.1.5
+# github.com/tinylib/msgp v1.1.6
 ## explicit
 github.com/tinylib/msgp/msgp
 # github.com/valyala/fastjson v1.6.3
@@ -164,12 +175,13 @@ github.com/valyala/fastjson/fastfloat
 # github.com/wangjohn/quickselect v0.0.0-20161129230411-ed8402a42d5f
 ## explicit
 github.com/wangjohn/quickselect
-# go.uber.org/atomic v1.7.0
+# go.uber.org/atomic v1.9.0
+## explicit
 go.uber.org/atomic
-# go.uber.org/multierr v1.6.0
+# go.uber.org/multierr v1.8.0
 ## explicit
 go.uber.org/multierr
-# go.uber.org/zap v1.16.0
+# go.uber.org/zap v1.21.0
 ## explicit
 go.uber.org/zap
 go.uber.org/zap/buffer
@@ -177,9 +189,7 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
-# golang.org/x/mod v0.4.2
-## explicit
-# golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2
+# golang.org/x/net v0.0.0-20220531201128-c960675eff93
 ## explicit
 golang.org/x/net/context
 golang.org/x/net/http/httpguts
@@ -188,10 +198,10 @@ golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
 golang.org/x/net/trace
-# golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+# golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f
 ## explicit
 golang.org/x/sync/singleflight
-# golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e
+# golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a
 ## explicit
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
@@ -200,10 +210,7 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-# golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
-golang.org/x/xerrors
-golang.org/x/xerrors/internal
-# gonum.org/v1/gonum v0.9.1
+# gonum.org/v1/gonum v0.11.0
 ## explicit
 gonum.org/v1/gonum/blas
 gonum.org/v1/gonum/blas/blas64
@@ -221,10 +228,10 @@ gonum.org/v1/gonum/lapack
 gonum.org/v1/gonum/lapack/gonum
 gonum.org/v1/gonum/lapack/lapack64
 gonum.org/v1/gonum/mat
-# google.golang.org/genproto v0.0.0-20210429181445-86c259c2b4ab
+# google.golang.org/genproto v0.0.0-20220602131408-e326c6e8e9c8
 ## explicit
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.46.2
+# google.golang.org/grpc v1.47.0
 ## explicit
 google.golang.org/grpc
 google.golang.org/grpc/attributes
@@ -309,12 +316,11 @@ google.golang.org/protobuf/types/known/anypb
 google.golang.org/protobuf/types/known/durationpb
 google.golang.org/protobuf/types/known/emptypb
 google.golang.org/protobuf/types/known/timestamppb
-# gopkg.in/ini.v1 v1.62.0
+# gopkg.in/ini.v1 v1.66.6
 ## explicit
 gopkg.in/ini.v1
 # gopkg.in/yaml.v2 v2.4.0
 ## explicit
 gopkg.in/yaml.v2
-# gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
-## explicit
+# gopkg.in/yaml.v3 v3.0.1
 gopkg.in/yaml.v3
