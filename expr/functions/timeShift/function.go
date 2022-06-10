@@ -85,7 +85,7 @@ func (f *timeShift) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		return nil, err
 	}
 
-	arg, err := helper.GetSeriesArg(e.Args()[0], from+int64(offs), until+int64(offs), values)
+	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from+int64(offs), until+int64(offs), values)
 	if err != nil {
 		return nil, err
 	}

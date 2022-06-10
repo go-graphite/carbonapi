@@ -6,6 +6,35 @@ to [Semantic Versioning](http://semver.org/) rules.
 
 ## [Next Release]
 
+## [v1.10.5] - 2022-05-03
+
+* fix: Fixes the metric name parser to correctly use curly brackets when
+parsing measurement tags.
+* fix: Fixes connection retries to always try the specified node first then
+randomly pick from active cluster nodes for retries.
+* fix: Fixes broken examples code.
+
+## [v1.10.4] - 2022-04-14
+
+* upd: NewClient() now requires a context when being called. This allows for
+context terminations to happen during the process of creating and initializing
+a new SnowthClient.
+
+## [v1.10.3] - 2022-04-12
+
+* upd: Adds retry number and trace ID to request debug log entries.
+* upd: Randomizes the IRONdb cluster nodes that will be retried in cases of
+network connection failure.
+
+## [v1.10.2] - 2021-12-03
+
+* add: Added metric name parsing functionality via the ParseMetricName function
+and its associated types.
+
+## [v1.10.1] - 2021-11-15
+
+* add: Added support for start and end time strings to the tags API.
+
 ## [v1.10.0] - 2021-06-14
 
 * add: Added functions implementing access to the IRONdb read graphite API:
@@ -318,6 +347,11 @@ writing to histogram endpoints.
 any delay, once started. Created: 2019-03-12. Fixed: 2019-03-13.
 
 [Next Release]: https://github.com/circonus-labs/gosnowth
+[v1.10.5]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.10.5
+[v1.10.4]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.10.4
+[v1.10.3]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.10.3
+[v1.10.2]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.10.2
+[v1.10.1]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.10.1
 [v1.10.0]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.10.0
 [v1.9.0]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.9.0
 [v1.8.1]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.8.1

@@ -36,7 +36,7 @@ func (f *holtWintersForecast) Do(ctx context.Context, e parser.Expr, from, until
 		return nil, err
 	}
 
-	args, err := helper.GetSeriesArgsAndRemoveNonExisting(e, from-bootstrapInterval, until, values)
+	args, err := helper.GetSeriesArgsAndRemoveNonExisting(ctx, e, from-bootstrapInterval, until, values)
 	if err != nil {
 		return nil, err
 	}

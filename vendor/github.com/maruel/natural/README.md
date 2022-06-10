@@ -1,41 +1,43 @@
 # natural
 
-Yet another natural sort, with 100% test coverage and a benchmark. It allocates
-no memory, doesn't depend on package `sort` and hence doesn't depend on `reflect`.
+Yet another natural sort, with 100% test coverage and a benchmark. It **does not
+allocate memory**, doesn't depend on package `sort` and hence doesn't depend on
+`reflect`. It is optimized for speed.
 
-[![GoDoc](https://godoc.org/github.com/maruel/natural?status.svg)](https://godoc.org/github.com/maruel/natural)
+[![Go
+Reference](https://pkg.go.dev/badge/github.com/maruel/natural.svg)](https://pkg.go.dev/github.com/maruel/natural)
+[![codecov](https://codecov.io/gh/maruel/natural/branch/main/graph/badge.svg?token=iQg8Y62BBg)](https://codecov.io/gh/maruel/natural)
 
 
 ## Benchmarks
 
-On Go 1.10.1.
-
-On a Xeon:
+On Go 1.18.3.
 
 ```
-$ go test -bench=. -benchmem -cpu 1
+$ go test -bench=. -cpu 1
 goos: linux
 goarch: amd64
 pkg: github.com/maruel/natural
-BenchmarkNative                200000000       8.63 ns/op     0 B/op     0 allocs/op
-BenchmarkLessStringOnly        100000000       18.7 ns/op     0 B/op     0 allocs/op
-BenchmarkLessDigits             50000000       30.5 ns/op     0 B/op     0 allocs/op
-BenchmarkLessStringDigits       50000000       31.3 ns/op     0 B/op     0 allocs/op
-BenchmarkLessDigitsTwoGroups    20000000       64.4 ns/op     0 B/op     0 allocs/op
+cpu: Intel(R) Core(TM) i7-10700 CPU @ 2.90GHz
+BenchmarkLessDigitsTwoGroupsNative 331287298     3.597 ns/op   0 B/op   0 allocs/op
+BenchmarkLessDigitsTwoGroups        32479050    36.55 ns/op    0 B/op   0 allocs/op
+BenchmarkLessStringOnly            157775884     7.603 ns/op   0 B/op   0 allocs/op
+BenchmarkLessDigitsOnly             69210796    17.52 ns/op    0 B/op   0 allocs/op
+BenchmarkLess10Blocks                6331066   190.8 ns/op     0 B/op   0 allocs/op
 ```
 
 On a Raspberry Pi 3:
 
 ```
-$ go test -bench=. -benchmem -cpu 1
+$ go test -bench=. -cpu 1
 goos: linux
 goarch: arm
 pkg: github.com/maruel/natural
-BenchmarkNative                 10000000        148 ns/op     0 B/op      0 allocs/op
-BenchmarkLessStringOnly          5000000        312 ns/op     0 B/op      0 allocs/op
-BenchmarkLessDigits              2000000        656 ns/op     0 B/op      0 allocs/op
-BenchmarkLessStringDigits        2000000        679 ns/op     0 B/op      0 allocs/op
-BenchmarkLessDigitsTwoGroups     1000000       1480 ns/op     0 B/op      0 allocs/op
+BenchmarkLessDigitsTwoGroupsNative  14181789    86.57 ns/op    0 B/op   0 allocs/op
+BenchmarkLessDigitsTwoGroups         1600195   748.9 ns/op     0 B/op   0 allocs/op
+BenchmarkLessStringOnly              8286034   142.3 ns/op     0 B/op   0 allocs/op
+BenchmarkLessDigitsOnly              3653055   331.4 ns/op     0 B/op   0 allocs/op
+BenchmarkLess10Blocks                 310687  3838 ns/op       0 B/op   0 allocs/op
 ```
 
 Coverage:
@@ -46,4 +48,3 @@ PASS
 coverage: 100.0% of statements
 ok     github.com/maruel/natural       0.012s
 ```
-

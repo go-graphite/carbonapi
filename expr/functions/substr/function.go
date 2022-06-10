@@ -32,7 +32,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 // aliasSub(seriesList, start, stop)
 func (f *substr) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// BUG: affected by the same positional arg issue as 'threshold'.
-	args, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -65,11 +65,11 @@ func (f *substr) Do(ctx context.Context, e parser.Expr, from, until int64, value
 			}
 			nodes = nodes[realStartField:]
 		}
-		if stopField != 0 && stopField < len(nodes) + realStartField {
+		if stopField != 0 && stopField < len(nodes)+realStartField {
 			realStopField := stopField
 			if stopField < 0 {
 				realStopField = len(nodes) + stopField
-			} else{ 
+			} else {
 				realStopField = realStopField - realStartField
 			}
 			if realStopField < 0 {

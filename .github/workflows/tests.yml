@@ -5,7 +5,6 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-
 jobs:
 
   tests:
@@ -14,9 +13,9 @@ jobs:
     strategy:
       matrix:
         go:
-          - ^1.15
           - ^1.16
           - ^1.17
+          - ^1.18
           - ^1
     steps:
 
@@ -34,16 +33,17 @@ jobs:
       run: |
         sudo apt-get install libcairo2-dev mercurial pkg-config wget -y
 
-    - name: Test
+    - name: Run tests
       run: |
         make test
         make
-        ./e2e_test.sh
-
-    - name: Check packaging
-      if: matrix.go == 'some-build-trigger' # TODO
-      env:
-        BUILD_PACKAGES: true
+    - name: Run e2e tests
       run: |
-        wget "https://raw.githubusercontent.com/go-graphite/helper-scripts/main/travis-docker-build.sh" && chmod +x ./travis-docker-build.sh
-        ./travis-docker-build.sh carbonapi
+        ./e2e_test.sh
+    - name: Check packaging
+      if: matrix.go == '^1'
+      env:
+        BUILD_PACKAGES: false
+      run: |
+        wget "https://raw.githubusercontent.com/go-graphite/helper-scripts/main/build.sh" && chmod +x ./build.sh
+        ./build.sh carbonapi

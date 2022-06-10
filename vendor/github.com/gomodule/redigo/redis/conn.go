@@ -168,6 +168,7 @@ func DialPassword(password string) DialOption {
 
 // DialUsername specifies the username to use when connecting to
 // the Redis server when Redis ACLs are used.
+// A DialPassword must also be passed otherwise this option will have no effect.
 func DialUsername(username string) DialOption {
 	return DialOption{func(do *dialOptions) {
 		do.username = username
@@ -315,10 +316,17 @@ func DialContext(ctx context.Context, network, address string, options ...DialOp
 
 var pathDBRegexp = regexp.MustCompile(`/(\d*)\z`)
 
-// DialURL connects to a Redis server at the given URL using the Redis
+// DialURL wraps DialURLContext using context.Background.
+func DialURL(rawurl string, options ...DialOption) (Conn, error) {
+	ctx := context.Background()
+
+	return DialURLContext(ctx, rawurl, options...)
+}
+
+// DialURLContext connects to a Redis server at the given URL using the Redis
 // URI scheme. URLs should follow the draft IANA specification for the
 // scheme (https://www.iana.org/assignments/uri-schemes/prov/redis).
-func DialURL(rawurl string, options ...DialOption) (Conn, error) {
+func DialURLContext(ctx context.Context, rawurl string, options ...DialOption) (Conn, error) {
 	u, err := url.Parse(rawurl)
 	if err != nil {
 		return nil, err
@@ -347,8 +355,18 @@ func DialURL(rawurl string, options ...DialOption) (Conn, error) {
 
 	if u.User != nil {
 		password, isSet := u.User.Password()
+		username := u.User.Username()
 		if isSet {
-			options = append(options, DialUsername(u.User.Username()), DialPassword(password))
+			if username != "" {
+				// ACL
+				options = append(options, DialUsername(username), DialPassword(password))
+			} else {
+				// requirepass - user-info username:password with blank username
+				options = append(options, DialPassword(password))
+			}
+		} else if username != "" {
+			// requirepass - redis-cli compatibility which treats as single arg in user-info as a password
+			options = append(options, DialPassword(username))
 		}
 	}
 
@@ -370,7 +388,7 @@ func DialURL(rawurl string, options ...DialOption) (Conn, error) {
 
 	options = append(options, DialUseTLS(u.Scheme == "rediss"))
 
-	return Dial("tcp", address, options...)
+	return DialContext(ctx, "tcp", address, options...)
 }
 
 // NewConn returns a new Redigo connection for the given net connection.
@@ -692,6 +710,36 @@ func (c *conn) Receive() (interface{}, error) {
 	return c.ReceiveWithTimeout(c.readTimeout)
 }
 
+func (c *conn) ReceiveContext(ctx context.Context) (interface{}, error) {
+	var realTimeout time.Duration
+	if dl, ok := ctx.Deadline(); ok {
+		timeout := time.Until(dl)
+		if timeout >= c.readTimeout && c.readTimeout != 0 {
+			realTimeout = c.readTimeout
+		} else if timeout <= 0 {
+			return nil, c.fatal(context.DeadlineExceeded)
+		} else {
+			realTimeout = timeout
+		}
+	} else {
+		realTimeout = c.readTimeout
+	}
+	endch := make(chan struct{})
+	var r interface{}
+	var e error
+	go func() {
+		defer close(endch)
+
+		r, e = c.ReceiveWithTimeout(realTimeout)
+	}()
+	select {
+	case <-ctx.Done():
+		return nil, c.fatal(ctx.Err())
+	case <-endch:
+		return r, e
+	}
+}
+
 func (c *conn) ReceiveWithTimeout(timeout time.Duration) (reply interface{}, err error) {
 	var deadline time.Time
 	if timeout != 0 {
@@ -724,6 +772,36 @@ func (c *conn) ReceiveWithTimeout(timeout time.Duration) (reply interface{}, err
 
 func (c *conn) Do(cmd string, args ...interface{}) (interface{}, error) {
 	return c.DoWithTimeout(c.readTimeout, cmd, args...)
+}
+
+func (c *conn) DoContext(ctx context.Context, cmd string, args ...interface{}) (interface{}, error) {
+	var realTimeout time.Duration
+	if dl, ok := ctx.Deadline(); ok {
+		timeout := time.Until(dl)
+		if timeout >= c.readTimeout && c.readTimeout != 0 {
+			realTimeout = c.readTimeout
+		} else if timeout <= 0 {
+			return nil, c.fatal(context.DeadlineExceeded)
+		} else {
+			realTimeout = timeout
+		}
+	} else {
+		realTimeout = c.readTimeout
+	}
+	endch := make(chan struct{})
+	var r interface{}
+	var e error
+	go func() {
+		defer close(endch)
+
+		r, e = c.DoWithTimeout(realTimeout, cmd, args...)
+	}()
+	select {
+	case <-ctx.Done():
+		return nil, c.fatal(ctx.Err())
+	case <-endch:
+		return r, e
+	}
 }
 
 func (c *conn) DoWithTimeout(readTimeout time.Duration, cmd string, args ...interface{}) (interface{}, error) {

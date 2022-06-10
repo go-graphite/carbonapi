@@ -33,7 +33,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // asPercent(seriesList, total=None, *nodes)
 func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			return fmt.Sprintf("asPercent(%s,%s)", a, b)
 		}
 	} else if len(e.Args()) == 2 && (e.Args()[1].IsName() || e.Args()[1].IsFunc()) {
-		total, err := helper.GetSeriesArg(e.Args()[1], from, until, values)
+		total, err := helper.GetSeriesArg(ctx, e.Args()[1], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -117,7 +117,7 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			return fmt.Sprintf("asPercent(%s,%s)", a, b)
 		}
 	} else if len(e.Args()) >= 3 {
-		total, err := helper.GetSeriesArg(e.Args()[1], from, until, values)
+		total, err := helper.GetSeriesArg(ctx, e.Args()[1], from, until, values)
 		if err != nil {
 			return nil, err
 		}

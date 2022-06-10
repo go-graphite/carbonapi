@@ -1,0 +1,29 @@
+version: "v1"
+test:
+    apps:
+        - name: "carbonapi"
+          binary: "./carbonapi"
+          args:
+              - "-config"
+              - "./cmd/mockbackend/carbonapi_singlebackend.yaml"
+    queries:
+            - endpoint: "http://127.0.0.1:8081"
+              delay: 1
+              type: "GET"
+              URL: "/render?format=json&target=group(some.existing.metric, some.nonexisting.metric)"
+              expectedResponse:
+                  httpCode: 200
+                  contentType: "application/json"
+                  expectedResults:
+                          - metrics:
+                                  - target: "some.existing.metric"
+                                    datapoints: [[3.0, 1],[3.0, 2],[3.0, 3]]
+
+listeners:
+        - address: ":9070"
+          expressions:
+                     "some.existing.metric":
+                         pathExpression: "some.existing.metric"
+                         data:
+                             - metricName: "some.existing.metric"
+                               values: [3.0, 3.0, 3.0]

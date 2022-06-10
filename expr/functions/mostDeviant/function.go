@@ -44,7 +44,7 @@ func (f *mostDeviant) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		return nil, err
 	}
 
-	args, err := helper.GetSeriesArg(e.Args()[seriesArg], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Args()[seriesArg], from, until, values)
 	if err != nil {
 		return nil, err
 	}

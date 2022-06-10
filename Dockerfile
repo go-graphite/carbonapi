@@ -1,5 +1,7 @@
 FROM golang:alpine as builder
 
+LABEL org.opencontainers.image.source https://github.com/go-graphite/carbonapi
+
 WORKDIR /go/src/github.com/go-graphite/carbonapi
 
 COPY . .

@@ -33,14 +33,14 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // ifft(absSeriesList, phaseSeriesList)
 func (f *ifft) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	absSeriesList, err := helper.GetSeriesArg(e.Args()[0], from, until, values)
+	absSeriesList, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
 	var phaseSeriesList []*types.MetricData
 	if len(e.Args()) > 1 {
-		phaseSeriesList, err = helper.GetSeriesArg(e.Args()[1], from, until, values)
+		phaseSeriesList, err = helper.GetSeriesArg(ctx, e.Args()[1], from, until, values)
 		if err != nil {
 			return nil, err
 		}

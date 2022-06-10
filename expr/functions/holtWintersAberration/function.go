@@ -37,7 +37,7 @@ func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, unt
 		return nil, err
 	}
 
-	args, err := helper.GetSeriesArg(e.Args()[0], from-bootstrapInterval, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from-bootstrapInterval, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, unt
 	for _, arg := range args {
 		var (
 			aberration []float64
-			series []float64
+			series     []float64
 		)
 
 		stepTime := arg.StepTime

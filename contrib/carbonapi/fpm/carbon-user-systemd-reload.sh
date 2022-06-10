@@ -37,4 +37,6 @@ if [ ! -e "${CONF}" ]; then
 fi
 
 # reload systemd
-[[ -e /bin/systemctl ]] && /bin/systemctl daemon-reload ||:
+if [ -e /bin/systemctl ]; then
+  /bin/systemctl daemon-reload
+fi

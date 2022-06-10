@@ -47,7 +47,7 @@ func (f *aggregate) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		if e.Target() == "aggregate" {
 			return nil, err
 		} else {
-			args, err = helper.GetSeriesArgsAndRemoveNonExisting(e, from, until, values)
+			args, err = helper.GetSeriesArgsAndRemoveNonExisting(ctx, e, from, until, values)
 			if err != nil {
 				return nil, err
 			}
@@ -55,7 +55,7 @@ func (f *aggregate) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			isAggregateFunc = false
 		}
 	} else {
-		args, err = helper.GetSeriesArg(e.Args()[0], from, until, values)
+		args, err = helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -264,10 +264,10 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 		},
 		"count": {
 			Description: "Draws a horizontal line representing the number of nodes found in the seriesList.\n\n.. code-block:: none\n\n  &target=count(carbon.agents.*.*)",
-			Function: "count(*seriesLists)",
-			Group: "Combine",
-			Module: "graphite.render.functions",
-			Name: "count",
+			Function:    "count(*seriesLists)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions",
+			Name:        "count",
 			Params: []types.FunctionParam{
 				{
 					Multiple: true,
@@ -279,10 +279,10 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 		},
 		"countSeries": {
 			Description: "Draws a horizontal line representing the number of nodes found in the seriesList.\n\n.. code-block:: none\n\n  &target=countSeries(carbon.agents.*.*)",
-			Function: "countSeries(*seriesLists)",
-			Group: "Combine",
-			Module: "graphite.render.functions",
-			Name: "countSeries",
+			Function:    "countSeries(*seriesLists)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions",
+			Name:        "countSeries",
 			Params: []types.FunctionParam{
 				{
 					Multiple: true,
@@ -294,10 +294,10 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 		},
 		"diff": {
 			Description: "Subtracts series 2 through n from series 1.\n\nExample:\n\n.. code-block:: none\n\n  &target=diff(service.connections.total,service.connections.failed)\n\nTo diff a series and a constant, one should use offset instead of (or in\naddition to) diffSeries\n\nExample:\n\n.. code-block:: none\n\n  &target=offset(service.connections.total,-5)\n\n  &target=offset(diffSeries(service.connections.total,service.connections.failed),-4)\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``diff``.",
-			Function: "diff(*seriesLists)",
-			Group: "Combine",
-			Module: "graphite.render.functions",
-			Name: "diff",
+			Function:    "diff(*seriesLists)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions",
+			Name:        "diff",
 			Params: []types.FunctionParam{
 				{
 					Multiple: true,
@@ -309,10 +309,10 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 		},
 		"diffSeries": {
 			Description: "Subtracts series 2 through n from series 1.\n\nExample:\n\n.. code-block:: none\n\n  &target=diffSeries(service.connections.total,service.connections.failed)\n\nTo diff a series and a constant, one should use offset instead of (or in\naddition to) diffSeries\n\nExample:\n\n.. code-block:: none\n\n  &target=offset(service.connections.total,-5)\n\n  &target=offset(diffSeries(service.connections.total,service.connections.failed),-4)\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``diff``.",
-			Function: "diffSeries(*seriesLists)",
-			Group: "Combine",
-			Module: "graphite.render.functions",
-			Name: "diffSeries",
+			Function:    "diffSeries(*seriesLists)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions",
+			Name:        "diffSeries",
 			Params: []types.FunctionParam{
 				{
 					Multiple: true,
@@ -324,10 +324,10 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 		},
 		"multiply": {
 			Description: "Takes two or more series and multiplies their points. A constant may not be\nused. To multiply by a constant, use the scale() function.\n\nExample:\n\n.. code-block:: none\n\n  &target=multiplySeries(Series.dividends,Series.divisors)\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``multiply``.",
-			Function: "multiply(*seriesLists)",
-			Group: "Combine",
-			Module: "graphite.render.functions",
-			Name: "multiply",
+			Function:    "multiply(*seriesLists)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions",
+			Name:        "multiply",
 			Params: []types.FunctionParam{
 				{
 					Multiple: true,
@@ -339,10 +339,10 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 		},
 		"multiplySeries": {
 			Description: "Takes two or more series and multiplies their points. A constant may not be\nused. To multiply by a constant, use the scale() function.\n\nExample:\n\n.. code-block:: none\n\n  &target=multiplySeries(Series.dividends,Series.divisors)\n\nThis is an alias for :py:func:`aggregate <aggregate>` with aggregation ``multiply``.",
-			Function: "multiplySeries(*seriesLists)",
-			Group: "Combine",
-			Module: "graphite.render.functions",
-			Name: "multiplySeries",
+			Function:    "multiplySeries(*seriesLists)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions",
+			Name:        "multiplySeries",
 			Params: []types.FunctionParam{
 				{
 					Multiple: true,

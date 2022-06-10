@@ -3,18 +3,18 @@
 
 package carbonapi_v2_pb
 
-import proto "github.com/gogo/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import _ "github.com/gogo/protobuf/gogoproto"
-
-import strings "strings"
-import reflect "reflect"
-import github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
-
-import encoding_binary "encoding/binary"
-
-import io "io"
+import (
+	encoding_binary "encoding/binary"
+	fmt "fmt"
+	_ "github.com/gogo/protobuf/gogoproto"
+	proto "github.com/gogo/protobuf/proto"
+	github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
+	io "io"
+	math "math"
+	math_bits "math/bits"
+	reflect "reflect"
+	strings "strings"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -25,21 +25,21 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type FetchResponse struct {
 	Name      string    `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	StartTime int32     `protobuf:"varint,2,opt,name=startTime,proto3" json:"startTime,omitempty"`
 	StopTime  int32     `protobuf:"varint,3,opt,name=stopTime,proto3" json:"stopTime,omitempty"`
 	StepTime  int32     `protobuf:"varint,4,opt,name=stepTime,proto3" json:"stepTime,omitempty"`
-	Values    []float64 `protobuf:"fixed64,5,rep,packed,name=values" json:"values,omitempty"`
-	IsAbsent  []bool    `protobuf:"varint,6,rep,packed,name=isAbsent" json:"isAbsent,omitempty"`
+	Values    []float64 `protobuf:"fixed64,5,rep,packed,name=values,proto3" json:"values,omitempty"`
+	IsAbsent  []bool    `protobuf:"varint,6,rep,packed,name=isAbsent,proto3" json:"isAbsent,omitempty"`
 }
 
 func (m *FetchResponse) Reset()      { *m = FetchResponse{} }
 func (*FetchResponse) ProtoMessage() {}
 func (*FetchResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_carbonapi_v2_pb_c2d3d6a98bf3a5ac, []int{0}
+	return fileDescriptor_e4f0f0285c07cd03, []int{0}
 }
 func (m *FetchResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -49,15 +49,15 @@ func (m *FetchResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return xxx_messageInfo_FetchResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (dst *FetchResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_FetchResponse.Merge(dst, src)
+func (m *FetchResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FetchResponse.Merge(m, src)
 }
 func (m *FetchResponse) XXX_Size() int {
 	return m.Size()
@@ -111,13 +111,13 @@ func (m *FetchResponse) GetIsAbsent() []bool {
 }
 
 type MultiFetchResponse struct {
-	Metrics []FetchResponse `protobuf:"bytes,1,rep,name=metrics" json:"metrics"`
+	Metrics []FetchResponse `protobuf:"bytes,1,rep,name=metrics,proto3" json:"metrics"`
 }
 
 func (m *MultiFetchResponse) Reset()      { *m = MultiFetchResponse{} }
 func (*MultiFetchResponse) ProtoMessage() {}
 func (*MultiFetchResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_carbonapi_v2_pb_c2d3d6a98bf3a5ac, []int{1}
+	return fileDescriptor_e4f0f0285c07cd03, []int{1}
 }
 func (m *MultiFetchResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -127,15 +127,15 @@ func (m *MultiFetchResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return xxx_messageInfo_MultiFetchResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (dst *MultiFetchResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MultiFetchResponse.Merge(dst, src)
+func (m *MultiFetchResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MultiFetchResponse.Merge(m, src)
 }
 func (m *MultiFetchResponse) XXX_Size() int {
 	return m.Size()
@@ -161,7 +161,7 @@ type GlobMatch struct {
 func (m *GlobMatch) Reset()      { *m = GlobMatch{} }
 func (*GlobMatch) ProtoMessage() {}
 func (*GlobMatch) Descriptor() ([]byte, []int) {
-	return fileDescriptor_carbonapi_v2_pb_c2d3d6a98bf3a5ac, []int{2}
+	return fileDescriptor_e4f0f0285c07cd03, []int{2}
 }
 func (m *GlobMatch) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -171,15 +171,15 @@ func (m *GlobMatch) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_GlobMatch.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (dst *GlobMatch) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GlobMatch.Merge(dst, src)
+func (m *GlobMatch) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GlobMatch.Merge(m, src)
 }
 func (m *GlobMatch) XXX_Size() int {
 	return m.Size()
@@ -206,13 +206,13 @@ func (m *GlobMatch) GetIsLeaf() bool {
 
 type GlobResponse struct {
 	Name    string      `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Matches []GlobMatch `protobuf:"bytes,2,rep,name=matches" json:"matches"`
+	Matches []GlobMatch `protobuf:"bytes,2,rep,name=matches,proto3" json:"matches"`
 }
 
 func (m *GlobResponse) Reset()      { *m = GlobResponse{} }
 func (*GlobResponse) ProtoMessage() {}
 func (*GlobResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_carbonapi_v2_pb_c2d3d6a98bf3a5ac, []int{3}
+	return fileDescriptor_e4f0f0285c07cd03, []int{3}
 }
 func (m *GlobResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -222,15 +222,15 @@ func (m *GlobResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return xxx_messageInfo_GlobResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (dst *GlobResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GlobResponse.Merge(dst, src)
+func (m *GlobResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GlobResponse.Merge(m, src)
 }
 func (m *GlobResponse) XXX_Size() int {
 	return m.Size()
@@ -263,7 +263,7 @@ type Retention struct {
 func (m *Retention) Reset()      { *m = Retention{} }
 func (*Retention) ProtoMessage() {}
 func (*Retention) Descriptor() ([]byte, []int) {
-	return fileDescriptor_carbonapi_v2_pb_c2d3d6a98bf3a5ac, []int{4}
+	return fileDescriptor_e4f0f0285c07cd03, []int{4}
 }
 func (m *Retention) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -273,15 +273,15 @@ func (m *Retention) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Retention.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (dst *Retention) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Retention.Merge(dst, src)
+func (m *Retention) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Retention.Merge(m, src)
 }
 func (m *Retention) XXX_Size() int {
 	return m.Size()
@@ -311,13 +311,13 @@ type InfoResponse struct {
 	AggregationMethod string      `protobuf:"bytes,2,opt,name=aggregationMethod,proto3" json:"aggregationMethod,omitempty"`
 	MaxRetention      int32       `protobuf:"varint,3,opt,name=maxRetention,proto3" json:"maxRetention,omitempty"`
 	XFilesFactor      float32     `protobuf:"fixed32,4,opt,name=xFilesFactor,proto3" json:"xFilesFactor,omitempty"`
-	Retentions        []Retention `protobuf:"bytes,5,rep,name=retentions" json:"retentions"`
+	Retentions        []Retention `protobuf:"bytes,5,rep,name=retentions,proto3" json:"retentions"`
 }
 
 func (m *InfoResponse) Reset()      { *m = InfoResponse{} }
 func (*InfoResponse) ProtoMessage() {}
 func (*InfoResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_carbonapi_v2_pb_c2d3d6a98bf3a5ac, []int{5}
+	return fileDescriptor_e4f0f0285c07cd03, []int{5}
 }
 func (m *InfoResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -327,15 +327,15 @@ func (m *InfoResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return xxx_messageInfo_InfoResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (dst *InfoResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_InfoResponse.Merge(dst, src)
+func (m *InfoResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_InfoResponse.Merge(m, src)
 }
 func (m *InfoResponse) XXX_Size() int {
 	return m.Size()
@@ -383,13 +383,13 @@ func (m *InfoResponse) GetRetentions() []Retention {
 
 type ServerInfoResponse struct {
 	Server string        `protobuf:"bytes,1,opt,name=server,proto3" json:"server,omitempty"`
-	Info   *InfoResponse `protobuf:"bytes,2,opt,name=info" json:"info,omitempty"`
+	Info   *InfoResponse `protobuf:"bytes,2,opt,name=info,proto3" json:"info,omitempty"`
 }
 
 func (m *ServerInfoResponse) Reset()      { *m = ServerInfoResponse{} }
 func (*ServerInfoResponse) ProtoMessage() {}
 func (*ServerInfoResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_carbonapi_v2_pb_c2d3d6a98bf3a5ac, []int{6}
+	return fileDescriptor_e4f0f0285c07cd03, []int{6}
 }
 func (m *ServerInfoResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -399,15 +399,15 @@ func (m *ServerInfoResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return xxx_messageInfo_ServerInfoResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (dst *ServerInfoResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ServerInfoResponse.Merge(dst, src)
+func (m *ServerInfoResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ServerInfoResponse.Merge(m, src)
 }
 func (m *ServerInfoResponse) XXX_Size() int {
 	return m.Size()
@@ -433,13 +433,13 @@ func (m *ServerInfoResponse) GetInfo() *InfoResponse {
 }
 
 type ZipperInfoResponse struct {
-	Responses []ServerInfoResponse `protobuf:"bytes,1,rep,name=responses" json:"responses"`
+	Responses []ServerInfoResponse `protobuf:"bytes,1,rep,name=responses,proto3" json:"responses"`
 }
 
 func (m *ZipperInfoResponse) Reset()      { *m = ZipperInfoResponse{} }
 func (*ZipperInfoResponse) ProtoMessage() {}
 func (*ZipperInfoResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_carbonapi_v2_pb_c2d3d6a98bf3a5ac, []int{7}
+	return fileDescriptor_e4f0f0285c07cd03, []int{7}
 }
 func (m *ZipperInfoResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -449,15 +449,15 @@ func (m *ZipperInfoResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return xxx_messageInfo_ZipperInfoResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (dst *ZipperInfoResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ZipperInfoResponse.Merge(dst, src)
+func (m *ZipperInfoResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ZipperInfoResponse.Merge(m, src)
 }
 func (m *ZipperInfoResponse) XXX_Size() int {
 	return m.Size()
@@ -476,13 +476,13 @@ func (m *ZipperInfoResponse) GetResponses() []ServerInfoResponse {
 }
 
 type ListMetricsResponse struct {
-	Metrics []string `protobuf:"bytes,1,rep,name=Metrics" json:"Metrics,omitempty"`
+	Metrics []string `protobuf:"bytes,1,rep,name=Metrics,proto3" json:"Metrics,omitempty"`
 }
 
 func (m *ListMetricsResponse) Reset()      { *m = ListMetricsResponse{} }
 func (*ListMetricsResponse) ProtoMessage() {}
 func (*ListMetricsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_carbonapi_v2_pb_c2d3d6a98bf3a5ac, []int{8}
+	return fileDescriptor_e4f0f0285c07cd03, []int{8}
 }
 func (m *ListMetricsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -492,15 +492,15 @@ func (m *ListMetricsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return xxx_messageInfo_ListMetricsResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (dst *ListMetricsResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ListMetricsResponse.Merge(dst, src)
+func (m *ListMetricsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListMetricsResponse.Merge(m, src)
 }
 func (m *ListMetricsResponse) XXX_Size() int {
 	return m.Size()
@@ -530,7 +530,7 @@ type MetricDetails struct {
 func (m *MetricDetails) Reset()      { *m = MetricDetails{} }
 func (*MetricDetails) ProtoMessage() {}
 func (*MetricDetails) Descriptor() ([]byte, []int) {
-	return fileDescriptor_carbonapi_v2_pb_c2d3d6a98bf3a5ac, []int{9}
+	return fileDescriptor_e4f0f0285c07cd03, []int{9}
 }
 func (m *MetricDetails) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -540,15 +540,15 @@ func (m *MetricDetails) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return xxx_messageInfo_MetricDetails.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (dst *MetricDetails) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MetricDetails.Merge(dst, src)
+func (m *MetricDetails) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MetricDetails.Merge(m, src)
 }
 func (m *MetricDetails) XXX_Size() int {
 	return m.Size()
@@ -588,7 +588,7 @@ func (m *MetricDetails) GetRdTime() int64 {
 }
 
 type MetricDetailsResponse struct {
-	Metrics    map[string]*MetricDetails `protobuf:"bytes,1,rep,name=metrics" json:"metrics,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
+	Metrics    map[string]*MetricDetails `protobuf:"bytes,1,rep,name=metrics,proto3" json:"metrics,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	FreeSpace  uint64                    `protobuf:"varint,2,opt,name=FreeSpace,proto3" json:"FreeSpace,omitempty"`
 	TotalSpace uint64                    `protobuf:"varint,3,opt,name=TotalSpace,proto3" json:"TotalSpace,omitempty"`
 }
@@ -596,7 +596,7 @@ type MetricDetailsResponse struct {
 func (m *MetricDetailsResponse) Reset()      { *m = MetricDetailsResponse{} }
 func (*MetricDetailsResponse) ProtoMessage() {}
 func (*MetricDetailsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_carbonapi_v2_pb_c2d3d6a98bf3a5ac, []int{10}
+	return fileDescriptor_e4f0f0285c07cd03, []int{10}
 }
 func (m *MetricDetailsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -606,15 +606,15 @@ func (m *MetricDetailsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byt
 		return xxx_messageInfo_MetricDetailsResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (dst *MetricDetailsResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MetricDetailsResponse.Merge(dst, src)
+func (m *MetricDetailsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MetricDetailsResponse.Merge(m, src)
 }
 func (m *MetricDetailsResponse) XXX_Size() int {
 	return m.Size()
@@ -660,6 +660,58 @@ func init() {
 	proto.RegisterType((*MetricDetailsResponse)(nil), "carbonapi_v2_pb.MetricDetailsResponse")
 	proto.RegisterMapType((map[string]*MetricDetails)(nil), "carbonapi_v2_pb.MetricDetailsResponse.MetricsEntry")
 }
+
+func init() { proto.RegisterFile("carbonapi_v2_pb.proto", fileDescriptor_e4f0f0285c07cd03) }
+
+var fileDescriptor_e4f0f0285c07cd03 = []byte{
+	// 708 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x54, 0x4f, 0x4f, 0x13, 0x41,
+	0x14, 0xef, 0x74, 0xdb, 0x42, 0x1f, 0x45, 0x74, 0x14, 0xd2, 0x34, 0x3a, 0x36, 0x6b, 0x62, 0x7a,
+	0x50, 0x88, 0x40, 0xa2, 0xe1, 0x60, 0x84, 0x68, 0x89, 0x09, 0x8d, 0x64, 0xe0, 0x44, 0x82, 0x64,
+	0x76, 0x99, 0xb6, 0x13, 0xda, 0x9d, 0xcd, 0xce, 0x94, 0x80, 0x27, 0x3e, 0x82, 0x1f, 0xc3, 0x8b,
+	0xdf, 0x83, 0x23, 0x47, 0xe2, 0xc1, 0x48, 0xb9, 0x78, 0xe4, 0x23, 0x98, 0x9d, 0xd9, 0x2e, 0xfd,
+	0x43, 0xf0, 0xf6, 0x7e, 0xbf, 0x37, 0xbf, 0x37, 0xbf, 0xf7, 0xe6, 0x0f, 0xcc, 0xfb, 0x2c, 0xf2,
+	0x64, 0xc0, 0x42, 0x71, 0x70, 0xbc, 0x7c, 0x10, 0x7a, 0x8b, 0x61, 0x24, 0xb5, 0xc4, 0x73, 0x63,
+	0x74, 0xe5, 0x75, 0x4b, 0xe8, 0x76, 0xcf, 0x5b, 0xf4, 0x65, 0x77, 0xa9, 0x25, 0x5b, 0x72, 0xc9,
+	0xac, 0xf3, 0x7a, 0x4d, 0x83, 0x0c, 0x30, 0x91, 0xd5, 0xbb, 0x3f, 0x11, 0xcc, 0xd6, 0xb9, 0xf6,
+	0xdb, 0x94, 0xab, 0x50, 0x06, 0x8a, 0x63, 0x0c, 0xb9, 0x80, 0x75, 0x79, 0x19, 0x55, 0x51, 0xad,
+	0x48, 0x4d, 0x8c, 0x9f, 0x42, 0x51, 0x69, 0x16, 0xe9, 0x5d, 0xd1, 0xe5, 0xe5, 0x6c, 0x15, 0xd5,
+	0xf2, 0xf4, 0x96, 0xc0, 0x15, 0x98, 0x56, 0x5a, 0x86, 0x26, 0xe9, 0x98, 0x64, 0x8a, 0x6d, 0x8e,
+	0xdb, 0x5c, 0x6e, 0x90, 0xb3, 0x18, 0x2f, 0x40, 0xe1, 0x98, 0x75, 0x7a, 0x5c, 0x95, 0xf3, 0x55,
+	0xa7, 0x86, 0x68, 0x82, 0x62, 0x8d, 0x50, 0xeb, 0x9e, 0xe2, 0x81, 0x2e, 0x17, 0xaa, 0x4e, 0x6d,
+	0x9a, 0xa6, 0xd8, 0xdd, 0x05, 0xdc, 0xe8, 0x75, 0xb4, 0x18, 0xf5, 0xfc, 0x1e, 0xa6, 0xba, 0x5c,
+	0x47, 0xc2, 0x57, 0x65, 0x54, 0x75, 0x6a, 0x33, 0xcb, 0x64, 0x71, 0x7c, 0x5c, 0x23, 0x82, 0x8d,
+	0xdc, 0xf9, 0xef, 0xe7, 0x19, 0x3a, 0x10, 0xb9, 0x6f, 0xa1, 0xb8, 0xd9, 0x91, 0x5e, 0x83, 0x69,
+	0xbf, 0x1d, 0x0f, 0x20, 0x64, 0xba, 0x3d, 0x18, 0x40, 0x1c, 0xc7, 0x56, 0x85, 0xda, 0xe2, 0xac,
+	0x69, 0xba, 0x9f, 0xa6, 0x09, 0x72, 0xbf, 0x42, 0x29, 0x16, 0xde, 0x3b, 0xbc, 0x35, 0x98, 0xea,
+	0xc6, 0x85, 0xb9, 0x2a, 0x67, 0x8d, 0xb9, 0xca, 0x84, 0xb9, 0x74, 0xf3, 0xd4, 0x98, 0x15, 0xb8,
+	0xfb, 0x50, 0xa4, 0x5c, 0xf3, 0x40, 0x0b, 0x19, 0xe0, 0x1a, 0xcc, 0x29, 0xee, 0xcb, 0xe0, 0x50,
+	0x6d, 0xf3, 0x68, 0x5b, 0x8a, 0x40, 0x9b, 0x7d, 0xf2, 0x74, 0x9c, 0xc6, 0x2f, 0xe1, 0x41, 0xd0,
+	0xeb, 0x7a, 0x3c, 0xfa, 0xd2, 0x34, 0x84, 0x4a, 0x0e, 0x6d, 0x8c, 0x75, 0x7f, 0x21, 0x28, 0x7d,
+	0x0e, 0x9a, 0xf2, 0x5e, 0xff, 0xaf, 0xe0, 0x11, 0x6b, 0xb5, 0x22, 0xde, 0x62, 0xb1, 0x8b, 0x06,
+	0xd7, 0x6d, 0x79, 0x68, 0xea, 0x15, 0xe9, 0x64, 0x02, 0xbb, 0x50, 0xea, 0xb2, 0x93, 0xd4, 0x74,
+	0x72, 0x21, 0x46, 0xb8, 0x78, 0xcd, 0x49, 0x5d, 0x74, 0xb8, 0xaa, 0x33, 0x5f, 0xcb, 0xc8, 0x5c,
+	0x8c, 0x2c, 0x1d, 0xe1, 0xf0, 0x07, 0x80, 0x68, 0x20, 0xb0, 0x17, 0xe4, 0xae, 0xc1, 0xa5, 0x35,
+	0x93, 0xc1, 0x0d, 0x69, 0xdc, 0x03, 0xc0, 0x3b, 0x3c, 0x3a, 0xe6, 0xd1, 0x48, 0x87, 0x0b, 0x50,
+	0x50, 0x86, 0x4d, 0x7a, 0x4c, 0x10, 0x7e, 0x03, 0x39, 0x11, 0x34, 0xa5, 0x69, 0x6c, 0x66, 0xf9,
+	0xd9, 0xc4, 0x4e, 0xc3, 0x45, 0xa8, 0x59, 0xea, 0xee, 0x03, 0xde, 0x13, 0x61, 0x38, 0xb6, 0xc1,
+	0x26, 0x14, 0xa3, 0x24, 0x1e, 0xdc, 0xc6, 0x17, 0x13, 0xd5, 0x26, 0x8d, 0x25, 0x0d, 0xdc, 0x6a,
+	0xdd, 0x25, 0x78, 0xbc, 0x25, 0x94, 0x6e, 0xd8, 0x3b, 0x9a, 0xd6, 0x2f, 0xc3, 0x54, 0x63, 0xe8,
+	0xae, 0x17, 0xe9, 0x00, 0xba, 0x47, 0x30, 0x6b, 0xc3, 0x8f, 0x5c, 0x33, 0xd1, 0x51, 0xf1, 0x69,
+	0xee, 0x88, 0x6f, 0xf6, 0xc5, 0x3a, 0xd4, 0xc4, 0x46, 0x2e, 0x0f, 0xd3, 0xb7, 0xea, 0xd0, 0x01,
+	0xc4, 0x4f, 0x20, 0xbf, 0x9e, 0xbe, 0x53, 0x87, 0x5a, 0x10, 0xcf, 0x8b, 0xda, 0xe5, 0x79, 0x43,
+	0x27, 0xc8, 0x3d, 0xcb, 0xc2, 0xfc, 0xc8, 0x6e, 0xa9, 0xc1, 0xc6, 0xf8, 0x63, 0x5c, 0x99, 0x68,
+	0xff, 0x4e, 0x61, 0xc2, 0xaa, 0x4f, 0x81, 0x8e, 0x4e, 0xd3, 0xb7, 0x19, 0xff, 0x3d, 0xf5, 0x88,
+	0xf3, 0x9d, 0x90, 0xf9, 0xb6, 0x93, 0x1c, 0xbd, 0x25, 0x30, 0x01, 0xd8, 0x95, 0x9a, 0x75, 0x6c,
+	0xda, 0x31, 0xe9, 0x21, 0xa6, 0xb2, 0x07, 0xa5, 0xe1, 0xb2, 0xf8, 0x21, 0x38, 0x47, 0xfc, 0x34,
+	0x39, 0xfb, 0x38, 0xc4, 0xab, 0x90, 0x37, 0xff, 0x4e, 0x72, 0xf2, 0xe4, 0x3f, 0x66, 0xed, 0xe2,
+	0xb5, 0xec, 0x3b, 0xb4, 0xb1, 0x7a, 0x71, 0x45, 0x32, 0x97, 0x57, 0x24, 0x73, 0x73, 0x45, 0xd0,
+	0x59, 0x9f, 0xa0, 0x1f, 0x7d, 0x82, 0xce, 0xfb, 0x04, 0x5d, 0xf4, 0x09, 0xfa, 0xd3, 0x27, 0xe8,
+	0x6f, 0x9f, 0x64, 0x6e, 0xfa, 0x04, 0x7d, 0xbf, 0x26, 0x99, 0x8b, 0x6b, 0x92, 0xb9, 0xbc, 0x26,
+	0x19, 0xaf, 0x60, 0x3e, 0xde, 0x95, 0x7f, 0x01, 0x00, 0x00, 0xff, 0xff, 0xaa, 0x3a, 0xf7, 0x1a,
+	0xd1, 0x05, 0x00, 0x00,
+}
+
 func (this *FetchResponse) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -1040,9 +1092,9 @@ func (this *MultiFetchResponse) GoString() string {
 	s := make([]string, 0, 5)
 	s = append(s, "&carbonapi_v2_pb.MultiFetchResponse{")
 	if this.Metrics != nil {
-		vs := make([]*FetchResponse, len(this.Metrics))
+		vs := make([]FetchResponse, len(this.Metrics))
 		for i := range vs {
-			vs[i] = &this.Metrics[i]
+			vs[i] = this.Metrics[i]
 		}
 		s = append(s, "Metrics: "+fmt.Sprintf("%#v", vs)+",\n")
 	}
@@ -1068,9 +1120,9 @@ func (this *GlobResponse) GoString() string {
 	s = append(s, "&carbonapi_v2_pb.GlobResponse{")
 	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
 	if this.Matches != nil {
-		vs := make([]*GlobMatch, len(this.Matches))
+		vs := make([]GlobMatch, len(this.Matches))
 		for i := range vs {
-			vs[i] = &this.Matches[i]
+			vs[i] = this.Matches[i]
 		}
 		s = append(s, "Matches: "+fmt.Sprintf("%#v", vs)+",\n")
 	}
@@ -1099,9 +1151,9 @@ func (this *InfoResponse) GoString() string {
 	s = append(s, "MaxRetention: "+fmt.Sprintf("%#v", this.MaxRetention)+",\n")
 	s = append(s, "XFilesFactor: "+fmt.Sprintf("%#v", this.XFilesFactor)+",\n")
 	if this.Retentions != nil {
-		vs := make([]*Retention, len(this.Retentions))
+		vs := make([]Retention, len(this.Retentions))
 		for i := range vs {
-			vs[i] = &this.Retentions[i]
+			vs[i] = this.Retentions[i]
 		}
 		s = append(s, "Retentions: "+fmt.Sprintf("%#v", vs)+",\n")
 	}
@@ -1128,9 +1180,9 @@ func (this *ZipperInfoResponse) GoString() string {
 	s := make([]string, 0, 5)
 	s = append(s, "&carbonapi_v2_pb.ZipperInfoResponse{")
 	if this.Responses != nil {
-		vs := make([]*ServerInfoResponse, len(this.Responses))
+		vs := make([]ServerInfoResponse, len(this.Responses))
 		for i := range vs {
-			vs[i] = &this.Responses[i]
+			vs[i] = this.Responses[i]
 		}
 		s = append(s, "Responses: "+fmt.Sprintf("%#v", vs)+",\n")
 	}
@@ -1195,7 +1247,7 @@ func valueToGoStringCarbonapiV2Pb(v interface{}, typ string) string {
 func (m *FetchResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1203,61 +1255,67 @@ func (m *FetchResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *FetchResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *FetchResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Name) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(len(m.Name)))
-		i += copy(dAtA[i:], m.Name)
-	}
-	if m.StartTime != 0 {
-		dAtA[i] = 0x10
-		i++
-		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(m.StartTime))
-	}
-	if m.StopTime != 0 {
-		dAtA[i] = 0x18
-		i++
-		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(m.StopTime))
-	}
-	if m.StepTime != 0 {
-		dAtA[i] = 0x20
-		i++
-		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(m.StepTime))
-	}
-	if len(m.Values) > 0 {
-		dAtA[i] = 0x2a
-		i++
-		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(len(m.Values)*8))
-		for _, num := range m.Values {
-			f1 := math.Float64bits(float64(num))
-			encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(f1))
-			i += 8
-		}
-	}
 	if len(m.IsAbsent) > 0 {
-		dAtA[i] = 0x32
-		i++
-		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(len(m.IsAbsent)))
-		for _, b := range m.IsAbsent {
-			if b {
+		for iNdEx := len(m.IsAbsent) - 1; iNdEx >= 0; iNdEx-- {
+			i--
+			if m.IsAbsent[iNdEx] {
 				dAtA[i] = 1
 			} else {
 				dAtA[i] = 0
 			}
-			i++
 		}
+		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(len(m.IsAbsent)))
+		i--
+		dAtA[i] = 0x32
 	}
-	return i, nil
+	if len(m.Values) > 0 {
+		for iNdEx := len(m.Values) - 1; iNdEx >= 0; iNdEx-- {
+			f1 := math.Float64bits(float64(m.Values[iNdEx]))
+			i -= 8
+			encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(f1))
+		}
+		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(len(m.Values)*8))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if m.StepTime != 0 {
+		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(m.StepTime))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.StopTime != 0 {
+		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(m.StopTime))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.StartTime != 0 {
+		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(m.StartTime))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *MultiFetchResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1265,29 +1323,36 @@ func (m *MultiFetchResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *MultiFetchResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MultiFetchResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Metrics) > 0 {
-		for _, msg := range m.Metrics {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.Metrics) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Metrics[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0xa
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *GlobMatch) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1295,33 +1360,39 @@ func (m *GlobMatch) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *GlobMatch) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GlobMatch) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Path) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(len(m.Path)))
-		i += copy(dAtA[i:], m.Path)
-	}
 	if m.IsLeaf {
-		dAtA[i] = 0x10
-		i++
+		i--
 		if m.IsLeaf {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
 		}
-		i++
+		i--
+		dAtA[i] = 0x10
 	}
-	return i, nil
+	if len(m.Path) > 0 {
+		i -= len(m.Path)
+		copy(dAtA[i:], m.Path)
+		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(len(m.Path)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *GlobResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1329,35 +1400,43 @@ func (m *GlobResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *GlobResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GlobResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Name) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(len(m.Name)))
-		i += copy(dAtA[i:], m.Name)
-	}
 	if len(m.Matches) > 0 {
-		for _, msg := range m.Matches {
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.Matches) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Matches[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0x12
 		}
 	}
-	return i, nil
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Retention) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1365,27 +1444,32 @@ func (m *Retention) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Retention) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Retention) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.SecondsPerPoint != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(m.SecondsPerPoint))
-	}
 	if m.NumberOfPoints != 0 {
-		dAtA[i] = 0x10
-		i++
 		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(m.NumberOfPoints))
+		i--
+		dAtA[i] = 0x10
 	}
-	return i, nil
+	if m.SecondsPerPoint != 0 {
+		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(m.SecondsPerPoint))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *InfoResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1393,52 +1477,61 @@ func (m *InfoResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *InfoResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *InfoResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Name) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(len(m.Name)))
-		i += copy(dAtA[i:], m.Name)
-	}
-	if len(m.AggregationMethod) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(len(m.AggregationMethod)))
-		i += copy(dAtA[i:], m.AggregationMethod)
-	}
-	if m.MaxRetention != 0 {
-		dAtA[i] = 0x18
-		i++
-		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(m.MaxRetention))
-	}
-	if m.XFilesFactor != 0 {
-		dAtA[i] = 0x25
-		i++
-		encoding_binary.LittleEndian.PutUint32(dAtA[i:], uint32(math.Float32bits(float32(m.XFilesFactor))))
-		i += 4
-	}
 	if len(m.Retentions) > 0 {
-		for _, msg := range m.Retentions {
-			dAtA[i] = 0x2a
-			i++
-			i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.Retentions) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Retentions[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0x2a
 		}
 	}
-	return i, nil
+	if m.XFilesFactor != 0 {
+		i -= 4
+		encoding_binary.LittleEndian.PutUint32(dAtA[i:], uint32(math.Float32bits(float32(m.XFilesFactor))))
+		i--
+		dAtA[i] = 0x25
+	}
+	if m.MaxRetention != 0 {
+		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(m.MaxRetention))
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.AggregationMethod) > 0 {
+		i -= len(m.AggregationMethod)
+		copy(dAtA[i:], m.AggregationMethod)
+		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(len(m.AggregationMethod)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *ServerInfoResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1446,33 +1539,41 @@ func (m *ServerInfoResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ServerInfoResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ServerInfoResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Server) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(len(m.Server)))
-		i += copy(dAtA[i:], m.Server)
-	}
 	if m.Info != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(m.Info.Size()))
-		n2, err := m.Info.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+		{
+			size, err := m.Info.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(size))
 		}
-		i += n2
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if len(m.Server) > 0 {
+		i -= len(m.Server)
+		copy(dAtA[i:], m.Server)
+		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(len(m.Server)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *ZipperInfoResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1480,29 +1581,36 @@ func (m *ZipperInfoResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ZipperInfoResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ZipperInfoResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Responses) > 0 {
-		for _, msg := range m.Responses {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
+		for iNdEx := len(m.Responses) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Responses[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(size))
 			}
-			i += n
+			i--
+			dAtA[i] = 0xa
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *ListMetricsResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1510,32 +1618,31 @@ func (m *ListMetricsResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *ListMetricsResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ListMetricsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
 	if len(m.Metrics) > 0 {
-		for _, s := range m.Metrics {
+		for iNdEx := len(m.Metrics) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Metrics[iNdEx])
+			copy(dAtA[i:], m.Metrics[iNdEx])
+			i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(len(m.Metrics[iNdEx])))
+			i--
 			dAtA[i] = 0xa
-			i++
-			l = len(s)
-			for l >= 1<<7 {
-				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
-				l >>= 7
-				i++
-			}
-			dAtA[i] = uint8(l)
-			i++
-			i += copy(dAtA[i:], s)
 		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func (m *MetricDetails) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1543,37 +1650,42 @@ func (m *MetricDetails) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *MetricDetails) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MetricDetails) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Size_ != 0 {
-		dAtA[i] = 0x10
-		i++
-		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(m.Size_))
-	}
-	if m.ModTime != 0 {
-		dAtA[i] = 0x18
-		i++
-		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(m.ModTime))
+	if m.RdTime != 0 {
+		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(m.RdTime))
+		i--
+		dAtA[i] = 0x28
 	}
 	if m.ATime != 0 {
-		dAtA[i] = 0x20
-		i++
 		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(m.ATime))
+		i--
+		dAtA[i] = 0x20
 	}
-	if m.RdTime != 0 {
-		dAtA[i] = 0x28
-		i++
-		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(m.RdTime))
+	if m.ModTime != 0 {
+		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(m.ModTime))
+		i--
+		dAtA[i] = 0x18
 	}
-	return i, nil
+	if m.Size_ != 0 {
+		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(m.Size_))
+		i--
+		dAtA[i] = 0x10
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *MetricDetailsResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -1581,59 +1693,64 @@ func (m *MetricDetailsResponse) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *MetricDetailsResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MetricDetailsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Metrics) > 0 {
-		for k, _ := range m.Metrics {
-			dAtA[i] = 0xa
-			i++
-			v := m.Metrics[k]
-			msgSize := 0
-			if v != nil {
-				msgSize = v.Size()
-				msgSize += 1 + sovCarbonapiV2Pb(uint64(msgSize))
-			}
-			mapSize := 1 + len(k) + sovCarbonapiV2Pb(uint64(len(k))) + msgSize
-			i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(mapSize))
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(len(k)))
-			i += copy(dAtA[i:], k)
-			if v != nil {
-				dAtA[i] = 0x12
-				i++
-				i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(v.Size()))
-				n3, err := v.MarshalTo(dAtA[i:])
-				if err != nil {
-					return 0, err
-				}
-				i += n3
-			}
-		}
+	if m.TotalSpace != 0 {
+		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(m.TotalSpace))
+		i--
+		dAtA[i] = 0x18
 	}
 	if m.FreeSpace != 0 {
-		dAtA[i] = 0x10
-		i++
 		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(m.FreeSpace))
+		i--
+		dAtA[i] = 0x10
 	}
-	if m.TotalSpace != 0 {
-		dAtA[i] = 0x18
-		i++
-		i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(m.TotalSpace))
+	if len(m.Metrics) > 0 {
+		for k := range m.Metrics {
+			v := m.Metrics[k]
+			baseI := i
+			if v != nil {
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(size))
+				}
+				i--
+				dAtA[i] = 0x12
+			}
+			i -= len(k)
+			copy(dAtA[i:], k)
+			i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(len(k)))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintCarbonapiV2Pb(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0xa
+		}
 	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintCarbonapiV2Pb(dAtA []byte, offset int, v uint64) int {
+	offset -= sovCarbonapiV2Pb(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *FetchResponse) Size() (n int) {
 	if m == nil {
@@ -1854,14 +1971,7 @@ func (m *MetricDetailsResponse) Size() (n int) {
 }
 
 func sovCarbonapiV2Pb(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozCarbonapiV2Pb(x uint64) (n int) {
 	return sovCarbonapiV2Pb(uint64((x << 1) ^ uint64((int64(x) >> 63))))
@@ -1885,8 +1995,13 @@ func (this *MultiFetchResponse) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForMetrics := "[]FetchResponse{"
+	for _, f := range this.Metrics {
+		repeatedStringForMetrics += strings.Replace(strings.Replace(f.String(), "FetchResponse", "FetchResponse", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForMetrics += "}"
 	s := strings.Join([]string{`&MultiFetchResponse{`,
-		`Metrics:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Metrics), "FetchResponse", "FetchResponse", 1), `&`, ``, 1) + `,`,
+		`Metrics:` + repeatedStringForMetrics + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1906,9 +2021,14 @@ func (this *GlobResponse) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForMatches := "[]GlobMatch{"
+	for _, f := range this.Matches {
+		repeatedStringForMatches += strings.Replace(strings.Replace(f.String(), "GlobMatch", "GlobMatch", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForMatches += "}"
 	s := strings.Join([]string{`&GlobResponse{`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
-		`Matches:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Matches), "GlobMatch", "GlobMatch", 1), `&`, ``, 1) + `,`,
+		`Matches:` + repeatedStringForMatches + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1928,12 +2048,17 @@ func (this *InfoResponse) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForRetentions := "[]Retention{"
+	for _, f := range this.Retentions {
+		repeatedStringForRetentions += strings.Replace(strings.Replace(f.String(), "Retention", "Retention", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForRetentions += "}"
 	s := strings.Join([]string{`&InfoResponse{`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
 		`AggregationMethod:` + fmt.Sprintf("%v", this.AggregationMethod) + `,`,
 		`MaxRetention:` + fmt.Sprintf("%v", this.MaxRetention) + `,`,
 		`XFilesFactor:` + fmt.Sprintf("%v", this.XFilesFactor) + `,`,
-		`Retentions:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Retentions), "Retention", "Retention", 1), `&`, ``, 1) + `,`,
+		`Retentions:` + repeatedStringForRetentions + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1944,7 +2069,7 @@ func (this *ServerInfoResponse) String() string {
 	}
 	s := strings.Join([]string{`&ServerInfoResponse{`,
 		`Server:` + fmt.Sprintf("%v", this.Server) + `,`,
-		`Info:` + strings.Replace(fmt.Sprintf("%v", this.Info), "InfoResponse", "InfoResponse", 1) + `,`,
+		`Info:` + strings.Replace(this.Info.String(), "InfoResponse", "InfoResponse", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1953,8 +2078,13 @@ func (this *ZipperInfoResponse) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForResponses := "[]ServerInfoResponse{"
+	for _, f := range this.Responses {
+		repeatedStringForResponses += strings.Replace(strings.Replace(f.String(), "ServerInfoResponse", "ServerInfoResponse", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForResponses += "}"
 	s := strings.Join([]string{`&ZipperInfoResponse{`,
-		`Responses:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Responses), "ServerInfoResponse", "ServerInfoResponse", 1), `&`, ``, 1) + `,`,
+		`Responses:` + repeatedStringForResponses + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2027,7 +2157,7 @@ func (m *FetchResponse) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2055,7 +2185,7 @@ func (m *FetchResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2065,6 +2195,9 @@ func (m *FetchResponse) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCarbonapiV2Pb
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2084,7 +2217,7 @@ func (m *FetchResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.StartTime |= (int32(b) & 0x7F) << shift
+				m.StartTime |= int32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2103,7 +2236,7 @@ func (m *FetchResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.StopTime |= (int32(b) & 0x7F) << shift
+				m.StopTime |= int32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2122,7 +2255,7 @@ func (m *FetchResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.StepTime |= (int32(b) & 0x7F) << shift
+				m.StepTime |= int32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2148,7 +2281,7 @@ func (m *FetchResponse) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					packedLen |= (int(b) & 0x7F) << shift
+					packedLen |= int(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -2157,6 +2290,9 @@ func (m *FetchResponse) Unmarshal(dAtA []byte) error {
 					return ErrInvalidLengthCarbonapiV2Pb
 				}
 				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthCarbonapiV2Pb
+				}
 				if postIndex > l {
 					return io.ErrUnexpectedEOF
 				}
@@ -2190,7 +2326,7 @@ func (m *FetchResponse) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= (int(b) & 0x7F) << shift
+					v |= int(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -2207,7 +2343,7 @@ func (m *FetchResponse) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					packedLen |= (int(b) & 0x7F) << shift
+					packedLen |= int(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -2216,6 +2352,9 @@ func (m *FetchResponse) Unmarshal(dAtA []byte) error {
 					return ErrInvalidLengthCarbonapiV2Pb
 				}
 				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthCarbonapiV2Pb
+				}
 				if postIndex > l {
 					return io.ErrUnexpectedEOF
 				}
@@ -2235,7 +2374,7 @@ func (m *FetchResponse) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= (int(b) & 0x7F) << shift
+						v |= int(b&0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -2251,7 +2390,7 @@ func (m *FetchResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			if (iNdEx + skippy) > l {
@@ -2281,7 +2420,7 @@ func (m *MultiFetchResponse) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2309,7 +2448,7 @@ func (m *MultiFetchResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2318,6 +2457,9 @@ func (m *MultiFetchResponse) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCarbonapiV2Pb
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2332,7 +2474,7 @@ func (m *MultiFetchResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			if (iNdEx + skippy) > l {
@@ -2362,7 +2504,7 @@ func (m *GlobMatch) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2390,7 +2532,7 @@ func (m *GlobMatch) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2400,6 +2542,9 @@ func (m *GlobMatch) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCarbonapiV2Pb
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2419,7 +2564,7 @@ func (m *GlobMatch) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= (int(b) & 0x7F) << shift
+				v |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2431,7 +2576,7 @@ func (m *GlobMatch) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			if (iNdEx + skippy) > l {
@@ -2461,7 +2606,7 @@ func (m *GlobResponse) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2489,7 +2634,7 @@ func (m *GlobResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2499,6 +2644,9 @@ func (m *GlobResponse) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCarbonapiV2Pb
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2518,7 +2666,7 @@ func (m *GlobResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2527,6 +2675,9 @@ func (m *GlobResponse) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCarbonapiV2Pb
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2541,7 +2692,7 @@ func (m *GlobResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			if (iNdEx + skippy) > l {
@@ -2571,7 +2722,7 @@ func (m *Retention) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2599,7 +2750,7 @@ func (m *Retention) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.SecondsPerPoint |= (int32(b) & 0x7F) << shift
+				m.SecondsPerPoint |= int32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2618,7 +2769,7 @@ func (m *Retention) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.NumberOfPoints |= (int32(b) & 0x7F) << shift
+				m.NumberOfPoints |= int32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2629,7 +2780,7 @@ func (m *Retention) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			if (iNdEx + skippy) > l {
@@ -2659,7 +2810,7 @@ func (m *InfoResponse) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2687,7 +2838,7 @@ func (m *InfoResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2697,6 +2848,9 @@ func (m *InfoResponse) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCarbonapiV2Pb
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2716,7 +2870,7 @@ func (m *InfoResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2726,6 +2880,9 @@ func (m *InfoResponse) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCarbonapiV2Pb
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2745,7 +2902,7 @@ func (m *InfoResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.MaxRetention |= (int32(b) & 0x7F) << shift
+				m.MaxRetention |= int32(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2775,7 +2932,7 @@ func (m *InfoResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2784,6 +2941,9 @@ func (m *InfoResponse) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCarbonapiV2Pb
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2798,7 +2958,7 @@ func (m *InfoResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			if (iNdEx + skippy) > l {
@@ -2828,7 +2988,7 @@ func (m *ServerInfoResponse) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2856,7 +3016,7 @@ func (m *ServerInfoResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2866,6 +3026,9 @@ func (m *ServerInfoResponse) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCarbonapiV2Pb
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2885,7 +3048,7 @@ func (m *ServerInfoResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2894,6 +3057,9 @@ func (m *ServerInfoResponse) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCarbonapiV2Pb
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2910,7 +3076,7 @@ func (m *ServerInfoResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			if (iNdEx + skippy) > l {
@@ -2940,7 +3106,7 @@ func (m *ZipperInfoResponse) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2968,7 +3134,7 @@ func (m *ZipperInfoResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2977,6 +3143,9 @@ func (m *ZipperInfoResponse) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCarbonapiV2Pb
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2991,7 +3160,7 @@ func (m *ZipperInfoResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			if (iNdEx + skippy) > l {
@@ -3021,7 +3190,7 @@ func (m *ListMetricsResponse) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -3049,7 +3218,7 @@ func (m *ListMetricsResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3059,6 +3228,9 @@ func (m *ListMetricsResponse) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCarbonapiV2Pb
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3070,7 +3242,7 @@ func (m *ListMetricsResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			if (iNdEx + skippy) > l {
@@ -3100,7 +3272,7 @@ func (m *MetricDetails) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -3128,7 +3300,7 @@ func (m *MetricDetails) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Size_ |= (int64(b) & 0x7F) << shift
+				m.Size_ |= int64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3147,7 +3319,7 @@ func (m *MetricDetails) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ModTime |= (int64(b) & 0x7F) << shift
+				m.ModTime |= int64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3166,7 +3338,7 @@ func (m *MetricDetails) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ATime |= (int64(b) & 0x7F) << shift
+				m.ATime |= int64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3185,7 +3357,7 @@ func (m *MetricDetails) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RdTime |= (int64(b) & 0x7F) << shift
+				m.RdTime |= int64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3196,7 +3368,7 @@ func (m *MetricDetails) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			if (iNdEx + skippy) > l {
@@ -3226,7 +3398,7 @@ func (m *MetricDetailsResponse) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -3254,7 +3426,7 @@ func (m *MetricDetailsResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3263,6 +3435,9 @@ func (m *MetricDetailsResponse) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCarbonapiV2Pb
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3283,7 +3458,7 @@ func (m *MetricDetailsResponse) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					wire |= (uint64(b) & 0x7F) << shift
+					wire |= uint64(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -3300,7 +3475,7 @@ func (m *MetricDetailsResponse) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						stringLenmapkey |= (uint64(b) & 0x7F) << shift
+						stringLenmapkey |= uint64(b&0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -3310,6 +3485,9 @@ func (m *MetricDetailsResponse) Unmarshal(dAtA []byte) error {
 						return ErrInvalidLengthCarbonapiV2Pb
 					}
 					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthCarbonapiV2Pb
+					}
 					if postStringIndexmapkey > l {
 						return io.ErrUnexpectedEOF
 					}
@@ -3326,7 +3504,7 @@ func (m *MetricDetailsResponse) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						mapmsglen |= (int(b) & 0x7F) << shift
+						mapmsglen |= int(b&0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -3335,7 +3513,7 @@ func (m *MetricDetailsResponse) Unmarshal(dAtA []byte) error {
 						return ErrInvalidLengthCarbonapiV2Pb
 					}
 					postmsgIndex := iNdEx + mapmsglen
-					if mapmsglen < 0 {
+					if postmsgIndex < 0 {
 						return ErrInvalidLengthCarbonapiV2Pb
 					}
 					if postmsgIndex > l {
@@ -3352,7 +3530,7 @@ func (m *MetricDetailsResponse) Unmarshal(dAtA []byte) error {
 					if err != nil {
 						return err
 					}
-					if skippy < 0 {
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
 						return ErrInvalidLengthCarbonapiV2Pb
 					}
 					if (iNdEx + skippy) > postIndex {
@@ -3377,7 +3555,7 @@ func (m *MetricDetailsResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.FreeSpace |= (uint64(b) & 0x7F) << shift
+				m.FreeSpace |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3396,7 +3574,7 @@ func (m *MetricDetailsResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.TotalSpace |= (uint64(b) & 0x7F) << shift
+				m.TotalSpace |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3407,7 +3585,7 @@ func (m *MetricDetailsResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCarbonapiV2Pb
 			}
 			if (iNdEx + skippy) > l {
@@ -3425,6 +3603,7 @@ func (m *MetricDetailsResponse) Unmarshal(dAtA []byte) error {
 func skipCarbonapiV2Pb(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0
+	depth := 0
 	for iNdEx < l {
 		var wire uint64
 		for shift := uint(0); ; shift += 7 {
@@ -3456,10 +3635,8 @@ func skipCarbonapiV2Pb(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
-			return iNdEx, nil
 		case 1:
 			iNdEx += 8
-			return iNdEx, nil
 		case 2:
 			var length int
 			for shift := uint(0); ; shift += 7 {
@@ -3476,106 +3653,34 @@ func skipCarbonapiV2Pb(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
-			iNdEx += length
 			if length < 0 {
 				return 0, ErrInvalidLengthCarbonapiV2Pb
 			}
-			return iNdEx, nil
+			iNdEx += length
 		case 3:
-			for {
-				var innerWire uint64
-				var start int = iNdEx
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return 0, ErrIntOverflowCarbonapiV2Pb
-					}
-					if iNdEx >= l {
-						return 0, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					innerWire |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				innerWireType := int(innerWire & 0x7)
-				if innerWireType == 4 {
-					break
-				}
-				next, err := skipCarbonapiV2Pb(dAtA[start:])
-				if err != nil {
-					return 0, err
-				}
-				iNdEx = start + next
-			}
-			return iNdEx, nil
+			depth++
 		case 4:
-			return iNdEx, nil
+			if depth == 0 {
+				return 0, ErrUnexpectedEndOfGroupCarbonapiV2Pb
+			}
+			depth--
 		case 5:
 			iNdEx += 4
-			return iNdEx, nil
 		default:
 			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
 		}
+		if iNdEx < 0 {
+			return 0, ErrInvalidLengthCarbonapiV2Pb
+		}
+		if depth == 0 {
+			return iNdEx, nil
+		}
 	}
-	panic("unreachable")
+	return 0, io.ErrUnexpectedEOF
 }
 
 var (
-	ErrInvalidLengthCarbonapiV2Pb = fmt.Errorf("proto: negative length found during unmarshaling")
-	ErrIntOverflowCarbonapiV2Pb   = fmt.Errorf("proto: integer overflow")
+	ErrInvalidLengthCarbonapiV2Pb        = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrIntOverflowCarbonapiV2Pb          = fmt.Errorf("proto: integer overflow")
+	ErrUnexpectedEndOfGroupCarbonapiV2Pb = fmt.Errorf("proto: unexpected end of group")
 )
-
-func init() {
-	proto.RegisterFile("carbonapi_v2_pb.proto", fileDescriptor_carbonapi_v2_pb_c2d3d6a98bf3a5ac)
-}
-
-var fileDescriptor_carbonapi_v2_pb_c2d3d6a98bf3a5ac = []byte{
-	// 708 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x54, 0x4f, 0x4f, 0x13, 0x41,
-	0x14, 0xef, 0x74, 0xdb, 0x42, 0x1f, 0x45, 0x74, 0x14, 0xd2, 0x34, 0x3a, 0x36, 0x6b, 0x62, 0x7a,
-	0x50, 0x88, 0x40, 0xa2, 0xe1, 0x60, 0x84, 0x68, 0x89, 0x09, 0x8d, 0x64, 0xe0, 0x44, 0x82, 0x64,
-	0x76, 0x99, 0xb6, 0x13, 0xda, 0x9d, 0xcd, 0xce, 0x94, 0x80, 0x27, 0x3e, 0x82, 0x1f, 0xc3, 0x8b,
-	0xdf, 0x83, 0x23, 0x47, 0xe2, 0xc1, 0x48, 0xb9, 0x78, 0xe4, 0x23, 0x98, 0x9d, 0xd9, 0x2e, 0xfd,
-	0x43, 0xf0, 0xf6, 0x7e, 0xbf, 0x37, 0xbf, 0x37, 0xbf, 0xf7, 0xe6, 0x0f, 0xcc, 0xfb, 0x2c, 0xf2,
-	0x64, 0xc0, 0x42, 0x71, 0x70, 0xbc, 0x7c, 0x10, 0x7a, 0x8b, 0x61, 0x24, 0xb5, 0xc4, 0x73, 0x63,
-	0x74, 0xe5, 0x75, 0x4b, 0xe8, 0x76, 0xcf, 0x5b, 0xf4, 0x65, 0x77, 0xa9, 0x25, 0x5b, 0x72, 0xc9,
-	0xac, 0xf3, 0x7a, 0x4d, 0x83, 0x0c, 0x30, 0x91, 0xd5, 0xbb, 0x3f, 0x11, 0xcc, 0xd6, 0xb9, 0xf6,
-	0xdb, 0x94, 0xab, 0x50, 0x06, 0x8a, 0x63, 0x0c, 0xb9, 0x80, 0x75, 0x79, 0x19, 0x55, 0x51, 0xad,
-	0x48, 0x4d, 0x8c, 0x9f, 0x42, 0x51, 0x69, 0x16, 0xe9, 0x5d, 0xd1, 0xe5, 0xe5, 0x6c, 0x15, 0xd5,
-	0xf2, 0xf4, 0x96, 0xc0, 0x15, 0x98, 0x56, 0x5a, 0x86, 0x26, 0xe9, 0x98, 0x64, 0x8a, 0x6d, 0x8e,
-	0xdb, 0x5c, 0x6e, 0x90, 0xb3, 0x18, 0x2f, 0x40, 0xe1, 0x98, 0x75, 0x7a, 0x5c, 0x95, 0xf3, 0x55,
-	0xa7, 0x86, 0x68, 0x82, 0x62, 0x8d, 0x50, 0xeb, 0x9e, 0xe2, 0x81, 0x2e, 0x17, 0xaa, 0x4e, 0x6d,
-	0x9a, 0xa6, 0xd8, 0xdd, 0x05, 0xdc, 0xe8, 0x75, 0xb4, 0x18, 0xf5, 0xfc, 0x1e, 0xa6, 0xba, 0x5c,
-	0x47, 0xc2, 0x57, 0x65, 0x54, 0x75, 0x6a, 0x33, 0xcb, 0x64, 0x71, 0x7c, 0x5c, 0x23, 0x82, 0x8d,
-	0xdc, 0xf9, 0xef, 0xe7, 0x19, 0x3a, 0x10, 0xb9, 0x6f, 0xa1, 0xb8, 0xd9, 0x91, 0x5e, 0x83, 0x69,
-	0xbf, 0x1d, 0x0f, 0x20, 0x64, 0xba, 0x3d, 0x18, 0x40, 0x1c, 0xc7, 0x56, 0x85, 0xda, 0xe2, 0xac,
-	0x69, 0xba, 0x9f, 0xa6, 0x09, 0x72, 0xbf, 0x42, 0x29, 0x16, 0xde, 0x3b, 0xbc, 0x35, 0x98, 0xea,
-	0xc6, 0x85, 0xb9, 0x2a, 0x67, 0x8d, 0xb9, 0xca, 0x84, 0xb9, 0x74, 0xf3, 0xd4, 0x98, 0x15, 0xb8,
-	0xfb, 0x50, 0xa4, 0x5c, 0xf3, 0x40, 0x0b, 0x19, 0xe0, 0x1a, 0xcc, 0x29, 0xee, 0xcb, 0xe0, 0x50,
-	0x6d, 0xf3, 0x68, 0x5b, 0x8a, 0x40, 0x9b, 0x7d, 0xf2, 0x74, 0x9c, 0xc6, 0x2f, 0xe1, 0x41, 0xd0,
-	0xeb, 0x7a, 0x3c, 0xfa, 0xd2, 0x34, 0x84, 0x4a, 0x0e, 0x6d, 0x8c, 0x75, 0x7f, 0x21, 0x28, 0x7d,
-	0x0e, 0x9a, 0xf2, 0x5e, 0xff, 0xaf, 0xe0, 0x11, 0x6b, 0xb5, 0x22, 0xde, 0x62, 0xb1, 0x8b, 0x06,
-	0xd7, 0x6d, 0x79, 0x68, 0xea, 0x15, 0xe9, 0x64, 0x02, 0xbb, 0x50, 0xea, 0xb2, 0x93, 0xd4, 0x74,
-	0x72, 0x21, 0x46, 0xb8, 0x78, 0xcd, 0x49, 0x5d, 0x74, 0xb8, 0xaa, 0x33, 0x5f, 0xcb, 0xc8, 0x5c,
-	0x8c, 0x2c, 0x1d, 0xe1, 0xf0, 0x07, 0x80, 0x68, 0x20, 0xb0, 0x17, 0xe4, 0xae, 0xc1, 0xa5, 0x35,
-	0x93, 0xc1, 0x0d, 0x69, 0xdc, 0x03, 0xc0, 0x3b, 0x3c, 0x3a, 0xe6, 0xd1, 0x48, 0x87, 0x0b, 0x50,
-	0x50, 0x86, 0x4d, 0x7a, 0x4c, 0x10, 0x7e, 0x03, 0x39, 0x11, 0x34, 0xa5, 0x69, 0x6c, 0x66, 0xf9,
-	0xd9, 0xc4, 0x4e, 0xc3, 0x45, 0xa8, 0x59, 0xea, 0xee, 0x03, 0xde, 0x13, 0x61, 0x38, 0xb6, 0xc1,
-	0x26, 0x14, 0xa3, 0x24, 0x1e, 0xdc, 0xc6, 0x17, 0x13, 0xd5, 0x26, 0x8d, 0x25, 0x0d, 0xdc, 0x6a,
-	0xdd, 0x25, 0x78, 0xbc, 0x25, 0x94, 0x6e, 0xd8, 0x3b, 0x9a, 0xd6, 0x2f, 0xc3, 0x54, 0x63, 0xe8,
-	0xae, 0x17, 0xe9, 0x00, 0xba, 0x47, 0x30, 0x6b, 0xc3, 0x8f, 0x5c, 0x33, 0xd1, 0x51, 0xf1, 0x69,
-	0xee, 0x88, 0x6f, 0xf6, 0xc5, 0x3a, 0xd4, 0xc4, 0x46, 0x2e, 0x0f, 0xd3, 0xb7, 0xea, 0xd0, 0x01,
-	0xc4, 0x4f, 0x20, 0xbf, 0x9e, 0xbe, 0x53, 0x87, 0x5a, 0x10, 0xcf, 0x8b, 0xda, 0xe5, 0x79, 0x43,
-	0x27, 0xc8, 0x3d, 0xcb, 0xc2, 0xfc, 0xc8, 0x6e, 0xa9, 0xc1, 0xc6, 0xf8, 0x63, 0x5c, 0x99, 0x68,
-	0xff, 0x4e, 0x61, 0xc2, 0xaa, 0x4f, 0x81, 0x8e, 0x4e, 0xd3, 0xb7, 0x19, 0xff, 0x3d, 0xf5, 0x88,
-	0xf3, 0x9d, 0x90, 0xf9, 0xb6, 0x93, 0x1c, 0xbd, 0x25, 0x30, 0x01, 0xd8, 0x95, 0x9a, 0x75, 0x6c,
-	0xda, 0x31, 0xe9, 0x21, 0xa6, 0xb2, 0x07, 0xa5, 0xe1, 0xb2, 0xf8, 0x21, 0x38, 0x47, 0xfc, 0x34,
-	0x39, 0xfb, 0x38, 0xc4, 0xab, 0x90, 0x37, 0xff, 0x4e, 0x72, 0xf2, 0xe4, 0x3f, 0x66, 0xed, 0xe2,
-	0xb5, 0xec, 0x3b, 0xb4, 0xb1, 0x7a, 0x71, 0x45, 0x32, 0x97, 0x57, 0x24, 0x73, 0x73, 0x45, 0xd0,
-	0x59, 0x9f, 0xa0, 0x1f, 0x7d, 0x82, 0xce, 0xfb, 0x04, 0x5d, 0xf4, 0x09, 0xfa, 0xd3, 0x27, 0xe8,
-	0x6f, 0x9f, 0x64, 0x6e, 0xfa, 0x04, 0x7d, 0xbf, 0x26, 0x99, 0x8b, 0x6b, 0x92, 0xb9, 0xbc, 0x26,
-	0x19, 0xaf, 0x60, 0x3e, 0xde, 0x95, 0x7f, 0x01, 0x00, 0x00, 0xff, 0xff, 0xaa, 0x3a, 0xf7, 0x1a,
-	0xd1, 0x05, 0x00, 0x00,
-}

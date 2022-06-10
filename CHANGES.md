@@ -17,6 +17,32 @@ Changes
 
 CHANGELOG
 ---------
+**0.15.5**
+ - **[Security]** Update vendored dependency for GoGo Proto that should fix improper index validation (CVE-2021-3121)
+ - [Feature] carbonapi supports `-check-config` flag just to run config validation (thx to @msaf1980)
+ - [Feature] 2-level cache lifetime support (see docs for more information) (thx to @msaf1980)
+ - [Feature] Support IronDB backend (thx to @deniszh)
+ - [Improvement] Debug logs should now log a bit more information about metrics
+ - [Improvement] Better performance for metrics/find on relatively new VictoriaMetrics (thx to @iklfst)
+ - [Improvement] Add support for Cluster Tenant ID for VictoriaMetrics backend (thx to @iklfst)
+ - [Fix] asPercent handles empty values correctly (thx to @msaf1980)
+ - [Fix] Cairo functions supports context passing now (thx to @faceair)
+ - [Fix] Handling multi-fetch request parameters for VictoriaMetrics backend respects start & stop Time as well as step for every metric (thx to @alexey-mylnkov)
+ - [Fix] Fix a bug in removeEmptySeries
+ - [Fix] Properly pass step to VictoriaMetrics (thx to @tantra35)
+ - [Fix] Fix substr function to behave in a way like graphite-web
+ - [Fix] timeShift properly hanldes resetEnd parameter (thx to @msaf1980)
+ - [Fix] Fix `moving*` to work properly when step is greater than window size (thx to @jonasbleyl)
+ - [Fix] Pass request UUID as header (thx to @msaf1980)
+ - [Fix] `groupByNode(s)` supports negative node indecies (thx to @Felixoid)
+
+**0.15.4**
+ - [Fix] zipper requests net error (encapsulated) (thx to @msaf1980)
+ - [Fix] preserve original points for some functions (thx to @msaf1980)
+ - [Fix] aliasByNode: strip function in name (thx to @msaf1980)
+ - [Improvement] build: allow to replace fpm with cli-compability program (thx to @msaf1980)
+ - [Improvement] build: equal version for carbonapi/carbonzipper package (thx to @msaf1980)
+
 **0.15.3**
  - [Fix] Time parsing is now closer to how graphite do it
  - [Fix] Aggregation functions now scale input to common step (thx to @Felixoid)
