@@ -11,14 +11,14 @@ import (
 	"github.com/ansel1/merry"
 	"github.com/valyala/fastjson"
 
-	"github.com/go-graphite/carbonapi/internal/dns"
-	"github.com/go-graphite/carbonapi/limiter"
-	"github.com/go-graphite/carbonapi/zipper/helper"
-	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
-	"github.com/go-graphite/carbonapi/zipper/metadata"
-	"github.com/go-graphite/carbonapi/zipper/types"
+	"github.com/grafana/carbonapi/internal/dns"
+	"github.com/grafana/carbonapi/limiter"
+	"github.com/grafana/carbonapi/zipper/helper"
+	"github.com/grafana/carbonapi/zipper/httpHeaders"
+	"github.com/grafana/carbonapi/zipper/metadata"
+	"github.com/grafana/carbonapi/zipper/types"
 
-	"github.com/go-graphite/carbonapi/zipper/protocols/prometheus"
+	"github.com/grafana/carbonapi/zipper/protocols/prometheus"
 
 	"go.uber.org/zap"
 )

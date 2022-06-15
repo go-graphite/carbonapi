@@ -64,7 +64,7 @@ ${FPM} -s dir -t deb -n carbonapi -v ${VERSION} -C ${TMPDIR} \
     --after-install contrib/carbonapi/fpm/systemd-reload.sh \
     --description "carbonapi: replacement graphite API server" \
     --license BSD-2 \
-    --url "https://github.com/go-graphite/carbonapi" \
+    --url "https://github.com/grafana/carbonapi" \
     etc usr/bin usr/share || die 1 "Can't create package!"
 
 die 0 "Success"

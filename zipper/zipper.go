@@ -9,20 +9,20 @@ import (
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"go.uber.org/zap"
 
-	utilctx "github.com/go-graphite/carbonapi/util/ctx"
-	"github.com/go-graphite/carbonapi/zipper/broadcast"
-	"github.com/go-graphite/carbonapi/zipper/config"
-	"github.com/go-graphite/carbonapi/zipper/helper"
-	"github.com/go-graphite/carbonapi/zipper/metadata"
-	"github.com/go-graphite/carbonapi/zipper/types"
+	utilctx "github.com/grafana/carbonapi/util/ctx"
+	"github.com/grafana/carbonapi/zipper/broadcast"
+	"github.com/grafana/carbonapi/zipper/config"
+	"github.com/grafana/carbonapi/zipper/helper"
+	"github.com/grafana/carbonapi/zipper/metadata"
+	"github.com/grafana/carbonapi/zipper/types"
 
-	_ "github.com/go-graphite/carbonapi/zipper/protocols/auto"
-	_ "github.com/go-graphite/carbonapi/zipper/protocols/graphite"
-	_ "github.com/go-graphite/carbonapi/zipper/protocols/irondb"
-	_ "github.com/go-graphite/carbonapi/zipper/protocols/prometheus"
-	_ "github.com/go-graphite/carbonapi/zipper/protocols/v2"
-	_ "github.com/go-graphite/carbonapi/zipper/protocols/v3"
-	_ "github.com/go-graphite/carbonapi/zipper/protocols/victoriametrics"
+	_ "github.com/grafana/carbonapi/zipper/protocols/auto"
+	_ "github.com/grafana/carbonapi/zipper/protocols/graphite"
+	_ "github.com/grafana/carbonapi/zipper/protocols/irondb"
+	_ "github.com/grafana/carbonapi/zipper/protocols/prometheus"
+	_ "github.com/grafana/carbonapi/zipper/protocols/v2"
+	_ "github.com/grafana/carbonapi/zipper/protocols/v3"
+	_ "github.com/grafana/carbonapi/zipper/protocols/victoriametrics"
 )
 
 // Zipper provides interface to Zipper-related functions

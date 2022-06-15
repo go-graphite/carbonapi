@@ -5,9 +5,9 @@ import (
 
 	"github.com/ansel1/merry"
 
-	"github.com/go-graphite/carbonapi/expr/types"
-	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
+	"github.com/grafana/carbonapi/expr/types"
+	zipperTypes "github.com/grafana/carbonapi/zipper/types"
 )
 
 // The CarbonZipper interface exposes access to realZipper

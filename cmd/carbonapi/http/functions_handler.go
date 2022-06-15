@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-graphite/carbonapi/carbonapipb"
-	"github.com/go-graphite/carbonapi/expr/metadata"
-	"github.com/go-graphite/carbonapi/expr/types"
-	utilctx "github.com/go-graphite/carbonapi/util/ctx"
+	"github.com/grafana/carbonapi/carbonapipb"
+	"github.com/grafana/carbonapi/expr/metadata"
+	"github.com/grafana/carbonapi/expr/types"
+	utilctx "github.com/grafana/carbonapi/util/ctx"
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
 )

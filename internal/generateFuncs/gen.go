@@ -1,3 +1,4 @@
+//go:build ignore
 // +build ignore
 
 package main
@@ -41,10 +42,10 @@ import (
 	"strings"
 `)
 	for _, m := range funcs {
-		fmt.Fprintf(writer, "	\"github.com/go-graphite/carbonapi/expr/functions/%s\"\n", m)
+		fmt.Fprintf(writer, "	\"github.com/grafana/carbonapi/expr/functions/%s\"\n", m)
 	}
-	fmt.Fprintf(writer, `	"github.com/go-graphite/carbonapi/expr/interfaces"
-	"github.com/go-graphite/carbonapi/expr/metadata"
+	fmt.Fprintf(writer, `	"github.com/grafana/carbonapi/expr/interfaces"
+	"github.com/grafana/carbonapi/expr/metadata"
 )
 
 type initFunc struct {

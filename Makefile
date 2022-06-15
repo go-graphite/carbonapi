@@ -7,9 +7,9 @@ VERSION ?= $(shell git describe --abbrev=4 --dirty --always --tags)
 
 GO ?= go
 
-PKG_CARBONAPI=github.com/go-graphite/carbonapi/cmd/carbonapi
-PKG_MOCKBACKEND=github.com/go-graphite/carbonapi/cmd/mockbackend
-PKG_CARBONZIPPER=github.com/go-graphite/carbonapi/cmd/carbonzipper
+PKG_CARBONAPI=github.com/grafana/carbonapi/cmd/carbonapi
+PKG_MOCKBACKEND=github.com/grafana/carbonapi/cmd/mockbackend
+PKG_CARBONZIPPER=github.com/grafana/carbonapi/cmd/carbonzipper
 
 carbonapi: $(shell find . -name '*.go' | grep -v 'vendor')
 	PKG_CONFIG_PATH="$(EXTRA_PKG_CONFIG_PATH)" GO111MODULE=on $(GO) build -mod=vendor -v -tags cairo -ldflags '-X main.BuildVersion=$(VERSION)' $(PKG_CARBONAPI)

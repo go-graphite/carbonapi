@@ -8,13 +8,13 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/go-graphite/carbonapi/expr/functions"
-	"github.com/go-graphite/carbonapi/expr/helper"
-	"github.com/go-graphite/carbonapi/expr/rewrite"
-	"github.com/go-graphite/carbonapi/expr/types"
-	"github.com/go-graphite/carbonapi/pkg/parser"
-	th "github.com/go-graphite/carbonapi/tests"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
+	"github.com/grafana/carbonapi/expr/functions"
+	"github.com/grafana/carbonapi/expr/helper"
+	"github.com/grafana/carbonapi/expr/rewrite"
+	"github.com/grafana/carbonapi/expr/types"
+	"github.com/grafana/carbonapi/pkg/parser"
+	th "github.com/grafana/carbonapi/tests"
 )
 
 func init() {

@@ -15,10 +15,10 @@ import (
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
 
-	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
-	"github.com/go-graphite/carbonapi/cmd/carbonapi/helper"
-	carbonapiHttp "github.com/go-graphite/carbonapi/cmd/carbonapi/http"
-	"github.com/go-graphite/carbonapi/internal/dns"
+	"github.com/grafana/carbonapi/cmd/carbonapi/config"
+	"github.com/grafana/carbonapi/cmd/carbonapi/helper"
+	carbonapiHttp "github.com/grafana/carbonapi/cmd/carbonapi/http"
+	"github.com/grafana/carbonapi/internal/dns"
 )
 
 // BuildVersion is provided to be overridden at build time. Eg. go build -ldflags -X 'main.BuildVersion=...'

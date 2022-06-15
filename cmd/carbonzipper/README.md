@@ -27,7 +27,7 @@ Configuration is done via a YAML file loaded at startup.  The only required
 field is the list of carbonserver backends to connect to.
 
 Other pieces of the stack are:
-   - [carbonapi](https://github.com/go-graphite/carbonapi)
+   - [carbonapi](https://github.com/grafana/carbonapi)
    - [carbonmem](https://github.com/go-graphite/carbonmem)
    - [carbonsearch](https://github.com/kanatohodets/carbonsearch)
 
@@ -46,7 +46,7 @@ CarbonZipper uses protobuf-based protocol to talk with underlying storages. For 
 2. [go-carbon](https://github.com/lomik/go-carbon) >= 0.9.0 (Note: you need to enable carbonserver in go-carbon).
 3. [carbonserver](https://github.com/grobian/carbonserver)@master (Note: you should probably switch to go-carbon in that case).
 4. [graphite-clickhouse](https://github.com/lomik/graphite-clickhouse) any. That's alternative storage that doesn't use Whisper. Limitations: /info handler won't work properly.
-5. [carbonapi](https://github.com/go-graphite/carbonapi) >= 0.5. Note: we are not sure if there is any point in running carbonzipper over carbonapi at this moment.
+5. [carbonapi](https://github.com/grafana/carbonapi) >= 0.5. Note: we are not sure if there is any point in running carbonzipper over carbonapi at this moment.
 
 Changes and versioning
 ----------------------

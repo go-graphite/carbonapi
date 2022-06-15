@@ -3,8 +3,8 @@ package interfaces
 import (
 	"context"
 
-	"github.com/go-graphite/carbonapi/expr/types"
-	"github.com/go-graphite/carbonapi/pkg/parser"
+	"github.com/grafana/carbonapi/expr/types"
+	"github.com/grafana/carbonapi/pkg/parser"
 )
 
 // FunctionBase is a set of base methods that partly satisfy Function interface and most probably nobody will modify

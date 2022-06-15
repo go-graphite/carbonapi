@@ -1,7 +1,7 @@
 package helper
 
 import (
-	"github.com/go-graphite/carbonapi/expr/types"
+	"github.com/grafana/carbonapi/expr/types"
 	"github.com/maruel/natural"
 )
 

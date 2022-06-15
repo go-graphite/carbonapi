@@ -53,7 +53,7 @@ ${FPM} -s dir -t rpm -n ${NAME} -v ${VERSION} -C ${TMPDIR} \
     --after-install contrib/carbonzipper/fpm/systemd-reload.sh \
     --description "carbonzipper proxy for graphite-web and carbonapi" \
     --license MIT \
-    --url "https://github.com/go-graphite/carbonapi" \
+    --url "https://github.com/grafana/carbonapi" \
     etc usr/bin usr/share || die 1 "Can't create package!"
 
 die 0 "Success"

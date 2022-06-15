@@ -4,12 +4,12 @@ import (
 	"math"
 	"testing"
 
-	th "github.com/go-graphite/carbonapi/tests"
+	th "github.com/grafana/carbonapi/tests"
 
-	"github.com/go-graphite/carbonapi/expr/helper"
-	"github.com/go-graphite/carbonapi/expr/metadata"
-	"github.com/go-graphite/carbonapi/expr/types"
-	"github.com/go-graphite/carbonapi/pkg/parser"
+	"github.com/grafana/carbonapi/expr/helper"
+	"github.com/grafana/carbonapi/expr/metadata"
+	"github.com/grafana/carbonapi/expr/types"
+	"github.com/grafana/carbonapi/pkg/parser"
 )
 
 func init() {
