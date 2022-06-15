@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
-	"github.com/go-graphite/carbonapi/cmd/carbonapi/http"
-	"github.com/go-graphite/carbonapi/mstats"
+	"github.com/grafana/carbonapi/cmd/carbonapi/config"
+	"github.com/grafana/carbonapi/cmd/carbonapi/http"
+	"github.com/grafana/carbonapi/mstats"
 	"github.com/peterbourgon/g2g"
 	"go.uber.org/zap"
 )

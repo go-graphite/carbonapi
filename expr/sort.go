@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/go-graphite/carbonapi/expr/types"
-	"github.com/go-graphite/carbonapi/pkg/parser"
+	"github.com/grafana/carbonapi/expr/types"
+	"github.com/grafana/carbonapi/pkg/parser"
 )
 
 // type for sorting a list of metrics by the nth part of the metric name.

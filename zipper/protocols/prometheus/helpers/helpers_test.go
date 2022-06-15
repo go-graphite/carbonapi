@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	th "github.com/go-graphite/carbonapi/tests"
-	"github.com/go-graphite/carbonapi/zipper/protocols/prometheus/types"
+	th "github.com/grafana/carbonapi/tests"
+	"github.com/grafana/carbonapi/zipper/protocols/prometheus/types"
 )
 
 func TestAlignValues(t *testing.T) {

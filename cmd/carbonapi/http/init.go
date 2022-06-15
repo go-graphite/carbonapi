@@ -6,8 +6,8 @@ import (
 	"net/http/pprof"
 
 	"github.com/dgryski/httputil"
-	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
-	"github.com/go-graphite/carbonapi/util/ctx"
+	"github.com/grafana/carbonapi/cmd/carbonapi/config"
+	"github.com/grafana/carbonapi/util/ctx"
 )
 
 func InitHandlers(headersToPass, headersToLog []string) *http.ServeMux {

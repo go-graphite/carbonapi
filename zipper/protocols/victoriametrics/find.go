@@ -10,7 +10,7 @@ import (
 
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
-	"github.com/go-graphite/carbonapi/zipper/types"
+	"github.com/grafana/carbonapi/zipper/types"
 )
 
 func (c *VictoriaMetricsGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {

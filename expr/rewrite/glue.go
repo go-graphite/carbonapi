@@ -4,10 +4,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/go-graphite/carbonapi/expr/interfaces"
-	"github.com/go-graphite/carbonapi/expr/metadata"
-	"github.com/go-graphite/carbonapi/expr/rewrite/aboveSeries"
-	"github.com/go-graphite/carbonapi/expr/rewrite/applyByNode"
+	"github.com/grafana/carbonapi/expr/interfaces"
+	"github.com/grafana/carbonapi/expr/metadata"
+	"github.com/grafana/carbonapi/expr/rewrite/aboveSeries"
+	"github.com/grafana/carbonapi/expr/rewrite/applyByNode"
 )
 
 type initFunc struct {

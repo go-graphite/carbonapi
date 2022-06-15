@@ -8,10 +8,10 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/go-graphite/carbonapi/expr/helper"
-	"github.com/go-graphite/carbonapi/expr/interfaces"
-	"github.com/go-graphite/carbonapi/expr/types"
-	"github.com/go-graphite/carbonapi/pkg/parser"
+	"github.com/grafana/carbonapi/expr/helper"
+	"github.com/grafana/carbonapi/expr/interfaces"
+	"github.com/grafana/carbonapi/expr/types"
+	"github.com/grafana/carbonapi/pkg/parser"
 )
 
 type timeShift struct {
@@ -65,7 +65,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 			"carbonapi currently forces this to be false. This behavior will change in next major release (0.15)" +
 			"to be compatible with graphite-web. Please change your dashboards to explicitly pass resetEnd parameter" +
 			"or create a config file for this function that sets it to false." +
-			"Please see https://github.com/go-graphite/carbonapi/blob/main/doc/configuration.md#example-for-timeshift")
+			"Please see https://github.com/grafana/carbonapi/blob/main/doc/configuration.md#example-for-timeshift")
 	}
 
 	return res

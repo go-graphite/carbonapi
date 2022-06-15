@@ -12,5 +12,5 @@ name = "go"
 enabled = true
 
   [analyzers.meta]
-  import_path = "github.com/go-graphite/carbonapi"
+  import_path = "github.com/grafana/carbonapi"
   dependencies_vendored = true

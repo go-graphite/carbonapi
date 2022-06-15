@@ -3,7 +3,7 @@ package slo
 import (
 	"fmt"
 
-	"github.com/go-graphite/carbonapi/pkg/parser"
+	"github.com/grafana/carbonapi/pkg/parser"
 )
 
 func (f *slo) buildDataPoint(bucketQtyMatched, bucketQtyNotNull int) (isAbsent bool, value float64) {

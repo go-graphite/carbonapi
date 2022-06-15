@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-graphite/carbonapi/zipper/protocols/prometheus/types"
+	"github.com/grafana/carbonapi/zipper/protocols/prometheus/types"
 )
 
 // ConvertGraphiteTargetToPromQL - converts graphite target string to PromQL friendly format

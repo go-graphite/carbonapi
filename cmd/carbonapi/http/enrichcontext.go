@@ -3,7 +3,7 @@ package http
 import (
 	"net/http"
 
-	utilctx "github.com/go-graphite/carbonapi/util/ctx"
+	utilctx "github.com/grafana/carbonapi/util/ctx"
 )
 
 // TrackConnections exports via expvar a list of all currently executing requests

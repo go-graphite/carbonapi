@@ -5,14 +5,14 @@ import (
 	"sort"
 
 	"github.com/ansel1/merry"
-	"github.com/go-graphite/carbonapi/expr/helper"
-	tags2 "github.com/go-graphite/carbonapi/expr/tags"
-	"github.com/go-graphite/carbonapi/expr/types"
-	util "github.com/go-graphite/carbonapi/util/ctx"
-	realZipper "github.com/go-graphite/carbonapi/zipper"
-	zipperCfg "github.com/go-graphite/carbonapi/zipper/config"
-	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
+	"github.com/grafana/carbonapi/expr/helper"
+	tags2 "github.com/grafana/carbonapi/expr/tags"
+	"github.com/grafana/carbonapi/expr/types"
+	util "github.com/grafana/carbonapi/util/ctx"
+	realZipper "github.com/grafana/carbonapi/zipper"
+	zipperCfg "github.com/grafana/carbonapi/zipper/config"
+	zipperTypes "github.com/grafana/carbonapi/zipper/types"
 	"go.uber.org/zap"
 )
 

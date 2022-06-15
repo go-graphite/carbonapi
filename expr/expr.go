@@ -3,16 +3,16 @@ package expr
 import (
 	"context"
 
-	utilctx "github.com/go-graphite/carbonapi/util/ctx"
+	utilctx "github.com/grafana/carbonapi/util/ctx"
 
 	"github.com/ansel1/merry"
-	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
-	_ "github.com/go-graphite/carbonapi/expr/functions"
-	"github.com/go-graphite/carbonapi/expr/helper"
-	"github.com/go-graphite/carbonapi/expr/metadata"
-	"github.com/go-graphite/carbonapi/expr/types"
-	"github.com/go-graphite/carbonapi/pkg/parser"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
+	"github.com/grafana/carbonapi/cmd/carbonapi/config"
+	_ "github.com/grafana/carbonapi/expr/functions"
+	"github.com/grafana/carbonapi/expr/helper"
+	"github.com/grafana/carbonapi/expr/metadata"
+	"github.com/grafana/carbonapi/expr/types"
+	"github.com/grafana/carbonapi/pkg/parser"
 )
 
 type evaluator struct{}
@@ -138,7 +138,7 @@ func EvalExpr(ctx context.Context, e parser.Expr, from, until int64, values map[
 	} else if e.IsConst() {
 		p := types.MetricData{
 			FetchResponse: pb.FetchResponse{
-				Name: e.Target(),
+				Name:   e.Target(),
 				Values: []float64{e.FloatValue()},
 			},
 			Tags: map[string]string{"name": e.Target()},

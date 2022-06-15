@@ -10,12 +10,12 @@ import (
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"go.uber.org/zap"
 
-	"github.com/go-graphite/carbonapi/internal/dns"
-	"github.com/go-graphite/carbonapi/limiter"
-	"github.com/go-graphite/carbonapi/zipper/helper"
-	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
-	"github.com/go-graphite/carbonapi/zipper/metadata"
-	"github.com/go-graphite/carbonapi/zipper/types"
+	"github.com/grafana/carbonapi/internal/dns"
+	"github.com/grafana/carbonapi/limiter"
+	"github.com/grafana/carbonapi/zipper/helper"
+	"github.com/grafana/carbonapi/zipper/httpHeaders"
+	"github.com/grafana/carbonapi/zipper/metadata"
+	"github.com/grafana/carbonapi/zipper/types"
 )
 
 const (

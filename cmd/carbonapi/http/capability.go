@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
+	"github.com/grafana/carbonapi/zipper/httpHeaders"
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
 )

@@ -17,7 +17,6 @@ require (
 	github.com/facebookgo/atomicfile v0.0.0-20151019160806-2de1f203e7d5 // indirect
 	github.com/facebookgo/pidfile v0.0.0-20150612191647-f242e2999868
 	github.com/felixge/httpsnoop v1.0.3 // indirect
-	github.com/go-graphite/carbonapi v0.15.6 // indirect
 	github.com/go-graphite/protocol v1.0.0
 	github.com/golang/protobuf v1.5.2
 	github.com/gomodule/redigo v1.8.8

@@ -12,10 +12,10 @@ import (
 	"sync/atomic"
 
 	"github.com/ansel1/merry"
-	"github.com/go-graphite/carbonapi/limiter"
-	"github.com/go-graphite/carbonapi/pkg/parser"
-	util "github.com/go-graphite/carbonapi/util/ctx"
-	"github.com/go-graphite/carbonapi/zipper/types"
+	"github.com/grafana/carbonapi/limiter"
+	"github.com/grafana/carbonapi/pkg/parser"
+	util "github.com/grafana/carbonapi/util/ctx"
+	"github.com/grafana/carbonapi/zipper/types"
 	"go.uber.org/zap"
 )
 
