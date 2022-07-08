@@ -78,6 +78,10 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		return nil, parser.ErrMissingArgument
 	}
 
+	if len(e.Args()) == 3 {
+		func := e.GetStringArg(2)
+	}
+
 	switch e.Args()[1].Type() {
 	case parser.EtConst:
 		// In this case, zipper does not request additional retrospective points,
@@ -144,6 +148,32 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		for i, v := range a.Values {
 			if ridx := i - offset; ridx >= 0 {
 				switch e.Target() {
+				case "movingWindow":
+					if func == "average" || func == "avg" {
+						r.Values[ridx] = w.Mean()
+					} else if func == "avg_zero" {
+						r.Values[ridx] = w.MeanZero()
+					} else if func == "sum" {
+						r.Values[ridx] = w.Sum()
+					} else if func == "min" {
+						r.Values[ridx] = w.Min()
+					} else if func == "max" {
+						r.Values[ridx] = w.Max()
+					} else if func == "multiply" {
+						r.Values[ridx] = w.Multiply()
+					} else if func == "range" {
+						r.Values[ridx] = w.Range()
+					} else if func == "diff" {
+						r.Values[ridx] = w.Diff()
+					} else if func == "stddev" {
+						r.Values[ridx] = w.Stdev()
+					} else if func == "count" {
+						r.Values[ridx] = w.Count()
+					} else if func == "last" {
+						r.Values[ridx] = w.Last()
+					} else if func == "median" {
+						r.Values[ridx] = w.Median()
+				}
 				case "movingAverage":
 					r.Values[ridx] = w.Mean()
 				case "movingSum":
@@ -169,6 +199,43 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
 func (f *moving) Description() map[string]types.FunctionDescription {
 	return map[string]types.FunctionDescription{
+		"movingWindow": {
+			Description: "Graphs a moving window function of a metric (or metrics) over a fixed number of past points, or a time interval.\n\nTakes one metric or a wildcard seriesList followed by a number N of datapoints\nor a quoted string with a length of time like '1hour' or '5min' (See ``from /\nuntil`` in the render\\_api_ for examples of time formats), and an xFilesFactor value to specify\nhow many points in the window must be non-null for the output to be considered valid. Graphs the\nsum of the preceeding datapoints for each point on the graph.\n\nExample:\n\n.. code-block:: none\n\n  &target=movingWindow(Server.instance01.threads.busy,10)\n  &target=movingWindow(Server.instance*.threads.idle,'5min','median',0.5)",
+			Function:    "movingWindow(seriesList, windowSize, func='average', xFilesFactor=None)",
+			Group:       "Calculate",
+			Module:      "graphite.render.functions",
+			Name:        "movingWindow",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "windowSize",
+					Required: true,
+					Suggestions: types.NewSuggestions(
+						5,
+						7,
+						10,
+						"1min",
+						"5min",
+						"10min",
+						"30min",
+						"1hour",
+					),
+					Type: types.IntOrInterval,
+				},
+				{
+					Name: "func",
+					Type: types.AggFunc,
+				},
+				{
+					Name: "xFilesFactor",
+					Type: types.Float,
+				},
+			},
+		},
 		"movingAverage": {
 			Description: "Graphs the moving average of a metric (or metrics) over a fixed number of\npast points, or a time interval.\n\nTakes one metric or a wildcard seriesList followed by a number N of datapoints\nor a quoted string with a length of time like '1hour' or '5min' (See ``from /\nuntil`` in the render\\_api_ for examples of time formats), and an xFilesFactor value to specify\nhow many points in the window must be non-null for the output to be considered valid. Graphs the\naverage of the preceeding datapoints for each point on the graph.\n\nExample:\n\n.. code-block:: none\n\n  &target=movingAverage(Server.instance01.threads.busy,10)\n  &target=movingAverage(Server.instance*.threads.idle,'5min')",
 			Function:    "movingAverage(seriesList, windowSize, xFilesFactor=None)",

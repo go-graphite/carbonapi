@@ -375,7 +375,7 @@ func AggCount(v []float64) float64 {
 	return float64(n)
 }
 
-// AggCount counts non-NaN points
+// AggDiff counts non-NaN points
 func AggDiff(v []float64) float64 {
 	res := v[0]
 	if len(v) == 1 {
