@@ -17,6 +17,13 @@ Changes
 
 CHANGELOG
 ---------
+**WIP**
+ - [Improvement] Port `join` function from Avito carbonapi fork (https://github.com/el-yurchito/carbonapi/commit/bccdb90a90492314c18696eb4f064b818c5fff70 and https://github.com/el-yurchito/carbonapi/commit/47177771d60b7af0f5ac865634ecf3d1c3aa2802)
+
+**0.15.6**
+ - [Improvement] Significant improvement in sorting metrics from backends (thx to @Felixoid)
+ - [Fix] Get rid of bashism in postinst script (thx to @Glandos)
+
 **0.15.5**
  - **[Security]** Update vendored dependency for GoGo Proto that should fix improper index validation (CVE-2021-3121)
  - [Feature] carbonapi supports `-check-config` flag just to run config validation (thx to @msaf1980)
