@@ -684,12 +684,12 @@ func parseConst(s string) (float64, string, string, error) {
 var RangeTables []*unicode.RangeTable
 
 var disallowedCharactersInMetricName = map[rune]struct{}{
-	'(': struct{}{},
-	')': struct{}{},
-	'"': struct{}{},
+	'(':  struct{}{},
+	')':  struct{}{},
+	'"':  struct{}{},
 	'\'': struct{}{},
-	' ': struct{}{},
-	'/': struct{}{},
+	' ':  struct{}{},
+	'/':  struct{}{},
 }
 
 func unicodeRuneAllowedInName(r rune) bool {
@@ -704,47 +704,87 @@ func parseName(s string) (string, string) {
 	var (
 		braces, i, w int
 		r            rune
+		isEscape     bool
+		isDefault    bool
 	)
+
+	buf := bytes.NewBuffer(make([]byte, 0, len(s)))
 
 FOR:
 	for braces, i, w = 0, 0, 0; i < len(s); i += w {
-
+		if s[i] != '\\' {
+			err := buf.WriteByte(s[i])
+			if err != nil {
+				break FOR
+			}
+		}
+		isDefault = false
 		w = 1
 		if IsNameChar(s[i]) {
 			continue
 		}
 
 		switch s[i] {
-		case '{':
-			braces++
-		case '}':
-			if braces == 0 {
-				break FOR
+		case '\\':
+			if isEscape {
+				err := buf.WriteByte(s[i])
+				if err != nil {
+					break FOR
+				}
+				isEscape = false
+				continue
 			}
-			braces--
+			isEscape = true
+		case '{':
+			if isEscape {
+				isDefault = true
+			} else {
+				braces++
+			}
+		case '}':
+			if isEscape {
+				isDefault = true
+			} else {
+				if braces == 0 {
+					break FOR
+				}
+				braces--
+			}
 		case ',':
-			if braces == 0 {
+			if isEscape {
+				isDefault = true
+			} else if braces == 0 {
 				break FOR
 			}
 		/* */
 		case '=':
 			// allow metric name to end with any amount of `=` without treating it as a named arg or tag
-			if s[i+1] == '=' || s[i+1] == ',' || s[i+1] == ')' {
-				continue
+			if !isEscape {
+				if s[i+1] == '=' || s[i+1] == ',' || s[i+1] == ')' {
+					continue
+				}
 			}
 			fallthrough
 		/* */
 		default:
+			isDefault = true
+		}
+		if isDefault {
 			r, w = utf8.DecodeRuneInString(s[i:])
 			if unicodeRuneAllowedInName(r) && unicode.In(r, RangeTables...) {
 				continue
 			}
-			break FOR
+			if !isEscape {
+				break FOR
+			}
+			isEscape = false
+			continue
 		}
 	}
 
 	if i == len(s) {
-		return s, ""
+		fmt.Println(buf.String())
+		return buf.String(), ""
 	}
 
 	return s[:i], s[i:]
