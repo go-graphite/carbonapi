@@ -29,6 +29,7 @@ import (
 	"github.com/grafana/carbonapi/expr/functions/divideSeries"
 	"github.com/grafana/carbonapi/expr/functions/ewma"
 	"github.com/grafana/carbonapi/expr/functions/exclude"
+	"github.com/grafana/carbonapi/expr/functions/exp"
 	"github.com/grafana/carbonapi/expr/functions/fallbackSeries"
 	"github.com/grafana/carbonapi/expr/functions/fft"
 	"github.com/grafana/carbonapi/expr/functions/filter"
@@ -137,6 +138,7 @@ func New(configs map[string]string) {
 		{name: "divideSeries", filename: "divideSeries", order: divideSeries.GetOrder(), f: divideSeries.New},
 		{name: "ewma", filename: "ewma", order: ewma.GetOrder(), f: ewma.New},
 		{name: "exclude", filename: "exclude", order: exclude.GetOrder(), f: exclude.New},
+		{name: "exp", filename: "exp", order: exp.GetOrder(), f: exp.New},
 		{name: "fallbackSeries", filename: "fallbackSeries", order: fallbackSeries.GetOrder(), f: fallbackSeries.New},
 		{name: "fft", filename: "fft", order: fft.GetOrder(), f: fft.New},
 		{name: "filter", filename: "filter", order: filter.GetOrder(), f: filter.New},
