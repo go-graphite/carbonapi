@@ -113,7 +113,6 @@ _When `format=png`_ (default if not specified)
 | aliasQuery |
 | averageOutsidePercentile |
 | events |
-| exp |
 | exponentialMovingAverage |
 | holtWintersConfidenceArea |
 | identity |
@@ -218,6 +217,7 @@ reverse: default value mismatch: got (empty), should be false |
 | divideSeriesLists(dividendSeriesList, divisorSeriesList) | no |
 | drawAsInfinite(seriesList) | no |
 | exclude(seriesList, pattern) | no |
+| exp(seriesList) | no |
 | fallbackSeries(seriesList, fallback) | no |
 | filterSeries(seriesList, func, operator, threshold) | no |
 | grep(seriesList, pattern) | no |
