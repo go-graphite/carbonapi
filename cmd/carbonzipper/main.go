@@ -20,7 +20,6 @@ import (
 	"github.com/ansel1/merry"
 
 	"github.com/dgryski/httputil"
-	"github.com/facebookgo/pidfile"
 	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
@@ -587,7 +586,6 @@ func main() {
 	logger := zapwriter.Logger("main")
 
 	configFile := flag.String("config", "", "config file (yaml)")
-	pidFile := flag.String("pid", "", "pidfile (default: empty, don't create pidfile)")
 	envPrefix := flag.String("envprefix", "CARBONZIPPER_", "Prefix for environment variables override")
 	if *envPrefix == "" {
 		logger.Fatal("empty prefix is not suppoerted due to possible collisions with OS environment variables")
@@ -790,16 +788,6 @@ func main() {
 		graphite.Register(fmt.Sprintf("%s.total_alloc", pattern), &mstats.TotalAlloc)
 		graphite.Register(fmt.Sprintf("%s.num_gc", pattern), &mstats.NumGC)
 		graphite.Register(fmt.Sprintf("%s.pause_ns", pattern), &mstats.PauseNS)
-	}
-
-	if *pidFile != "" {
-		pidfile.SetPidfilePath(*pidFile)
-		err = pidfile.Write()
-		if err != nil {
-			logger.Fatal("error during pidfile.Write()",
-				zap.Error(err),
-			)
-		}
 	}
 
 	if len(config.GRPCListen) > 0 {

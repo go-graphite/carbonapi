@@ -1,17 +1,17 @@
 listen: "localhost:8081"
 expvar:
-  enabled: true
-  pprofEnabled: false
-  listen: ""
+    enabled: true
+    pprofEnabled: false
+    listen: ""
 concurency: 1000
 notFoundStatusCode: 404
 cache:
-   type: "mem"
-   size_mb: 0
-   defaultTimeoutSec: 60
-   memcachedServers:
-       - "127.0.0.1:1234"
-       - "127.0.0.2:1235"
+    type: "mem"
+    size_mb: 0
+    defaultTimeoutSec: 60
+    memcachedServers:
+        - "127.0.0.1:1234"
+        - "127.0.0.2:1235"
 cpus: 0
 tz: ""
 maxBatchSize: 0
@@ -21,7 +21,6 @@ graphite:
     prefix: "carbon.api"
     pattern: "{prefix}.{fqdn}"
 idleConnections: 10
-pidFile: ""
 upstreams:
     buckets: 10
     timeouts:
@@ -33,38 +32,36 @@ upstreams:
     maxIdleConnsPerHost: 100
     backendsv2:
         backends:
-          -
-            groupName: "mock-001"
-            protocol: "auto"
-            lbMethod: "all"
-            maxTries: 3
-            maxBatchSize: 0
-            keepAliveInterval: "10s"
-            concurrencyLimit: 0
-            maxIdleConnsPerHost: 1000
-            timeouts:
-                find: "15s"
-                render: "50s"
-                connect: "200ms"
-            servers:
-                - "http://127.0.0.1:9070"
-                - "http://127.0.0.1:9071"
-          -
-            groupName: "mock-002"
-            protocol: "auto"
-            lbMethod: "all"
-            maxTries: 3
-            maxBatchSize: 0
-            keepAliveInterval: "10s"
-            concurrencyLimit: 0
-            maxIdleConnsPerHost: 1000
-            timeouts:
-                find: "15s"
-                render: "50s"
-                connect: "200ms"
-            servers:
-                - "http://127.0.0.1:9072"
-                - "http://127.0.0.1:9073"
+            - groupName: "mock-001"
+              protocol: "auto"
+              lbMethod: "all"
+              maxTries: 3
+              maxBatchSize: 0
+              keepAliveInterval: "10s"
+              concurrencyLimit: 0
+              maxIdleConnsPerHost: 1000
+              timeouts:
+                  find: "15s"
+                  render: "50s"
+                  connect: "200ms"
+              servers:
+                  - "http://127.0.0.1:9070"
+                  - "http://127.0.0.1:9071"
+            - groupName: "mock-002"
+              protocol: "auto"
+              lbMethod: "all"
+              maxTries: 3
+              maxBatchSize: 0
+              keepAliveInterval: "10s"
+              concurrencyLimit: 0
+              maxIdleConnsPerHost: 1000
+              timeouts:
+                  find: "15s"
+                  render: "50s"
+                  connect: "200ms"
+              servers:
+                  - "http://127.0.0.1:9072"
+                  - "http://127.0.0.1:9073"
     graphite09compat: false
 expireDelaySec: 10
 logger:

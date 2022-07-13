@@ -14,8 +14,6 @@ require (
 	github.com/dgryski/httputil v0.0.0-20160116060654-189c2918cd08
 	github.com/dustin/go-humanize v1.0.0
 	github.com/evmar/gocairo v0.0.0-20160222165215-ddd30f837497
-	github.com/facebookgo/atomicfile v0.0.0-20151019160806-2de1f203e7d5 // indirect
-	github.com/facebookgo/pidfile v0.0.0-20150612191647-f242e2999868
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/go-graphite/protocol v1.0.0
 	github.com/golang/protobuf v1.5.2
