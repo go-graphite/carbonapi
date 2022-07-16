@@ -14,6 +14,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
+	"github.com/go-graphite/carbonapi/tests/compare"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
@@ -494,7 +495,7 @@ func TestEvalCustomFromUntil(t *testing.T) {
 			if g[0].StepTime == 0 {
 				t.Errorf("missing step for %+v", g)
 			}
-			if !th.NearlyEqual(g[0].Values, tt.w) {
+			if !compare.NearlyEqual(g[0].Values, tt.w) {
 				t.Errorf("failed: %s: got %+v, want %+v", g[0].Name, g[0].Values, tt.w)
 			}
 			if g[0].Name != tt.name {
