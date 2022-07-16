@@ -277,3 +277,36 @@ func TestAverageSeries(t *testing.T) {
 	}
 
 }
+
+func TestAverageSeriesAlign(t *testing.T) {
+	tests := []th.EvalTestItem{
+		{
+			// timeseries with different length
+			Target: "sum(metric1_2,metric2_1)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{"metric1_2", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 3, 5}, 1, 1)},
+				{"metric2_1", 0, 1}: {types.MakeMetricData("metric2", []float64{1, 5}, 2, 1)},
+			},
+			Want: []*types.MetricData{types.MakeMetricData("sumSeries(metric1_2,metric2_1)",
+				[]float64{1, 6, 10, 5}, 1, 1)},
+		},
+		{
+			// First timeseries with broker StopTime
+			Target: "sum(metric1,metric2)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 3, 5, 8}, 1, 1).AppendStopTime(-1)},
+				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{1, 5, 7}, 1, 1)},
+			},
+			Want: []*types.MetricData{types.MakeMetricData("sumSeries(metric1,metric2)",
+				[]float64{2, 8, 12, 8}, 1, 1)},
+		},
+	}
+
+	for _, tt := range tests {
+		testName := tt.Target
+		t.Run(testName, func(t *testing.T) {
+			th.TestEvalExpr(t, &tt)
+		})
+	}
+
+}

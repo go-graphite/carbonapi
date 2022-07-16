@@ -423,6 +423,24 @@ func (r *MetricData) CopyLink() *MetricData {
 	}
 }
 
+// SetConsolidationFunc set ConsolidationFunc
+func (r *MetricData) SetConsolidationFunc(f string) *MetricData {
+	r.ConsolidationFunc = f
+	return r
+}
+
+// SetXFilesFactor set XFilesFactor
+func (r *MetricData) SetXFilesFactor(x float32) *MetricData {
+	r.XFilesFactor = x
+	return r
+}
+
+// AppendStopTime append to StopTime for simulate broken time series
+func (r *MetricData) AppendStopTime(step int64) *MetricData {
+	r.StopTime += step
+	return r
+}
+
 // CopyMetricDataSlice returns the slice of metrics that should be changed later.
 // It allows to avoid a changing of source data, e.g. by AlignMetrics
 func CopyMetricDataSlice(args []*MetricData) (newData []*MetricData) {
