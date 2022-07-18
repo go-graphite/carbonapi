@@ -57,6 +57,7 @@ import (
 	"github.com/grafana/carbonapi/expr/functions/limit"
 	"github.com/grafana/carbonapi/expr/functions/linearRegression"
 	"github.com/grafana/carbonapi/expr/functions/logarithm"
+	"github.com/grafana/carbonapi/expr/functions/logit"
 	"github.com/grafana/carbonapi/expr/functions/lowPass"
 	"github.com/grafana/carbonapi/expr/functions/mapSeries"
 	"github.com/grafana/carbonapi/expr/functions/mostDeviant"
@@ -166,6 +167,7 @@ func New(configs map[string]string) {
 		{name: "limit", filename: "limit", order: limit.GetOrder(), f: limit.New},
 		{name: "linearRegression", filename: "linearRegression", order: linearRegression.GetOrder(), f: linearRegression.New},
 		{name: "logarithm", filename: "logarithm", order: logarithm.GetOrder(), f: logarithm.New},
+		{name: "logit", filename: "logit", order: logit.GetOrder(), f: logit.New},
 		{name: "lowPass", filename: "lowPass", order: lowPass.GetOrder(), f: lowPass.New},
 		{name: "mapSeries", filename: "mapSeries", order: mapSeries.GetOrder(), f: mapSeries.New},
 		{name: "mostDeviant", filename: "mostDeviant", order: mostDeviant.GetOrder(), f: mostDeviant.New},
