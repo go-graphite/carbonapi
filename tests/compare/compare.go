@@ -163,6 +163,19 @@ func MaxInt(a, b int) int {
 	}
 }
 
+func GenerateMetrics(n int, startValue, endValue, stepValue float64) []float64 {
+	values := make([]float64, n)
+	v := startValue
+	for i := 0; i < n; i++ {
+		values[i] = v
+		v += stepValue
+		if v > endValue {
+			v = startValue
+		}
+	}
+	return values
+}
+
 func TestMetricData(t *testing.T, got, want []*types.MetricData) {
 	for i := 0; i < MaxInt(len(want), len(got)); i++ {
 		if i >= len(got) {

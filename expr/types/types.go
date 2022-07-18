@@ -441,6 +441,24 @@ func (r *MetricData) AppendStopTime(step int64) *MetricData {
 	return r
 }
 
+// FixStopTime fix broken StopTime (less than need for values)
+func (r *MetricData) FixStopTime() *MetricData {
+	stop := r.StartTime + int64(len(r.Values))*r.StepTime
+	if r.StopTime < stop {
+		r.StopTime = stop
+	}
+	return r
+}
+
+// RecalcStopTime recalc StopTime with StartTime and Values length
+func (r *MetricData) RecalcStopTime() *MetricData {
+	stop := r.StartTime + int64(len(r.Values))*r.StepTime
+	if r.StopTime != stop {
+		r.StopTime = stop
+	}
+	return r
+}
+
 // CopyMetricDataSlice returns the slice of metrics that should be changed later.
 // It allows to avoid a changing of source data, e.g. by AlignMetrics
 func CopyMetricDataSlice(args []*MetricData) (newData []*MetricData) {
