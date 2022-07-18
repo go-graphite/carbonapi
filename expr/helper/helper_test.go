@@ -182,25 +182,37 @@ func TestScaleToCommonStep(t *testing.T) {
 			},
 			0,
 			[]*types.MetricData{
-				types.MakeMetricData("metric1", []float64{2, 10, 17}, 6, 0),      // 0..18
-				types.MakeMetricData("metric2", []float64{1, 3, 5}, 6, 0),        // 0..18
+				types.MakeMetricData("metric1", []float64{2, 10, 17, NaN}, 6, 0), // 0..18
+				types.MakeMetricData("metric2", []float64{1, 3, 5, NaN}, 6, 0),   // 0..18
 				types.MakeMetricData("metric3", []float64{1, 2.5, 4.5, 6}, 6, 0), // 0..24
 			},
 		},
+
+		// Indx     |  0   |   1  |   2  |   3  |   4  |   5  |   6  |   7  |   8  |   9  |   10  |   11  |   12  |   13  |   14  |   15  |   20  |   21  |   22  |   23  |   24  |   25  |   26  |   27  |   28  |   29  |
+		// commonStep  6
+		// Start  0 (2 - 2 % 6)
+		//
+		// ConsolidationFunc = "sum", XFilesFactor = 0.45
+		//  metric1 |      |      |      |   N  |   3  |   5  |   7  |   9  |  11  |  13  |   15  |   17  |       |       |       |       |       |       |       |       |       |       |       |       |       |       |
+		//  metric1 |  N   |      |      |      |      |      |  72  |      |      |      |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |       |
+		//
+		// ConsolidationFunc = "min", XFilesFactor = 0.45
+		//  metric2 |      |      |      |      |   1  |      |   2  |      |   3  |      |    4  |       |    5  |       |       |       |       |       |       |       |       |       |       |       |       |       |
+		//  metric2 |  N   |      |      |      |      |      |   2  |      |      |      |       |       |    N  |       |       |       |       |       |       |       |       |       |       |       |       |       |
 		{
 			"xFilesFactor and custom aggregate function",
 			[]*types.MetricData{
-				types.MakeMetricData("metric1", []float64{NaN, 3, 5, 7, 9, 11, 13, 15, 17}, 1, 3), // 3..12
-				types.MakeMetricData("metric2", []float64{1, 2, 3, 4, 5}, 2, 4),                   // 4..14
-				types.MakeMetricData("metric3", []float64{1, 2, 3, 4, 5, 6}, 3, 3),                // 3..21
-				types.MakeMetricData("metric6", []float64{1, 2, 3, 4, 5}, 6, 0),                   // 0..30
+				types.MakeMetricData("metric1", []float64{NaN, 3, 5, 7, 9, 11, 13, 15, 17}, 1, 3).SetConsolidationFunc("sum").SetXFilesFactor(0.45),
+				types.MakeMetricData("metric2", []float64{1, 2, 3, 4, 5}, 2, 4).SetConsolidationFunc("min").SetXFilesFactor(0.45),
+				types.MakeMetricData("metric3", []float64{1, 2, 3, 4, 5, 6}, 3, 3).SetConsolidationFunc("max").SetXFilesFactor(0.51),
+				types.MakeMetricData("metric6", []float64{1, 2, 3, 4, 5}, 6, 0),
 			},
 			0,
 			[]*types.MetricData{
-				types.MakeMetricData("metric1", []float64{NaN, 72}, 6, 0),        // 0..12
-				types.MakeMetricData("metric2", []float64{NaN, 2, NaN}, 6, 0),    // 0..18
-				types.MakeMetricData("metric3", []float64{NaN, 3, 5, NaN}, 6, 0), // 0..24
-				types.MakeMetricData("metric6", []float64{1, 2, 3, 4, 5}, 6, 0),  // 0..30, unchanged
+				types.MakeMetricData("metric1", []float64{NaN, 72, NaN, NaN, NaN}, 6, 0), // 0..12
+				types.MakeMetricData("metric2", []float64{NaN, 2, NaN, NaN, NaN}, 6, 0),  // 0..18
+				types.MakeMetricData("metric3", []float64{NaN, 3, 5, NaN, NaN}, 6, 0),    // 0..24
+				types.MakeMetricData("metric6", []float64{1, 2, 3, 4, 5}, 6, 0),          // 0..30, unchanged
 			},
 		},
 		{
@@ -213,20 +225,13 @@ func TestScaleToCommonStep(t *testing.T) {
 			},
 			12,
 			[]*types.MetricData{
-				types.MakeMetricData("metric1", []float64{10}, 12, 0),          // 0..12
-				types.MakeMetricData("metric2", []float64{2.5, 5}, 12, 0),      // 0..18
-				types.MakeMetricData("metric3", []float64{2, 5}, 12, 0),        // 0..24
-				types.MakeMetricData("metric6", []float64{1.5, 3.5, 5}, 12, 0), // 0..30, unchanged
+				types.MakeMetricData("metric1", []float64{10, NaN, NaN}, 12, 0), // 0..12
+				types.MakeMetricData("metric2", []float64{2.5, 5, NaN}, 12, 0),  // 0..18
+				types.MakeMetricData("metric3", []float64{2, 5, NaN}, 12, 0),    // 0..24
+				types.MakeMetricData("metric6", []float64{1.5, 3.5, 5}, 12, 0),  // 0..30, unchanged
 			},
 		},
 	}
-	custom := tests[1].metrics
-	custom[0].ConsolidationFunc = "sum"
-	custom[1].ConsolidationFunc = "min"
-	custom[2].ConsolidationFunc = "max"
-	custom[0].XFilesFactor = 0.45
-	custom[1].XFilesFactor = 0.45
-	custom[2].XFilesFactor = 0.51
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := ScaleToCommonStep(tt.metrics, tt.commonStep)
@@ -236,7 +241,7 @@ func TestScaleToCommonStep(t *testing.T) {
 			for i, r := range result {
 				e := tt.expected[i]
 				if len(r.Values) != len(e.Values) {
-					t.Fatalf("Values of result[%v] has the different length %v than expected %v", i, len(r.Values), len(e.Values))
+					t.Fatalf("Values of result[%v] has the different length %+v than expected %+v", i, r.Values, e.Values)
 				}
 				for v, rv := range r.Values {
 					ev := e.Values[v]

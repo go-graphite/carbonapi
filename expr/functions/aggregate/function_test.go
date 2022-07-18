@@ -280,6 +280,16 @@ func TestAverageSeries(t *testing.T) {
 
 func TestAverageSeriesAlign(t *testing.T) {
 	tests := []th.EvalTestItem{
+		// Indx      |   0  |   1  |   2  |   3  |   4  |
+		// commonStep  2
+		// Start  0 (1 - 1 % 2)
+		// metric1_2 |      |   1  |   3  |   5  |      |
+		// metric1_2 |   1  |      |   4  |      |      |
+		//
+		// metric2_1 |      |   1  |      |   5  |      |
+		// metric2_1 |   1  |      |   5  |      |      |
+
+		// sum       |   2  |      |   9  |      |      |
 		{
 			// timeseries with different length
 			Target: "sum(metric1_2,metric2_1)",
@@ -288,7 +298,7 @@ func TestAverageSeriesAlign(t *testing.T) {
 				{"metric2_1", 0, 1}: {types.MakeMetricData("metric2", []float64{1, 5}, 2, 1)},
 			},
 			Want: []*types.MetricData{types.MakeMetricData("sumSeries(metric1_2,metric2_1)",
-				[]float64{1, 6, 10, 5}, 1, 1)},
+				[]float64{2, 9}, 2, 0)},
 		},
 		{
 			// First timeseries with broker StopTime
@@ -305,7 +315,7 @@ func TestAverageSeriesAlign(t *testing.T) {
 	for _, tt := range tests {
 		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
-			th.TestEvalExpr(t, &tt)
+			th.TestEvalExprResult(t, &tt)
 		})
 	}
 
