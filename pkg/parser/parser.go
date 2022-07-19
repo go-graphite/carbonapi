@@ -783,7 +783,6 @@ FOR:
 	}
 
 	if i == len(s) {
-		fmt.Println(buf.String())
 		return buf.String(), ""
 	}
 
