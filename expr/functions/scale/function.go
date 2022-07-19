@@ -45,7 +45,7 @@ func (f *scale) Do(ctx context.Context, e parser.Expr, from, until int64, values
 
 	results := make([]*types.MetricData, 0, len(arg))
 	for _, a := range arg {
-		r := *a
+		r := a.CopyLink()
 		if timestamp == 0 {
 			r.Name = fmt.Sprintf("scale(%s,%g)", a.Name, scale)
 		} else {
@@ -63,7 +63,7 @@ func (f *scale) Do(ctx context.Context, e parser.Expr, from, until int64, values
 
 			currentTimestamp += a.StepTime
 		}
-		results = append(results, &r)
+		results = append(results, r)
 	}
 	return results, nil
 }

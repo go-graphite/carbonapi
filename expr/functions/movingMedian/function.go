@@ -118,7 +118,7 @@ func (f *movingMedian) Do(ctx context.Context, e parser.Expr, from, until int64,
 	}
 
 	for _, a := range arg {
-		r := *a
+		r := a.CopyLink()
 		r.Name = fmt.Sprintf("movingMedian(%s,%s)", a.Name, argstr)
 
 		if windowSize == 0 {
@@ -128,7 +128,7 @@ func (f *movingMedian) Do(ctx context.Context, e parser.Expr, from, until int64,
 					r.Values[i] = math.NaN()
 				}
 			}
-			result = append(result, &r)
+			result = append(result, r)
 			continue
 		}
 		r.Values = make([]float64, len(a.Values)-offset)
@@ -148,7 +148,7 @@ func (f *movingMedian) Do(ctx context.Context, e parser.Expr, from, until int64,
 			}
 		}
 		r.Tags["movingMedian"] = fmt.Sprintf("%d", windowSize)
-		result = append(result, &r)
+		result = append(result, r)
 	}
 	return result, nil
 }

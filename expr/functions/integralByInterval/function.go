@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 
-	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/grafana/carbonapi/expr/helper"
 	"github.com/grafana/carbonapi/expr/interfaces"
 	"github.com/grafana/carbonapi/expr/types"
@@ -57,19 +56,11 @@ func (f *integralByInterval) Do(ctx context.Context, e parser.Expr, from, until 
 		currentTime := arg.StartTime
 
 		name := fmt.Sprintf("integralByInterval(%s,'%s')", arg.Name, e.Args()[1].StringValue())
-		result := types.MetricData{
-			FetchResponse: pb.FetchResponse{
-				Name:              name,
-				Values:            make([]float64, len(arg.Values)),
-				StepTime:          arg.StepTime,
-				StartTime:         arg.StartTime,
-				StopTime:          arg.StopTime,
-				XFilesFactor:      arg.XFilesFactor,
-				PathExpression:    name,
-				ConsolidationFunc: arg.ConsolidationFunc,
-			},
-			Tags: arg.Tags,
-		}
+		result := arg.CopyLink()
+		result.Name = name
+		result.PathExpression = name
+		result.Values = make([]float64, len(arg.Values))
+
 		result.Tags["integralByInterval"] = intervalString
 
 		for i, v := range arg.Values {
@@ -84,7 +75,7 @@ func (f *integralByInterval) Do(ctx context.Context, e parser.Expr, from, until 
 			currentTime += arg.StepTime
 		}
 
-		results = append(results, &result)
+		results = append(results, result)
 	}
 
 	return results, nil

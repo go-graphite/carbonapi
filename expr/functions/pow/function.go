@@ -42,7 +42,7 @@ func (f *pow) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 	var results []*types.MetricData
 
 	for _, a := range arg {
-		r := *a
+		r := a.CopyLink()
 		r.Name = fmt.Sprintf("pow(%s,%g)", a.Name, factor)
 		r.Values = make([]float64, len(a.Values))
 		r.Tags["pow"] = fmt.Sprintf("%f", factor)
@@ -54,7 +54,7 @@ func (f *pow) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 				r.Values[i] = math.Pow(v, factor)
 			}
 		}
-		results = append(results, &r)
+		results = append(results, r)
 	}
 	return results, nil
 }

@@ -76,7 +76,7 @@ func (f *nonNegativeDerivative) Do(ctx context.Context, e parser.Expr, from, unt
 			name = fmt.Sprintf("nonNegativeDerivative(%s)", a.Name)
 		}
 
-		r := *a
+		r := a.CopyLink()
 		r.Name = name
 		r.Values = make([]float64, len(a.Values))
 		r.Tags["nonNegativeDerivative"] = "1"
@@ -101,7 +101,7 @@ func (f *nonNegativeDerivative) Do(ctx context.Context, e parser.Expr, from, unt
 			}
 			prev = v
 		}
-		result = append(result, &r)
+		result = append(result, r)
 	}
 	return result, nil
 }

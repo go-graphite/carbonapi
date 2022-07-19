@@ -43,7 +43,7 @@ func (f *linearRegression) Do(ctx context.Context, e parser.Expr, from, until in
 	var results []*types.MetricData
 
 	for _, a := range arg {
-		r := *a
+		r := a.CopyLink()
 		if len(e.Args()) > 2 {
 			r.Name = fmt.Sprintf("linearRegression(%s,'%s','%s')", a.GetName(), e.Args()[1].StringValue(), e.Args()[2].StringValue())
 		} else if len(e.Args()) > 1 {
@@ -66,7 +66,7 @@ func (f *linearRegression) Do(ctx context.Context, e parser.Expr, from, until in
 			for i := range r.Values {
 				r.Values[i] = math.NaN()
 			}
-			results = append(results, &r)
+			results = append(results, r)
 			continue
 		}
 
@@ -90,7 +90,7 @@ func (f *linearRegression) Do(ctx context.Context, e parser.Expr, from, until in
 		}
 		r.Tags["linearRegressions"] = fmt.Sprintf("%d, %d", a.GetStartTime(), a.GetStopTime())
 
-		results = append(results, &r)
+		results = append(results, r)
 	}
 	return results, nil
 }
