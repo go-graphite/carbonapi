@@ -92,7 +92,7 @@ func (f *timeShift) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	results := make([]*types.MetricData, 0, len(arg))
 
 	for _, a := range arg {
-		r := *a
+		r := a.CopyLink()
 		r.Name = fmt.Sprintf("timeShift(%s,'%d',%v)", a.Name, offs, resetEnd)
 		r.StartTime = a.StartTime - int64(offs)
 		r.StopTime = a.StopTime - int64(offs)
@@ -105,7 +105,7 @@ func (f *timeShift) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		}
 		r.Values = r.Values[:length]
 		r.Tags["timeshift"] = fmt.Sprintf("%d", offs)
-		results = append(results, &r)
+		results = append(results, r)
 	}
 
 	return results, nil
