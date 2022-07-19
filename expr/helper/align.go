@@ -74,7 +74,7 @@ func GetStepRange(args []*types.MetricData) (minStep, maxStep int64, needScale b
 // If commonStep == 0, then it will be calculated automatically
 // It respects xFilesFactor and fills gaps in the begin and end with NaNs if needed.
 func ScaleToCommonStep(args []*types.MetricData, commonStep int64) []*types.MetricData {
-	if commonStep < 0 {
+	if commonStep < 0 || len(args) == 0 {
 		// This doesn't make sence
 		return args
 	}
@@ -343,6 +343,8 @@ func ScaleSeries(args []*types.MetricData) []*types.MetricData {
 	if needScale {
 		ScaleToCommonStep(args, commonStep)
 	} else {
+		maxVals := 0
+
 		for _, arg := range args {
 			if minStart < arg.StartTime {
 				valCnt := (arg.StartTime - minStart) / arg.StepTime
@@ -358,8 +360,20 @@ func ScaleSeries(args []*types.MetricData) []*types.MetricData {
 				arg.StopTime = maxStop
 			}
 
+			if maxVals < len(arg.Values) {
+				maxVals = len(arg.Values)
+			}
+		}
+
+		for _, arg := range args {
+			if maxVals > len(arg.Values) {
+				valCnt := maxVals - len(arg.Values)
+				newVals := genNaNs(valCnt)
+				arg.Values = append(arg.Values, newVals...)
+			}
 			arg.RecalcStopTime()
 		}
+
 	}
 
 	return args

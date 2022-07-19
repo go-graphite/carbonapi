@@ -100,7 +100,7 @@ func TestScaleSeries(t *testing.T) {
 			},
 			[]*types.MetricData{
 				types.MakeMetricData("metric1", []float64{1, 3, 5, 7, 9, 11, 13, 15, 17}, 2, 4),     // 4..26
-				types.MakeMetricData("metric2", []float64{1, 5, 7, 9, 11, 13, 18, NaN}, 2, 4),       // 4..26
+				types.MakeMetricData("metric2", []float64{1, 5, 7, 9, 11, 13, 18, NaN, NaN}, 2, 4),  // 4..26
 				types.MakeMetricData("metric3", []float64{NaN, 1, 5, 7, 9, 11, 13, NaN, NaN}, 2, 4), // 4..26
 			},
 		},
@@ -159,7 +159,7 @@ func TestScaleSeries(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := ScaleSeries(tt.metrics)
-			compare.TestMetricData(t, got, tt.want)
+			compare.TestMetricDataEqLen(t, got, tt.want)
 		})
 	}
 }
