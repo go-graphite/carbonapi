@@ -141,6 +141,9 @@ type AggregateFunc func([]float64) float64
 
 // AggregateSeries aggregates series
 func AggregateSeries(e parser.Expr, args []*types.MetricData, function AggregateFunc) ([]*types.MetricData, error) {
+	if len(args) == 0 {
+		return args, nil
+	}
 	args = ScaleSeries(args)
 
 	length := len(args[0].Values)

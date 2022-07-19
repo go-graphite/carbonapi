@@ -212,3 +212,45 @@ func TestMetricData(t *testing.T, got, want []*types.MetricData) {
 		}
 	}
 }
+
+// Validate test case values length
+func TestMetricDataEqLen(t *testing.T, got, want []*types.MetricData) {
+	length := len(want[0].Values)
+	for i := 0; i < MaxInt(len(want), len(got)); i++ {
+		if i >= len(got) {
+			t.Errorf("\n-[%d] = %v", i, want[i])
+		} else if i >= len(want) {
+			t.Errorf("\n+[%d] = %v", i, got[i])
+		} else {
+			if length != len(want[i].Values) {
+				t.Fatalf("metric[%d] with name %v contain invalid test case (values length %d not equal with metric[0] values legth %d", i, want[i].Name, length, len(want[i].Values))
+			}
+			actual := got[i]
+			if _, ok := actual.Tags["name"]; !ok {
+				t.Errorf("metric %+v with name %v doesn't contain 'name' tag", actual, actual.Name)
+			}
+			if actual == nil {
+				t.Errorf("returned no value")
+				return
+			}
+			if actual.StepTime == 0 {
+				t.Errorf("missing Step for %+v", actual)
+			}
+			if actual.Name != want[i].Name {
+				t.Errorf("bad Name metric[%d]: got %s, want %s", i, actual.Name, want[i].Name)
+			}
+			if !NearlyEqualMetrics(actual, want[i]) {
+				t.Errorf("different values metric[%d] %s: got %v, want %v", i, actual.Name, actual.Values, want[i].Values)
+			}
+			if actual.StepTime != want[i].StepTime {
+				t.Errorf("different StepTime metric[%d] %s: got %v, want %v", i, actual.Name, actual.StepTime, want[i].StepTime)
+			}
+			if actual.StartTime != want[i].StartTime {
+				t.Errorf("different StartTime metric[%d] %s: got %v, want %v", i, actual.Name, actual.StartTime, want[i].StartTime)
+			}
+			if actual.StopTime != want[i].StopTime {
+				t.Errorf("different StopTime metric[%d] %s: got %v, want %v", i, actual.Name, actual.StopTime, want[i].StopTime)
+			}
+		}
+	}
+}
