@@ -569,15 +569,6 @@ func TestEvalExprWithRange(t *testing.T, tt *EvalTestItemWithRange) {
 	DeepEqual(t, tt.Target, originalMetrics, tt.M, true)
 }
 
-func TestEvalExprWithRangeModifiedOrigin(t *testing.T, tt *EvalTestItemWithRange) {
-	tt2 := tt.TestItem()
-	err := TestEvalExprModifiedOrigin(t, tt2, tt.From, tt.Until, false)
-	if err != nil {
-		t.Errorf("unexpected error while evaluating %s: got `%+v`", tt.Target, err)
-		return
-	}
-}
-
 func TestEvalExprWithError(t *testing.T, tt *EvalTestItemWithError) {
 	originalMetrics := DeepClone(tt.M)
 	tt2 := &EvalTestItem{
