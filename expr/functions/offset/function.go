@@ -44,6 +44,7 @@ func (f *offset) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		r := *a
 		r.Name = fmt.Sprintf("%s(%s,%g)", e.Target(), a.Name, factor)
 		r.Values = make([]float64, len(a.Values))
+		r.Tags[e.Target()] = fmt.Sprintf("%f", factor)
 
 		for i, v := range a.Values {
 			r.Values[i] = v + factor

@@ -45,6 +45,7 @@ func (f *pow) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 		r := *a
 		r.Name = fmt.Sprintf("pow(%s,%g)", a.Name, factor)
 		r.Values = make([]float64, len(a.Values))
+		r.Tags["pow"] = fmt.Sprintf("%f", factor)
 
 		for i, v := range a.Values {
 			if math.IsNaN(v) {

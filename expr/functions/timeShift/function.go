@@ -104,6 +104,7 @@ func (f *timeShift) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			continue
 		}
 		r.Values = r.Values[:length]
+		r.Tags["timeshift"] = fmt.Sprintf("%d", offs)
 		results = append(results, &r)
 	}
 

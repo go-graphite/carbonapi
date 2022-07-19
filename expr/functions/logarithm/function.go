@@ -61,6 +61,7 @@ func (f *logarithm) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		r := *a
 		r.Name = name
 		r.Values = make([]float64, len(a.Values))
+		r.Tags["log"] = fmt.Sprintf("%f", baseLog)
 
 		for i, v := range a.Values {
 			r.Values[i] = math.Log(v) / baseLog

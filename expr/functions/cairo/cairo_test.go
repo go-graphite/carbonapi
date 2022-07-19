@@ -73,6 +73,6 @@ func TestEvalExpressionGraph(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		th.TestEvalExpr(t, &tt)
+		th.TestEvalExprModifiedOrigin(t, &tt, 0, 1, false)
 	}
 }

@@ -41,6 +41,7 @@ func (f *squareRoot) Do(ctx context.Context, e parser.Expr, from, until int64, v
 		r := *a
 		r.Name = fmt.Sprintf("squareRoot(%s)", a.Name)
 		r.Values = make([]float64, len(a.Values))
+		r.Tags["squareRoot"] = "1"
 
 		for i, v := range a.Values {
 			r.Values[i] = math.Sqrt(v)

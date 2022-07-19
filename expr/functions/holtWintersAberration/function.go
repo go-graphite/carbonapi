@@ -88,7 +88,7 @@ func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, unt
 			},
 			Tags: arg.Tags,
 		}
-
+		r.Tags["holtWintersAberration"] = "1"
 		results = append(results, &r)
 	}
 	return results, nil

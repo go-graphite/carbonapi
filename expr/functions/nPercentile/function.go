@@ -46,7 +46,7 @@ func (f *nPercentile) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		r := *a
 		r.Name = fmt.Sprintf("nPercentile(%s,%g)", a.Name, percent)
 		r.Values = make([]float64, len(a.Values))
-
+		r.Tags["nPercentile"] = fmt.Sprintf("%f", percent)
 		var values []float64
 		for _, v := range a.Values {
 			if !math.IsNaN(v) {

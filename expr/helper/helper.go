@@ -159,6 +159,14 @@ func AggregateSeries(e parser.Expr, args []*types.MetricData, function Aggregate
 	r.Name = fmt.Sprintf("%s(%s)", e.Target(), e.RawArgs())
 	r.Values = make([]float64, length)
 
+	commonTags := GetCommonTags(args)
+
+	if _, ok := commonTags["name"]; !ok {
+		commonTags["name"] = r.Name
+	}
+
+	r.Tags = commonTags
+
 	for i := range args[0].Values {
 		var values []float64
 		for _, arg := range args {
@@ -236,4 +244,26 @@ func Contains(a []int, i int) bool {
 		}
 	}
 	return false
+}
+
+// CopyTags makes a deep copy of the tags
+func CopyTags(series *types.MetricData) map[string]string {
+	out := make(map[string]string, len(series.Tags))
+	for k, v := range series.Tags {
+		out[k] = v
+	}
+	return out
+}
+
+func GetCommonTags(series []*types.MetricData) map[string]string {
+	commonTags := CopyTags(series[0])
+	for _, serie := range series {
+		for k, v := range serie.Tags {
+			if commonTags[k] != v {
+				delete(commonTags, k)
+			}
+		}
+	}
+
+	return commonTags
 }

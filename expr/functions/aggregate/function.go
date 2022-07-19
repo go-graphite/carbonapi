@@ -78,7 +78,17 @@ func (f *aggregate) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	if isAggregateFunc {
 		e.SetRawArgs(e.Args()[0].Target())
 	}
-	return helper.AggregateSeries(e, args, aggFunc)
+
+	results, err := helper.AggregateSeries(e, args, aggFunc)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, result := range results {
+		result.Tags["aggregatedBy"] = callback
+	}
+
+	return results, nil
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web

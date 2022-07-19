@@ -42,6 +42,7 @@ func (f *isNotNull) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			}
 
 		}
+		r.Tags["isNonNull"] = "1"
 		return r
 	})
 }

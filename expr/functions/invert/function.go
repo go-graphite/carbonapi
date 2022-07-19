@@ -38,6 +38,8 @@ func (f *invert) Do(ctx context.Context, e parser.Expr, from, until int64, value
 				r.Values[i] = 1 / v
 			}
 		}
+		r.Tags["invert"] = "1"
+
 		return r
 	})
 }

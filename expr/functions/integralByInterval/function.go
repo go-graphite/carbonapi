@@ -45,6 +45,10 @@ func (f *integralByInterval) Do(ctx context.Context, e parser.Expr, from, until 
 		return nil, err
 	}
 	bucketSize := int64(bucketSizeInt32)
+	intervalString, err := e.GetStringArg(1)
+	if err != nil {
+		return nil, err
+	}
 
 	startTime := from
 	results := make([]*types.MetricData, 0, len(args))
@@ -66,6 +70,8 @@ func (f *integralByInterval) Do(ctx context.Context, e parser.Expr, from, until 
 			},
 			Tags: arg.Tags,
 		}
+		result.Tags["integralByInterval"] = intervalString
+
 		for i, v := range arg.Values {
 			if (currentTime-startTime)/bucketSize != (currentTime-startTime-arg.StepTime)/bucketSize {
 				current = 0

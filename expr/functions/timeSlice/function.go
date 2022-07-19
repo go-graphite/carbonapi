@@ -56,6 +56,8 @@ func (f *timeSlice) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		r := *a
 		r.Name = fmt.Sprintf("timeSlice(%s, %d, %d)", a.Name, start, end)
 		r.Values = make([]float64, len(a.Values))
+		r.Tags["timeSliceStart"] = fmt.Sprintf("%d", start)
+		r.Tags["timeSliceEnd"] = fmt.Sprintf("%d", end)
 
 		current := from
 		for i, v := range a.Values {

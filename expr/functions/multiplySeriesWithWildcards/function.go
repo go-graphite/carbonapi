@@ -71,6 +71,8 @@ func (f *multiplySeriesWithWildcards) Do(ctx context.Context, e parser.Expr, fro
 		groups[node] = append(groups[node], a)
 	}
 
+	commonTags := helper.GetCommonTags(args)
+
 	for _, series := range nodeList {
 		args := groups[series]
 		r := *args[0]
@@ -80,6 +82,10 @@ func (f *multiplySeriesWithWildcards) Do(ctx context.Context, e parser.Expr, fro
 			r.Tags[k] = v
 		}
 		r.Tags["name"] = series
+		if _, ok := commonTags["name"]; !ok {
+			commonTags["name"] = r.Name
+		}
+		r.Tags = commonTags
 		r.Values = make([]float64, len(args[0].Values))
 
 		atLeastOne := make([]bool, len(args[0].Values))
@@ -106,6 +112,12 @@ func (f *multiplySeriesWithWildcards) Do(ctx context.Context, e parser.Expr, fro
 				r.Values[i] = math.NaN()
 			}
 		}
+
+		if _, ok := commonTags["name"]; !ok {
+			commonTags["name"] = r.Name
+		}
+
+		r.Tags = commonTags
 
 		results = append(results, &r)
 	}

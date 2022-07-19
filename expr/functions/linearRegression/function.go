@@ -88,6 +88,8 @@ func (f *linearRegression) Do(ctx context.Context, e parser.Expr, from, until in
 		for i := range r.Values {
 			r.Values[i] = consolidations.Poly(float64(i), c.RawMatrix().Data...)
 		}
+		r.Tags["linearRegressions"] = fmt.Sprintf("%d, %d", a.GetStartTime(), a.GetStopTime())
+
 		results = append(results, &r)
 	}
 	return results, nil

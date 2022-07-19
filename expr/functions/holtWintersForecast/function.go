@@ -68,6 +68,8 @@ func (f *holtWintersForecast) Do(ctx context.Context, e parser.Expr, from, until
 			},
 			Tags: arg.Tags,
 		}
+		r.Tags["holtWintersConfidenceBands"] = "1"
+
 		results = append(results, &r)
 	}
 	return results, nil

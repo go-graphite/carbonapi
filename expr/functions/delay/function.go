@@ -65,6 +65,7 @@ func (f *delay) Do(ctx context.Context, e parser.Expr, from, until int64, values
 		result := *series
 		result.Name = fmt.Sprintf("delay(%s,%d)", series.Name, steps)
 		result.Values = newValues
+		result.Tags["delay"] = fmt.Sprintf("%d", steps)
 
 		results = append(results, &result)
 	}

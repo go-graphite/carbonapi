@@ -2,6 +2,7 @@ package offsetToZero
 
 import (
 	"context"
+	"fmt"
 	"math"
 
 	"github.com/grafana/carbonapi/expr/helper"
@@ -41,6 +42,7 @@ func (f *offsetToZero) Do(ctx context.Context, e parser.Expr, from, until int64,
 		for i, v := range a.Values {
 			r.Values[i] = v - minimum
 		}
+		r.Tags["offsetToZero"] = fmt.Sprintf("%f", minimum)
 		return r
 	})
 }

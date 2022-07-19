@@ -65,6 +65,7 @@ func (f *holtWintersConfidenceBands) Do(ctx context.Context, e parser.Expr, from
 			},
 			Tags: arg.Tags,
 		}
+		lowerSeries.Tags["holtWintersConfidenceLower"] = "1"
 
 		upperSeries := types.MetricData{
 			FetchResponse: pb.FetchResponse{
@@ -79,6 +80,7 @@ func (f *holtWintersConfidenceBands) Do(ctx context.Context, e parser.Expr, from
 			},
 			Tags: arg.Tags,
 		}
+		upperSeries.Tags["holtWintersConfidenceUpper"] = "1"
 
 		results = append(results, &lowerSeries, &upperSeries)
 	}

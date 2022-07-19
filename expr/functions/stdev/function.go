@@ -54,6 +54,7 @@ func (f *stdev) Do(ctx context.Context, e parser.Expr, from, until int64, values
 		r := *a
 		r.Name = fmt.Sprintf("stdev(%s,%d)", a.Name, points)
 		r.Values = make([]float64, len(a.Values))
+		r.Tags["stdev"] = fmt.Sprintf("%d", points)
 
 		for i, v := range a.Values {
 			w.Push(v)

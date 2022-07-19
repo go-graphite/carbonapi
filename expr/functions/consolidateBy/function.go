@@ -45,7 +45,7 @@ func (f *consolidateBy) Do(ctx context.Context, e parser.Expr, from, until int64
 		r := *a
 
 		r.AggregateFunction = consolidations.ConsolidationToFunc[name]
-
+		r.Tags["consolidateBy"] = name
 		results = append(results, &r)
 	}
 

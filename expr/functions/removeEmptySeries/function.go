@@ -2,6 +2,7 @@ package removeEmptySeries
 
 import (
 	"context"
+	"fmt"
 	"math"
 
 	"github.com/grafana/carbonapi/expr/helper"
@@ -56,6 +57,7 @@ func (f *removeEmptySeries) Do(ctx context.Context, e parser.Expr, from, until i
 				}
 			}
 		}
+		arg.Tags[e.Target()] = fmt.Sprintf("%f", factor)
 		if nonNull != 0 && nonNull/float64(len(arg.Values)) >= factor {
 			results = append(results, arg)
 		}

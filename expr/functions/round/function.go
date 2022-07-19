@@ -54,6 +54,7 @@ func (f *round) Do(ctx context.Context, e parser.Expr, from, until int64, values
 		for i, v := range a.Values {
 			r.Values[i] = doRound(v, precision)
 		}
+		r.Tags["round"] = fmt.Sprintf("%d", precision)
 		results = append(results, &r)
 	}
 	return results, nil

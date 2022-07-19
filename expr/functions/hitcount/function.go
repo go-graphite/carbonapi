@@ -80,6 +80,7 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 			},
 			Tags: arg.Tags,
 		}
+		r.Tags["hitcount"] = fmt.Sprintf("%d", bucketSizeInt32)
 
 		bucketEnd := start + bucketSize
 		t := arg.StartTime

@@ -712,6 +712,7 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 			r := *a
 			r.Stacked = true
 			r.StackName = stackName
+			r.Tags["stacked"] = stackName
 			results = append(results, &r)
 		}
 
@@ -791,10 +792,13 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 					return nil, err
 				}
 				r.Dashed = d
+				r.Tags["dashed"] = fmt.Sprintf("%f", d)
 			case "drawAsInfinite":
 				r.DrawAsInfinite = true
+				r.Tags["drawAsInfinite"] = "1"
 			case "secondYAxis":
 				r.SecondYAxis = true
+				r.Tags["secondYAxis"] = "1"
 			}
 
 			results = append(results, &r)

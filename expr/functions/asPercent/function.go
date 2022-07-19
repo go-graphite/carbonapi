@@ -34,6 +34,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 // asPercent(seriesList, total=None, *nodes)
 func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+
 	if err != nil {
 		return nil, err
 	}
@@ -73,6 +74,7 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		}
 	} else if len(e.Args()) == 2 && e.Args()[1].IsConst() {
 		total, err := e.GetFloatArg(1)
+
 		if err != nil {
 			return nil, err
 		}

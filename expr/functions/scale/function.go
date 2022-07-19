@@ -52,6 +52,7 @@ func (f *scale) Do(ctx context.Context, e parser.Expr, from, until int64, values
 			r.Name = fmt.Sprintf("scale(%s,%g,%d)", a.Name, scale, timestamp)
 		}
 		r.Values = make([]float64, len(a.Values))
+		r.Tags["scale"] = fmt.Sprintf("%f", scale)
 
 		currentTimestamp := a.StartTime
 		for i, v := range a.Values {

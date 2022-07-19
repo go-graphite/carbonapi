@@ -71,6 +71,7 @@ func (f *removeBelowSeries) Do(ctx context.Context, e parser.Expr, from, until i
 		r := *a
 		r.Name = fmt.Sprintf("%s(%s, %g)", e.Target(), a.Name, number)
 		r.Values = make([]float64, len(a.Values))
+		r.Tags["removeBelowSeries"] = fmt.Sprintf("%f", threshold)
 
 		for i, v := range a.Values {
 			if math.IsNaN(v) || condition(v, threshold) {

@@ -147,6 +147,7 @@ func (f *movingMedian) Do(ctx context.Context, e parser.Expr, from, until int64,
 				}
 			}
 		}
+		r.Tags["movingMedian"] = fmt.Sprintf("%d", windowSize)
 		result = append(result, &r)
 	}
 	return result, nil
