@@ -151,10 +151,10 @@ func AggregateSeries(e parser.Expr, args []*types.MetricData, function Aggregate
 	r.Name = fmt.Sprintf("%s(%s)", e.Target(), e.RawArgs())
 	r.Values = make([]float64, length)
 
+	values := make([]float64, len(args))
 	for i := range args[0].Values {
-		var values []float64
-		for _, arg := range args {
-			values = append(values, arg.Values[i])
+		for n, arg := range args {
+			values[n] = arg.Values[i]
 		}
 
 		r.Values[i] = math.NaN()
