@@ -203,7 +203,7 @@ func MarshalPickle(results []*MetricData) []byte {
 func MarshalProtobufV2(results []*MetricData) ([]byte, error) {
 	response := pbv2.MultiFetchResponse{}
 	for _, metric := range results {
-		fmv3 := (*metric).FetchResponse
+		fmv3 := metric.FetchResponse
 		v := make([]float64, len(fmv3.Values))
 		isAbsent := make([]bool, len(fmv3.Values))
 		for i := range fmv3.Values {
@@ -236,7 +236,7 @@ func MarshalProtobufV2(results []*MetricData) ([]byte, error) {
 func MarshalProtobufV3(results []*MetricData) ([]byte, error) {
 	response := pb.MultiFetchResponse{}
 	for _, metric := range results {
-		response.Metrics = append(response.Metrics, (*metric).FetchResponse)
+		response.Metrics = append(response.Metrics, metric.FetchResponse)
 	}
 	b, err := response.Marshal()
 	if err != nil {
