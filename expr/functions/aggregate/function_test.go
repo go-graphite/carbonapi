@@ -1,6 +1,7 @@
 package aggregate
 
 import (
+	"context"
 	"math"
 	"testing"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
+	"github.com/go-graphite/carbonapi/tests/compare"
 )
 
 func init() {
@@ -319,4 +321,30 @@ func TestAverageSeriesAlign(t *testing.T) {
 		})
 	}
 
+}
+
+func BenchmarkAverageSeries(b *testing.B) {
+	target := "sum(metric*)"
+	metrics := map[parser.MetricRequest][]*types.MetricData{
+		{"metric*", 0, 1}: {
+			types.MakeMetricData("metric2", compare.GenerateMetrics(2046, 1, 10, 1), 2, 1),
+			types.MakeMetricData("metric1", compare.GenerateMetrics(4096, 1, 10, 1), 1, 1),
+			types.MakeMetricData("metric3", compare.GenerateMetrics(1360, 1, 10, 1), 3, 1),
+		},
+	}
+
+	evaluator := metadata.GetEvaluator()
+	exp, _, err := parser.ParseExpr(target)
+	if err != nil {
+		b.Fatalf("failed to parse %s: %+v", target, err)
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		g, err := evaluator.Eval(context.Background(), exp, 0, 1, metrics)
+		if err != nil {
+			b.Fatalf("failed to eval %s: %+v", target, err)
+		}
+		_ = g
+	}
 }
