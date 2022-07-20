@@ -263,7 +263,7 @@ func (e *expr) GetStringArgs(n int) ([]string, error) {
 		return nil, ErrMissingArgument
 	}
 
-	var strs []string
+	strs := make([]string, 0, len(e.args)-n)
 
 	for i := n; i < len(e.args); i++ {
 		a, err := e.GetStringArg(i)
@@ -329,7 +329,7 @@ func (e *expr) GetIntArgs(n int) ([]int, error) {
 		return nil, ErrMissingArgument
 	}
 
-	var ints []int
+	ints := make([]int, 0, len(e.args)-n)
 
 	for i := n; i < len(e.args); i++ {
 		a, err := e.GetIntArg(i)
@@ -401,7 +401,7 @@ func (e *expr) GetNodeOrTagArgs(n int) ([]NodeOrTag, error) {
 		return nil, ErrMissingArgument
 	}
 
-	var nodeTags []NodeOrTag
+	nodeTags := make([]NodeOrTag, 0, len(e.args)-n)
 
 	var err error
 	for i := n; i < len(e.args); i++ {

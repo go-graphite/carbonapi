@@ -393,7 +393,7 @@ func (r *MetricData) Copy(includeValues bool) *MetricData {
 	}
 }
 
-// Copy returns the copy of r. Values not copied and link from parent.
+// CopyLink returns the copy of MetricData, Values not copied and link from parent.
 func (r *MetricData) CopyLink() *MetricData {
 	tags := make(map[string]string)
 	for k, v := range r.Tags {
@@ -403,6 +403,37 @@ func (r *MetricData) CopyLink() *MetricData {
 	return &MetricData{
 		FetchResponse: pb.FetchResponse{
 			Name:                    r.Name,
+			PathExpression:          r.PathExpression,
+			ConsolidationFunc:       r.ConsolidationFunc,
+			StartTime:               r.StartTime,
+			StopTime:                r.StopTime,
+			StepTime:                r.StepTime,
+			XFilesFactor:            r.XFilesFactor,
+			HighPrecisionTimestamps: r.HighPrecisionTimestamps,
+			Values:                  r.Values,
+			AppliedFunctions:        r.AppliedFunctions,
+			RequestStartTime:        r.RequestStartTime,
+			RequestStopTime:         r.RequestStopTime,
+		},
+		GraphOptions:      r.GraphOptions,
+		ValuesPerPoint:    r.ValuesPerPoint,
+		aggregatedValues:  r.aggregatedValues,
+		Tags:              tags,
+		AggregateFunction: r.AggregateFunction,
+	}
+}
+
+// CopyName returns the copy of MetricData, Values not copied and link from parent. If name set, Name and Name tag changed, Tags wil be reset
+func (r *MetricData) CopyName(name string) *MetricData {
+	if len(name) == 0 {
+		return r.CopyLink()
+	}
+
+	tags := map[string]string{"name": name}
+
+	return &MetricData{
+		FetchResponse: pb.FetchResponse{
+			Name:                    name,
 			PathExpression:          r.PathExpression,
 			ConsolidationFunc:       r.ConsolidationFunc,
 			StartTime:               r.StartTime,
@@ -465,6 +496,24 @@ func CopyMetricDataSlice(args []*MetricData) (newData []*MetricData) {
 	newData = make([]*MetricData, len(args))
 	for i, m := range args {
 		newData[i] = m.Copy(true)
+	}
+	return newData
+}
+
+// CopyMetricDataSliceLink returns the copies slice of metrics, Values not copied and link from parent.
+func CopyMetricDataSliceLink(args []*MetricData) (newData []*MetricData) {
+	newData = make([]*MetricData, len(args))
+	for i, m := range args {
+		newData[i] = m.CopyLink()
+	}
+	return newData
+}
+
+// CopyMetricDataSliceWithName returns the copies slice of metrics with name overwrite, Values not copied and link from parent. Tags will be reset
+func CopyMetricDataSliceWithName(args []*MetricData, name string) (newData []*MetricData) {
+	newData = make([]*MetricData, len(args))
+	for i, m := range args {
+		newData[i] = m.CopyName(name)
 	}
 	return newData
 }

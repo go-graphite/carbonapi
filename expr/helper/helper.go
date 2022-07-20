@@ -93,7 +93,7 @@ func GetSeriesArgsAndRemoveNonExisting(ctx context.Context, e parser.Expr, from,
 
 // AggKey returns joined by dot nodes of tags names
 func AggKey(arg *types.MetricData, nodesOrTags []parser.NodeOrTag) string {
-	var matched []string
+	matched := make([]string, 0, len(nodesOrTags))
 	metricTags := arg.Tags
 	nodes := strings.Split(metricTags["name"], ".")
 	for _, nt := range nodesOrTags {
@@ -110,6 +110,25 @@ func AggKey(arg *types.MetricData, nodesOrTags []parser.NodeOrTag) string {
 			}
 			matched = append(matched, nodes[f])
 		}
+	}
+	if len(matched) > 0 {
+		return strings.Join(matched, ".")
+	}
+	return ""
+}
+
+// AggKey returns joined by dot nodes of tags names
+func AggKeyInt(arg *types.MetricData, ints []int) string {
+	matched := make([]string, 0, len(ints))
+	nodes := strings.Split(arg.Tags["name"], ".")
+	for _, f := range ints {
+		if f < 0 {
+			f += len(nodes)
+		}
+		if f >= len(nodes) || f < 0 {
+			continue
+		}
+		matched = append(matched, nodes[f])
 	}
 	if len(matched) > 0 {
 		return strings.Join(matched, ".")
