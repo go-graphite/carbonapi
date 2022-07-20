@@ -1,6 +1,7 @@
 package groupByNode
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -122,4 +123,31 @@ func TestGroupByNode(t *testing.T) {
 		})
 	}
 
+}
+
+func BenchmarkGroupByNode(b *testing.B) {
+	target := "groupByNodes(metric1.foo.bar.*,\"sum\",0,2)"
+	metrics := map[parser.MetricRequest][]*types.MetricData{
+		{Metric: "metric1.foo.bar.*", From: 0, Until: 1}: {
+			types.MakeMetricData("metric1.foo.bar.baz1", []float64{1, 2, 3, 4, 5}, 1, 1),
+			types.MakeMetricData("metric1.foo.bar.baz2", []float64{1, 2, 3, 4, 5}, 1, 1),
+			types.MakeMetricData("metric1.foo.bar.baz3", []float64{1, 2, 3, 4, 5}, 1, 1),
+			types.MakeMetricData("metric1.foo.bar.baz4", []float64{1, 2, 3, 4, 5}, 1, 1),
+		},
+	}
+
+	evaluator := metadata.GetEvaluator()
+	exp, _, err := parser.ParseExpr(target)
+	if err != nil {
+		b.Fatalf("failed to parse %s: %+v", target, err)
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		g, err := evaluator.Eval(context.Background(), exp, 0, 1, metrics)
+		if err != nil {
+			b.Fatalf("failed to eval %s: %+v", target, err)
+		}
+		_ = g
+	}
 }
