@@ -204,10 +204,11 @@ FOR:
 			break FOR
 		case '=':
 			// allow metric name to end with any amount of `=` without treating it as a named arg or tag
-			if i == len(s)-1 || s[i+1] == '=' || s[i+1] == ',' || s[i+1] == ')' {
-				continue
-			}
-			fallthrough
+			// if i == len(s)-1 || s[i+1] == '=' || s[i+1] == ',' || s[i+1] == ')' {
+			// 	continue
+			// }
+			// fallthrough
+			continue
 		default:
 			r, w = utf8.DecodeRuneInString(s[i:])
 			if unicode.In(r, parser.RangeTables...) {
