@@ -114,6 +114,36 @@ func TestGroupByNode(t *testing.T) {
 				"metric1.foo.qux": {types.MakeMetricData("metric1.foo.qux", []float64{13, 15, 17, 19, 21}, 1, now32)},
 			},
 		},
+		{
+			Target: "groupByNode(metric1.foo.*.*,2,\"sum\")",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				mr: {
+					types.MakeMetricData("metric1.foo.Ab1==.lag", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric1.foo.bC2=.lag", []float64{6, 7, 8, 9, 10}, 1, now32),
+					types.MakeMetricData("metric1.foo.Ab1==.lag", []float64{11, 12, 13, 14, 15}, 1, now32),
+					types.MakeMetricData("metric1.foo.bC2=.lag=", []float64{7, 8, 9, 10, 11}, 1, now32),
+				},
+			},
+			Name: "groupByNode_names_with_special_symbol_equal",
+			Results: map[string][]*types.MetricData{
+				"Ab1==": {types.MakeMetricData("Ab1==", []float64{12, 14, 16, 18, 20}, 1, now32)},
+				"bC2=":  {types.MakeMetricData("bC2=", []float64{13, 15, 17, 19, 21}, 1, now32)},
+			},
+		},
+		{
+			Target: "groupByNode(metric1.foo.*.*,3,\"sum\")",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				mr: {
+					types.MakeMetricData("metric1.foo.Ab1==.lag;tag1=value1", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric1.foo.Ab2.lag=;tag1=value1", []float64{1, 0, 3, 4, 5}, 1, now32),
+				},
+			},
+			Name: "groupByNode_tagged_names_with_special_symbol_equal",
+			Results: map[string][]*types.MetricData{
+				"lag":  {types.MakeMetricData("lag", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				"lag=": {types.MakeMetricData("lag=", []float64{1, 0, 3, 4, 5}, 1, now32)},
+			},
+		},
 	}
 
 	for _, tt := range tests {
