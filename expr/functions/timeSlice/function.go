@@ -53,7 +53,7 @@ func (f *timeSlice) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	var results []*types.MetricData
 
 	for _, a := range arg {
-		r := *a
+		r := a.CopyLink()
 		r.Name = fmt.Sprintf("timeSlice(%s, %d, %d)", a.Name, start, end)
 		r.Values = make([]float64, len(a.Values))
 		r.Tags["timeSliceStart"] = fmt.Sprintf("%d", start)
@@ -68,7 +68,7 @@ func (f *timeSlice) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			}
 			current += a.StepTime
 		}
-		results = append(results, &r)
+		results = append(results, r)
 	}
 
 	return results, nil
