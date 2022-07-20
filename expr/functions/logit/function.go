@@ -39,7 +39,7 @@ func (f *logit) Do(ctx context.Context, e parser.Expr, from, until int64, values
 
 	var results []*types.MetricData
 	for _, a := range arg {
-		r := *a
+		r := a.CopyLink()
 		r.Name = fmt.Sprintf("logit(%s)", a.Name)
 		r.Values = make([]float64, len(a.Values))
 		r.Tags["logit"] = "logit"
@@ -51,7 +51,7 @@ func (f *logit) Do(ctx context.Context, e parser.Expr, from, until int64, values
 				r.Values[i] = math.Log(v / (1 - v))
 			}
 		}
-		results = append(results, &r)
+		results = append(results, r)
 	}
 	return results, nil
 }

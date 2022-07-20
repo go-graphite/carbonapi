@@ -78,7 +78,7 @@ func (f *perSecond) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			name = fmt.Sprintf("perSecond(%s)", a.Name)
 		}
 
-		r := *a
+		r := a.CopyLink()
 		r.Name = name
 		r.Values = make([]float64, len(a.Values))
 		r.Tags["perSecond"] = "1"
@@ -103,7 +103,7 @@ func (f *perSecond) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			}
 			prev = v
 		}
-		result = append(result, &r)
+		result = append(result, r)
 	}
 	return result, nil
 }

@@ -86,7 +86,7 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 			name = fmt.Sprintf("transformNull(%s)", a.Name)
 		}
 
-		r := *a
+		r := a.CopyLink()
 		r.Name = name
 		r.Values = make([]float64, len(a.Values))
 		r.Tags["transformNull"] = fmt.Sprintf("%f", defv)
@@ -103,7 +103,7 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 			r.Values[i] = v
 		}
 
-		results = append(results, &r)
+		results = append(results, r)
 	}
 	if len(arg) == 0 && defaultOnAbsent {
 		values := []float64{defv, defv}

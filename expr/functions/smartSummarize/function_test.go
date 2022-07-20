@@ -106,11 +106,7 @@ func TestFunctionUseNameWithWildcards(t *testing.T) {
 	for _, tt := range tests {
 		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
-			err := th.TestMultiReturnEvalExprModifiedOrigin(t, &tt)
-			if err != nil {
-				t.Errorf("unexpected error while evaluating %s: got `%+v`", tt.Target, err)
-				return
-			}
+			th.TestMultiReturnEvalExpr(t, &tt)
 		})
 	}
 }

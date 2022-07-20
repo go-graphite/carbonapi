@@ -68,7 +68,7 @@ func (f *removeBelowSeries) Do(ctx context.Context, e parser.Expr, from, until i
 			threshold = consolidations.Percentile(values, number, true)
 		}
 
-		r := *a
+		r := a.CopyLink()
 		r.Name = fmt.Sprintf("%s(%s, %g)", e.Target(), a.Name, number)
 		r.Values = make([]float64, len(a.Values))
 		r.Tags["removeBelowSeries"] = fmt.Sprintf("%f", threshold)
@@ -82,7 +82,7 @@ func (f *removeBelowSeries) Do(ctx context.Context, e parser.Expr, from, until i
 			r.Values[i] = v
 		}
 
-		results = append(results, &r)
+		results = append(results, r)
 	}
 
 	return results, nil

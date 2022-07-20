@@ -42,7 +42,7 @@ func (f *scaleToSeconds) Do(ctx context.Context, e parser.Expr, from, until int6
 	var results []*types.MetricData
 
 	for _, a := range arg {
-		r := *a
+		r := a.CopyLink()
 		r.Name = fmt.Sprintf("scaleToSeconds(%s,%d)", a.Name, int(seconds))
 		r.Values = make([]float64, len(a.Values))
 		r.Tags["scaleToSeconds"] = fmt.Sprintf("%f", seconds)
@@ -52,7 +52,7 @@ func (f *scaleToSeconds) Do(ctx context.Context, e parser.Expr, from, until int6
 		for i, v := range a.Values {
 			r.Values[i] = v * factor
 		}
-		results = append(results, &r)
+		results = append(results, r)
 	}
 	return results, nil
 }

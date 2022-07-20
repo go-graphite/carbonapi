@@ -52,11 +52,7 @@ func TestPerSecond(t *testing.T) {
 	for _, tt := range tests {
 		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
-			err := th.TestEvalExprModifiedOrigin(t, &tt, 0, 1, false)
-			if err != nil {
-				t.Errorf("unexpected error while evaluating %s: got `%+v`", tt.Target, err)
-				return
-			}
+			th.TestEvalExpr(t, &tt)
 		})
 	}
 

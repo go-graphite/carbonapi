@@ -43,7 +43,7 @@ func (f *nPercentile) Do(ctx context.Context, e parser.Expr, from, until int64, 
 
 	var results []*types.MetricData
 	for _, a := range arg {
-		r := *a
+		r := a.CopyLink()
 		r.Name = fmt.Sprintf("nPercentile(%s,%g)", a.Name, percent)
 		r.Values = make([]float64, len(a.Values))
 		r.Tags["nPercentile"] = fmt.Sprintf("%f", percent)
@@ -59,7 +59,7 @@ func (f *nPercentile) Do(ctx context.Context, e parser.Expr, from, until int64, 
 			r.Values[i] = value
 		}
 
-		results = append(results, &r)
+		results = append(results, r)
 	}
 	return results, nil
 }

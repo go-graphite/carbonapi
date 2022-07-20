@@ -100,7 +100,7 @@ func TestTimeShift(t *testing.T) {
 	for _, tt := range tests {
 		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
-			th.TestEvalExprWithRangeModifiedOrigin(t, &tt)
+			th.TestEvalExprWithRange(t, &tt)
 		})
 	}
 }

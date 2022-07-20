@@ -64,7 +64,7 @@ func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 		return nil, errors.New("must be called with 2 series or a wildcard that matches exactly 2 series")
 	}
 
-	alignedSeries := helper.AlignSeries(append(numerators, denominator))
+	alignedSeries := helper.AlignSeries(types.CopyMetricDataSlice(append(numerators, denominator)))
 	numerators = alignedSeries[:len(numerators)]
 	denominator = alignedSeries[len(numerators)]
 
@@ -76,7 +76,7 @@ func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 
 	var results []*types.MetricData
 	for _, numerator := range numerators {
-		r := *numerator
+		r := numerator.CopyLink()
 		if useMetricNames {
 			r.Name = fmt.Sprintf("divideSeries(%s,%s)", numerator.Name, denominator.Name)
 		} else {
@@ -94,7 +94,7 @@ func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 
 			r.Values[i] = v / denominator.Values[i]
 		}
-		results = append(results, &r)
+		results = append(results, r)
 	}
 
 	return results, nil

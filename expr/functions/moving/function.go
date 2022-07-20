@@ -123,7 +123,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 	}
 
 	for _, a := range arg {
-		r := *a
+		r := a.CopyLink()
 		r.Name = fmt.Sprintf("%s(%s,%s)", e.Target(), a.Name, argstr)
 
 		if windowSize == 0 {
@@ -133,7 +133,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 					r.Values[i] = math.NaN()
 				}
 			}
-			result = append(result, &r)
+			result = append(result, r)
 			continue
 		}
 		r.Values = make([]float64, len(a.Values)-offset)
@@ -162,7 +162,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 			w.Push(v)
 		}
 		r.Tags[e.Target()] = fmt.Sprintf("%d", windowSize)
-		result = append(result, &r)
+		result = append(result, r)
 	}
 	return result, nil
 }

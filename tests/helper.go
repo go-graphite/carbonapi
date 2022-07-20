@@ -412,53 +412,6 @@ func TestMultiReturnEvalExpr(t *testing.T, tt *MultiReturnEvalTestItem) {
 	}
 }
 
-func TestMultiReturnEvalExprModifiedOrigin(t *testing.T, tt *MultiReturnEvalTestItem) error {
-	evaluator := metadata.GetEvaluator()
-
-	exp, _, err := parser.ParseExpr(tt.Target)
-	if err != nil {
-		t.Errorf("failed to parse %v: %+v", tt.Target, err)
-		return err
-	}
-	g, err := evaluator.Eval(context.Background(), exp, 0, 1, tt.M)
-	if err != nil {
-		t.Errorf("failed to eval %v: %+v", tt.Name, err)
-		return err
-	}
-	if len(g) == 0 {
-		t.Errorf("returned no data %v", tt.Name)
-		return nil
-	}
-	if g[0] == nil {
-		t.Errorf("returned no value %v", tt.Name)
-		return nil
-	}
-	if g[0].StepTime == 0 {
-		t.Errorf("missing Step for %+v", g)
-	}
-	if len(g) != len(tt.Results) {
-		t.Errorf("unexpected results len: got %d, want %d for %s", len(g), len(tt.Results), tt.Target)
-	}
-	for _, gg := range g {
-		r, ok := tt.Results[gg.Name]
-		if !ok {
-			t.Errorf("missing result Name: %v", gg.Name)
-			continue
-		}
-		if r[0].Name != gg.Name {
-			t.Errorf("result Name mismatch, got\n%#v,\nwant\n%#v", gg.Name, r[0].Name)
-		}
-		if !reflect.DeepEqual(r[0].Values, gg.Values) ||
-			r[0].StartTime != gg.StartTime ||
-			r[0].StopTime != gg.StopTime ||
-			r[0].StepTime != gg.StepTime {
-			t.Errorf("result mismatch, got\n%#v,\nwant\n%#v", gg, r)
-		}
-	}
-
-	return nil
-}
-
 type RewriteTestResult struct {
 	Rewritten bool
 	Targets   []string
@@ -614,15 +567,6 @@ func TestEvalExprWithRange(t *testing.T, tt *EvalTestItemWithRange) {
 		return
 	}
 	DeepEqual(t, tt.Target, originalMetrics, tt.M, true)
-}
-
-func TestEvalExprWithRangeModifiedOrigin(t *testing.T, tt *EvalTestItemWithRange) {
-	tt2 := tt.TestItem()
-	err := TestEvalExprModifiedOrigin(t, tt2, tt.From, tt.Until, false)
-	if err != nil {
-		t.Errorf("unexpected error while evaluating %s: got `%+v`", tt.Target, err)
-		return
-	}
 }
 
 func TestEvalExprWithError(t *testing.T, tt *EvalTestItemWithError) {

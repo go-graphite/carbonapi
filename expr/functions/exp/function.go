@@ -37,7 +37,7 @@ func (f *exp) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 	var results []*types.MetricData
 
 	for _, a := range args {
-		r := *a
+		r := a.CopyLink()
 		r.Name = fmt.Sprintf("exp(%s)", a.Name)
 		r.Values = make([]float64, len(a.Values))
 		r.Tags["exp"] = "e"
@@ -49,7 +49,7 @@ func (f *exp) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 				r.Values[i] = math.Exp(v)
 			}
 		}
-		results = append(results, &r)
+		results = append(results, r)
 	}
 	return results, nil
 }

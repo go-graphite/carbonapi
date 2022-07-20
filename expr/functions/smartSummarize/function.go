@@ -84,7 +84,7 @@ func (f *smartSummarize) Do(ctx context.Context, e parser.Expr, from, until int6
 				StopTime:          stop,
 				ConsolidationFunc: summarizeFunction,
 			},
-			Tags: arg.Tags,
+			Tags: helper.CopyTags(arg),
 		}
 		r.Tags["smartSummarize"] = fmt.Sprintf("%d", bucketSizeInt32)
 		r.Tags["smartSummarizeFunction"] = summarizeFunction

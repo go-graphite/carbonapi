@@ -43,7 +43,7 @@ func (f *round) Do(ctx context.Context, e parser.Expr, from, until int64, values
 
 	results := make([]*types.MetricData, 0, len(arg))
 	for _, a := range arg {
-		r := *a
+		r := a.CopyLink()
 		if withPrecision {
 			r.Name = fmt.Sprintf("round(%s,%d)", a.Name, precision)
 		} else {
@@ -55,7 +55,7 @@ func (f *round) Do(ctx context.Context, e parser.Expr, from, until int64, values
 			r.Values[i] = doRound(v, precision)
 		}
 		r.Tags["round"] = fmt.Sprintf("%d", precision)
-		results = append(results, &r)
+		results = append(results, r)
 	}
 	return results, nil
 }
