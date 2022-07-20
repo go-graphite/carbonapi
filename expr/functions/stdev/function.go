@@ -51,7 +51,7 @@ func (f *stdev) Do(ctx context.Context, e parser.Expr, from, until int64, values
 	for _, a := range arg {
 		w := &types.Windowed{Data: make([]float64, points)}
 
-		r := *a
+		r := a.CopyLink()
 		r.Name = fmt.Sprintf("stdev(%s,%d)", a.Name, points)
 		r.Values = make([]float64, len(a.Values))
 		r.Tags["stdev"] = fmt.Sprintf("%d", points)
@@ -63,7 +63,7 @@ func (f *stdev) Do(ctx context.Context, e parser.Expr, from, until int64, values
 				r.Values[i] = math.NaN()
 			}
 		}
-		result = append(result, &r)
+		result = append(result, r)
 	}
 	return result, nil
 }

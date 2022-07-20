@@ -225,10 +225,10 @@ func (f *aliasByPostgres) Do(ctx context.Context, e parser.Expr, from, until int
 				r.Tags["name"] = r.Name
 			}
 		} else {
-			r := *a
+			r := a.CopyLink()
 			r.Name = tempName
 			r.Tags["name"] = r.Name
-			results = append(results, &r)
+			results = append(results, r)
 		}
 	}
 	return results, nil
