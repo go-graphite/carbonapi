@@ -29,14 +29,12 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *aliasByMetric) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	return helper.ForEachSeriesDo(ctx, e, from, until, values, func(a *types.MetricData, r *types.MetricData) *types.MetricData {
-		metric := helper.ExtractMetric(a.Name)
+	return helper.ForEachSeriesDo1(ctx, e, from, until, values, func(a *types.MetricData) *types.MetricData {
+		metric := helper.ExtractMetric(a.Tags["name"])
 		part := strings.Split(metric, ".")
-		ret := r.Copy(false)
-		ret.Name = part[len(part)-1]
-		ret.Tags["name"] = r.Name
-		ret.PathExpression = ret.Name
-		ret.Values = a.Values
+		name := part[len(part)-1]
+		ret := a.CopyName(name)
+		ret.PathExpression = name
 		return ret
 	})
 }
@@ -57,6 +55,8 @@ func (f *aliasByMetric) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
+			NameChange:    true, // name changed
+			NameTagChange: true, // name tag changed
 		},
 	}
 }
