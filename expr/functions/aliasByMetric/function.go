@@ -34,7 +34,7 @@ func (f *aliasByMetric) Do(ctx context.Context, e parser.Expr, from, until int64
 		part := strings.Split(metric, ".")
 		ret := r.Copy(false)
 		ret.Name = part[len(part)-1]
-		ret.Tags["name"] = r.Name
+		ret.Tags["name"] = metric
 		ret.PathExpression = ret.Name
 		ret.Values = a.Values
 		return ret
