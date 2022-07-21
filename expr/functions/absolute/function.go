@@ -56,6 +56,7 @@ func (f *absolute) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
+			ValuesChange: true,
 		},
 	}
 }

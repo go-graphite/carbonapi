@@ -510,6 +510,12 @@ func (r *MetricData) FixStopTime() *MetricData {
 	return r
 }
 
+// SetTag allow to set custom tag (for tests)
+func (r *MetricData) SetTag(key, value string) *MetricData {
+	r.Tags[key] = value
+	return r
+}
+
 // RecalcStopTime recalc StopTime with StartTime and Values length
 func (r *MetricData) RecalcStopTime() *MetricData {
 	stop := r.StartTime + int64(len(r.Values))*r.StepTime
