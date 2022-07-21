@@ -43,17 +43,16 @@ func (f *alias) Do(ctx context.Context, e parser.Expr, from, until int64, values
 		return nil, err
 	}
 
-	results := make([]*types.MetricData, 0, len(args))
-	for _, arg := range args {
-		r := *arg.CopyLink()
-
-		r.Name = alias
+	results := make([]*types.MetricData, len(args))
+	for i, arg := range args {
+		name := alias
 		if allowFormatStr {
-			r.Name = strings.ReplaceAll(r.Name, "${expr}", arg.Name)
+			name = strings.ReplaceAll(name, "${expr}", arg.Name)
 		}
-		r.Tags["name"] = r.Name
 
-		results = append(results, &r)
+		r := arg.CopyName(name)
+
+		results[i] = r
 	}
 
 	return results, nil
