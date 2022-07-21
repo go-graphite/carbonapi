@@ -51,13 +51,15 @@ func (f *aliasSub) Do(ctx context.Context, e parser.Expr, from, until int64, val
 
 	replace = helper.Backref.ReplaceAllString(replace, "$${$1}")
 
-	var results []*types.MetricData
+	results := make([]*types.MetricData, len(args))
 
-	for _, a := range args {
-		r := *a.CopyLink()
-		r.Name = re.ReplaceAllString(r.Name, replace)
+	for i, a := range args {
+		r := a.CopyLink()
+
+		r.Name = re.ReplaceAllString(a.Name, replace)
 		r.Tags["name"] = r.Name
-		results = append(results, &r)
+
+		results[i] = r
 	}
 
 	return results, nil
@@ -89,6 +91,8 @@ func (f *aliasSub) Description() map[string]types.FunctionDescription {
 					Type:     types.String,
 				},
 			},
+			NameChange: true, // name changed
+			TagsChange: true, // name tag changed
 		},
 	}
 }
