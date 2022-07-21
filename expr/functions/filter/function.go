@@ -101,8 +101,9 @@ func (f *filterSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 		if !keepSeries {
 			continue
 		}
-
-		results = append(results, a)
+		r := a.CopyLink()
+		r.Tags["name"] = r.Name
+		results = append(results, r)
 	}
 
 	return results, nil
