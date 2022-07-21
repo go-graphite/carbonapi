@@ -70,8 +70,8 @@ func (f *aliasByNode) Description() map[string]types.FunctionDescription {
 					Type:     types.NodeOrTag,
 				},
 			},
-			NameChange:    true, // name changed
-			NameTagChange: true, // name tag changed
+			NameChange: true, // name changed
+			TagsChange: true, // name tag changed
 		},
 		"aliasByTags": {
 			Description: "Takes a seriesList and applies an alias derived from one or more tags",
@@ -92,8 +92,8 @@ func (f *aliasByNode) Description() map[string]types.FunctionDescription {
 					Type:     types.NodeOrTag,
 				},
 			},
-			NameChange:    true, // name changed
-			NameTagChange: true, // name tag changed
+			NameChange: true, // name changed
+			TagsChange: true, // name tag changed
 		},
 	}
 }

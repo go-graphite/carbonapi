@@ -98,6 +98,8 @@ func (f *aliasByBase64) Description() map[string]types.FunctionDescription {
 					Type:     types.NodeOrTag,
 				},
 			},
+			NameChange: true, // name changed
+			TagsChange: true, // name tag changed
 		},
 	}
 }

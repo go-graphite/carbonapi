@@ -55,8 +55,8 @@ func (f *aliasByMetric) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
-			NameChange:    true, // name changed
-			NameTagChange: true, // name tag changed
+			NameChange: true, // name changed
+			TagsChange: true, // name tag changed
 		},
 	}
 }

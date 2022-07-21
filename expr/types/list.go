@@ -271,8 +271,8 @@ type FunctionDescription struct {
 
 	Proxied bool `json:"proxied"`
 
-	Aggretated    bool `json:"aggregate,omitempty"`       //  function aggregate metrics, for tests and verify results in future
-	NameChange    bool `json:"name-change,omitempty"`     // function change name, for tests and verify results in future
-	NameTagChange bool `json:"name-tag-change,omitempty"` //  function change name tag, for tests and verify results in future
-	ValuesChange  bool `json:"values-change,omitempty"`   //  function change values, for tests and verify results in future
+	Aggretated   bool `json:"aggregate,omitempty"`       //  function aggregate metrics, for tests and verify results in future
+	NameChange   bool `json:"name-change,omitempty"`     // function change name, for tests and verify results in future
+	TagsChange   bool `json:"name-tag-change,omitempty"` //  function change name tag, for tests and verify results in future
+	ValuesChange bool `json:"values-change,omitempty"`   //  function change values, for tests and verify results in future
 }

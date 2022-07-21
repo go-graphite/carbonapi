@@ -88,6 +88,8 @@ func (f *alias) Description() map[string]types.FunctionDescription {
 					Type:     types.Boolean,
 				},
 			},
+			NameChange: true, // name changed
+			TagsChange: true, // name tag changed
 		},
 	}
 }

@@ -126,10 +126,10 @@ func (f *aggregateLine) Description() map[string]types.FunctionDescription {
 					},
 				},
 			},
-			Aggretated:    true, // function aggregate metrics
-			NameChange:    true, // name changed
-			NameTagChange: true, // name tag changed
-			ValuesChange:  true, // values changed
+			Aggretated:   true, // function aggregate metrics
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

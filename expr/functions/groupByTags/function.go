@@ -162,10 +162,10 @@ func (f *groupByTags) Description() map[string]types.FunctionDescription {
 					Type:     types.Tag,
 				},
 			},
-			Aggretated:    true, // function aggregate metrics
-			NameChange:    true, // name changed
-			NameTagChange: true, // name tag changed
-			ValuesChange:  true, // values changed
+			Aggretated:   true, // function aggregate metrics
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

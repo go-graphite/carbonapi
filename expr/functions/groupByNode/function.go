@@ -140,10 +140,10 @@ func (f *groupByNode) Description() map[string]types.FunctionDescription {
 					Type:     types.AggFunc,
 				},
 			},
-			Aggretated:    true, // function aggregate metrics
-			NameChange:    true, // name changed
-			NameTagChange: true, // name tag changed
-			ValuesChange:  true, // values changed
+			Aggretated:   true, // function aggregate metrics
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 		"groupByNodes": {
 			Description: "Takes a serieslist and maps a callback to subgroups within as defined by multiple nodes\n\n.. code-block:: none\n\n  &target=groupByNodes(ganglia.server*.*.cpu.load*,\"sum\",1,4)\n\nWould return multiple series which are each the result of applying the \"sum\" aggregation\nto groups joined on the nodes' list (0 indexed) resulting in a list of targets like\n\n.. code-block :: none\n\n  sumSeries(ganglia.server1.*.cpu.load5),sumSeries(ganglia.server1.*.cpu.load10),sumSeries(ganglia.server1.*.cpu.load15),sumSeries(ganglia.server2.*.cpu.load5),sumSeries(ganglia.server2.*.cpu.load10),sumSeries(ganglia.server2.*.cpu.load15),...\n\nThis function can be used with all aggregation functions supported by\n:py:func:`aggregate <aggregate>`: ``average``, ``median``, ``sum``, ``min``, ``max``, ``diff``,\n``stddev``, ``range`` & ``multiply``.\n\nEach node may be an integer referencing a node in the series name or a string identifying a tag.\n\n.. code-block :: none\n\n  &target=seriesByTag(\"name=~cpu.load.*\", \"server=~server[1-9}+\", \"datacenter=~dc[1-9}+\")|groupByNodes(\"average\", \"datacenter\", 1)\n\n  # will produce output series like\n  # dc1.load5, dc2.load5, dc1.load10, dc2.load10\n\nThis complements :py:func:`aggregateWithWildcards <aggregateWithWildcards>` which takes a list of wildcard nodes.",
@@ -170,10 +170,10 @@ func (f *groupByNode) Description() map[string]types.FunctionDescription {
 					Type:     types.NodeOrTag,
 				},
 			},
-			Aggretated:    true, // function aggregate metrics
-			NameChange:    true, // name changed
-			NameTagChange: true, // name tag changed
-			ValuesChange:  true, // values changed
+			Aggretated:   true, // function aggregate metrics
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }
