@@ -179,11 +179,13 @@ func AggregateSeries(e parser.Expr, args []*types.MetricData, function Aggregate
 	if len(args) == 0 {
 		return args, nil
 	}
+
 	args = ScaleSeries(args)
 
 	length := len(args[0].Values)
 	r := *args[0]
-	r.Name = fmt.Sprintf("%s(%s)", e.Target(), e.RawArgs())
+	r.Name = e.Target() + "(" + e.RawArgs() + ")"
+	r.Tags = map[string]string{"name": r.Name}
 	r.Values = make([]float64, length)
 
 	values := make([]float64, len(args))

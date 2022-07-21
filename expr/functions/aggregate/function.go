@@ -72,7 +72,7 @@ func (f *aggregate) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	if !ok {
 		return nil, fmt.Errorf("unsupported consolidation function %s", callback)
 	}
-	target := fmt.Sprintf("%sSeries", callback)
+	target := callback + "%sSeries"
 
 	e.SetTarget(target)
 	if isAggregateFunc {

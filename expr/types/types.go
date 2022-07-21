@@ -425,11 +425,40 @@ func (r *MetricData) CopyLink() *MetricData {
 
 // CopyName returns the copy of MetricData, Values not copied and link from parent. If name set, Name and Name tag changed, Tags wil be reset
 func (r *MetricData) CopyName(name string) *MetricData {
-	if len(name) == 0 {
+	if name == "" {
 		return r.CopyLink()
 	}
 
 	tags := map[string]string{"name": name}
+
+	return &MetricData{
+		FetchResponse: pb.FetchResponse{
+			Name:                    name,
+			PathExpression:          r.PathExpression,
+			ConsolidationFunc:       r.ConsolidationFunc,
+			StartTime:               r.StartTime,
+			StopTime:                r.StopTime,
+			StepTime:                r.StepTime,
+			XFilesFactor:            r.XFilesFactor,
+			HighPrecisionTimestamps: r.HighPrecisionTimestamps,
+			Values:                  r.Values,
+			AppliedFunctions:        r.AppliedFunctions,
+			RequestStartTime:        r.RequestStartTime,
+			RequestStopTime:         r.RequestStopTime,
+		},
+		GraphOptions:      r.GraphOptions,
+		ValuesPerPoint:    r.ValuesPerPoint,
+		aggregatedValues:  r.aggregatedValues,
+		Tags:              tags,
+		AggregateFunction: r.AggregateFunction,
+	}
+}
+
+// CopyTag returns the copy of MetricData, Values not copied and link from parent. If name set, Name and Name tag changed, Tags wil be reset
+func (r *MetricData) CopyTag(name string, tags map[string]string) *MetricData {
+	if name == "" {
+		return r.CopyLink()
+	}
 
 	return &MetricData{
 		FetchResponse: pb.FetchResponse{
@@ -514,6 +543,15 @@ func CopyMetricDataSliceWithName(args []*MetricData, name string) (newData []*Me
 	newData = make([]*MetricData, len(args))
 	for i, m := range args {
 		newData[i] = m.CopyName(name)
+	}
+	return newData
+}
+
+// CopyMetricDataSliceWithTags returns the copies slice of metrics with name overwrite, Values not copied and link from parent.
+func CopyMetricDataSliceWithTags(args []*MetricData, name string, tags map[string]string) (newData []*MetricData) {
+	newData = make([]*MetricData, len(args))
+	for i, m := range args {
+		newData[i] = m.CopyTag(name, tags)
 	}
 	return newData
 }
