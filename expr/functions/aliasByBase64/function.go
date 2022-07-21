@@ -9,6 +9,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
+	"github.com/msaf1980/go-stringutils"
 )
 
 type aliasByBase64 struct {
@@ -38,31 +39,37 @@ func (f *aliasByBase64) Do(ctx context.Context, e parser.Expr, from, until int64
 	field--
 	withoutFieldArg := err != nil
 
-	results := make([]*types.MetricData, 0, len(args))
+	results := make([]*types.MetricData, len(args))
 
-	for _, a := range args {
-		r := *a
+	for k, a := range args {
+		var r *types.MetricData
 		if withoutFieldArg {
-			decoded, err := base64.StdEncoding.DecodeString(r.Name)
+			decoded, err := base64.StdEncoding.DecodeString(a.Name)
 			if err == nil {
-				r.Name = string(decoded)
+				r = a.CopyName(string(decoded))
+			} else {
+				r = a
 			}
 		} else {
-			metric := helper.ExtractMetric(r.Name)
-			var name []string
-			for i, n := range strings.Split(metric, ".") {
-				if i == field {
-					decoded, err := base64.StdEncoding.DecodeString(n)
-					if err == nil {
-						n = string(decoded)
-					}
+			var changed bool
+			metric := helper.ExtractMetric(a.Name)
+			nodeList := strings.Split(metric, ".")
+			if field < len(nodeList) {
+				decoded, err := base64.StdEncoding.DecodeString(nodeList[field])
+				if err == nil {
+					n := stringutils.UnsafeString(decoded)
+					nodeList[field] = n
+					changed = true
 				}
-				name = append(name, n)
 			}
-			r.Name = strings.Join(name, ".")
+			if changed {
+				r = a.CopyName(strings.Join(nodeList, "."))
+			} else {
+				r = a
+			}
 		}
 
-		results = append(results, &r)
+		results[k] = r
 	}
 
 	return results, nil
