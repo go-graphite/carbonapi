@@ -47,9 +47,13 @@ func (f *groupByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 			return nil, err
 		}
 
-		callback, err = e.GetStringArg(2)
-		if err != nil {
-			return nil, err
+		if len(e.Args()) == 3 {
+			callback, err = e.GetStringArg(2)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			callback = "avg"
 		}
 		fields = []int{field}
 	} else {
@@ -153,7 +157,7 @@ func (f *groupByNode) Description() map[string]types.FunctionDescription {
 					Default:  types.NewSuggestion("average"),
 					Name:     "callback",
 					Options:  types.StringsToSuggestionList(consolidations.AvailableSummarizers),
-					Required: true,
+					Required: false,
 					Type:     types.AggFunc,
 				},
 			},
@@ -173,7 +177,7 @@ func (f *groupByNode) Description() map[string]types.FunctionDescription {
 				{
 					Name:     "callback",
 					Options:  types.StringsToSuggestionList(consolidations.AvailableSummarizers),
-					Required: true,
+					Required: false,
 					Type:     types.AggFunc,
 				},
 				{
