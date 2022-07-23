@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
-	"github.com/go-graphite/carbonapi/expr/helper/metric"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -41,7 +40,7 @@ func (f *aliasByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 	results := make([]*types.MetricData, len(args))
 
 	for i, a := range args {
-		name := metric.ExtractMetric(helper.AggKey(a, nodesOrTags))
+		name := helper.AggKey(a, nodesOrTags)
 		r := a.CopyName(name)
 		results[i] = r
 	}
