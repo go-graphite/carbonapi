@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
+	"github.com/go-graphite/carbonapi/expr/helper/metric"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -49,7 +50,7 @@ func (f *averageSeriesWithWildcards) Do(ctx context.Context, e parser.Expr, from
 	groups := make(map[string][]*types.MetricData)
 
 	for _, a := range args {
-		metric := helper.ExtractMetric(a.Name)
+		metric := metric.ExtractMetric(a.Name)
 		nodes := strings.Split(metric, ".")
 		var s []string
 		// Yes, this is O(n^2), but len(nodes) < 10 and len(fields) < 3

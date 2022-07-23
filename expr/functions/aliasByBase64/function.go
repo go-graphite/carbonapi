@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
+	"github.com/go-graphite/carbonapi/expr/helper/metric"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -52,7 +53,7 @@ func (f *aliasByBase64) Do(ctx context.Context, e parser.Expr, from, until int64
 			}
 		} else {
 			var changed bool
-			metric := helper.ExtractMetric(a.Name)
+			metric := metric.ExtractMetric(a.Name)
 			nodeList := strings.Split(metric, ".")
 			if field < len(nodeList) {
 				decoded, err := base64.StdEncoding.DecodeString(nodeList[field])

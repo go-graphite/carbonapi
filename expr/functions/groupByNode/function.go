@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
+	"github.com/go-graphite/carbonapi/expr/helper/metric"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -68,7 +69,7 @@ func (f *groupByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 	nodeList := make([]string, 0, 4)
 
 	for _, a := range args {
-		node := helper.ExtractMetric(helper.AggKeyInt(a, fields))
+		node := metric.ExtractMetric(helper.AggKeyInt(a, fields))
 		if len(groups[node]) == 0 {
 			nodeList = append(nodeList, node)
 		}

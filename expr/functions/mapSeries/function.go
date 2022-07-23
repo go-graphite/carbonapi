@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
+	"github.com/go-graphite/carbonapi/expr/helper/metric"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -49,7 +50,7 @@ func (f *mapSeries) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	var nodeList []string
 
 	for _, a := range args {
-		metric := helper.ExtractMetric(a.Name)
+		metric := metric.ExtractMetric(a.Name)
 		nodes := strings.Split(metric, ".")
 		nodeKey := make([]string, 0, len(fields))
 		for _, f := range fields {

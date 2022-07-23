@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
+	"github.com/go-graphite/carbonapi/expr/helper/metric"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -30,7 +31,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 func (f *aliasByMetric) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	return helper.ForEachSeriesDo1(ctx, e, from, until, values, func(a *types.MetricData) *types.MetricData {
-		metric := helper.ExtractMetric(a.Tags["name"])
+		metric := metric.ExtractMetric(a.Tags["name"])
 		part := strings.Split(metric, ".")
 		name := part[len(part)-1]
 		ret := a.CopyName(name)

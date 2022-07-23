@@ -22,7 +22,7 @@ func init() {
 	}
 }
 
-func TestAliasByNode(t *testing.T) {
+func TestAliasSub(t *testing.T) {
 	now32 := int64(time.Now().Unix())
 
 	tests := []th.EvalTestItem{

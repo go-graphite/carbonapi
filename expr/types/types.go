@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
+	"github.com/go-graphite/carbonapi/expr/helper/metric"
 	"github.com/go-graphite/carbonapi/expr/tags"
 	pbv2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
@@ -429,7 +430,7 @@ func (r *MetricData) CopyName(name string) *MetricData {
 		return r.CopyLink()
 	}
 
-	tags := map[string]string{"name": name}
+	tags := map[string]string{"name": metric.ExtractMetric(name)}
 
 	return &MetricData{
 		FetchResponse: pb.FetchResponse{
@@ -442,6 +443,40 @@ func (r *MetricData) CopyName(name string) *MetricData {
 			XFilesFactor:            r.XFilesFactor,
 			HighPrecisionTimestamps: r.HighPrecisionTimestamps,
 			Values:                  r.Values,
+			AppliedFunctions:        r.AppliedFunctions,
+			RequestStartTime:        r.RequestStartTime,
+			RequestStopTime:         r.RequestStopTime,
+		},
+		GraphOptions:      r.GraphOptions,
+		ValuesPerPoint:    r.ValuesPerPoint,
+		aggregatedValues:  r.aggregatedValues,
+		Tags:              tags,
+		AggregateFunction: r.AggregateFunction,
+	}
+}
+
+// CopyName returns the copy of MetricData, Values not copied and link from parent. If name set, Name and Name tag changed, Tags wil be reset
+func (r *MetricData) CopyNameWithVal(name string) *MetricData {
+	if name == "" {
+		return r.Copy(true)
+	}
+
+	values := make([]float64, len(r.Values))
+	copy(values, r.Values)
+
+	tags := map[string]string{"name": metric.ExtractMetric(name)}
+
+	return &MetricData{
+		FetchResponse: pb.FetchResponse{
+			Name:                    name,
+			PathExpression:          r.PathExpression,
+			ConsolidationFunc:       r.ConsolidationFunc,
+			StartTime:               r.StartTime,
+			StopTime:                r.StopTime,
+			StepTime:                r.StepTime,
+			XFilesFactor:            r.XFilesFactor,
+			HighPrecisionTimestamps: r.HighPrecisionTimestamps,
+			Values:                  values,
 			AppliedFunctions:        r.AppliedFunctions,
 			RequestStartTime:        r.RequestStartTime,
 			RequestStopTime:         r.RequestStopTime,
@@ -510,6 +545,18 @@ func (r *MetricData) FixStopTime() *MetricData {
 	return r
 }
 
+// SetNameTag set safe name tag for future use without metric.ExtractMetric
+func (r *MetricData) SetNameTag(name string) *MetricData {
+	r.Tags["name"] = metric.ExtractMetric(name)
+	return r
+}
+
+// FixNameTag for safe name tag for future use without metric.ExtractMetric
+func (r *MetricData) FixNameTag() *MetricData {
+	r.Tags["name"] = metric.ExtractMetric(r.Tags["name"])
+	return r
+}
+
 // SetTag allow to set custom tag (for tests)
 func (r *MetricData) SetTag(key, value string) *MetricData {
 	r.Tags[key] = value
@@ -564,7 +611,8 @@ func CopyMetricDataSliceWithTags(args []*MetricData, name string, tags map[strin
 
 // MakeMetricData creates new metrics data with given metric timeseries
 func MakeMetricData(name string, values []float64, step, start int64) *MetricData {
-	return makeMetricDataWithTags(name, values, step, start, tags.ExtractTags(name))
+	tags := tags.ExtractTags(name)
+	return makeMetricDataWithTags(name, values, step, start, tags).FixNameTag()
 }
 
 // MakeMetricDataWithTags creates new metrics data with given metric Time Series (with tags)

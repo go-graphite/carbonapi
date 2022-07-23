@@ -57,7 +57,7 @@ func (f *aliasSub) Do(ctx context.Context, e parser.Expr, from, until int64, val
 		r := a.CopyLink()
 
 		r.Name = re.ReplaceAllString(a.Name, replace)
-		r.Tags["name"] = r.Name
+		r.SetNameTag(r.Name)
 
 		results[i] = r
 	}

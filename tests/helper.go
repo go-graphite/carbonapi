@@ -385,50 +385,48 @@ func TestEvalExprModifiedOrigin(t *testing.T, tt *EvalTestItem, from, until int6
 	}
 	if len(g) != len(tt.Want) {
 		t.Errorf("%s returned a different number of metrics, actual %v, Want %v", testName, len(g), len(tt.Want))
-		return nil
 	}
 
 	for i, want := range tt.Want {
-		actual := g[i]
-		if actual == nil {
-			t.Errorf("returned no value %v", tt.Target)
+		if i > len(g)-1 || g[i] == nil {
+			t.Errorf("returned no value %+s[%d]: want %+v", tt.Target, i, want)
 			return nil
 		}
+		actual := g[i]
 		if _, ok := actual.Tags["name"]; !ok {
-			t.Errorf("metric %+v with name %v doesn't contain 'name' tag", actual, actual.Name)
+			t.Errorf("metric[%d] %+v with name %v doesn't contain 'name' tag", i, actual, actual.Name)
 		}
 		for k, v := range want.Tags {
 			if aTag, ok := actual.Tags[k]; ok {
 				if aTag != v {
-					t.Errorf("metric %+v with name '%s' tag['%s'] value '%s' not equal '%s'", actual, actual.Name, k, aTag, v)
+					t.Errorf("metric[%d] %+v with name '%s' tag['%s'] value '%s' not equal '%s'", i, actual, actual.Name, k, aTag, v)
 				}
 			} else {
-				t.Errorf("metric %+v with name %v doesn't contain '%s' tag", actual, actual.Name, k)
+				t.Errorf("metric[%d] %+v with name %v doesn't contain '%s' tag", i, actual, actual.Name, k)
 			}
 		}
 		for k := range actual.Tags {
 			if _, ok := want.Tags[k]; !ok {
-				t.Errorf("metric %+v with name %v contain unwanted '%s' tag", actual, actual.Name, k)
+				t.Errorf("metric[%d] %+v with name %v contain unwanted '%s' tag", i, actual, actual.Name, k)
 			}
 		}
 		if actual.StepTime == 0 {
 			t.Errorf("missing Step for %+v", g)
 		}
 		if actual.Name != want.Name {
-			t.Errorf("bad Name for %s metric %d: got %s, Want %s", testName, i, actual.Name, want.Name)
+			t.Errorf("bad Name for %s metric[%d]: got %s, Want %s", testName, i, actual.Name, want.Name)
 		}
 		if !compare.NearlyEqualMetrics(actual, want) {
-			t.Errorf("different values for %s metric %s: got %v, Want %v", testName, actual.Name, actual.Values, want.Values)
-			return nil
+			t.Errorf("different values for %s metric[%d] %s: got %v, Want %v", testName, i, actual.Name, actual.Values, want.Values)
 		}
 		if actual.StepTime != want.StepTime {
-			t.Errorf("different StepTime for %s metric %s: got %v, Want %v", testName, actual.Name, actual.StepTime, want.StepTime)
+			t.Errorf("different StepTime for %s metric[%d] %s: got %v, Want %v", testName, i, actual.Name, actual.StepTime, want.StepTime)
 		}
 		if actual.StartTime != want.StartTime {
-			t.Errorf("different StartTime for %s metric %s: got %v, Want %v", testName, actual.Name, actual.StartTime, want.StartTime)
+			t.Errorf("different StartTime for %s metric[%d] %s: got %v, Want %v", testName, i, actual.Name, actual.StartTime, want.StartTime)
 		}
 		if actual.StopTime != want.StopTime {
-			t.Errorf("different StopTime for %s metric %s: got %v, Want %v", testName, actual.Name, actual.StopTime, want.StopTime)
+			t.Errorf("different StopTime for %s metric[%d] %s: got %v, Want %v", testName, i, actual.Name, actual.StopTime, want.StopTime)
 		}
 	}
 	return nil
