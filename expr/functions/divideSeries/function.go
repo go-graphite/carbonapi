@@ -74,13 +74,13 @@ func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 		}
 	}
 
-	var results []*types.MetricData
+	results := make([]*types.MetricData, 0, len(numerators))
 	for _, numerator := range numerators {
 		r := *numerator
 		if useMetricNames {
-			r.Name = fmt.Sprintf("divideSeries(%s,%s)", numerator.Name, denominator.Name)
+			r.Name = "divideSeries(" + numerator.Name + "," + denominator.Name + ")"
 		} else {
-			r.Name = fmt.Sprintf("divideSeries(%s)", e.RawArgs())
+			r.Name = "divideSeries(" + e.RawArgs() + ")"
 		}
 		r.Values = make([]float64, len(numerator.Values))
 
@@ -89,10 +89,9 @@ func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 			// math.IsNaN(v) || math.IsNaN(denominator.Values[i]) covered by nature of math.NaN
 			if denominator.Values[i] == 0 {
 				r.Values[i] = math.NaN()
-				continue
+			} else {
+				r.Values[i] = v / denominator.Values[i]
 			}
-
-			r.Values[i] = v / denominator.Values[i]
 		}
 		results = append(results, &r)
 	}
@@ -122,6 +121,10 @@ func (f *divideSeries) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
+			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }
