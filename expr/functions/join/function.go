@@ -69,6 +69,10 @@ Example:
 					Options:  types.StringsToSuggestionList([]string{and, or, xor, sub}),
 				},
 			},
+			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

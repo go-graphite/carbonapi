@@ -45,7 +45,7 @@ func (f *exclude) Do(ctx context.Context, e parser.Expr, from, until int64, valu
 		return nil, err
 	}
 
-	var results []*types.MetricData
+	results := make([]*types.MetricData, 0, len(arg))
 
 	for _, a := range arg {
 		if !patre.MatchString(a.Name) {
@@ -77,6 +77,7 @@ func (f *exclude) Description() map[string]types.FunctionDescription {
 					Type:     types.String,
 				},
 			},
+			Aggretated: true, // function aggregate metrics (change seriesList items count)
 		},
 	}
 }

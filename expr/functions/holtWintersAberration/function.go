@@ -2,7 +2,6 @@ package holtWintersAberration
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -75,14 +74,15 @@ func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, unt
 			}
 		}
 
+		name := "holtWintersAberration(" + arg.Name + ")"
 		r := types.MetricData{
 			FetchResponse: pb.FetchResponse{
-				Name:              fmt.Sprintf("holtWintersAberration(%s)", arg.Name),
+				Name:              name,
 				Values:            aberration,
 				StepTime:          arg.StepTime,
 				StartTime:         arg.StartTime + bootstrapInterval,
 				StopTime:          arg.StopTime,
-				PathExpression:    fmt.Sprintf("holtWintersAberration(%s)", arg.Name),
+				PathExpression:    name,
 				ConsolidationFunc: arg.ConsolidationFunc,
 				XFilesFactor:      arg.XFilesFactor,
 			},
@@ -124,6 +124,10 @@ func (f *holtWintersAberration) Description() map[string]types.FunctionDescripti
 					Type: types.Interval,
 				},
 			},
+			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

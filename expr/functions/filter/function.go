@@ -68,7 +68,7 @@ func (f *filterSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 		return nil, fmt.Errorf("unsupported consolidation function %s", callback)
 	}
 
-	var results []*types.MetricData
+	results := make([]*types.MetricData, 0, len(args))
 	for _, a := range args {
 		val := aggFunc(a.Values)
 		keepSeries := false

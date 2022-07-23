@@ -5,7 +5,6 @@ import (
 	"errors"
 	"math"
 	"sort"
-	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -362,7 +361,7 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 					a.Values[i] *= 100 / total
 				}
 			}
-			a.Name = "asPercent(" + a.Name + "," + strconv.FormatFloat(total, 'g', -1, 64) + ")"
+			a.Name = "asPercent(" + a.Name + "," + eArgs[1].StringValue() + ")"
 		}
 		return arg, nil
 	} else if len(eArgs) == 2 && (eArgs[1].IsName() || eArgs[1].IsFunc()) {
@@ -433,6 +432,10 @@ func (f *asPercent) Description() map[string]types.FunctionDescription {
 					Type:     types.NodeOrTag,
 				},
 			},
+			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

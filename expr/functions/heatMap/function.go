@@ -2,7 +2,6 @@ package heatMap
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
@@ -47,7 +46,7 @@ func (f *heatMap) Do(ctx context.Context, e parser.Expr, from, until int64, valu
 		pointsQty := len(curr.Values)
 		r := &types.MetricData{
 			FetchResponse: pb.FetchResponse{
-				Name:      fmt.Sprintf("heatMap(%s,%s)", curr.Name, prev.Name),
+				Name:      "heatMap(" + curr.Name + "," + prev.Name + ")",
 				Values:    make([]float64, pointsQty),
 				StartTime: curr.StartTime,
 				StopTime:  curr.StopTime,
@@ -98,6 +97,9 @@ func (f *heatMap) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
+			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

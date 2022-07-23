@@ -2,7 +2,6 @@ package integralWithReset
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	"github.com/ansel1/merry"
@@ -52,10 +51,10 @@ func (f *integralWithReset) Do(ctx context.Context, e parser.Expr, from, until i
 		}
 	}
 
-	results := make([]*types.MetricData, 0, len(arg))
-	for _, a := range arg {
+	results := make([]*types.MetricData, len(arg))
+	for i, a := range arg {
 		r := *a
-		r.Name = fmt.Sprintf("integralWithReset(%s,%s)", a.Name, resettingSeries.Name)
+		r.Name = "integralWithReset(" + a.Name + "," + resettingSeries.Name + ")"
 		r.Values = make([]float64, len(a.Values))
 
 		current := 0.0
@@ -71,7 +70,7 @@ func (f *integralWithReset) Do(ctx context.Context, e parser.Expr, from, until i
 			}
 			r.Values[i] = current
 		}
-		results = append(results, &r)
+		results[i] = &r
 	}
 	return results, nil
 }
@@ -97,6 +96,8 @@ func (f *integralWithReset) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

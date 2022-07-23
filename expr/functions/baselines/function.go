@@ -82,12 +82,13 @@ func (f *baselines) Do(ctx context.Context, e parser.Expr, from, until int64, va
 
 	results := make([]*types.MetricData, 0, len(groups))
 	for name, args := range groups {
-		r := *args[0]
+		var newName string
 		if isAberration {
-			r.Name = fmt.Sprintf("baselineAberration(%s)", name)
+			newName = fmt.Sprintf("baselineAberration(%s)", name)
 		} else {
-			r.Name = fmt.Sprintf("baseline(%s)", name)
+			newName = fmt.Sprintf("baseline(%s)", name)
 		}
+		r := args[0].CopyTag(newName, map[string]string{"name": name})
 		r.Values = make([]float64, len(args[0].Values))
 
 		tmp := make([][]float64, len(args[0].Values)) // number of points
@@ -139,7 +140,7 @@ func (f *baselines) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			}
 		}
 
-		results = append(results, &r)
+		results = append(results, r)
 	}
 
 	return results, nil
@@ -203,6 +204,10 @@ func (f *baselines) Description() map[string]types.FunctionDescription {
 					Type:    types.Integer,
 				},
 			},
+			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 		"baselineAberration": {
 			Description: baselineAberrationDescription,
@@ -247,6 +252,10 @@ func (f *baselines) Description() map[string]types.FunctionDescription {
 					Type:    types.Float,
 				},
 			},
+			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

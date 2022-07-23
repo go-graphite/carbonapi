@@ -2,8 +2,8 @@ package keepLastValue
 
 import (
 	"context"
-	"fmt"
 	"math"
+	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -50,9 +50,9 @@ func (f *keepLastValue) Do(ctx context.Context, e parser.Expr, from, until int64
 	for _, a := range arg {
 		var name string
 		if ok {
-			name = fmt.Sprintf("keepLastValue(%s,%d)", a.Name, keep)
+			name = "keepLastValue(" + a.Name + "," + strconv.Itoa(keep) + ")"
 		} else {
-			name = fmt.Sprintf("keepLastValue(%s)", a.Name)
+			name = "keepLastValue(" + a.Name + ")"
 		}
 
 		r := *a
@@ -104,6 +104,9 @@ func (f *keepLastValue) Description() map[string]types.FunctionDescription {
 					Type:    types.Integer,
 				},
 			},
+			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

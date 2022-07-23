@@ -2,12 +2,10 @@ package averageSeriesWithWildcards
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"strings"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
-	"github.com/go-graphite/carbonapi/expr/helper/metric"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -44,15 +42,12 @@ func (f *averageSeriesWithWildcards) Do(ctx context.Context, e parser.Expr, from
 		return nil, err
 	}
 
-	var results []*types.MetricData
-
 	nodeList := []string{}
 	groups := make(map[string][]*types.MetricData)
 
 	for _, a := range args {
-		metric := metric.ExtractMetric(a.Name)
-		nodes := strings.Split(metric, ".")
-		var s []string
+		nodes := strings.Split(a.Tags["name"], ".")
+		s := make([]string, 0, len(nodes))
 		// Yes, this is O(n^2), but len(nodes) < 10 and len(fields) < 3
 		// Iterating an int slice is faster than a map for n ~ 30
 		// http://www.antoine.im/posts/someone_is_wrong_on_the_internet
@@ -71,15 +66,13 @@ func (f *averageSeriesWithWildcards) Do(ctx context.Context, e parser.Expr, from
 		groups[node] = append(groups[node], a)
 	}
 
-	for _, series := range nodeList {
+	results := make([]*types.MetricData, len(nodeList))
+
+	for i, series := range nodeList {
 		args := groups[series]
-		r := *args[0]
-		r.Name = fmt.Sprintf("averageSeriesWithWildcards(%s)", series)
-		r.Tags = make(map[string]string)
-		for k, v := range args[0].Tags {
-			r.Tags[k] = v
-		}
-		r.Tags["name"] = series
+
+		name := "averageSeriesWithWildcards(" + series + ")"
+		r := args[0].CopyTag(name, map[string]string{"name": series})
 		r.Values = make([]float64, len(args[0].Values))
 
 		length := make([]float64, len(args[0].Values))
@@ -103,7 +96,7 @@ func (f *averageSeriesWithWildcards) Do(ctx context.Context, e parser.Expr, from
 			}
 		}
 
-		results = append(results, &r)
+		results[i] = r
 	}
 	return results, nil
 }
@@ -129,6 +122,10 @@ func (f *averageSeriesWithWildcards) Description() map[string]types.FunctionDesc
 					Type:     types.Node,
 				},
 			},
+			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

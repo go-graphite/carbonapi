@@ -56,7 +56,7 @@ func (f *below) Do(ctx context.Context, e parser.Expr, from, until int64, values
 		compute = consolidations.MinValue
 		isInclusive = false
 	}
-	var results []*types.MetricData
+	results := make([]*types.MetricData, 0, len(args))
 	for _, a := range args {
 		value := compute(a.Values)
 		if isAbove {
@@ -100,6 +100,9 @@ func (f *below) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			Aggretated: true, // function aggregate metrics
+			NameChange: true, // name changed
+			TagsChange: true, // name tag changed
 		},
 		"averageBelow": {
 			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\nOut of all metrics passed, draws only the metrics with an average value\nbelow N for the time period specified.\n\nExample:\n\n.. code-block:: none\n\n  &target=averageBelow(server*.instance*.threads.busy,25)\n\nDraws the servers with average values below 25.",
@@ -119,6 +122,9 @@ func (f *below) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			Aggretated: true, // function aggregate metrics
+			NameChange: true, // name changed
+			TagsChange: true, // name tag changed
 		},
 		"currentAbove": {
 			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\nOut of all metrics passed, draws only the  metrics whose value is above N\nat the end of the time period specified.\n\nExample:\n\n.. code-block:: none\n\n  &target=currentAbove(server*.instance*.threads.busy,50)\n\nDraws the servers with more than 50 busy threads.",
@@ -138,6 +144,9 @@ func (f *below) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			Aggretated: true, // function aggregate metrics
+			NameChange: true, // name changed
+			TagsChange: true, // name tag changed
 		},
 		"currentBelow": {
 			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\nOut of all metrics passed, draws only the  metrics whose value is below N\nat the end of the time period specified.\n\nExample:\n\n.. code-block:: none\n\n  &target=currentBelow(server*.instance*.threads.busy,3)\n\nDraws the servers with less than 3 busy threads.",
@@ -157,6 +166,9 @@ func (f *below) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			Aggretated: true, // function aggregate metrics
+			NameChange: true, // name changed
+			TagsChange: true, // name tag changed
 		},
 		"maximumAbove": {
 			Description: "Takes one metric or a wildcard seriesList followed by a constant n.\nDraws only the metrics with a maximum value above n.\n\nExample:\n\n.. code-block:: none\n\n  &target=maximumAbove(system.interface.eth*.packetsSent,1000)\n\nThis would only display interfaces which sent more than 1000 packets/min.",
@@ -176,6 +188,9 @@ func (f *below) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			Aggretated: true, // function aggregate metrics
+			NameChange: true, // name changed
+			TagsChange: true, // name tag changed
 		},
 		"maximumBelow": {
 			Description: "Takes one metric or a wildcard seriesList followed by a constant n.\nDraws only the metrics with a maximum value below n.\n\nExample:\n\n.. code-block:: none\n\n  &target=maximumBelow(system.interface.eth*.packetsSent,1000)\n\nThis would only display interfaces which sent less than 1000 packets/min.",
@@ -195,6 +210,9 @@ func (f *below) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			Aggretated: true, // function aggregate metrics
+			NameChange: true, // name changed
+			TagsChange: true, // name tag changed
 		},
 		"minimumAbove": {
 			Description: "Takes one metric or a wildcard seriesList followed by a constant n.\nDraws only the metrics with a minimum value above n.\n\nExample:\n\n.. code-block:: none\n\n  &target=minimumAbove(system.interface.eth*.packetsSent,1000)\n\nThis would only display interfaces which sent more than 1000 packets/min.",
@@ -214,6 +232,9 @@ func (f *below) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			Aggretated: true, // function aggregate metrics
+			NameChange: true, // name changed
+			TagsChange: true, // name tag changed
 		},
 		"minimumBelow": {
 			Description: "Takes one metric or a wildcard seriesList followed by a constant n.\nDraws only the metrics with a minimum value below n.\n\nExample:\n\n.. code-block:: none\n\n  &target=minimumBelow(system.interface.eth*.packetsSent,1000)\n\nThis would only display interfaces which at one point sent less than 1000 packets/min.",
@@ -233,6 +254,9 @@ func (f *below) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			Aggretated: true, // function aggregate metrics
+			NameChange: true, // name changed
+			TagsChange: true, // name tag changed
 		},
 	}
 }

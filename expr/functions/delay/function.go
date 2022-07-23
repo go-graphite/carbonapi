@@ -2,7 +2,6 @@ package delay
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -31,7 +30,8 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // delay(seriesList, steps)
 func (f *delay) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	seriesList, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	eArgs := e.Args()
+	seriesList, err := helper.GetSeriesArg(ctx, eArgs[0], from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -41,9 +41,9 @@ func (f *delay) Do(ctx context.Context, e parser.Expr, from, until int64, values
 		return nil, err
 	}
 
-	var results []*types.MetricData
+	results := make([]*types.MetricData, len(seriesList))
 
-	for _, series := range seriesList {
+	for i, series := range seriesList {
 		length := len(series.Values)
 
 		newValues := make([]float64, length)
@@ -62,11 +62,10 @@ func (f *delay) Do(ctx context.Context, e parser.Expr, from, until int64, values
 			prevValues = append(prevValues, value)
 		}
 
-		result := *series
-		result.Name = fmt.Sprintf("delay(%s,%d)", series.Name, steps)
+		result := series.CopyTag("delay("+series.Name+","+eArgs[1].StringValue()+")", series.Tags)
 		result.Values = newValues
 
-		results = append(results, &result)
+		results[i] = result
 	}
 
 	return results, nil
@@ -93,6 +92,8 @@ func (f *delay) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }
