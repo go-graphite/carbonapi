@@ -430,7 +430,7 @@ func (r *MetricData) CopyName(name string) *MetricData {
 		return r.CopyLink()
 	}
 
-	tags := map[string]string{"name": metric.ExtractMetric(name)}
+	tags := map[string]string{"name": ExtractName(name)}
 
 	return &MetricData{
 		FetchResponse: pb.FetchResponse{
@@ -464,7 +464,7 @@ func (r *MetricData) CopyNameWithVal(name string) *MetricData {
 	values := make([]float64, len(r.Values))
 	copy(values, r.Values)
 
-	tags := map[string]string{"name": metric.ExtractMetric(name)}
+	tags := map[string]string{"name": ExtractName(name)}
 
 	return &MetricData{
 		FetchResponse: pb.FetchResponse{
@@ -553,7 +553,7 @@ func (r *MetricData) SetNameTag(name string) *MetricData {
 
 // FixNameTag for safe name tag for future use without metric.ExtractMetric
 func (r *MetricData) FixNameTag() *MetricData {
-	r.Tags["name"] = metric.ExtractMetric(r.Tags["name"])
+	r.Tags["name"] = ExtractName(r.Tags["name"])
 	return r
 }
 
