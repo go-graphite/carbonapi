@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strconv"
 
 	pbv3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
@@ -81,9 +82,9 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 	for _, a := range arg {
 		var name string
 		if ok {
-			name = fmt.Sprintf("transformNull(%s,%g)", a.Name, defv)
+			name = "transformNull(" + a.Name + "," + strconv.FormatFloat(defv, 'g', -1, 64) + ")"
 		} else {
-			name = fmt.Sprintf("transformNull(%s)", a.Name)
+			name = "transformNull(" + a.Name + ")"
 		}
 
 		r := *a
@@ -115,7 +116,7 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 				StepTime:  step,
 				Values:    values,
 			},
-			Tags: map[string]string{"name": e.ToString()},
+			Tags: map[string]string{"name": types.ExtractName(e.ToString())},
 		})
 	}
 	return results, nil
@@ -163,6 +164,8 @@ func (f *transformNull) Description() map[string]types.FunctionDescription {
 					Type: types.Boolean,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

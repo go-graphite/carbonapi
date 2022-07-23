@@ -50,7 +50,7 @@ func (e *expr) Type() ExprType {
 func (e *expr) ToString() string {
 	switch e.etype {
 	case EtFunc:
-		return fmt.Sprintf("%s(%s)", e.target, e.argString)
+		return e.target + "(" + e.argString + ")"
 	case EtConst:
 		return e.valStr
 	case EtString:
