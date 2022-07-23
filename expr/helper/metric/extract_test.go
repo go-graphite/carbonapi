@@ -39,22 +39,6 @@ func TestExtractMetric(t *testing.T) {
 			"{something}",
 			"{something}",
 		},
-		{
-			"ab=",
-			"ab=",
-		},
-		{
-			"ab=.c",
-			"ab=.c",
-		},
-		{
-			"ab==",
-			"ab==",
-		},
-		{
-			"ab==.c",
-			"ab==.c",
-		},
 	}
 
 	for _, tt := range tests {
