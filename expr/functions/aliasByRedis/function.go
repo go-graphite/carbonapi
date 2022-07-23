@@ -17,11 +17,9 @@ import (
 	"github.com/gomodule/redigo/redis"
 )
 
-func prepareMetric(metric string) string {
+func prepareMetric(metric string) (string, []string) {
 	parts := strings.Split(metric, ".")
-	lastPart := parts[len(parts)-1]
-	prefix := strings.Split(lastPart, ",")[0]
-	return strings.Trim(prefix, ")")
+	return parts[len(parts)-1], parts
 }
 
 func redisGetHash(name, key string, c redis.Conn, timeout time.Duration) (string, error) {
@@ -179,23 +177,35 @@ func (f *aliasByRedis) Do(ctx context.Context, e parser.Expr, from, until int64,
 		return nil, err
 	}
 
+	keepPath, err := e.GetBoolArgDefault(2, false)
+	if err != nil {
+		return nil, err
+	}
+	_ = keepPath
+
 	redisConnection, err := f.pool.GetContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer redisConnection.Close()
 
-	results := make([]*types.MetricData, 0, len(args))
+	results := make([]*types.MetricData, len(args))
 
-	for _, a := range args {
-		r := *a.CopyLink()
-		r.Name = prepareMetric(r.Name)
-		redisName, err := redisGetHash(r.Name, redisHashName, redisConnection, f.queryTimeout)
+	for i, a := range args {
+		var r *types.MetricData
+		name, nodes := prepareMetric(a.Tags["name"])
+		redisName, err := redisGetHash(name, redisHashName, redisConnection, f.queryTimeout)
 		if err == nil {
-			r.Name = redisName
-			r.Tags["name"] = redisName
+			if keepPath {
+				nodes[len(nodes)-1] = redisName
+				r = a.CopyName(strings.Join(nodes, "."))
+			} else {
+				r = a.CopyName(redisName)
+			}
+		} else {
+			r = a.CopyLink()
 		}
-		results = append(results, &r)
+		results[i] = r
 	}
 
 	return results, nil
@@ -205,7 +215,7 @@ func (f *aliasByRedis) Description() map[string]types.FunctionDescription {
 	return map[string]types.FunctionDescription{
 		"aliasByHash": {
 			Description: "Takes a seriesList, extracts first part of a metric name and use it as a field name for HGET redis query. Key name is specified by argument.\n\n.. code-block:: none\n\n  &target=aliasByRedis(some.metric, \"redis_key_name\")",
-			Function:    "aliasByRedis(seriesList. keyName)",
+			Function:    "aliasByRedis(seriesList, keyName[, keepPath])",
 			Group:       "Alias",
 			Module:      "graphite.render.functions",
 			Name:        "aliasByRedis",
@@ -220,7 +230,17 @@ func (f *aliasByRedis) Description() map[string]types.FunctionDescription {
 					Required: true,
 					Type:     types.String,
 				},
+				{
+					Name: "keepPath",
+					Type: types.Boolean,
+					Default: &types.Suggestion{
+						Value: false,
+						Type:  types.SBool,
+					},
+				},
 			},
+			NameChange: true, // name changed
+			TagsChange: true, // name tag changed
 		},
 	}
 }

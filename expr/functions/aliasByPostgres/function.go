@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
-	"github.com/go-graphite/carbonapi/expr/helper/metric"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -172,17 +171,17 @@ func (f *aliasByPostgres) Do(ctx context.Context, e parser.Expr, from, until int
 		return nil, err
 	}
 
-	var results []*types.MetricData
+	results := make([]*types.MetricData, 0, len(args))
 	matchString := regexp.MustCompile(f.Database[databaseName].KeyString[keyString].MatchString)
 
 	for _, a := range args {
-		metric := metric.ExtractMetric(a.Name)
+		metric := a.Tags["name"]
 		logger.Debug(metric)
 		if metric == "" {
 			continue
 		}
 		nodes := strings.Split(metric, ".")
-		var name []string
+		name := make([]string, 0, len(nodes))
 		for _, f := range fields {
 			if f < 0 {
 				f += len(nodes)
@@ -202,6 +201,7 @@ func (f *aliasByPostgres) Do(ctx context.Context, e parser.Expr, from, until int
 			query = reg.ReplaceAllString(query, name[i])
 		}
 
+		// TODO: may be batch fetch of aliases
 		res, err := f.SQLQueryDB(query, databaseName)
 		if err != nil {
 			logger.Error("failed query to Postgresql DB", zap.Error(err))
@@ -214,22 +214,18 @@ func (f *aliasByPostgres) Do(ctx context.Context, e parser.Expr, from, until int
 		}
 		if len(res) > 0 {
 			if matchString.MatchString(res) {
-				r := *a.CopyLink()
-				r.Name = strings.Join(name, ".")
+				var newName string
 				if len(name) > 0 {
-					r.Name = res + "." + r.Name
-					results = append(results, &r)
+					newName = res + "." + strings.Join(name, ".")
 				} else {
-					r.Name = res
-					results = append(results, &r)
+					newName = res
 				}
-				r.Tags["name"] = r.Name
+				r := a.CopyName(newName)
+				results = append(results, r)
 			}
 		} else {
-			r := *a
-			r.Name = tempName
-			r.Tags["name"] = r.Name
-			results = append(results, &r)
+			r := a.CopyName(tempName)
+			results = append(results, r)
 		}
 	}
 	return results, nil
@@ -267,6 +263,8 @@ func (f *aliasByPostgres) Description() map[string]types.FunctionDescription {
 					Type:     types.NodeOrTag,
 				},
 			},
+			NameChange: true, // name changed
+			TagsChange: true, // name tag changed
 		},
 	}
 }
