@@ -32,14 +32,14 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // aggregateLine(*seriesLists)
 func (f *aggregateLine) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
 	callback := "avg"
 	keepStep := false
-	switch len(e.Args()) {
+	switch e.ArgsLen() {
 	case 2:
 		callback, err = e.GetStringArg(1)
 		if err != nil {
@@ -126,7 +126,7 @@ func (f *aggregateLine) Description() map[string]types.FunctionDescription {
 					},
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed

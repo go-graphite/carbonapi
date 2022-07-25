@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
-	"github.com/go-graphite/carbonapi/expr/helper/metric"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -33,11 +32,11 @@ func New(configFile string) []interfaces.FunctionMetadata {
 func (f *reduce) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	const matchersStartIndex = 3
 
-	if len(e.Args()) < matchersStartIndex+1 {
+	if e.ArgsLen() < matchersStartIndex+1 {
 		return nil, parser.ErrMissingArgument
 	}
 
-	seriesList, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	seriesList, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +51,7 @@ func (f *reduce) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		return nil, err
 	}
 
-	argsCount := len(e.Args())
+	argsCount := e.ArgsLen()
 	matchersCount := argsCount - matchersStartIndex
 	reduceMatchers := make([]string, matchersCount)
 	for i := matchersStartIndex; i < argsCount; i++ {
@@ -64,14 +63,14 @@ func (f *reduce) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		reduceMatchers[i-matchersStartIndex] = reduceMatcher
 	}
 
-	var results []*types.MetricData
+	results := make([]*types.MetricData, 0, len(seriesList))
 
 	reduceGroups := make(map[string]map[string]*types.MetricData)
 	reducedValues := values
 	var aliasNames []string
 
 	for _, series := range seriesList {
-		metric := metric.ExtractMetric(series.Name)
+		metric := series.Tags["name"]
 		nodes := strings.Split(metric, ".")
 		reduceNodeKey := nodes[reduceNode]
 		nodes[reduceNode] = "reduce." + reduceFunction
@@ -145,6 +144,10 @@ func (f *reduce) Description() map[string]types.FunctionDescription {
 					Type:     types.String,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 		"reduce": {
 			Description: "Short form: ``reduce()``\n\nTakes a list of seriesLists and reduces it to a list of series by means of the reduceFunction.\n\nReduction is performed by matching the reduceNode in each series against the list of\nreduceMatchers. Then each series is passed to the reduceFunction as arguments in the order\ngiven by reduceMatchers. The reduceFunction should yield a single series.\n\nThe resulting list of series are aliased so that they can easily be nested in other functions.\n\n**Example**: Map/Reduce asPercent(bytes_used,total_bytes) for each server\n\nAssume that metrics in the form below exist:\n\n.. code-block:: none\n\n     servers.server1.disk.bytes_used\n     servers.server1.disk.total_bytes\n     servers.server2.disk.bytes_used\n     servers.server2.disk.total_bytes\n     servers.server3.disk.bytes_used\n     servers.server3.disk.total_bytes\n     ...\n     servers.serverN.disk.bytes_used\n     servers.serverN.disk.total_bytes\n\nTo get the percentage of disk used for each server:\n\n.. code-block:: none\n\n    reduceSeries(mapSeries(servers.*.disk.*,1),\"asPercent\",3,\"bytes_used\",\"total_bytes\") =>\n\n      alias(asPercent(servers.server1.disk.bytes_used,servers.server1.disk.total_bytes),\"servers.server1.disk.reduce.asPercent\"),\n      alias(asPercent(servers.server2.disk.bytes_used,servers.server2.disk.total_bytes),\"servers.server2.disk.reduce.asPercent\"),\n      alias(asPercent(servers.server3.disk.bytes_used,servers.server3.disk.total_bytes),\"servers.server3.disk.reduce.asPercent\"),\n      ...\n      alias(asPercent(servers.serverN.disk.bytes_used,servers.serverN.disk.total_bytes),\"servers.serverN.disk.reduce.asPercent\")\n\nIn other words, we will get back the following metrics::\n\n    servers.server1.disk.reduce.asPercent\n    servers.server2.disk.reduce.asPercent\n    servers.server3.disk.reduce.asPercent\n    ...\n    servers.serverN.disk.reduce.asPercent\n\n.. seealso:: :py:func:`mapSeries`",
@@ -175,6 +178,10 @@ func (f *reduce) Description() map[string]types.FunctionDescription {
 					Type:     types.String,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

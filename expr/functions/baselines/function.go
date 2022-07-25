@@ -2,7 +2,6 @@ package baselines
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
@@ -58,7 +57,7 @@ func (f *baselines) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	}
 
 	current := make(map[string]*types.MetricData)
-	arg, _ := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg, _ := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	for _, a := range arg {
 		current[a.Name] = a
 	}
@@ -69,7 +68,7 @@ func (f *baselines) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			continue
 		}
 		offs := int64(i * unit)
-		arg, _ := helper.GetSeriesArg(ctx, e.Args()[0], from+offs, until+offs, values)
+		arg, _ := helper.GetSeriesArg(ctx, e.Arg(0), from+offs, until+offs, values)
 		for _, a := range arg {
 			r := *a
 			if _, ok := current[r.Name]; ok || !isAberration {
@@ -84,11 +83,11 @@ func (f *baselines) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	for name, args := range groups {
 		var newName string
 		if isAberration {
-			newName = fmt.Sprintf("baselineAberration(%s)", name)
+			newName = "baselineAberration(" + name + ")"
 		} else {
-			newName = fmt.Sprintf("baseline(%s)", name)
+			newName = "baseline(" + name + ")"
 		}
-		r := args[0].CopyTag(newName, map[string]string{"name": name})
+		r := args[0].CopyName(newName)
 		r.Values = make([]float64, len(args[0].Values))
 
 		tmp := make([][]float64, len(args[0].Values)) // number of points
@@ -204,7 +203,7 @@ func (f *baselines) Description() map[string]types.FunctionDescription {
 					Type:    types.Integer,
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed
@@ -252,7 +251,7 @@ func (f *baselines) Description() map[string]types.FunctionDescription {
 					Type:    types.Float,
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed

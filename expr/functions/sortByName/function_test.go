@@ -1,6 +1,7 @@
 package sortByName
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -21,7 +22,7 @@ func init() {
 	}
 }
 
-func TestFunction(t *testing.T) {
+func TestSortByName(t *testing.T) {
 	now32 := int64(time.Now().Unix())
 
 	tests := []th.EvalTestItem{
@@ -156,4 +157,93 @@ func TestFunction(t *testing.T) {
 		})
 	}
 
+}
+
+func BenchmarkSortByName(b *testing.B) {
+	benchmarks := []struct {
+		target string
+		M      map[parser.MetricRequest][]*types.MetricData
+	}{
+		{
+			target: "sortByName(metric.foo.*)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				parser.MetricRequest{
+					Metric: "metric.foo.*",
+					From:   0,
+					Until:  1,
+				}: {
+					types.MakeMetricData("metric.foo.x99", []float64{1}, 1, 1),
+					types.MakeMetricData("metric.foo.x1", []float64{1}, 1, 1),
+					types.MakeMetricData("metric.foo.x2", []float64{1}, 1, 1),
+					types.MakeMetricData("metric.foo.x100", []float64{1}, 1, 1),
+				},
+			},
+		},
+		{
+			target: "sortByName(metric.foo.*, true)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				parser.MetricRequest{
+					Metric: "metric.foo.*",
+					From:   0,
+					Until:  1,
+				}: {
+					types.MakeMetricData("metric.foo.x99", []float64{1}, 1, 1),
+					types.MakeMetricData("metric.foo.x1", []float64{1}, 1, 1),
+					types.MakeMetricData("metric.foo.x2", []float64{1}, 1, 1),
+					types.MakeMetricData("metric.foo.x100", []float64{1}, 1, 1),
+				},
+			},
+		},
+		{
+			target: "sortByName(metric.foo.*, natural=false, reverse=true)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				parser.MetricRequest{
+					Metric: "metric.foo.*",
+					From:   0,
+					Until:  1,
+				}: {
+					types.MakeMetricData("metric.foo.x99", []float64{1}, 1, 1),
+					types.MakeMetricData("metric.foo.x1", []float64{1}, 1, 1),
+					types.MakeMetricData("metric.foo.x2", []float64{1}, 1, 1),
+					types.MakeMetricData("metric.foo.x100", []float64{1}, 1, 1),
+				},
+			},
+		},
+		{
+			target: "sortByName(metric.foo.*, true, true)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				parser.MetricRequest{
+					Metric: "metric.foo.*",
+					From:   0,
+					Until:  1,
+				}: {
+					types.MakeMetricData("metric.foo.x99", []float64{1}, 1, 1),
+					types.MakeMetricData("metric.foo.x1", []float64{1}, 1, 1),
+					types.MakeMetricData("metric.foo.x2", []float64{1}, 1, 1),
+					types.MakeMetricData("metric.foo.x100", []float64{1}, 1, 1),
+				},
+			},
+		},
+	}
+
+	evaluator := metadata.GetEvaluator()
+
+	for _, bm := range benchmarks {
+		b.Run(bm.target, func(b *testing.B) {
+			exp, _, err := parser.ParseExpr(bm.target)
+			if err != nil {
+				b.Fatalf("failed to parse %s: %+v", bm.target, err)
+			}
+
+			b.ResetTimer()
+
+			for i := 0; i < b.N; i++ {
+				g, err := evaluator.Eval(context.Background(), exp, 0, 1, bm.M)
+				if err != nil {
+					b.Fatalf("failed to eval %s: %+v", bm.target, err)
+				}
+				_ = g
+			}
+		})
+	}
 }

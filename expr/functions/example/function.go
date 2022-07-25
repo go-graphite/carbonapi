@@ -50,7 +50,7 @@ func (f *example) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
-			Aggretated:   false, // function aggregate metrics (change seriesList items count)
+			SeriesChange: false, // function aggregate metrics or change series items count
 			NameChange:   false, // name changed
 			TagsChange:   false, // name tag changed
 			ValuesChange: false, // values changed

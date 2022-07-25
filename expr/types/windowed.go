@@ -21,6 +21,17 @@ type Windowed struct {
 	nans   int
 }
 
+func (w *Windowed) Reset() {
+	w.length = 0
+	w.head = 0
+	w.sum = 0
+	w.sumsq = 0
+	w.nans = 0
+	for i := range w.Data {
+		w.Data[i] = 0
+	}
+}
+
 // Push pushes data
 func (w *Windowed) Push(n float64) {
 	if len(w.Data) == 0 {

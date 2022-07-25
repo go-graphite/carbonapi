@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
-	"github.com/go-graphite/carbonapi/expr/helper/metric"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -33,7 +32,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 // groupByNode(seriesList, nodeNum, callback)
 // groupByNodes(seriesList, callback, *nodes)
 func (f *groupByNode) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +68,7 @@ func (f *groupByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 	nodeList := make([]string, 0, 4)
 
 	for _, a := range args {
-		node := metric.ExtractMetric(helper.AggKeyInt(a, fields))
+		node := helper.AggKeyInt(a, fields)
 		if len(groups[node]) == 0 {
 			nodeList = append(nodeList, node)
 		}
@@ -141,7 +140,7 @@ func (f *groupByNode) Description() map[string]types.FunctionDescription {
 					Type:     types.AggFunc,
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed
@@ -171,7 +170,7 @@ func (f *groupByNode) Description() map[string]types.FunctionDescription {
 					Type:     types.NodeOrTag,
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed

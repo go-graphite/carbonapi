@@ -675,7 +675,7 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 	switch e.Target() {
 
 	case "color": // color(seriesList, theColor)
-		arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+		arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -685,18 +685,18 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 			return nil, err
 		}
 
-		var results []*types.MetricData
+		results := make([]*types.MetricData, len(arg))
 
-		for _, a := range arg {
+		for i, a := range arg {
 			r := *a
 			r.Color = color
-			results = append(results, &r)
+			results[i] = &r
 		}
 
 		return results, nil
 
 	case "stacked": // stacked(seriesList, stackname="__DEFAULT__")
-		arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+		arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -706,19 +706,19 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 			return nil, err
 		}
 
-		var results []*types.MetricData
+		results := make([]*types.MetricData, len(arg))
 
-		for _, a := range arg {
+		for i, a := range arg {
 			r := *a
 			r.Stacked = true
 			r.StackName = stackName
-			results = append(results, &r)
+			results[i] = &r
 		}
 
 		return results, nil
 
 	case "areaBetween":
-		arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+		arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -727,7 +727,7 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 			return nil, fmt.Errorf("areaBetween needs exactly two arguments (%d given)", len(arg))
 		}
 
-		name := fmt.Sprintf("%s(%s)", e.Target(), e.RawArgs())
+		name := e.Target() + "(" + e.RawArgs() + ")"
 
 		lower := *arg[0]
 		lower.Stacked = true
@@ -751,7 +751,7 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 		return []*types.MetricData{&lower, &upper}, nil
 
 	case "alpha": // alpha(seriesList, theAlpha)
-		arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+		arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -761,28 +761,28 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 			return nil, err
 		}
 
-		var results []*types.MetricData
+		results := make([]*types.MetricData, len(arg))
 
-		for _, a := range arg {
+		for i, a := range arg {
 			r := *a
 			r.Alpha = alpha
 			r.HasAlpha = true
-			results = append(results, &r)
+			results[i] = &r
 		}
 
 		return results, nil
 
 	case "dashed", "drawAsInfinite", "secondYAxis":
-		arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+		arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 		if err != nil {
 			return nil, err
 		}
 
-		var results []*types.MetricData
+		results := make([]*types.MetricData, len(arg))
 
-		for _, a := range arg {
+		for i, a := range arg {
 			r := *a
-			r.Name = fmt.Sprintf("%s(%s)", e.Target(), a.Name)
+			r.Name = e.Target() + "(" + a.Name + ")"
 
 			switch e.Target() {
 			case "dashed":
@@ -797,12 +797,12 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 				r.SecondYAxis = true
 			}
 
-			results = append(results, &r)
+			results[i] = &r
 		}
 		return results, nil
 
 	case "lineWidth": // lineWidth(seriesList, width)
-		arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+		arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -812,13 +812,13 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 			return nil, err
 		}
 
-		var results []*types.MetricData
+		results := make([]*types.MetricData, len(arg))
 
-		for _, a := range arg {
+		for i, a := range arg {
 			r := *a
 			r.LineWidth = width
 			r.HasLineWidth = true
-			results = append(results, &r)
+			results[i] = &r
 		}
 
 		return results, nil
@@ -834,12 +834,13 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 		//			   color = "" (by default as len(positionalArgs) == 2 and there is no named 'color' arg)
 
 		value, err := e.GetFloatArg(0)
-
 		if err != nil {
 			return nil, err
 		}
 
-		name, err := e.GetStringNamedOrPosArgDefault("label", 1, fmt.Sprintf("%g", value))
+		defaultLabel := e.Arg(0).StringValue()
+
+		name, err := e.GetStringNamedOrPosArgDefault("label", 1, defaultLabel)
 		if err != nil {
 			return nil, err
 		}
@@ -852,7 +853,7 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 		newValues := []float64{value, value}
 		stepTime := until - from
 		stopTime := from + stepTime*int64(len(newValues))
-		p := types.MetricData{
+		p := &types.MetricData{
 			FetchResponse: pb.FetchResponse{
 				Name:              name,
 				StartTime:         from,
@@ -865,7 +866,7 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 			GraphOptions: types.GraphOptions{Color: color},
 		}
 
-		return []*types.MetricData{&p}, nil
+		return []*types.MetricData{p}, nil
 
 	}
 

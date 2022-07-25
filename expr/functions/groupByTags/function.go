@@ -32,7 +32,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // seriesByTag("name=cpu")|groupByTags("average","dc","os")
 func (f *groupByTags) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func (f *groupByTags) Description() map[string]types.FunctionDescription {
 					Type:     types.Tag,
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed

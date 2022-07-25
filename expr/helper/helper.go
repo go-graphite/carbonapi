@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/ansel1/merry"
-	"github.com/go-graphite/carbonapi/expr/helper/metric"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -83,7 +82,7 @@ func GetSeriesArgsAndRemoveNonExisting(ctx context.Context, e parser.Expr, from,
 	}
 
 	// We need to rewrite name if there are some missing metrics
-	if len(args) < len(e.Args()) {
+	if len(args) < e.ArgsLen() {
 		e.SetRawArgs(RemoveEmptySeriesFromName(args))
 	}
 
@@ -139,7 +138,7 @@ type seriesFunc1 func(*types.MetricData) *types.MetricData
 
 // ForEachSeriesDo do action for each serie in list.
 func ForEachSeriesDo1(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData, function seriesFunc1) ([]*types.MetricData, error) {
-	arg, err := GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg, err := GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, parser.ErrMissingTimeseries
 	}
@@ -155,17 +154,17 @@ type seriesFunc func(*types.MetricData, *types.MetricData) *types.MetricData
 
 // ForEachSeriesDo do action for each serie in list.
 func ForEachSeriesDo(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData, function seriesFunc) ([]*types.MetricData, error) {
-	arg, err := GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg, err := GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, parser.ErrMissingTimeseries
 	}
 	var results []*types.MetricData
 
 	for _, a := range arg {
-		r := *a
+		r := a.CopyLinkTags()
 		r.Name = e.Target() + "(" + a.Name + ")"
 		r.Values = make([]float64, len(a.Values))
-		results = append(results, function(a, &r))
+		results = append(results, function(a, r))
 	}
 	return results, nil
 }
@@ -182,9 +181,7 @@ func AggregateSeries(e parser.Expr, args []*types.MetricData, function Aggregate
 	args = ScaleSeries(args)
 
 	length := len(args[0].Values)
-	r := *args[0]
-	r.Name = e.Target() + "(" + e.RawArgs() + ")"
-	r.Tags = map[string]string{"name": metric.ExtractMetric(e.RawArgs())}
+	r := args[0].CopyName(e.Target() + "(" + e.RawArgs() + ")")
 	r.Values = make([]float64, length)
 
 	values := make([]float64, len(args))
@@ -199,7 +196,7 @@ func AggregateSeries(e parser.Expr, args []*types.MetricData, function Aggregate
 		}
 	}
 
-	return []*types.MetricData{&r}, nil
+	return []*types.MetricData{r}, nil
 }
 
 // Contains check if slice 'a' contains value 'i'

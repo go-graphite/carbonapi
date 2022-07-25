@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
-	"github.com/go-graphite/carbonapi/expr/helper/metric"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -31,7 +30,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *aliasByBase64) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +52,7 @@ func (f *aliasByBase64) Do(ctx context.Context, e parser.Expr, from, until int64
 			}
 		} else {
 			var changed bool
-			metric := metric.ExtractMetric(a.Name)
+			metric := a.Tags["name"]
 			nodeList := strings.Split(metric, ".")
 			if field < len(nodeList) {
 				decoded, err := base64.StdEncoding.DecodeString(nodeList[field])

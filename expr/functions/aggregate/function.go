@@ -55,7 +55,7 @@ func (f *aggregate) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			isAggregateFunc = false
 		}
 	} else {
-		args, err = helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+		args, err = helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -76,7 +76,7 @@ func (f *aggregate) Do(ctx context.Context, e parser.Expr, from, until int64, va
 
 	e.SetTarget(target)
 	if isAggregateFunc {
-		e.SetRawArgs(e.Args()[0].Target())
+		e.SetRawArgs(e.Arg(0).Target())
 	}
 	return helper.AggregateSeries(e, args, aggFunc)
 }
@@ -111,7 +111,7 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 					},
 				*/
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed
@@ -130,7 +130,7 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed
@@ -149,7 +149,7 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed
@@ -168,7 +168,7 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed
@@ -187,7 +187,7 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed
@@ -206,7 +206,7 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed
@@ -225,7 +225,7 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed
@@ -244,7 +244,7 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed
@@ -263,7 +263,7 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed
@@ -282,7 +282,7 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed
@@ -301,7 +301,7 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed
@@ -320,7 +320,7 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed
@@ -339,7 +339,7 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed
@@ -358,7 +358,7 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed
@@ -377,7 +377,7 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed
@@ -396,7 +396,7 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed
@@ -415,7 +415,7 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
-	"github.com/go-graphite/carbonapi/expr/helper/metric"
 	"github.com/go-graphite/carbonapi/expr/tags"
 	pbv2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
@@ -394,7 +393,7 @@ func (r *MetricData) Copy(includeValues bool) *MetricData {
 	}
 }
 
-// CopyLink returns the copy of MetricData, Values not copied and link from parent.
+// CopyLink returns the copy of MetricData, Values not copied and link from parent. Tags map are copied
 func (r *MetricData) CopyLink() *MetricData {
 	tags := make(map[string]string)
 	for k, v := range r.Tags {
@@ -424,13 +423,67 @@ func (r *MetricData) CopyLink() *MetricData {
 	}
 }
 
+// CopyLinkTags returns the copy of MetricData, Values not copied and link from parent. Tags map set by rereference without copy (so, DON'T change them for prevent naming bugs)
+func (r *MetricData) CopyLinkTags() *MetricData {
+	return &MetricData{
+		FetchResponse: pb.FetchResponse{
+			Name:                    r.Name,
+			PathExpression:          r.PathExpression,
+			ConsolidationFunc:       r.ConsolidationFunc,
+			StartTime:               r.StartTime,
+			StopTime:                r.StopTime,
+			StepTime:                r.StepTime,
+			XFilesFactor:            r.XFilesFactor,
+			HighPrecisionTimestamps: r.HighPrecisionTimestamps,
+			Values:                  r.Values,
+			AppliedFunctions:        r.AppliedFunctions,
+			RequestStartTime:        r.RequestStartTime,
+			RequestStopTime:         r.RequestStopTime,
+		},
+		GraphOptions:      r.GraphOptions,
+		ValuesPerPoint:    r.ValuesPerPoint,
+		aggregatedValues:  r.aggregatedValues,
+		Tags:              r.Tags,
+		AggregateFunction: r.AggregateFunction,
+	}
+}
+
 // CopyName returns the copy of MetricData, Values not copied and link from parent. If name set, Name and Name tag changed, Tags wil be reset
 func (r *MetricData) CopyName(name string) *MetricData {
 	if name == "" {
 		return r.CopyLink()
 	}
 
-	tags := map[string]string{"name": ExtractName(name)}
+	tags := tags.ExtractTags(ExtractName(name))
+
+	return &MetricData{
+		FetchResponse: pb.FetchResponse{
+			Name:                    name,
+			PathExpression:          r.PathExpression,
+			ConsolidationFunc:       r.ConsolidationFunc,
+			StartTime:               r.StartTime,
+			StopTime:                r.StopTime,
+			StepTime:                r.StepTime,
+			XFilesFactor:            r.XFilesFactor,
+			HighPrecisionTimestamps: r.HighPrecisionTimestamps,
+			Values:                  r.Values,
+			AppliedFunctions:        r.AppliedFunctions,
+			RequestStartTime:        r.RequestStartTime,
+			RequestStopTime:         r.RequestStopTime,
+		},
+		GraphOptions:      r.GraphOptions,
+		ValuesPerPoint:    r.ValuesPerPoint,
+		aggregatedValues:  r.aggregatedValues,
+		Tags:              tags,
+		AggregateFunction: r.AggregateFunction,
+	}
+}
+
+// CopyName returns the copy of MetricData, Values not copied and link from parent. If name set, Name and Name tag changed, Tags wil be reset
+func (r *MetricData) CopyTag(name string, tags map[string]string) *MetricData {
+	if name == "" {
+		return r.CopyLink()
+	}
 
 	return &MetricData{
 		FetchResponse: pb.FetchResponse{
@@ -464,7 +517,7 @@ func (r *MetricData) CopyNameWithVal(name string) *MetricData {
 	values := make([]float64, len(r.Values))
 	copy(values, r.Values)
 
-	tags := map[string]string{"name": ExtractName(name)}
+	tags := tags.ExtractTags(ExtractName(name))
 
 	return &MetricData{
 		FetchResponse: pb.FetchResponse{
@@ -477,35 +530,6 @@ func (r *MetricData) CopyNameWithVal(name string) *MetricData {
 			XFilesFactor:            r.XFilesFactor,
 			HighPrecisionTimestamps: r.HighPrecisionTimestamps,
 			Values:                  values,
-			AppliedFunctions:        r.AppliedFunctions,
-			RequestStartTime:        r.RequestStartTime,
-			RequestStopTime:         r.RequestStopTime,
-		},
-		GraphOptions:      r.GraphOptions,
-		ValuesPerPoint:    r.ValuesPerPoint,
-		aggregatedValues:  r.aggregatedValues,
-		Tags:              tags,
-		AggregateFunction: r.AggregateFunction,
-	}
-}
-
-// CopyTag returns the copy of MetricData, Values not copied and link from parent. If name set, Name and Name tag changed, Tags wil be reset
-func (r *MetricData) CopyTag(name string, tags map[string]string) *MetricData {
-	if name == "" {
-		return r.CopyLink()
-	}
-
-	return &MetricData{
-		FetchResponse: pb.FetchResponse{
-			Name:                    name,
-			PathExpression:          r.PathExpression,
-			ConsolidationFunc:       r.ConsolidationFunc,
-			StartTime:               r.StartTime,
-			StopTime:                r.StopTime,
-			StepTime:                r.StepTime,
-			XFilesFactor:            r.XFilesFactor,
-			HighPrecisionTimestamps: r.HighPrecisionTimestamps,
-			Values:                  r.Values,
 			AppliedFunctions:        r.AppliedFunctions,
 			RequestStartTime:        r.RequestStartTime,
 			RequestStopTime:         r.RequestStopTime,
@@ -545,9 +569,9 @@ func (r *MetricData) FixStopTime() *MetricData {
 	return r
 }
 
-// SetNameTag set safe name tag for future use without metric.ExtractMetric
+// SetNameTag set name tag
 func (r *MetricData) SetNameTag(name string) *MetricData {
-	r.Tags["name"] = metric.ExtractMetric(name)
+	r.Tags["name"] = name
 	return r
 }
 

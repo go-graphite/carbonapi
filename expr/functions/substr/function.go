@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
-	"github.com/go-graphite/carbonapi/expr/helper/metric"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -33,7 +32,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 // aliasSub(seriesList, start, stop)
 func (f *substr) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// BUG: affected by the same positional arg issue as 'threshold'.
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -48,10 +47,10 @@ func (f *substr) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		return nil, err
 	}
 
-	var results []*types.MetricData
+	results := make([]*types.MetricData, len(args))
 
-	for _, a := range args {
-		metric := metric.ExtractMetric(a.Name)
+	for n, a := range args {
+		metric := a.Tags["name"]
 		nodes := strings.Split(metric, ".")
 		realStartField := startField
 		if startField != 0 {
@@ -79,9 +78,8 @@ func (f *substr) Do(ctx context.Context, e parser.Expr, from, until int64, value
 			nodes = nodes[:realStopField]
 		}
 
-		r := *a
-		r.Name = strings.Join(nodes, ".")
-		results = append(results, &r)
+		r := a.CopyName(strings.Join(nodes, "."))
+		results[n] = r
 	}
 
 	return results, nil

@@ -2,9 +2,7 @@ package weightedAverage
 
 import (
 	"context"
-	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -36,11 +34,12 @@ func (f *weightedAverage) Do(ctx context.Context, e parser.Expr, from, until int
 	aggKeyPairs := make(map[string]map[string]*types.MetricData)
 	var productList []*types.MetricData
 
-	avgs, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	avgs, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
-	weights, err := helper.GetSeriesArg(ctx, e.Args()[1], from, until, values)
+
+	weights, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -54,12 +53,8 @@ func (f *weightedAverage) Do(ctx context.Context, e parser.Expr, from, until int
 		return nil, err
 	}
 
-	avgNames := make([]string, 0)
-	weightNames := make([]string, 0)
-	nodeNames := make([]string, 0)
-	for _, node := range nodes {
-		nodeNames = append(nodeNames, fmt.Sprintf("%v", node.Value))
-	}
+	avgNames := make([]string, 0, len(avgs))
+	weightNames := make([]string, 0, len(weights))
 
 	for _, metric := range avgs {
 		key := helper.AggKey(metric, nodes)
@@ -117,12 +112,6 @@ func (f *weightedAverage) Do(ctx context.Context, e parser.Expr, from, until int
 		return nil, err
 	}
 
-	weightedAverageSeries[0].Name = fmt.Sprintf(
-		"weightedAverage(%s, %s, %s)",
-		strings.Join(avgNames, ","),
-		strings.Join(weightNames, ","),
-		strings.Join(nodeNames, ", "),
-	)
 	return weightedAverageSeries, nil
 }
 

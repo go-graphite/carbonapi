@@ -30,8 +30,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // delay(seriesList, steps)
 func (f *delay) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	eArgs := e.Args()
-	seriesList, err := helper.GetSeriesArg(ctx, eArgs[0], from, until, values)
+	seriesList, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -40,6 +39,7 @@ func (f *delay) Do(ctx context.Context, e parser.Expr, from, until int64, values
 	if err != nil {
 		return nil, err
 	}
+	stepsStr := e.Arg(1).StringValue()
 
 	results := make([]*types.MetricData, len(seriesList))
 
@@ -62,7 +62,7 @@ func (f *delay) Do(ctx context.Context, e parser.Expr, from, until int64, values
 			prevValues = append(prevValues, value)
 		}
 
-		result := series.CopyTag("delay("+series.Name+","+eArgs[1].StringValue()+")", series.Tags)
+		result := series.CopyTag("delay("+series.Name+","+stepsStr+")", series.Tags)
 		result.Values = newValues
 
 		results[i] = result

@@ -2,12 +2,10 @@ package sumSeriesWithWildcards
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"strings"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
-	"github.com/go-graphite/carbonapi/expr/helper/metric"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -44,15 +42,13 @@ func (f *sumSeriesWithWildcards) Do(ctx context.Context, e parser.Expr, from, un
 		return nil, err
 	}
 
-	var results []*types.MetricData
-
-	nodeList := []string{}
+	nodeList := make([]string, 0, 256)
 	groups := make(map[string][]*types.MetricData)
 
 	for _, a := range args {
-		metric := metric.ExtractMetric(a.Name)
+		metric := a.Tags["name"]
 		nodes := strings.Split(metric, ".")
-		var s []string
+		s := make([]string, 0, len(nodes))
 		// Yes, this is O(n^2), but len(nodes) < 10 and len(fields) < 3
 		// Iterating an int slice is faster than a map for n ~ 30
 		// http://www.antoine.im/posts/someone_is_wrong_on_the_internet
@@ -71,17 +67,12 @@ func (f *sumSeriesWithWildcards) Do(ctx context.Context, e parser.Expr, from, un
 		groups[node] = append(groups[node], a)
 	}
 
-	for _, series := range nodeList {
+	results := make([]*types.MetricData, len(nodeList))
+	for n, series := range nodeList {
 		args := groups[series]
-		r := *args[0]
-		r.Name = fmt.Sprintf("sumSeriesWithWildcards(%s)", series)
-		r.Tags = make(map[string]string)
-		for k, v := range args[0].Tags {
-			r.Tags[k] = v
-		}
-		r.Tags["name"] = series
+		name := "sumSeriesWithWildcards(" + series + ")"
+		r := args[0].CopyTag(name, map[string]string{"name": series})
 		r.Values = make([]float64, len(args[0].Values))
-
 		atLeastOne := make([]bool, len(args[0].Values))
 		for _, arg := range args {
 			for i, v := range arg.Values {
@@ -99,7 +90,7 @@ func (f *sumSeriesWithWildcards) Do(ctx context.Context, e parser.Expr, from, un
 			}
 		}
 
-		results = append(results, &r)
+		results[n] = r
 	}
 	return results, nil
 }
@@ -125,6 +116,10 @@ func (f *sumSeriesWithWildcards) Description() map[string]types.FunctionDescript
 					Type:     types.Node,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

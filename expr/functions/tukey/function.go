@@ -34,7 +34,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // tukeyAbove(seriesList,basis,n,interval=0) , tukeyBelow(seriesList,basis,n,interval=0)
 func (f *tukey) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -54,8 +54,8 @@ func (f *tukey) Do(ctx context.Context, e parser.Expr, from, until int64, values
 
 	var beginInterval int
 	endInterval := len(arg[0].Values)
-	if len(e.Args()) >= 4 {
-		switch e.Args()[3].Type() {
+	if e.ArgsLen() >= 4 {
+		switch e.Arg(3).Type() {
 		case parser.EtConst:
 			beginInterval, err = e.GetIntArg(3)
 		case parser.EtString:
@@ -219,6 +219,10 @@ func (f *tukey) Description() map[string]types.FunctionDescription {
 					Type:    types.IntOrInterval,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

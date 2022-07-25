@@ -33,9 +33,8 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // hitcount(seriesList, intervalString, alignToInterval=False)
 func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	eArgs := e.Args()
 	// TODO(dgryski): make sure the arrays are all the same 'size'
-	args, err := helper.GetSeriesArg(ctx, eArgs[0], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -50,10 +49,6 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 	if err != nil {
 		return nil, err
 	}
-	_, ok := e.NamedArgs()["alignToInterval"]
-	if !ok {
-		ok = len(e.Args()) > 2
-	}
 
 	start := args[0].StartTime
 	stop := args[0].StopTime
@@ -65,14 +60,14 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 	results := make([]*types.MetricData, 0, len(args))
 	for _, arg := range args {
 		var nameBuf strings.Builder
-		bucketSizeStr := eArgs[1].StringValue()
+		bucketSizeStr := e.Arg(1).StringValue()
 		nameBuf.Grow(len(arg.Name) + 13 + len(bucketSizeStr))
 		nameBuf.WriteString("hitcount(")
 		nameBuf.WriteString(arg.Name)
 		nameBuf.WriteString(",'")
 		nameBuf.WriteString(bucketSizeStr)
 		nameBuf.WriteString("'")
-		if ok {
+		if alignToInterval {
 			nameBuf.WriteString(",")
 			nameBuf.WriteString(strconv.FormatBool(alignToInterval))
 		}

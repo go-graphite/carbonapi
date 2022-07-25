@@ -41,7 +41,7 @@ func extractComponent(m *types.MetricData, values []complex128, t string, f func
 // fft(seriesList, mode)
 // mode: "", abs, phase. Empty string means "both"
 func (f *fft) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func (f *fft) Description() map[string]types.FunctionDescription {
 					}),
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			ValuesChange: true, // values changed
 		},

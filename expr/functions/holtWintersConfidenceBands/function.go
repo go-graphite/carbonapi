@@ -35,7 +35,7 @@ func (f *holtWintersConfidenceBands) Do(ctx context.Context, e parser.Expr, from
 		return nil, err
 	}
 
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from-bootstrapInterval, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from-bootstrapInterval, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func (f *holtWintersConfidenceBands) Description() map[string]types.FunctionDesc
 					Type: types.Interval,
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed

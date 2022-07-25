@@ -44,6 +44,16 @@ func TestAliasByNode(t *testing.T) {
 	now32 := int64(time.Now().Unix())
 
 	tests := []th.EvalTestItem{
+		// issue 517
+		{
+			"aliasByNode(aliasSub(a.b.c.d.e, '(.*)', '0.1.2.@.4'), 2)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"a.b.c.d.e", 0, 1}: {
+					types.MakeMetricData("a.b.c.d.e", []float64{8, 2, 4}, 1, now32),
+				},
+			},
+			[]*types.MetricData{types.MakeMetricData("2", []float64{8, 2, 4}, 1, now32)},
+		},
 		{
 			Target: "aliasByNode(aliasSub(transformNull(metric1.foo.bar.ba*, 0), 'baz', 'word'), 2, 3)",
 			M: map[parser.MetricRequest][]*types.MetricData{

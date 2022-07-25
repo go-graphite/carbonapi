@@ -2,12 +2,10 @@ package multiplySeriesWithWildcards
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"strings"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
-	"github.com/go-graphite/carbonapi/expr/helper/metric"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -35,7 +33,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 func (f *multiplySeriesWithWildcards) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	/* TODO(dgryski): make sure the arrays are all the same 'size'
 	   (duplicated from sumSeriesWithWildcards because of similar logic but multiplication) */
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -45,15 +43,13 @@ func (f *multiplySeriesWithWildcards) Do(ctx context.Context, e parser.Expr, fro
 		return nil, err
 	}
 
-	var results []*types.MetricData
-
-	nodeList := []string{}
+	nodeList := make([]string, 0, 256)
 	groups := make(map[string][]*types.MetricData)
 
 	for _, a := range args {
-		metric := metric.ExtractMetric(a.Name)
+		metric := a.Tags["name"]
 		nodes := strings.Split(metric, ".")
-		var s []string
+		s := make([]string, 0, len(nodes))
 		// Yes, this is O(n^2), but len(nodes) < 10 and len(fields) < 3
 		// Iterating an int slice is faster than a map for n ~ 30
 		// http://www.antoine.im/posts/someone_is_wrong_on_the_internet
@@ -72,15 +68,11 @@ func (f *multiplySeriesWithWildcards) Do(ctx context.Context, e parser.Expr, fro
 		groups[node] = append(groups[node], a)
 	}
 
+	results := make([]*types.MetricData, 0, len(nodeList))
+
 	for _, series := range nodeList {
 		args := groups[series]
-		r := *args[0]
-		r.Name = fmt.Sprintf("multiplySeriesWithWildcards(%s)", series)
-		r.Tags = make(map[string]string)
-		for k, v := range args[0].Tags {
-			r.Tags[k] = v
-		}
-		r.Tags["name"] = series
+		r := args[0].CopyTag("multiplySeriesWithWildcards("+series+")", map[string]string{"name": series})
 		r.Values = make([]float64, len(args[0].Values))
 
 		atLeastOne := make([]bool, len(args[0].Values))
@@ -108,7 +100,7 @@ func (f *multiplySeriesWithWildcards) Do(ctx context.Context, e parser.Expr, fro
 			}
 		}
 
-		results = append(results, &r)
+		results = append(results, r)
 	}
 	return results, nil
 }
@@ -134,6 +126,10 @@ func (f *multiplySeriesWithWildcards) Description() map[string]types.FunctionDes
 					Type:     types.Node,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

@@ -154,12 +154,21 @@ func seriesAsPercent(arg, total []*types.MetricData) []*types.MetricData {
 	return arg
 }
 
-func seriesSelfGroupAsPercent(arg []*types.MetricData, nodesOrTags []parser.NodeOrTag) []*types.MetricData {
+func seriesGroupAsPercent(arg []*types.MetricData, nodesOrTags []parser.NodeOrTag) []*types.MetricData {
 	// asPercent(seriesList, None, *nodes)
 	argGroups := groupByNodes(arg, nodesOrTags)
 
+	keys := make([]string, len(argGroups))
+	i := 0
+	for key := range argGroups {
+		keys[i] = key
+		i++
+	}
+	sort.Strings(keys)
+
 	arg = make([]*types.MetricData, 0, len(arg))
-	for _, argGroup := range argGroups {
+	for _, k := range keys {
+		argGroup := argGroups[k]
 		sum := sumSeries(argGroup)
 		start := len(arg)
 		for _, a := range argGroup {
@@ -181,7 +190,7 @@ func seriesSelfGroupAsPercent(arg []*types.MetricData, nodesOrTags []parser.Node
 	return arg
 }
 
-func seriesGroupAsPercent(arg, total []*types.MetricData, nodesOrTags []parser.NodeOrTag) []*types.MetricData {
+func seriesGroup2AsPercent(arg, total []*types.MetricData, nodesOrTags []parser.NodeOrTag) []*types.MetricData {
 	argGroups := groupByNodes(arg, nodesOrTags)
 	totalGroups := groupByNodes(total, nodesOrTags)
 
@@ -312,8 +321,7 @@ func seriesGroupAsPercent(arg, total []*types.MetricData, nodesOrTags []parser.N
 
 // asPercent(seriesList, total=None, *nodes)
 func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	eArgs := e.Args()
-	arg, err := helper.GetSeriesArg(ctx, eArgs[0], from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -321,7 +329,7 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		return nil, nil
 	}
 
-	if len(eArgs) == 1 {
+	if e.ArgsLen() == 1 {
 		// asPercent(seriesList)
 
 		// TODO (msaf1980): may be copy in before start eval (based on function pipeline descritptions (ValueChange field)) and avoid copy metrics in functions
@@ -342,7 +350,7 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			a.Name = "asPercent(" + a.Name + ")"
 		}
 		return arg, nil
-	} else if len(eArgs) == 2 && eArgs[1].IsConst() {
+	} else if e.ArgsLen() == 2 && e.Arg(1).IsConst() {
 		// asPercent(seriesList, N)
 
 		total, err := e.GetFloatArg(1)
@@ -361,12 +369,12 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 					a.Values[i] *= 100 / total
 				}
 			}
-			a.Name = "asPercent(" + a.Name + "," + eArgs[1].StringValue() + ")"
+			a.Name = "asPercent(" + a.Name + "," + e.Arg(1).StringValue() + ")"
 		}
 		return arg, nil
-	} else if len(eArgs) == 2 && (eArgs[1].IsName() || eArgs[1].IsFunc()) {
+	} else if e.ArgsLen() == 2 && (e.Arg(1).IsName() || e.Arg(1).IsFunc()) {
 		// asPercent(seriesList, totalList)
-		total, err := helper.GetSeriesArg(ctx, eArgs[1], from, until, values)
+		total, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -377,21 +385,21 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 
 		return seriesAsPercent(arg, total), nil
 
-	} else if len(eArgs) >= 3 && eArgs[1].IsName() || eArgs[1].IsFunc() {
+	} else if e.ArgsLen() >= 3 && e.Arg(1).IsName() || e.Arg(1).IsFunc() {
 		// Group by
 		nodesOrTags, err := e.GetNodeOrTagArgs(2)
 		if err != nil {
 			return nil, err
 		}
 
-		if eArgs[1].Target() == "None" {
+		if e.Arg(1).Target() == "None" {
 			// asPercent(seriesList, None, *nodes)
 			arg = helper.AlignSeries(types.CopyMetricDataSlice(arg))
 
-			return seriesSelfGroupAsPercent(arg, nodesOrTags), nil
+			return seriesGroupAsPercent(arg, nodesOrTags), nil
 		} else {
 			// asPercent(seriesList, totalSeriesList, *nodes)
-			total, err := helper.GetSeriesArg(ctx, eArgs[1], from, until, values)
+			total, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
 			if err != nil {
 				return nil, err
 			}
@@ -400,7 +408,7 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			arg = alignedSeries[0:len(arg)]
 			total = alignedSeries[len(arg):]
 
-			return seriesGroupAsPercent(arg, total, nodesOrTags), nil
+			return seriesGroup2AsPercent(arg, total, nodesOrTags), nil
 		}
 	}
 
@@ -432,7 +440,7 @@ func (f *asPercent) Description() map[string]types.FunctionDescription {
 					Type:     types.NodeOrTag,
 				},
 			},
-			Aggretated:   true, // function aggregate metrics (change seriesList items count)
+			SeriesChange: true, // function aggregate metrics or change series items count
 			NameChange:   true, // name changed
 			TagsChange:   true, // name tag changed
 			ValuesChange: true, // values changed

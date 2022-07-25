@@ -22,7 +22,7 @@ func init() {
 	}
 }
 
-func TestFunction(t *testing.T) {
+func TestRangeOfSeries(t *testing.T) {
 	now32 := int64(time.Now().Unix())
 
 	tests := []th.EvalTestItem{

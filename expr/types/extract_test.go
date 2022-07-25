@@ -63,6 +63,14 @@ func TestExtractName(t *testing.T) {
 			"average(metric{1,2}e,'sum')",
 			"metric{1,2}e",
 		},
+		{
+			"aliasByNode(alias(0.1.2.@.4, 2), 1)",
+			"0.1.2.@.4",
+		},
+		{
+			"aliasByTags(alias(0.1.2.@.4, 2), 1)",
+			"0.1.2.@.4",
+		},
 	}
 
 	for _, tt := range tests {

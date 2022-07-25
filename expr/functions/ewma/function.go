@@ -31,8 +31,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // ewma(seriesList, alpha)
 func (f *ewma) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	eArgs := e.Args()
-	arg, err := helper.GetSeriesArg(ctx, eArgs[0], from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -41,13 +40,14 @@ func (f *ewma) Do(ctx context.Context, e parser.Expr, from, until int64, values 
 	if err != nil {
 		return nil, err
 	}
+	alphaStr := e.Arg(1).StringValue()
 
 	e.SetTarget("ewma")
 
 	// ugh, helper.ForEachSeriesDo does not handle arguments properly
 	results := make([]*types.MetricData, len(arg))
 	for i, a := range arg {
-		name := "ewma(" + a.Name + "," + eArgs[1].StringValue() + ")"
+		name := "ewma(" + a.Name + "," + alphaStr + ")"
 
 		r := a.CopyName(name)
 		r.Values = make([]float64, len(a.Values))

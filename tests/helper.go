@@ -37,7 +37,7 @@ func (evaluator *FuncEvaluator) Eval(ctx context.Context, e parser.Expr, from, u
 	// evaluate the function
 
 	// all functions have arguments -- check we do too
-	if len(e.Args()) == 0 {
+	if e.ArgsLen() == 0 {
 		return nil, parser.ErrMissingArgument
 	}
 

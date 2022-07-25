@@ -47,9 +47,13 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 		return nil, err
 	}
 
-	_, ok := e.NamedArgs()["default"]
+	_, ok := e.NamedArg("default")
 	if !ok {
-		ok = len(e.Args()) > 1
+		ok = e.ArgsLen() > 1
+	}
+	var defvStr string
+	if defv != 0 {
+		defvStr = strconv.FormatFloat(defv, 'g', -1, 64)
 	}
 
 	var valMap []bool
@@ -78,11 +82,11 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 		}
 	}
 
-	results := make([]*types.MetricData, 0, len(arg))
+	results := make([]*types.MetricData, 0, len(arg)+1)
 	for _, a := range arg {
 		var name string
 		if ok {
-			name = "transformNull(" + a.Name + "," + strconv.FormatFloat(defv, 'g', -1, 64) + ")"
+			name = "transformNull(" + a.Name + "," + defvStr + ")"
 		} else {
 			name = "transformNull(" + a.Name + ")"
 		}

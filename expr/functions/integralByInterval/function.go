@@ -31,7 +31,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // integralByInterval(seriesList, intervalString)
 func (f *integralByInterval) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -44,6 +44,7 @@ func (f *integralByInterval) Do(ctx context.Context, e parser.Expr, from, until 
 		return nil, err
 	}
 	bucketSize := int64(bucketSizeInt32)
+	bucketSizeStr := e.Arg(1).StringValue()
 
 	startTime := from
 	results := make([]*types.MetricData, len(args))
@@ -51,7 +52,7 @@ func (f *integralByInterval) Do(ctx context.Context, e parser.Expr, from, until 
 		current := 0.0
 		currentTime := arg.StartTime
 
-		name := "integralByInterval(" + arg.Name + ",'" + e.Args()[1].StringValue() + "')"
+		name := "integralByInterval(" + arg.Name + ",'" + bucketSizeStr + "')"
 		result := &types.MetricData{
 			FetchResponse: pb.FetchResponse{
 				Name:              name,

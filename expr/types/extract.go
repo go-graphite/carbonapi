@@ -7,11 +7,20 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-// ExtractName extracts name out of function list
-func ExtractName(s string) string {
+var allowedCharactersInMetricName = map[byte]struct{}{
+	'=': struct{}{},
+	'@': struct{}{},
+}
+
+func byteAllowedInName(b byte) bool {
+	_, ok := allowedCharactersInMetricName[b]
+	return ok
+}
+
+// ExtractNameLoc extracts name start:end location out of function list with . Only for use in MetrciData name parse, it's has more allowed chard in names, like =
+func ExtractNameLoc(s string) (int, int) {
 	// search for a metric name in 's'
 	// metric name is defined to be a Series of name characters terminated by a ',' or ')'
-	// work sample: bla(bla{bl,a}b[la,b]la,1) => bla{bl,a}b[la,b]la
 
 	var (
 		start, braces, i, w int
@@ -22,7 +31,7 @@ FOR:
 	for braces, i, w = 0, 0, 0; i < len(s); i += w {
 
 		w = 1
-		if parser.IsNameChar(s[i]) {
+		if parser.IsNameChar(s[i]) || byteAllowedInName(s[i]) {
 			continue
 		}
 
@@ -43,8 +52,6 @@ FOR:
 			}
 		case ')':
 			break FOR
-		case '=':
-			continue
 		default:
 			r, w = utf8.DecodeRuneInString(s[i:])
 			if unicode.In(r, parser.RangeTables...) {
@@ -54,5 +61,11 @@ FOR:
 		}
 	}
 
-	return s[start:i]
+	return start, i
+}
+
+// ExtractName extracts name out of function list. Only for use in MetrciData name parse, it's has more allowed chard in names, like =
+func ExtractName(s string) string {
+	start, end := ExtractNameLoc(s)
+	return s[start:end]
 }

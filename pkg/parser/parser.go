@@ -116,12 +116,25 @@ func (e *expr) Args() []Expr {
 	return ret
 }
 
+func (e *expr) Arg(i int) Expr {
+	return e.args[i]
+}
+
+func (e *expr) ArgsLen() int {
+	return len(e.args)
+}
+
 func (e *expr) NamedArgs() map[string]Expr {
 	ret := make(map[string]Expr)
 	for k, v := range e.namedArgs {
 		ret[k] = v
 	}
 	return ret
+}
+
+func (e *expr) NamedArg(name string) (Expr, bool) {
+	expr, exist := e.namedArgs[name]
+	return expr, exist
 }
 
 func (e *expr) Metrics() []MetricRequest {

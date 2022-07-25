@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
-	"github.com/go-graphite/carbonapi/expr/helper/metric"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -46,7 +45,7 @@ func (f *applyByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 	}
 
 	var newName string
-	if len(e.Args()) == 4 {
+	if e.ArgsLen() == 4 {
 		newName, err = e.GetStringArg(3)
 		if err != nil {
 			return false, nil, err
@@ -55,7 +54,7 @@ func (f *applyByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 
 	var rv []string
 	for _, a := range args {
-		metric := metric.ExtractMetric(a.Name)
+		metric := a.Tags["name"]
 		nodes := strings.Split(metric, ".")
 		node := strings.Join(nodes[0:field+1], ".")
 		newTarget := strings.ReplaceAll(callback, "%", node)

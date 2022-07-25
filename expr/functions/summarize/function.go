@@ -53,9 +53,9 @@ func (f *summarize) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	if err != nil {
 		return nil, err
 	}
-	_, funcOk := e.NamedArgs()["func"]
+	_, funcOk := e.NamedArg("func")
 	if !funcOk {
-		funcOk = len(e.Args()) > 2
+		funcOk = e.ArgsLen() > 2
 	}
 
 	alignToFrom, err := e.GetBoolNamedOrPosArgDefault("alignToFrom", 3, false)
@@ -64,7 +64,7 @@ func (f *summarize) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	}
 	_, alignOk := e.NamedArgs()["alignToFrom"]
 	if !alignOk {
-		alignOk = len(e.Args()) > 3
+		alignOk = e.ArgsLen() > 3
 	}
 
 	start := args[0].StartTime
