@@ -552,7 +552,8 @@ func IsNameChar(r byte) bool {
 		r == '^' || r == '$' ||
 		r == '<' || r == '>' ||
 		r == '&' || r == '#' ||
-		r == '/' || r == '%'
+		r == '/' || r == '%' ||
+		r == '@'
 }
 
 func isDigit(r byte) bool {
@@ -684,12 +685,12 @@ func parseConst(s string) (float64, string, string, error) {
 var RangeTables []*unicode.RangeTable
 
 var disallowedCharactersInMetricName = map[rune]struct{}{
-	'(': struct{}{},
-	')': struct{}{},
-	'"': struct{}{},
+	'(':  struct{}{},
+	')':  struct{}{},
+	'"':  struct{}{},
 	'\'': struct{}{},
-	' ': struct{}{},
-	'/': struct{}{},
+	' ':  struct{}{},
+	'/':  struct{}{},
 }
 
 func unicodeRuneAllowedInName(r rune) bool {
