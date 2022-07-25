@@ -122,9 +122,9 @@ func (f *summarize) Do(ctx context.Context, e parser.Expr, from, until int64, va
 				PathExpression:    name,
 				ConsolidationFunc: arg.ConsolidationFunc,
 			},
-			Tags: arg.Tags,
+			Tags: helper.CopyTags(arg),
 		}
-		r.Tags["summarize"] = fmt.Sprintf("%d", bucketSizeInt32)
+		r.Tags["summarize"] = e.Args()[1].StringValue()
 		r.Tags["summarizeFunction"] = summarizeFunction
 
 		t := arg.StartTime // unadjusted
