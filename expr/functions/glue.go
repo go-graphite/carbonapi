@@ -84,6 +84,7 @@ import (
 	"github.com/grafana/carbonapi/expr/functions/scaleToSeconds"
 	"github.com/grafana/carbonapi/expr/functions/seriesByTag"
 	"github.com/grafana/carbonapi/expr/functions/seriesList"
+	"github.com/grafana/carbonapi/expr/functions/sinFunction"
 	"github.com/grafana/carbonapi/expr/functions/slo"
 	"github.com/grafana/carbonapi/expr/functions/smartSummarize"
 	"github.com/grafana/carbonapi/expr/functions/sortBy"
@@ -195,6 +196,7 @@ func New(configs map[string]string) {
 		{name: "scaleToSeconds", filename: "scaleToSeconds", order: scaleToSeconds.GetOrder(), f: scaleToSeconds.New},
 		{name: "seriesByTag", filename: "seriesByTag", order: seriesByTag.GetOrder(), f: seriesByTag.New},
 		{name: "seriesList", filename: "seriesList", order: seriesList.GetOrder(), f: seriesList.New},
+		{name: "sinFunction", filename: "sinFunction", order: sinFunction.GetOrder(), f: sinFunction.New},
 		{name: "slo", filename: "slo", order: slo.GetOrder(), f: slo.New},
 		{name: "smartSummarize", filename: "smartSummarize", order: smartSummarize.GetOrder(), f: smartSummarize.New},
 		{name: "sortBy", filename: "sortBy", order: sortBy.GetOrder(), f: sortBy.New},
