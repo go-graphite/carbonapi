@@ -2,8 +2,8 @@ package nPercentile
 
 import (
 	"context"
-	"fmt"
 	"math"
+	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -32,7 +32,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // nPercentile(seriesList, n)
 func (f *nPercentile) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -40,11 +40,12 @@ func (f *nPercentile) Do(ctx context.Context, e parser.Expr, from, until int64, 
 	if err != nil {
 		return nil, err
 	}
+	percentStr := strconv.FormatFloat(percent, 'g', -1, 64)
 
-	var results []*types.MetricData
-	for _, a := range arg {
+	results := make([]*types.MetricData, len(arg))
+	for i, a := range arg {
 		r := *a
-		r.Name = fmt.Sprintf("nPercentile(%s,%g)", a.Name, percent)
+		r.Name = "nPercentile(" + a.Name + "," + percentStr + ")"
 		r.Values = make([]float64, len(a.Values))
 
 		var values []float64
@@ -59,7 +60,7 @@ func (f *nPercentile) Do(ctx context.Context, e parser.Expr, from, until int64, 
 			r.Values[i] = value
 		}
 
-		results = append(results, &r)
+		results[i] = &r
 	}
 	return results, nil
 }
@@ -85,6 +86,8 @@ func (f *nPercentile) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

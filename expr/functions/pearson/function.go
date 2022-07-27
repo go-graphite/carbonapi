@@ -2,7 +2,6 @@ package pearson
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	"github.com/dgryski/go-onlinestats"
@@ -32,12 +31,12 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // pearson(series, series, windowSize)
 func (f *pearson) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg1, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg1, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
-	arg2, err := helper.GetSeriesArg(ctx, e.Args()[1], from, until, values)
+	arg2, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +57,7 @@ func (f *pearson) Do(ctx context.Context, e parser.Expr, from, until int64, valu
 	w2 := &types.Windowed{Data: make([]float64, windowSize)}
 
 	r := *a1
-	r.Name = fmt.Sprintf("pearson(%s,%s,%d)", a1.Name, a2.Name, windowSize)
+	r.Name = "pearson(" + a1.Name + "," + a2.Name + "," + e.Arg(2).StringValue() + ")"
 	r.Values = make([]float64, len(a1.Values))
 	r.StartTime = from
 	r.StopTime = r.StartTime + int64(len(r.Values))*r.StepTime
@@ -117,6 +116,8 @@ and will manifest as if the entire window/series had missing values.`,
 					Type:     types.Integer,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

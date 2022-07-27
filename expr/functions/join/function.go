@@ -69,16 +69,20 @@ Example:
 					Options:  types.StringsToSuggestionList([]string{and, or, xor, sub}),
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }
 
 func (_ *join) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (results []*types.MetricData, err error) {
-	seriesA, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	seriesA, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
-	seriesB, err := helper.GetSeriesArg(ctx, e.Args()[1], from, until, values)
+	seriesB, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
 	if err != nil {
 		return nil, err
 	}

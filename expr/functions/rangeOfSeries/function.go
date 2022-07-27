@@ -2,7 +2,6 @@ package rangeOfSeries
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -31,13 +30,12 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // rangeOfSeries(*seriesLists)
 func (f *rangeOfSeries) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	series, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	series, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
-	r := *series[0]
-	r.Name = fmt.Sprintf("%s(%s)", e.Target(), e.RawArgs())
+	r := series[0].CopyName(e.Target() + "(" + e.RawArgs() + ")")
 	r.Values = make([]float64, len(series[0].Values))
 
 	for i := range series[0].Values {
@@ -65,7 +63,7 @@ func (f *rangeOfSeries) Do(ctx context.Context, e parser.Expr, from, until int64
 			r.Values[i] = math.NaN()
 		}
 	}
-	return []*types.MetricData{&r}, err
+	return []*types.MetricData{r}, err
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web

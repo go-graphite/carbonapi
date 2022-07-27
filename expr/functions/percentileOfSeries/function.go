@@ -31,7 +31,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 // percentileOfSeries(seriesList, n, interpolate=False)
 func (f *percentileOfSeries) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(dgryski): make sure the arrays are all the same 'size'
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -77,6 +77,10 @@ func (f *percentileOfSeries) Description() map[string]types.FunctionDescription 
 					Type:    types.Boolean,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

@@ -32,11 +32,11 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // divideSeries(dividendSeriesList, divisorSeriesList)
 func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	if len(e.Args()) < 1 {
+	if e.ArgsLen() < 1 {
 		return nil, parser.ErrMissingTimeseries
 	}
 
-	firstArg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	firstArg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -45,10 +45,10 @@ func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 
 	var numerators []*types.MetricData
 	var denominator *types.MetricData
-	if len(e.Args()) == 2 {
+	if e.ArgsLen() == 2 {
 		useMetricNames = true
 		numerators = firstArg
-		denominators, err := helper.GetSeriesArg(ctx, e.Args()[1], from, until, values)
+		denominators, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -57,7 +57,7 @@ func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 		}
 
 		denominator = denominators[0]
-	} else if len(firstArg) == 2 && len(e.Args()) == 1 {
+	} else if len(firstArg) == 2 && e.ArgsLen() == 1 {
 		numerators = append(numerators, firstArg[0])
 		denominator = firstArg[1]
 	} else {
@@ -74,13 +74,13 @@ func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 		}
 	}
 
-	var results []*types.MetricData
+	results := make([]*types.MetricData, 0, len(numerators))
 	for _, numerator := range numerators {
 		r := *numerator
 		if useMetricNames {
-			r.Name = fmt.Sprintf("divideSeries(%s,%s)", numerator.Name, denominator.Name)
+			r.Name = "divideSeries(" + numerator.Name + "," + denominator.Name + ")"
 		} else {
-			r.Name = fmt.Sprintf("divideSeries(%s)", e.RawArgs())
+			r.Name = "divideSeries(" + e.RawArgs() + ")"
 		}
 		r.Values = make([]float64, len(numerator.Values))
 
@@ -89,10 +89,9 @@ func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 			// math.IsNaN(v) || math.IsNaN(denominator.Values[i]) covered by nature of math.NaN
 			if denominator.Values[i] == 0 {
 				r.Values[i] = math.NaN()
-				continue
+			} else {
+				r.Values[i] = v / denominator.Values[i]
 			}
-
-			r.Values[i] = v / denominator.Values[i]
 		}
 		results = append(results, &r)
 	}
@@ -122,6 +121,10 @@ func (f *divideSeries) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

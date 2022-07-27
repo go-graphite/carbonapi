@@ -2,7 +2,6 @@ package holtWintersConfidenceBands
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/holtwinters"
@@ -36,7 +35,7 @@ func (f *holtWintersConfidenceBands) Do(ctx context.Context, e parser.Expr, from
 		return nil, err
 	}
 
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from-bootstrapInterval, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from-bootstrapInterval, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -52,35 +51,37 @@ func (f *holtWintersConfidenceBands) Do(ctx context.Context, e parser.Expr, from
 
 		lowerBand, upperBand := holtwinters.HoltWintersConfidenceBands(arg.Values, stepTime, delta, bootstrapInterval/86400)
 
-		lowerSeries := types.MetricData{
+		name := "holtWintersConfidenceLower(" + arg.Name + ")"
+		lowerSeries := &types.MetricData{
 			FetchResponse: pb.FetchResponse{
-				Name:              fmt.Sprintf("holtWintersConfidenceLower(%s)", arg.Name),
+				Name:              name,
 				Values:            lowerBand,
 				StepTime:          arg.StepTime,
 				StartTime:         arg.StartTime + bootstrapInterval,
 				StopTime:          arg.StopTime,
 				ConsolidationFunc: arg.ConsolidationFunc,
 				XFilesFactor:      arg.XFilesFactor,
-				PathExpression:    fmt.Sprintf("holtWintersConfidenceLower(%s)", arg.Name),
+				PathExpression:    name,
 			},
 			Tags: arg.Tags,
 		}
 
-		upperSeries := types.MetricData{
+		name = "holtWintersConfidenceUpper(" + arg.Name + ")"
+		upperSeries := &types.MetricData{
 			FetchResponse: pb.FetchResponse{
-				Name:              fmt.Sprintf("holtWintersConfidenceUpper(%s)", arg.Name),
+				Name:              name,
 				Values:            upperBand,
 				StepTime:          arg.StepTime,
 				StartTime:         arg.StartTime + bootstrapInterval,
 				StopTime:          arg.StopTime,
 				ConsolidationFunc: arg.ConsolidationFunc,
 				XFilesFactor:      arg.XFilesFactor,
-				PathExpression:    fmt.Sprintf("holtWintersConfidenceLower(%s)", arg.Name),
+				PathExpression:    name,
 			},
 			Tags: arg.Tags,
 		}
 
-		results = append(results, &lowerSeries, &upperSeries)
+		results = append(results, lowerSeries, upperSeries)
 	}
 	return results, nil
 }
@@ -115,6 +116,10 @@ func (f *holtWintersConfidenceBands) Description() map[string]types.FunctionDesc
 					Type: types.Interval,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

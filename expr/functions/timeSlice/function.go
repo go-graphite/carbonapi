@@ -2,8 +2,8 @@ package timeSlice
 
 import (
 	"context"
-	"fmt"
 	"math"
+	"strconv"
 	"time"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -45,16 +45,19 @@ func (f *timeSlice) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	start += now
 	end += now
 
+	startStr := strconv.FormatInt(start, 10)
+	endStr := strconv.FormatInt(end, 10)
+
 	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
-	var results []*types.MetricData
+	results := make([]*types.MetricData, len(arg))
 
-	for _, a := range arg {
+	for n, a := range arg {
 		r := *a
-		r.Name = fmt.Sprintf("timeSlice(%s, %d, %d)", a.Name, start, end)
+		r.Name = "timeSlice(" + a.Name + "," + startStr + "," + endStr + ")"
 		r.Values = make([]float64, len(a.Values))
 
 		current := from
@@ -66,7 +69,7 @@ func (f *timeSlice) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			}
 			current += a.StepTime
 		}
-		results = append(results, &r)
+		results[n] = &r
 	}
 
 	return results, nil
@@ -98,6 +101,8 @@ func (f *timeSlice) Description() map[string]types.FunctionDescription {
 					Default: types.NewSuggestion("now"),
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

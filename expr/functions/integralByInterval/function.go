@@ -2,7 +2,6 @@ package integralByInterval
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -32,7 +31,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // integralByInterval(seriesList, intervalString)
 func (f *integralByInterval) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -45,15 +44,16 @@ func (f *integralByInterval) Do(ctx context.Context, e parser.Expr, from, until 
 		return nil, err
 	}
 	bucketSize := int64(bucketSizeInt32)
+	bucketSizeStr := e.Arg(1).StringValue()
 
 	startTime := from
-	results := make([]*types.MetricData, 0, len(args))
-	for _, arg := range args {
+	results := make([]*types.MetricData, len(args))
+	for j, arg := range args {
 		current := 0.0
 		currentTime := arg.StartTime
 
-		name := fmt.Sprintf("integralByInterval(%s,'%s')", arg.Name, e.Args()[1].StringValue())
-		result := types.MetricData{
+		name := "integralByInterval(" + arg.Name + ",'" + bucketSizeStr + "')"
+		result := &types.MetricData{
 			FetchResponse: pb.FetchResponse{
 				Name:              name,
 				Values:            make([]float64, len(arg.Values)),
@@ -78,7 +78,7 @@ func (f *integralByInterval) Do(ctx context.Context, e parser.Expr, from, until 
 			currentTime += arg.StepTime
 		}
 
-		results = append(results, &result)
+		results[j] = result
 	}
 
 	return results, nil
@@ -109,6 +109,8 @@ func (f *integralByInterval) Description() map[string]types.FunctionDescription 
 					Type: types.Interval,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

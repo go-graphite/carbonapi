@@ -27,7 +27,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *aliasByNode) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -37,16 +37,12 @@ func (f *aliasByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		return nil, err
 	}
 
-	var results []*types.MetricData
+	results := make([]*types.MetricData, len(args))
 
-	for _, a := range args {
-		r := *a.CopyLink()
-		name := helper.ExtractMetric(helper.AggKey(a, nodesOrTags))
-		if len(name) > 0 {
-			r.Name = name
-			r.Tags["name"] = r.Name
-		}
-		results = append(results, &r)
+	for i, a := range args {
+		name := helper.AggKey(a, nodesOrTags)
+		r := a.CopyName(name)
+		results[i] = r
 	}
 
 	return results, nil
@@ -74,6 +70,8 @@ func (f *aliasByNode) Description() map[string]types.FunctionDescription {
 					Type:     types.NodeOrTag,
 				},
 			},
+			NameChange: true, // name changed
+			TagsChange: true, // name tag changed
 		},
 		"aliasByTags": {
 			Description: "Takes a seriesList and applies an alias derived from one or more tags",
@@ -94,6 +92,8 @@ func (f *aliasByNode) Description() map[string]types.FunctionDescription {
 					Type:     types.NodeOrTag,
 				},
 			},
+			NameChange: true, // name changed
+			TagsChange: true, // name tag changed
 		},
 	}
 }

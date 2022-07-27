@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strconv"
 
 	pbv3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
@@ -46,9 +47,13 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 		return nil, err
 	}
 
-	_, ok := e.NamedArgs()["default"]
+	_, ok := e.NamedArg("default")
 	if !ok {
-		ok = len(e.Args()) > 1
+		ok = e.ArgsLen() > 1
+	}
+	var defvStr string
+	if defv != 0 {
+		defvStr = strconv.FormatFloat(defv, 'g', -1, 64)
 	}
 
 	var valMap []bool
@@ -77,13 +82,13 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 		}
 	}
 
-	results := make([]*types.MetricData, 0, len(arg))
+	results := make([]*types.MetricData, 0, len(arg)+1)
 	for _, a := range arg {
 		var name string
 		if ok {
-			name = fmt.Sprintf("transformNull(%s,%g)", a.Name, defv)
+			name = "transformNull(" + a.Name + "," + defvStr + ")"
 		} else {
-			name = fmt.Sprintf("transformNull(%s)", a.Name)
+			name = "transformNull(" + a.Name + ")"
 		}
 
 		r := *a
@@ -115,7 +120,7 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 				StepTime:  step,
 				Values:    values,
 			},
-			Tags: map[string]string{"name": e.ToString()},
+			Tags: map[string]string{"name": types.ExtractName(e.ToString())},
 		})
 	}
 	return results, nil
@@ -163,6 +168,8 @@ func (f *transformNull) Description() map[string]types.FunctionDescription {
 					Type: types.Boolean,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

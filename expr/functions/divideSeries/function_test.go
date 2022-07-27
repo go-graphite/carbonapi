@@ -78,7 +78,7 @@ func TestDivideSeries(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("divideSeries(metric[12])",
-				[]float64{0.5, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 2}, 1, now32)},
+				[]float64{0.5, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 2}, 1, now32).SetNameTag("metric1")},
 		},
 	}
 
@@ -116,7 +116,7 @@ func TestDivideSeriesAligned(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("divideSeries(metric[23])",
-				[]float64{0.5, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 2, math.NaN()}, 1, now32)},
+				[]float64{0.5, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 2, math.NaN()}, 1, now32).SetNameTag("metric2")},
 		},
 	}
 

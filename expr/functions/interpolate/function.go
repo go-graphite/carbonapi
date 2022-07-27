@@ -2,7 +2,6 @@ package interpolate
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -27,7 +26,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *interpolate) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (resultData []*types.MetricData, resultError error) {
-	seriesList, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	seriesList, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +40,7 @@ func (f *interpolate) Do(ctx context.Context, e parser.Expr, from, until int64, 
 	for _, series := range seriesList {
 		pointsQty := len(series.Values)
 		resultSeries := *series
-		resultSeries.Name = fmt.Sprintf("interpolate(%s)", series.Name)
+		resultSeries.Name = "interpolate(" + series.Name + ")"
 
 		resultSeries.Values = make([]float64, pointsQty)
 		copy(resultSeries.Values, series.Values)
@@ -114,6 +113,8 @@ func (f *interpolate) Description() map[string]types.FunctionDescription {
 					Type:     types.Float,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

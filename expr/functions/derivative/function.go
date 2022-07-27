@@ -60,6 +60,7 @@ func (f *derivative) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
+			ValuesChange: true, // values changed
 		},
 	}
 }

@@ -2,7 +2,6 @@ package movingMedian
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"strconv"
 
@@ -75,7 +74,7 @@ func (f *movingMedian) Do(ctx context.Context, e parser.Expr, from, until int64,
 
 	var argstr string
 
-	switch e.Args()[1].Type() {
+	switch e.Arg(1).Type() {
 	case parser.EtConst:
 		n, err = e.GetIntArg(1)
 		argstr = strconv.Itoa(n)
@@ -83,7 +82,7 @@ func (f *movingMedian) Do(ctx context.Context, e parser.Expr, from, until int64,
 		var n32 int32
 		n32, err = e.GetIntervalArg(1, 1)
 		n = int(n32)
-		argstr = fmt.Sprintf("%q", e.Args()[1].StringValue())
+		argstr = "'" + e.Arg(1).StringValue() + "'"
 		scaleByStep = true
 	default:
 		err = parser.ErrBadType
@@ -99,15 +98,13 @@ func (f *movingMedian) Do(ctx context.Context, e parser.Expr, from, until int64,
 		start -= int64(n)
 	}
 
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], start, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), start, until, values)
 	if err != nil {
 		return nil, err
 	}
 
-	var result []*types.MetricData
-
 	if len(arg) == 0 {
-		return result, nil
+		return nil, nil
 	}
 
 	var offset int
@@ -117,9 +114,11 @@ func (f *movingMedian) Do(ctx context.Context, e parser.Expr, from, until int64,
 		offset = windowSize
 	}
 
-	for _, a := range arg {
+	result := make([]*types.MetricData, len(arg))
+
+	for n, a := range arg {
 		r := *a
-		r.Name = fmt.Sprintf("movingMedian(%s,%s)", a.Name, argstr)
+		r.Name = "movingMedian(" + a.Name + "," + argstr + ")"
 
 		if windowSize == 0 {
 			if *f.config.ReturnNaNsIfStepMismatch {
@@ -128,26 +127,25 @@ func (f *movingMedian) Do(ctx context.Context, e parser.Expr, from, until int64,
 					r.Values[i] = math.NaN()
 				}
 			}
-			result = append(result, &r)
-			continue
-		}
-		r.Values = make([]float64, len(a.Values)-offset)
-		r.StartTime = (from + r.StepTime - 1) / r.StepTime * r.StepTime // align StartTime to closest >= StepTime
-		r.StopTime = r.StartTime + int64(len(r.Values))*r.StepTime
+		} else {
+			r.Values = make([]float64, len(a.Values)-offset)
+			r.StartTime = (from + r.StepTime - 1) / r.StepTime * r.StepTime // align StartTime to closest >= StepTime
+			r.StopTime = r.StartTime + int64(len(r.Values))*r.StepTime
 
-		data := movingmedian.NewMovingMedian(windowSize)
+			data := movingmedian.NewMovingMedian(windowSize)
 
-		for i, v := range a.Values {
-			data.Push(v)
+			for i, v := range a.Values {
+				data.Push(v)
 
-			if ridx := i - offset; ridx >= 0 {
-				r.Values[ridx] = math.NaN()
-				if i >= (windowSize - 1) {
-					r.Values[ridx] = data.Median()
+				if ridx := i - offset; ridx >= 0 {
+					r.Values[ridx] = math.NaN()
+					if i >= (windowSize - 1) {
+						r.Values[ridx] = data.Median()
+					}
 				}
 			}
 		}
-		result = append(result, &r)
+		result[n] = &r
 	}
 	return result, nil
 }
@@ -187,6 +185,8 @@ func (f *movingMedian) Description() map[string]types.FunctionDescription {
 					Type: types.Float,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

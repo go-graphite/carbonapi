@@ -2,7 +2,6 @@ package stdev
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -38,6 +37,7 @@ func (f *stdev) Do(ctx context.Context, e parser.Expr, from, until int64, values
 	if err != nil {
 		return nil, err
 	}
+	pointsStr := e.Arg(1).StringValue()
 
 	missingThreshold, err := e.GetFloatArgDefault(2, 0.1)
 	if err != nil {
@@ -46,13 +46,13 @@ func (f *stdev) Do(ctx context.Context, e parser.Expr, from, until int64, values
 
 	minLen := int((1 - missingThreshold) * float64(points))
 
-	var result []*types.MetricData
+	result := make([]*types.MetricData, len(arg))
 
-	for _, a := range arg {
+	for n, a := range arg {
 		w := &types.Windowed{Data: make([]float64, points)}
 
 		r := *a
-		r.Name = fmt.Sprintf("stdev(%s,%d)", a.Name, points)
+		r.Name = "stdev(" + a.Name + "," + pointsStr + ")"
 		r.Values = make([]float64, len(a.Values))
 
 		for i, v := range a.Values {
@@ -62,7 +62,7 @@ func (f *stdev) Do(ctx context.Context, e parser.Expr, from, until int64, values
 				r.Values[i] = math.NaN()
 			}
 		}
-		result = append(result, &r)
+		result[n] = &r
 	}
 	return result, nil
 }

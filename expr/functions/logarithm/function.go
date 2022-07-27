@@ -2,8 +2,8 @@ package logarithm
 
 import (
 	"context"
-	"fmt"
 	"math"
+	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -32,7 +32,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 // logarithm(seriesList, base=10)
 // Alias: log
 func (f *logarithm) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -40,22 +40,23 @@ func (f *logarithm) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	if err != nil {
 		return nil, err
 	}
-	_, ok := e.NamedArgs()["base"]
-	if !ok {
-		ok = len(e.Args()) > 1
+	ok := base != 10
+	var baseStr string
+	if ok {
+		baseStr = strconv.Itoa(base)
 	}
 
 	baseLog := math.Log(float64(base))
 
-	var results []*types.MetricData
+	results := make([]*types.MetricData, len(arg))
 
-	for _, a := range arg {
+	for j, a := range arg {
 
 		var name string
 		if ok {
-			name = fmt.Sprintf("logarithm(%s,%d)", a.Name, base)
+			name = "logarithm(" + a.Name + "," + baseStr + ")"
 		} else {
-			name = fmt.Sprintf("logarithm(%s)", a.Name)
+			name = "logarithm(" + a.Name + ")"
 		}
 
 		r := *a
@@ -65,7 +66,7 @@ func (f *logarithm) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		for i, v := range a.Values {
 			r.Values[i] = math.Log(v) / baseLog
 		}
-		results = append(results, &r)
+		results[j] = &r
 	}
 	return results, nil
 }
@@ -110,6 +111,8 @@ func (f *logarithm) Description() map[string]types.FunctionDescription {
 					Type:    types.Integer,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

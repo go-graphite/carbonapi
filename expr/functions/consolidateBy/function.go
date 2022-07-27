@@ -30,7 +30,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // consolidateBy(seriesList, aggregationMethod)
 func (f *consolidateBy) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -39,14 +39,14 @@ func (f *consolidateBy) Do(ctx context.Context, e parser.Expr, from, until int64
 		return nil, err
 	}
 
-	var results []*types.MetricData
+	results := make([]*types.MetricData, len(arg))
 
-	for _, a := range arg {
+	for i, a := range arg {
 		r := *a
 
 		r.AggregateFunction = consolidations.ConsolidationToFunc[name]
 
-		results = append(results, &r)
+		results[i] = &r
 	}
 
 	return results, nil

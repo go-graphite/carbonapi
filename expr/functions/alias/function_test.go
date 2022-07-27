@@ -1,6 +1,7 @@
 package alias
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -76,5 +77,28 @@ func TestAlias(t *testing.T) {
 		t.Run(testName, func(t *testing.T) {
 			th.TestEvalExpr(t, &tt)
 		})
+	}
+}
+
+func BenchmarkAverageAlias(b *testing.B) {
+	target := `alias(metric1, "renamed")`
+	metrics := map[parser.MetricRequest][]*types.MetricData{
+		{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, 1)},
+		{Metric: "metric2", From: 0, Until: 1}: {types.MakeMetricData("metric2", []float64{1, 2, 3, 4, 5}, 1, 1)},
+	}
+
+	evaluator := metadata.GetEvaluator()
+	exp, _, err := parser.ParseExpr(target)
+	if err != nil {
+		b.Fatalf("failed to parse %s: %+v", target, err)
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		g, err := evaluator.Eval(context.Background(), exp, 0, 1, metrics)
+		if err != nil {
+			b.Fatalf("failed to eval %s: %+v", target, err)
+		}
+		_ = g
 	}
 }

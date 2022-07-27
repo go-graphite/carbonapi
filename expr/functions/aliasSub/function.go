@@ -29,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *aliasSub) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -51,13 +51,21 @@ func (f *aliasSub) Do(ctx context.Context, e parser.Expr, from, until int64, val
 
 	replace = helper.Backref.ReplaceAllString(replace, "$${$1}")
 
-	var results []*types.MetricData
+	results := make([]*types.MetricData, len(args))
 
-	for _, a := range args {
-		r := *a.CopyLink()
-		r.Name = re.ReplaceAllString(r.Name, replace)
-		r.Tags["name"] = r.Name
-		results = append(results, &r)
+	for i, a := range args {
+		var r *types.MetricData
+
+		oldName := a.Name
+		// not safe for tagged metrics
+		name := re.ReplaceAllString(oldName, replace)
+		if oldName == name {
+			r = a.CopyLinkTags()
+		} else {
+			r = a.CopyName(name)
+		}
+
+		results[i] = r
 	}
 
 	return results, nil
@@ -89,6 +97,8 @@ func (f *aliasSub) Description() map[string]types.FunctionDescription {
 					Type:     types.String,
 				},
 			},
+			NameChange: true, // name changed
+			TagsChange: true, // name tag changed
 		},
 	}
 }

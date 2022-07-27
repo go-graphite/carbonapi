@@ -2,7 +2,6 @@ package heatMap
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
@@ -29,7 +28,7 @@ func New(_ string) []interfaces.FunctionMetadata {
 }
 
 func (f *heatMap) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	series, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	series, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +46,7 @@ func (f *heatMap) Do(ctx context.Context, e parser.Expr, from, until int64, valu
 		pointsQty := len(curr.Values)
 		r := &types.MetricData{
 			FetchResponse: pb.FetchResponse{
-				Name:      fmt.Sprintf("heatMap(%s,%s)", curr.Name, prev.Name),
+				Name:      "heatMap(" + curr.Name + "," + prev.Name + ")",
 				Values:    make([]float64, pointsQty),
 				StartTime: curr.StartTime,
 				StopTime:  curr.StopTime,
@@ -98,6 +97,9 @@ func (f *heatMap) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

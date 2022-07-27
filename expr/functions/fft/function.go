@@ -2,7 +2,6 @@ package fft
 
 import (
 	"context"
-	"fmt"
 	"math/cmplx"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -30,10 +29,19 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
+func extractComponent(m *types.MetricData, values []complex128, t string, f func(x complex128) float64) *types.MetricData {
+	r := m.CopyTag("fft("+m.Name+","+t+")", m.Tags)
+	r.Values = make([]float64, len(values))
+	for i, v := range values {
+		r.Values[i] = f(v)
+	}
+	return r
+}
+
 // fft(seriesList, mode)
 // mode: "", abs, phase. Empty string means "both"
 func (f *fft) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -41,18 +49,11 @@ func (f *fft) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 	mode, _ := e.GetStringArg(1)
 
 	var results []*types.MetricData
-
-	extractComponent := func(m *types.MetricData, values []complex128, t string, f func(x complex128) float64) *types.MetricData {
-		name := fmt.Sprintf("fft(%s,'%s')", m.Name, t)
-		r := *m
-		r.Name = name
-		r.Values = make([]float64, len(values))
-		for i, v := range values {
-			r.Values[i] = f(v)
-		}
-		return &r
+	if mode == "abs" || mode == "phase" {
+		results = make([]*types.MetricData, 0, len(arg))
+	} else {
+		results = make([]*types.MetricData, 0, 2*len(arg))
 	}
-
 	for _, a := range arg {
 		values := realFFT.FFTReal(a.Values)
 
@@ -63,7 +64,6 @@ func (f *fft) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 			results = append(results, extractComponent(a, values, "abs", cmplx.Abs))
 		case "phase":
 			results = append(results, extractComponent(a, values, "phase", cmplx.Phase))
-
 		}
 	}
 	return results, nil
@@ -95,6 +95,9 @@ func (f *fft) Description() map[string]types.FunctionDescription {
 					}),
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

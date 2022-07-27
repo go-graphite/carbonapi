@@ -3,8 +3,8 @@ package polyfit
 import (
 	"context"
 	"errors"
-	"fmt"
 	"math"
+	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -36,7 +36,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 func (f *polyfit) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// Fitting Nth degree polynom to the dataset
 	// https://en.wikipedia.org/wiki/Polynomial_regression#Matrix_form_and_calculation_of_estimates
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -47,33 +47,34 @@ func (f *polyfit) Do(ctx context.Context, e parser.Expr, from, until int64, valu
 	} else if degree < 1 {
 		return nil, errors.New("degree must be larger or equal to 1")
 	}
+	degreeStr := strconv.Itoa(degree)
 
 	offsStr, err := e.GetStringNamedOrPosArgDefault("offset", 2, "0d")
 	if err != nil {
 		return nil, err
 	}
+
 	offs, err := parser.IntervalString(offsStr, 1)
 	if err != nil {
 		return nil, err
 	}
 
-	var results []*types.MetricData
-
+	results := make([]*types.MetricData, 0, len(arg))
 	for _, a := range arg {
 		r := *a
-		if len(e.Args()) > 2 {
-			r.Name = fmt.Sprintf("polyfit(%s,%d,'%s')", a.Name, degree, e.Args()[2].StringValue())
-		} else if len(e.Args()) > 1 {
-			r.Name = fmt.Sprintf("polyfit(%s,%d)", a.Name, degree)
+		if e.ArgsLen() > 2 {
+			r.Name = "polyfit(" + a.Name + "," + degreeStr + ",'" + offsStr + "')"
+		} else if e.ArgsLen() > 1 {
+			r.Name = "polyfit(" + a.Name + "," + degreeStr + ")"
 		} else {
-			r.Name = fmt.Sprintf("polyfit(%s)", a.Name)
+			r.Name = "polyfit(" + a.Name + ")"
 		}
 		// Extending slice by "offset" so our graph slides into future!
 		r.Values = make([]float64, len(a.Values)+int(offs)/int(r.StepTime))
 		r.StopTime = a.StopTime + int64(offs)
 
 		// Removing absent values from original dataset
-		nonNulls := make([]float64, 0)
+		nonNulls := make([]float64, 0, len(a.Values))
 		for _, v := range a.Values {
 			if !math.IsNaN(v) {
 				nonNulls = append(nonNulls, v)
@@ -136,6 +137,10 @@ func (f *polyfit) Description() map[string]types.FunctionDescription {
 					Type:    types.Interval,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

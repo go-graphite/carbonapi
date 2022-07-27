@@ -2,8 +2,8 @@ package lowPass
 
 import (
 	"context"
-	"fmt"
 	"math"
+	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -31,7 +31,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // lowPass(seriesList, cutPercent)
 func (f *lowPass) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -40,12 +40,12 @@ func (f *lowPass) Do(ctx context.Context, e parser.Expr, from, until int64, valu
 	if err != nil {
 		return nil, err
 	}
+	cutPercentStr := strconv.FormatFloat(cutPercent, 'g', -1, 64)
 
-	var results []*types.MetricData
-	for _, a := range arg {
-		name := fmt.Sprintf("lowPass(%s,%v)", a.Name, cutPercent)
+	results := make([]*types.MetricData, len(arg))
+	for j, a := range arg {
 		r := *a
-		r.Name = name
+		r.Name = "lowPass(" + a.Name + "," + cutPercentStr + ")"
 		r.Values = make([]float64, len(a.Values))
 		lowCut := int((cutPercent / 200) * float64(len(a.Values)))
 		highCut := len(a.Values) - lowCut
@@ -57,7 +57,7 @@ func (f *lowPass) Do(ctx context.Context, e parser.Expr, from, until int64, valu
 			}
 		}
 
-		results = append(results, &r)
+		results[j] = &r
 	}
 	return results, nil
 }
@@ -83,6 +83,8 @@ func (f *lowPass) Description() map[string]types.FunctionDescription {
 					Type:     types.Float,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 		"lowPass": {
 			Description: "Low-pass filters provide a smoother form of a signal, removing the short-term fluctuations, and leaving the longer-term trend. https://en.wikipedia.org/wiki/Low-pass_filter",
@@ -102,6 +104,8 @@ func (f *lowPass) Description() map[string]types.FunctionDescription {
 					Type:     types.Float,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

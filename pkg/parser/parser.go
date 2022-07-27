@@ -50,7 +50,7 @@ func (e *expr) Type() ExprType {
 func (e *expr) ToString() string {
 	switch e.etype {
 	case EtFunc:
-		return fmt.Sprintf("%s(%s)", e.target, e.argString)
+		return e.target + "(" + e.argString + ")"
 	case EtConst:
 		return e.valStr
 	case EtString:
@@ -116,12 +116,25 @@ func (e *expr) Args() []Expr {
 	return ret
 }
 
+func (e *expr) Arg(i int) Expr {
+	return e.args[i]
+}
+
+func (e *expr) ArgsLen() int {
+	return len(e.args)
+}
+
 func (e *expr) NamedArgs() map[string]Expr {
 	ret := make(map[string]Expr)
 	for k, v := range e.namedArgs {
 		ret[k] = v
 	}
 	return ret
+}
+
+func (e *expr) NamedArg(name string) (Expr, bool) {
+	expr, exist := e.namedArgs[name]
+	return expr, exist
 }
 
 func (e *expr) Metrics() []MetricRequest {
@@ -263,7 +276,7 @@ func (e *expr) GetStringArgs(n int) ([]string, error) {
 		return nil, ErrMissingArgument
 	}
 
-	var strs []string
+	strs := make([]string, 0, len(e.args)-n)
 
 	for i := n; i < len(e.args); i++ {
 		a, err := e.GetStringArg(i)
@@ -329,7 +342,7 @@ func (e *expr) GetIntArgs(n int) ([]int, error) {
 		return nil, ErrMissingArgument
 	}
 
-	var ints []int
+	ints := make([]int, 0, len(e.args)-n)
 
 	for i := n; i < len(e.args); i++ {
 		a, err := e.GetIntArg(i)
@@ -401,7 +414,7 @@ func (e *expr) GetNodeOrTagArgs(n int) ([]NodeOrTag, error) {
 		return nil, ErrMissingArgument
 	}
 
-	var nodeTags []NodeOrTag
+	nodeTags := make([]NodeOrTag, 0, len(e.args)-n)
 
 	var err error
 	for i := n; i < len(e.args); i++ {
