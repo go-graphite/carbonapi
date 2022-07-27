@@ -271,3 +271,51 @@ func GetCommonTags(series []*types.MetricData) map[string]string {
 
 	return commonTags
 }
+
+type unitPrefix struct {
+	prefix string
+	size   uint64
+}
+
+const floatEpsilon = 0.00000000001
+
+const (
+	unitSystemBinary = "binary"
+	unitSystemSI     = "si"
+)
+
+var UnitSystems = map[string][]unitPrefix{
+	unitSystemBinary: {
+		{"Pi", 1125899906842624}, // 1024^5
+		{"Ti", 1099511627776},    // 1024^4
+		{"Gi", 1073741824},       // 1024^3
+		{"Mi", 1048576},          // 1024^2
+		{"Ki", 1024},
+	},
+	unitSystemSI: {
+		{"P", 1000000000000000}, // 1000^5
+		{"T", 1000000000000},    // 1000^4
+		{"G", 1000000000},       // 1000^3
+		{"M", 1000000},          // 1000^2
+		{"K", 1000},
+	},
+}
+
+// formatUnits formats the given value according to the given unit prefix system
+func FormatUnits(v float64, system string) (float64, string) {
+	unitsystem := UnitSystems[system]
+	for _, p := range unitsystem {
+		fsize := float64(p.size)
+		if math.Abs(v) >= fsize {
+			v2 := v / fsize
+			if (v2-math.Floor(v2)) < floatEpsilon && v > 1 {
+				v2 = math.Floor(v2)
+			}
+			return v2, p.prefix
+		}
+	}
+	if (v-math.Floor(v)) < floatEpsilon && v > 1 {
+		v = math.Floor(v)
+	}
+	return v, ""
+}

@@ -36,26 +36,48 @@ func (f *legendValue) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		return nil, err
 	}
 
-	methods := make([]string, len(e.Args())-1)
+	var system string
+	var methods []string
 	for i := 1; i < len(e.Args()); i++ {
 		method, err := e.GetStringArg(i)
 		if err != nil {
 			return nil, err
 		}
-
-		methods[i-1] = method
+		if method == "si" || method == "binary" {
+			system = method
+		} else {
+			methods = append(methods, method)
+		}
 	}
-
 	var results []*types.MetricData
-
 	for _, a := range arg {
-		r := *a
+		r := a.CopyLink()
 		for _, method := range methods {
 			summary := consolidations.SummarizeValues(method, a.Values, a.XFilesFactor)
-			r.Name = fmt.Sprintf("%s (%s: %f)", r.Name, method, summary)
+			if system == "" {
+				r.Name = fmt.Sprintf("%s (%s: %f)", r.Name, method, summary)
+			} else {
+				v, prefix := helper.FormatUnits(summary, system)
+				var formatted string
+				if prefix != "" {
+					prefix += " "
+				}
+
+				if v < 0.1 {
+					formatted = fmt.Sprintf("%.9g%s", v, prefix)
+				}
+				if v < 1.0 {
+					formatted = fmt.Sprintf("%.2f%s", v, prefix)
+				}
+				if formatted != "" {
+					r.Name = fmt.Sprintf("%s (%s: %s)", r.Name, method, formatted)
+				} else {
+					r.Name = fmt.Sprintf("%s (%s: %f)", r.Name, method, summary)
+				}
+			}
 		}
 
-		results = append(results, &r)
+		results = append(results, r)
 	}
 	return results, nil
 }
