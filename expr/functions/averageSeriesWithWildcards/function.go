@@ -2,7 +2,6 @@ package averageSeriesWithWildcards
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"strings"
 
@@ -72,12 +71,8 @@ func (f *averageSeriesWithWildcards) Do(ctx context.Context, e parser.Expr, from
 
 	for _, series := range nodeList {
 		args := groups[series]
-		r := *args[0]
-		r.Name = fmt.Sprintf("averageSeriesWithWildcards(%s)", series)
-		r.Tags = make(map[string]string)
-		for k, v := range args[0].Tags {
-			r.Tags[k] = v
-		}
+		r := args[0].CopyLink()
+		r.Name = series
 		r.Tags["name"] = series
 		r.Values = make([]float64, len(args[0].Values))
 
@@ -102,7 +97,7 @@ func (f *averageSeriesWithWildcards) Do(ctx context.Context, e parser.Expr, from
 			}
 		}
 
-		results = append(results, &r)
+		results = append(results, r)
 	}
 	return results, nil
 }

@@ -2,7 +2,6 @@ package multiplySeriesWithWildcards
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"strings"
 
@@ -76,7 +75,7 @@ func (f *multiplySeriesWithWildcards) Do(ctx context.Context, e parser.Expr, fro
 	for _, series := range nodeList {
 		args := groups[series]
 		r := args[0].CopyLink()
-		r.Name = fmt.Sprintf("multiplySeriesWithWildcards(%s)", series)
+		r.Name = series
 		r.Tags = make(map[string]string)
 		for k, v := range args[0].Tags {
 			r.Tags[k] = v
