@@ -2,7 +2,6 @@ package sumSeriesWithWildcards
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"strings"
 
@@ -72,12 +71,8 @@ func (f *sumSeriesWithWildcards) Do(ctx context.Context, e parser.Expr, from, un
 
 	for _, series := range nodeList {
 		args := groups[series]
-		r := *args[0]
-		r.Name = fmt.Sprintf("sumSeriesWithWildcards(%s)", series)
-		r.Tags = make(map[string]string)
-		for k, v := range args[0].Tags {
-			r.Tags[k] = v
-		}
+		r := args[0].CopyLink()
+		r.Name = series
 		r.Tags["name"] = series
 		r.Values = make([]float64, len(args[0].Values))
 
@@ -98,7 +93,7 @@ func (f *sumSeriesWithWildcards) Do(ctx context.Context, e parser.Expr, from, un
 			}
 		}
 
-		results = append(results, &r)
+		results = append(results, r)
 	}
 	return results, nil
 }

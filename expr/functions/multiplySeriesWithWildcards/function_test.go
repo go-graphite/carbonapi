@@ -38,8 +38,8 @@ func TestFunctionMultiReturn(t *testing.T) {
 			},
 			"multiplySeriesWithWildcards",
 			map[string][]*types.MetricData{
-				"multiplySeriesWithWildcards(metric1.baz)": {types.MakeMetricData("multiplySeriesWithWildcards(metric1.baz)", []float64{22, 48, 78, 112, 150}, 1, now32)},
-				"multiplySeriesWithWildcards(metric1.qux)": {types.MakeMetricData("multiplySeriesWithWildcards(metric1.qux)", []float64{42, 0, 72, 90, 110}, 1, now32)},
+				"metric1.baz": {types.MakeMetricData("metric1.baz", []float64{22, 48, 78, 112, 150}, 1, now32)},
+				"metric1.qux": {types.MakeMetricData("metric1.qux", []float64{42, 0, 72, 90, 110}, 1, now32)},
 			},
 		},
 	}
