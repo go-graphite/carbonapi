@@ -145,7 +145,7 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 
 	var denominator *types.MetricData
 
-	results := make([]*types.MetricData, len(numerators))
+	results := make([]*types.MetricData, 0, len(numerators))
 	for n, numerator := range numerators {
 		pairFound := false
 		if useMatching {
@@ -199,7 +199,7 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 				r.Values[i] = compute(v, denomValue)
 			}
 		}
-		results[n] = &r
+		results = append(results, &r)
 	}
 	return results, nil
 }
