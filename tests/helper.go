@@ -248,7 +248,11 @@ func TestMultiReturnEvalExpr(t *testing.T, tt *MultiReturnEvalTestItem) {
 	if len(g) != len(tt.Results) {
 		t.Errorf("unexpected results len: got %d, want %d for %s", len(g), len(tt.Results), tt.Target)
 	}
-	for _, actual := range g {
+	for i, actual := range g {
+		if actual == nil {
+			t.Errorf("result[%d] mismatch, got nil", i)
+			continue
+		}
 		wants, ok := tt.Results[actual.Name]
 		if !ok {
 			t.Errorf("missing result Name: %v", actual.Name)
