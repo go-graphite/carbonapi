@@ -109,7 +109,6 @@ _When `format=png`_ (default if not specified)
 ### Unsupported functions
 | Function                                                                  |
 | :------------------------------------------------------------------------ |
-| aggregateWithWildcards |
 | aliasQuery |
 | averageOutsidePercentile |
 | events |
@@ -186,6 +185,7 @@ reverse: default value mismatch: got (empty), should be false |
 | add(seriesList, constant) | no |
 | aggregate(seriesList, func, xFilesFactor=None) | no |
 | aggregateLine(seriesList, func='average', keepStep=False) | no |
+| aggregateWithWildcards(seriesList, func, *positions) | no |
 | alias(seriesList, newName) | no |
 | aliasByMetric(seriesList) | no |
 | aliasByNode(seriesList, *nodes) | no |
