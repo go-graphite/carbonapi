@@ -1,6 +1,7 @@
 package functions
 
 import (
+	"github.com/grafana/carbonapi/expr/functions/powSeries"
 	"sort"
 	"strings"
 
@@ -188,6 +189,7 @@ func New(configs map[string]string) {
 		{name: "percentileOfSeries", filename: "percentileOfSeries", order: percentileOfSeries.GetOrder(), f: percentileOfSeries.New},
 		{name: "polyfit", filename: "polyfit", order: polyfit.GetOrder(), f: polyfit.New},
 		{name: "pow", filename: "pow", order: pow.GetOrder(), f: pow.New},
+		{name: "powSeries", filename: "powSeries", order: powSeries.GetOrder(), f: powSeries.New},
 		{name: "randomWalk", filename: "randomWalk", order: randomWalk.GetOrder(), f: randomWalk.New},
 		{name: "rangeOfSeries", filename: "rangeOfSeries", order: rangeOfSeries.GetOrder(), f: rangeOfSeries.New},
 		{name: "reduce", filename: "reduce", order: reduce.GetOrder(), f: reduce.New},
