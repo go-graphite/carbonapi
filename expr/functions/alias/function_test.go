@@ -70,6 +70,31 @@ func TestAlias(t *testing.T) {
 				),
 			},
 		},
+		{
+			"alias(metric2, 'Метрика 2')",
+			map[parser.MetricRequest][]*types.MetricData{
+				{
+					Metric: "metric2",
+					From:   0,
+					Until:  1,
+				}: {
+					types.MakeMetricData(
+						"metric2",
+						[]float64{1, 2, 3, 4, 5},
+						1,
+						now32,
+					),
+				},
+			},
+			[]*types.MetricData{
+				types.MakeMetricData(
+					"Метрика 2",
+					[]float64{1, 2, 3, 4, 5},
+					1,
+					now32,
+				),
+			},
+		},
 	}
 
 	for _, tt := range tests {
