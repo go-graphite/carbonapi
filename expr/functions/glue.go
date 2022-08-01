@@ -16,6 +16,7 @@ import (
 	"github.com/grafana/carbonapi/expr/functions/aliasByRedis"
 	"github.com/grafana/carbonapi/expr/functions/aliasSub"
 	"github.com/grafana/carbonapi/expr/functions/asPercent"
+	"github.com/grafana/carbonapi/expr/functions/averageOutsidePercentile"
 	"github.com/grafana/carbonapi/expr/functions/averageSeriesWithWildcards"
 	"github.com/grafana/carbonapi/expr/functions/baselines"
 	"github.com/grafana/carbonapi/expr/functions/below"
@@ -129,6 +130,7 @@ func New(configs map[string]string) {
 		{name: "aliasByRedis", filename: "aliasByRedis", order: aliasByRedis.GetOrder(), f: aliasByRedis.New},
 		{name: "aliasSub", filename: "aliasSub", order: aliasSub.GetOrder(), f: aliasSub.New},
 		{name: "asPercent", filename: "asPercent", order: asPercent.GetOrder(), f: asPercent.New},
+		{name: "averageOutsidePercentile", filename: "averageOutsidePercentile", order: averageOutsidePercentile.GetOrder(), f: averageOutsidePercentile.New},
 		{name: "averageSeriesWithWildcards", filename: "averageSeriesWithWildcards", order: averageSeriesWithWildcards.GetOrder(), f: averageSeriesWithWildcards.New},
 		{name: "baselines", filename: "baselines", order: baselines.GetOrder(), f: baselines.New},
 		{name: "below", filename: "below", order: below.GetOrder(), f: below.New},
