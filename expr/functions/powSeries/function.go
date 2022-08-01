@@ -50,40 +50,35 @@ func (f *powSeries) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	r.Name = fmt.Sprintf("%s(%s)", e.Target(), e.RawArgs())
 	r.Values = make([]float64, 0)
 
+	metricData := make([][]float64, 0, len(series))
+	for _, s := range series {
+		metricData = append(metricData, s.GetValues())
+	}
+
 	for i := 0; i < overallLength; i++ {
-		metricData := make([]*types.MetricData, 0, len(series))
-		for _, s := range series {
-			metricData = append(metricData, s)
-		}
+		first := true
+		var result float64
 
-		if len(metricData) == len(series) {
-			first := true
-			var result float64
-
-			for _, m := range metricData {
-				vals := m.GetValues()
-				var val float64
-				if i < len(vals) {
-					val = vals[i]
-				} else {
-					val = math.NaN()
-				}
-
-				if first {
-					result = val
-					first = false
-				} else {
-					result = math.Pow(result, val)
-				}
+		for _, vals := range metricData {
+			var val float64
+			if i < len(vals) {
+				val = vals[i]
+			} else {
+				val = math.NaN()
 			}
 
-			if math.IsInf(result, 0) {
-				result = math.NaN()
+			if first {
+				result = val
+				first = false
+			} else {
+				result = math.Pow(result, val)
 			}
-			r.Values = append(r.Values, result)
-		} else {
-			r.Values = append(r.Values, math.NaN())
 		}
+
+		if math.IsInf(result, 0) {
+			result = math.NaN()
+		}
+		r.Values = append(r.Values, result)
 	}
 
 	return []*types.MetricData{r}, nil
