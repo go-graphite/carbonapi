@@ -74,6 +74,8 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 
 	var argstr string
 
+	var xFilesFactor float64
+
 	if len(e.Args()) < 2 {
 		return nil, parser.ErrMissingArgument
 	}
@@ -107,6 +109,14 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], start, until, values)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(e.Args()) == 3 {
+		xFilesFactor, err = e.GetFloatArgDefault(2, float64(arg[0].XFilesFactor))
+
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var result []*types.MetricData
@@ -143,19 +153,23 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		w := &types.Windowed{Data: make([]float64, windowSize)}
 		for i, v := range a.Values {
 			if ridx := i - offset; ridx >= 0 {
-				switch e.Target() {
-				case "movingAverage":
-					r.Values[ridx] = w.Mean()
-				case "movingSum":
-					r.Values[ridx] = w.Sum()
-					//TODO(cldellow): consider a linear time min/max-heap for these,
-					// e.g. http://stackoverflow.com/questions/8905525/computing-a-moving-maximum/8905575#8905575
-				case "movingMin":
-					r.Values[ridx] = w.Min()
-				case "movingMax":
-					r.Values[ridx] = w.Max()
-				}
-				if i < windowSize || math.IsNaN(r.Values[ridx]) {
+				if helper.XFilesFactorValues(w.Data, xFilesFactor) {
+					switch e.Target() {
+					case "movingAverage":
+						r.Values[ridx] = w.Mean()
+					case "movingSum":
+						r.Values[ridx] = w.Sum()
+						//TODO(cldellow): consider a linear time min/max-heap for these,
+						// e.g. http://stackoverflow.com/questions/8905525/computing-a-moving-maximum/8905575#8905575
+					case "movingMin":
+						r.Values[ridx] = w.Min()
+					case "movingMax":
+						r.Values[ridx] = w.Max()
+					}
+					if i < windowSize || math.IsNaN(r.Values[ridx]) {
+						r.Values[ridx] = math.NaN()
+					}
+				} else {
 					r.Values[ridx] = math.NaN()
 				}
 			}

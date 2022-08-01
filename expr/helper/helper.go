@@ -144,8 +144,13 @@ func ForEachSeriesDo(ctx context.Context, e parser.Expr, from, until int64, valu
 type AggregateFunc func([]float64) float64
 
 // AggregateSeries aggregates series
-func AggregateSeries(e parser.Expr, args []*types.MetricData, function AggregateFunc) ([]*types.MetricData, error) {
+func AggregateSeries(e parser.Expr, args []*types.MetricData, function AggregateFunc, xFilesFactor float64) ([]*types.MetricData, error) {
+	var applyXFilesFactor = true
 	args = AlignSeries(args)
+
+	if xFilesFactor < 0 {
+		applyXFilesFactor = true
+	}
 
 	needScale := false
 	for i := 1; i < len(args); i++ {
@@ -179,7 +184,11 @@ func AggregateSeries(e parser.Expr, args []*types.MetricData, function Aggregate
 
 		r.Values[i] = math.NaN()
 		if len(values) > 0 {
-			r.Values[i] = function(values)
+			if applyXFilesFactor && XFilesFactorValues(values, xFilesFactor) {
+				r.Values[i] = function(values)
+			} else {
+				r.Values[i] = function(values)
+			}
 		}
 	}
 
@@ -318,4 +327,24 @@ func FormatUnits(v float64, system string) (float64, string) {
 		v = math.Floor(v)
 	}
 	return v, ""
+}
+
+func XFilesFactorValues(values []float64, xFilesFactor float64) bool {
+	if math.IsNaN(xFilesFactor) || xFilesFactor == 0 {
+		return true
+	}
+	nonNull := 0
+	for _, val := range values {
+		if !math.IsNaN(val) {
+			nonNull++
+		}
+	}
+	return XFilesFactor(nonNull, len(values), xFilesFactor)
+}
+
+func XFilesFactor(nonNull int, total int, xFilesFactor float64) bool {
+	if nonNull < 0 || total <= 0 {
+		return false
+	}
+	return float64(nonNull)/float64(total) >= xFilesFactor
 }

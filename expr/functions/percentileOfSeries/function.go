@@ -46,9 +46,11 @@ func (f *percentileOfSeries) Do(ctx context.Context, e parser.Expr, from, until 
 		return nil, err
 	}
 
+	xFilesFactor := args[0].XFilesFactor
+
 	return helper.AggregateSeries(e, args, func(values []float64) float64 {
 		return consolidations.Percentile(values, percent, interpolate)
-	})
+	}, float64(xFilesFactor))
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web

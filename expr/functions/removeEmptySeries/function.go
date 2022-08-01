@@ -31,20 +31,23 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // removeEmptySeries(seriesLists, n), removeZeroSeries(seriesLists, n)
 func (f *removeEmptySeries) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	var xFilesFactor float64
 	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
-	factor, err := e.GetFloatArgDefault(1, 0)
-	if err != nil {
-		return nil, err
+	if len(e.Args()) == 2 {
+		xFilesFactor, err = e.GetFloatArgDefault(1, float64(args[0].XFilesFactor)) // If set by setXFilesFactor, all series in a list will have the same value
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var results []*types.MetricData
 
 	for _, arg := range args {
-		nonNull := 0.0
+		nonNull := 0
 		for _, v := range arg.Values {
 			if !math.IsNaN(v) {
 				switch e.Target() {
@@ -57,9 +60,10 @@ func (f *removeEmptySeries) Do(ctx context.Context, e parser.Expr, from, until i
 				}
 			}
 		}
-		if nonNull != 0 && nonNull/float64(len(arg.Values)) >= factor {
+
+		if nonNull != 0 && helper.XFilesFactor(nonNull, len(arg.Values), xFilesFactor) {
 			r := arg.CopyLink()
-			r.Tags[e.Target()] = fmt.Sprintf("%f", factor)
+			r.Tags[e.Target()] = fmt.Sprintf("%f", xFilesFactor)
 			results = append(results, r)
 		}
 	}

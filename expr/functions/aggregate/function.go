@@ -40,6 +40,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 // aggregate(*seriesLists)
 func (f *aggregate) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	var args []*types.MetricData
+	var xFilesFactor float64
 	isAggregateFunc := true
 
 	callback, err := e.GetStringArg(1)
@@ -53,21 +54,22 @@ func (f *aggregate) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			}
 			callback = strings.Replace(e.Target(), "Series", "", 1)
 			isAggregateFunc = false
+			xFilesFactor = -1 // xFilesFactor is not used by the ...Series functions
 		}
 	} else {
 		args, err = helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
 		if err != nil {
 			return nil, err
 		}
+		if len(e.Args()) == 3 {
+			xFilesFactor, err = e.GetFloatArgDefault(2, float64(args[0].XFilesFactor)) // If set by setXFilesFactor, all series in a list will have the same value
+
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
-	// TODO: Implement xFilesFactor
-	/*
-		xFilesFactor, err := e.GetFloatArgDefault(2, 0)
-		if err != nil {
-			return false, nil, err
-		}
-	*/
 	aggFunc, ok := consolidations.ConsolidationToFunc[callback]
 	if !ok {
 		return nil, fmt.Errorf("unsupported consolidation function %s", callback)
@@ -79,7 +81,7 @@ func (f *aggregate) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		e.SetRawArgs(e.Args()[0].Target())
 	}
 
-	results, err := helper.AggregateSeries(e, args, aggFunc)
+	results, err := helper.AggregateSeries(e, args, aggFunc, xFilesFactor)
 	if err != nil {
 		return nil, err
 	}
@@ -114,12 +116,12 @@ func (f *aggregate) Description() map[string]types.FunctionDescription {
 					Required: true,
 					Options:  types.StringsToSuggestionList(consolidations.AvailableConsolidationFuncs()),
 				},
-				/*
-					{
-						Name: "xFilesFactor",
-						Type: types.Float,
-					},
-				*/
+				{
+
+					Name:     "xFilesFactor",
+					Type:     types.Float,
+					Required: false,
+				},
 			},
 		},
 		"averageSeries": {
