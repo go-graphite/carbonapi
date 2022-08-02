@@ -1,12 +1,5 @@
 package types
 
-import (
-	"unicode"
-	"unicode/utf8"
-
-	"github.com/go-graphite/carbonapi/pkg/parser"
-)
-
 var allowedCharactersInMetricName = map[byte]struct{}{
 	'=': struct{}{},
 	'@': struct{}{},
@@ -24,21 +17,14 @@ func ExtractNameLoc(s string) (int, int) {
 
 	var (
 		start, braces, i, w int
-		r                   rune
 	)
 
 FOR:
 	for braces, i, w = 0, 0, 0; i < len(s); i += w {
 
 		w = 1
-		if parser.IsNameChar(s[i]) || byteAllowedInName(s[i]) {
-			continue
-		}
 
 		switch s[i] {
-		// If metric name have tags, we want to skip them
-		case ';':
-			break FOR
 		case '{':
 			braces++
 		case '}':
@@ -50,14 +36,10 @@ FOR:
 			if braces == 0 {
 				break FOR
 			}
+		case '(':
+			start = i + 1
 		case ')':
 			break FOR
-		default:
-			r, w = utf8.DecodeRuneInString(s[i:])
-			if unicode.In(r, parser.RangeTables...) {
-				continue
-			}
-			start = i + 1
 		}
 	}
 

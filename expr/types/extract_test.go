@@ -71,6 +71,11 @@ func TestExtractName(t *testing.T) {
 			"aliasByTags(alias(0.1.2.@.4, 2), 1)",
 			"0.1.2.@.4",
 		},
+		// non-ASCII symbols
+		{
+			"alias(Количество изменений)",
+			"Количество изменений",
+		},
 	}
 
 	for _, tt := range tests {
