@@ -110,25 +110,12 @@ _When `format=png`_ (default if not specified)
 | Function                                                                  |
 | :------------------------------------------------------------------------ |
 | aliasQuery |
-| averageOutsidePercentile |
 | events |
 | exponentialMovingAverage |
 | holtWintersConfidenceArea |
-| identity |
-| logit |
-| minMax |
 | movingWindow |
 | pct |
-| powSeries |
-| removeBetweenPercentile |
-| setXFilesFactor |
-| sigmoid |
-| sin |
-| sinFunction |
-| unique |
 | verticalLine |
-| xFilesFactor |
-
 
 ### Partly supported functions
 | Function                 | Incompatibilities                              |
@@ -197,6 +184,7 @@ reverse: default value mismatch: got (empty), should be false |
 | asPercent(seriesList, total=None, *nodes) | no |
 | averageAbove(seriesList, n) | no |
 | averageBelow(seriesList, n) | no |
+| averageOutsidePercentile(seriesList, n) | no |
 | averageSeries(*seriesLists) | no |
 | averageSeriesWithWildcards(seriesList, *position) | no |
 | avg(*seriesLists) | no |
@@ -233,6 +221,8 @@ reverse: default value mismatch: got (empty), should be false |
 | holtWintersAberration(seriesList, delta=3, bootstrapInterval='7d') | no |
 | holtWintersConfidenceBands(seriesList, delta=3, bootstrapInterval='7d') | no |
 | holtWintersForecast(seriesList, bootstrapInterval='7d') | no |
+| logit(seriesList) | no |
+| identity(name) | no |
 | integral(seriesList) | no |
 | integralByInterval(seriesList, intervalString) | no |
 | interpolate(seriesList, limit) | no |
@@ -255,6 +245,7 @@ reverse: default value mismatch: got (empty), should be false |
 | minSeries(*seriesLists) | no |
 | minimumAbove(seriesList, n) | no |
 | minimumBelow(seriesList, n) | no |
+| minMax(seriesList) | no |
 | mostDeviant(seriesList, n) | no |
 | movingAverage(seriesList, windowSize, xFilesFactor=None) | no |
 | movingMax(seriesList, windowSize, xFilesFactor=None) | no |
@@ -270,6 +261,7 @@ reverse: default value mismatch: got (empty), should be false |
 | perSecond(seriesList, maxValue=None) | no |
 | percentileOfSeries(seriesList, n, interpolate=False) | no |
 | pow(seriesList, factor) | no |
+| powSeries(*seriesLists) | no |
 | randomWalk(name, step=60) | no |
 | randomWalkFunction(name, step=60) | no |
 | rangeOfSeries(*seriesLists) | no |
@@ -279,12 +271,16 @@ reverse: default value mismatch: got (empty), should be false |
 | removeAboveValue(seriesList, n) | no |
 | removeBelowPercentile(seriesList, n) | no |
 | removeBelowValue(seriesList, n) | no |
+| removeBelowValue(seriesList, n) | no |
 | removeEmptySeries(seriesList, xFilesFactor=None) | no |
 | round(seriesList, precision) | no |
 | scale(seriesList, factor) | no |
 | scaleToSeconds(seriesList, seconds) | no |
 | secondYAxis(seriesList) | no |
 | seriesByTag(*tagExpressions) | no |
+| setXFilesFactor(seriesList, xFilesFactor) | no |
+| sigmoid(seriesList) | no |
+| sinFunction(seriesList, amplitude=1, step=60) | no |
 | smartSummarize(seriesList, intervalString, func='sum', alignTo=None) | no |
 | sortBy(seriesList, func='average', reverse=False) | no |
 | sortByMaxima(seriesList) | no |
@@ -307,6 +303,7 @@ reverse: default value mismatch: got (empty), should be false |
 | timeSlice(seriesList, startSliceAt, endSliceAt='now') | no |
 | timeStack(seriesList, timeShiftUnit='1d', timeShiftStart=0, timeShiftEnd=7) | no |
 | transformNull(seriesList, default=0, referenceSeries=None) | no |
+| unique(*seriesLists) | no |
 | useSeriesAbove(seriesList, value, search, replace) | no |
 | weightedAverage(seriesListAvg, seriesListWeight, *nodes) | no |
 | aliasByBase64(seriesList) | yes |
