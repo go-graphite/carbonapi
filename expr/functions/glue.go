@@ -47,6 +47,7 @@ import (
 	"github.com/grafana/carbonapi/expr/functions/holtWintersAberration"
 	"github.com/grafana/carbonapi/expr/functions/holtWintersConfidenceBands"
 	"github.com/grafana/carbonapi/expr/functions/holtWintersForecast"
+	"github.com/grafana/carbonapi/expr/functions/identity"
 	"github.com/grafana/carbonapi/expr/functions/ifft"
 	"github.com/grafana/carbonapi/expr/functions/integral"
 	"github.com/grafana/carbonapi/expr/functions/integralByInterval"
@@ -164,6 +165,7 @@ func New(configs map[string]string) {
 		{name: "holtWintersAberration", filename: "holtWintersAberration", order: holtWintersAberration.GetOrder(), f: holtWintersAberration.New},
 		{name: "holtWintersConfidenceBands", filename: "holtWintersConfidenceBands", order: holtWintersConfidenceBands.GetOrder(), f: holtWintersConfidenceBands.New},
 		{name: "holtWintersForecast", filename: "holtWintersForecast", order: holtWintersForecast.GetOrder(), f: holtWintersForecast.New},
+		{name: "identity", filename: "identity", order: identity.GetOrder(), f: identity.New},
 		{name: "ifft", filename: "ifft", order: ifft.GetOrder(), f: ifft.New},
 		{name: "integral", filename: "integral", order: integral.GetOrder(), f: integral.New},
 		{name: "integralByInterval", filename: "integralByInterval", order: integralByInterval.GetOrder(), f: integralByInterval.New},
