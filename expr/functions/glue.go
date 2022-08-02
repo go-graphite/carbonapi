@@ -81,6 +81,7 @@ import (
 	"github.com/grafana/carbonapi/expr/functions/rangeOfSeries"
 	"github.com/grafana/carbonapi/expr/functions/reduce"
 	"github.com/grafana/carbonapi/expr/functions/removeBelowSeries"
+	"github.com/grafana/carbonapi/expr/functions/removeBetweenPercentile"
 	"github.com/grafana/carbonapi/expr/functions/removeEmptySeries"
 	"github.com/grafana/carbonapi/expr/functions/round"
 	"github.com/grafana/carbonapi/expr/functions/scale"
@@ -198,6 +199,7 @@ func New(configs map[string]string) {
 		{name: "rangeOfSeries", filename: "rangeOfSeries", order: rangeOfSeries.GetOrder(), f: rangeOfSeries.New},
 		{name: "reduce", filename: "reduce", order: reduce.GetOrder(), f: reduce.New},
 		{name: "removeBelowSeries", filename: "removeBelowSeries", order: removeBelowSeries.GetOrder(), f: removeBelowSeries.New},
+		{name: "removeBetweenPercentile", filename: "removeBetweenPercentile", order: removeBetweenPercentile.GetOrder(), f: removeBetweenPercentile.New},
 		{name: "removeEmptySeries", filename: "removeEmptySeries", order: removeEmptySeries.GetOrder(), f: removeEmptySeries.New},
 		{name: "round", filename: "round", order: round.GetOrder(), f: round.New},
 		{name: "scale", filename: "scale", order: scale.GetOrder(), f: scale.New},
