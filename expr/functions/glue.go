@@ -1,13 +1,13 @@
 package functions
 
 import (
-	"github.com/grafana/carbonapi/expr/functions/powSeries"
 	"sort"
 	"strings"
 
 	"github.com/grafana/carbonapi/expr/functions/absolute"
 	"github.com/grafana/carbonapi/expr/functions/aggregate"
 	"github.com/grafana/carbonapi/expr/functions/aggregateLine"
+	"github.com/grafana/carbonapi/expr/functions/aggregateSeriesLists"
 	"github.com/grafana/carbonapi/expr/functions/aggregateWithWildcards"
 	"github.com/grafana/carbonapi/expr/functions/alias"
 	"github.com/grafana/carbonapi/expr/functions/aliasByBase64"
@@ -77,6 +77,7 @@ import (
 	"github.com/grafana/carbonapi/expr/functions/percentileOfSeries"
 	"github.com/grafana/carbonapi/expr/functions/polyfit"
 	"github.com/grafana/carbonapi/expr/functions/pow"
+	"github.com/grafana/carbonapi/expr/functions/powSeries"
 	"github.com/grafana/carbonapi/expr/functions/randomWalk"
 	"github.com/grafana/carbonapi/expr/functions/rangeOfSeries"
 	"github.com/grafana/carbonapi/expr/functions/reduce"
@@ -124,6 +125,7 @@ func New(configs map[string]string) {
 		{name: "absolute", filename: "absolute", order: absolute.GetOrder(), f: absolute.New},
 		{name: "aggregate", filename: "aggregate", order: aggregate.GetOrder(), f: aggregate.New},
 		{name: "aggregateLine", filename: "aggregateLine", order: aggregateLine.GetOrder(), f: aggregateLine.New},
+		{name: "aggregateSeriesLists", filename: "aggregateSeriesLists", order: aggregateSeriesLists.GetOrder(), f: aggregateSeriesLists.New},
 		{name: "aggregateWithWildcards", filename: "aggregateWithWildcards", order: aggregateWithWildcards.GetOrder(), f: aggregateWithWildcards.New},
 		{name: "alias", filename: "alias", order: alias.GetOrder(), f: alias.New},
 		{name: "aliasByBase64", filename: "aliasByBase64", order: aliasByBase64.GetOrder(), f: aliasByBase64.New},

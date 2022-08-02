@@ -195,11 +195,14 @@ func SummarizeValues(f string, values []float64, XFilesFactor float32) float64 {
 		rv = Percentile(values, 50, true)
 		total = notNans(values)
 	case "multiply":
-		rv = values[0]
-		for _, av := range values[1:] {
-			if !math.IsNaN(av) {
+		rv = 1.0
+		for _, v := range values {
+			if math.IsNaN(v) {
+				rv = math.NaN()
+				break
+			} else {
 				total++
-				rv *= av
+				rv *= v
 			}
 		}
 	case "diff":
@@ -375,19 +378,30 @@ func AggCount(v []float64) float64 {
 	return float64(n)
 }
 
-// AggCount counts non-NaN points
 func AggDiff(v []float64) float64 {
-	res := v[0]
-	if len(v) == 1 {
-		return res
-	}
-	for _, vv := range v[1:] {
+	safeValues := make([]float64, 0)
+	for _, vv := range v {
 		if !math.IsNaN(vv) {
-			res -= vv
+			safeValues = append(safeValues, vv)
 		}
 	}
 
-	return res
+	if len(safeValues) > 0 {
+		res := safeValues[0]
+		if len(safeValues) == 1 {
+			return res
+		}
+
+		for _, vv := range safeValues[1:] {
+			if !math.IsNaN(vv) {
+				res -= vv
+			}
+		}
+
+		return res
+	} else {
+		return math.NaN()
+	}
 }
 
 // MaxValue returns maximum from the list

@@ -132,7 +132,7 @@ func TestAverageSeries(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("multiplySeries(metric[123])",
-				[]float64{6, math.NaN(), 24, 15, 120, 30}, 1, now32)},
+				[]float64{6, math.NaN(), 24, math.NaN(), 120, math.NaN()}, 1, now32)},
 		},
 		{
 			`aggregate(metric[123], "range")`,
