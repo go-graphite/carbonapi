@@ -50,16 +50,16 @@ func (f *powSeries) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	r.Name = fmt.Sprintf("%s(%s)", e.Target(), e.RawArgs())
 	r.Values = make([]float64, 0)
 
-	metricData := make([][]float64, 0, len(series))
+	seriesValues := make([][]float64, 0, len(series))
 	for _, s := range series {
-		metricData = append(metricData, s.GetValues())
+		seriesValues = append(seriesValues, s.GetValues())
 	}
 
 	for i := 0; i < overallLength; i++ {
 		first := true
 		var result float64
 
-		for _, vals := range metricData {
+		for _, vals := range seriesValues {
 			var val float64
 			if i < len(vals) {
 				val = vals[i]
