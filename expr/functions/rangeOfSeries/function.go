@@ -36,6 +36,10 @@ func (f *rangeOfSeries) Do(ctx context.Context, e parser.Expr, from, until int64
 		return nil, err
 	}
 
+	if len(series) == 0 {
+		return []*types.MetricData{}, nil
+	}
+
 	r := *series[0]
 	r.Name = fmt.Sprintf("%s(%s)", e.Target(), e.RawArgs())
 	r.Values = make([]float64, len(series[0].Values))

@@ -45,6 +45,11 @@ func (f *weightedAverage) Do(ctx context.Context, e parser.Expr, from, until int
 		return nil, err
 	}
 
+	// TODO: should fail if len(avgs) != len(weights)
+	if len(avgs)+len(weights) == 0 {
+		return []*types.MetricData{}, nil
+	}
+
 	alignedMetrics := helper.AlignSeries(append(avgs, weights...))
 	avgs = alignedMetrics[0:len(avgs)]
 	weights = alignedMetrics[len(avgs):]

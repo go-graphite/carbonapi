@@ -38,6 +38,10 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 		return nil, err
 	}
 
+	if len(args) == 0 {
+		return []*types.MetricData{}, nil
+	}
+
 	bucketSizeInt32, err := e.GetIntervalArg(1, 1)
 	if err != nil {
 		return nil, err
