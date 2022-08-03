@@ -50,6 +50,18 @@ func TestGroupByNode(t *testing.T) {
 			},
 		},
 		{
+			Name:   "groupByNode_with_tag",
+			Target: `groupByNode(metric1.foo.*.*,"name","sum")`,
+			M: map[parser.MetricRequest][]*types.MetricData{
+				mr: {
+					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
+				},
+			},
+			Results: map[string][]*types.MetricData{
+				"metric1.foo.bar1.baz": {types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			},
+		},
+		{
 			Target: "groupByNode(metric1.foo.*.*,3,\"sum\")",
 			M: map[parser.MetricRequest][]*types.MetricData{
 				mr: {
@@ -127,6 +139,32 @@ func TestGroupByNode(t *testing.T) {
 			Results: map[string][]*types.MetricData{
 				"metric1.foo.baz": {types.MakeMetricData("metric1.foo.baz", []float64{12, 14, 16, 18, 20}, 1, now32)},
 				"metric1.foo.qux": {types.MakeMetricData("metric1.foo.qux", []float64{13, 15, 17, 19, 21}, 1, now32)},
+			},
+		},
+		{
+			Name:   "groupByNodes_out_of_range_node_is_ignored",
+			Target: "groupByNodes(metric1.foo.*.*,\"sum\",0,5,2)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				mr: {
+					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
+				},
+			},
+			Results: map[string][]*types.MetricData{
+				"metric1.bar1": {types.MakeMetricData("metric1.bar1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			},
+		},
+		{
+			Name:   "groupByNodes_tags_and_nodes_combined",
+			Target: `groupByNodes(metric1.foo.*.*,"sum","name",1)`,
+			M: map[parser.MetricRequest][]*types.MetricData{
+				mr: {
+					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar1.bla", []float64{1, 2, 3, 4, 5}, 1, now32),
+				},
+			},
+			Results: map[string][]*types.MetricData{
+				"metric1.foo.bar1.baz.foo": {types.MakeMetricData("metric1.foo.bar1.baz.foo", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				"metric1.foo.bar1.bla.foo": {types.MakeMetricData("metric1.foo.bar1.bla.foo", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 		},
 	}
