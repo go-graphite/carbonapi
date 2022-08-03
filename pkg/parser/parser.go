@@ -396,7 +396,7 @@ func (e *expr) GetBoolArgDefault(n int, b bool) (bool, error) {
 	return e.args[n].doGetBoolArg()
 }
 
-func (e *expr) GetNodeOrTagArgs(n int) ([]NodeOrTag, error) {
+func (e *expr) GetNodeOrTagArgs(n int, single bool) ([]NodeOrTag, error) {
 	if len(e.args) <= n {
 		return nil, ErrMissingArgument
 	}
@@ -404,7 +404,11 @@ func (e *expr) GetNodeOrTagArgs(n int) ([]NodeOrTag, error) {
 	var nodeTags []NodeOrTag
 
 	var err error
-	for i := n; i < len(e.args); i++ {
+	until := len(e.args)
+	if single {
+		until = n + 1
+	}
+	for i := n; i < until; i++ {
 		var nodeTag NodeOrTag
 		nodeTag.Value, err = e.GetIntArg(i)
 		if err != nil {

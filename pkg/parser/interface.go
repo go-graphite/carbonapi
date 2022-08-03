@@ -146,8 +146,8 @@ type Expr interface {
 	// GetBoolNamedOrPosArgDefault returns specific positioned bool-typed argument or replace it with default if none found.
 	GetBoolNamedOrPosArgDefault(k string, n int, b bool) (bool, error)
 
-	// GetNodeOrTagArgs returns n-th argument as slice of NodeOrTag structures.
-	GetNodeOrTagArgs(n int) ([]NodeOrTag, error)
+	// GetNodeOrTagArgs returns the last arguments starting from the n-th as a slice of NodeOrTag structures. If `single` is `true`, only the n-th argument is taken.
+	GetNodeOrTagArgs(n int, single bool) ([]NodeOrTag, error)
 
 	IsInterfaceNil() bool
 

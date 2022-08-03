@@ -50,7 +50,7 @@ func (f *weightedAverage) Do(ctx context.Context, e parser.Expr, from, until int
 	weights = alignedMetrics[len(avgs):]
 	xFilesFactor := float64(alignedMetrics[0].XFilesFactor)
 
-	nodes, err := e.GetNodeOrTagArgs(2)
+	nodes, err := e.GetNodeOrTagArgs(2, false)
 	if err != nil {
 		return nil, err
 	}

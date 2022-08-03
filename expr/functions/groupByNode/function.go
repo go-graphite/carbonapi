@@ -39,30 +39,24 @@ func (f *groupByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		return nil, err
 	}
 	var callback string
-	var fields []int
+	var nodes []parser.NodeOrTag
 
 	if e.Target() == "groupByNode" {
-		field, err := e.GetIntArg(1)
+		nodes, err = e.GetNodeOrTagArgs(1, true)
 		if err != nil {
 			return nil, err
 		}
-
-		if len(e.Args()) == 3 {
-			callback, err = e.GetStringArg(2)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			callback = "avg"
+		callback, err = e.GetStringArgDefault(2, "avg")
+		if err != nil {
+			return nil, err
 		}
-		fields = []int{field}
 	} else {
 		callback, err = e.GetStringArg(1)
 		if err != nil {
 			return nil, err
 		}
 
-		fields, err = e.GetIntArgs(2)
+		nodes, err = e.GetNodeOrTagArgs(2, false)
 		if err != nil {
 			return nil, err
 		}
@@ -73,24 +67,13 @@ func (f *groupByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 	groups := make(map[string][]*types.MetricData)
 	nodeList := []string{}
 
+	// This is done to preserve the order
 	for _, a := range args {
-
-		metric := helper.ExtractMetric(a.Name)
-		nodes := strings.Split(metric, ".")
-		nodeKey := make([]string, 0, len(fields))
-		for _, f := range fields {
-			if f < 0 {
-				// Backward compatibility with python negative indecies
-				f += len(nodes)
-			}
-			nodeKey = append(nodeKey, nodes[f])
+		key := helper.AggKey(a, nodes)
+		if len(groups[key]) == 0 {
+			nodeList = append(nodeList, key)
 		}
-		node := strings.Join(nodeKey, ".")
-		if len(groups[node]) == 0 {
-			nodeList = append(nodeList, node)
-		}
-
-		groups[node] = append(groups[node], a)
+		groups[key] = append(groups[key], a)
 	}
 
 	for _, k := range nodeList {
