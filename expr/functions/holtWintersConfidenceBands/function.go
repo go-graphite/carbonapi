@@ -63,7 +63,7 @@ func (f *holtWintersConfidenceBands) Do(ctx context.Context, e parser.Expr, from
 				XFilesFactor:      arg.XFilesFactor,
 				PathExpression:    fmt.Sprintf("holtWintersConfidenceLower(%s)", arg.Name),
 			},
-			Tags: arg.Tags,
+			Tags: helper.CopyTags(arg),
 		}
 		lowerSeries.Tags["holtWintersConfidenceLower"] = "1"
 
@@ -78,7 +78,7 @@ func (f *holtWintersConfidenceBands) Do(ctx context.Context, e parser.Expr, from
 				XFilesFactor:      arg.XFilesFactor,
 				PathExpression:    fmt.Sprintf("holtWintersConfidenceLower(%s)", arg.Name),
 			},
-			Tags: arg.Tags,
+			Tags: helper.CopyTags(arg),
 		}
 		upperSeries.Tags["holtWintersConfidenceUpper"] = "1"
 

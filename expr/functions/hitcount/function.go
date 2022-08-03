@@ -78,7 +78,7 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 				StopTime:          stop,
 				ConsolidationFunc: "max",
 			},
-			Tags: arg.Tags,
+			Tags: helper.CopyTags(arg),
 		}
 		r.Tags["hitcount"] = fmt.Sprintf("%d", bucketSizeInt32)
 

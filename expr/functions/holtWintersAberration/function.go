@@ -86,7 +86,7 @@ func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, unt
 				ConsolidationFunc: arg.ConsolidationFunc,
 				XFilesFactor:      arg.XFilesFactor,
 			},
-			Tags: arg.Tags,
+			Tags: helper.CopyTags(arg),
 		}
 		r.Tags["holtWintersAberration"] = "1"
 		results = append(results, &r)
