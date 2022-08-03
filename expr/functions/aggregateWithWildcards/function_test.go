@@ -108,7 +108,7 @@ func TestAggregateWithWildcards(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{
-				types.MakeMetricData("metric1.baz", []float64{2, math.NaN(), 6, 3, 20, 30}, 1, now32),
+				types.MakeMetricData("metric1.baz", []float64{2, math.NaN(), 6, math.NaN(), 20, 30}, 1, now32),
 				types.MakeMetricData("metric1.qux", []float64{12, math.NaN(), 20, 30, 42, math.NaN()}, 1, now32),
 			},
 		},
