@@ -66,7 +66,7 @@ func (f *holtWintersForecast) Do(ctx context.Context, e parser.Expr, from, until
 				XFilesFactor:      arg.XFilesFactor,
 				ConsolidationFunc: arg.ConsolidationFunc,
 			},
-			Tags: arg.Tags,
+			Tags: helper.CopyTags(arg),
 		}
 		r.Tags["holtWintersConfidenceBands"] = "1"
 
