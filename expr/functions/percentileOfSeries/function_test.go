@@ -27,6 +27,13 @@ func TestPercentileOfSeriesSeries(t *testing.T) {
 
 	tests := []th.EvalTestItem{
 		{
+			`percentileOfSeries(metric1.empty,4)`,
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1.empty", 0, 1}: {},
+			},
+			[]*types.MetricData{},
+		},
+		{
 			`percentileOfSeries(metric1,4)`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, math.NaN()}, 1, now32)},

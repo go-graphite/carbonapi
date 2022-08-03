@@ -20,6 +20,26 @@ func init() {
 	}
 }
 
+func TestSummarizeEmptyData(t *testing.T) {
+	tests := []th.EvalTestItem{
+		{
+			"smartSummarize(metric1,'1hour','sum','1y')",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"foo.bar", 0, 1}: {},
+			},
+			[]*types.MetricData{},
+		},
+	}
+
+	for _, tt := range tests {
+		testName := tt.Target
+		t.Run(testName, func(t *testing.T) {
+			th.TestEvalExpr(t, &tt)
+		})
+	}
+
+}
+
 func TestEvalSummarize(t *testing.T) {
 	tests := []th.SummarizeEvalTestItem{
 		{

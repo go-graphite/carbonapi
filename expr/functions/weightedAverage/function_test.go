@@ -31,6 +31,13 @@ func TestAbsolute(t *testing.T) {
 		{
 			"weightedAverage(metric*, metric*, 0)",
 			map[parser.MetricRequest][]*types.MetricData{
+				{"metric*", 0, 1}: {},
+			},
+			[]*types.MetricData{},
+		},
+		{
+			"weightedAverage(metric*, metric*, 0)",
+			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, 1, now32),
 					types.MakeMetricData("metric2", []float64{None, 2, None, 4, None, 6, None, 8, None, 10, None, 12, None, 14, None, 16, None, 18, None, 20}, 1, now32),
