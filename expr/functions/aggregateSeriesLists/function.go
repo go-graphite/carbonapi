@@ -38,6 +38,12 @@ func (f *aggregateSeriesLists) Do(ctx context.Context, e parser.Expr, from, unti
 		return nil, err
 	}
 
+	if len(seriesList1) != len(seriesList2) {
+		return nil, fmt.Errorf("seriesListFirstPos and seriesListSecondPos must have equal length")
+	} else if len(seriesList1) == 0 {
+		return make([]*types.MetricData, 0, 0), nil
+	}
+
 	aggFuncStr, err := e.GetStringArg(2)
 	if err != nil {
 		return nil, err
@@ -47,13 +53,9 @@ func (f *aggregateSeriesLists) Do(ctx context.Context, e parser.Expr, from, unti
 		return nil, fmt.Errorf("unsupported consolidation function %s", aggFuncStr)
 	}
 
-	xFilesFactor, err := e.GetFloatArg(3)
+	xFilesFactor, err := e.GetFloatArgDefault(3, float64(seriesList1[0].XFilesFactor))
 	if err != nil {
 		return nil, err
-	}
-
-	if len(seriesList1) != len(seriesList2) {
-		return nil, fmt.Errorf("seriesListFirstPos and seriesListSecondPos must have equal length")
 	}
 
 	results := make([]*types.MetricData, 0, len(seriesList1))
