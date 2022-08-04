@@ -52,6 +52,9 @@ func (f *aggregate) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			if err != nil {
 				return nil, err
 			}
+			if len(args) == 0 {
+				return []*types.MetricData{}, nil
+			}
 			callback = strings.Replace(e.Target(), "Series", "", 1)
 			isAggregateFunc = false
 			xFilesFactor = -1 // xFilesFactor is not used by the ...Series functions
@@ -61,12 +64,13 @@ func (f *aggregate) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		if err != nil {
 			return nil, err
 		}
-		if len(e.Args()) == 3 {
-			xFilesFactor, err = e.GetFloatArgDefault(2, float64(args[0].XFilesFactor)) // If set by setXFilesFactor, all series in a list will have the same value
+		if len(args) == 0 {
+			return []*types.MetricData{}, nil
+		}
 
-			if err != nil {
-				return nil, err
-			}
+		xFilesFactor, err = e.GetFloatArgDefault(2, float64(args[0].XFilesFactor)) // If set by setXFilesFactor, all series in a list will have the same value
+		if err != nil {
+			return nil, err
 		}
 	}
 

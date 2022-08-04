@@ -29,6 +29,18 @@ func TestAverageSeries(t *testing.T) {
 		{
 			`aggregate(metric[123], "avg")`,
 			map[parser.MetricRequest][]*types.MetricData{
+				{"metric[123]", 0, 1}: {},
+			},
+			[]*types.MetricData{},
+		},
+		{
+			`aggregate(metric[123], "avg")`,
+			map[parser.MetricRequest][]*types.MetricData{},
+			[]*types.MetricData{},
+		},
+		{
+			`aggregate(metric[123], "avg")`,
+			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[123]", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32),

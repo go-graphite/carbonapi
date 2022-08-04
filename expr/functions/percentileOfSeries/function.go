@@ -36,6 +36,10 @@ func (f *percentileOfSeries) Do(ctx context.Context, e parser.Expr, from, until 
 		return nil, err
 	}
 
+	if len(args) == 0 {
+		return []*types.MetricData{}, nil
+	}
+
 	percent, err := e.GetFloatArg(1)
 	if err != nil {
 		return nil, err

@@ -145,6 +145,12 @@ type AggregateFunc func([]float64) float64
 
 // AggregateSeries aggregates series
 func AggregateSeries(e parser.Expr, args []*types.MetricData, function AggregateFunc, xFilesFactor float64) ([]*types.MetricData, error) {
+	if len(args) == 0 {
+		// GraphiteWeb does this, no matter the function
+		// https://github.com/graphite-project/graphite-web/blob/b52987ac97f49dcfb401a21d4b92860cfcbcf074/webapp/graphite/render/functions.py#L228
+		return []*types.MetricData{}, nil
+	}
+
 	var applyXFilesFactor = true
 	args = AlignSeries(args)
 
@@ -269,6 +275,9 @@ func CopyTags(series *types.MetricData) map[string]string {
 }
 
 func GetCommonTags(series []*types.MetricData) map[string]string {
+	if len(series) == 0 {
+		return make(map[string]string)
+	}
 	commonTags := CopyTags(series[0])
 	for _, serie := range series {
 		for k, v := range serie.Tags {

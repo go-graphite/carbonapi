@@ -52,3 +52,22 @@ func TestFunctionMultiReturn(t *testing.T) {
 	}
 
 }
+
+func TestEmptyData(t *testing.T) {
+	tests := []th.EvalTestItem{
+		{
+			"multiplySeriesWithWildcards(metric1.foo.*.*,1,2)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1.foo.*.*", 0, 1}: {},
+			},
+			[]*types.MetricData{},
+		},
+	}
+
+	for _, tt := range tests {
+		testName := tt.Target
+		t.Run(testName, func(t *testing.T) {
+			th.TestEvalExpr(t, &tt)
+		})
+	}
+}
