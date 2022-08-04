@@ -1,17 +1,21 @@
-//go:build !cairo
-// +build !cairo
+//go:build cairo
+// +build cairo
 
 package verticalLine
 
 import (
 	"context"
 	"fmt"
+	"time"
+
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/grafana/carbonapi/expr/interfaces"
+	"github.com/grafana/carbonapi/expr/tags"
 	"github.com/grafana/carbonapi/expr/types"
 	"github.com/grafana/carbonapi/pkg/parser"
 )
 
-var UnsupportedError = fmt.Errorf("must build w/ cairo support")
+var TsOutOfRangeError = fmt.Errorf("timestamp out of range")
 
 type verticalLine struct {
 	interfaces.FunctionBase
@@ -33,8 +37,46 @@ func New(_ string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *verticalLine) Do(_ context.Context, _ parser.Expr, _, _ int64, _ map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	return nil, UnsupportedError
+func (f *verticalLine) Do(_ context.Context, e parser.Expr, from, until int64, _ map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	start, err := e.GetIntervalArg(0, -1)
+	if err != nil {
+		return nil, err
+	}
+
+	ts := until + int64(start)
+
+	if ts < from {
+		return nil, fmt.Errorf("ts %s is before start %s: %w", time.Unix(ts, 0), time.Unix(from, 0), TsOutOfRangeError)
+	} else if ts > until {
+		return nil, fmt.Errorf("ts %s is after end %s: %w", time.Unix(ts, 0), time.Unix(until, 0), TsOutOfRangeError)
+	}
+
+	label, err := e.GetStringArgDefault(1, "")
+	if err != nil {
+		return nil, err
+	}
+
+	color, err := e.GetStringArgDefault(2, "")
+	if err != nil {
+		return nil, err
+	}
+
+	md := &types.MetricData{
+		FetchResponse: pb.FetchResponse{
+			Name:      label,
+			Values:    []float64{1.0, 1.0},
+			StartTime: ts,
+			StepTime:  1,
+			StopTime:  ts,
+		},
+		Tags: tags.ExtractTags(label),
+		GraphOptions: types.GraphOptions{
+			DrawAsInfinite: true,
+			Color:          color,
+		},
+	}
+
+	return []*types.MetricData{md}, nil
 }
 
 func (f *verticalLine) Description() map[string]types.FunctionDescription {
