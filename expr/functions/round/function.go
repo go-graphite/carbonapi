@@ -3,7 +3,6 @@ package round
 import (
 	"context"
 	"fmt"
-	"math"
 
 	"github.com/grafana/carbonapi/expr/helper"
 	"github.com/grafana/carbonapi/expr/interfaces"
@@ -52,20 +51,12 @@ func (f *round) Do(ctx context.Context, e parser.Expr, from, until int64, values
 		r.Values = make([]float64, len(a.Values))
 
 		for i, v := range a.Values {
-			r.Values[i] = doRound(v, precision)
+			r.Values[i] = helper.SafeRound(v, precision)
 		}
 		r.Tags["round"] = fmt.Sprintf("%d", precision)
 		results = append(results, r)
 	}
 	return results, nil
-}
-
-func doRound(x float64, precision int) float64 {
-	if math.IsNaN(x) {
-		return x
-	}
-	roundTo := math.Pow10(precision)
-	return math.RoundToEven(x*roundTo) / roundTo
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web

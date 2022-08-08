@@ -185,7 +185,7 @@ func (e *expr) Metrics() []MetricRequest {
 			for i := range r {
 				r[i].From -= 7 * 86400 // starts -7 days from where the original starts
 			}
-		case "movingAverage", "movingMedian", "movingMin", "movingMax", "movingSum":
+		case "movingAverage", "movingMedian", "movingMin", "movingMax", "movingSum", "exponentialMovingAverage":
 			if len(e.args) < 2 {
 				return nil
 			}

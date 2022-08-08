@@ -290,6 +290,34 @@ func GetCommonTags(series []*types.MetricData) map[string]string {
 	return commonTags
 }
 
+func SafeRound(x float64, precision int) float64 {
+	if math.IsNaN(x) {
+		return x
+	}
+	roundTo := math.Pow10(precision)
+	return math.RoundToEven(x*roundTo) / roundTo
+}
+
+func XFilesFactorValues(values []float64, xFilesFactor float64) bool {
+	if math.IsNaN(xFilesFactor) || xFilesFactor == 0 {
+		return true
+	}
+	nonNull := 0
+	for _, val := range values {
+		if !math.IsNaN(val) {
+			nonNull++
+		}
+	}
+	return XFilesFactor(nonNull, len(values), xFilesFactor)
+}
+
+func XFilesFactor(nonNull int, total int, xFilesFactor float64) bool {
+	if nonNull < 0 || total <= 0 {
+		return false
+	}
+	return float64(nonNull)/float64(total) >= xFilesFactor
+}
+
 type unitPrefix struct {
 	prefix string
 	size   uint64
@@ -336,24 +364,4 @@ func FormatUnits(v float64, system string) (float64, string) {
 		v = math.Floor(v)
 	}
 	return v, ""
-}
-
-func XFilesFactorValues(values []float64, xFilesFactor float64) bool {
-	if math.IsNaN(xFilesFactor) || xFilesFactor == 0 {
-		return true
-	}
-	nonNull := 0
-	for _, val := range values {
-		if !math.IsNaN(val) {
-			nonNull++
-		}
-	}
-	return XFilesFactor(nonNull, len(values), xFilesFactor)
-}
-
-func XFilesFactor(nonNull int, total int, xFilesFactor float64) bool {
-	if nonNull < 0 || total <= 0 {
-		return false
-	}
-	return float64(nonNull)/float64(total) >= xFilesFactor
 }
