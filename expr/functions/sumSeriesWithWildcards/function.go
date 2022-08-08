@@ -74,6 +74,7 @@ func (f *sumSeriesWithWildcards) Do(ctx context.Context, e parser.Expr, from, un
 		r := args[0].CopyLink()
 		r.Name = series
 		r.Tags["name"] = series
+		r.Tags["aggregatedBy"] = "sum"
 		r.Values = make([]float64, len(args[0].Values))
 
 		atLeastOne := make([]bool, len(args[0].Values))

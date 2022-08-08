@@ -74,6 +74,7 @@ func (f *averageSeriesWithWildcards) Do(ctx context.Context, e parser.Expr, from
 		r := args[0].CopyLink()
 		r.Name = series
 		r.Tags["name"] = series
+		r.Tags["aggregatedBy"] = "average"
 		r.Values = make([]float64, len(args[0].Values))
 
 		length := make([]float64, len(args[0].Values))
