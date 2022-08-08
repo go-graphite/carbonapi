@@ -220,7 +220,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 			}
 			w.Push(v)
 		}
-		r.Tags[e.Target()] = fmt.Sprintf("%d", windowSize)
+		r.Tags[e.Target()] = argstr
 		result = append(result, r)
 	}
 	return result, nil
