@@ -40,7 +40,7 @@ func (f *verticalLine) Do(_ context.Context, _ parser.Expr, _, _ int64, _ map[pa
 func (f *verticalLine) Description() map[string]types.FunctionDescription {
 	return map[string]types.FunctionDescription{
 		"verticalLine": {
-			Description: "Draws a vertical line at the designated timestamp with optional\n  'label' and 'color'. Supported timestamp formats include both\n  relative (e.g. -3h) and absolute (e.g. 16:00_20110501) strings,\n  such as those used with ``from`` and ``until`` parameters. When\n  set, the 'label' will appear in the graph legend.",
+			Description: "Draws a vertical line at the designated timestamp with optional\n  'label' and 'color'. This function is unsupported in this build (built w/o Cairo).",
 			Function:    "verticalLine(ts, label=None, color=None)",
 			Group:       "Graph",
 			Module:      "graphite.render.functions",
