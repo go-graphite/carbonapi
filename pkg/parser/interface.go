@@ -44,8 +44,6 @@ var (
 	ErrMissingArgument = errors.New("missing argument")
 	// ErrMissingTimeseries is an eval error returned when a time series argument is missing.
 	ErrMissingTimeseries = errors.New("missing time series argument")
-	// ErrSeriesDoesNotExist is an eval error returned when a requested time series argument does not exist.
-	ErrSeriesDoesNotExist = errors.New("no timeseries with that name")
 	// ErrUnknownTimeUnits is an eval error returned when a time unit is unknown to system
 	ErrUnknownTimeUnits = errors.New("unknown time units")
 )

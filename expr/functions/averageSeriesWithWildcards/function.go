@@ -71,7 +71,8 @@ func (f *averageSeriesWithWildcards) Do(ctx context.Context, e parser.Expr, from
 	for i, series := range nodeList {
 		args := groups[series]
 		name := "averageSeriesWithWildcards(" + series + ")"
-		r := args[0].CopyTag(name, map[string]string{"name": series})
+		r := args[0].CopyTag(name, map[string]string{"name": name})
+		r.Tags["aggregatedBy"] = "average"
 		r.Values = make([]float64, len(args[0].Values))
 
 		length := make([]float64, len(args[0].Values))

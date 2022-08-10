@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/ansel1/merry"
 	"github.com/grafana/carbonapi/expr/helper/metric"
 	"github.com/grafana/carbonapi/expr/interfaces"
 	"github.com/grafana/carbonapi/expr/types"
@@ -61,14 +60,14 @@ func GetSeriesArgs(ctx context.Context, e []parser.Expr, from, until int64, valu
 
 	for _, arg := range e {
 		a, err := GetSeriesArg(ctx, arg, from, until, values)
-		if err != nil && !merry.Is(err, parser.ErrSeriesDoesNotExist) {
+		if err != nil {
 			return nil, err
 		}
 		args = append(args, a...)
 	}
 
 	if len(args) == 0 {
-		return nil, parser.ErrSeriesDoesNotExist
+		return nil, nil
 	}
 
 	return args, nil

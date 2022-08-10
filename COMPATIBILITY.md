@@ -111,11 +111,8 @@ _When `format=png`_ (default if not specified)
 | :------------------------------------------------------------------------ |
 | aliasQuery |
 | events |
-| exponentialMovingAverage |
 | holtWintersConfidenceArea |
-| movingWindow |
 | pct |
-| verticalLine |
 
 ### Partly supported functions
 | Function                 | Incompatibilities                              |
@@ -206,6 +203,7 @@ reverse: default value mismatch: got (empty), should be false |
 | drawAsInfinite(seriesList) | no |
 | exclude(seriesList, pattern) | no |
 | exp(seriesList) | no |
+| exponentialMovingAverage(seriesList, windowSize) | no |
 | fallbackSeries(seriesList, fallback) | no |
 | filterSeries(seriesList, func, operator, threshold) | no |
 | grep(seriesList, pattern) | no |
@@ -252,6 +250,7 @@ reverse: default value mismatch: got (empty), should be false |
 | movingMedian(seriesList, windowSize, xFilesFactor=None) | no |
 | movingMin(seriesList, windowSize, xFilesFactor=None) | no |
 | movingSum(seriesList, windowSize, xFilesFactor=None) | no |
+| movingWindow(seriesList, windowSize, func='average', xFilesFactor=None) | no |
 | multiplySeries(*seriesLists) | no |
 | multiplySeriesWithWildcards(seriesList, *position) | no |
 | nPercentile(seriesList, n) | no |
@@ -306,6 +305,7 @@ reverse: default value mismatch: got (empty), should be false |
 | unique(*seriesLists) | no |
 | useSeriesAbove(seriesList, value, search, replace) | no |
 | weightedAverage(seriesListAvg, seriesListWeight, *nodes) | no |
+| verticalLine(ts, label=None, color=None) | no |
 | aliasByBase64(seriesList) | yes |
 | aliasByPostgres(seriesList, *nodes) | yes |
 | aliasByRedis(seriesList. keyName) | yes |

@@ -113,6 +113,7 @@ import (
 	"github.com/grafana/carbonapi/expr/functions/transformNull"
 	"github.com/grafana/carbonapi/expr/functions/tukey"
 	"github.com/grafana/carbonapi/expr/functions/unique"
+	"github.com/grafana/carbonapi/expr/functions/verticalLine"
 	"github.com/grafana/carbonapi/expr/functions/weightedAverage"
 	"github.com/grafana/carbonapi/expr/interfaces"
 	"github.com/grafana/carbonapi/expr/metadata"
@@ -236,6 +237,7 @@ func New(configs map[string]string) {
 		{name: "transformNull", filename: "transformNull", order: transformNull.GetOrder(), f: transformNull.New},
 		{name: "tukey", filename: "tukey", order: tukey.GetOrder(), f: tukey.New},
 		{name: "unique", filename: "unique", order: unique.GetOrder(), f: unique.New},
+		{name: "verticalLine", filename: "verticalLine", order: verticalLine.GetOrder(), f: verticalLine.New},
 		{name: "weightedAverage", filename: "weightedAverage", order: weightedAverage.GetOrder(), f: weightedAverage.New},
 	}
 
