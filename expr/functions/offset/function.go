@@ -3,6 +3,7 @@ package offset
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/grafana/carbonapi/expr/helper"
 	"github.com/grafana/carbonapi/expr/interfaces"
@@ -30,7 +31,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // offset(seriesList,factor)
 func (f *offset) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -38,18 +39,19 @@ func (f *offset) Do(ctx context.Context, e parser.Expr, from, until int64, value
 	if err != nil {
 		return nil, err
 	}
-	var results []*types.MetricData
+	factorStr := strconv.FormatFloat(factor, 'g', -1, 64)
+	results := make([]*types.MetricData, len(arg))
 
-	for _, a := range arg {
+	for i, a := range arg {
 		r := a.CopyLink()
-		r.Name = fmt.Sprintf("%s(%s,%g)", e.Target(), a.Name, factor)
+		r.Name = fmt.Sprintf("%s(%s,%s)", e.Target(), a.Name, factorStr)
 		r.Values = make([]float64, len(a.Values))
 		r.Tags[e.Target()] = fmt.Sprintf("%f", factor)
 
 		for i, v := range a.Values {
 			r.Values[i] = v + factor
 		}
-		results = append(results, r)
+		results[i] = r
 	}
 	return results, nil
 }
@@ -75,6 +77,8 @@ func (f *offset) Description() map[string]types.FunctionDescription {
 					Type:     types.Float,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 		"offset": {
 			Description: "Takes one metric or a wildcard seriesList followed by a constant, and adds the constant to\neach datapoint.\n\nExample:\n\n.. code-block:: none\n\n  &target=offset(Server.instance01.threads.busy,10)",
@@ -94,6 +98,8 @@ func (f *offset) Description() map[string]types.FunctionDescription {
 					Type:     types.Float,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

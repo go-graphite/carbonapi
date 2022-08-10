@@ -15,6 +15,7 @@ import (
 	"github.com/grafana/carbonapi/expr/types"
 	"github.com/grafana/carbonapi/pkg/parser"
 	th "github.com/grafana/carbonapi/tests"
+	"github.com/grafana/carbonapi/tests/compare"
 )
 
 func init() {
@@ -408,54 +409,6 @@ func TestRewriteExpr(t *testing.T) {
 	}
 }
 
-func TestExtractMetric(t *testing.T) {
-	var tests = []struct {
-		input  string
-		metric string
-	}{
-		{
-			"f",
-			"f",
-		},
-		{
-			"func(f)",
-			"f",
-		},
-		{
-			"foo.bar.baz",
-			"foo.bar.baz",
-		},
-		{
-			"nonNegativeDerivative(foo.bar.baz)",
-			"foo.bar.baz",
-		},
-		{
-			"movingAverage(foo.bar.baz,10)",
-			"foo.bar.baz",
-		},
-		{
-			"scale(scaleToSeconds(nonNegativeDerivative(foo.bar.baz),60),60)",
-			"foo.bar.baz",
-		},
-		{
-			"divideSeries(foo.bar.baz,baz.qux.zot)",
-			"foo.bar.baz",
-		},
-		{
-			"{something}",
-			"{something}",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			if m := helper.ExtractMetric(tt.input); m != tt.metric {
-				t.Errorf("extractMetric(%q)=%q, want %q", tt.input, m, tt.metric)
-			}
-		})
-	}
-}
-
 func TestEvalCustomFromUntil(t *testing.T) {
 	tests := []struct {
 		target string
@@ -494,7 +447,7 @@ func TestEvalCustomFromUntil(t *testing.T) {
 			if g[0].StepTime == 0 {
 				t.Errorf("missing step for %+v", g)
 			}
-			if !th.NearlyEqual(g[0].Values, tt.w) {
+			if !compare.NearlyEqual(g[0].Values, tt.w) {
 				t.Errorf("failed: %s: got %+v, want %+v", g[0].Name, g[0].Values, tt.w)
 			}
 			if g[0].Name != tt.name {

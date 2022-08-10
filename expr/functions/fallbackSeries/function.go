@@ -33,8 +33,8 @@ func (f *fallbackSeries) Do(ctx context.Context, e parser.Expr, from, until int6
 		Takes a wildcard seriesList, and a second fallback metric.
 		If the wildcard does not match any series, draws the fallback metric.
 	*/
-	seriesList, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
-	fallback, errFallback := helper.GetSeriesArg(ctx, e.Args()[1], from, until, values)
+	seriesList, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	fallback, errFallback := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
 	if errFallback != nil && err != nil {
 		return nil, errFallback
 	}

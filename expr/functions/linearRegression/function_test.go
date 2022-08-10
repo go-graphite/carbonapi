@@ -1,6 +1,7 @@
 package linearRegression
 
 import (
+	"context"
 	"math"
 	"testing"
 	"time"
@@ -22,7 +23,7 @@ func init() {
 	}
 }
 
-func TestFunction(t *testing.T) {
+func TestLinearRegression(t *testing.T) {
 	now32 := int64(time.Now().Unix())
 
 	tests := []th.EvalTestItem{
@@ -48,4 +49,26 @@ func TestFunction(t *testing.T) {
 		})
 	}
 
+}
+
+func BenchmarkLinearRegression(b *testing.B) {
+	target := "linearRegression(metric1)"
+	metrics := map[parser.MetricRequest][]*types.MetricData{
+		{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, math.NaN(), math.NaN(), 5, 6}, 1, 1)},
+	}
+
+	evaluator := metadata.GetEvaluator()
+	exp, _, err := parser.ParseExpr(target)
+	if err != nil {
+		b.Fatalf("failed to parse %s: %+v", target, err)
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		g, err := evaluator.Eval(context.Background(), exp, 0, 1, metrics)
+		if err != nil {
+			b.Fatalf("failed to eval %s: %+v", target, err)
+		}
+		_ = g
+	}
 }

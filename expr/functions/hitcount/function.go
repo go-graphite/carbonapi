@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strconv"
+	"strings"
 
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/grafana/carbonapi/expr/helper"
@@ -33,7 +35,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 // hitcount(seriesList, intervalString, alignToInterval=False)
 func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(dgryski): make sure the arrays are all the same 'size'
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -52,10 +54,6 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 	if err != nil {
 		return nil, err
 	}
-	_, ok := e.NamedArgs()["alignToInterval"]
-	if !ok {
-		ok = len(e.Args()) > 2
-	}
 
 	start := args[0].StartTime
 	stop := args[0].StopTime
@@ -66,16 +64,23 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 	buckets := helper.GetBuckets(start, stop, bucketSize)
 	results := make([]*types.MetricData, 0, len(args))
 	for _, arg := range args {
-
-		name := fmt.Sprintf("hitcount(%s,'%s'", arg.Name, e.Args()[1].StringValue())
-		if ok {
-			name += fmt.Sprintf(",%v", alignToInterval)
+		var nameBuf strings.Builder
+		bucketSizeStr := e.Arg(1).StringValue()
+		nameBuf.Grow(len(arg.Name) + 13 + len(bucketSizeStr))
+		nameBuf.WriteString("hitcount(")
+		nameBuf.WriteString(arg.Name)
+		nameBuf.WriteString(",'")
+		nameBuf.WriteString(bucketSizeStr)
+		nameBuf.WriteString("'")
+		if alignToInterval {
+			nameBuf.WriteString(",")
+			nameBuf.WriteString(strconv.FormatBool(alignToInterval))
 		}
-		name += ")"
+		nameBuf.WriteString(")")
 
-		r := types.MetricData{
+		r := &types.MetricData{
 			FetchResponse: pb.FetchResponse{
-				Name:              name,
+				Name:              nameBuf.String(),
 				Values:            make([]float64, buckets, buckets+1),
 				StepTime:          bucketSize,
 				StartTime:         start,
@@ -122,7 +127,7 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 			r.Values[ridx] = count
 		}
 
-		results = append(results, &r)
+		results = append(results, r)
 	}
 	return results, nil
 }
@@ -158,6 +163,8 @@ func (f *hitcount) Description() map[string]types.FunctionDescription {
 					Type:    types.Boolean,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

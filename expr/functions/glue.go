@@ -56,6 +56,7 @@ import (
 	"github.com/grafana/carbonapi/expr/functions/interpolate"
 	"github.com/grafana/carbonapi/expr/functions/invert"
 	"github.com/grafana/carbonapi/expr/functions/isNotNull"
+	"github.com/grafana/carbonapi/expr/functions/join"
 	"github.com/grafana/carbonapi/expr/functions/keepLastValue"
 	"github.com/grafana/carbonapi/expr/functions/kolmogorovSmirnovTest2"
 	"github.com/grafana/carbonapi/expr/functions/legendValue"
@@ -178,6 +179,7 @@ func New(configs map[string]string) {
 		{name: "interpolate", filename: "interpolate", order: interpolate.GetOrder(), f: interpolate.New},
 		{name: "invert", filename: "invert", order: invert.GetOrder(), f: invert.New},
 		{name: "isNotNull", filename: "isNotNull", order: isNotNull.GetOrder(), f: isNotNull.New},
+		{name: "join", filename: "join", order: join.GetOrder(), f: join.New},
 		{name: "keepLastValue", filename: "keepLastValue", order: keepLastValue.GetOrder(), f: keepLastValue.New},
 		{name: "kolmogorovSmirnovTest2", filename: "kolmogorovSmirnovTest2", order: kolmogorovSmirnovTest2.GetOrder(), f: kolmogorovSmirnovTest2.New},
 		{name: "legendValue", filename: "legendValue", order: legendValue.GetOrder(), f: legendValue.New},

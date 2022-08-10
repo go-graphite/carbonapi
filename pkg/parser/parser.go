@@ -50,7 +50,7 @@ func (e *expr) Type() ExprType {
 func (e *expr) ToString() string {
 	switch e.etype {
 	case EtFunc:
-		return fmt.Sprintf("%s(%s)", e.target, e.argString)
+		return e.target + "(" + e.argString + ")"
 	case EtConst:
 		return e.valStr
 	case EtString:
@@ -116,12 +116,25 @@ func (e *expr) Args() []Expr {
 	return ret
 }
 
+func (e *expr) Arg(i int) Expr {
+	return e.args[i]
+}
+
+func (e *expr) ArgsLen() int {
+	return len(e.args)
+}
+
 func (e *expr) NamedArgs() map[string]Expr {
 	ret := make(map[string]Expr)
 	for k, v := range e.namedArgs {
 		ret[k] = v
 	}
 	return ret
+}
+
+func (e *expr) NamedArg(name string) (Expr, bool) {
+	expr, exist := e.namedArgs[name]
+	return expr, exist
 }
 
 func (e *expr) Metrics() []MetricRequest {
@@ -263,7 +276,7 @@ func (e *expr) GetStringArgs(n int) ([]string, error) {
 		return nil, ErrMissingArgument
 	}
 
-	var strs []string
+	strs := make([]string, 0, len(e.args)-n)
 
 	for i := n; i < len(e.args); i++ {
 		a, err := e.GetStringArg(i)
@@ -329,7 +342,7 @@ func (e *expr) GetIntArgs(n int) ([]int, error) {
 		return nil, ErrMissingArgument
 	}
 
-	var ints []int
+	ints := make([]int, 0, len(e.args)-n)
 
 	for i := n; i < len(e.args); i++ {
 		a, err := e.GetIntArg(i)
@@ -401,7 +414,7 @@ func (e *expr) GetNodeOrTagArgs(n int, single bool) ([]NodeOrTag, error) {
 		return nil, ErrMissingArgument
 	}
 
-	var nodeTags []NodeOrTag
+	nodeTags := make([]NodeOrTag, 0, len(e.args)-n)
 
 	var err error
 	until := len(e.args)
@@ -709,47 +722,86 @@ func parseName(s string) (string, string) {
 	var (
 		braces, i, w int
 		r            rune
+		isEscape     bool
+		isDefault    bool
 	)
+
+	buf := bytes.NewBuffer(make([]byte, 0, len(s)))
 
 FOR:
 	for braces, i, w = 0, 0, 0; i < len(s); i += w {
-
+		if s[i] != '\\' {
+			err := buf.WriteByte(s[i])
+			if err != nil {
+				break FOR
+			}
+		}
+		isDefault = false
 		w = 1
 		if IsNameChar(s[i]) {
 			continue
 		}
 
 		switch s[i] {
-		case '{':
-			braces++
-		case '}':
-			if braces == 0 {
-				break FOR
+		case '\\':
+			if isEscape {
+				err := buf.WriteByte(s[i])
+				if err != nil {
+					break FOR
+				}
+				isEscape = false
+				continue
 			}
-			braces--
+			isEscape = true
+		case '{':
+			if isEscape {
+				isDefault = true
+			} else {
+				braces++
+			}
+		case '}':
+			if isEscape {
+				isDefault = true
+			} else {
+				if braces == 0 {
+					break FOR
+				}
+				braces--
+			}
 		case ',':
-			if braces == 0 {
+			if isEscape {
+				isDefault = true
+			} else if braces == 0 {
 				break FOR
 			}
 		/* */
 		case '=':
 			// allow metric name to end with any amount of `=` without treating it as a named arg or tag
-			if s[i+1] == '=' || s[i+1] == ',' || s[i+1] == ')' {
-				continue
+			if !isEscape {
+				if s[i+1] == '=' || s[i+1] == ',' || s[i+1] == ')' {
+					continue
+				}
 			}
 			fallthrough
 		/* */
 		default:
+			isDefault = true
+		}
+		if isDefault {
 			r, w = utf8.DecodeRuneInString(s[i:])
 			if unicodeRuneAllowedInName(r) && unicode.In(r, RangeTables...) {
 				continue
 			}
-			break FOR
+			if !isEscape {
+				break FOR
+			}
+			isEscape = false
+			continue
 		}
 	}
 
 	if i == len(s) {
-		return s, ""
+		return buf.String(), ""
 	}
 
 	return s[:i], s[i:]

@@ -2,8 +2,8 @@ package keepLastValue
 
 import (
 	"context"
-	"fmt"
 	"math"
+	"strconv"
 
 	"github.com/grafana/carbonapi/expr/helper"
 	"github.com/grafana/carbonapi/expr/interfaces"
@@ -31,7 +31,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // keepLastValue(seriesList, limit=inf)
 func (f *keepLastValue) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -40,19 +40,19 @@ func (f *keepLastValue) Do(ctx context.Context, e parser.Expr, from, until int64
 	if err != nil {
 		return nil, err
 	}
-	_, ok := e.NamedArgs()["limit"]
-	if !ok {
-		ok = len(e.Args()) > 1
+	var keepStr string
+	if keep != -1 {
+		keepStr = strconv.Itoa(keep)
 	}
 
 	var results []*types.MetricData
 
 	for _, a := range arg {
 		var name string
-		if ok {
-			name = fmt.Sprintf("keepLastValue(%s,%d)", a.Name, keep)
+		if keep == -1 {
+			name = "keepLastValue(" + a.Name + ")"
 		} else {
-			name = fmt.Sprintf("keepLastValue(%s)", a.Name)
+			name = "keepLastValue(" + a.Name + "," + keepStr + ")"
 		}
 
 		r := *a
@@ -104,6 +104,9 @@ func (f *keepLastValue) Description() map[string]types.FunctionDescription {
 					Type:    types.Integer,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

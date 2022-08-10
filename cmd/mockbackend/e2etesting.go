@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	merry2 "github.com/ansel1/merry"
 	"go.uber.org/zap"
 )
 
@@ -155,12 +156,13 @@ func isMetricsEqual(m1, m2 CarbonAPIResponse) error {
 	return nil
 }
 
-func doTest(logger *zap.Logger, t *Query) []string {
+func doTest(logger *zap.Logger, t *Query) []error {
 	client := http.Client{}
-	failures := make([]string, 0)
+	failures := make([]error, 0)
 	d, err := time.ParseDuration(fmt.Sprintf("%v", t.Delay) + "s")
 	if err != nil {
-		failures = append(failures, fmt.Sprintf("failed parse duration: %v", err))
+		err = merry2.Prepend(err, "failed parse duration")
+		failures = append(failures, err)
 		return failures
 	}
 	time.Sleep(d)
@@ -173,7 +175,8 @@ func doTest(logger *zap.Logger, t *Query) []string {
 	var contentType string
 	u, err := url.Parse(t.Endpoint + t.URL)
 	if err != nil {
-		failures = append(failures, fmt.Sprintf("failed to parse URL: %v", err))
+		err = merry2.Prepend(err, "failed to parse URL")
+		failures = append(failures, err)
 		return failures
 	}
 
@@ -184,29 +187,30 @@ func doTest(logger *zap.Logger, t *Query) []string {
 
 	req, err := http.NewRequestWithContext(ctx, t.Type, t.Endpoint+u.Path+"/?"+u.Query().Encode(), body)
 	if err != nil {
-		failures = append(failures, fmt.Sprintf("failed to prepare the request: %v", err))
+		err = merry2.Prepend(err, "failed to prepare the request")
+		failures = append(failures, err)
 		return failures
 	}
 
 	resp, err = client.Do(req)
 	if err != nil {
-		failures = append(failures, fmt.Sprintf("failed to perform the request: %v", err))
+		err = merry2.Prepend(err, "failed to perform the request")
+		failures = append(failures, err)
 		return failures
 	}
 
 	if resp.StatusCode != t.ExpectedResponse.HttpCode {
-		failures = append(failures,
-			fmt.Sprintf("unexpected status code, got %v, expected %v",
-				resp.StatusCode,
-				t.ExpectedResponse.HttpCode,
-			),
+		failures = append(failures, merry2.Errorf("unexpected status code, got %v, expected %v",
+			resp.StatusCode,
+			t.ExpectedResponse.HttpCode,
+		),
 		)
 	}
 
 	contentType = resp.Header.Get("Content-Type")
 	if t.ExpectedResponse.ContentType != contentType {
 		failures = append(failures,
-			fmt.Sprintf("unexpected content-type, got %v, expected %v",
+			merry2.Errorf("unexpected content-type, got %v, expected %v",
 				contentType,
 				t.ExpectedResponse.ContentType,
 			),
@@ -215,7 +219,8 @@ func doTest(logger *zap.Logger, t *Query) []string {
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		failures = append(failures, fmt.Sprintf("failed to read body: %v", err))
+		err = merry2.Prepend(err, "failed to read body")
+		failures = append(failures, err)
 		return failures
 	}
 
@@ -238,14 +243,15 @@ func doTest(logger *zap.Logger, t *Query) []string {
 		}
 		if !sha256matched {
 			encodedBody := base64.StdEncoding.EncodeToString(b)
-			failures = append(failures, fmt.Sprintf("sha256 mismatch, got '%v', expected '%v', encodedBodyy: '%v'", hashStr, t.ExpectedResponse.ExpectedResults[0].SHA256, encodedBody))
+			failures = append(failures, merry2.Errorf("sha256 mismatch, got '%v', expected '%v', encodedBodyy: '%v'", hashStr, t.ExpectedResponse.ExpectedResults[0].SHA256, encodedBody))
 			return failures
 		}
 	case "application/json":
-		res := []CarbonAPIResponse{}
+		res := make([]CarbonAPIResponse, 0, 1)
 		err := json.Unmarshal(b, &res)
 		if err != nil {
-			failures = append(failures, fmt.Sprintf("failed to parse response '%v'", err))
+			err = merry2.Prepend(err, "failed to parse response")
+			failures = append(failures, err)
 			return failures
 		}
 
@@ -254,19 +260,22 @@ func doTest(logger *zap.Logger, t *Query) []string {
 		}
 
 		if len(res) != len(t.ExpectedResponse.ExpectedResults[0].Metrics) {
-			failures = append(failures, fmt.Sprintf("unexpected amount of results, got %v, expected %v", len(res), len(t.ExpectedResponse.ExpectedResults[0].Metrics)))
+			failures = append(failures, merry2.Errorf("unexpected amount of results, got %v, expected %v",
+				len(res),
+				len(t.ExpectedResponse.ExpectedResults[0].Metrics)))
 			return failures
 		}
 
 		for i := range res {
 			err := isMetricsEqual(res[i], t.ExpectedResponse.ExpectedResults[0].Metrics[i])
 			if err != nil {
-				failures = append(failures, fmt.Sprintf("metrics are not equal, err=`%v`, got=`%+v`, expected=`%+v`", err, res[i], t.ExpectedResponse.ExpectedResults[0].Metrics[i]))
+				err = merry2.Prependf(err, "metrics are not equal, got=`%+v`, expected=`%+v`", res[i], t.ExpectedResponse.ExpectedResults[0].Metrics[i])
+				failures = append(failures, err)
 			}
 		}
 
 	default:
-		failures = append(failures, fmt.Sprintf("unsupported content-type: got '%v'", contentType))
+		failures = append(failures, merry2.Errorf("unsupported content-type: got '%v'", contentType))
 	}
 
 	return failures
@@ -295,7 +304,7 @@ func e2eTest(logger *zap.Logger, noapp bool) bool {
 		if len(failures) != 0 {
 			failed = true
 			logger.Error("test failed",
-				zap.Strings("failures", failures),
+				zap.Errors("failures", failures),
 			)
 		} else {
 			logger.Info("test OK")

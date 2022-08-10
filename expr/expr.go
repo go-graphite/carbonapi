@@ -148,7 +148,7 @@ func EvalExpr(ctx context.Context, e parser.Expr, from, until int64, values map[
 	// evaluate the function
 
 	// all functions have arguments -- check we do too
-	if len(e.Args()) == 0 {
+	if e.ArgsLen() == 0 {
 		err := merry.WithMessagef(parser.ErrMissingArgument, "target=%s: %s", e.Target(), parser.ErrMissingArgument)
 		return nil, merry.WithHTTPCode(err, 400)
 	}

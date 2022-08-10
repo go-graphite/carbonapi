@@ -34,7 +34,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 // cactiStyle(seriesList, system=None, units=None)
 func (f *cactiStyle) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// Get the series data
-	original, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	original, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -50,8 +50,8 @@ func (f *cactiStyle) Do(ctx context.Context, e parser.Expr, from, until int64, v
 	}
 
 	// Deal with each of the series
-	var metrics []*types.MetricData
-	for _, a := range original {
+	metrics := make([]*types.MetricData, len(original))
+	for n, a := range original {
 		// Calculate min, max, current
 		//
 		// This saves calling helper.SummarizeValues 3 times and looping over
@@ -102,11 +102,11 @@ func (f *cactiStyle) Do(ctx context.Context, e parser.Expr, from, until int64, v
 			current = fmt.Sprintf("%s %s", current, unit)
 		}
 
-		r := *a
+		r := a.CopyLinkTags()
 		labels := map[string]string{
-			"current": fmt.Sprintf("Current:%s", current),
-			"min":     fmt.Sprintf("Min:%s", min),
-			"max":     fmt.Sprintf("Max:%s", max),
+			"current": "Current:" + current,
+			"min":     "Min:" + min,
+			"max":     "Max:" + max,
 		}
 
 		maxLength := len(labels["current"])
@@ -126,8 +126,8 @@ func (f *cactiStyle) Do(ctx context.Context, e parser.Expr, from, until int64, v
 			labels[k] = tmpBB.String()
 		}
 
-		r.Name = fmt.Sprintf("%s %s%s%s", a.Name, labels["current"], labels["max"], labels["min"])
-		metrics = append(metrics, &r)
+		r.Name = a.Name + " " + labels["current"] + labels["max"] + labels["min"]
+		metrics[n] = r
 	}
 
 	return metrics, nil
