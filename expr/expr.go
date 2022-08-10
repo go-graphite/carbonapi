@@ -3,16 +3,17 @@ package expr
 import (
 	"context"
 
-	utilctx "github.com/grafana/carbonapi/util/ctx"
-
 	"github.com/ansel1/merry"
+
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/grafana/carbonapi/cmd/carbonapi/config"
 	_ "github.com/grafana/carbonapi/expr/functions"
 	"github.com/grafana/carbonapi/expr/helper"
 	"github.com/grafana/carbonapi/expr/metadata"
+	"github.com/grafana/carbonapi/expr/tags"
 	"github.com/grafana/carbonapi/expr/types"
 	"github.com/grafana/carbonapi/pkg/parser"
+	utilctx "github.com/grafana/carbonapi/util/ctx"
 )
 
 type evaluator struct{}
@@ -96,7 +97,7 @@ func (eval evaluator) FetchAndEvalExp(ctx context.Context, exp parser.Expr, from
 	return eval.Eval(ctx, exp, from, until, targetValues)
 }
 
-// Eval evalualtes expressions
+// Eval evaluates expressions
 func (eval evaluator) Eval(ctx context.Context, exp parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (results []*types.MetricData, err error) {
 	rewritten, targets, err := RewriteExpr(ctx, exp, from, until, values)
 	if err != nil {
@@ -131,7 +132,7 @@ func FetchAndEvalExp(ctx context.Context, e parser.Expr, from, until int64, valu
 	return _evaluator.FetchAndEvalExp(ctx, e, from, until, values)
 }
 
-// Eval is the main expression evaluator
+// EvalExpr is the main expression evaluator
 func EvalExpr(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if e.IsName() {
 		return values[parser.MetricRequest{Metric: e.Target(), From: from, Until: until}], nil
@@ -174,6 +175,21 @@ func EvalExpr(ctx context.Context, e parser.Expr, from, until int64, values map[
 				err = merry.WithHTTPCode(err, 400)
 			}
 		}
+
+		for _, md := range v {
+			if md.Tags == nil {
+				md.Tags = make(map[string]string)
+			}
+
+			if _, ok := md.Tags["name"]; !ok {
+				for k, v := range tags.ExtractTags(md.Name) {
+					if _, ok := md.Tags[k]; !ok {
+						md.Tags[k] = v
+					}
+				}
+			}
+		}
+
 		return v, err
 	}
 
