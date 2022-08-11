@@ -2,6 +2,12 @@
 
 TESTS=$(ls cmd/mockbackend/testcases/)
 
+OPTIONS=""
+if [[ "$1" == "-break" ]]; then
+	OPTIONS="${OPTIONS} -break"
+	shift
+fi
+
 if [[ ! -z "${1}" ]]; then
 	TESTS="${1}"
 fi
@@ -14,7 +20,7 @@ for t in ${TESTS}; do
 	fi
 
 	echo "RUNNING TEST ${t}"
-	./mockbackend -test -config cmd/mockbackend/testcases/${t}/${t}.yaml
+	./mockbackend ${OPTIONS} -test -config cmd/mockbackend/testcases/${t}/${t}.yaml
 	status=$?
 
 	if [[ "${TRAVIS}" == "true" ]]; then
@@ -22,7 +28,7 @@ for t in ${TESTS}; do
 		travis_fold end "test_${t}"
 	fi
 
-	sleep 10
+	sleep 2
 	if [[ ${status} -ne 0 ]]; then
 		FAILED_TESTS="${FAILED_TESTS} ${t}"
 		echo "test_${t}: FAIL"

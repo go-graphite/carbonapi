@@ -37,6 +37,7 @@ require (
 	github.com/spf13/viper v1.12.0
 	github.com/stretchr/testify v1.7.1
 	github.com/subosito/gotenv v1.4.0 // indirect
+	github.com/tevino/abool v1.2.0 // indirect
 	github.com/tinylib/msgp v1.1.6
 	github.com/valyala/fastjson v1.6.3
 	github.com/wangjohn/quickselect v0.0.0-20161129230411-ed8402a42d5f
