@@ -174,6 +174,9 @@ github.com/stretchr/testify/assert
 # github.com/subosito/gotenv v1.4.0
 ## explicit
 github.com/subosito/gotenv
+# github.com/tevino/abool v1.2.0
+## explicit
+github.com/tevino/abool
 # github.com/tinylib/msgp v1.1.6
 ## explicit
 github.com/tinylib/msgp/msgp

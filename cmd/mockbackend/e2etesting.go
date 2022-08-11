@@ -159,7 +159,7 @@ func isMetricsEqual(m1, m2 CarbonAPIResponse) error {
 	return nil
 }
 
-func doTest(logger *zap.Logger, t *Query, n int) []error {
+func doTest(logger *zap.Logger, t *Query) []error {
 	client := http.Client{}
 	failures := make([]error, 0)
 	d, err := time.ParseDuration(fmt.Sprintf("%v", t.Delay) + "s")
@@ -284,7 +284,7 @@ func doTest(logger *zap.Logger, t *Query, n int) []error {
 	return failures
 }
 
-func e2eTest(logger *zap.Logger, noapp bool, breakOnError bool) bool {
+func e2eTest(logger *zap.Logger, noapp, breakOnError bool) bool {
 	failed := false
 	logger.Info("will run test",
 		zap.Any("config", cfg.Test),
@@ -307,14 +307,19 @@ func e2eTest(logger *zap.Logger, noapp bool, breakOnError bool) bool {
 		time.Sleep(1 * time.Second)
 	}
 
-	for i, t := range cfg.Test.Queries {
-		failures := doTest(logger, &t, i)
+	for _, t := range cfg.Test.Queries {
+		failures := doTest(logger, &t)
 
 		if len(failures) != 0 {
 			failed = true
 			logger.Error("test failed",
 				zap.Errors("failures", failures),
 			)
+			for _, v := range runningApps {
+				if !v.IsRunning() {
+					logger.Error("unexpected app crash", zap.Any("app", v))
+				}
+			}
 			if breakOnError {
 				for {
 					fmt.Print("Some queries was failed, press y for continue after debug test:")
@@ -338,6 +343,9 @@ func e2eTest(logger *zap.Logger, noapp bool, breakOnError bool) bool {
 
 	if failed {
 		logger.Error("tests failed")
+		for _, v := range runningApps {
+			logger.Info("app out", zap.Any("app", v), zap.String("out", v.Out()))
+		}
 	} else {
 		logger.Info("All tests OK")
 	}
