@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
@@ -11,8 +12,10 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	merry2 "github.com/ansel1/merry"
@@ -156,7 +159,7 @@ func isMetricsEqual(m1, m2 CarbonAPIResponse) error {
 	return nil
 }
 
-func doTest(logger *zap.Logger, t *Query) []error {
+func doTest(logger *zap.Logger, t *Query, n int) []error {
 	client := http.Client{}
 	failures := make([]error, 0)
 	d, err := time.ParseDuration(fmt.Sprintf("%v", t.Delay) + "s")
@@ -281,31 +284,48 @@ func doTest(logger *zap.Logger, t *Query) []error {
 	return failures
 }
 
-func e2eTest(logger *zap.Logger, noapp bool) bool {
+func e2eTest(logger *zap.Logger, noapp bool, breakOnError bool) bool {
 	failed := false
 	logger.Info("will run test",
 		zap.Any("config", cfg.Test),
 	)
 	runningApps := make(map[string]*runner)
 	if !noapp {
+		wgStart := sync.WaitGroup{}
 		for i, c := range cfg.Test.Apps {
 			r := new(&cfg.Test.Apps[i], logger)
+			wgStart.Add(1)
 			runningApps[c.Name] = r
-			go r.Run()
+			go func() {
+				wgStart.Done()
+				r.Run()
+			}()
 		}
 
-		logger.Info("will sleep for 5 seconds to start all required apps")
-		time.Sleep(5 * time.Second)
+		wgStart.Wait()
+		logger.Info("will sleep for 1 seconds to start all required apps")
+		time.Sleep(1 * time.Second)
 	}
 
-	for _, t := range cfg.Test.Queries {
-		failures := doTest(logger, &t)
+	for i, t := range cfg.Test.Queries {
+		failures := doTest(logger, &t, i)
 
 		if len(failures) != 0 {
 			failed = true
 			logger.Error("test failed",
 				zap.Errors("failures", failures),
 			)
+			if breakOnError {
+				for {
+					fmt.Print("Some queries was failed, press y for continue after debug test:")
+					in := bufio.NewScanner(os.Stdin)
+					in.Scan()
+					s := in.Text()
+					if s == "y" || s == "Y" {
+						break
+					}
+				}
+			}
 		} else {
 			logger.Info("test OK")
 		}
