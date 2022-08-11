@@ -2,7 +2,9 @@ package legendValue
 
 import (
 	"context"
-	"fmt"
+	"math"
+	"strconv"
+	"strings"
 
 	"github.com/grafana/carbonapi/expr/consolidations"
 	"github.com/grafana/carbonapi/expr/helper"
@@ -31,14 +33,14 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // legendValue(seriesList, newName)
 func (f *legendValue) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
 	var system string
 	var methods []string
-	for i := 1; i < len(e.Args()); i++ {
+	for i := 1; i < e.ArgsLen(); i++ {
 		method, err := e.GetStringArg(i)
 		if err != nil {
 			return nil, err
@@ -49,35 +51,39 @@ func (f *legendValue) Do(ctx context.Context, e parser.Expr, from, until int64, 
 			methods = append(methods, method)
 		}
 	}
-	var results []*types.MetricData
-	for _, a := range arg {
+
+	results := make([]*types.MetricData, len(arg))
+	for i, a := range arg {
 		r := a.CopyLink()
+		var nameBuf strings.Builder
+		nameBuf.Grow(len(r.Name) + len(methods)*5)
+		nameBuf.WriteString(r.Name)
 		for _, method := range methods {
 			summary := consolidations.SummarizeValues(method, a.Values, a.XFilesFactor)
+			nameBuf.WriteString(" (")
+			nameBuf.WriteString(method)
+			nameBuf.WriteString(": ")
 			if system == "" {
-				r.Name = fmt.Sprintf("%s (%s: %f)", r.Name, method, summary)
+				nameBuf.WriteString(strconv.FormatFloat(summary, 'g', -1, 64))
 			} else {
 				v, prefix := helper.FormatUnits(summary, system)
-				var formatted string
 				if prefix != "" {
 					prefix += " "
 				}
 
-				if v < 0.1 {
-					formatted = fmt.Sprintf("%.9g%s", v, prefix)
-				}
-				if v < 1.0 {
-					formatted = fmt.Sprintf("%.2f%s", v, prefix)
-				}
-				if formatted != "" {
-					r.Name = fmt.Sprintf("%s (%s: %s)", r.Name, method, formatted)
+				if math.Abs(v) < 0.1 {
+					nameBuf.WriteString(strconv.FormatFloat(v, 'g', 9, 64))
 				} else {
-					r.Name = fmt.Sprintf("%s (%s: %f)", r.Name, method, summary)
+					nameBuf.WriteString(strconv.FormatFloat(v, 'f', 2, 64))
 				}
-			}
-		}
 
-		results = append(results, r)
+				nameBuf.WriteString(prefix)
+			}
+			nameBuf.WriteString(")")
+		}
+		r.Name = nameBuf.String()
+
+		results[i] = r
 	}
 	return results, nil
 }
@@ -104,6 +110,7 @@ func (f *legendValue) Description() map[string]types.FunctionDescription {
 					Type:     types.String,
 				},
 			},
+			NameChange: true, // name changed
 		},
 	}
 }

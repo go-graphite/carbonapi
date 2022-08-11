@@ -3,7 +3,6 @@ package tests
 import (
 	"context"
 	"fmt"
-	"math"
 	"reflect"
 	"testing"
 	"time"
@@ -15,6 +14,7 @@ import (
 	"github.com/grafana/carbonapi/expr/metadata"
 	"github.com/grafana/carbonapi/expr/types"
 	"github.com/grafana/carbonapi/pkg/parser"
+	"github.com/grafana/carbonapi/tests/compare"
 )
 
 type FuncEvaluator struct {
@@ -37,7 +37,7 @@ func (evaluator *FuncEvaluator) Eval(ctx context.Context, e parser.Expr, from, u
 	// evaluate the function
 
 	// all functions have arguments -- check we do too
-	if len(e.Args()) == 0 {
+	if e.ArgsLen() == 0 {
 		return nil, parser.ErrMissingArgument
 	}
 
@@ -116,115 +116,11 @@ func DeepClone(original map[parser.MetricRequest][]*types.MetricData) map[parser
 	return clone
 }
 
-func compareFloat64(v1, v2 float64) bool {
-	if math.IsNaN(v1) && math.IsNaN(v2) {
-		return true
-	}
-	if math.IsInf(v1, 1) && math.IsInf(v2, 1) {
-		return true
-	}
-
-	if math.IsInf(v1, 0) && math.IsInf(v2, 0) {
-		return true
-	}
-
-	d := math.Abs(v1 - v2)
-	return d < eps
-}
-
-func deepCompareFields(v1, v2 reflect.Value) bool {
-	if !v1.CanInterface() {
-		return true
-	}
-	t1 := v1.Type()
-	if t1.Comparable() {
-		if t1.Name() == "float64" {
-			return compareFloat64(v1.Interface().(float64), v2.Interface().(float64))
-		}
-		if t1.Name() == "float32" {
-			v1f64 := float64(v1.Interface().(float32))
-			v2f64 := float64(v2.Interface().(float32))
-			return compareFloat64(v1f64, v2f64)
-		}
-		return reflect.DeepEqual(v1.Interface(), v2.Interface())
-	} else {
-		switch v1.Kind() {
-		case reflect.Struct:
-			if v1.NumField() == 0 {
-				// We don't know how to compare that
-				return false
-			}
-			for i := 0; i < v1.NumField(); i++ {
-				r := deepCompareFields(v1.Field(i), v2.Field(i))
-				if !r {
-					return r
-				}
-			}
-		case reflect.Slice, reflect.Array:
-			if v1.Len() != v2.Len() {
-				return false
-			}
-			if v1.Len() == 0 {
-				return true
-			}
-			if v1.Index(0).Kind() != v2.Index(0).Kind() {
-				return false
-			}
-			for i := 0; i < v1.Len(); i++ {
-				e1 := v1.Index(i)
-				e2 := v2.Index(i)
-				if !deepCompareFields(e1, e2) {
-					return false
-				}
-			}
-		case reflect.Map:
-			if v1.Len() != v2.Len() {
-				return false
-			}
-			if v1.Len() == 0 {
-				return true
-			}
-
-			keys1 := v1.MapKeys()
-			for _, k := range keys1 {
-				val1 := v1.MapIndex(k)
-				val2 := v2.MapIndex(k)
-				if !deepCompareFields(val1, val2) {
-					return false
-				}
-			}
-			return true
-		case reflect.Func:
-			return v1.Pointer() == v2.Pointer()
-		default:
-			fmt.Printf("unsupported v1.Kind=%v t1.Name=%v, t1.Value=%v\n\n", v1.Kind(), v1.Type().Name(), v1.String())
-			return false
-		}
-	}
-	return true
-}
-
-func MetricDataIsEqual(d1, d2 *types.MetricData, compareTags bool) bool {
-	v1 := reflect.ValueOf(*d1)
-	v2 := reflect.ValueOf(*d2)
-
-	for i := 0; i < v1.NumField(); i++ {
-		if v1.Type().Field(i).Name == "Tags" && !compareTags {
-			continue
-		}
-		r := deepCompareFields(v1.Field(i), v2.Field(i))
-		if !r {
-			return r
-		}
-	}
-	return true
-}
-
 func DeepEqual(t *testing.T, target string, original, modified map[parser.MetricRequest][]*types.MetricData, compareTags bool) {
 	for key := range original {
 		if len(original[key]) == len(modified[key]) {
 			for i := range original[key] {
-				if !MetricDataIsEqual(original[key][i], modified[key][i], compareTags) {
+				if !compare.MetricDataIsEqual(original[key][i], modified[key][i], compareTags) {
 					t.Errorf(
 						"%s: source data was modified key %v index %v original:\n%v\n modified:\n%v",
 						target,
@@ -245,48 +141,6 @@ func DeepEqual(t *testing.T, target string, original, modified map[parser.Metric
 			)
 		}
 	}
-}
-
-const eps = 0.0000000001
-
-func NearlyEqual(a, b []float64) bool {
-	if len(a) != len(b) {
-		return false
-	}
-
-	for i, v := range a {
-		// "same"
-		if math.IsNaN(a[i]) && math.IsNaN(b[i]) {
-			continue
-		}
-		if math.IsNaN(a[i]) || math.IsNaN(b[i]) {
-			// unexpected NaN
-			return false
-		}
-		// "close enough"
-		if math.Abs(v-b[i]) > eps {
-			return false
-		}
-	}
-
-	return true
-}
-
-func NearlyEqualMetrics(a, b *types.MetricData) bool {
-	if len(a.Values) != len(b.Values) {
-		return false
-	}
-	for i := range a.Values {
-		if (math.IsNaN(a.Values[i]) && !math.IsNaN(b.Values[i])) || (!math.IsNaN(a.Values[i]) && math.IsNaN(b.Values[i])) {
-			return false
-		}
-		// "close enough"
-		if math.Abs(a.Values[i]-b.Values[i]) > eps {
-			return false
-		}
-	}
-
-	return true
 }
 
 type SummarizeEvalTestItem struct {
@@ -346,7 +200,7 @@ func TestSummarizeEvalExpr(t *testing.T, tt *SummarizeEvalTestItem) {
 			t.Errorf("bad Stop for %s: got %s want %s", g[0].Name, time.Unix(g[0].StopTime, 0).Format(time.StampNano), time.Unix(tt.Stop, 0).Format(time.StampNano))
 		}
 
-		if !NearlyEqual(g[0].Values, tt.W) {
+		if !compare.NearlyEqual(g[0].Values, tt.W) {
 			t.Errorf("failed: %s:\ngot  %+v,\nwant %+v", g[0].Name, g[0].Values, tt.W)
 		}
 		if g[0].Name != tt.Name {
@@ -394,20 +248,46 @@ func TestMultiReturnEvalExpr(t *testing.T, tt *MultiReturnEvalTestItem) {
 	if len(g) != len(tt.Results) {
 		t.Errorf("unexpected results len: got %d, want %d for %s", len(g), len(tt.Results), tt.Target)
 	}
-	for _, gg := range g {
-		r, ok := tt.Results[gg.Name]
-		if !ok {
-			t.Errorf("missing result Name: %v", gg.Name)
+	for i, actual := range g {
+		if actual == nil {
+			t.Errorf("result[%d] mismatch, got nil", i)
 			continue
 		}
-		if r[0].Name != gg.Name {
-			t.Errorf("result Name mismatch, got\n%#v,\nwant\n%#v", gg.Name, r[0].Name)
+		wants, ok := tt.Results[actual.Name]
+		if !ok {
+			t.Errorf("missing result Name: %v", actual.Name)
+			continue
 		}
-		if !reflect.DeepEqual(r[0].Values, gg.Values) ||
-			r[0].StartTime != gg.StartTime ||
-			r[0].StopTime != gg.StopTime ||
-			r[0].StepTime != gg.StepTime {
-			t.Errorf("result mismatch, got\n%#v,\nwant\n%#v", gg, r)
+
+		if wants[0].Name != actual.Name {
+			t.Errorf("result Name mismatch, got\n%#v,\nwant\n%#v", actual.Name, wants[0].Name)
+		}
+
+		for k, v := range wants[0].Tags {
+			// FIXME: we are skipping Tags comparison until we fix the tests https://github.com/grafana/carbonapi/issues/65
+			break
+			if aTag, ok := actual.Tags[k]; ok {
+				if aTag != v {
+					t.Errorf("metric %+v with name '%s' tag['%s'] value '%s' not equal '%s'", actual, actual.Name, k, aTag, v)
+				}
+			} else {
+				t.Errorf("metric %+v with name %v doesn't contain '%s' tag", actual, actual.Name, k)
+			}
+		}
+
+		for k := range actual.Tags {
+			// FIXME: we are skipping Tags comparison until we fix the tests https://github.com/grafana/carbonapi/issues/65
+			break
+			if _, ok := wants[0].Tags[k]; !ok {
+				t.Errorf("metric %+v with name %v contain unwanted '%s' tag", actual, actual.Name, k)
+			}
+		}
+
+		if !reflect.DeepEqual(wants[0].Values, actual.Values) ||
+			wants[0].StartTime != actual.StartTime ||
+			wants[0].StopTime != actual.StopTime ||
+			wants[0].StepTime != actual.StepTime {
+			t.Errorf("result mismatch, got\n%#v,\nwant\n%#v", actual, wants)
 		}
 	}
 }
@@ -513,36 +393,52 @@ func TestEvalExprModifiedOrigin(t *testing.T, tt *EvalTestItem, from, until int6
 	}
 	if len(g) != len(tt.Want) {
 		t.Errorf("%s returned a different number of metrics, actual %v, Want %v", testName, len(g), len(tt.Want))
-		return nil
 	}
 
 	for i, want := range tt.Want {
+		if i > len(g)-1 || g[i] == nil {
+			t.Errorf("returned no value %+s[%d]: want %+v", tt.Target, i, want)
+			return nil
+		}
 		actual := g[i]
 		if _, ok := actual.Tags["name"]; !ok {
-			t.Errorf("metric %+v with name %v doesn't contain 'name' tag", actual, actual.Name)
+			t.Errorf("metric[%d] %+v with name %v doesn't contain 'name' tag", i, actual, actual.Name)
 		}
-		if actual == nil {
-			t.Errorf("returned no value %v", tt.Target)
-			return nil
+		for k, v := range want.Tags {
+			// FIXME: we are skipping Tags comparison until we fix the tests https://github.com/grafana/carbonapi/issues/65
+			break
+			if aTag, ok := actual.Tags[k]; ok {
+				if aTag != v {
+					t.Errorf("metric[%d] %+v with name '%s' tag['%s'] value '%s' not equal '%s'", i, actual, actual.Name, k, aTag, v)
+				}
+			} else {
+				t.Errorf("metric[%d] %+v with name %v doesn't contain '%s' tag", i, actual, actual.Name, k)
+			}
+		}
+		for k := range actual.Tags {
+			// FIXME: we are skipping Tags comparison until we fix the tests https://github.com/grafana/carbonapi/issues/65
+			break
+			if _, ok := want.Tags[k]; !ok {
+				t.Errorf("metric[%d] %+v with name %v contain unwanted '%s' tag", i, actual, actual.Name, k)
+			}
 		}
 		if actual.StepTime == 0 {
 			t.Errorf("missing Step for %+v", g)
 		}
 		if actual.Name != want.Name {
-			t.Errorf("bad Name for %s metric %d: got %s, Want %s", testName, i, actual.Name, want.Name)
+			t.Errorf("bad Name for %s metric[%d]: got %s, Want %s", testName, i, actual.Name, want.Name)
 		}
-		if !NearlyEqualMetrics(actual, want) {
-			t.Errorf("different values for %s metric %s: got %v, Want %v", testName, actual.Name, actual.Values, want.Values)
-			return nil
+		if !compare.NearlyEqualMetrics(actual, want) {
+			t.Errorf("different values for %s metric[%d] %s: got %v, Want %v", testName, i, actual.Name, actual.Values, want.Values)
 		}
 		if actual.StepTime != want.StepTime {
-			t.Errorf("different StepTime for %s metric %s: got %v, Want %v", testName, actual.Name, actual.StepTime, want.StepTime)
+			t.Errorf("different StepTime for %s metric[%d] %s: got %v, Want %v", testName, i, actual.Name, actual.StepTime, want.StepTime)
 		}
 		if actual.StartTime != want.StartTime {
-			t.Errorf("different StartTime for %s metric %s: got %v, Want %v", testName, actual.Name, actual.StartTime, want.StartTime)
+			t.Errorf("different StartTime for %s metric[%d] %s: got %v, Want %v", testName, i, actual.Name, actual.StartTime, want.StartTime)
 		}
 		if actual.StopTime != want.StopTime {
-			t.Errorf("different StopTime for %s metric %s: got %v, Want %v", testName, actual.Name, actual.StopTime, want.StopTime)
+			t.Errorf("different StopTime for %s metric[%d] %s: got %v, Want %v", testName, i, actual.Name, actual.StopTime, want.StopTime)
 		}
 	}
 	return nil
@@ -556,6 +452,15 @@ func TestEvalExpr(t *testing.T, tt *EvalTestItem) {
 		return
 	}
 	DeepEqual(t, tt.Target, originalMetrics, tt.M, true)
+}
+
+func TestEvalExprResult(t *testing.T, tt *EvalTestItem) {
+	err := TestEvalExprModifiedOrigin(t, tt, 0, 1, false)
+	if err != nil {
+		t.Errorf("unexpected error while evaluating %s: got `%+v`", tt.Target, err)
+		return
+	}
+	//
 }
 
 func TestEvalExprWithRange(t *testing.T, tt *EvalTestItemWithRange) {

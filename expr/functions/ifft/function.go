@@ -2,7 +2,6 @@ package ifft
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"math/cmplx"
 
@@ -33,27 +32,26 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // ifft(absSeriesList, phaseSeriesList)
 func (f *ifft) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	absSeriesList, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	absSeriesList, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
 	var phaseSeriesList []*types.MetricData
-	if len(e.Args()) > 1 {
-		phaseSeriesList, err = helper.GetSeriesArg(ctx, e.Args()[1], from, until, values)
+	if e.ArgsLen() > 1 {
+		phaseSeriesList, err = helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	var results []*types.MetricData
+	results := make([]*types.MetricData, len(absSeriesList))
 	for j, a := range absSeriesList {
 		r := *a
 		r.Values = make([]float64, len(a.Values))
 		if len(phaseSeriesList) > j {
 			p := phaseSeriesList[j]
-			name := fmt.Sprintf("ifft(%s, %s)", a.Name, p.Name)
-			r.Name = name
+			r.Name = "ifft(" + a.Name + "," + p.Name + ")"
 			values := make([]complex128, len(a.Values))
 			for i, v := range a.Values {
 				if math.IsNaN(v) {
@@ -68,15 +66,14 @@ func (f *ifft) Do(ctx context.Context, e parser.Expr, from, until int64, values 
 				r.Values[i] = cmplx.Abs(v)
 			}
 		} else {
-			name := fmt.Sprintf("ifft(%s)", a.Name)
-			r.Name = name
+			r.Name = "ifft(" + a.Name + ")"
 			values := realFFT.IFFTReal(a.Values)
 			for i, v := range values {
 				r.Values[i] = cmplx.Abs(v)
 			}
 		}
 
-		results = append(results, &r)
+		results[j] = &r
 	}
 	return results, nil
 }
@@ -102,6 +99,8 @@ func (f *ifft) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

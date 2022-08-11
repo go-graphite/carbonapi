@@ -1,0 +1,44 @@
+version: "v1"
+test:
+    apps:
+        - name: "carbonapi"
+          binary: "./carbonapi"
+          args:
+              - "-config"
+              - "./cmd/mockbackend/testcases/i598/carbonapi.yaml"
+    queries:
+            - endpoint: "http://127.0.0.1:8081"
+              delay: 1
+              type: "GET"
+              URL: "/render/?target=fo\\(o\\).bar&format=json"
+              expectedResponse:
+                  httpCode: 200
+                  contentType: "application/json"
+                  expectedResults:
+                          - metrics:
+                                  - target: "fo(o).bar"
+                                    datapoints: [[0,1],[1,2],[2,3],[2,4],[3,5]]
+            - endpoint: "http://127.0.0.1:8081"
+              delay: 1
+              type: "GET"
+              URL: "/render/?target=metric\\\\a&format=json"
+              expectedResponse:
+                  httpCode: 200
+                  contentType: "application/json"
+                  expectedResults:
+                          - metrics:
+                                  - target: "metric\\a"
+                                    datapoints: [[0,1],[1,2],[2,3],[2,4],[3,5]]
+listeners:
+  - address: ":9070"
+    expressions:
+      "fo(o).bar":
+        pathExpression: "fo(o).bar"
+        data:
+            - metricName: "fo(o).bar"
+              values: [0,1,2,2,3]
+      "metric\\a":
+        pathExpression: "metric\\a"
+        data:
+            - metricName: "metric\\a"
+              values: [0,1,2,2,3]

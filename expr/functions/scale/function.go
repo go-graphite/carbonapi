@@ -3,6 +3,7 @@ package scale
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/grafana/carbonapi/expr/helper"
 	"github.com/grafana/carbonapi/expr/interfaces"
@@ -30,7 +31,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // scale(seriesList, factor)
 func (f *scale) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -38,18 +39,20 @@ func (f *scale) Do(ctx context.Context, e parser.Expr, from, until int64, values
 	if err != nil {
 		return nil, err
 	}
+	scaleStr := strconv.FormatFloat(scale, 'g', -1, 64)
 	timestamp, err := e.GetIntArgDefault(2, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	results := make([]*types.MetricData, 0, len(arg))
-	for _, a := range arg {
+	results := make([]*types.MetricData, len(arg))
+	for j, a := range arg {
 		r := a.CopyLink()
 		if timestamp == 0 {
-			r.Name = fmt.Sprintf("scale(%s,%g)", a.Name, scale)
+			r.Name = "scale(" + a.Name + "," + scaleStr + ")"
 		} else {
 			r.Name = fmt.Sprintf("scale(%s,%g,%d)", a.Name, scale, timestamp)
+			r.Name = "scale(" + a.Name + "," + scaleStr + "," + e.Arg(2).StringValue() + ")"
 		}
 		r.Values = make([]float64, len(a.Values))
 		r.Tags["scale"] = fmt.Sprintf("%f", scale)
@@ -63,7 +66,8 @@ func (f *scale) Do(ctx context.Context, e parser.Expr, from, until int64, values
 
 			currentTimestamp += a.StepTime
 		}
-		results = append(results, r)
+
+		results[j] = r
 	}
 	return results, nil
 }
@@ -99,6 +103,8 @@ func (f *scale) Description() map[string]types.FunctionDescription {
 					Default:  types.NewSuggestion(0),
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 		"scaleAfterTimestamp": {
 			Description: "Takes one metric or a wildcard seriesList followed by a constant, and multiplies the datapoint\n" +
@@ -127,6 +133,8 @@ func (f *scale) Description() map[string]types.FunctionDescription {
 					Default:  types.NewSuggestion(0),
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

@@ -3,6 +3,7 @@ package round
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/grafana/carbonapi/expr/helper"
 	"github.com/grafana/carbonapi/expr/interfaces"
@@ -35,26 +36,32 @@ func (f *round) Do(ctx context.Context, e parser.Expr, from, until int64, values
 		return nil, err
 	}
 	var withPrecision bool
+	var precisionStr string
 	precision, withPrecision, err := e.GetIntNamedOrPosArgWithIndication("precision", 1)
 	if err != nil {
 		return nil, err
 	}
+	if withPrecision {
+		precisionStr = strconv.Itoa(precision)
+	}
 
-	results := make([]*types.MetricData, 0, len(arg))
-	for _, a := range arg {
+	results := make([]*types.MetricData, len(arg))
+	for j, a := range arg {
 		r := a.CopyLink()
 		if withPrecision {
-			r.Name = fmt.Sprintf("round(%s,%d)", a.Name, precision)
+			r.Name = "round(" + a.Name + "," + precisionStr + ")"
 		} else {
-			r.Name = fmt.Sprintf("round(%s)", a.Name)
+			r.Name = "round(" + a.Name + ")"
 		}
 		r.Values = make([]float64, len(a.Values))
 
 		for i, v := range a.Values {
 			r.Values[i] = helper.SafeRound(v, precision)
 		}
+
 		r.Tags["round"] = fmt.Sprintf("%d", precision)
-		results = append(results, r)
+		results[j] = r
+
 	}
 	return results, nil
 }
@@ -80,6 +87,8 @@ func (f *round) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

@@ -33,7 +33,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 func (f *multiplySeriesWithWildcards) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	/* TODO(dgryski): make sure the arrays are all the same 'size'
 	   (duplicated from sumSeriesWithWildcards because of similar logic but multiplication) */
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -43,15 +43,13 @@ func (f *multiplySeriesWithWildcards) Do(ctx context.Context, e parser.Expr, fro
 		return nil, err
 	}
 
-	var results []*types.MetricData
-
-	nodeList := []string{}
+	nodeList := make([]string, 0, 256)
 	groups := make(map[string][]*types.MetricData)
 
 	for _, a := range args {
-		metric := helper.ExtractMetric(a.Name)
+		metric := a.Tags["name"]
 		nodes := strings.Split(metric, ".")
-		var s []string
+		s := make([]string, 0, len(nodes))
 		// Yes, this is O(n^2), but len(nodes) < 10 and len(fields) < 3
 		// Iterating an int slice is faster than a map for n ~ 30
 		// http://www.antoine.im/posts/someone_is_wrong_on_the_internet
@@ -70,6 +68,7 @@ func (f *multiplySeriesWithWildcards) Do(ctx context.Context, e parser.Expr, fro
 		groups[node] = append(groups[node], a)
 	}
 
+	results := make([]*types.MetricData, 0, len(nodeList))
 	commonTags := helper.GetCommonTags(args)
 	commonTags["aggregatedBy"] = "multiply"
 
@@ -82,6 +81,12 @@ func (f *multiplySeriesWithWildcards) Do(ctx context.Context, e parser.Expr, fro
 			r.Tags[k] = v
 		}
 		r.Tags["name"] = series
+
+		if _, ok := commonTags["name"]; !ok {
+			commonTags["name"] = r.Name
+		}
+		r.Tags = commonTags
+
 		r.Values = make([]float64, len(args[0].Values))
 
 		atLeastOne := make([]bool, len(args[0].Values))
@@ -140,6 +145,10 @@ func (f *multiplySeriesWithWildcards) Description() map[string]types.FunctionDes
 					Type:     types.Node,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

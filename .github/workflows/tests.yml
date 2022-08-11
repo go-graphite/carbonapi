@@ -9,13 +9,13 @@ jobs:
 
   tests:
     name: Test code
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         go:
-          - ^1.16
-          - ^1.17
           - ^1.18
+          # FIXME https://github.com/grafana/carbonapi/issues/70
+          # - ^1.19
           - ^1
     steps:
 

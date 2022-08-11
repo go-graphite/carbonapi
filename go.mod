@@ -6,6 +6,7 @@ require (
 	bitbucket.org/tebeka/strftime v0.0.0-20140926081919-2194253a23c0
 	github.com/JaderDias/movingmedian v0.0.0-20170611140316-de8c410559fa
 	github.com/aclements/go-moremath v0.0.0-20210112150236-f10218a38794 // indirect
+	github.com/alicebob/miniredis/v2 v2.22.0 // indirect
 	github.com/ansel1/merry v1.6.2
 	github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d
 	github.com/circonus-labs/gosnowth v1.10.5

@@ -31,7 +31,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // delay(seriesList, steps)
 func (f *delay) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	seriesList, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	seriesList, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -40,10 +40,11 @@ func (f *delay) Do(ctx context.Context, e parser.Expr, from, until int64, values
 	if err != nil {
 		return nil, err
 	}
+	stepsStr := e.Arg(1).StringValue()
 
-	var results []*types.MetricData
+	results := make([]*types.MetricData, len(seriesList))
 
-	for _, series := range seriesList {
+	for i, series := range seriesList {
 		length := len(series.Values)
 
 		newValues := make([]float64, length)
@@ -62,12 +63,11 @@ func (f *delay) Do(ctx context.Context, e parser.Expr, from, until int64, values
 			prevValues = append(prevValues, value)
 		}
 
-		result := series.CopyLink()
-		result.Name = fmt.Sprintf("delay(%s,%d)", series.Name, steps)
+		result := series.CopyName("delay(" + series.Name + "," + stepsStr + ")")
 		result.Values = newValues
 		result.Tags["delay"] = fmt.Sprintf("%d", steps)
 
-		results = append(results, result)
+		results[i] = result
 	}
 
 	return results, nil
@@ -94,6 +94,8 @@ func (f *delay) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

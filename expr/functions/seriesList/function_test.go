@@ -91,6 +91,24 @@ func TestSeriesListMultiReturn(t *testing.T) {
 				"diffSeries(metric2,metric2)": {types.MakeMetricData("diffSeries(metric2,metric2)", []float64{0, 0, 0, 0, 0}, 1, now32)},
 			},
 		},
+		{
+			"diffSeriesLists(metric[12],metric[134])",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric[12]", 0, 1}: {
+					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric2", []float64{2, 4, 6, 8, 10}, 1, now32),
+				},
+				{"metric[134]", 0, 1}: {
+					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric3", []float64{2, 4, 6, 8, 10}, 1, now32),
+					types.MakeMetricData("metric4", []float64{2, 4, 6, 8, 10}, 1, now32),
+				},
+			},
+			"diffSeriesListSameGroups",
+			map[string][]*types.MetricData{
+				"diffSeries(metric1,metric1)": {types.MakeMetricData("diffSeries(metric1,metric1)", []float64{0, 0, 0, 0, 0}, 1, now32)},
+			},
+		},
 	}
 
 	for _, tt := range tests {

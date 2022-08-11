@@ -6,6 +6,9 @@ on:
     branches: [ main ]
     types:
       - completed
+  push:
+    tags:
+      - v.*
 jobs:
   build-packages-ubuntu-1804:
     name: Build packages for Ubuntu 18.04

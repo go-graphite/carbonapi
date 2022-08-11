@@ -19,7 +19,7 @@ test:
                             - "6d9b18d1fe7264cc0ceb1aa319bf735d346f264bae058e0918d1e41437834aa7" # sha256(nodata svg) on Gentoo stable
                             - "33d0b579778e2e0bfdb7cf85cbddafe08f5f97b720e1e717d046262ded23cdf2" # sha256(nodata svg) on Ubuntu Xenial (travis-ci) 
                             - "cbb6fb095dfcfefd44d42e86c0bf3c677693cf4fa5e45897777405ed272c8915" # sha256(nodata svg) on Arch Linux, Ubuntu Bionic (Github Actions)
-
+                            - "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" # sha256(nodata svg) on macos
 listeners:
         - address: ":9070"
           expressions:

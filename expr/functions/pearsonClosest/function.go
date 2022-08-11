@@ -33,11 +33,11 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // pearsonClosest(series, seriesList, n, direction=abs)
 func (f *pearsonClosest) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	if len(e.Args()) > 3 {
+	if e.ArgsLen() > 3 {
 		return nil, types.ErrTooManyArguments
 	}
 
-	ref, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	ref, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (f *pearsonClosest) Do(ctx context.Context, e parser.Expr, from, until int6
 		return nil, types.ErrWildcardNotAllowed
 	}
 
-	compare, err := helper.GetSeriesArg(ctx, e.Args()[1], from, until, values)
+	compare, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (f *pearsonClosest) Do(ctx context.Context, e parser.Expr, from, until int6
 	refValues := make([]float64, len(ref[0].Values))
 	copy(refValues, ref[0].Values)
 
-	var mh types.MetricHeap
+	mh := make(types.MetricHeap, 0, len(compare))
 
 	for index, a := range compare {
 		compareValues := make([]float64, len(a.Values))
@@ -183,6 +183,10 @@ and will manifest as if the entire window/series had missing values.`,
 					Type: types.String,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

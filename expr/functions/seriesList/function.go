@@ -73,7 +73,6 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 		return nil, err
 	}
 
-	var results []*types.MetricData
 	functionName := e.Target()[:len(e.Target())-len("Lists")]
 
 	var compute func(l, r float64) float64
@@ -96,9 +95,10 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 		} else {
 			single = numerators
 		}
-		for _, s := range single {
+		results := make([]*types.MetricData, len(single))
+		for n, s := range single {
 			r := *s
-			r.Name = fmt.Sprintf("%s(%s,%s)", functionName, s.Name, s.Name)
+			r.Name = functionName + "(" + s.Name + "," + s.Name + ")"
 			r.Values = make([]float64, len(s.Values))
 			for i, v := range s.Values {
 				if math.IsNaN(v) {
@@ -119,7 +119,7 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 				}
 
 			}
-			results = append(results, &r)
+			results[n] = &r
 		}
 		return results, nil
 	}
@@ -134,7 +134,8 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 
 	var denominator *types.MetricData
 
-	for i, numerator := range numerators {
+	results := make([]*types.MetricData, 0, len(numerators))
+	for n, numerator := range numerators {
 		pairFound := false
 		if useMatching {
 			denominator, pairFound = denomMap[numerator.Name]
@@ -146,7 +147,7 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 			if len(denominators) == 1 {
 				denominator = denominators[0]
 			} else {
-				denominator = denominators[i]
+				denominator = denominators[n]
 			}
 		}
 		if pairFound {
@@ -161,7 +162,7 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 		} else {
 			denomName = strconv.FormatFloat(defaultValue, 'f', -1, 64)
 		}
-		r.Name = fmt.Sprintf("%s(%s,%s)", functionName, numerator.Name, denomName)
+		r.Name = functionName + "(" + numerator.Name + "," + denomName + ")"
 		r.Values = make([]float64, len(numerator.Values))
 
 		for i, v := range numerator.Values {
@@ -218,6 +219,10 @@ func (f *seriesList) Description() map[string]types.FunctionDescription {
 					Type:     types.Float,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 		"diffSeriesLists": {
 			Description: "Iterates over a two lists and substracts list1[0} by list2[0}, list1[1} by list2[1} and so on.\nThe lists need to be the same length\nCarbonAPI-specific extension allows to specify default value as 3rd optional argument in case series doesn't exist or value is missing",
@@ -242,6 +247,10 @@ func (f *seriesList) Description() map[string]types.FunctionDescription {
 					Type:     types.Float,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 		"multiplySeriesLists": {
 			Description: "Iterates over a two lists and multiplies list1[0} by list2[0}, list1[1} by list2[1} and so on.\nThe lists need to be the same length\nCarbonAPI-specific extension allows to specify default value as 3rd optional argument in case series doesn't exist or value is missing",
@@ -266,6 +275,10 @@ func (f *seriesList) Description() map[string]types.FunctionDescription {
 					Type:     types.Float,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 		"powSeriesLists": {
 			Description: "Iterates over a two lists and do list1[0} in power of list2[0}, list1[1} in power of  list2[1} and so on.\nThe lists need to be the same length\nCarbonAPI-specific extension allows to specify default value as 3rd optional argument in case series doesn't exist or value is missing",
@@ -290,6 +303,10 @@ func (f *seriesList) Description() map[string]types.FunctionDescription {
 					Type:     types.Float,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

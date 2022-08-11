@@ -1,6 +1,7 @@
 package aliasByNode
 
 import (
+	"context"
 	"math"
 	"testing"
 	"time"
@@ -43,6 +44,16 @@ func TestAliasByNode(t *testing.T) {
 	now32 := int64(time.Now().Unix())
 
 	tests := []th.EvalTestItem{
+		// issue 517
+		{
+			"aliasByNode(aliasSub(a.b.c.d.e, '(.*)', '0.1.2.@.4'), 2)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"a.b.c.d.e", 0, 1}: {
+					types.MakeMetricData("a.b.c.d.e", []float64{8, 2, 4}, 1, now32),
+				},
+			},
+			[]*types.MetricData{types.MakeMetricData("2", []float64{8, 2, 4}, 1, now32)},
+		},
 		{
 			Target: "aliasByNode(aliasSub(a.b.c.d.e, '(.*)', '0.1.2.@.4'), 2)",
 			M: map[parser.MetricRequest][]*types.MetricData{
@@ -115,6 +126,22 @@ func TestAliasByNode(t *testing.T) {
 			},
 			Want: []*types.MetricData{types.MakeMetricData("base.metric1", []float64{math.NaN(), 1, 1, 1, 1}, 1, now32)},
 		},
+		// FIXME: I don't think `metric1.foo==.bar.baz` is a valid metric name, that is making this test fail https://github.com/grafana/carbonapi/issues/68
+		// {
+		// 	Target: "aliasByNode(metric1.fo*.bar.baz,1,3)",
+		// 	M: map[parser.MetricRequest][]*types.MetricData{
+		// 		{Metric: "metric1.fo*.bar.baz", From: 0, Until: 1}: {types.MakeMetricData("metric1.foo==.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
+		// 	},
+		// 	Want: []*types.MetricData{types.MakeMetricData("foo==.baz",
+		// 		[]float64{1, 2, 3, 4, 5}, 1, now32)},
+		// },
+		{
+			Target: `aliasByTags(*, 2, "baz", "foo", 1)`,
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "*", From: 0, Until: 1}: {types.MakeMetricData("base.metric1;foo=bar=;baz=bam==", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			},
+			Want: []*types.MetricData{types.MakeMetricData("bam==.bar=.metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+		},
 	}
 
 	for _, tt := range tests {
@@ -124,4 +151,28 @@ func TestAliasByNode(t *testing.T) {
 		})
 	}
 
+}
+
+func BenchmarkAliasByNode(b *testing.B) {
+	target := "aliasByNode(metric1.foo.bar.baz,1,3)"
+	metrics := map[parser.MetricRequest][]*types.MetricData{
+		{Metric: "metric1.foo.bar.baz", From: 0, Until: 1}: {
+			types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, 1),
+		},
+	}
+
+	evaluator := metadata.GetEvaluator()
+	exp, _, err := parser.ParseExpr(target)
+	if err != nil {
+		b.Fatalf("failed to parse %s: %+v", target, err)
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		g, err := evaluator.Eval(context.Background(), exp, 0, 1, metrics)
+		if err != nil {
+			b.Fatalf("failed to eval %s: %+v", target, err)
+		}
+		_ = g
+	}
 }

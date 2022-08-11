@@ -7,6 +7,7 @@ import (
 
 	"github.com/grafana/carbonapi/expr/consolidations"
 	"github.com/grafana/carbonapi/expr/helper"
+	"github.com/grafana/carbonapi/expr/helper/metric"
 	"github.com/grafana/carbonapi/expr/interfaces"
 	"github.com/grafana/carbonapi/expr/types"
 	"github.com/grafana/carbonapi/pkg/parser"
@@ -65,7 +66,7 @@ func (f *aggregateWithWildcards) Do(ctx context.Context, e parser.Expr, from, un
 	nodeList := []string{}
 
 	for _, a := range args {
-		metric := helper.ExtractMetric(a.Name)
+		metric := metric.ExtractMetric(a.Name)
 		nodes := strings.Split(metric, ".")
 		var s []string
 		// Yes, this is O(n^2), but len(nodes) < 10 and len(fields) < 3

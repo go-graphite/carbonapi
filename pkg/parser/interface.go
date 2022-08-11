@@ -88,10 +88,16 @@ type Expr interface {
 	// MutateValString changes ValString for the expression and returns new interface. Please note that it doesn't copy object yet
 	MutateValString(string) Expr
 
+	// Arg returns argument with index (parsed, as Expr interface as well)
+	Arg(int) Expr
 	// Args returns slice of arguments (parsed, as Expr interface as well)
 	Args() []Expr
+	// ArgsLen return arguments count
+	ArgsLen() int
 	// NamedArgs returns map of named arguments. E.x. for nonNegativeDerivative(metric1,maxValue=32) it will return map{"maxValue": constExpr(32)}
 	NamedArgs() map[string]Expr
+	// NamedArg returns named argument and boolean flag for check arg exist.
+	NamedArg(string) (Expr, bool)
 	// RawArgs returns string that contains all arguments of expression exactly the same order they appear
 	RawArgs() string
 	// SetRawArgs changes raw argument list for current expression.

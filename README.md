@@ -14,7 +14,7 @@ For requirements see **Requirements** section below.
 Installation
 ------------
 
-At this moment we are building packages for CentOS 6, CentOS 7, Debian 9, Debian 10, Ubuntu 14.04, Ubuntu 16.04 and Ubuntu 18.04. Installation guides are available on packagecloud (see the links below).
+At this moment we are building packages for CentOS 7, Rockylinux 8 (should be compatible with RHEL 8), Debian 10, Debian 11, Debian 12 (testing), Ubuntu 18.04, Ubuntu 20.04, Ubuntu 22.04. Installation guides are available on packagecloud (see the links below).
 
 Stable versions: [Stable repo](https://packagecloud.io/go-graphite/stable/install)
 
@@ -111,7 +111,18 @@ Supported protocols
 Requirements
 ------------
 
-You need to have Go >= 1.14 to build carbonapi from sources. Building with Go 1.10 or earlier is not supported since 0.11.0. Building with Go 1.12 or earlier is not supported since 0.13.0.
+Golang compatibility matrix:
+
+| Golang Version | Last supported carbonapi version |
+|----------------|----------------------------------|
+| 1.10           | 0.10.0.1                         |
+| 1.12           | 0.12.6                           |
+| 1.16 / 1.17    | 0.15.6                           |
+| 1.18           | current                          |
+
+Overall rule of thumb is that carbonapi supports last 2 major go versions. E.x. at this moment Go 1.19 and 1.18 are supported.
+
+You can verify current versions that are being tested in [CI Configuration](https://github.com/grafana/carbonapi/blob/main/.github/workflows/tests.yml#L14).
 
 CarbonAPI uses protobuf-based protocol to talk with underlying storages. For current version the compatibility list is:
 
@@ -122,6 +133,14 @@ CarbonAPI uses protobuf-based protocol to talk with underlying storages. For cur
 5. [carbonserver](https://github.com/grobian/carbonserver)@master (Note: you should probably switch to go-carbon in that case).
 6. [carbonzipper](https://github.com/go-graphite/carbonzipper) >= 0.50. **Please note**, carbonzipper functionality was merged to carbonapi and it's no longer needed to run separate zipper. Current version of carbonzipper can be build from `cmd/carbonzipper`
 
+Supported architectures and OSs
+-------------------------------
+
+Currently building is tested regularly on amd64 (automated) and arm64 (manual) only. However from time to time, riscv64 is also tested manually.
+
+For OS support: **Linux** is the only OS that is well tested for production usage. Theoretically nothing prevents from running carbonapi on **\*BSD**, however its not tested by developers (but bugs will be accepted and eventually fixed). Running on **macos** is supported for testing purposes but it is not tested for any production use case. Other platforms are not tested and not supported.
+
+For any other OS or Architectures bugs **won't be actively worked on**, but PRs that fixes the OS and doesn't break any other supported platforms are more than welcome.
 
 Some remarks on different backends
 ----------------------------------
