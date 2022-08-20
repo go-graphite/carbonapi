@@ -4,14 +4,21 @@ import (
 	"context"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
+	fconfig "github.com/go-graphite/carbonapi/expr/functions/config"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
+type Config struct {
+	ExtractTagsFromArgs bool
+}
+
 type percentileOfSeries struct {
 	interfaces.FunctionBase
+
+	extractTagsFromArgs bool
 }
 
 func GetOrder() interfaces.Order {
@@ -48,7 +55,12 @@ func (f *percentileOfSeries) Do(ctx context.Context, e parser.Expr, from, until 
 
 	return helper.AggregateSeries(e, args, func(values []float64) float64 {
 		return consolidations.Percentile(values, percent, interpolate)
-	})
+	}, fconfig.Config.ExtractTagsFromArgs)
+}
+
+// SetExtractTagsFromArgs for use in tests
+func (f *percentileOfSeries) SetExtractTagsFromArgs(e bool) {
+	f.extractTagsFromArgs = e
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web

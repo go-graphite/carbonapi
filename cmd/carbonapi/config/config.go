@@ -75,6 +75,7 @@ type ConfigType struct {
 	PidFile                    string             `mapstructure:"pidFile"`
 	SendGlobsAsIs              *bool              `mapstructure:"sendGlobsAsIs"`
 	AlwaysSendGlobsAsIs        *bool              `mapstructure:"alwaysSendGlobsAsIs"`
+	ExtractTagsFromArgs        bool               `mapstructure:"extractTagsFromArgs"`
 	MaxBatchSize               int                `mapstructure:"maxBatchSize"`
 	Zipper                     string             `mapstructure:"zipper"`
 	Upstreams                  zipperCfg.Config   `mapstructure:"upstreams"`

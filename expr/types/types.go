@@ -479,7 +479,44 @@ func (r *MetricData) CopyName(name string) *MetricData {
 	}
 }
 
-// CopyName returns the copy of MetricData, Values not copied and link from parent. If name set, Name and Name tag changed, Tags wil be reset
+// CopyNameWithDefault returns the copy of MetricData, Values not copied and link from parent. Name is changed, Tags will be reset.
+// If Name tag not set, it will be set with default value.
+// Use this function in aggregate function (like sumSeries)
+func (r *MetricData) CopyNameWithDefault(name, defaultName string) *MetricData {
+	if name == "" {
+		name = defaultName
+	}
+
+	tags := tags.ExtractTags(ExtractName(name))
+	if _, exist := tags["name"]; !exist {
+		tags["name"] = defaultName
+	}
+
+	return &MetricData{
+		FetchResponse: pb.FetchResponse{
+			Name:                    name,
+			PathExpression:          r.PathExpression,
+			ConsolidationFunc:       r.ConsolidationFunc,
+			StartTime:               r.StartTime,
+			StopTime:                r.StopTime,
+			StepTime:                r.StepTime,
+			XFilesFactor:            r.XFilesFactor,
+			HighPrecisionTimestamps: r.HighPrecisionTimestamps,
+			Values:                  r.Values,
+			AppliedFunctions:        r.AppliedFunctions,
+			RequestStartTime:        r.RequestStartTime,
+			RequestStopTime:         r.RequestStopTime,
+		},
+		GraphOptions:      r.GraphOptions,
+		ValuesPerPoint:    r.ValuesPerPoint,
+		aggregatedValues:  r.aggregatedValues,
+		Tags:              tags,
+		AggregateFunction: r.AggregateFunction,
+	}
+}
+
+// CopyTag returns the copy of MetricData, Values not copied and link from parent. If name set, Name and Name tag changed, Tags will be reset.
+// WARNING: can provide inconsistence beetween name and tags, if incorectly used
 func (r *MetricData) CopyTag(name string, tags map[string]string) *MetricData {
 	if name == "" {
 		return r.CopyLink()
@@ -504,6 +541,49 @@ func (r *MetricData) CopyTag(name string, tags map[string]string) *MetricData {
 		ValuesPerPoint:    r.ValuesPerPoint,
 		aggregatedValues:  r.aggregatedValues,
 		Tags:              tags,
+		AggregateFunction: r.AggregateFunction,
+	}
+}
+
+// CopyNameArg returns the copy of MetricData, Values not copied and link from parent. Name is changed, tags extracted from seriesByTag args, if extractTags is true
+// For use in functions like aggregate
+func (r *MetricData) CopyNameArg(name, defaultName string, defaultTags map[string]string, extractTags bool) *MetricData {
+	if name == "" {
+		return r.CopyLink()
+	}
+
+	var tagsExtracted map[string]string
+	nameStiped := ExtractName(name)
+	if strings.HasPrefix(nameStiped, "seriesByTag(") {
+		if extractTags {
+			// from aggregation functions with seriesByTag
+			tagsExtracted = tags.ExtractSeriesByTags(nameStiped, defaultName)
+		} else {
+			tagsExtracted = defaultTags
+		}
+	} else {
+		tagsExtracted = tags.ExtractTags(nameStiped)
+	}
+
+	return &MetricData{
+		FetchResponse: pb.FetchResponse{
+			Name:                    name,
+			PathExpression:          r.PathExpression,
+			ConsolidationFunc:       r.ConsolidationFunc,
+			StartTime:               r.StartTime,
+			StopTime:                r.StopTime,
+			StepTime:                r.StepTime,
+			XFilesFactor:            r.XFilesFactor,
+			HighPrecisionTimestamps: r.HighPrecisionTimestamps,
+			Values:                  r.Values,
+			AppliedFunctions:        r.AppliedFunctions,
+			RequestStartTime:        r.RequestStartTime,
+			RequestStopTime:         r.RequestStopTime,
+		},
+		GraphOptions:      r.GraphOptions,
+		ValuesPerPoint:    r.ValuesPerPoint,
+		aggregatedValues:  r.aggregatedValues,
+		Tags:              tagsExtracted,
 		AggregateFunction: r.AggregateFunction,
 	}
 }
@@ -587,6 +667,12 @@ func (r *MetricData) SetTag(key, value string) *MetricData {
 	return r
 }
 
+// SetTag allow to set tags
+func (r *MetricData) SetTags(tags map[string]string) *MetricData {
+	r.Tags = tags
+	return r
+}
+
 // RecalcStopTime recalc StopTime with StartTime and Values length
 func (r *MetricData) RecalcStopTime() *MetricData {
 	stop := r.StartTime + int64(len(r.Values))*r.StepTime
@@ -635,7 +721,7 @@ func CopyMetricDataSliceWithTags(args []*MetricData, name string, tags map[strin
 
 // MakeMetricData creates new metrics data with given metric timeseries
 func MakeMetricData(name string, values []float64, step, start int64) *MetricData {
-	tags := tags.ExtractTags(name)
+	tags := tags.ExtractTags(ExtractName(name))
 	return makeMetricDataWithTags(name, values, step, start, tags).FixNameTag()
 }
 

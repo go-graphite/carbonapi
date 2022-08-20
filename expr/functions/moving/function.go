@@ -122,8 +122,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 	result := make([]*types.MetricData, len(arg))
 
 	for n, a := range arg {
-		r := a.CopyLinkTags()
-		r.Name = e.Target() + "(" + a.Name + "," + argstr + ")"
+		r := a.CopyTag(e.Target()+"("+a.Name+","+argstr+")", a.Tags)
 
 		if windowSize == 0 {
 			if *f.config.ReturnNaNsIfStepMismatch {

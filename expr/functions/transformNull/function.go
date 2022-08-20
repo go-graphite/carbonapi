@@ -91,8 +91,7 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 			name = "transformNull(" + a.Name + ")"
 		}
 
-		r := *a
-		r.Name = name
+		r := a.CopyTag(name, a.Tags)
 		r.Values = make([]float64, len(a.Values))
 
 		for i, v := range a.Values {
@@ -107,7 +106,7 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 			r.Values[i] = v
 		}
 
-		results = append(results, &r)
+		results = append(results, r)
 	}
 	if len(arg) == 0 && defaultOnAbsent {
 		values := []float64{defv, defv}

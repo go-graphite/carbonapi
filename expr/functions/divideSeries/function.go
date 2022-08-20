@@ -76,12 +76,13 @@ func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 
 	results := make([]*types.MetricData, 0, len(numerators))
 	for _, numerator := range numerators {
-		r := *numerator
+		var name string
 		if useMetricNames {
-			r.Name = "divideSeries(" + numerator.Name + "," + denominator.Name + ")"
+			name = "divideSeries(" + numerator.Name + "," + denominator.Name + ")"
 		} else {
-			r.Name = "divideSeries(" + e.RawArgs() + ")"
+			name = "divideSeries(" + e.RawArgs() + ")"
 		}
+		r := numerator.CopyTag(name, numerator.Tags)
 		r.Values = make([]float64, len(numerator.Values))
 
 		for i, v := range numerator.Values {
@@ -93,7 +94,7 @@ func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 				r.Values[i] = v / denominator.Values[i]
 			}
 		}
-		results = append(results, &r)
+		results = append(results, r)
 	}
 
 	return results, nil
