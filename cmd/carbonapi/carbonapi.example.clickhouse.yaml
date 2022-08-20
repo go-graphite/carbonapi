@@ -32,6 +32,9 @@ cpus: 0
 # Timezone, default - local
 tz: ""
 
+# By default, functions like aggregate inherit tags from first series (for compatibility with graphite-web)
+# If set to true, tags are extracted from seriesByTag arguments
+#extractTagsFromArgs: false
 functionsConfig:
     graphiteWeb: ./graphiteWeb.example.yaml
 maxBatchSize: 0

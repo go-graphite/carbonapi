@@ -13,6 +13,7 @@ headersToPass:
   - "X-Dashboard-Id"
   - "X-Grafana-Org-Id"
   - "X-Panel-Id"
+#extractTagsFromArgs: false
 functionsConfig:
     graphiteWeb: ./graphiteWeb.example.yaml
 maxBatchSize: 0
