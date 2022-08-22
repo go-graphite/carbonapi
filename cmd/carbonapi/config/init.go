@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"expvar"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"runtime"
 	"sort"
 	"strconv"
@@ -93,7 +93,7 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 	if Config.GraphTemplates != "" {
 		graphTemplates = make(map[string]png.PictureParams)
 		graphTemplatesViper := viper.New()
-		b, err := ioutil.ReadFile(Config.GraphTemplates)
+		b, err := os.ReadFile(Config.GraphTemplates)
 		if err != nil {
 			logger.Fatal("error reading graphTemplates file",
 				zap.String("graphTemplate_path", Config.GraphTemplates),
@@ -321,7 +321,7 @@ func createCache(logger *zap.Logger, cacheName string, cacheConfig *CacheConfig)
 
 func SetUpViper(logger *zap.Logger, configPath *string, viperPrefix string) {
 	if *configPath != "" {
-		b, err := ioutil.ReadFile(*configPath)
+		b, err := os.ReadFile(*configPath)
 		if err != nil {
 			logger.Fatal("error reading config file",
 				zap.String("config_path", *configPath),
