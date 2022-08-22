@@ -21,7 +21,7 @@ jobs:
       # Step 2: run this sync action - specify the upstream repo, upstream branch to sync with, and target sync branch
       - name: Pull upstream changes
         id: sync
-        uses: aormsby/Fork-Sync-With-Upstream-action@latest
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.2
         with:
           target_sync_branch: main
           target_repo_token: ${{ secrets.GITHUB_TOKEN }}
