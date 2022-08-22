@@ -97,9 +97,7 @@ func copyResponse(src Response) Response {
 			Step:       src.Data[i].Step,
 		}
 
-		for j := range src.Data[i].Values {
-			dst.Data[i].Values[j] = src.Data[i].Values[j]
-		}
+		copy(dst.Data[i].Values, src.Data[i].Values)
 	}
 
 	return dst

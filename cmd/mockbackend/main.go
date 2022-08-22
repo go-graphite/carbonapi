@@ -40,6 +40,7 @@ func main() {
 	testonly := flag.Bool("testonly", false, "run only unit test")
 	noapp := flag.Bool("noapp", false, "do not run application")
 	test := flag.Bool("test", false, "run unit test if present")
+	breakOnError := flag.Bool("break", false, "break and wait user response if request failed")
 	flag.Parse()
 	logger, err := zap.NewProduction()
 	if err != nil {
@@ -67,6 +68,7 @@ func main() {
 
 	httpServers := make([]*http.Server, 0)
 	wg := sync.WaitGroup{}
+	wgStart := sync.WaitGroup{}
 	if !*testonly {
 		for _, c := range cfg.Listeners {
 			logger := logger.With(zap.String("listener", c.Address))
@@ -95,13 +97,15 @@ func main() {
 			mux.HandleFunc("/metrics/find/", listener.findHandler)
 
 			wg.Add(1)
+			wgStart.Add(1)
 			server := &http.Server{
 				Addr:    listener.Address,
 				Handler: mux,
 			}
 			go func(h *http.Server) {
+				wgStart.Done()
 				err = h.ListenAndServe()
-				if err != nil {
+				if err != nil && err != http.ErrServerClosed {
 					logger.Error("failed to start server",
 						zap.Error(err),
 					)
@@ -109,6 +113,7 @@ func main() {
 				wg.Done()
 			}(server)
 
+			wgStart.Wait()
 			httpServers = append(httpServers, server)
 		}
 		logger.Info("all listeners started")
@@ -116,7 +121,7 @@ func main() {
 
 	failed := false
 	if cfg.Test != nil && (*test || *testonly) {
-		failed = e2eTest(logger, *noapp)
+		failed = e2eTest(logger, *noapp, *breakOnError)
 	}
 
 	if !*testonly {

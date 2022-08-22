@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
@@ -11,8 +12,10 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	merry2 "github.com/ansel1/merry"
@@ -281,21 +284,27 @@ func doTest(logger *zap.Logger, t *Query) []error {
 	return failures
 }
 
-func e2eTest(logger *zap.Logger, noapp bool) bool {
+func e2eTest(logger *zap.Logger, noapp, breakOnError bool) bool {
 	failed := false
 	logger.Info("will run test",
 		zap.Any("config", cfg.Test),
 	)
 	runningApps := make(map[string]*runner)
 	if !noapp {
+		wgStart := sync.WaitGroup{}
 		for i, c := range cfg.Test.Apps {
 			r := new(&cfg.Test.Apps[i], logger)
+			wgStart.Add(1)
 			runningApps[c.Name] = r
-			go r.Run()
+			go func() {
+				wgStart.Done()
+				r.Run()
+			}()
 		}
 
-		logger.Info("will sleep for 5 seconds to start all required apps")
-		time.Sleep(5 * time.Second)
+		wgStart.Wait()
+		logger.Info("will sleep for 1 seconds to start all required apps")
+		time.Sleep(1 * time.Second)
 	}
 
 	for _, t := range cfg.Test.Queries {
@@ -306,6 +315,22 @@ func e2eTest(logger *zap.Logger, noapp bool) bool {
 			logger.Error("test failed",
 				zap.Errors("failures", failures),
 			)
+			for _, v := range runningApps {
+				if !v.IsRunning() {
+					logger.Error("unexpected app crash", zap.Any("app", v))
+				}
+			}
+			if breakOnError {
+				for {
+					fmt.Print("Some queries was failed, press y for continue after debug test:")
+					in := bufio.NewScanner(os.Stdin)
+					in.Scan()
+					s := in.Text()
+					if s == "y" || s == "Y" {
+						break
+					}
+				}
+			}
 		} else {
 			logger.Info("test OK")
 		}
@@ -318,6 +343,9 @@ func e2eTest(logger *zap.Logger, noapp bool) bool {
 
 	if failed {
 		logger.Error("tests failed")
+		for _, v := range runningApps {
+			logger.Info("app out", zap.Any("app", v), zap.String("out", v.Out()))
+		}
 	} else {
 		logger.Info("All tests OK")
 	}
