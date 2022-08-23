@@ -117,8 +117,7 @@ func (f *movingMedian) Do(ctx context.Context, e parser.Expr, from, until int64,
 	result := make([]*types.MetricData, len(arg))
 
 	for n, a := range arg {
-		r := *a
-		r.Name = "movingMedian(" + a.Name + "," + argstr + ")"
+		r := a.CopyTag("movingMedian("+a.Name+","+argstr+")", a.Tags)
 
 		if windowSize == 0 {
 			if *f.config.ReturnNaNsIfStepMismatch {
@@ -145,7 +144,7 @@ func (f *movingMedian) Do(ctx context.Context, e parser.Expr, from, until int64,
 				}
 			}
 		}
-		result[n] = &r
+		result[n] = r
 	}
 	return result, nil
 }

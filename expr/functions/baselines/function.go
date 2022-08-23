@@ -70,11 +70,11 @@ func (f *baselines) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		offs := int64(i * unit)
 		arg, _ := helper.GetSeriesArg(ctx, e.Arg(0), from+offs, until+offs, values)
 		for _, a := range arg {
-			r := *a
+			r := a.CopyLinkTags()
 			if _, ok := current[r.Name]; ok || !isAberration {
 				r.StartTime = a.StartTime - offs
 				r.StopTime = a.StopTime - offs
-				groups[r.Name] = append(groups[r.Name], &r)
+				groups[r.Name] = append(groups[r.Name], r)
 			}
 		}
 	}

@@ -709,10 +709,10 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 		results := make([]*types.MetricData, len(arg))
 
 		for i, a := range arg {
-			r := *a
+			r := a.CopyLinkTags()
 			r.Stacked = true
 			r.StackName = stackName
-			results[i] = &r
+			results[i] = r
 		}
 
 		return results, nil
@@ -729,16 +729,14 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 
 		name := e.Target() + "(" + e.RawArgs() + ")"
 
-		lower := *arg[0]
+		lower := arg[0].CopyTag(name, arg[0].Tags)
 		lower.Stacked = true
 		lower.StackName = types.DefaultStackName
 		lower.Invisible = true
-		lower.Name = name
 
-		upper := *arg[1]
+		upper := arg[1].CopyTag(name, arg[1].Tags)
 		upper.Stacked = true
 		upper.StackName = types.DefaultStackName
-		upper.Name = name
 
 		vals := make([]float64, len(upper.Values))
 
@@ -748,7 +746,7 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 
 		upper.Values = vals
 
-		return []*types.MetricData{&lower, &upper}, nil
+		return []*types.MetricData{lower, upper}, nil
 
 	case "alpha": // alpha(seriesList, theAlpha)
 		arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)

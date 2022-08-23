@@ -89,7 +89,7 @@ func (f *weightedAverage) Do(ctx context.Context, e parser.Expr, from, until int
 		if _, ok := pair["weight"]; !ok {
 			continue
 		}
-		product, err := helper.AggregateSeries(e, []*types.MetricData{pair["avg"], pair["weight"]}, consolidations.ConsolidationToFunc["multiply"])
+		product, err := helper.AggregateSeries(e, []*types.MetricData{pair["avg"], pair["weight"]}, consolidations.ConsolidationToFunc["multiply"], false)
 		if err != nil {
 			return nil, err
 		}
@@ -99,15 +99,15 @@ func (f *weightedAverage) Do(ctx context.Context, e parser.Expr, from, until int
 		return []*types.MetricData{}, nil
 	}
 
-	sumProducts, err := helper.AggregateSeries(e, productList, consolidations.AggSum)
+	sumProducts, err := helper.AggregateSeries(e, productList, consolidations.AggSum, false)
 	if err != nil {
 		return nil, err
 	}
-	sumWeights, err := helper.AggregateSeries(e, weights, consolidations.AggSum)
+	sumWeights, err := helper.AggregateSeries(e, weights, consolidations.AggSum, false)
 	if err != nil {
 		return nil, err
 	}
-	weightedAverageSeries, err := helper.AggregateSeries(e, append(sumProducts, sumWeights...), func(v []float64) float64 { return v[0] / v[1] })
+	weightedAverageSeries, err := helper.AggregateSeries(e, append(sumProducts, sumWeights...), func(v []float64) float64 { return v[0] / v[1] }, false)
 	if err != nil {
 		return nil, err
 	}

@@ -161,8 +161,7 @@ func ForEachSeriesDo(ctx context.Context, e parser.Expr, from, until int64, valu
 	var results []*types.MetricData
 
 	for _, a := range arg {
-		r := a.CopyLinkTags()
-		r.Name = e.Target() + "(" + a.Name + ")"
+		r := a.CopyTag(e.Target()+"("+a.Name+")", a.Tags)
 		r.Values = make([]float64, len(a.Values))
 		results = append(results, function(a, r))
 	}
@@ -173,7 +172,7 @@ func ForEachSeriesDo(ctx context.Context, e parser.Expr, from, until int64, valu
 type AggregateFunc func([]float64) float64
 
 // AggregateSeries aggregates series
-func AggregateSeries(e parser.Expr, args []*types.MetricData, function AggregateFunc) ([]*types.MetricData, error) {
+func AggregateSeries(e parser.Expr, args []*types.MetricData, function AggregateFunc, extractTagsFromArgs bool) ([]*types.MetricData, error) {
 	if len(args) == 0 {
 		return args, nil
 	}
@@ -181,7 +180,7 @@ func AggregateSeries(e parser.Expr, args []*types.MetricData, function Aggregate
 	args = ScaleSeries(args)
 
 	length := len(args[0].Values)
-	r := args[0].CopyName(e.Target() + "(" + e.RawArgs() + ")")
+	r := args[0].CopyNameArg(e.Target()+"("+e.RawArgs()+")", e.Target(), args[0].Tags, extractTagsFromArgs)
 	r.Values = make([]float64, length)
 
 	values := make([]float64, len(args))

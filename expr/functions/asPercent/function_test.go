@@ -141,6 +141,24 @@ func TestAsPersent(t *testing.T) {
 				types.MakeMetricData("asPercent(Server3.memory.used,MISSING)", []float64{NaN, NaN, NaN}, 1, now32),
 			},
 		},
+		// tagged series
+		{
+			"asPercent(seriesByTag('name=metric', 'tag=A*'),metricB*)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"seriesByTag('name=metric', 'tag=A*')", 0, 1}: {
+					types.MakeMetricData("metric;tag=A1", []float64{1, 20, 10}, 1, now32),
+					types.MakeMetricData("metric;tag=A2", []float64{1, 10, 20}, 1, now32),
+				},
+				{"metricB*", 0, 1}: {
+					types.MakeMetricData("metricB1", []float64{4, 4, 8}, 1, now32),
+					types.MakeMetricData("metricB2", []float64{4, 16, 2}, 1, now32),
+				},
+			},
+			[]*types.MetricData{
+				types.MakeMetricData("asPercent(metric;tag=A1,metricB1)", []float64{25, 500, 125}, 1, now32),
+				types.MakeMetricData("asPercent(metric;tag=A2,metricB2)", []float64{25, 62.5, 1000}, 1, now32),
+			},
+		},
 	}
 
 	for _, tt := range tests {

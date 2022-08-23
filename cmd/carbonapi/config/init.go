@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"expvar"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"runtime"
 	"sort"
 	"strconv"
@@ -19,6 +19,7 @@ import (
 	"github.com/go-graphite/carbonapi/cache"
 	"github.com/go-graphite/carbonapi/expr/functions"
 	"github.com/go-graphite/carbonapi/expr/functions/cairo/png"
+	fconfig "github.com/go-graphite/carbonapi/expr/functions/config"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/rewrite"
 	"github.com/go-graphite/carbonapi/limiter"
@@ -92,7 +93,7 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 	if Config.GraphTemplates != "" {
 		graphTemplates = make(map[string]png.PictureParams)
 		graphTemplatesViper := viper.New()
-		b, err := ioutil.ReadFile(Config.GraphTemplates)
+		b, err := os.ReadFile(Config.GraphTemplates)
 		if err != nil {
 			logger.Fatal("error reading graphTemplates file",
 				zap.String("graphTemplate_path", Config.GraphTemplates),
@@ -320,7 +321,7 @@ func createCache(logger *zap.Logger, cacheName string, cacheConfig *CacheConfig)
 
 func SetUpViper(logger *zap.Logger, configPath *string, viperPrefix string) {
 	if *configPath != "" {
-		b, err := ioutil.ReadFile(*configPath)
+		b, err := os.ReadFile(*configPath)
 		if err != nil {
 			logger.Fatal("error reading config file",
 				zap.String("config_path", *configPath),
@@ -362,7 +363,8 @@ func SetUpViper(logger *zap.Logger, configPath *string, viperPrefix string) {
 	viper.SetDefault("cpus", 0)
 	viper.SetDefault("tz", "")
 	viper.SetDefault("sendGlobsAsIs", nil)
-	viper.SetDefault("AlwaysSendGlobsAsIs", nil)
+	viper.SetDefault("alwaysSendGlobsAsIs", nil)
+	viper.SetDefault("extractTagsFromArgs", false)
 	viper.SetDefault("maxBatchSize", 100)
 	viper.SetDefault("graphite.host", "")
 	viper.SetDefault("graphite.interval", "60s")
@@ -394,6 +396,8 @@ func SetUpViper(logger *zap.Logger, configPath *string, viperPrefix string) {
 			zap.Error(err),
 		)
 	}
+
+	fconfig.Config.ExtractTagsFromArgs = Config.ExtractTagsFromArgs
 }
 
 func SetUpConfigUpstreams(logger *zap.Logger) {
