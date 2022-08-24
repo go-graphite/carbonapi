@@ -138,7 +138,7 @@ func TestRenderHandler(t *testing.T) {
 	req, rr := setUpRequest(t, "/render/?target=fallbackSeries(foo.bar,foo.baz)&from=-10minutes&format=json")
 	renderHandler(rr, req)
 
-	expected := `[{"target":"foo.bar","datapoints":[[null,1510913280],[1510913759,1510913340],[1510913818,1510913400]],"tags":{"name":"foo.bar"}}]`
+	expected := `[{"target":"foo.bar","datapoints":[[null,1510913280],[1510913759,1510913340],[1510913818,1510913400]],"tags":{}}]`
 
 	// Check the status code is what we expect.
 	r := assert.Equal(t, rr.Code, http.StatusOK, "HttpStatusCode should be 200 OK.")
