@@ -80,6 +80,14 @@ func TestDivideSeries(t *testing.T) {
 			[]*types.MetricData{types.MakeMetricData("divideSeries(metric[12])",
 				[]float64{0.5, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 2}, 1, now32).SetNameTag("metric1")},
 		},
+		{
+			"divideSeries(testMetric,metric)", // verify that a non-existant denominator will not error out and instead will return a list of math.NaN() values
+			map[parser.MetricRequest][]*types.MetricData{
+				{"testMetric", 0, 1}: {types.MakeMetricData("testMetric", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData("divideSeries(testMetric,MISSING)",
+				[]float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
+		},
 	}
 
 	for _, tt := range tests {
