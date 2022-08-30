@@ -2,6 +2,7 @@ package sumSeriesWithWildcards
 
 import (
 	"context"
+	"github.com/grafana/carbonapi/expr/helper/metric"
 	"math"
 	"strings"
 
@@ -46,7 +47,7 @@ func (f *sumSeriesWithWildcards) Do(ctx context.Context, e parser.Expr, from, un
 	groups := make(map[string][]*types.MetricData)
 
 	for _, a := range args {
-		metric := a.Tags["name"]
+		metric := metric.ExtractMetric(a.Name)
 		nodes := strings.Split(metric, ".")
 		s := make([]string, 0, len(nodes))
 		// Yes, this is O(n^2), but len(nodes) < 10 and len(fields) < 3
