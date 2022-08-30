@@ -24,13 +24,16 @@ var ConsolidationToFunc = map[string]func([]float64) float64{
 	"minimum":  AggMin,
 	"multiply": summarizeToAggregate("multiply"),
 	"range":    summarizeToAggregate("range"),
+	"rangeOf":  summarizeToAggregate("rangeOf"),
 	"sum":      AggSum,
+	"total":    AggSum,
 	"stddev":   summarizeToAggregate("stddev"),
 	"first":    AggFirst,
 	"last":     AggLast,
+	"current":  AggLast,
 }
 
-var AvailableSummarizers = []string{"sum", "total", "avg", "average", "avg_zero", "max", "min", "last", "range", "median", "multiply", "diff", "count", "stddev"}
+var AvailableSummarizers = []string{"sum", "total", "avg", "average", "avg_zero", "max", "min", "last", "current", "range", "rangeOf", "median", "multiply", "diff", "count", "stddev"}
 
 // AvgValue returns average of list of values
 func AvgValue(f64s []float64) float64 {
@@ -167,10 +170,10 @@ func SummarizeValues(f string, values []float64, XFilesFactor float32) float64 {
 				}
 			}
 		}
-	case "last":
+	case "last", "current":
 		rv = values[len(values)-1]
 		total = notNans(values)
-	case "range":
+	case "range", "rangeOf":
 		vMax := math.Inf(-1)
 		vMin := math.Inf(1)
 		isNaN := true
