@@ -70,7 +70,7 @@ func (f *removeBelowSeries) Do(ctx context.Context, e parser.Expr, from, until i
 		}
 
 		r := a.CopyLink()
-		r.Name = e.Target() + "(" + a.Name + "," + numberStr + ")"
+		r.Name = e.Target() + "(" + a.Name + ", " + numberStr + ")"
 		r.Values = make([]float64, len(a.Values))
 		r.Tags["removeBelowSeries"] = fmt.Sprintf("%f", threshold)
 
