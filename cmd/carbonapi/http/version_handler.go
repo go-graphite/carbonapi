@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/grafana/carbonapi/carbonapipb"
-	"github.com/grafana/carbonapi/cmd/carbonapi/config"
+	"github.com/go-graphite/carbonapi/carbonapipb"
+	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
 )

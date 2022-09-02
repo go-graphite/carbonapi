@@ -6,14 +6,14 @@ import (
 
 	"github.com/ansel1/merry"
 
-	"github.com/grafana/carbonapi/expr/types"
+	"github.com/go-graphite/carbonapi/expr/types"
 )
 
 var (
 	errSeriesLengthMismatch = merry.Errorf("bad data: length of Values for series differs from others")
-	errTooFewDatasets       = merry.Errorf("bad data: too few data sets")
-	errLessThan2Marks       = merry.Errorf("bad data: could not find 2 marks")
-	errEmptySeries          = merry.Errorf("bad data: empty series")
+	errTooFewDatasets = merry.Errorf("bad data: too few data sets")
+	errLessThan2Marks = merry.Errorf("bad data: could not find 2 marks")
+	errEmptySeries = merry.Errorf("bad data: empty series")
 )
 
 type callParams struct {

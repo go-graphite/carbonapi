@@ -13,13 +13,13 @@ import (
 	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
-	"github.com/grafana/carbonapi/internal/dns"
-	"github.com/grafana/carbonapi/limiter"
-	"github.com/grafana/carbonapi/zipper/helper"
-	"github.com/grafana/carbonapi/zipper/httpHeaders"
-	"github.com/grafana/carbonapi/zipper/metadata"
-	"github.com/grafana/carbonapi/zipper/protocols/graphite/msgpack"
-	"github.com/grafana/carbonapi/zipper/types"
+	"github.com/go-graphite/carbonapi/internal/dns"
+	"github.com/go-graphite/carbonapi/limiter"
+	"github.com/go-graphite/carbonapi/zipper/helper"
+	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
+	"github.com/go-graphite/carbonapi/zipper/metadata"
+	"github.com/go-graphite/carbonapi/zipper/protocols/graphite/msgpack"
+	"github.com/go-graphite/carbonapi/zipper/types"
 
 	"go.uber.org/zap"
 )

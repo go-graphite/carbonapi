@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"sync/atomic"
 
-	"github.com/grafana/carbonapi/cache"
-	"github.com/grafana/carbonapi/cmd/carbonapi/config"
-	zipperTypes "github.com/grafana/carbonapi/zipper/types"
+	"github.com/go-graphite/carbonapi/cache"
+	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
+	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 	"go.uber.org/zap"
 )
 

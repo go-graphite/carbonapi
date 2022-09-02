@@ -7,9 +7,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/grafana/carbonapi/carbonapipb"
-	"github.com/grafana/carbonapi/cmd/carbonapi/config"
-	"github.com/grafana/carbonapi/pkg/parser"
+	"github.com/go-graphite/carbonapi/carbonapipb"
+	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
 )

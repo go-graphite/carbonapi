@@ -10,10 +10,10 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/grafana/carbonapi/expr/helper"
-	"github.com/grafana/carbonapi/expr/interfaces"
-	"github.com/grafana/carbonapi/expr/types"
-	"github.com/grafana/carbonapi/pkg/parser"
+	"github.com/go-graphite/carbonapi/expr/helper"
+	"github.com/go-graphite/carbonapi/expr/interfaces"
+	"github.com/go-graphite/carbonapi/expr/types"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
 type moving struct {

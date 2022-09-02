@@ -4,8 +4,8 @@ import (
 	"math"
 	"time"
 
-	"github.com/grafana/carbonapi/expr/types"
-	"github.com/grafana/carbonapi/pkg/parser"
+	"github.com/go-graphite/carbonapi/expr/types"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
 // GCD returns greatest common divisor calculated via Euclidean algorithm

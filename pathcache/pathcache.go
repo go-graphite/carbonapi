@@ -2,7 +2,7 @@ package pathcache
 
 import (
 	"github.com/dgryski/go-expirecache"
-	"github.com/grafana/carbonapi/zipper/types"
+	"github.com/go-graphite/carbonapi/zipper/types"
 
 	"time"
 )

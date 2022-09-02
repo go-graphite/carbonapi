@@ -25,12 +25,12 @@ import (
 	"github.com/lomik/zapwriter"
 	"github.com/spf13/viper"
 
-	"github.com/grafana/carbonapi/intervalset"
-	"github.com/grafana/carbonapi/mstats"
-	util "github.com/grafana/carbonapi/util/ctx"
-	"github.com/grafana/carbonapi/zipper"
-	zipperConfig "github.com/grafana/carbonapi/zipper/config"
-	"github.com/grafana/carbonapi/zipper/types"
+	"github.com/go-graphite/carbonapi/intervalset"
+	"github.com/go-graphite/carbonapi/mstats"
+	util "github.com/go-graphite/carbonapi/util/ctx"
+	"github.com/go-graphite/carbonapi/zipper"
+	zipperConfig "github.com/go-graphite/carbonapi/zipper/config"
+	"github.com/go-graphite/carbonapi/zipper/types"
 
 	pickle "github.com/lomik/og-rek"
 	"github.com/peterbourgon/g2g"

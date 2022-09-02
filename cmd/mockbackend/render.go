@@ -15,7 +15,7 @@ import (
 	ogórek "github.com/lomik/og-rek"
 	"go.uber.org/zap"
 
-	"github.com/grafana/carbonapi/zipper/httpHeaders"
+	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 )
 
 func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {

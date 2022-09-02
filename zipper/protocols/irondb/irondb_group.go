@@ -13,9 +13,9 @@ import (
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"go.uber.org/zap"
 
-	"github.com/grafana/carbonapi/limiter"
-	"github.com/grafana/carbonapi/zipper/metadata"
-	"github.com/grafana/carbonapi/zipper/types"
+	"github.com/go-graphite/carbonapi/limiter"
+	"github.com/go-graphite/carbonapi/zipper/metadata"
+	"github.com/go-graphite/carbonapi/zipper/types"
 )
 
 func init() {

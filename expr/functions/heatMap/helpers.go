@@ -5,7 +5,7 @@ import (
 	"math"
 	"sort"
 
-	"github.com/grafana/carbonapi/expr/types"
+	"github.com/go-graphite/carbonapi/expr/types"
 )
 
 // Helper functions that are used to sort or validate metrics

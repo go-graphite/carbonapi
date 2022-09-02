@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-graphite/carbonapi/expr/helper"
+	"github.com/go-graphite/carbonapi/expr/interfaces"
+	"github.com/go-graphite/carbonapi/expr/types"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"github.com/grafana/carbonapi/expr/helper"
-	"github.com/grafana/carbonapi/expr/interfaces"
-	"github.com/grafana/carbonapi/expr/types"
-	"github.com/grafana/carbonapi/pkg/parser"
 )
 
 type hitcount struct {

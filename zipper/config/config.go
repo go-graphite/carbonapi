@@ -5,7 +5,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/grafana/carbonapi/zipper/types"
+	"github.com/go-graphite/carbonapi/zipper/types"
 )
 
 // Config is a structure that contains zipper-related configuration bits

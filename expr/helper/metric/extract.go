@@ -4,7 +4,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/grafana/carbonapi/pkg/parser"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
 // ExtractMetric extracts metric out of function list

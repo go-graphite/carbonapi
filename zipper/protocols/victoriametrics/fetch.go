@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/ansel1/merry"
+	"github.com/go-graphite/carbonapi/zipper/protocols/prometheus/helpers"
+	prometheusTypes "github.com/go-graphite/carbonapi/zipper/protocols/prometheus/types"
+	"github.com/go-graphite/carbonapi/zipper/types"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"github.com/grafana/carbonapi/zipper/protocols/prometheus/helpers"
-	prometheusTypes "github.com/grafana/carbonapi/zipper/protocols/prometheus/types"
-	"github.com/grafana/carbonapi/zipper/types"
 	"go.uber.org/zap"
 )
 

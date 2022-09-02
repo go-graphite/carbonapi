@@ -10,7 +10,7 @@ import (
 
 	"github.com/shurcooL/githubv4"
 
-	"github.com/grafana/carbonapi/drone/pkg/github"
+	"github.com/go-graphite/carbonapi/drone/pkg/github"
 )
 
 const CommenterLogin = "grafanabot"

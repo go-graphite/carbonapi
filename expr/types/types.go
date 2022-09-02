@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-graphite/carbonapi/expr/consolidations"
+	"github.com/go-graphite/carbonapi/expr/tags"
 	pbv2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"github.com/grafana/carbonapi/expr/consolidations"
-	"github.com/grafana/carbonapi/expr/tags"
 	pickle "github.com/lomik/og-rek"
 )
 

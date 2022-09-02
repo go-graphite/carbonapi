@@ -11,11 +11,11 @@ import (
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
 
-	"github.com/grafana/carbonapi/limiter"
-	"github.com/grafana/carbonapi/pathcache"
-	utilctx "github.com/grafana/carbonapi/util/ctx"
-	"github.com/grafana/carbonapi/zipper/helper"
-	"github.com/grafana/carbonapi/zipper/types"
+	"github.com/go-graphite/carbonapi/limiter"
+	"github.com/go-graphite/carbonapi/pathcache"
+	utilctx "github.com/go-graphite/carbonapi/util/ctx"
+	"github.com/go-graphite/carbonapi/zipper/helper"
+	"github.com/go-graphite/carbonapi/zipper/types"
 
 	"go.uber.org/zap"
 )

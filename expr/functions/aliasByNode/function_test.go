@@ -6,15 +6,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/grafana/carbonapi/expr/helper"
-	"github.com/grafana/carbonapi/expr/metadata"
-	"github.com/grafana/carbonapi/expr/types"
-	"github.com/grafana/carbonapi/pkg/parser"
-	th "github.com/grafana/carbonapi/tests"
+	"github.com/go-graphite/carbonapi/expr/helper"
+	"github.com/go-graphite/carbonapi/expr/metadata"
+	"github.com/go-graphite/carbonapi/expr/types"
+	"github.com/go-graphite/carbonapi/pkg/parser"
+	th "github.com/go-graphite/carbonapi/tests"
 
-	"github.com/grafana/carbonapi/expr/functions/aliasSub"
-	"github.com/grafana/carbonapi/expr/functions/perSecond"
-	"github.com/grafana/carbonapi/expr/functions/transformNull"
+	"github.com/go-graphite/carbonapi/expr/functions/aliasSub"
+	"github.com/go-graphite/carbonapi/expr/functions/perSecond"
+	"github.com/go-graphite/carbonapi/expr/functions/transformNull"
 )
 
 func init() {

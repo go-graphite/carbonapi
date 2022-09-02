@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/grafana/carbonapi/cmd/carbonapi/config"
+	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 )
 
 func Test_timestampTruncate(t *testing.T) {

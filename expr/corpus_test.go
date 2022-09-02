@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/grafana/carbonapi/pkg/parser"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
 func TestCorpus(t *testing.T) {

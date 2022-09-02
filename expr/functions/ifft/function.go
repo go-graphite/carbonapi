@@ -5,10 +5,10 @@ import (
 	"math"
 	"math/cmplx"
 
-	"github.com/grafana/carbonapi/expr/helper"
-	"github.com/grafana/carbonapi/expr/interfaces"
-	"github.com/grafana/carbonapi/expr/types"
-	"github.com/grafana/carbonapi/pkg/parser"
+	"github.com/go-graphite/carbonapi/expr/helper"
+	"github.com/go-graphite/carbonapi/expr/interfaces"
+	"github.com/go-graphite/carbonapi/expr/types"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 	realFFT "github.com/mjibson/go-dsp/fft"
 )
 

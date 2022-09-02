@@ -1,4 +1,3 @@
-//go:build !cairo
 // +build !cairo
 
 package png
@@ -7,8 +6,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/grafana/carbonapi/expr/types"
-	"github.com/grafana/carbonapi/pkg/parser"
+	"github.com/go-graphite/carbonapi/expr/types"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
 const HaveGraphSupport = false

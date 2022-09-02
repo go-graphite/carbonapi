@@ -5,8 +5,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/grafana/carbonapi/expr/tags"
-	"github.com/grafana/carbonapi/expr/types"
+	"github.com/go-graphite/carbonapi/expr/tags"
+	"github.com/go-graphite/carbonapi/expr/types"
 )
 
 func TestExtractTags(t *testing.T) {

@@ -3,8 +3,8 @@ package expr
 import (
 	"testing"
 
-	"github.com/grafana/carbonapi/expr/types"
-	"github.com/grafana/carbonapi/pkg/parser"
+	"github.com/go-graphite/carbonapi/expr/types"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
 func TestSortMetrics(t *testing.T) {

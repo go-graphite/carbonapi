@@ -6,9 +6,9 @@ package verticalLine
 import (
 	"context"
 	"fmt"
-	"github.com/grafana/carbonapi/expr/interfaces"
-	"github.com/grafana/carbonapi/expr/types"
-	"github.com/grafana/carbonapi/pkg/parser"
+	"github.com/go-graphite/carbonapi/expr/interfaces"
+	"github.com/go-graphite/carbonapi/expr/types"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
 var UnsupportedError = fmt.Errorf("must build w/ cairo support")

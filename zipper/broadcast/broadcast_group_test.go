@@ -11,8 +11,8 @@ import (
 
 	"github.com/ansel1/merry"
 
-	"github.com/grafana/carbonapi/zipper/dummy"
-	"github.com/grafana/carbonapi/zipper/types"
+	"github.com/go-graphite/carbonapi/zipper/dummy"
+	"github.com/go-graphite/carbonapi/zipper/types"
 
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"

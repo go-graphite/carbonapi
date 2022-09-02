@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
-	"github.com/grafana/carbonapi/expr/helper"
-	"github.com/grafana/carbonapi/expr/metadata"
-	"github.com/grafana/carbonapi/expr/types"
-	"github.com/grafana/carbonapi/pkg/parser"
-	th "github.com/grafana/carbonapi/tests"
+	"github.com/go-graphite/carbonapi/expr/helper"
+	"github.com/go-graphite/carbonapi/expr/metadata"
+	"github.com/go-graphite/carbonapi/expr/types"
+	"github.com/go-graphite/carbonapi/pkg/parser"
+	th "github.com/go-graphite/carbonapi/tests"
 )
 
 var r *miniredis.Miniredis

@@ -6,16 +6,16 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/ansel1/merry"
+	"github.com/go-graphite/carbonapi/zipper/types"
 	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"github.com/grafana/carbonapi/zipper/types"
 	"go.uber.org/zap"
 
-	_ "github.com/grafana/carbonapi/zipper/protocols/auto"
-	_ "github.com/grafana/carbonapi/zipper/protocols/graphite"
-	_ "github.com/grafana/carbonapi/zipper/protocols/prometheus"
-	_ "github.com/grafana/carbonapi/zipper/protocols/v2"
-	_ "github.com/grafana/carbonapi/zipper/protocols/v3"
+	_ "github.com/go-graphite/carbonapi/zipper/protocols/auto"
+	_ "github.com/go-graphite/carbonapi/zipper/protocols/graphite"
+	_ "github.com/go-graphite/carbonapi/zipper/protocols/prometheus"
+	_ "github.com/go-graphite/carbonapi/zipper/protocols/v2"
+	_ "github.com/go-graphite/carbonapi/zipper/protocols/v3"
 )
 
 // DEPRECATED

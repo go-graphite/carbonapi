@@ -9,10 +9,10 @@ import (
 	"testing"
 
 	"github.com/ansel1/merry"
+	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
+	"github.com/go-graphite/carbonapi/expr/types"
+	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"github.com/grafana/carbonapi/cmd/carbonapi/config"
-	"github.com/grafana/carbonapi/expr/types"
-	zipperTypes "github.com/grafana/carbonapi/zipper/types"
 	"github.com/lomik/zapwriter"
 	"github.com/stretchr/testify/assert"
 )

@@ -1,4 +1,4 @@
-module github.com/grafana/carbonapi/drone
+module github.com/go-graphite/carbonapi/drone
 
 go 1.18
 

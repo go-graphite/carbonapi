@@ -4,8 +4,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/grafana/carbonapi/expr/types"
-	"github.com/grafana/carbonapi/tests/compare"
+	"github.com/go-graphite/carbonapi/expr/types"
+	"github.com/go-graphite/carbonapi/tests/compare"
 )
 
 func TestAlignSeries(t *testing.T) {

@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/grafana/carbonapi/cache"
-	"github.com/grafana/carbonapi/cmd/carbonapi/interfaces"
-	"github.com/grafana/carbonapi/limiter"
-	zipperCfg "github.com/grafana/carbonapi/zipper/config"
-	zipperTypes "github.com/grafana/carbonapi/zipper/types"
+	"github.com/go-graphite/carbonapi/cache"
+	"github.com/go-graphite/carbonapi/cmd/carbonapi/interfaces"
+	"github.com/go-graphite/carbonapi/limiter"
+	zipperCfg "github.com/go-graphite/carbonapi/zipper/config"
+	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 
 	"github.com/lomik/zapwriter"
 )

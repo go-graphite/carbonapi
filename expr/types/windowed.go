@@ -1,7 +1,7 @@
 package types
 
 import (
-	"github.com/grafana/carbonapi/expr/consolidations"
+	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"math"
 )
 

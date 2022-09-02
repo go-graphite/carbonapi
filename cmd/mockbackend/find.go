@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/ansel1/merry"
+	"github.com/go-graphite/carbonapi/intervalset"
 	"github.com/go-graphite/protocol/carbonapi_v2_pb"
 	"github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"github.com/grafana/carbonapi/intervalset"
 	ogórek "github.com/lomik/og-rek"
 	"go.uber.org/zap"
 )

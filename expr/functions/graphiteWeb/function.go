@@ -12,12 +12,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/go-graphite/carbonapi/expr/interfaces"
+	"github.com/go-graphite/carbonapi/expr/metadata"
+	"github.com/go-graphite/carbonapi/expr/types"
+	"github.com/go-graphite/carbonapi/limiter"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"github.com/grafana/carbonapi/expr/interfaces"
-	"github.com/grafana/carbonapi/expr/metadata"
-	"github.com/grafana/carbonapi/expr/types"
-	"github.com/grafana/carbonapi/limiter"
-	"github.com/grafana/carbonapi/pkg/parser"
 	"github.com/lomik/zapwriter"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -455,7 +455,7 @@ func (f *graphiteWeb) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		}
 		res = append(res, &types.MetricData{
 			FetchResponse: pbResp,
-			Tags:          tags,
+			Tags: tags,
 		})
 	}
 

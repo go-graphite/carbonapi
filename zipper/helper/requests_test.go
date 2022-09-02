@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/ansel1/merry"
-	"github.com/grafana/carbonapi/zipper/types"
+	"github.com/go-graphite/carbonapi/zipper/types"
 )
 
 func TestMergeHttpErrors(t *testing.T) {

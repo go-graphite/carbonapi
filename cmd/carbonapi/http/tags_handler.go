@@ -10,10 +10,10 @@ import (
 	"github.com/ansel1/merry"
 	uuid "github.com/satori/go.uuid"
 
-	"github.com/grafana/carbonapi/carbonapipb"
-	"github.com/grafana/carbonapi/cmd/carbonapi/config"
-	utilctx "github.com/grafana/carbonapi/util/ctx"
-	"github.com/grafana/carbonapi/zipper/types"
+	"github.com/go-graphite/carbonapi/carbonapipb"
+	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
+	utilctx "github.com/go-graphite/carbonapi/util/ctx"
+	"github.com/go-graphite/carbonapi/zipper/types"
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
 )
