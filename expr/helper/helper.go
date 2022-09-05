@@ -165,16 +165,12 @@ func AggregateSeries(e parser.Expr, args []*types.MetricData, function Aggregate
 
 	args = ScaleSeries(args)
 	length := len(args[0].Values)
-	r := args[0].CopyNameArg(e.Target()+"("+e.RawArgs()+")", e.Target(), args[0].Tags, extractTagsFromArgs)
+	r := args[0].CopyNameArg(e.Target()+"("+e.RawArgs()+")", e.Target(), GetCommonTags(args), extractTagsFromArgs)
 	r.Values = make([]float64, length)
 
-	commonTags := GetCommonTags(args)
-
-	if _, ok := commonTags["name"]; !ok {
-		commonTags["name"] = r.Name
+	if _, ok := r.Tags["name"]; !ok {
+		r.Tags["name"] = r.Name
 	}
-
-	r.Tags = commonTags
 
 	values := make([]float64, len(args))
 	for i := range args[0].Values {
@@ -220,8 +216,8 @@ func GetCommonTags(series []*types.MetricData) map[string]string {
 	}
 	commonTags := CopyTags(series[0])
 	for _, serie := range series {
-		for k, v := range serie.Tags {
-			if commonTags[k] != v {
+		for k, v := range commonTags {
+			if serie.Tags[k] != v {
 				delete(commonTags, k)
 			}
 		}
