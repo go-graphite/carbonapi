@@ -22,6 +22,7 @@ graphite:
     prefix: "carbon.api"
     pattern: "{prefix}.{fqdn}"
 idleConnections: 10
+pidFile: ""
 upstreams:
     graphite09compat: false
     buckets: 10

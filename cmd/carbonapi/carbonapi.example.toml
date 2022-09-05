@@ -7,6 +7,7 @@ cpus = 0
 expireDelaySec = 10
 idleConnections = 10
 listen = "localhost:8081"
+pidFile = ""
 tz = ""
 graphTemplates = "graphTemplates.example.toml"
 

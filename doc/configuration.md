@@ -29,6 +29,8 @@ Table of Contents
     * [Example for timeShift](#example-for-timeshift)
   * [graphite](#graphite)
     * [Example](#example-11)
+  * [pidFile](#pidfile)
+    * [Example](#example-12)
   * [graphTemplates](#graphtemplates)
     * [Example](#example-13)
   * [defaultColors](#defaultcolors)
@@ -371,6 +373,16 @@ graphite:
     interval: "60s"
     prefix: "carbon.api"
     pattern: "{prefix}.{fqdn}"
+```
+
+***
+## pidFile
+
+Specify pidfile. Useful for systemd units
+
+### Example
+```yaml
+pidFile: ""
 ```
 
 ***

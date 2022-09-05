@@ -72,6 +72,7 @@ type ConfigType struct {
 	UnicodeRangeTables         []string           `mapstructure:"unicodeRangeTables"`
 	Graphite                   GraphiteConfig     `mapstructure:"graphite"`
 	IdleConnections            int                `mapstructure:"idleConnections"`
+	PidFile                    string             `mapstructure:"pidFile"`
 	SendGlobsAsIs              *bool              `mapstructure:"sendGlobsAsIs"`
 	AlwaysSendGlobsAsIs        *bool              `mapstructure:"alwaysSendGlobsAsIs"`
 	MaxBatchSize               int                `mapstructure:"maxBatchSize"`
@@ -142,6 +143,7 @@ var Config = ConfigType{
 	},
 	Cpus:            0,
 	IdleConnections: 10,
+	PidFile:         "",
 
 	ResponseCache: cache.NullCache{},
 	BackendCache:  cache.NullCache{},

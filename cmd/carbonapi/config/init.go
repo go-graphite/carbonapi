@@ -12,6 +12,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/go-graphite/carbonapi/util/pidfile"
 	zipperConfig "github.com/go-graphite/carbonapi/zipper/config"
 
 	"github.com/ansel1/merry"
@@ -238,6 +239,15 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 		runtime.GOMAXPROCS(Config.Cpus)
 	}
 
+	if Config.PidFile != "" {
+		err := pidfile.WritePidFile(Config.PidFile)
+		if err != nil {
+			logger.Fatal("error when writing pidfile",
+				zap.Error(err),
+			)
+		}
+	}
+
 	helper.ExtrapolatePoints = Config.ExtrapolateExperiment
 	if Config.ExtrapolateExperiment {
 		logger.Warn("extraploation experiment is enabled",
@@ -358,6 +368,7 @@ func SetUpViper(logger *zap.Logger, configPath *string, viperPrefix string) {
 	viper.SetDefault("graphite.prefix", "carbon.api")
 	viper.SetDefault("graphite.pattern", "{prefix}.{fqdn}")
 	viper.SetDefault("idleConnections", 10)
+	viper.SetDefault("pidFile", "")
 	viper.SetDefault("upstreams.internalRoutingCache", "600s")
 	viper.SetDefault("upstreams.buckets", 10)
 	viper.SetDefault("upstreams.slowLogThreshold", "1s")

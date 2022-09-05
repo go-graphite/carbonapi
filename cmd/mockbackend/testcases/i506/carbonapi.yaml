@@ -1,10 +1,10 @@
 listen: "127.0.0.1:8081"
 concurency: 50
 cache:
-    # Type of caching. Valid: "mem", "memcache", "null"
-    type: "mem"
-    size_mb: 1024
-    defaultTimeoutSec: 60
+   # Type of caching. Valid: "mem", "memcache", "null"
+   type: "mem"
+   size_mb: 1024
+   defaultTimeoutSec: 60
 cpus: 8
 tz: ""
 sendGlobsAsIs: false
@@ -14,6 +14,7 @@ graphite:
     # Empty = disabled
     host: ""
 idleConnections: 100
+pidFile: ""
 notFoundStatusCode: 200
 upstreams:
     buckets: 10

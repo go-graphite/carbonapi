@@ -1,18 +1,18 @@
 listen: "localhost:8081"
 concurency: 1000
 cache:
-    type: "mem"
-    size_mb: 0
-    defaultTimeoutSec: 60
-    memcachedServers:
-        - "127.0.0.1:1234"
-        - "127.0.0.2:1235"
+   type: "mem"
+   size_mb: 0
+   defaultTimeoutSec: 60
+   memcachedServers:
+       - "127.0.0.1:1234"
+       - "127.0.0.2:1235"
 cpus: 0
 tz: ""
 headersToPass:
-    - "X-Dashboard-Id"
-    - "X-Grafana-Org-Id"
-    - "X-Panel-Id"
+  - "X-Dashboard-Id"
+  - "X-Grafana-Org-Id"
+  - "X-Panel-Id"
 functionsConfig:
     graphiteWeb: ./graphiteWeb.example.yaml
 maxBatchSize: 0
@@ -22,6 +22,7 @@ graphite:
     prefix: "carbon.api"
     pattern: "{prefix}.{fqdn}"
 idleConnections: 10
+pidFile: ""
 upstreams:
     buckets: 10
 
@@ -35,25 +36,26 @@ upstreams:
     maxIdleConnsPerHost: 100
     backendsv2:
         backends:
-            - groupName: "prometheus"
-              protocol: "prometheus"
-              lbMethod: "broadcast"
-              maxTries: 3
-              maxBatchSize: 0
-              keepAliveInterval: "10s"
-              concurrencyLimit: 0
-              maxIdleConnsPerHost: 1000
-              backendOptions:
-                  step: "60"
-                  start: "-5m"
-                  max_points_per_query: 5000
-                  force_min_step_interval: 1h
-              timeouts:
-                  find: "2s"
-                  render: "50s"
-                  connect: "200ms"
-              servers:
-                  - "http://127.0.0.1:8428"
+          -
+            groupName: "prometheus"
+            protocol: "prometheus"
+            lbMethod: "broadcast"
+            maxTries: 3
+            maxBatchSize: 0
+            keepAliveInterval: "10s"
+            concurrencyLimit: 0
+            maxIdleConnsPerHost: 1000
+            backendOptions:
+                step: "60"
+                start: "-5m"
+                max_points_per_query: 5000
+                force_min_step_interval: 1h
+            timeouts:
+                find: "2s"
+                render: "50s"
+                connect: "200ms"
+            servers:
+                - "http://127.0.0.1:8428"
     graphite09compat: false
 graphTemplates: graphTemplates.example.yaml
 expireDelaySec: 10

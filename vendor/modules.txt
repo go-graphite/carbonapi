@@ -119,6 +119,9 @@ github.com/mjibson/go-dsp/fft
 # github.com/msaf1980/go-stringutils v0.0.15
 ## explicit
 github.com/msaf1980/go-stringutils
+# github.com/natefinch/atomic v1.0.1
+## explicit
+github.com/natefinch/atomic
 # github.com/openhistogram/circonusllhist v0.3.0
 ## explicit
 github.com/openhistogram/circonusllhist
