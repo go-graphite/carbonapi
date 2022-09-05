@@ -73,7 +73,7 @@ func (f *aggregateLine) Do(ctx context.Context, e parser.Expr, from, until int64
 			name = "aggregateLine(" + a.Name + ", None)"
 		}
 
-		r := a.CopyName(name)
+		r := a.CopyTag(name, a.Tags)
 
 		if keepStep {
 			r.Values = make([]float64, len(a.Values))

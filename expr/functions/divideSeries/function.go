@@ -54,13 +54,13 @@ func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 		if err != nil {
 			return nil, err
 		}
-
 		if len(denominators) == 0 {
+			results := make([]*types.MetricData, 0, len(numerators))
 			for _, numerator := range numerators {
 				r := numerator.CopyLink()
 				r.Values = make([]float64, len(numerator.Values))
 				r.Name = fmt.Sprintf("divideSeries(%s,MISSING)", numerator.Name)
-				for i, _ := range numerator.Values {
+				for i := range numerator.Values {
 					r.Values[i] = math.NaN()
 				}
 				results = append(results, r)
@@ -91,12 +91,13 @@ func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 	}
 
 	for _, numerator := range numerators {
-		r := numerator.CopyLink()
+		var name string
 		if useMetricNames {
-			r.Name = "divideSeries(" + numerator.Name + "," + denominator.Name + ")"
+			name = "divideSeries(" + numerator.Name + "," + denominator.Name + ")"
 		} else {
-			r.Name = "divideSeries(" + e.RawArgs() + ")"
+			name = "divideSeries(" + e.RawArgs() + ")"
 		}
+		r := numerator.CopyTag(name, numerator.Tags)
 		r.Values = make([]float64, len(numerator.Values))
 
 		for i, v := range numerator.Values {

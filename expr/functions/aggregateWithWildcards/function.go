@@ -90,7 +90,8 @@ func (f *aggregateWithWildcards) Do(ctx context.Context, e parser.Expr, from, un
 	results := make([]*types.MetricData, 0, len(groups))
 
 	for _, node := range nodeList {
-		res, err := helper.AggregateSeries(e, groups[node], aggFunc, -1) // Pass in -1 for xFilesFactor because aggregateWithWildcards doesn't support xFilesFactor
+		// Pass in -1 for xFilesFactor because aggregateWithWildcards doesn't support xFilesFactor
+		res, err := helper.AggregateSeries(e, groups[node], aggFunc, -1, false)
 		if err != nil {
 			return nil, err
 		}

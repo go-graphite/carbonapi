@@ -94,9 +94,6 @@ func AggKey(arg *types.MetricData, nodesOrTags []parser.NodeOrTag) string {
 	matched := make([]string, 0, len(nodesOrTags))
 	metricTags := arg.Tags
 	name := metric.ExtractMetric(arg.Name)
-	if name == "" {
-		name = metricTags["name"]
-	}
 	nodes := strings.Split(name, ".")
 	for _, nt := range nodesOrTags {
 		if nt.IsTag {
@@ -146,8 +143,7 @@ func ForEachSeriesDo(ctx context.Context, e parser.Expr, from, until int64, valu
 	var results []*types.MetricData
 
 	for _, a := range arg {
-		r := a.CopyLink()
-		r.Name = e.Target() + "(" + a.Name + ")"
+		r := a.CopyName(e.Target() + "(" + a.Name + ")")
 		r.Values = make([]float64, len(a.Values))
 		results = append(results, function(a, r))
 	}
@@ -158,7 +154,7 @@ func ForEachSeriesDo(ctx context.Context, e parser.Expr, from, until int64, valu
 type AggregateFunc func([]float64) float64
 
 // AggregateSeries aggregates series
-func AggregateSeries(e parser.Expr, args []*types.MetricData, function AggregateFunc, xFilesFactor float64) ([]*types.MetricData, error) {
+func AggregateSeries(e parser.Expr, args []*types.MetricData, function AggregateFunc, xFilesFactor float64, extractTagsFromArgs bool) ([]*types.MetricData, error) {
 	if len(args) == 0 {
 		// GraphiteWeb does this, no matter the function
 		// https://github.com/graphite-project/graphite-web/blob/b52987ac97f49dcfb401a21d4b92860cfcbcf074/webapp/graphite/render/functions.py#L228
@@ -169,7 +165,7 @@ func AggregateSeries(e parser.Expr, args []*types.MetricData, function Aggregate
 
 	args = ScaleSeries(args)
 	length := len(args[0].Values)
-	r := args[0].CopyName(e.Target() + "(" + e.RawArgs() + ")")
+	r := args[0].CopyNameArg(e.Target()+"("+e.RawArgs()+")", e.Target(), args[0].Tags, extractTagsFromArgs)
 	r.Values = make([]float64, length)
 
 	commonTags := GetCommonTags(args)

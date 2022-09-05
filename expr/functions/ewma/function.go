@@ -49,7 +49,7 @@ func (f *ewma) Do(ctx context.Context, e parser.Expr, from, until int64, values 
 	for i, a := range arg {
 		name := "ewma(" + a.Name + "," + alphaStr + ")"
 
-		r := a.CopyName(name)
+		r := a.CopyTag(name, a.Tags)
 		r.Values = make([]float64, len(a.Values))
 
 		ewma := onlinestats.NewExpWeight(alpha)

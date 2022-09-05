@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
+	fconfig "github.com/go-graphite/carbonapi/expr/functions/config"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -85,7 +86,7 @@ func (f *aggregate) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		e.SetRawArgs(e.Arg(0).Target())
 	}
 
-	results, err := helper.AggregateSeries(e, args, aggFunc, xFilesFactor)
+	results, err := helper.AggregateSeries(e, args, aggFunc, xFilesFactor, fconfig.Config.ExtractTagsFromArgs)
 	if err != nil {
 		return nil, err
 	}
