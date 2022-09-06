@@ -1,5 +1,10 @@
 package types
 
+import (
+	"strings"
+	"unicode/utf8"
+)
+
 var allowedCharactersInMetricName = map[byte]struct{}{
 	'=': struct{}{},
 	'@': struct{}{},
@@ -15,16 +20,12 @@ func ExtractNameLoc(s string) (int, int) {
 	// search for a metric name in 's'
 	// metric name is defined to be a Series of name characters terminated by a ',' or ')'
 
-	var (
-		start, braces, i, w int
-	)
-
+	var w, i, start, braces int
+	var c rune
 FOR:
-	for braces, i, w = 0, 0, 0; i < len(s); i += w {
-
-		w = 1
-
-		switch s[i] {
+	for i, c = range s {
+		w = i
+		switch c {
 		case '{':
 			braces++
 		case '}':
@@ -37,13 +38,25 @@ FOR:
 				break FOR
 			}
 		case '(':
+			if i >= 11 {
+				n := i - 11
+				if s[n:i] == "seriesByTag" {
+					end := strings.IndexRune(s[n:], ')')
+					if end == -1 {
+						return n, len(s) // broken end of args, can't exist in correctly parsed functions
+					} else {
+						return n, n + end + 1
+					}
+				}
+			}
 			start = i + 1
 		case ')':
 			break FOR
 		}
+		w += utf8.RuneLen(c)
 	}
 
-	return start, i
+	return start, w
 }
 
 // ExtractName extracts name out of function list. Only for use in MetrciData name parse, it's has more allowed chard in names, like =

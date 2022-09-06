@@ -10,6 +10,7 @@ listen = "localhost:8081"
 pidFile = ""
 tz = ""
 graphTemplates = "graphTemplates.example.toml"
+#extractTagsFromArgs = false
 
 [cache]
 defaultTimeoutSec = 60

@@ -76,6 +76,18 @@ func TestExtractName(t *testing.T) {
 			"alias(Количество изменений)",
 			"Количество изменений",
 		},
+		{
+			"some(Количество изменений, Аргумент)",
+			"Количество изменений",
+		},
+		{
+			"seriesByTag('tag2=value*', 'name=metric')",
+			"seriesByTag('tag2=value*', 'name=metric')",
+		},
+		{
+			"sum(seriesByTag('tag2=value*', 'name=metric'))",
+			"seriesByTag('tag2=value*', 'name=metric')",
+		},
 	}
 
 	for _, tt := range tests {

@@ -2,7 +2,6 @@ package moving
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"strconv"
 
@@ -161,8 +160,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 	result := make([]*types.MetricData, len(arg))
 
 	for n, a := range arg {
-		r := a.CopyLink()
-		r.Name = fmt.Sprintf("%s(%s,%s)", e.Target(), a.Name, argstr)
+		r := a.CopyName(e.Target() + "(" + a.Name + "," + argstr + ")")
 
 		if windowSize == 0 {
 			if *f.config.ReturnNaNsIfStepMismatch {

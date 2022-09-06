@@ -63,7 +63,7 @@ func (f *aggregateSeriesLists) Do(ctx context.Context, e parser.Expr, from, unti
 	for i, series1 := range seriesList1 {
 		series2 := seriesList2[i]
 
-		r, err := helper.AggregateSeries(e, []*types.MetricData{series1.CopyLink(), series2.CopyLink()}, aggFunc, xFilesFactor)
+		r, err := helper.AggregateSeries(e, []*types.MetricData{series1.CopyLink(), series2.CopyLink()}, aggFunc, xFilesFactor, false)
 		if err != nil {
 			return nil, err
 		}

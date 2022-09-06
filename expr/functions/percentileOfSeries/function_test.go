@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	fconfig "github.com/go-graphite/carbonapi/expr/functions/config"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -22,7 +23,9 @@ func init() {
 	}
 }
 
-func TestPercentileOfSeriesSeries(t *testing.T) {
+func TestPercentileOfSeries(t *testing.T) {
+	fconfig.Config.ExtractTagsFromArgs = false
+
 	now32 := int64(time.Now().Unix())
 
 	tests := []th.EvalTestItem{
@@ -76,6 +79,52 @@ func TestPercentileOfSeriesSeries(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("percentileOfSeries(metric1.foo.*.*,95,false)", []float64{0, 0, 0, 100500, 100501, 1005002}, 1, now32)},
+		},
+		// seriesByTag
+		{
+			`percentileOfSeries(seriesByTag('tag2=value*', 'name=metric'),95,false)`,
+			map[parser.MetricRequest][]*types.MetricData{
+				{"seriesByTag('tag2=value*', 'name=metric')", 0, 1}: {
+					types.MakeMetricData("metric;tag1=value1;tag2=value21;tag3=value3", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
+					types.MakeMetricData("metric;tag2=value21", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0}, 1, now32),
+					types.MakeMetricData("metric;tag1=value1;tag2=value21", []float64{0, 0, 0, 100500, 100501, 1005002}, 1, now32),
+					types.MakeMetricData("metric;tag1=value1;tag2=value21", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0}, 1, now32),
+					types.MakeMetricData("metric;tag1=value1;tag2=value21", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0}, 1, now32),
+				},
+			},
+			[]*types.MetricData{types.MakeMetricData(`percentileOfSeries(seriesByTag('tag2=value*', 'name=metric'),95,false)`, []float64{0, 0, 0, 100500, 100501, 1005002}, 1, now32).
+				SetTags(map[string]string{"name": "metric", "tag2": "value21"})},
+		},
+	}
+
+	for _, tt := range tests {
+		testName := tt.Target
+		t.Run(testName, func(t *testing.T) {
+			th.TestEvalExpr(t, &tt)
+		})
+	}
+
+}
+
+func TestPercentileOfSeriesExtractSeriesByTag(t *testing.T) {
+	fconfig.Config.ExtractTagsFromArgs = true
+
+	now32 := int64(time.Now().Unix())
+
+	tests := []th.EvalTestItem{
+		{
+			`percentileOfSeries(seriesByTag('tag2=value*', 'name=metric'),95,false)`,
+			map[parser.MetricRequest][]*types.MetricData{
+				{"seriesByTag('tag2=value*', 'name=metric')", 0, 1}: {
+					types.MakeMetricData("metric;tag1=value1;tag2=value21;tag3=value3", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
+					types.MakeMetricData("metric;tag2=value22", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0}, 1, now32),
+					types.MakeMetricData("metric;tag1=value1;tag2=value23", []float64{0, 0, 0, 100500, 100501, 1005002}, 1, now32),
+					types.MakeMetricData("metric;tag1=value1;tag2=value24", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0}, 1, now32),
+					types.MakeMetricData("metric;tag1=value1;tag2=value25", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0}, 1, now32),
+				},
+			},
+			[]*types.MetricData{types.MakeMetricData(`percentileOfSeries(seriesByTag('tag2=value*', 'name=metric'),95,false)`, []float64{0, 0, 0, 100500, 100501, 1005002}, 1, now32).
+				SetTags(map[string]string{"name": "metric", "tag2": "value*"})},
 		},
 	}
 
