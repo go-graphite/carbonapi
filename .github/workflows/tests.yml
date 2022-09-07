@@ -14,8 +14,7 @@ jobs:
       matrix:
         go:
           - ^1.18
-          # FIXME https://github.com/grafana/carbonapi/issues/70
-          # - ^1.19
+          - ^1.19
           - ^1
     steps:
 
