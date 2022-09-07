@@ -122,7 +122,7 @@ Golang compatibility matrix:
 
 Overall rule of thumb is that carbonapi supports last 2 major go versions. E.x. at this moment Go 1.19 and 1.18 are supported.
 
-You can verify current versions that are being tested in [CI Configuration](https://github.com/grafana/carbonapi/blob/main/.github/workflows/tests.yml#L14).
+You can verify current versions that are being tested in [CI Configuration](https://github.com/go-graphite/carbonapi/blob/main/.github/workflows/tests.yml#L14).
 
 CarbonAPI uses protobuf-based protocol to talk with underlying storages. For current version the compatibility list is:
 
