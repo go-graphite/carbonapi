@@ -57,6 +57,9 @@ func (f *summarize) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	if !funcOk {
 		funcOk = e.ArgsLen() > 2
 	}
+	if err := consolidations.CheckValidConsolidationFunc(summarizeFunction); err != nil {
+		return nil, err
+	}
 
 	alignToFrom, err := e.GetBoolNamedOrPosArgDefault("alignToFrom", 3, false)
 	if err != nil {

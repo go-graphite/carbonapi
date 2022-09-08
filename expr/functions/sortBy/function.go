@@ -63,6 +63,9 @@ func (f *sortBy) Do(ctx context.Context, e parser.Expr, from, until int64, value
 	if !exists {
 		return nil, fmt.Errorf("invalid function called: %s", target)
 	}
+	if err := consolidations.CheckValidConsolidationFunc(aggFunc.name); err != nil {
+		return nil, err
+	}
 
 	// some function by default are not ascending so we need to reverse behaviour
 	if !aggFunc.ascending {
