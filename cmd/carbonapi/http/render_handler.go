@@ -238,7 +238,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		ApiMetrics.RequestCacheMisses.Add(1)
 	}
 
-	if from32 == until32 {
+	if from32 >= until32 {
 		setError(w, accessLogDetails, "Invalid or empty time range", http.StatusBadRequest, uid.String())
 		logAsError = true
 		return
