@@ -46,8 +46,7 @@ func (f *aliasByBase64) Do(ctx context.Context, e parser.Expr, from, until int64
 		if withoutFieldArg {
 			decoded, err := base64.StdEncoding.DecodeString(a.Name)
 			if err == nil {
-				r = a.CopyLink()
-				r.Name = string(decoded)
+				r = a.CopyName(string(decoded))
 			} else {
 				r = a
 			}
