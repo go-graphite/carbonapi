@@ -2,12 +2,17 @@ package parser
 
 import (
 	"fmt"
+	"strconv"
 
 	"runtime/debug"
 )
 
 func (e *expr) doGetIntArg() (int, error) {
 	if e.etype != EtConst {
+		if e.etype == EtString {
+			f, err := strconv.ParseInt(e.valStr, 0, 64)
+			return int(f), err
+		}
 		return 0, ErrBadType
 	}
 
@@ -24,6 +29,10 @@ func (e *expr) getNamedArg(name string) *expr {
 
 func (e *expr) doGetFloatArg() (float64, error) {
 	if e.etype != EtConst {
+		if e.etype == EtString {
+			f, err := strconv.ParseFloat(e.valStr, 64)
+			return f, err
+		}
 		return 0, ErrBadType
 	}
 
