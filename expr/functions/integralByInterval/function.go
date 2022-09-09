@@ -54,7 +54,7 @@ func (f *integralByInterval) Do(ctx context.Context, e parser.Expr, from, until 
 		current := 0.0
 		currentTime := arg.StartTime
 
-		name := "integralByInterval(" + arg.Name + ",'" + e.Args()[1].StringValue() + "')"
+		name := "integralByInterval(" + arg.Name + ",'" + intervalString + "')"
 		result := arg.CopyLink()
 		result.Name = name
 		result.PathExpression = name
