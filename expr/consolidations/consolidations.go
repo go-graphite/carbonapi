@@ -382,7 +382,7 @@ func AggCount(v []float64) float64 {
 }
 
 func AggDiff(v []float64) float64 {
-	safeValues := make([]float64, 0)
+	safeValues := make([]float64, 0, len(v))
 	for _, vv := range v {
 		if !math.IsNaN(vv) {
 			safeValues = append(safeValues, vv)
