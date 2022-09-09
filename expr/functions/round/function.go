@@ -2,7 +2,6 @@ package round
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -41,9 +40,7 @@ func (f *round) Do(ctx context.Context, e parser.Expr, from, until int64, values
 	if err != nil {
 		return nil, err
 	}
-	if withPrecision {
-		precisionStr = strconv.Itoa(precision)
-	}
+	precisionStr = strconv.Itoa(precision)
 
 	results := make([]*types.MetricData, len(arg))
 	for j, a := range arg {
@@ -59,7 +56,7 @@ func (f *round) Do(ctx context.Context, e parser.Expr, from, until int64, values
 			r.Values[i] = helper.SafeRound(v, precision)
 		}
 
-		r.Tags["round"] = fmt.Sprintf("%d", precision)
+		r.Tags["round"] = precisionStr
 		results[j] = r
 
 	}

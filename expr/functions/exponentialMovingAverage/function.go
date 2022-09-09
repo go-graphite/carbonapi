@@ -79,7 +79,7 @@ func (f *exponentialMovingAverage) Do(ctx context.Context, e parser.Expr, from, 
 
 	for _, a := range arg {
 		r := a.CopyLink()
-		r.Name = fmt.Sprintf("%s(%s,%s)", e.Target(), a.Name, argstr)
+		r.Name = e.Target() + "(" + a.Name + "," + argstr + ")"
 
 		var vals []float64
 

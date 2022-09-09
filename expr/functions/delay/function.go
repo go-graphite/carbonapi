@@ -2,7 +2,6 @@ package delay
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -65,7 +64,7 @@ func (f *delay) Do(ctx context.Context, e parser.Expr, from, until int64, values
 
 		result := series.CopyName("delay(" + series.Name + "," + stepsStr + ")")
 		result.Values = newValues
-		result.Tags["delay"] = fmt.Sprintf("%d", steps)
+		result.Tags["delay"] = stepsStr
 
 		results[i] = result
 	}

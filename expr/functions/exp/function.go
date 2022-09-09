@@ -2,7 +2,6 @@ package exp
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -38,7 +37,7 @@ func (f *exp) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 
 	for _, a := range args {
 		r := a.CopyLink()
-		r.Name = fmt.Sprintf("exp(%s)", a.Name)
+		r.Name = "exp(" + a.Name + ")"
 		r.Values = make([]float64, len(a.Values))
 		r.Tags["exp"] = "e"
 

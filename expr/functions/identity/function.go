@@ -2,7 +2,6 @@ package identity
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -46,7 +45,7 @@ func (f *identity) Do(ctx context.Context, e parser.Expr, from, until int64, val
 
 	p := types.MetricData{
 		FetchResponse: pb.FetchResponse{
-			Name:              fmt.Sprintf("identity(%s)", name),
+			Name:              "identity(" + name + ")",
 			StartTime:         from,
 			StopTime:          until,
 			StepTime:          step,

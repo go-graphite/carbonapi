@@ -2,7 +2,6 @@ package sigmoid
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -39,7 +38,7 @@ func (f *sigmoid) Do(ctx context.Context, e parser.Expr, from, until int64, valu
 
 	for _, a := range arg {
 		r := a.CopyLink()
-		r.Name = fmt.Sprintf("sigmoid(%s)", a.Name)
+		r.Name = "sigmoid(" + a.Name + ")"
 		r.Values = make([]float64, len(a.Values))
 		r.Tags["sigmoid"] = "sigmoid"
 

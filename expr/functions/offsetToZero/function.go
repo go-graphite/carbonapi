@@ -2,8 +2,8 @@ package offsetToZero
 
 import (
 	"context"
-	"fmt"
 	"math"
+	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -42,7 +42,7 @@ func (f *offsetToZero) Do(ctx context.Context, e parser.Expr, from, until int64,
 		for i, v := range a.Values {
 			r.Values[i] = v - minimum
 		}
-		r.Tags["offsetToZero"] = fmt.Sprintf("%f", minimum)
+		r.Tags["offsetToZero"] = strconv.FormatFloat(minimum, 'g', -1, 64)
 		return r
 	})
 }

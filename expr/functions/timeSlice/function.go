@@ -2,7 +2,6 @@ package timeSlice
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"strconv"
 	"time"
@@ -60,8 +59,8 @@ func (f *timeSlice) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		r := a.CopyLink()
 		r.Name = "timeSlice(" + a.Name + "," + startStr + "," + endStr + ")"
 		r.Values = make([]float64, len(a.Values))
-		r.Tags["timeSliceStart"] = fmt.Sprintf("%d", start)
-		r.Tags["timeSliceEnd"] = fmt.Sprintf("%d", end)
+		r.Tags["timeSliceStart"] = startStr
+		r.Tags["timeSliceEnd"] = endStr
 
 		current := from
 		for i, v := range a.Values {

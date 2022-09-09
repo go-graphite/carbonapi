@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -790,7 +791,7 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 					return nil, err
 				}
 				r.Dashed = d
-				r.Tags["dashed"] = fmt.Sprintf("%f", d)
+				r.Tags["dashed"] = strconv.FormatFloat(d, 'g', -1, 64)
 			case "drawAsInfinite":
 				r.DrawAsInfinite = true
 				r.Tags["drawAsInfinite"] = "1"

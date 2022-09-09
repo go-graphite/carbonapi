@@ -2,8 +2,8 @@ package removeBetweenPercentile
 
 import (
 	"context"
-	"fmt"
 	"math"
+	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -67,9 +67,10 @@ func (f *removeBetweenPercentile) Do(ctx context.Context, e parser.Expr, from, u
 		}
 	}
 
+	numberStr := strconv.FormatFloat(number, 'f', -1, 64)
 	for i, a := range args {
 		r := a.CopyLink()
-		r.Name = fmt.Sprintf("%s(%s, %g)", e.Target(), a.Name, number)
+		r.Name = e.Target() + "(" + a.Name + ", " + numberStr + ")"
 
 		for _, v := range a.Values {
 			if !(v > lowerThresholds[i] && v < higherThresholds[i]) {

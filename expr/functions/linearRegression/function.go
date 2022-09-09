@@ -2,8 +2,8 @@ package linearRegression
 
 import (
 	"context"
-	"fmt"
 	"math"
+	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -45,9 +45,9 @@ func (f *linearRegression) Do(ctx context.Context, e parser.Expr, from, until in
 	for _, a := range arg {
 		r := a.CopyLink()
 		if len(e.Args()) > 2 {
-			r.Name = fmt.Sprintf("linearRegression(%s,'%s','%s')", a.GetName(), e.Arg(1).StringValue(), e.Arg(2).StringValue())
+			r.Name = "linearRegression(" + a.GetName() + ",'" + e.Arg(1).StringValue() + "','" + e.Arg(2).StringValue() + "')"
 		} else if len(e.Args()) > 1 {
-			r.Name = fmt.Sprintf("linearRegression(%s,'%s')", a.GetName(), e.Arg(2).StringValue())
+			r.Name = "linearRegression(" + a.GetName() + ",'" + e.Arg(1).StringValue() + "')"
 		} else {
 			r.Name = "linearRegression(" + a.Name + ")"
 		}
@@ -88,7 +88,7 @@ func (f *linearRegression) Do(ctx context.Context, e parser.Expr, from, until in
 		for i := range r.Values {
 			r.Values[i] = consolidations.Poly(float64(i), c.RawMatrix().Data...)
 		}
-		r.Tags["linearRegressions"] = fmt.Sprintf("%d, %d", a.GetStartTime(), a.GetStopTime())
+		r.Tags["linearRegressions"] = strconv.FormatInt(a.GetStartTime(), 10) + ", " + strconv.FormatInt(a.GetStopTime(), 10)
 
 		results = append(results, r)
 	}

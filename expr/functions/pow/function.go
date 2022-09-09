@@ -2,7 +2,6 @@ package pow
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"strconv"
 
@@ -45,9 +44,9 @@ func (f *pow) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 
 	for j, a := range arg {
 		r := a.CopyLink()
-		r.Name = fmt.Sprintf("pow(%s,%s)", a.Name, factorStr)
+		r.Name = "pow(" + a.Name + "," + factorStr + ")"
 		r.Values = make([]float64, len(a.Values))
-		r.Tags["pow"] = fmt.Sprintf("%f", factor)
+		r.Tags["pow"] = factorStr
 
 		for i, v := range a.Values {
 			if math.IsNaN(v) {

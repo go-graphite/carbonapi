@@ -2,7 +2,6 @@ package nPercentile
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"strconv"
 
@@ -46,9 +45,9 @@ func (f *nPercentile) Do(ctx context.Context, e parser.Expr, from, until int64, 
 	results := make([]*types.MetricData, len(arg))
 	for i, a := range arg {
 		r := a.CopyLink()
-		r.Name = fmt.Sprintf("nPercentile(%s,%s)", a.Name, percentStr)
+		r.Name = "nPercentile(" + a.Name + "," + percentStr + ")"
 		r.Values = make([]float64, len(a.Values))
-		r.Tags["nPercentile"] = fmt.Sprintf("%f", percent)
+		r.Tags["nPercentile"] = percentStr
 		var values []float64
 		for _, v := range a.Values {
 			if !math.IsNaN(v) {

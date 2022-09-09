@@ -2,7 +2,6 @@ package movingMedian
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"strconv"
 
@@ -144,7 +143,7 @@ func (f *movingMedian) Do(ctx context.Context, e parser.Expr, from, until int64,
 				}
 			}
 		}
-		r.Tags["movingMedian"] = fmt.Sprintf("%d", windowSize)
+		r.Tags["movingMedian"] = argstr
 		result[n] = r
 	}
 	return result, nil

@@ -44,7 +44,7 @@ func (f *offset) Do(ctx context.Context, e parser.Expr, from, until int64, value
 
 	for i, a := range arg {
 		r := a.CopyLink()
-		r.Name = fmt.Sprintf("%s(%s,%s)", e.Target(), a.Name, factorStr)
+		r.Name = e.Target() + "(" + a.Name + "," + factorStr + ")"
 		r.Values = make([]float64, len(a.Values))
 		r.Tags[e.Target()] = fmt.Sprintf("%f", factor)
 

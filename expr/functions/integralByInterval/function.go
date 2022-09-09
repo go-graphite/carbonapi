@@ -2,7 +2,6 @@ package integralByInterval
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -55,7 +54,7 @@ func (f *integralByInterval) Do(ctx context.Context, e parser.Expr, from, until 
 		current := 0.0
 		currentTime := arg.StartTime
 
-		name := fmt.Sprintf("integralByInterval(%s,'%s')", arg.Name, e.Args()[1].StringValue())
+		name := "integralByInterval(" + arg.Name + ",'" + e.Args()[1].StringValue() + "')"
 		result := arg.CopyLink()
 		result.Name = name
 		result.PathExpression = name
