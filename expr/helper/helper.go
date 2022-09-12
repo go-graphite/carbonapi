@@ -179,8 +179,10 @@ func AggregateSeries(e parser.Expr, args []*types.MetricData, function Aggregate
 
 		r.Values[i] = math.NaN()
 		if len(values) > 0 {
-			if applyXFilesFactor && XFilesFactorValues(values, xFilesFactor) {
-				r.Values[i] = function(values)
+			if applyXFilesFactor && !XFilesFactorValues(values, xFilesFactor) {
+				// if an xFileFactor is specified and the ratio of NaN values to non-NaN values is not equal to
+				// or greater than the xFilesFactor, the value should be NaN
+				r.Values[i] = math.NaN()
 			} else {
 				r.Values[i] = function(values)
 			}

@@ -40,11 +40,6 @@ func TestAverageSeries(t *testing.T) {
 		},
 		{
 			`aggregate(metric[123], "avg")`,
-			map[parser.MetricRequest][]*types.MetricData{},
-			[]*types.MetricData{},
-		},
-		{
-			`aggregate(metric[123], "avg")`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[123]", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32),
@@ -210,6 +205,42 @@ func TestAverageSeries(t *testing.T) {
 			},
 			[]*types.MetricData{types.MakeMetricData("totalSeries(metric[123])",
 				[]float64{6, math.NaN(), 9, 8, 15, 11}, 1, now32)},
+		},
+		{
+			`aggregate(metric[123], "avg", 0.7)`, // Test with xFilesFactor
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric[123]", 0, 1}: {
+					types.MakeMetricData("metric1", []float64{1, math.NaN(), 2, math.NaN(), 4, 5}, 1, now32),
+					types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32),
+					types.MakeMetricData("metric3", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
+				},
+			},
+			[]*types.MetricData{types.MakeMetricData("avgSeries(metric[123])",
+				[]float64{2, math.NaN(), 3, math.NaN(), 5, math.NaN()}, 1, now32)},
+		},
+		{
+			`aggregate(metric[123], "sum", 0.5)`, // Test with xFilesFactor
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric[123]", 0, 1}: {
+					types.MakeMetricData("metric1", []float64{1, math.NaN(), 2, 3, 4, math.NaN()}, 1, now32),
+					types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 5, 5}, 1, now32),
+					types.MakeMetricData("metric3", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
+				},
+			},
+			[]*types.MetricData{types.MakeMetricData("sumSeries(metric[123])",
+				[]float64{6, math.NaN(), 9, 8, 15, math.NaN()}, 1, now32)},
+		},
+		{
+			`aggregate(metric[123], "max", 0.3)`,
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric[123]", 0, 1}: {
+					types.MakeMetricData("metric1", []float64{1, math.NaN(), 2, math.NaN(), 4, 5}, 1, now32),
+					types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32),
+					types.MakeMetricData("metric3", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
+				},
+			},
+			[]*types.MetricData{types.MakeMetricData("maxSeries(metric[123])",
+				[]float64{3, math.NaN(), 4, 5, 6, 6}, 1, now32)},
 		},
 		{
 			`stddevSeries(metric[123])`,

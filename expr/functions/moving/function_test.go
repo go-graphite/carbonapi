@@ -144,9 +144,16 @@ func TestMovingXFilesFactor(t *testing.T) {
 		{
 			"movingAverage(metric1,4,0.6)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8}, 1, now32)},
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 2, math.NaN(), 2, 4, math.NaN(), 4, 6, 8}, 1, now32)},
 			},
-			[]*types.MetricData{types.MakeMetricData("movingAverage(metric1,4)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), 1, 1.25, 1.5, 1.75, 2.5, 3.5, 4, 5}, 1, 0)}, // StartTime = from
+			[]*types.MetricData{types.MakeMetricData("movingAverage(metric1,4)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), 1, 1.25, 1.3333333333333333, 1.6666666666666667, 2.666666666666666, math.NaN(), 3.3333333333333335, 4.666666666666667}, 1, 0)}, // StartTime = from
+		},
+		{
+			"movingMax(metric1,2,0.5)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, math.NaN(), math.NaN(), 0}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData("movingMax(metric1,2)", []float64{math.NaN(), math.NaN(), 2, 3, 3, math.NaN()}, 1, 0)}, // StartTime = from
 		},
 	}
 
