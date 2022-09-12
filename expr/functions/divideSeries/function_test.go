@@ -23,7 +23,7 @@ func init() {
 }
 
 func TestDivideSeriesMultiReturn(t *testing.T) {
-	now32 := int64(time.Now().Unix())
+	now32 := time.Now().Unix()
 
 	tests := []th.MultiReturnEvalTestItem{
 		{
@@ -57,7 +57,7 @@ func TestDivideSeriesMultiReturn(t *testing.T) {
 }
 
 func TestDivideSeries(t *testing.T) {
-	now32 := int64(time.Now().Unix())
+	now32 := time.Now().Unix()
 
 	tests := []th.EvalTestItem{
 		{
@@ -99,43 +99,57 @@ func TestDivideSeries(t *testing.T) {
 }
 
 func TestDivideSeriesAligned(t *testing.T) {
-	now32 := int64(time.Now().Unix())
+	startTime := int64(0)
 
-	tests := []th.EvalTestItem{
+	tests := []th.EvalTestItemWithRange{
 		{
 			"divideSeries(metric1,metric2)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
-					types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12, 2}, 1, now32),
+					types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12, 2}, 1, startTime),
 				},
 				{"metric2", 0, 1}: {
-					types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32),
+					types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, startTime),
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("divideSeries(metric1,metric2)",
-				[]float64{0.5, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 2, math.NaN()}, 1, now32)},
+				[]float64{0.5, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 2, math.NaN()}, 1, startTime)},
+			startTime,
+			startTime + 1,
 		},
 		{
 			"divideSeries(metric[23])",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric[23]", 0, 1}: {
-					types.MakeMetricData("metric2", []float64{1, math.NaN(), math.NaN(), 3, 4, 12, 2}, 1, now32),
-					types.MakeMetricData("metric3", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32),
+					types.MakeMetricData("metric2", []float64{1, math.NaN(), math.NaN(), 3, 4, 12, 2}, 1, startTime),
+					types.MakeMetricData("metric3", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, startTime),
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("divideSeries(metric[23])",
-				[]float64{0.5, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 2, math.NaN()}, 1, now32).SetNameTag("metric2")},
+				[]float64{0.5, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 2, math.NaN()}, 1, startTime).SetNameTag("metric2")},
+			startTime,
+			startTime + 1,
+		},
+		{
+			"divideSeries(metric3,metric4)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric3", 0, 1}: {
+					types.MakeMetricData("metric3", []float64{1, math.NaN(), math.NaN(), 3, 4, 8, 2, math.NaN(), 3, math.NaN(), 0, 6}, 5, startTime),
+				},
+				{"metric4", 0, 1}: {
+					types.MakeMetricData("metric4", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 10, startTime),
+				},
+			},
+			[]*types.MetricData{types.MakeMetricData("divideSeries(metric3,metric4)",
+				[]float64{0.5, math.NaN(), 2, math.NaN(), math.NaN(), 0.5}, 10, startTime)},
+			startTime,
+			startTime + 1,
 		},
 	}
 
 	for _, tt := range tests {
-		testName := tt.Target
-		t.Run(testName, func(t *testing.T) {
-			err := th.TestEvalExprModifiedOrigin(t, &tt, 0, 1, false)
-			if err != nil {
-				t.Errorf("unexpected error while evaluating %s: got `%+v`", tt.Target, err)
-				return
-			}
+		t.Run(tt.Target, func(t *testing.T) {
+			th.TestEvalExprWithRange(t, &tt)
 		})
 	}
 }

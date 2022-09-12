@@ -161,13 +161,7 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 			}
 		}
 		if pairFound {
-			pair := []*types.MetricData{numerator, denominator}
-			step, alignStep := helper.GetCommonStep(pair)
-			if alignStep || len(numerator.Values) != len(denominator.Values) {
-				alignedSeries := helper.ScaleToCommonStep(types.CopyMetricDataSlice(pair), step)
-				numerator = alignedSeries[0]
-				denominator = alignedSeries[1]
-			}
+			numerator, denominator = helper.ConsolidateSeriesByStep(numerator, denominator)
 		}
 
 		r := numerator.CopyLink()

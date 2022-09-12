@@ -75,7 +75,7 @@ func GetStepRange(args []*types.MetricData) (minStep, maxStep int64, needScale b
 // It respects xFilesFactor and fills gaps in the begin and end with NaNs if needed.
 func ScaleToCommonStep(args []*types.MetricData, commonStep int64) []*types.MetricData {
 	if commonStep < 0 || len(args) == 0 {
-		// This doesn't make sence
+		// This doesn't make sense
 		return args
 	}
 
@@ -377,6 +377,21 @@ func ScaleSeries(args []*types.MetricData) []*types.MetricData {
 	}
 
 	return args
+}
+
+func ConsolidateSeriesByStep(numerator, denominator *types.MetricData) (*types.MetricData, *types.MetricData) {
+	pair := []*types.MetricData{numerator, denominator}
+
+	step, changed := GetCommonStep(pair)
+	if changed || len(numerator.Values) != len(denominator.Values) {
+		alignedSeries := ScaleToCommonStep(types.CopyMetricDataSlice(pair), step)
+		numerator = alignedSeries[0]
+		denominator = alignedSeries[1]
+
+		return alignedSeries[0], alignedSeries[1]
+	}
+
+	return numerator, denominator
 }
 
 func genNaNs(length int) []float64 {
