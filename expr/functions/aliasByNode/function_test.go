@@ -131,15 +131,14 @@ func TestAliasByNode(t *testing.T) {
 			},
 			Want: []*types.MetricData{types.MakeMetricData("base.metric1", []float64{math.NaN(), 1, 1, 1, 1}, 1, now32)},
 		},
-		// FIXME: I don't think `metric1.foo==.bar.baz` is a valid metric name, that is making this test fail https://github.com/grafana/carbonapi/issues/68
-		// {
-		// 	Target: "aliasByNode(metric1.fo*.bar.baz,1,3)",
-		// 	M: map[parser.MetricRequest][]*types.MetricData{
-		// 		{Metric: "metric1.fo*.bar.baz", From: 0, Until: 1}: {types.MakeMetricData("metric1.foo==.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
-		// 	},
-		// 	Want: []*types.MetricData{types.MakeMetricData("foo==.baz",
-		// 		[]float64{1, 2, 3, 4, 5}, 1, now32)},
-		// },
+		{
+			Target: "aliasByNode(metric1.fo*.bar.baz,1,3)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1.fo*.bar.baz", From: 0, Until: 1}: {types.MakeMetricData("metric1.foo==.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			},
+			Want: []*types.MetricData{types.MakeMetricData("foo==.baz",
+				[]float64{1, 2, 3, 4, 5}, 1, now32)},
+		},
 		{
 			Target: `aliasByTags(*, 2, "baz", "foo", 1)`,
 			M: map[parser.MetricRequest][]*types.MetricData{

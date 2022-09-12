@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/go-graphite/carbonapi/expr/helper/metric"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -93,7 +92,7 @@ func GetSeriesArgsAndRemoveNonExisting(ctx context.Context, e parser.Expr, from,
 func AggKey(arg *types.MetricData, nodesOrTags []parser.NodeOrTag) string {
 	matched := make([]string, 0, len(nodesOrTags))
 	metricTags := arg.Tags
-	name := metric.ExtractMetric(arg.Name)
+	name := types.ExtractNameTag(arg.Name)
 	nodes := strings.Split(name, ".")
 	for _, nt := range nodesOrTags {
 		if nt.IsTag {
