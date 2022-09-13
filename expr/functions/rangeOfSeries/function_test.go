@@ -29,6 +29,13 @@ func TestRangeOfSeries(t *testing.T) {
 		{
 			"rangeOfSeries(metric*)",
 			map[parser.MetricRequest][]*types.MetricData{
+				{"metric*", 0, 1}: {},
+			},
+			[]*types.MetricData{},
+		},
+		{
+			"rangeOfSeries(metric*)",
+			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{math.NaN(), math.NaN(), math.NaN(), 3, 4, 12, -10}, 1, now32),
 					types.MakeMetricData("metric2", []float64{2, math.NaN(), math.NaN(), 15, 0, 6, 10}, 1, now32),

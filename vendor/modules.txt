@@ -47,12 +47,6 @@ github.com/dustin/go-humanize
 # github.com/evmar/gocairo v0.0.0-20160222165215-ddd30f837497
 ## explicit
 github.com/evmar/gocairo/cairo
-# github.com/facebookgo/atomicfile v0.0.0-20151019160806-2de1f203e7d5
-## explicit
-github.com/facebookgo/atomicfile
-# github.com/facebookgo/pidfile v0.0.0-20150612191647-f242e2999868
-## explicit
-github.com/facebookgo/pidfile
 # github.com/felixge/httpsnoop v1.0.3
 ## explicit
 github.com/felixge/httpsnoop
@@ -125,6 +119,9 @@ github.com/mjibson/go-dsp/fft
 # github.com/msaf1980/go-stringutils v0.0.15
 ## explicit
 github.com/msaf1980/go-stringutils
+# github.com/natefinch/atomic v1.0.1
+## explicit
+github.com/natefinch/atomic
 # github.com/openhistogram/circonusllhist v0.3.0
 ## explicit
 github.com/openhistogram/circonusllhist

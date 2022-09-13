@@ -3,6 +3,7 @@ package removeBelowSeries
 import (
 	"context"
 	"math"
+	"strconv"
 	"strings"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
@@ -68,10 +69,10 @@ func (f *removeBelowSeries) Do(ctx context.Context, e parser.Expr, from, until i
 			threshold = consolidations.Percentile(values, number, true)
 		}
 
-		r := *a
-		// r.Name = fmt.Sprintf("%s(%s, %g)", e.Target(), a.Name, number)
-		r.Name = e.Target() + "(" + a.Name + "," + numberStr + ")"
+		r := a.CopyLink()
+		r.Name = e.Target() + "(" + a.Name + ", " + numberStr + ")"
 		r.Values = make([]float64, len(a.Values))
+		r.Tags["removeBelowSeries"] = strconv.FormatFloat(threshold, 'f', -1, 64)
 
 		for i, v := range a.Values {
 			if math.IsNaN(v) || condition(v, threshold) {
@@ -81,7 +82,7 @@ func (f *removeBelowSeries) Do(ctx context.Context, e parser.Expr, from, until i
 			}
 		}
 
-		results[n] = &r
+		results[n] = r
 	}
 
 	return results, nil

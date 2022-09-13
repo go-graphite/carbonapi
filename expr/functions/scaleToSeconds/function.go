@@ -43,16 +43,18 @@ func (f *scaleToSeconds) Do(ctx context.Context, e parser.Expr, from, until int6
 	results := make([]*types.MetricData, len(arg))
 
 	for j, a := range arg {
-		r := *a
+		r := a.CopyLink()
 		r.Name = "scaleToSeconds(" + a.Name + "," + secondsStr + ")"
 		r.Values = make([]float64, len(a.Values))
+		r.Tags["scaleToSeconds"] = secondsStr
 
 		factor := seconds / float64(a.StepTime)
 
 		for i, v := range a.Values {
 			r.Values[i] = v * factor
 		}
-		results[j] = &r
+
+		results[j] = r
 	}
 	return results, nil
 }

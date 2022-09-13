@@ -43,6 +43,10 @@ func (f *percentileOfSeries) Do(ctx context.Context, e parser.Expr, from, until 
 		return nil, err
 	}
 
+	if len(args) == 0 {
+		return []*types.MetricData{}, nil
+	}
+
 	percent, err := e.GetFloatArg(1)
 	if err != nil {
 		return nil, err
@@ -53,9 +57,11 @@ func (f *percentileOfSeries) Do(ctx context.Context, e parser.Expr, from, until 
 		return nil, err
 	}
 
+	xFilesFactor := args[0].XFilesFactor
+
 	return helper.AggregateSeries(e, args, func(values []float64) float64 {
 		return consolidations.Percentile(values, percent, interpolate)
-	}, fconfig.Config.ExtractTagsFromArgs)
+	}, float64(xFilesFactor), fconfig.Config.ExtractTagsFromArgs)
 }
 
 // SetExtractTagsFromArgs for use in tests

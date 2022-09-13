@@ -2,6 +2,7 @@ package hitcount
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -37,6 +38,10 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(args) == 0 {
+		return []*types.MetricData{}, nil
 	}
 
 	bucketSizeInt32, err := e.GetIntervalArg(1, 1)
@@ -82,8 +87,9 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 				StopTime:          stop,
 				ConsolidationFunc: "max",
 			},
-			Tags: arg.Tags,
+			Tags: helper.CopyTags(arg),
 		}
+		r.Tags["hitcount"] = fmt.Sprintf("%d", bucketSizeInt32)
 
 		bucketEnd := start + bucketSize
 		t := arg.StartTime

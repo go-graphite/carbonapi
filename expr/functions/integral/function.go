@@ -40,6 +40,7 @@ func (f *integral) Do(ctx context.Context, e parser.Expr, from, until int64, val
 			current += v
 			r.Values[i] = current
 		}
+		r.Tags["integral"] = "1"
 		return r
 	})
 }

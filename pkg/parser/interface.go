@@ -44,8 +44,6 @@ var (
 	ErrMissingArgument = errors.New("missing argument")
 	// ErrMissingTimeseries is an eval error returned when a time series argument is missing.
 	ErrMissingTimeseries = errors.New("missing time series argument")
-	// ErrSeriesDoesNotExist is an eval error returned when a requested time series argument does not exist.
-	ErrSeriesDoesNotExist = errors.New("no timeseries with that name")
 	// ErrUnknownTimeUnits is an eval error returned when a time unit is unknown to system
 	ErrUnknownTimeUnits = errors.New("unknown time units")
 )
@@ -152,8 +150,8 @@ type Expr interface {
 	// GetBoolNamedOrPosArgDefault returns specific positioned bool-typed argument or replace it with default if none found.
 	GetBoolNamedOrPosArgDefault(k string, n int, b bool) (bool, error)
 
-	// GetNodeOrTagArgs returns n-th argument as slice of NodeOrTag structures.
-	GetNodeOrTagArgs(n int) ([]NodeOrTag, error)
+	// GetNodeOrTagArgs returns the last arguments starting from the n-th as a slice of NodeOrTag structures. If `single` is `true`, only the n-th argument is taken.
+	GetNodeOrTagArgs(n int, single bool) ([]NodeOrTag, error)
 
 	IsInterfaceNil() bool
 

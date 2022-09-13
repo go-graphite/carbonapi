@@ -42,11 +42,11 @@ func (f *consolidateBy) Do(ctx context.Context, e parser.Expr, from, until int64
 	results := make([]*types.MetricData, len(arg))
 
 	for i, a := range arg {
-		r := *a
+		r := a.CopyLink()
 
 		r.AggregateFunction = consolidations.ConsolidationToFunc[name]
-
-		results[i] = &r
+		r.Tags["consolidateBy"] = name
+		results[i] = r
 	}
 
 	return results, nil

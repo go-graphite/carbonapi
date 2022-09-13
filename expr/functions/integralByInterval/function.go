@@ -8,7 +8,6 @@ import (
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
 type integralByInterval struct {
@@ -44,7 +43,10 @@ func (f *integralByInterval) Do(ctx context.Context, e parser.Expr, from, until 
 		return nil, err
 	}
 	bucketSize := int64(bucketSizeInt32)
-	bucketSizeStr := e.Arg(1).StringValue()
+	intervalString, err := e.GetStringArg(1)
+	if err != nil {
+		return nil, err
+	}
 
 	startTime := from
 	results := make([]*types.MetricData, len(args))
@@ -52,20 +54,14 @@ func (f *integralByInterval) Do(ctx context.Context, e parser.Expr, from, until 
 		current := 0.0
 		currentTime := arg.StartTime
 
-		name := "integralByInterval(" + arg.Name + ",'" + bucketSizeStr + "')"
-		result := &types.MetricData{
-			FetchResponse: pb.FetchResponse{
-				Name:              name,
-				Values:            make([]float64, len(arg.Values)),
-				StepTime:          arg.StepTime,
-				StartTime:         arg.StartTime,
-				StopTime:          arg.StopTime,
-				XFilesFactor:      arg.XFilesFactor,
-				PathExpression:    name,
-				ConsolidationFunc: arg.ConsolidationFunc,
-			},
-			Tags: arg.Tags,
-		}
+		name := "integralByInterval(" + arg.Name + ",'" + intervalString + "')"
+		result := arg.CopyLink()
+		result.Name = name
+		result.PathExpression = name
+		result.Values = make([]float64, len(arg.Values))
+
+		result.Tags["integralByInterval"] = intervalString
+
 		for i, v := range arg.Values {
 			if (currentTime-startTime)/bucketSize != (currentTime-startTime-arg.StepTime)/bucketSize {
 				current = 0

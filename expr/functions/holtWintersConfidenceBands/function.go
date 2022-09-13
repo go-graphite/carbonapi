@@ -63,8 +63,9 @@ func (f *holtWintersConfidenceBands) Do(ctx context.Context, e parser.Expr, from
 				XFilesFactor:      arg.XFilesFactor,
 				PathExpression:    name,
 			},
-			Tags: arg.Tags,
+			Tags: helper.CopyTags(arg),
 		}
+		lowerSeries.Tags["holtWintersConfidenceLower"] = "1"
 
 		name = "holtWintersConfidenceUpper(" + arg.Name + ")"
 		upperSeries := &types.MetricData{
@@ -78,8 +79,9 @@ func (f *holtWintersConfidenceBands) Do(ctx context.Context, e parser.Expr, from
 				XFilesFactor:      arg.XFilesFactor,
 				PathExpression:    name,
 			},
-			Tags: arg.Tags,
+			Tags: helper.CopyTags(arg),
 		}
+		upperSeries.Tags["holtWintersConfidenceUpper"] = "1"
 
 		results = append(results, lowerSeries, upperSeries)
 	}
