@@ -1,6 +1,7 @@
 package types
 
 import (
+	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"math"
 )
 
@@ -94,8 +95,25 @@ func (w *Windowed) Sum() float64 {
 	return w.sum
 }
 
+func (w *Windowed) Multiply() float64 {
+	var rv = 1.0
+	for _, f := range w.Data {
+		if !math.IsNaN(rv) {
+			rv *= f
+		}
+	}
+	return rv
+}
+
 // Mean returns mean value of data
 func (w *Windowed) Mean() float64 { return w.sum / float64(w.Len()) }
+
+// MeanZero returns mean value of data, with NaN values replaced with 0
+func (w *Windowed) MeanZero() float64 { return w.sum / float64(len(w.Data)) }
+
+func (w *Windowed) Median() float64 {
+	return consolidations.Percentile(w.Data, 50, true)
+}
 
 // Max returns max(values)
 func (w *Windowed) Max() float64 {
@@ -117,4 +135,43 @@ func (w *Windowed) Min() float64 {
 		}
 	}
 	return rv
+}
+
+// Count returns number of non-NaN points
+func (w *Windowed) Count() float64 {
+	return float64(w.Len())
+}
+
+// Diff subtracts series 2 through n from series 1
+func (w *Windowed) Diff() float64 {
+	rv := w.Data[w.head]
+	for i, f := range w.Data {
+		if !math.IsNaN(f) && i != w.head {
+			rv -= f
+		}
+	}
+	return rv
+}
+
+func (w *Windowed) Range() float64 {
+	vMax := math.Inf(-1)
+	vMin := math.Inf(1)
+	for _, f := range w.Data {
+		if f > vMax {
+			vMax = f
+		}
+		if f < vMin {
+			vMin = f
+		}
+	}
+	return vMax - vMin
+}
+
+// Last returns the last data point
+func (w *Windowed) Last() float64 {
+	if w.head == 0 {
+		return w.Data[len(w.Data)-1]
+	}
+
+	return w.Data[w.head-1]
 }

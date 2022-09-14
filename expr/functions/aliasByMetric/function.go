@@ -30,7 +30,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 func (f *aliasByMetric) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	return helper.ForEachSeriesDo1(ctx, e, from, until, values, func(a *types.MetricData) *types.MetricData {
-		metric := a.Tags["name"]
+		metric := types.ExtractNameTag(a.Name)
 		part := strings.Split(metric, ".")
 		name := part[len(part)-1]
 		ret := a.CopyName(name)

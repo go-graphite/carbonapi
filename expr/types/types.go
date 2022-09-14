@@ -448,35 +448,13 @@ func (r *MetricData) CopyLinkTags() *MetricData {
 	}
 }
 
-// CopyName returns the copy of MetricData, Values not copied and link from parent. If name set, Name and Name tag changed, Tags wil be reset
+// CopyName returns the copy of MetricData, Values not copied and link from parent. If name set, Name and Name tag changed
 func (r *MetricData) CopyName(name string) *MetricData {
-	if name == "" {
-		return r.CopyLink()
-	}
+	res := r.CopyLink()
+	res.Name = name
+	res.Tags["name"] = name
 
-	tags := tags.ExtractTags(ExtractName(name))
-
-	return &MetricData{
-		FetchResponse: pb.FetchResponse{
-			Name:                    name,
-			PathExpression:          r.PathExpression,
-			ConsolidationFunc:       r.ConsolidationFunc,
-			StartTime:               r.StartTime,
-			StopTime:                r.StopTime,
-			StepTime:                r.StepTime,
-			XFilesFactor:            r.XFilesFactor,
-			HighPrecisionTimestamps: r.HighPrecisionTimestamps,
-			Values:                  r.Values,
-			AppliedFunctions:        r.AppliedFunctions,
-			RequestStartTime:        r.RequestStartTime,
-			RequestStopTime:         r.RequestStopTime,
-		},
-		GraphOptions:      r.GraphOptions,
-		ValuesPerPoint:    r.ValuesPerPoint,
-		aggregatedValues:  r.aggregatedValues,
-		Tags:              tags,
-		AggregateFunction: r.AggregateFunction,
-	}
+	return res
 }
 
 // CopyNameWithDefault returns the copy of MetricData, Values not copied and link from parent. Name is changed, Tags will be reset.

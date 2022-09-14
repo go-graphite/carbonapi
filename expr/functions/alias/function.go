@@ -49,7 +49,6 @@ func (f *alias) Do(ctx context.Context, e parser.Expr, from, until int64, values
 		if allowFormatStr {
 			name = strings.ReplaceAll(name, "${expr}", arg.Name)
 		}
-
 		r := arg.CopyName(name)
 
 		results[i] = r

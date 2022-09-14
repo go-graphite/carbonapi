@@ -3,6 +3,7 @@ package helper
 import (
 	"fmt"
 	"math"
+	"reflect"
 	"testing"
 
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -219,5 +220,17 @@ func TestScaleToCommonStep(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestGetCommonTags(t *testing.T) {
+	first := map[string]string{"tag1": "value1", "tag2": "onevalue", "tag3": "value3"}
+	second := map[string]string{"tag1": "value1", "tag2": "differentvalue", "tag4": "value4"}
+
+	expected := map[string]string{"tag1": "value1"}
+	result := GetCommonTags([]*types.MetricData{{Tags: first}, {Tags: second}})
+
+	if !reflect.DeepEqual(expected, result) {
+		t.Errorf("expected %v, got %v", expected, result)
 	}
 }

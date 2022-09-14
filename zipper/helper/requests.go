@@ -13,7 +13,6 @@ import (
 
 	"github.com/ansel1/merry"
 	"github.com/go-graphite/carbonapi/limiter"
-	"github.com/go-graphite/carbonapi/pkg/parser"
 	util "github.com/go-graphite/carbonapi/util/ctx"
 	"github.com/go-graphite/carbonapi/zipper/types"
 	"go.uber.org/zap"
@@ -45,7 +44,7 @@ func MergeHttpErrors(errors []merry.Error) (int, []string) {
 		}
 
 		code := merry.HTTPCode(err)
-		if code == http.StatusNotFound || merry.Is(c, parser.ErrSeriesDoesNotExist) {
+		if code == http.StatusNotFound {
 			continue
 		}
 		if msg := merry.Message(c); len(msg) > 0 {

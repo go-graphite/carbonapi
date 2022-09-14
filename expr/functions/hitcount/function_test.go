@@ -20,6 +20,24 @@ func init() {
 		metadata.RegisterFunction(m.Name, m.F)
 	}
 }
+func TestHitcountEmptyData(t *testing.T) {
+	tests := []th.EvalTestItem{
+		{
+			"hitcount(foo.bar, '1min')",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"foo.bar", 0, 1}: {},
+			},
+			[]*types.MetricData{},
+		},
+	}
+
+	for _, tt := range tests {
+		testName := tt.Target
+		t.Run(testName, func(t *testing.T) {
+			th.TestEvalExpr(t, &tt)
+		})
+	}
+}
 
 func TestHitcount(t *testing.T) {
 	_, tenFiftyNine, tenThirty := th.InitTestSummarize()
