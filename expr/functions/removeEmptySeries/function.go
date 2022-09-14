@@ -34,6 +34,9 @@ func (f *removeEmptySeries) Do(ctx context.Context, e parser.Expr, from, until i
 	if err != nil {
 		return nil, err
 	}
+	if len(args) == 0 {
+		return []*types.MetricData{}, nil
+	}
 
 	factor, err := e.GetFloatArgDefault(1, 0)
 	if err != nil {
