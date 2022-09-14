@@ -23,7 +23,7 @@ func init() {
 	}
 }
 
-func TestAsPersent(t *testing.T) {
+func TestAsPercent(t *testing.T) {
 	now32 := int64(time.Now().Unix())
 	NaN := math.NaN()
 
@@ -70,6 +70,23 @@ func TestAsPersent(t *testing.T) {
 				types.MakeMetricData("asPercent(Server1.memory.used,Server1.memory.total)", []float64{25, 500, 125}, 1, now32),
 				types.MakeMetricData("asPercent(Server2.memory.used,Server3.memory.total)", []float64{25, 62.5, 1000}, 1, now32),
 			},
+		},
+		{
+			"asPercent(metricC*,metricD*)", // This test is to verify that passing in metrics with different number of values and different step values for the series and the totalSeries does not throw an error
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metricC*", 0, 1}: {
+					types.MakeMetricData("metricC1", []float64{1, 20, 10, 15, 5}, 1, now32), // Test that error isn't thrown when seriesList has more values than totalSeries
+					types.MakeMetricData("metricC2", []float64{1, 10, 20, 15, 5}, 1, now32),
+				},
+				{"metricD*", 0, 1}: {
+					types.MakeMetricData("metricD1", []float64{4, 4, 8}, 2, now32),
+					types.MakeMetricData("metricD2", []float64{4, 16, 2}, 2, now32),
+				},
+			},
+			[]*types.MetricData{types.MakeMetricData("asPercent(metricC1,metricD1)",
+				[]float64{25, 500, 125, math.NaN(), math.NaN(), math.NaN()}, 1, now32),
+				types.MakeMetricData("asPercent(metricC2,metricD2)",
+					[]float64{25, 62.5, 1000, math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
 		},
 
 		// Extend tests
@@ -169,7 +186,7 @@ func TestAsPersent(t *testing.T) {
 	}
 }
 
-func TestAsPersentAligment(t *testing.T) {
+func TestAsPercentAlignment(t *testing.T) {
 	now32 := int64(time.Now().Unix())
 	NaN := math.NaN()
 	testAlignments := []th.EvalTestItem{
@@ -229,7 +246,7 @@ func TestAsPersentAligment(t *testing.T) {
 	}
 }
 
-func TestAsPersentGroup(t *testing.T) {
+func TestAsPercentGroup(t *testing.T) {
 	now32 := int64(time.Now().Unix())
 	NaN := math.NaN()
 

@@ -3,6 +3,7 @@ package timeStack
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -34,6 +35,7 @@ func (f *timeStack) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	if err != nil {
 		return nil, err
 	}
+	unitStr := e.Arg(1).StringValue()
 
 	start, err := e.GetIntArg(2)
 	if err != nil {
@@ -55,12 +57,15 @@ func (f *timeStack) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			return nil, err
 		}
 
+		offsStr := strconv.FormatInt(offs, 10)
 		for _, a := range arg {
-			r := *a
+			r := a.CopyLink()
 			r.Name = fmt.Sprintf("timeShift(%s,%d)", a.Name, offs)
 			r.StartTime = a.StartTime - offs
 			r.StopTime = a.StopTime - offs
-			results = append(results, &r)
+			r.Tags["timeShiftUnit"] = unitStr
+			r.Tags["timeShift"] = offsStr
+			results = append(results, r)
 		}
 	}
 

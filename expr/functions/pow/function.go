@@ -40,12 +40,13 @@ func (f *pow) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 		return nil, err
 	}
 	factorStr := strconv.FormatFloat(factor, 'g', -1, 64)
-
 	results := make([]*types.MetricData, len(arg))
+
 	for j, a := range arg {
-		r := *a
+		r := a.CopyLink()
 		r.Name = "pow(" + a.Name + "," + factorStr + ")"
 		r.Values = make([]float64, len(a.Values))
+		r.Tags["pow"] = factorStr
 
 		for i, v := range a.Values {
 			if math.IsNaN(v) {
@@ -54,7 +55,7 @@ func (f *pow) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 				r.Values[i] = math.Pow(v, factor)
 			}
 		}
-		results[j] = &r
+		results[j] = r
 	}
 	return results, nil
 }

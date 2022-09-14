@@ -91,8 +91,9 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 			name = "transformNull(" + a.Name + ")"
 		}
 
-		r := a.CopyTag(name, a.Tags)
+		r := a.CopyName(name)
 		r.Values = make([]float64, len(a.Values))
+		r.Tags["transformNull"] = defvStr
 
 		for i, v := range a.Values {
 			if math.IsNaN(v) {

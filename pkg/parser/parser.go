@@ -198,7 +198,7 @@ func (e *expr) Metrics() []MetricRequest {
 			for i := range r {
 				r[i].From -= 7 * 86400 // starts -7 days from where the original starts
 			}
-		case "movingAverage", "movingMedian", "movingMin", "movingMax", "movingSum":
+		case "movingAverage", "movingMedian", "movingMin", "movingMax", "movingSum", "exponentialMovingAverage":
 			if len(e.args) < 2 {
 				return nil
 			}
@@ -409,7 +409,7 @@ func (e *expr) GetBoolArgDefault(n int, b bool) (bool, error) {
 	return e.args[n].doGetBoolArg()
 }
 
-func (e *expr) GetNodeOrTagArgs(n int) ([]NodeOrTag, error) {
+func (e *expr) GetNodeOrTagArgs(n int, single bool) ([]NodeOrTag, error) {
 	if len(e.args) <= n {
 		return nil, ErrMissingArgument
 	}
@@ -417,7 +417,11 @@ func (e *expr) GetNodeOrTagArgs(n int) ([]NodeOrTag, error) {
 	nodeTags := make([]NodeOrTag, 0, len(e.args)-n)
 
 	var err error
-	for i := n; i < len(e.args); i++ {
+	until := len(e.args)
+	if single {
+		until = n + 1
+	}
+	for i := n; i < until; i++ {
 		var nodeTag NodeOrTag
 		nodeTag.Value, err = e.GetIntArg(i)
 		if err != nil {
@@ -565,7 +569,8 @@ func IsNameChar(r byte) bool {
 		r == '^' || r == '$' ||
 		r == '<' || r == '>' ||
 		r == '&' || r == '#' ||
-		r == '/' || r == '%'
+		r == '/' || r == '%' ||
+		r == '@'
 }
 
 func isDigit(r byte) bool {

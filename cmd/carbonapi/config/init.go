@@ -12,10 +12,10 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/go-graphite/carbonapi/util/pidfile"
 	zipperConfig "github.com/go-graphite/carbonapi/zipper/config"
 
 	"github.com/ansel1/merry"
-	"github.com/facebookgo/pidfile"
 	"github.com/go-graphite/carbonapi/cache"
 	"github.com/go-graphite/carbonapi/expr/functions"
 	"github.com/go-graphite/carbonapi/expr/functions/cairo/png"
@@ -241,10 +241,9 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 	}
 
 	if Config.PidFile != "" {
-		pidfile.SetPidfilePath(Config.PidFile)
-		err := pidfile.Write()
+		err := pidfile.WritePidFile(Config.PidFile)
 		if err != nil {
-			logger.Fatal("error during pidfile.Write()",
+			logger.Fatal("error when writing pidfile",
 				zap.Error(err),
 			)
 		}
