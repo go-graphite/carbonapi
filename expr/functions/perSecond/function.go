@@ -87,9 +87,10 @@ func (f *perSecond) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			name = "perSecond(" + a.Name + ")"
 		}
 
-		r := a.CopyLinkTags()
+		r := a.CopyLink()
 		r.Name = name
 		r.Values = make([]float64, len(a.Values))
+		r.Tags["perSecond"] = "1"
 
 		prev := a.Values[0]
 		for i, v := range a.Values {

@@ -6,7 +6,7 @@ require (
 	bitbucket.org/tebeka/strftime v0.0.0-20140926081919-2194253a23c0
 	github.com/JaderDias/movingmedian v0.0.0-20170611140316-de8c410559fa
 	github.com/aclements/go-moremath v0.0.0-20210112150236-f10218a38794 // indirect
-	github.com/alicebob/miniredis/v2 v2.22.0 // indirect
+	github.com/alicebob/miniredis/v2 v2.22.0
 	github.com/ansel1/merry v1.6.2
 	github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d
 	github.com/circonus-labs/gosnowth v1.10.5
@@ -15,8 +15,6 @@ require (
 	github.com/dgryski/httputil v0.0.0-20160116060654-189c2918cd08
 	github.com/dustin/go-humanize v1.0.0
 	github.com/evmar/gocairo v0.0.0-20160222165215-ddd30f837497
-	github.com/facebookgo/atomicfile v0.0.0-20151019160806-2de1f203e7d5 // indirect
-	github.com/facebookgo/pidfile v0.0.0-20150612191647-f242e2999868
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/go-graphite/protocol v1.0.0
 	github.com/golang/protobuf v1.5.2
@@ -30,6 +28,7 @@ require (
 	github.com/maruel/natural v1.1.0
 	github.com/mjibson/go-dsp v0.0.0-20180508042940-11479a337f12
 	github.com/msaf1980/go-stringutils v0.0.15
+	github.com/natefinch/atomic v1.0.1
 	github.com/openhistogram/circonusllhist v0.3.0 // indirect
 	github.com/peterbourgon/g2g v0.0.0-20161124161852-0c2bab2b173d
 	github.com/rs/dnscache v0.0.0-20211102005908-e0241e321417
@@ -37,7 +36,7 @@ require (
 	github.com/spf13/viper v1.12.0
 	github.com/stretchr/testify v1.7.1
 	github.com/subosito/gotenv v1.4.0 // indirect
-	github.com/tevino/abool v1.2.0 // indirect
+	github.com/tevino/abool v1.2.0
 	github.com/tinylib/msgp v1.1.6
 	github.com/valyala/fastjson v1.6.3
 	github.com/wangjohn/quickselect v0.0.0-20161129230411-ed8402a42d5f

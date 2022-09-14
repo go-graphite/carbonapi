@@ -2,6 +2,7 @@ package smartSummarize
 
 import (
 	"context"
+	"fmt"
 	"math"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
@@ -36,6 +37,10 @@ func (f *smartSummarize) Do(ctx context.Context, e parser.Expr, from, until int6
 	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(args) == 0 {
+		return []*types.MetricData{}, nil
 	}
 
 	bucketSizeInt32, err := e.GetIntervalArg(1, 1)
@@ -88,9 +93,10 @@ func (f *smartSummarize) Do(ctx context.Context, e parser.Expr, from, until int6
 				StopTime:          stop,
 				ConsolidationFunc: summarizeFunction,
 			},
-			Tags: arg.Tags,
+			Tags: helper.CopyTags(arg),
 		}
-
+		r.Tags["smartSummarize"] = fmt.Sprintf("%d", bucketSizeInt32)
+		r.Tags["smartSummarizeFunction"] = summarizeFunction
 		t := arg.StartTime // unadjusted
 		bucketEnd := start + bucketSize
 		values := make([]float64, 0, bucketSize/arg.StepTime)

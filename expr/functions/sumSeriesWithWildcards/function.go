@@ -46,7 +46,7 @@ func (f *sumSeriesWithWildcards) Do(ctx context.Context, e parser.Expr, from, un
 	groups := make(map[string][]*types.MetricData)
 
 	for _, a := range args {
-		metric := a.Tags["name"]
+		metric := types.ExtractNameTag(a.Name)
 		nodes := strings.Split(metric, ".")
 		s := make([]string, 0, len(nodes))
 		// Yes, this is O(n^2), but len(nodes) < 10 and len(fields) < 3
@@ -72,6 +72,7 @@ func (f *sumSeriesWithWildcards) Do(ctx context.Context, e parser.Expr, from, un
 		args := groups[series]
 		name := "sumSeriesWithWildcards(" + series + ")"
 		r := args[0].CopyTag(name, map[string]string{"name": series})
+		r.Tags["aggregatedBy"] = "sum"
 		r.Values = make([]float64, len(args[0].Values))
 		atLeastOne := make([]bool, len(args[0].Values))
 		for _, arg := range args {

@@ -45,6 +45,8 @@ func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 
 	var numerators []*types.MetricData
 	var denominator *types.MetricData
+	var results []*types.MetricData
+
 	if e.ArgsLen() == 2 {
 		useMetricNames = true
 		numerators = firstArg
@@ -78,7 +80,7 @@ func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 		return nil, errors.New("must be called with 2 series or a wildcard that matches exactly 2 series")
 	}
 
-	alignedSeries := helper.AlignSeries(append(numerators, denominator))
+	alignedSeries := helper.AlignSeries(types.CopyMetricDataSlice(append(numerators, denominator)))
 	numerators = alignedSeries[:len(numerators)]
 	denominator = alignedSeries[len(numerators)]
 
@@ -88,7 +90,6 @@ func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 		}
 	}
 
-	results := make([]*types.MetricData, 0, len(numerators))
 	for _, numerator := range numerators {
 		var name string
 		if useMetricNames {

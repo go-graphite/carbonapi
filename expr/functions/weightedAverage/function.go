@@ -44,11 +44,17 @@ func (f *weightedAverage) Do(ctx context.Context, e parser.Expr, from, until int
 		return nil, err
 	}
 
+	// TODO: should fail if len(avgs) != len(weights)
+	if len(avgs)+len(weights) == 0 {
+		return []*types.MetricData{}, nil
+	}
+
 	alignedMetrics := helper.AlignSeries(append(avgs, weights...))
 	avgs = alignedMetrics[0:len(avgs)]
 	weights = alignedMetrics[len(avgs):]
+	xFilesFactor := float64(alignedMetrics[0].XFilesFactor)
 
-	nodes, err := e.GetNodeOrTagArgs(2)
+	nodes, err := e.GetNodeOrTagArgs(2, false)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +95,7 @@ func (f *weightedAverage) Do(ctx context.Context, e parser.Expr, from, until int
 		if _, ok := pair["weight"]; !ok {
 			continue
 		}
-		product, err := helper.AggregateSeries(e, []*types.MetricData{pair["avg"], pair["weight"]}, consolidations.ConsolidationToFunc["multiply"], false)
+		product, err := helper.AggregateSeries(e, []*types.MetricData{pair["avg"], pair["weight"]}, consolidations.ConsolidationToFunc["multiply"], xFilesFactor, false)
 		if err != nil {
 			return nil, err
 		}
@@ -99,15 +105,15 @@ func (f *weightedAverage) Do(ctx context.Context, e parser.Expr, from, until int
 		return []*types.MetricData{}, nil
 	}
 
-	sumProducts, err := helper.AggregateSeries(e, productList, consolidations.AggSum, false)
+	sumProducts, err := helper.AggregateSeries(e, productList, consolidations.AggSum, xFilesFactor, false)
 	if err != nil {
 		return nil, err
 	}
-	sumWeights, err := helper.AggregateSeries(e, weights, consolidations.AggSum, false)
+	sumWeights, err := helper.AggregateSeries(e, weights, consolidations.AggSum, xFilesFactor, false)
 	if err != nil {
 		return nil, err
 	}
-	weightedAverageSeries, err := helper.AggregateSeries(e, append(sumProducts, sumWeights...), func(v []float64) float64 { return v[0] / v[1] }, false)
+	weightedAverageSeries, err := helper.AggregateSeries(e, append(sumProducts, sumWeights...), func(v []float64) float64 { return v[0] / v[1] }, xFilesFactor, false)
 	if err != nil {
 		return nil, err
 	}

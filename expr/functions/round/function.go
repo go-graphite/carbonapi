@@ -2,7 +2,6 @@ package round
 
 import (
 	"context"
-	"math"
 	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -41,13 +40,11 @@ func (f *round) Do(ctx context.Context, e parser.Expr, from, until int64, values
 	if err != nil {
 		return nil, err
 	}
-	if withPrecision {
-		precisionStr = strconv.Itoa(precision)
-	}
+	precisionStr = strconv.Itoa(precision)
 
 	results := make([]*types.MetricData, len(arg))
 	for j, a := range arg {
-		r := *a
+		r := a.CopyLink()
 		if withPrecision {
 			r.Name = "round(" + a.Name + "," + precisionStr + ")"
 		} else {
@@ -56,19 +53,14 @@ func (f *round) Do(ctx context.Context, e parser.Expr, from, until int64, values
 		r.Values = make([]float64, len(a.Values))
 
 		for i, v := range a.Values {
-			r.Values[i] = doRound(v, precision)
+			r.Values[i] = helper.SafeRound(v, precision)
 		}
-		results[j] = &r
+
+		r.Tags["round"] = precisionStr
+		results[j] = r
+
 	}
 	return results, nil
-}
-
-func doRound(x float64, precision int) float64 {
-	if math.IsNaN(x) {
-		return x
-	}
-	roundTo := math.Pow10(precision)
-	return math.RoundToEven(x*roundTo) / roundTo
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
