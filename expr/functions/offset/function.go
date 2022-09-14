@@ -2,6 +2,7 @@ package offset
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -39,17 +40,18 @@ func (f *offset) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		return nil, err
 	}
 	factorStr := strconv.FormatFloat(factor, 'g', -1, 64)
-
 	results := make([]*types.MetricData, len(arg))
+
 	for i, a := range arg {
-		r := *a
+		r := a.CopyLink()
 		r.Name = e.Target() + "(" + a.Name + "," + factorStr + ")"
 		r.Values = make([]float64, len(a.Values))
+		r.Tags[e.Target()] = fmt.Sprintf("%f", factor)
 
 		for i, v := range a.Values {
 			r.Values[i] = v + factor
 		}
-		results[i] = &r
+		results[i] = r
 	}
 	return results, nil
 }

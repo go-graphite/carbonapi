@@ -20,7 +20,6 @@ import (
 	"github.com/ansel1/merry"
 
 	"github.com/dgryski/httputil"
-	"github.com/facebookgo/pidfile"
 	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
@@ -29,6 +28,7 @@ import (
 	"github.com/go-graphite/carbonapi/intervalset"
 	"github.com/go-graphite/carbonapi/mstats"
 	util "github.com/go-graphite/carbonapi/util/ctx"
+	"github.com/go-graphite/carbonapi/util/pidfile"
 	"github.com/go-graphite/carbonapi/zipper"
 	zipperConfig "github.com/go-graphite/carbonapi/zipper/config"
 	"github.com/go-graphite/carbonapi/zipper/types"
@@ -793,10 +793,9 @@ func main() {
 	}
 
 	if *pidFile != "" {
-		pidfile.SetPidfilePath(*pidFile)
-		err = pidfile.Write()
+		err := pidfile.WritePidFile(*pidFile)
 		if err != nil {
-			logger.Fatal("error during pidfile.Write()",
+			logger.Fatal("error when writing pidfile",
 				zap.Error(err),
 			)
 		}

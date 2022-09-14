@@ -61,6 +61,46 @@ func sumSeries(seriesList []*types.MetricData) *types.MetricData {
 	return result
 }
 
+func calculatePercentage(seriesValue, totalValue float64) float64 {
+	var value float64
+	if math.IsNaN(seriesValue) || math.IsNaN(totalValue) || totalValue == 0 {
+		value = math.NaN()
+	} else {
+		value = seriesValue * (100 / totalValue)
+	}
+	return value
+}
+
+// GetPercentages contains the logic to apply to the series in order to properly
+// calculate percentages. If the length of the values in series and totalSeries are
+// not equal, special handling is required. If the number of values in seriesList is
+// greater than the number of values in totalSeries, math.NaN() needs to be set to the
+// indices in series starting at the length of totalSeries.Values. If the number of values
+// in totalSeries is greater than the number of values in series, then math.NaN() needs
+// to be appended to series until its values have the same length as totalSeries.Values
+func getPercentages(series, totalSeries *types.MetricData) {
+	// If there are more series values than totalSeries values, set series value to math.NaN() for those indices
+	if len(series.Values) > len(totalSeries.Values) {
+		for i := 0; i < len(totalSeries.Values); i++ {
+			series.Values[i] = calculatePercentage(series.Values[i], totalSeries.Values[i])
+		}
+		for i := len(totalSeries.Values); i < len(series.Values); i++ {
+			series.Values[i] = math.NaN()
+		}
+	} else {
+		for i := range series.Values {
+			series.Values[i] = calculatePercentage(series.Values[i], totalSeries.Values[i])
+		}
+
+		// If there are more totalSeries values than series values, append math.NaN() to the series values
+		if lengthDiff := len(totalSeries.Values) - len(series.Values); lengthDiff > 0 {
+			for i := 0; i < lengthDiff; i++ {
+				series.Values = append(series.Values, math.NaN())
+			}
+		}
+	}
+}
+
 func groupByNodes(seriesList []*types.MetricData, nodesOrTags []parser.NodeOrTag) map[string][]*types.MetricData {
 	groups := make(map[string][]*types.MetricData)
 
@@ -85,14 +125,7 @@ func seriesAsPercent(arg, total []*types.MetricData) []*types.MetricData {
 	} else if len(total) == 1 {
 		// asPercent(seriesList, totalSeries)
 		for _, a := range arg {
-			for i := range a.Values {
-				t := total[0].Values[i]
-				if math.IsNaN(a.Values[i]) || math.IsNaN(t) || t == 0 {
-					a.Values[i] = math.NaN()
-				} else {
-					a.Values[i] *= 100 / t
-				}
-			}
+			getPercentages(a, total[0])
 
 			a.Name = "asPercent(" + a.Name + "," + total[0].Name + ")"
 		}
@@ -103,14 +136,7 @@ func seriesAsPercent(arg, total []*types.MetricData) []*types.MetricData {
 		if len(arg) <= len(total) {
 			// asPercent(seriesList, totalSeriesList) for series with len(seriesList) <= len(totalSeriesList)
 			for n, a := range arg {
-				for i := range a.Values {
-					t := total[n].Values[i]
-					if math.IsNaN(a.Values[i]) || math.IsNaN(t) || t == 0 {
-						a.Values[i] = math.NaN()
-					} else {
-						a.Values[i] *= 100 / t
-					}
-				}
+				getPercentages(a, total[n])
 
 				a.Name = "asPercent(" + a.Name + "," + total[n].Name + ")"
 			}
@@ -215,14 +241,8 @@ func seriesGroup2AsPercent(arg, total []*types.MetricData, nodesOrTags []parser.
 					// asPercent(seriesList, totalSeries, *nodes)
 					start := len(arg)
 					for _, a := range argGroup {
-						for i := range a.Values {
-							t := totalGroup[0].Values[i]
-							if math.IsNaN(a.Values[i]) || math.IsNaN(t) || t == 0 {
-								a.Values[i] = math.NaN()
-							} else {
-								a.Values[i] *= 100 / t
-							}
-						}
+						getPercentages(a, totalGroup[0])
+
 						a.Name = "asPercent(" + a.Name + "," + totalGroup[0].Name + ")"
 						arg = append(arg, a)
 					}
@@ -354,6 +374,7 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		// asPercent(seriesList, N)
 
 		total, err := e.GetFloatArg(1)
+
 		if err != nil {
 			return nil, err
 		}
@@ -387,7 +408,7 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 
 	} else if e.ArgsLen() >= 3 && e.Arg(1).IsName() || e.Arg(1).IsFunc() {
 		// Group by
-		nodesOrTags, err := e.GetNodeOrTagArgs(2)
+		nodesOrTags, err := e.GetNodeOrTagArgs(2, false)
 		if err != nil {
 			return nil, err
 		}

@@ -2,6 +2,7 @@ package stdev
 
 import (
 	"context"
+	"fmt"
 	"math"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -51,9 +52,10 @@ func (f *stdev) Do(ctx context.Context, e parser.Expr, from, until int64, values
 	for n, a := range arg {
 		w := &types.Windowed{Data: make([]float64, points)}
 
-		r := *a
+		r := a.CopyLink()
 		r.Name = "stdev(" + a.Name + "," + pointsStr + ")"
 		r.Values = make([]float64, len(a.Values))
+		r.Tags["stdev"] = fmt.Sprintf("%d", points)
 
 		for i, v := range a.Values {
 			w.Push(v)
@@ -62,7 +64,7 @@ func (f *stdev) Do(ctx context.Context, e parser.Expr, from, until int64, values
 				r.Values[i] = math.NaN()
 			}
 		}
-		result[n] = &r
+		result[n] = r
 	}
 	return result, nil
 }

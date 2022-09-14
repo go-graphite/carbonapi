@@ -61,10 +61,10 @@ func (f *aliasSub) Do(ctx context.Context, e parser.Expr, from, until int64, val
 		name := re.ReplaceAllString(oldName, replace)
 		if oldName == name {
 			r = a.CopyLinkTags()
+			r.Tags["name"] = r.Name
 		} else {
 			r = a.CopyName(name)
 		}
-
 		results[i] = r
 	}
 

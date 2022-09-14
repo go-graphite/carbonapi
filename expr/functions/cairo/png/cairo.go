@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -712,6 +713,7 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 			r := a.CopyLinkTags()
 			r.Stacked = true
 			r.StackName = stackName
+			r.Tags["stacked"] = stackName
 			results[i] = r
 		}
 
@@ -778,24 +780,33 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 
 		results := make([]*types.MetricData, len(arg))
 
+		var dashLen float64
+		var dashLenStr string
+		if e.Target() == "dashed" {
+			dashLen, err := e.GetFloatArgDefault(1, 2.5)
+			if err != nil {
+				return nil, err
+			}
+			dashLenStr = strconv.FormatFloat(dashLen, 'g', -1, 64)
+		}
+
 		for i, a := range arg {
-			r := *a
+			r := a.CopyLink()
 			r.Name = e.Target() + "(" + a.Name + ")"
 
 			switch e.Target() {
 			case "dashed":
-				d, err := e.GetFloatArgDefault(1, 2.5)
-				if err != nil {
-					return nil, err
-				}
-				r.Dashed = d
+				r.Dashed = dashLen
+				r.Tags["dashed"] = dashLenStr
 			case "drawAsInfinite":
 				r.DrawAsInfinite = true
+				r.Tags["drawAsInfinite"] = "1"
 			case "secondYAxis":
 				r.SecondYAxis = true
+				r.Tags["secondYAxis"] = "1"
 			}
 
-			results[i] = &r
+			results[i] = r
 		}
 		return results, nil
 

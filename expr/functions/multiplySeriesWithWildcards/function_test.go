@@ -39,8 +39,8 @@ func TestFunctionMultiplySeriesWithWildcards(t *testing.T) {
 			},
 			"multiplySeriesWithWildcards",
 			map[string][]*types.MetricData{
-				"multiplySeriesWithWildcards(metric1.baz)": {types.MakeMetricData("multiplySeriesWithWildcards(metric1.baz)", []float64{22, 48, 78, 112, 150}, 1, now32)},
-				"multiplySeriesWithWildcards(metric1.qux)": {types.MakeMetricData("multiplySeriesWithWildcards(metric1.qux)", []float64{42, 0, 72, 90, 110}, 1, now32)},
+				"metric1.baz": {types.MakeMetricData("metric1.baz", []float64{22, 48, 78, 112, 150}, 1, now32)},
+				"metric1.qux": {types.MakeMetricData("metric1.qux", []float64{42, 0, 72, 90, 110}, 1, now32)},
 			},
 		},
 	}
@@ -52,6 +52,25 @@ func TestFunctionMultiplySeriesWithWildcards(t *testing.T) {
 		})
 	}
 
+}
+
+func TestEmptyData(t *testing.T) {
+	tests := []th.EvalTestItem{
+		{
+			"multiplySeriesWithWildcards(metric1.foo.*.*,1,2)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1.foo.*.*", 0, 1}: {},
+			},
+			[]*types.MetricData{},
+		},
+	}
+
+	for _, tt := range tests {
+		testName := tt.Target
+		t.Run(testName, func(t *testing.T) {
+			th.TestEvalExpr(t, &tt)
+		})
+	}
 }
 
 func BenchmarkMultiplySeriesWithWildcards(b *testing.B) {

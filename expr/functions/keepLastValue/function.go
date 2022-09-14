@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 	"strconv"
+	"strings"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -31,25 +32,33 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // keepLastValue(seriesList, limit=inf)
 func (f *keepLastValue) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+
 	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
-	keep, err := e.GetIntNamedOrPosArgDefault("limit", 1, -1)
-	if err != nil {
-		return nil, err
-	}
+	var keep int
 	var keepStr string
-	if keep != -1 {
-		keepStr = strconv.Itoa(keep)
+
+	if e.ArgsLen() == 2 && strings.ToLower(e.Arg(1).Target()) == "inf" {
+		keep = -1
+		keepStr = "inf"
+	} else {
+		keep, err = e.GetIntNamedOrPosArgDefault("limit", 1, -1)
+		if err != nil {
+			return nil, err
+		}
+		if keep != -1 {
+			keepStr = strconv.Itoa(keep)
+		}
 	}
 
 	var results []*types.MetricData
 
 	for _, a := range arg {
 		var name string
-		if keep == -1 {
+		if keepStr == "" {
 			name = "keepLastValue(" + a.Name + ")"
 		} else {
 			name = "keepLastValue(" + a.Name + "," + keepStr + ")"

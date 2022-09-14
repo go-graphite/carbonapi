@@ -34,9 +34,20 @@ func (f *rangeOfSeries) Do(ctx context.Context, e parser.Expr, from, until int64
 	if err != nil {
 		return nil, err
 	}
+	if len(series) == 0 {
+		return []*types.MetricData{}, nil
+	}
 
-	r := series[0].CopyName(e.Target() + "(" + e.RawArgs() + ")")
+	r := series[0].CopyLinkTags()
+	r.Name = e.Target() + "(" + e.RawArgs() + ")"
 	r.Values = make([]float64, len(series[0].Values))
+
+	commonTags := helper.GetCommonTags(series)
+
+	if _, ok := commonTags["name"]; !ok {
+		commonTags["name"] = r.Name
+	}
+	r.Tags = commonTags
 
 	for i := range series[0].Values {
 		var min, max float64
