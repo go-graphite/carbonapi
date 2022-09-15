@@ -38,7 +38,7 @@ var ConsolidationToFunc = map[string]func([]float64) float64{
 	"current":  AggLast,
 }
 
-var AvailableSummarizers = []string{"sum", "total", "avg", "average", "avg_zero", "max", "min", "last", "current", "range", "rangeOf", "median", "multiply", "diff", "count", "stddev"}
+var AvailableSummarizers = []string{"sum", "total", "avg", "average", "avg_zero", "max", "min", "last", "current", "first", "range", "rangeOf", "median", "multiply", "diff", "count", "stddev"}
 
 func CheckValidConsolidationFunc(functionName string) error {
 	if _, ok := ConsolidationToFunc[functionName]; ok {
