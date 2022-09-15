@@ -48,6 +48,9 @@ func (f *legendValue) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		if method == "si" || method == "binary" {
 			system = method
 		} else {
+			if err := consolidations.CheckValidConsolidationFunc(method); err != nil {
+				return nil, err
+			}
 			methods = append(methods, method)
 		}
 	}

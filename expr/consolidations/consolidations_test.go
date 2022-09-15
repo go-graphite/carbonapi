@@ -3,6 +3,8 @@ package consolidations
 import (
 	"math"
 	"testing"
+
+	"github.com/ansel1/merry"
 )
 
 func TestSummarizeValues(t *testing.T) {
@@ -133,6 +135,44 @@ func TestSummarizeValues(t *testing.T) {
 			actual := SummarizeValues(tt.function, tt.values, tt.xFilesFactor)
 			if math.Abs(actual-tt.expected) > epsilon {
 				t.Errorf("actual %v, expected %v", actual, tt.expected)
+			}
+		})
+	}
+
+}
+
+func TestCheckValidConsolidationFunc(t *testing.T) {
+	tests := []struct {
+		name           string
+		expectedResult error
+	}{
+		{
+			name:           "sum",
+			expectedResult: nil,
+		},
+		{
+			name:           "avg",
+			expectedResult: nil,
+		},
+		{
+			name:           "p50",
+			expectedResult: nil,
+		},
+		{
+			name:           "p99.9",
+			expectedResult: nil,
+		},
+		{
+			name:           "test",
+			expectedResult: ErrInvalidConsolidationFunc,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := CheckValidConsolidationFunc(tt.name)
+			if result != nil && !merry.Is(result, tt.expectedResult) {
+				t.Errorf("actual %v, expected %v", result, tt.expectedResult)
 			}
 		})
 	}

@@ -2,12 +2,17 @@ package consolidations
 
 import (
 	"math"
+	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/ansel1/merry"
 
 	"github.com/wangjohn/quickselect"
 	"gonum.org/v1/gonum/mat"
 )
+
+var ErrInvalidConsolidationFunc = merry.New("Invalid Consolidation Function")
 
 // ConsolidationToFunc contains a map of graphite-compatible consolidation functions definitions to actual functions that can do aggregation
 // TODO(civil): take into account xFilesFactor
@@ -33,7 +38,19 @@ var ConsolidationToFunc = map[string]func([]float64) float64{
 	"current":  AggLast,
 }
 
-var AvailableSummarizers = []string{"sum", "total", "avg", "average", "avg_zero", "max", "min", "last", "current", "range", "rangeOf", "median", "multiply", "diff", "count", "stddev"}
+var AvailableSummarizers = []string{"sum", "total", "avg", "average", "avg_zero", "max", "min", "last", "current", "first", "range", "rangeOf", "median", "multiply", "diff", "count", "stddev"}
+
+func CheckValidConsolidationFunc(functionName string) error {
+	if _, ok := ConsolidationToFunc[functionName]; ok {
+		return nil
+	} else {
+		// Check if this is a p50 - p99.9 consolidation
+		if match, _ := regexp.MatchString("p([0-9]*[.])?[0-9]+", functionName); match {
+			return nil
+		}
+	}
+	return ErrInvalidConsolidationFunc.WithMessage("invalid consolidation " + functionName)
+}
 
 // AvgValue returns average of list of values
 func AvgValue(f64s []float64) float64 {
@@ -222,12 +239,25 @@ func SummarizeValues(f string, values []float64, XFilesFactor float32) float64 {
 	case "stddev":
 		rv = math.Sqrt(VarianceValue(values))
 		total = notNans(values)
+	case "first":
+		if len(values) > 0 {
+			rv = values[0]
+		} else {
+			rv = math.NaN()
+		}
+		total = notNans(values)
 	default:
-		f = strings.Split(f, "p")[1]
-		percent, err := strconv.ParseFloat(f, 64)
-		if err == nil {
-			total = notNans(values)
-			rv = Percentile(values, percent, true)
+		// This processes function percentile functions such as p50 or p99.9.
+		// If a function name is passed in that does not match that format,
+		// it should be ignored
+		fn := strings.Split(f, "p")
+		if len(fn) > 1 {
+			f = fn[1]
+			percent, err := strconv.ParseFloat(f, 64)
+			if err == nil {
+				total = notNans(values)
+				rv = Percentile(values, percent, true)
+			}
 		}
 	}
 

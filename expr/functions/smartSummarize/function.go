@@ -54,6 +54,9 @@ func (f *smartSummarize) Do(ctx context.Context, e parser.Expr, from, until int6
 	if err != nil {
 		return nil, err
 	}
+	if err := consolidations.CheckValidConsolidationFunc(summarizeFunction); err != nil {
+		return nil, err
+	}
 
 	alignToInterval, err := e.GetStringNamedOrPosArgDefault("alignTo", 3, "")
 	if err != nil {
