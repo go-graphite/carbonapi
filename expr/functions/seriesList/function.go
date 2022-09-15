@@ -2,7 +2,6 @@ package seriesList
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"sort"
 	"strconv"
@@ -151,11 +150,10 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 			}
 		}
 		if pairFound {
-			if numerator.StepTime != denominator.StepTime || len(numerator.Values) != len(denominator.Values) {
-				return nil, fmt.Errorf("series %s must have the same length as %s", numerator.Name, denominator.Name)
-			}
+			numerator, denominator = helper.ConsolidateSeriesByStep(numerator, denominator)
 		}
-		r := *numerator
+
+		r := numerator.CopyLink()
 		var denomName string
 		if pairFound {
 			denomName = denominator.Name
@@ -188,7 +186,7 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 				r.Values[i] = compute(v, denomValue)
 			}
 		}
-		results = append(results, &r)
+		results = append(results, r)
 	}
 	return results, nil
 }
