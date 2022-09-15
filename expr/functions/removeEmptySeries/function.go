@@ -37,6 +37,9 @@ func (f *removeEmptySeries) Do(ctx context.Context, e parser.Expr, from, until i
 	if err != nil {
 		return nil, err
 	}
+	if len(args) == 0 {
+		return []*types.MetricData{}, nil
+	}
 
 	if len(e.Args()) == 2 {
 		xFilesFactor, err = e.GetFloatArgDefault(1, float64(args[0].XFilesFactor)) // If set by setXFilesFactor, all series in a list will have the same value

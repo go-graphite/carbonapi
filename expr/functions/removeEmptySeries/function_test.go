@@ -137,6 +137,16 @@ func TestFunction(t *testing.T) {
 				types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 23, 12, 8, -2.3}, 1, now32),
 			},
 		},
+		{
+			"removeEmptySeries(metric*,0.5)", // Verify that passing in empty series with an xFilesFactor does not result in an error
+			nil,
+			[]*types.MetricData{},
+		},
+		{
+			"removeZeroSeries(metric*,0.5)", // Verify that passing in empty series with an xFilesFactor does not result in an error
+			nil,
+			[]*types.MetricData{},
+		},
 	}
 
 	for _, tt := range tests {
