@@ -74,3 +74,29 @@ func TestFallbackSeries(t *testing.T) {
 	}
 
 }
+
+func TestErrorMissingTimeSeriesFunction(t *testing.T) {
+	now32 := int64(time.Now().Unix())
+
+	tests := []th.EvalTestItemWithError{
+		{
+			"fallbackSeries(metric*)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric*", 0, 1}: {
+					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+					types.MakeMetricData("metricB", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					types.MakeMetricData("metricC", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+				},
+			},
+			nil,
+			parser.ErrMissingTimeseries,
+		},
+	}
+
+	for _, testCase := range tests {
+		testName := testCase.Target
+		t.Run(testName, func(t *testing.T) {
+			th.TestEvalExprWithError(t, &testCase)
+		})
+	}
+}

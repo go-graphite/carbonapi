@@ -45,6 +45,8 @@ func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 
 	var numerators []*types.MetricData
 	var denominator *types.MetricData
+	var results []*types.MetricData
+
 	if e.ArgsLen() == 2 {
 		useMetricNames = true
 		numerators = firstArg
@@ -78,17 +80,6 @@ func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 		return nil, errors.New("must be called with 2 series or a wildcard that matches exactly 2 series")
 	}
 
-	alignedSeries := helper.AlignSeries(append(numerators, denominator))
-	numerators = alignedSeries[:len(numerators)]
-	denominator = alignedSeries[len(numerators)]
-
-	for _, numerator := range numerators {
-		if numerator.StepTime != denominator.StepTime {
-			return nil, fmt.Errorf("series %s must have the same length as %s", numerator.Name, denominator.Name)
-		}
-	}
-
-	results := make([]*types.MetricData, 0, len(numerators))
 	for _, numerator := range numerators {
 		var name string
 		if useMetricNames {
@@ -96,11 +87,13 @@ func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 		} else {
 			name = "divideSeries(" + e.RawArgs() + ")"
 		}
+
+		numerator, denominator = helper.ConsolidateSeriesByStep(numerator, denominator)
+
 		r := numerator.CopyTag(name, numerator.Tags)
 		r.Values = make([]float64, len(numerator.Values))
 
 		for i, v := range numerator.Values {
-
 			// math.IsNaN(v) || math.IsNaN(denominator.Values[i]) covered by nature of math.NaN
 			if denominator.Values[i] == 0 {
 				r.Values[i] = math.NaN()

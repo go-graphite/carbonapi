@@ -2,7 +2,6 @@ package scale
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -47,14 +46,14 @@ func (f *scale) Do(ctx context.Context, e parser.Expr, from, until int64, values
 
 	results := make([]*types.MetricData, len(arg))
 	for j, a := range arg {
-		r := *a
+		r := a.CopyLink()
 		if timestamp == 0 {
 			r.Name = "scale(" + a.Name + "," + scaleStr + ")"
 		} else {
-			r.Name = fmt.Sprintf("scale(%s,%g,%d)", a.Name, scale, timestamp)
 			r.Name = "scale(" + a.Name + "," + scaleStr + "," + e.Arg(2).StringValue() + ")"
 		}
 		r.Values = make([]float64, len(a.Values))
+		r.Tags["scale"] = scaleStr
 
 		currentTimestamp := a.StartTime
 		for i, v := range a.Values {
@@ -65,7 +64,8 @@ func (f *scale) Do(ctx context.Context, e parser.Expr, from, until int64, values
 
 			currentTimestamp += a.StepTime
 		}
-		results[j] = &r
+
+		results[j] = r
 	}
 	return results, nil
 }

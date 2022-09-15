@@ -35,7 +35,7 @@ func (f *mapSeries) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		return nil, err
 	}
 
-	nodesOrTags, err := e.GetNodeOrTagArgs(1)
+	nodesOrTags, err := e.GetNodeOrTagArgs(1, false)
 	if err != nil {
 		return nil, err
 	}

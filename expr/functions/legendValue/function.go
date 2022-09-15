@@ -2,6 +2,7 @@ package legendValue
 
 import (
 	"context"
+	"math"
 	"strconv"
 	"strings"
 
@@ -37,20 +38,23 @@ func (f *legendValue) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		return nil, err
 	}
 
-	methods := make([]string, e.ArgsLen()-1)
+	var system string
+	var methods []string
 	for i := 1; i < e.ArgsLen(); i++ {
 		method, err := e.GetStringArg(i)
 		if err != nil {
 			return nil, err
 		}
-
-		methods[i-1] = method
+		if method == "si" || method == "binary" {
+			system = method
+		} else {
+			methods = append(methods, method)
+		}
 	}
 
 	results := make([]*types.MetricData, len(arg))
-
 	for i, a := range arg {
-		r := *a
+		r := a.CopyLink()
 		var nameBuf strings.Builder
 		nameBuf.Grow(len(r.Name) + len(methods)*5)
 		nameBuf.WriteString(r.Name)
@@ -59,12 +63,27 @@ func (f *legendValue) Do(ctx context.Context, e parser.Expr, from, until int64, 
 			nameBuf.WriteString(" (")
 			nameBuf.WriteString(method)
 			nameBuf.WriteString(": ")
-			nameBuf.WriteString(strconv.FormatFloat(summary, 'g', -1, 64))
+			if system == "" {
+				nameBuf.WriteString(strconv.FormatFloat(summary, 'g', -1, 64))
+			} else {
+				v, prefix := helper.FormatUnits(summary, system)
+				if prefix != "" {
+					prefix += " "
+				}
+
+				if math.Abs(v) < 0.1 {
+					nameBuf.WriteString(strconv.FormatFloat(v, 'g', 9, 64))
+				} else {
+					nameBuf.WriteString(strconv.FormatFloat(v, 'f', 2, 64))
+				}
+
+				nameBuf.WriteString(prefix)
+			}
 			nameBuf.WriteString(")")
 		}
 		r.Name = nameBuf.String()
 
-		results[i] = &r
+		results[i] = r
 	}
 	return results, nil
 }

@@ -37,14 +37,15 @@ func (f *squareRoot) Do(ctx context.Context, e parser.Expr, from, until int64, v
 	var results []*types.MetricData
 
 	for _, a := range arg {
-		r := *a
+		r := a.CopyLink()
 		r.Name = "squareRoot(" + a.Name + ")"
 		r.Values = make([]float64, len(a.Values))
+		r.Tags["squareRoot"] = "1"
 
 		for i, v := range a.Values {
 			r.Values[i] = math.Sqrt(v)
 		}
-		results = append(results, &r)
+		results = append(results, r)
 	}
 	return results, nil
 }

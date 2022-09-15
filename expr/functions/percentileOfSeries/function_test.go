@@ -30,6 +30,13 @@ func TestPercentileOfSeries(t *testing.T) {
 
 	tests := []th.EvalTestItem{
 		{
+			`percentileOfSeries(metric1.empty,4)`,
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1.empty", 0, 1}: {},
+			},
+			[]*types.MetricData{},
+		},
+		{
 			`percentileOfSeries(metric1,4)`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, math.NaN()}, 1, now32)},
@@ -79,14 +86,14 @@ func TestPercentileOfSeries(t *testing.T) {
 			map[parser.MetricRequest][]*types.MetricData{
 				{"seriesByTag('tag2=value*', 'name=metric')", 0, 1}: {
 					types.MakeMetricData("metric;tag1=value1;tag2=value21;tag3=value3", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
-					types.MakeMetricData("metric;tag2=value22", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0}, 1, now32),
-					types.MakeMetricData("metric;tag1=value1;tag2=value23", []float64{0, 0, 0, 100500, 100501, 1005002}, 1, now32),
-					types.MakeMetricData("metric;tag1=value1;tag2=value24", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0}, 1, now32),
-					types.MakeMetricData("metric;tag1=value1;tag2=value25", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0}, 1, now32),
+					types.MakeMetricData("metric;tag2=value21", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0}, 1, now32),
+					types.MakeMetricData("metric;tag1=value1;tag2=value21", []float64{0, 0, 0, 100500, 100501, 1005002}, 1, now32),
+					types.MakeMetricData("metric;tag1=value1;tag2=value21", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0}, 1, now32),
+					types.MakeMetricData("metric;tag1=value1;tag2=value21", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0}, 1, now32),
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData(`percentileOfSeries(seriesByTag('tag2=value*', 'name=metric'),95,false)`, []float64{0, 0, 0, 100500, 100501, 1005002}, 1, now32).
-				SetTags(map[string]string{"name": "metric", "tag1": "value1", "tag2": "value21", "tag3": "value3"})},
+				SetTags(map[string]string{"name": "metric", "tag2": "value21"})},
 		},
 	}
 

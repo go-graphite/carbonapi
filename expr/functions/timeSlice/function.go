@@ -56,9 +56,11 @@ func (f *timeSlice) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	results := make([]*types.MetricData, len(arg))
 
 	for n, a := range arg {
-		r := *a
+		r := a.CopyLink()
 		r.Name = "timeSlice(" + a.Name + "," + startStr + "," + endStr + ")"
 		r.Values = make([]float64, len(a.Values))
+		r.Tags["timeSliceStart"] = startStr
+		r.Tags["timeSliceEnd"] = endStr
 
 		current := from
 		for i, v := range a.Values {
@@ -69,7 +71,8 @@ func (f *timeSlice) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			}
 			current += a.StepTime
 		}
-		results[n] = &r
+
+		results[n] = r
 	}
 
 	return results, nil

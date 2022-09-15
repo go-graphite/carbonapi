@@ -60,6 +60,13 @@ func TestAliasByNode(t *testing.T) {
 			[]*types.MetricData{types.MakeMetricData("2", []float64{8, 2, 4}, 1, now32)},
 		},
 		{
+			Target: "aliasByNode(aliasSub(a.b.c.d.e, '(.*)', '0.1.2.@.4'), 2)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "a.b.c.d.e", From: 0, Until: 1}: {types.MakeMetricData("a.b.c.d.e", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			},
+			Want: []*types.MetricData{types.MakeMetricData("2", []float64{1, 2, 3, 4, 5}, 1, now32)},
+		},
+		{
 			Target: "aliasByNode(aliasSub(transformNull(metric1.foo.bar.ba*, 0), 'baz', 'word'), 2, 3)",
 			M: map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "metric1.foo.bar.ba*", From: 0, Until: 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
@@ -157,8 +164,8 @@ func TestAliasByNode(t *testing.T) {
 			M: map[parser.MetricRequest][]*types.MetricData{
 				{"seriesByTag('tag2=value*', 'name=metric')", 0, 1}: {
 					types.MakeMetricData("metric;tag1=value1;tag2=value21", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32),
-					types.MakeMetricData("metric;tag2=value22;tag3=value3", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32),
-					types.MakeMetricData("metric;tag2=value23;tag3=value3", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
+					types.MakeMetricData("metric;tag2=value21;tag3=value3", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32),
+					types.MakeMetricData("metric;tag2=value21;tag3=value3", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
 				},
 				{"metric", 0, 1}: {types.MakeMetricData("metric", []float64{2, math.NaN(), 3, math.NaN(), 5, 11}, 1, now32)},
 			},
