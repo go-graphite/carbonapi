@@ -240,7 +240,7 @@ func (e *expr) GetIntervalNamedOrPosArgDefault(k string, n, defaultSign int, v i
 	var val string
 	var err error
 	if a := e.getNamedArg(k); a != nil {
-		val, err = e.doGetStringArg()
+		val, err = a.doGetStringArg()
 		if err != nil {
 			return 0, ErrBadType
 		}
