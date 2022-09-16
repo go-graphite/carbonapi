@@ -301,6 +301,7 @@ reverse: default value mismatch: got (empty), should be false |
 | timeShift(seriesList, timeShift, resetEnd=True, alignDST=False) | no |
 | timeSlice(seriesList, startSliceAt, endSliceAt='now') | no |
 | timeStack(seriesList, timeShiftUnit='1d', timeShiftStart=0, timeShiftEnd=7) | no |
+| toUpperCase(seriesList, *pos) | no |
 | transformNull(seriesList, default=0, referenceSeries=None) | no |
 | unique(*seriesLists) | no |
 | useSeriesAbove(seriesList, value, search, replace) | no |
