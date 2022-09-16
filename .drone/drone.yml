@@ -1,0 +1,79 @@
+---
+depends_on: null
+image_pull_secrets:
+- dockerconfigjson
+kind: pipeline
+name: test
+steps:
+- commands:
+  - make test
+  depends_on: []
+  entrypoint: null
+  environment: {}
+  image: us.gcr.io/kubernetes-dev/carbonapi/test-runner:latest
+  name: run tests
+  settings: {}
+trigger:
+  branch:
+  - main
+  event:
+    include:
+    - pull_request
+    - push
+type: docker
+---
+depends_on: null
+kind: pipeline
+name: coverageLintReport
+steps:
+- commands:
+  - scripts/build-drone-utilities.sh
+  - go test -coverprofile=coverage.out ./...
+  - .drone/coverage > coverage_report.out
+  - scripts/generate-lint-report.sh
+  - cat coverage_report.out > report.out
+  - echo "" >> report.out
+  - cat lint.out >> report.out
+  - .drone/ghcomment -id "Go coverage report:" -bodyfile report.out
+  depends_on: []
+  entrypoint: null
+  environment:
+    GRAFANABOT_PAT:
+      from_secret: gh_token
+  image: golangci/golangci-lint:v1.45
+  name: coverage + lint
+  settings: {}
+trigger:
+  event:
+    include:
+    - pull_request
+type: docker
+---
+get:
+  name: .dockerconfigjson
+  path: secret/data/common/gcr
+kind: secret
+name: dockerconfigjson
+---
+get:
+  name: pat
+  path: infra/data/ci/github/grafanabot
+kind: secret
+name: gh_token
+---
+get:
+  name: service-account
+  path: infra/data/ci/gcr-admin
+kind: secret
+name: gcr_admin
+---
+get:
+  name: token
+  path: infra/data/ci/argo-workflows/trigger-service-account
+kind: secret
+name: argo_token
+---
+kind: signature
+hmac: 786972e7020e02e75b297bf8f7a67669cf11bd5bf02f61ac62ec63d0fca2a6c1
+
+...
