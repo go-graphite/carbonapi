@@ -65,6 +65,10 @@ func (f *exponentialMovingAverage) Do(ctx context.Context, e parser.Expr, from, 
 	var results []*types.MetricData
 	windowSize := n
 
+	if windowSize < 1 {
+		return nil, fmt.Errorf("invalid window size %d", windowSize)
+	}
+
 	start := from
 
 	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], start, until, values)
@@ -83,20 +87,21 @@ func (f *exponentialMovingAverage) Do(ctx context.Context, e parser.Expr, from, 
 
 		var vals []float64
 
-		if windowSize < 1 && windowSize > len(a.Values) {
-			return nil, fmt.Errorf("invalid window size %d", windowSize)
-		}
+		if windowSize > len(a.Values) {
+			mean := consolidations.AggMean(a.Values)
+			vals = append(vals, helper.SafeRound(mean, 6))
+		} else {
+			ema := consolidations.AggMean(a.Values[:windowSize])
 
-		ema := consolidations.AggMean(a.Values[:windowSize])
-
-		vals = append(vals, helper.SafeRound(ema, 6))
-		for _, v := range a.Values[windowSize:] {
-			if math.IsNaN(v) {
-				vals = append(vals, math.NaN())
-				continue
-			}
-			ema = constant*v + (1-constant)*ema
 			vals = append(vals, helper.SafeRound(ema, 6))
+			for _, v := range a.Values[windowSize:] {
+				if math.IsNaN(v) {
+					vals = append(vals, math.NaN())
+					continue
+				}
+				ema = constant*v + (1-constant)*ema
+				vals = append(vals, helper.SafeRound(ema, 6))
+			}
 		}
 
 		r.Tags[e.Target()] = fmt.Sprintf("%d", windowSize)
