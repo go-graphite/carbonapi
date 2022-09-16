@@ -28,6 +28,12 @@ func TestConstantLine(t *testing.T) {
 			[]*types.MetricData{types.MakeMetricData("42.42",
 				[]float64{42.42, 42.42}, 1, 0)},
 		},
+		{
+			"constantLine('42.42')", // Verify string input can be parsed into int or float
+			map[parser.MetricRequest][]*types.MetricData{},
+			[]*types.MetricData{types.MakeMetricData("42.42",
+				[]float64{42.42, 42.42}, 1, 0)},
+		},
 	}
 
 	for _, tt := range tests {
