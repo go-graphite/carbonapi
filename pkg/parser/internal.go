@@ -10,7 +10,7 @@ import (
 func (e *expr) doGetIntArg() (int, error) {
 	if e.etype != EtConst {
 		if e.etype == EtString {
-			f, err := strconv.ParseInt(e.valStr, 0, 64)
+			f, err := strconv.ParseInt(e.valStr, 0, 32)
 			return int(f), err
 		}
 		return 0, ErrBadType
