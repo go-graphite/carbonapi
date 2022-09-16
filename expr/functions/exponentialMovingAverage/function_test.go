@@ -33,6 +33,17 @@ func TestExponentialMovingAverage(t *testing.T) {
 				types.MakeMetricData("exponentialMovingAverage(metric1,3)", []float64{4, 6, 9, 11.5, 13.75, 15.875, 17.9375}, 1, 0),
 			},
 		},
+		{
+			// if the window is larger than the length of the values, the result should just be the average.
+			// this matches graphiteweb's behavior
+			"exponentialMovingAverage(metric1,100)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, startTime)},
+			},
+			[]*types.MetricData{
+				types.MakeMetricData("exponentialMovingAverage(metric1,100)", []float64{2}, 1, 0),
+			},
+		},
 	}
 
 	for _, tt := range tests {
