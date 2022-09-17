@@ -149,7 +149,7 @@ limit: default value mismatch: got "INF", should be "Infinity" |
 | removeAbovePercentile | n: type mismatch: got integer, should be float |
 | removeAboveValue | n: type mismatch: got integer, should be float |
 | removeBelowPercentile | n: type mismatch: got integer, should be float |
-| removeBelowValue | n: type mismatch: got integer, should be float |
+| removeBelowValue | n: type mismatch: got integer, sho/usr/bin/nvidia-dockeruld be float |
 | round | precision: default value mismatch: got (empty), should be 0 |
 | scaleToSeconds | seconds: type mismatch: got integer, should be float |
 | smartSummarize | func: different amount of parameters, `[current rangeOf]` are missing
@@ -301,6 +301,7 @@ reverse: default value mismatch: got (empty), should be false |
 | timeShift(seriesList, timeShift, resetEnd=True, alignDST=False) | no |
 | timeSlice(seriesList, startSliceAt, endSliceAt='now') | no |
 | timeStack(seriesList, timeShiftUnit='1d', timeShiftStart=0, timeShiftEnd=7) | no |
+| toLowerCase(seruesList)       | no |
 | toUpperCase(seriesList, *pos) | no |
 | transformNull(seriesList, default=0, referenceSeries=None) | no |
 | unique(*seriesLists) | no |
