@@ -23,7 +23,7 @@ func GetOrder() interfaces.Order {
 func New(configFile string) []interfaces.FunctionMetadata {
 	res := make([]interfaces.FunctionMetadata, 0)
 	f := &seriesList{}
-	functions := []string{"divideSeriesLists", "diffSeriesLists", "multiplySeriesLists", "powSeriesLists"}
+	functions := []string{"divideSeriesLists", "diffSeriesLists", "multiplySeriesLists", "powSeriesLists", "sumSeriesLists"}
 	for _, n := range functions {
 		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
 	}
@@ -31,6 +31,10 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	if e.ArgsLen() < 2 {
+		return nil, parser.ErrMissingArgument
+	}
+
 	useConstant := false
 	useDenom := false
 
@@ -85,6 +89,8 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 		compute = func(l, r float64) float64 { return l - r }
 	case "powSeriesLists":
 		compute = math.Pow
+	case "sumSeriesLists":
+		compute = func(l, r float64) float64 { return l + r }
 	}
 
 	if useConstant {
@@ -292,6 +298,34 @@ func (f *seriesList) Description() map[string]types.FunctionDescription {
 				},
 				{
 					Name:     "factorSeriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "default",
+					Required: false,
+					Type:     types.Float,
+				},
+			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
+		},
+		"sumSeriesLists": {
+			Description: "Iterates over a two lists and subtracts series lists 2 through n from series 1 list1[0] to list2[0], list1[1] to list2[1] and so on. \n The lists will need to be the same length\nCarbonAPI-specific extension allows to specify default value as 3rd optional argument in case series doesn't exist or value is missing Example:\n\n.. code-block:: none\n\n  &target=sumSeriesLists(mining.{carbon,graphite,diamond}.extracted,mining.{carbon,graphite,diamond}.shipped)\n\n",
+			Function:    "sumSeriesLists(seriesListFirstPos, seriesListSecondPos)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions.custom",
+			Name:        "sumSeriesLists",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesListFirstPos",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "seriesListSecondPos",
 					Required: true,
 					Type:     types.SeriesList,
 				},
