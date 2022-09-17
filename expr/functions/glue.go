@@ -24,7 +24,6 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/cactiStyle"
 	"github.com/go-graphite/carbonapi/expr/functions/cairo"
 	"github.com/go-graphite/carbonapi/expr/functions/changed"
-	"github.com/go-graphite/carbonapi/expr/functions/config"
 	"github.com/go-graphite/carbonapi/expr/functions/consolidateBy"
 	"github.com/go-graphite/carbonapi/expr/functions/constantLine"
 	"github.com/go-graphite/carbonapi/expr/functions/cumulative"
@@ -151,7 +150,6 @@ func New(configs map[string]string) {
 		{name: "cactiStyle", filename: "cactiStyle", order: cactiStyle.GetOrder(), f: cactiStyle.New},
 		{name: "cairo", filename: "cairo", order: cairo.GetOrder(), f: cairo.New},
 		{name: "changed", filename: "changed", order: changed.GetOrder(), f: changed.New},
-		{name: "config", filename: "config", order: config.GetOrder(), f: config.New},
 		{name: "consolidateBy", filename: "consolidateBy", order: consolidateBy.GetOrder(), f: consolidateBy.New},
 		{name: "constantLine", filename: "constantLine", order: constantLine.GetOrder(), f: constantLine.New},
 		{name: "cumulative", filename: "cumulative", order: cumulative.GetOrder(), f: cumulative.New},
