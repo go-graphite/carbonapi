@@ -110,6 +110,8 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/timeShiftByMetric"
 	"github.com/go-graphite/carbonapi/expr/functions/timeSlice"
 	"github.com/go-graphite/carbonapi/expr/functions/timeStack"
+	"github.com/go-graphite/carbonapi/expr/functions/toLowerCase"
+	"github.com/go-graphite/carbonapi/expr/functions/toUpperCase"
 	"github.com/go-graphite/carbonapi/expr/functions/transformNull"
 	"github.com/go-graphite/carbonapi/expr/functions/tukey"
 	"github.com/go-graphite/carbonapi/expr/functions/unique"
@@ -234,6 +236,8 @@ func New(configs map[string]string) {
 		{name: "timeShiftByMetric", filename: "timeShiftByMetric", order: timeShiftByMetric.GetOrder(), f: timeShiftByMetric.New},
 		{name: "timeSlice", filename: "timeSlice", order: timeSlice.GetOrder(), f: timeSlice.New},
 		{name: "timeStack", filename: "timeStack", order: timeStack.GetOrder(), f: timeStack.New},
+		{name: "toLowerCase", filename: "toLowerCase", order: toLowerCase.GetOrder(), f: toLowerCase.New},
+		{name: "toUpperCase", filename: "toUpperCase", order: toUpperCase.GetOrder(), f: toUpperCase.New},
 		{name: "transformNull", filename: "transformNull", order: transformNull.GetOrder(), f: transformNull.New},
 		{name: "tukey", filename: "tukey", order: tukey.GetOrder(), f: tukey.New},
 		{name: "unique", filename: "unique", order: unique.GetOrder(), f: unique.New},

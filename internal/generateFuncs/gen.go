@@ -41,6 +41,9 @@ import (
 	"strings"
 `)
 	for _, m := range funcs {
+		if m == "config" {
+			continue
+		}
 		fmt.Fprintf(writer, "	\"github.com/go-graphite/carbonapi/expr/functions/%s\"\n", m)
 	}
 	fmt.Fprintf(writer, `	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -57,6 +60,9 @@ type initFunc struct {
 func New(configs map[string]string) {
 	funcs := []initFunc{`)
 	for _, m := range funcs {
+		if m == "config" {
+			continue
+		}
 		fmt.Fprintf(writer, `
 		{name: "%s", filename: "%s", order: %s.GetOrder(), f: %s.New},`, m, m, m, m)
 
