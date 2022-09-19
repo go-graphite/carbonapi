@@ -163,6 +163,7 @@ reverse: default value mismatch: got (empty), should be false |
 | timeSlice | endSliceAt: type mismatch: got interval, should be date |
 
 ## Supported functions
+## Supported functions
 | Function      | Carbonapi-only                                            |
 | :-------------|:--------------------------------------------------------- |
 | absolute(seriesList) | no |
@@ -293,6 +294,7 @@ reverse: default value mismatch: got (empty), should be false |
 | substr(seriesList, start=0, stop=0) | no |
 | sum(*seriesLists) | no |
 | sumSeries(*seriesLists) | no |
+| sumSeriesLists(seriesListFirstPos, seriesListSecondPos) | no |
 | sumSeriesWithWildcards(seriesList, *position) | no |
 | summarize(seriesList, intervalString, func='sum', alignToFrom=False) | no |
 | threshold(value, label=None, color=None) | no |
@@ -301,7 +303,7 @@ reverse: default value mismatch: got (empty), should be false |
 | timeShift(seriesList, timeShift, resetEnd=True, alignDST=False) | no |
 | timeSlice(seriesList, startSliceAt, endSliceAt='now') | no |
 | timeStack(seriesList, timeShiftUnit='1d', timeShiftStart=0, timeShiftEnd=7) | no |
-| toLowerCase(seruesList)       | no |
+| toLowerCase(seriesList)       | no |
 | toUpperCase(seriesList, *pos) | no |
 | transformNull(seriesList, default=0, referenceSeries=None) | no |
 | unique(*seriesLists) | no |

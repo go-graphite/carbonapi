@@ -35,6 +35,15 @@ func TestFunction(t *testing.T) {
 			[]*types.MetricData{types.MakeMetricData("diffSeries(metric1,metric2)",
 				[]float64{-1, math.NaN(), math.NaN(), math.NaN(), 4, 6}, 1, now32)},
 		},
+		{
+			"sumSeriesLists(metric1,metric2)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
+				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData("sumSeries(metric1,metric2)",
+				[]float64{3, math.NaN(), math.NaN(), math.NaN(), 4, 18}, 1, now32)},
+		},
 	}
 
 	for _, tt := range tests {
@@ -107,6 +116,20 @@ func TestSeriesListMultiReturn(t *testing.T) {
 			"diffSeriesListSameGroups",
 			map[string][]*types.MetricData{
 				"diffSeries(metric1,metric1)": {types.MakeMetricData("diffSeries(metric1,metric1)", []float64{0, 0, 0, 0, 0}, 1, now32)},
+			},
+		},
+		{
+			"sumSeriesLists(metric[12],metric[12])",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric[12]", 0, 1}: {
+					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric2", []float64{2, 4, 6, 8, 10}, 1, now32),
+				},
+			},
+			"sumSeriesListSameGroups",
+			map[string][]*types.MetricData{
+				"sumSeries(metric1,metric1)": {types.MakeMetricData("sumSeries(metric1,metric1)", []float64{2, 4, 6, 8, 10}, 1, now32)},
+				"sumSeries(metric2,metric2)": {types.MakeMetricData("sumSeries(metric2,metric2)", []float64{4, 8, 12, 16, 20}, 1, now32)},
 			},
 		},
 	}
