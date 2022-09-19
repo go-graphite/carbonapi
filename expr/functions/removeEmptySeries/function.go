@@ -2,8 +2,8 @@ package removeEmptySeries
 
 import (
 	"context"
-	"fmt"
 	"math"
+	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -48,6 +48,8 @@ func (f *removeEmptySeries) Do(ctx context.Context, e parser.Expr, from, until i
 		}
 	}
 
+	xFilesFactorStr := strconv.FormatFloat(xFilesFactor, 'f', -1, 64)
+
 	results := make([]*types.MetricData, 0, len(args))
 	for _, arg := range args {
 		nonNull := 0
@@ -66,7 +68,7 @@ func (f *removeEmptySeries) Do(ctx context.Context, e parser.Expr, from, until i
 
 		if nonNull != 0 && helper.XFilesFactor(nonNull, len(arg.Values), xFilesFactor) {
 			r := arg.CopyLink()
-			r.Tags[e.Target()] = fmt.Sprintf("%f", xFilesFactor)
+			r.Tags[e.Target()] = xFilesFactorStr
 			results = append(results, r)
 		}
 	}

@@ -264,8 +264,6 @@ func TestMultiReturnEvalExpr(t *testing.T, tt *MultiReturnEvalTestItem) {
 		}
 
 		for k, v := range wants[0].Tags {
-			// FIXME: we are skipping Tags comparison until we fix the tests https://github.com/grafana/carbonapi/issues/65
-			break
 			if aTag, ok := actual.Tags[k]; ok {
 				if aTag != v {
 					t.Errorf("metric %+v with name '%s' tag['%s'] value '%s' not equal '%s'", actual, actual.Name, k, aTag, v)
@@ -276,8 +274,6 @@ func TestMultiReturnEvalExpr(t *testing.T, tt *MultiReturnEvalTestItem) {
 		}
 
 		for k := range actual.Tags {
-			// FIXME: we are skipping Tags comparison until we fix the tests https://github.com/grafana/carbonapi/issues/65
-			break
 			if _, ok := wants[0].Tags[k]; !ok {
 				t.Errorf("metric %+v with name %v contain unwanted '%s' tag", actual, actual.Name, k)
 			}
@@ -379,7 +375,7 @@ func (r *EvalTestItemWithRange) TestItem() *EvalTestItem {
 	}
 }
 
-func TestEvalExprModifiedOrigin(t *testing.T, tt *EvalTestItem, from, until int64, strictOrder bool) error {
+func TestEvalExprModifiedOrigin(t *testing.T, tt *EvalTestItem, from, until int64, strictOrder, compareTags bool) error {
 	evaluator := metadata.GetEvaluator()
 	testName := tt.Target
 	exp, _, err := parser.ParseExpr(tt.Target)
@@ -401,25 +397,23 @@ func TestEvalExprModifiedOrigin(t *testing.T, tt *EvalTestItem, from, until int6
 			return nil
 		}
 		actual := g[i]
-		if _, ok := actual.Tags["name"]; !ok {
-			t.Errorf("metric[%d] %+v with name %v doesn't contain 'name' tag", i, actual, actual.Name)
-		}
-		for k, v := range want.Tags {
-			// FIXME: we are skipping Tags comparison until we fix the tests https://github.com/grafana/carbonapi/issues/65
-			break
-			if aTag, ok := actual.Tags[k]; ok {
-				if aTag != v {
-					t.Errorf("metric[%d] %+v with name '%s' tag['%s'] value '%s' not equal '%s'", i, actual, actual.Name, k, aTag, v)
-				}
-			} else {
-				t.Errorf("metric[%d] %+v with name %v doesn't contain '%s' tag", i, actual, actual.Name, k)
+		if compareTags {
+			if _, ok := actual.Tags["name"]; !ok {
+				t.Errorf("metric[%d] %+v with name %v doesn't contain 'name' tag", i, actual, actual.Name)
 			}
-		}
-		for k := range actual.Tags {
-			// FIXME: we are skipping Tags comparison until we fix the tests https://github.com/grafana/carbonapi/issues/65
-			break
-			if _, ok := want.Tags[k]; !ok {
-				t.Errorf("metric[%d] %+v with name %v contain unwanted '%s' tag", i, actual, actual.Name, k)
+			for k, v := range want.Tags {
+				if aTag, ok := actual.Tags[k]; ok {
+					if aTag != v {
+						t.Errorf("metric[%d] %+v with name '%s' tag['%s'] value '%s' not equal '%s'", i, actual, actual.Name, k, aTag, v)
+					}
+				} else {
+					t.Errorf("metric[%d] %+v with name %v doesn't contain '%s' tag", i, actual, actual.Name, k)
+				}
+			}
+			for k := range actual.Tags {
+				if _, ok := want.Tags[k]; !ok {
+					t.Errorf("metric[%d] %+v with name %v contain unwanted '%s' tag", i, actual, actual.Name, k)
+				}
 			}
 		}
 		if actual.StepTime == 0 {
@@ -445,8 +439,12 @@ func TestEvalExprModifiedOrigin(t *testing.T, tt *EvalTestItem, from, until int6
 }
 
 func TestEvalExpr(t *testing.T, tt *EvalTestItem) {
+	TestEvalExprWithOptions(t, tt, true)
+}
+
+func TestEvalExprWithOptions(t *testing.T, tt *EvalTestItem, compareTags bool) {
 	originalMetrics := DeepClone(tt.M)
-	err := TestEvalExprModifiedOrigin(t, tt, 0, 1, false)
+	err := TestEvalExprModifiedOrigin(t, tt, 0, 1, false, compareTags)
 	if err != nil {
 		t.Errorf("unexpected error while evaluating %s: got `%+v`", tt.Target, err)
 		return
@@ -455,7 +453,7 @@ func TestEvalExpr(t *testing.T, tt *EvalTestItem) {
 }
 
 func TestEvalExprResult(t *testing.T, tt *EvalTestItem) {
-	err := TestEvalExprModifiedOrigin(t, tt, 0, 1, false)
+	err := TestEvalExprModifiedOrigin(t, tt, 0, 1, false, true)
 	if err != nil {
 		t.Errorf("unexpected error while evaluating %s: got `%+v`", tt.Target, err)
 		return
@@ -466,7 +464,7 @@ func TestEvalExprResult(t *testing.T, tt *EvalTestItem) {
 func TestEvalExprWithRange(t *testing.T, tt *EvalTestItemWithRange) {
 	originalMetrics := DeepClone(tt.M)
 	tt2 := tt.TestItem()
-	err := TestEvalExprModifiedOrigin(t, tt2, tt.From, tt.Until, false)
+	err := TestEvalExprModifiedOrigin(t, tt2, tt.From, tt.Until, false, true)
 	if err != nil {
 		t.Errorf("unexpected error while evaluating %s: got `%+v`", tt.Target, err)
 		return
@@ -481,7 +479,7 @@ func TestEvalExprWithError(t *testing.T, tt *EvalTestItemWithError) {
 		M:      tt.M,
 		Want:   tt.Want,
 	}
-	err := TestEvalExprModifiedOrigin(t, tt2, 0, 1, false)
+	err := TestEvalExprModifiedOrigin(t, tt2, 0, 1, false, true)
 	if !merry.Is(err, tt.Error) {
 		t.Errorf("unexpected error while evaluating %s: got `%+v`, expected `%+v`", tt.Target, err, tt.Error)
 		return
@@ -491,7 +489,7 @@ func TestEvalExprWithError(t *testing.T, tt *EvalTestItemWithError) {
 
 func TestEvalExprOrdered(t *testing.T, tt *EvalTestItem) {
 	originalMetrics := DeepClone(tt.M)
-	err := TestEvalExprModifiedOrigin(t, tt, 0, 1, true)
+	err := TestEvalExprModifiedOrigin(t, tt, 0, 1, true, true)
 	if err != nil {
 		t.Errorf("unexpected error while evaluating %s: got `%+v`", tt.Target, err)
 		return

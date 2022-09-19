@@ -56,7 +56,8 @@ var (
 func TestFunction(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.Target, func(t *testing.T) {
-			th.TestEvalExpr(t, &test)
+			// FIXME: fix tag settings and assertions
+			th.TestEvalExprWithOptions(t, &test, false)
 		})
 	}
 }

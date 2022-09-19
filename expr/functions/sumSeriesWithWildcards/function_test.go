@@ -38,8 +38,8 @@ func TestFunctionSumSeriesWithWildcards(t *testing.T) {
 			},
 			"sumSeriesWithWildcards",
 			map[string][]*types.MetricData{
-				"sumSeriesWithWildcards(metric1.baz)": {types.MakeMetricData("sumSeriesWithWildcards(metric1.baz)", []float64{12, 14, 16, 18, 20}, 1, now32)},
-				"sumSeriesWithWildcards(metric1.qux)": {types.MakeMetricData("sumSeriesWithWildcards(metric1.qux)", []float64{13, 15, 17, 19, 21}, 1, now32)},
+				"sumSeriesWithWildcards(metric1.baz)": {types.MakeMetricData("sumSeriesWithWildcards(metric1.baz)", []float64{12, 14, 16, 18, 20}, 1, now32).SetTag("aggregatedBy", "sum")},
+				"sumSeriesWithWildcards(metric1.qux)": {types.MakeMetricData("sumSeriesWithWildcards(metric1.qux)", []float64{13, 15, 17, 19, 21}, 1, now32).SetTag("aggregatedBy", "sum")},
 			},
 		},
 	}

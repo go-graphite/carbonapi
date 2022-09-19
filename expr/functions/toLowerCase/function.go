@@ -2,8 +2,9 @@ package toLowerCase
 
 import (
 	"context"
-	"github.com/go-graphite/carbonapi/expr/helper"
 	"strings"
+
+	"github.com/go-graphite/carbonapi/expr/helper"
 
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -60,6 +61,7 @@ func (f *toLowerCase) Do(ctx context.Context, e parser.Expr, from, until int64, 
 				r.Name = r.Name[:i] + lowered + r.Name[i+1:]
 			}
 		}
+		r.Tags["name"] = r.Name
 
 		results = append(results, r)
 	}

@@ -48,7 +48,7 @@ func TestAverageSeries(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("avgSeries(metric[123])",
-				[]float64{2, math.NaN(), 3, 4, 5, 5.5}, 1, now32)},
+				[]float64{2, math.NaN(), 3, 4, 5, 5.5}, 1, now32).SetTag("aggregatedBy", "avg")},
 		},
 		{
 			`aggregate(metric[123], "avg_zero")`,
@@ -60,7 +60,7 @@ func TestAverageSeries(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("avg_zeroSeries(metric[123])",
-				[]float64{2, math.NaN(), 3, 3, 5, 4}, 1, now32)},
+				[]float64{2, math.NaN(), 3, 3, 5, 4}, 1, now32).SetTag("aggregatedBy", "avg_zero")},
 		},
 		{
 			`aggregate(metric[123], "count")`,
@@ -72,7 +72,7 @@ func TestAverageSeries(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("countSeries(metric[123])",
-				[]float64{3, math.NaN(), 3, 2, 3, 2}, 1, now32)},
+				[]float64{3, math.NaN(), 3, 2, 3, 2}, 1, now32).SetTag("aggregatedBy", "count")},
 		},
 		{
 			`aggregate(metric[123], "diff")`,
@@ -84,7 +84,7 @@ func TestAverageSeries(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("diffSeries(metric[123])",
-				[]float64{-4, math.NaN(), -5, -2, -7, -1}, 1, now32)},
+				[]float64{-4, math.NaN(), -5, -2, -7, -1}, 1, now32).SetTag("aggregatedBy", "diff")},
 		},
 		{
 			`aggregate(metric[123], "last")`,
@@ -96,7 +96,7 @@ func TestAverageSeries(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("lastSeries(metric[123])",
-				[]float64{3, math.NaN(), 4, 5, 6, 6}, 1, now32)},
+				[]float64{3, math.NaN(), 4, 5, 6, 6}, 1, now32).SetTag("aggregatedBy", "last")},
 		},
 		{
 			`aggregate(metric[123], "current")`,
@@ -108,7 +108,7 @@ func TestAverageSeries(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("currentSeries(metric[123])",
-				[]float64{3, math.NaN(), 4, 5, 6, 6}, 1, now32)},
+				[]float64{3, math.NaN(), 4, 5, 6, 6}, 1, now32).SetTag("aggregatedBy", "current")},
 		},
 		{
 			`aggregate(metric[123], "max")`,
@@ -120,7 +120,7 @@ func TestAverageSeries(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("maxSeries(metric[123])",
-				[]float64{3, math.NaN(), 4, 5, 6, 6}, 1, now32)},
+				[]float64{3, math.NaN(), 4, 5, 6, 6}, 1, now32).SetTag("aggregatedBy", "max")},
 		},
 		{
 			`aggregate(metric[123], "min")`,
@@ -132,7 +132,7 @@ func TestAverageSeries(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("minSeries(metric[123])",
-				[]float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32)},
+				[]float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32).SetTag("aggregatedBy", "min")},
 		},
 		{
 			`aggregate(metric[123], "median")`,
@@ -144,7 +144,7 @@ func TestAverageSeries(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("medianSeries(metric[123])",
-				[]float64{2, math.NaN(), 3, 4, 5, 5.5}, 1, now32)},
+				[]float64{2, math.NaN(), 3, 4, 5, 5.5}, 1, now32).SetTag("aggregatedBy", "median")},
 		},
 		{
 			`aggregate(metric[123], "multiply")`,
@@ -156,7 +156,7 @@ func TestAverageSeries(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("multiplySeries(metric[123])",
-				[]float64{6, math.NaN(), 24, math.NaN(), 120, math.NaN()}, 1, now32)},
+				[]float64{6, math.NaN(), 24, math.NaN(), 120, math.NaN()}, 1, now32).SetTag("aggregatedBy", "multiply")},
 		},
 		{
 			`aggregate(metric[123], "range")`,
@@ -168,7 +168,7 @@ func TestAverageSeries(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("rangeSeries(metric[123])",
-				[]float64{2, math.NaN(), 2, 2, 2, 1}, 1, now32)},
+				[]float64{2, math.NaN(), 2, 2, 2, 1}, 1, now32).SetTag("aggregatedBy", "range")},
 		},
 		{
 			`aggregate(metric[123], "rangeOf")`,
@@ -180,7 +180,7 @@ func TestAverageSeries(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("rangeOfSeries(metric[123])",
-				[]float64{2, math.NaN(), 2, 2, 2, 1}, 1, now32)},
+				[]float64{2, math.NaN(), 2, 2, 2, 1}, 1, now32).SetTag("aggregatedBy", "rangeOf")},
 		},
 		{
 			`aggregate(metric[123], "sum")`,
@@ -192,7 +192,7 @@ func TestAverageSeries(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("sumSeries(metric[123])",
-				[]float64{6, math.NaN(), 9, 8, 15, 11}, 1, now32)},
+				[]float64{6, math.NaN(), 9, 8, 15, 11}, 1, now32).SetTag("aggregatedBy", "sum")},
 		},
 		{
 			`aggregate(metric[123], "total")`,
@@ -204,7 +204,7 @@ func TestAverageSeries(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("totalSeries(metric[123])",
-				[]float64{6, math.NaN(), 9, 8, 15, 11}, 1, now32)},
+				[]float64{6, math.NaN(), 9, 8, 15, 11}, 1, now32).SetTag("aggregatedBy", "total")},
 		},
 		{
 			`aggregate(metric[123], "avg", 0.7)`, // Test with xFilesFactor
@@ -216,7 +216,7 @@ func TestAverageSeries(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("avgSeries(metric[123])",
-				[]float64{2, math.NaN(), 3, math.NaN(), 5, math.NaN()}, 1, now32)},
+				[]float64{2, math.NaN(), 3, math.NaN(), 5, math.NaN()}, 1, now32).SetTag("aggregatedBy", "avg")},
 		},
 		{
 			`aggregate(metric[123], "sum", 0.5)`, // Test with xFilesFactor
@@ -228,7 +228,7 @@ func TestAverageSeries(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("sumSeries(metric[123])",
-				[]float64{6, math.NaN(), 9, 8, 15, math.NaN()}, 1, now32)},
+				[]float64{6, math.NaN(), 9, 8, 15, math.NaN()}, 1, now32).SetTag("aggregatedBy", "sum")},
 		},
 		{
 			`aggregate(metric[123], "max", 0.3)`,
@@ -240,7 +240,7 @@ func TestAverageSeries(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("maxSeries(metric[123])",
-				[]float64{3, math.NaN(), 4, 5, 6, 6}, 1, now32)},
+				[]float64{3, math.NaN(), 4, 5, 6, 6}, 1, now32).SetTag("aggregatedBy", "max")},
 		},
 		{
 			`stddevSeries(metric[123])`,
@@ -252,7 +252,7 @@ func TestAverageSeries(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("stddevSeries(metric[123])",
-				[]float64{0.816496580927726, math.NaN(), 0.816496580927726, 1, 0.816496580927726, 0.5}, 1, now32)},
+				[]float64{0.816496580927726, math.NaN(), 0.816496580927726, 1, 0.816496580927726, 0.5}, 1, now32).SetTag("aggregatedBy", "stddev")},
 		},
 		{
 			`stddevSeries(metric1,metric2,metric3)`,
@@ -262,7 +262,7 @@ func TestAverageSeries(t *testing.T) {
 				{"metric3", 0, 1}: {types.MakeMetricData("metric3", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("stddevSeries(metric1,metric2,metric3)",
-				[]float64{0.4714045207910317, 0.9428090415820634, 1.4142135623730951, 1.8856180831641267, 2.357022603955158}, 1, now32)},
+				[]float64{0.4714045207910317, 0.9428090415820634, 1.4142135623730951, 1.8856180831641267, 2.357022603955158}, 1, now32).SetTag("aggregatedBy", "stddev")},
 		},
 		{
 			`aggregate(metric[123], "stddev")`,
@@ -274,7 +274,7 @@ func TestAverageSeries(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("stddevSeries(metric[123])",
-				[]float64{0.816496580927726, math.NaN(), 0.816496580927726, 1, 0.816496580927726, 0.5}, 1, now32)},
+				[]float64{0.816496580927726, math.NaN(), 0.816496580927726, 1, 0.816496580927726, 0.5}, 1, now32).SetTag("aggregatedBy", "stddev")},
 		},
 		{
 			`aggregate(metric[123], "stddev")`,
@@ -286,7 +286,7 @@ func TestAverageSeries(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("stddevSeries(metric[123])",
-				[]float64{0.4714045207910317, 0.9428090415820634, 1.4142135623730951, 1.8856180831641267, 2.357022603955158}, 1, now32)},
+				[]float64{0.4714045207910317, 0.9428090415820634, 1.4142135623730951, 1.8856180831641267, 2.357022603955158}, 1, now32).SetTag("aggregatedBy", "stddev")},
 		},
 
 		// sum
@@ -297,7 +297,7 @@ func TestAverageSeries(t *testing.T) {
 				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{0, 1, -2, 3, -4, -5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("sumSeries(metric1,metric2)",
-				[]float64{0, 0, 0, 0, 0, 0}, 1, now32)},
+				[]float64{0, 0, 0, 0, 0, 0}, 1, now32).SetTag("aggregatedBy", "sum")},
 		},
 		{
 			"sum(metric1,metric2,metric3)",
@@ -306,7 +306,7 @@ func TestAverageSeries(t *testing.T) {
 				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, 3, math.NaN(), 5, 6, math.NaN()}, 1, now32)},
 				{"metric3", 0, 1}: {types.MakeMetricData("metric3", []float64{3, 4, 5, 6, math.NaN(), math.NaN()}, 1, now32)},
 			},
-			[]*types.MetricData{types.MakeMetricData("sumSeries(metric1,metric2,metric3)", []float64{6, 9, 8, 15, 11, math.NaN()}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("sumSeries(metric1,metric2,metric3)", []float64{6, 9, 8, 15, 11, math.NaN()}, 1, now32).SetTag("aggregatedBy", "sum")},
 		},
 		{
 			"sum(metric1,metric2,metric3,metric4)",
@@ -315,7 +315,7 @@ func TestAverageSeries(t *testing.T) {
 				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, 3, math.NaN(), 5, 6, math.NaN()}, 1, now32)},
 				{"metric3", 0, 1}: {types.MakeMetricData("metric3", []float64{3, 4, 5, 6, math.NaN(), math.NaN()}, 1, now32)},
 			},
-			[]*types.MetricData{types.MakeMetricData("sumSeries(metric1,metric2,metric3)", []float64{6, 9, 8, 15, 11, math.NaN()}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("sumSeries(metric1,metric2,metric3)", []float64{6, 9, 8, 15, 11, math.NaN()}, 1, now32).SetTag("aggregatedBy", "sum")},
 		},
 
 		// minMax
@@ -327,7 +327,7 @@ func TestAverageSeries(t *testing.T) {
 				{"metric3", 0, 1}: {types.MakeMetricData("metric3", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("maxSeries(metric1,metric2,metric3)",
-				[]float64{3, math.NaN(), 4, 5, 6, 6}, 1, now32)},
+				[]float64{3, math.NaN(), 4, 5, 6, 6}, 1, now32).SetTag("aggregatedBy", "max")},
 		},
 		{
 			"minSeries(metric1,metric2,metric3)",
@@ -337,7 +337,7 @@ func TestAverageSeries(t *testing.T) {
 				{"metric3", 0, 1}: {types.MakeMetricData("metric3", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("minSeries(metric1,metric2,metric3)",
-				[]float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32)},
+				[]float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32).SetTag("aggregatedBy", "min")},
 		},
 
 		// avg
@@ -349,28 +349,29 @@ func TestAverageSeries(t *testing.T) {
 				{"metric3", 0, 1}: {types.MakeMetricData("metric3", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("averageSeries(metric1,metric2,metric3)",
-				[]float64{2, math.NaN(), 3, 4, 5, 5.5}, 1, now32)},
+				[]float64{2, math.NaN(), 3, 4, 5, 5.5}, 1, now32).SetTag("aggregatedBy", "average")},
 		},
 
-		// sumSeies with tags, tags from first metric
+		// sumSeies with tags, common tags to all metrics
 		{
 			"sum(seriesByTag('tag2=value*', 'name=metric'))",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"seriesByTag('tag2=value*', 'name=metric')", 0, 1}: {
+					// No tags in common
 					types.MakeMetricData("metric;tag1=value1;tag2=value21", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric;tag2=value22;tag3=value3", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32),
-					types.MakeMetricData("metric;tag2=value23;tag3=value3", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
+					types.MakeMetricData("metric;tag2=value23;tag3=value3;tag4=val4", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
 				},
 				{"metric", 0, 1}: {types.MakeMetricData("metric", []float64{2, math.NaN(), 3, math.NaN(), 5, 11}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("sumSeries(seriesByTag('tag2=value*', 'name=metric'))",
-				// []float64{6, math.NaN(), 9, 8, 15, 11}, 1, now32).SetTags(map[string]string{"name": "metric", "tag2": "value____"})},
-				[]float64{6, math.NaN(), 9, 8, 15, 11}, 1, now32).SetTags(map[string]string{"name": "metric", "tag1": "value1", "tag2": "value21"})},
+				[]float64{6, math.NaN(), 9, 8, 15, 11}, 1, now32).SetTags(map[string]string{"aggregatedBy": "sum", "name": "metric"})},
 		},
 		{
 			"sum(seriesByTag('tag2!=value2*', 'name=metric.name'))",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"seriesByTag('tag2!=value2*', 'name=metric.name')", 0, 1}: {
+					// One tag in common
 					types.MakeMetricData("metric.name;tag2=value22;tag3=value3", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32),
 					types.MakeMetricData("metric.name;tag2=value23;tag3=value3", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
 				},
@@ -378,20 +379,21 @@ func TestAverageSeries(t *testing.T) {
 			},
 			[]*types.MetricData{types.MakeMetricData("sumSeries(seriesByTag('tag2!=value2*', 'name=metric.name'))",
 				// []float64{5, math.NaN(), 7, 5, 11, 6}, 1, now32).SetTags(map[string]string{"name": "metric.name"})},
-				[]float64{5, math.NaN(), 7, 5, 11, 6}, 1, now32).SetTags(map[string]string{"name": "metric.name", "tag2": "value22", "tag3": "value3"})},
+				[]float64{5, math.NaN(), 7, 5, 11, 6}, 1, now32).SetTags(map[string]string{"aggregatedBy": "sum", "name": "metric.name", "tag3": "value3"})},
 		},
 		{
 			"sum(seriesByTag('tag2=value21'))",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"seriesByTag('tag2=value21')", 0, 1}: {
+					// All tags in common
 					types.MakeMetricData("metric;tag2=value22;tag3=value3", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32),
-					types.MakeMetricData("metric;tag2=value23;tag3=value3", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
+					types.MakeMetricData("metric;tag2=value22;tag3=value3", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
 				},
 				{"metric", 0, 1}: {types.MakeMetricData("metric", []float64{2, math.NaN(), 3, math.NaN(), 5, 11}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("sumSeries(seriesByTag('tag2=value21'))",
 				// []float64{5, math.NaN(), 7, 5, 11, 6}, 1, now32).SetTags(map[string]string{"name": "sumSeries", "tag2": "value21"})},
-				[]float64{5, math.NaN(), 7, 5, 11, 6}, 1, now32).SetTags(map[string]string{"name": "metric", "tag2": "value22", "tag3": "value3"})},
+				[]float64{5, math.NaN(), 7, 5, 11, 6}, 1, now32).SetTags(map[string]string{"aggregatedBy": "sum", "name": "metric", "tag2": "value22", "tag3": "value3"})},
 		},
 	}
 
@@ -422,7 +424,7 @@ func TestAverageSeriesExtractSeriesByTag(t *testing.T) {
 				{"metric", 0, 1}: {types.MakeMetricData("metric", []float64{2, math.NaN(), 3, math.NaN(), 5, 11}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("sumSeries(seriesByTag('tag2=value*', 'name=metric'))",
-				[]float64{6, math.NaN(), 9, 8, 15, 11}, 1, now32).SetTags(map[string]string{"name": "metric", "tag2": "value*"})},
+				[]float64{6, math.NaN(), 9, 8, 15, 11}, 1, now32).SetTags(map[string]string{"name": "metric", "tag2": "value*", "aggregatedBy": "sum"})},
 		},
 		{
 			"sum(seriesByTag('tag2!=value2*', 'name=metric.name'))",
@@ -434,7 +436,7 @@ func TestAverageSeriesExtractSeriesByTag(t *testing.T) {
 				{"metric.name", 0, 1}: {types.MakeMetricData("metric.name", []float64{2, math.NaN(), 3, math.NaN(), 5, 11}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("sumSeries(seriesByTag('tag2!=value2*', 'name=metric.name'))",
-				[]float64{5, math.NaN(), 7, 5, 11, 6}, 1, now32).SetTags(map[string]string{"name": "metric.name"})},
+				[]float64{5, math.NaN(), 7, 5, 11, 6}, 1, now32).SetTags(map[string]string{"name": "metric.name", "aggregatedBy": "sum"})},
 		},
 		{
 			"sum(seriesByTag('tag2=value21'))",
@@ -446,7 +448,7 @@ func TestAverageSeriesExtractSeriesByTag(t *testing.T) {
 				{"metric", 0, 1}: {types.MakeMetricData("metric", []float64{2, math.NaN(), 3, math.NaN(), 5, 11}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("sumSeries(seriesByTag('tag2=value21'))",
-				[]float64{5, math.NaN(), 7, 5, 11, 6}, 1, now32).SetTags(map[string]string{"name": "sumSeries", "tag2": "value21"})},
+				[]float64{5, math.NaN(), 7, 5, 11, 6}, 1, now32).SetTags(map[string]string{"name": "sumSeries", "tag2": "value21", "aggregatedBy": "sum"})},
 		},
 	}
 
@@ -479,7 +481,7 @@ func TestAverageSeriesAlign(t *testing.T) {
 				{"metric2_1", 0, 1}: {types.MakeMetricData("metric2", []float64{1, 5}, 2, 1)},
 			},
 			Want: []*types.MetricData{types.MakeMetricData("sumSeries(metric1_2,metric2_1)",
-				[]float64{2, 9}, 2, 0)},
+				[]float64{2, 9}, 2, 0).SetTag("aggregatedBy", "sum")},
 		},
 		{
 			// First timeseries with broker StopTime
@@ -489,7 +491,7 @@ func TestAverageSeriesAlign(t *testing.T) {
 				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{1, 5, 7}, 1, 1)},
 			},
 			Want: []*types.MetricData{types.MakeMetricData("sumSeries(metric1,metric2)",
-				[]float64{2, 8, 12, 8}, 1, 1)},
+				[]float64{2, 8, 12, 8}, 1, 1).SetTag("aggregatedBy", "sum")},
 		},
 	}
 

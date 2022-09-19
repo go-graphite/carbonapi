@@ -72,6 +72,10 @@ func TestAliasSub(t *testing.T) {
 
 	for _, tt := range tests {
 		testName := tt.Target
+		for i := range tt.Want {
+			// aliasSub includes the name of the function in the 'name' tag
+			tt.Want[i].SetNameTag(tt.Want[i].Name)
+		}
 		t.Run(testName, func(t *testing.T) {
 			th.TestEvalExpr(t, &tt)
 		})

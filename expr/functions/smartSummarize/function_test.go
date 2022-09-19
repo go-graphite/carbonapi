@@ -117,8 +117,10 @@ func TestFunctionUseNameWithWildcards(t *testing.T) {
 			},
 			"smartSummarize",
 			map[string][]*types.MetricData{
-				"smartSummarize(metric1.foo,'1minute','last')": {types.MakeMetricData("smartSummarize(metric1.foo,'1minute','last')", []float64{59, 119, 179, 239}, 60, 0)},
-				"smartSummarize(metric1.bar,'1minute','last')": {types.MakeMetricData("smartSummarize(metric1.bar,'1minute','last')", []float64{59, 119, 179, 239}, 60, 0)},
+				"smartSummarize(metric1.foo,'1minute','last')": {types.MakeMetricData("smartSummarize(metric1.foo,'1minute','last')",
+					[]float64{59, 119, 179, 239}, 60, 0).SetTag("smartSummarize", "60").SetTag("smartSummarizeFunction", "last")},
+				"smartSummarize(metric1.bar,'1minute','last')": {types.MakeMetricData("smartSummarize(metric1.bar,'1minute','last')",
+					[]float64{59, 119, 179, 239}, 60, 0).SetTag("smartSummarize", "60").SetTag("smartSummarizeFunction", "last")},
 			},
 		},
 	}

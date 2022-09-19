@@ -172,8 +172,8 @@ func TestAsPercent(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{
-				types.MakeMetricData("asPercent(metric;tag=A1,metricB1)", []float64{25, 500, 125}, 1, now32),
-				types.MakeMetricData("asPercent(metric;tag=A2,metricB2)", []float64{25, 62.5, 1000}, 1, now32),
+				types.MakeMetricData("asPercent(metric;tag=A1,metricB1)", []float64{25, 500, 125}, 1, now32).SetTag("tag", "A1"),
+				types.MakeMetricData("asPercent(metric;tag=A2,metricB2)", []float64{25, 62.5, 1000}, 1, now32).SetTag("tag", "A2"),
 			},
 		},
 	}

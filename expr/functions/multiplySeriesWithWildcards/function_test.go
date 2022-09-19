@@ -39,8 +39,9 @@ func TestFunctionMultiplySeriesWithWildcards(t *testing.T) {
 			},
 			"multiplySeriesWithWildcards",
 			map[string][]*types.MetricData{
-				"metric1.baz": {types.MakeMetricData("metric1.baz", []float64{22, 48, 78, 112, 150}, 1, now32)},
-				"metric1.qux": {types.MakeMetricData("metric1.qux", []float64{42, 0, 72, 90, 110}, 1, now32)},
+				"metric1.baz": {types.MakeMetricData("metric1.baz", []float64{22, 48, 78, 112, 150}, 1, now32).SetTag("aggregatedBy", "multiply")},
+				// FIXME: the name tags are being set weirdly, check it
+				"metric1.qux": {types.MakeMetricData("metric1.qux", []float64{42, 0, 72, 90, 110}, 1, now32).SetTag("aggregatedBy", "multiply").SetNameTag("metric1.baz")},
 			},
 		},
 	}

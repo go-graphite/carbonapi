@@ -51,10 +51,7 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 	if !ok {
 		ok = e.ArgsLen() > 1
 	}
-	var defvStr string
-	if defv != 0 {
-		defvStr = strconv.FormatFloat(defv, 'g', -1, 64)
-	}
+	defvStr := strconv.FormatFloat(defv, 'g', -1, 64)
 
 	var valMap []bool
 	referenceSeriesExpr := e.GetNamedArg("referenceSeries")
@@ -120,7 +117,7 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 				StepTime:  step,
 				Values:    values,
 			},
-			Tags: map[string]string{"name": types.ExtractName(e.ToString())},
+			Tags: map[string]string{"name": e.ToString()},
 		})
 	}
 	return results, nil

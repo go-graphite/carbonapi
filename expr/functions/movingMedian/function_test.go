@@ -33,40 +33,44 @@ func TestMovingMedian(t *testing.T) {
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8}, 1, now32)},
 			},
-			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,4)", []float64{math.NaN(), math.NaN(), math.NaN(), 1, 1, 1.5, 2, 2, 3, 4, 5, 6}, 1, 0)}, // StartTime = from
+			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,4)", []float64{math.NaN(), math.NaN(), math.NaN(), 1, 1, 1.5, 2, 2, 3, 4, 5, 6}, 1, 0).SetTag("movingMedian", "4")}, // StartTime = from
 		},
 		{
 			"movingMedian(metric1,5)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, math.NaN()}, 1, now32)},
 			},
-			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,5)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), 1, 1, 2, 2, 2, 4, 4, 6, 6, 4, 2}, 1, 0)}, // StartTime = from
+			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,5)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), 1, 1, 2, 2, 2, 4, 4, 6, 6, 4, 2}, 1, 0).SetTag("movingMedian", "5")}, // StartTime = from
 		},
 		{
 			"movingMedian(metric1,\"1s\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", -1, 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, 0}, 1, now32)},
 			},
-			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,'1s')", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, 0}, 1, 0)}, // StartTime = from
+			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,'1s')", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, 0}, 1, 0).SetTag("movingMedian", "'1s'")}, // StartTime = from
 		},
 		{
 			"movingMedian(metric1,\"3s\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", -3, 1}: {types.MakeMetricData("metric1", []float64{0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2}, 1, now32)},
 			},
-			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,'3s')", []float64{0, 1, 1, 1, 1, 2, 2, 2, 4, 4, 6, 6, 6, 2}, 1, 0)}, // StartTime = from
+			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,'3s')", []float64{0, 1, 1, 1, 1, 2, 2, 2, 4, 4, 6, 6, 6, 2}, 1, 0).SetTag("movingMedian", "'3s'")}, // StartTime = from
 		},
 		{
 			"movingMedian(metric1,\"5s\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", -5, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3}, 10, now32)}, // step > windowSize
 			},
-			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,'5s')", []float64{math.NaN(), math.NaN(), math.NaN()}, 10, now32)}, // StartTime = from
+			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,'5s')", []float64{math.NaN(), math.NaN(), math.NaN()}, 10, now32).SetTag("movingMedian", "'5s'")}, // StartTime = from
 		},
 	}
 
 	for _, tt := range tests {
 		testName := tt.Target
+		for i := range tt.Want {
+			// moving* includes the name of the function in the 'name' tag
+			tt.Want[i].SetNameTag(tt.Want[i].Name)
+		}
 		t.Run(testName, func(t *testing.T) {
 			th.TestEvalExpr(t, &tt)
 		})
