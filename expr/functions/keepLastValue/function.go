@@ -2,14 +2,12 @@ package keepLastValue
 
 import (
 	"context"
-	"math"
-	"strconv"
-	"strings"
-
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
+	"math"
+	"strconv"
 )
 
 type keepLastValue struct {
@@ -38,27 +36,25 @@ func (f *keepLastValue) Do(ctx context.Context, e parser.Expr, from, until int64
 		return nil, err
 	}
 
-	var keep int
+	var keep float64
 	var keepStr string
 
-	if e.ArgsLen() == 2 && strings.ToLower(e.Arg(1).Target()) == "inf" {
-		keep = -1
-		keepStr = "inf"
+	keep, err = e.GetFloatNamedOrPosArgDefault("limit", 1, math.Inf(1))
+	if err != nil {
+		return nil, err
+	}
+
+	if !math.IsInf(keep, 1) {
+		keepStr = strconv.Itoa(int(keep))
 	} else {
-		keep, err = e.GetIntNamedOrPosArgDefault("limit", 1, -1)
-		if err != nil {
-			return nil, err
-		}
-		if keep != -1 {
-			keepStr = strconv.Itoa(keep)
-		}
+		keepStr = "inf"
 	}
 
 	var results []*types.MetricData
 
 	for _, a := range arg {
 		var name string
-		if keepStr == "" {
+		if e.ArgsLen() < 2 {
 			name = "keepLastValue(" + a.Name + ")"
 		} else {
 			name = "keepLastValue(" + a.Name + "," + keepStr + ")"
@@ -69,7 +65,7 @@ func (f *keepLastValue) Do(ctx context.Context, e parser.Expr, from, until int64
 		r.Values = make([]float64, len(a.Values))
 
 		prev := math.NaN()
-		missing := 0
+		missing := 0.0
 
 		for i, v := range a.Values {
 			if math.IsNaN(v) {
