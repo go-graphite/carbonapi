@@ -18,7 +18,6 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/aliasSub"
 	"github.com/go-graphite/carbonapi/expr/functions/asPercent"
 	"github.com/go-graphite/carbonapi/expr/functions/averageOutsidePercentile"
-	"github.com/go-graphite/carbonapi/expr/functions/averageSeriesWithWildcards"
 	"github.com/go-graphite/carbonapi/expr/functions/baselines"
 	"github.com/go-graphite/carbonapi/expr/functions/below"
 	"github.com/go-graphite/carbonapi/expr/functions/cactiStyle"
@@ -71,7 +70,6 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/mostDeviant"
 	"github.com/go-graphite/carbonapi/expr/functions/moving"
 	"github.com/go-graphite/carbonapi/expr/functions/movingMedian"
-	"github.com/go-graphite/carbonapi/expr/functions/multiplySeriesWithWildcards"
 	"github.com/go-graphite/carbonapi/expr/functions/nPercentile"
 	"github.com/go-graphite/carbonapi/expr/functions/nonNegativeDerivative"
 	"github.com/go-graphite/carbonapi/expr/functions/offset"
@@ -104,7 +102,6 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/squareRoot"
 	"github.com/go-graphite/carbonapi/expr/functions/stdev"
 	"github.com/go-graphite/carbonapi/expr/functions/substr"
-	"github.com/go-graphite/carbonapi/expr/functions/sumSeriesWithWildcards"
 	"github.com/go-graphite/carbonapi/expr/functions/summarize"
 	"github.com/go-graphite/carbonapi/expr/functions/timeFunction"
 	"github.com/go-graphite/carbonapi/expr/functions/timeShift"
@@ -145,7 +142,6 @@ func New(configs map[string]string) {
 		{name: "aliasSub", filename: "aliasSub", order: aliasSub.GetOrder(), f: aliasSub.New},
 		{name: "asPercent", filename: "asPercent", order: asPercent.GetOrder(), f: asPercent.New},
 		{name: "averageOutsidePercentile", filename: "averageOutsidePercentile", order: averageOutsidePercentile.GetOrder(), f: averageOutsidePercentile.New},
-		{name: "averageSeriesWithWildcards", filename: "averageSeriesWithWildcards", order: averageSeriesWithWildcards.GetOrder(), f: averageSeriesWithWildcards.New},
 		{name: "baselines", filename: "baselines", order: baselines.GetOrder(), f: baselines.New},
 		{name: "below", filename: "below", order: below.GetOrder(), f: below.New},
 		{name: "cactiStyle", filename: "cactiStyle", order: cactiStyle.GetOrder(), f: cactiStyle.New},
@@ -198,7 +194,6 @@ func New(configs map[string]string) {
 		{name: "mostDeviant", filename: "mostDeviant", order: mostDeviant.GetOrder(), f: mostDeviant.New},
 		{name: "moving", filename: "moving", order: moving.GetOrder(), f: moving.New},
 		{name: "movingMedian", filename: "movingMedian", order: movingMedian.GetOrder(), f: movingMedian.New},
-		{name: "multiplySeriesWithWildcards", filename: "multiplySeriesWithWildcards", order: multiplySeriesWithWildcards.GetOrder(), f: multiplySeriesWithWildcards.New},
 		{name: "nPercentile", filename: "nPercentile", order: nPercentile.GetOrder(), f: nPercentile.New},
 		{name: "nonNegativeDerivative", filename: "nonNegativeDerivative", order: nonNegativeDerivative.GetOrder(), f: nonNegativeDerivative.New},
 		{name: "offset", filename: "offset", order: offset.GetOrder(), f: offset.New},
@@ -231,7 +226,6 @@ func New(configs map[string]string) {
 		{name: "squareRoot", filename: "squareRoot", order: squareRoot.GetOrder(), f: squareRoot.New},
 		{name: "stdev", filename: "stdev", order: stdev.GetOrder(), f: stdev.New},
 		{name: "substr", filename: "substr", order: substr.GetOrder(), f: substr.New},
-		{name: "sumSeriesWithWildcards", filename: "sumSeriesWithWildcards", order: sumSeriesWithWildcards.GetOrder(), f: sumSeriesWithWildcards.New},
 		{name: "summarize", filename: "summarize", order: summarize.GetOrder(), f: summarize.New},
 		{name: "timeFunction", filename: "timeFunction", order: timeFunction.GetOrder(), f: timeFunction.New},
 		{name: "timeShift", filename: "timeShift", order: timeShift.GetOrder(), f: timeShift.New},

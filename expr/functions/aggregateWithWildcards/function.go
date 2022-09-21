@@ -23,16 +23,8 @@ func GetOrder() interfaces.Order {
 func New(configFile string) []interfaces.FunctionMetadata {
 	f := &aggregateWithWildcards{}
 	res := make([]interfaces.FunctionMetadata, 0)
-	for _, n := range []string{"aggregateWithWildcards"} {
+	for _, n := range []string{"multiplySeriesWithWildcards", "averageSeriesWithWildcards", "aggregateWithWildcards", "sumSeriesWithWildcards"} {
 		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
-	}
-
-	// Also register aliases for each and every summarizer
-	for _, n := range consolidations.AvailableSummarizers {
-		res = append(res,
-			interfaces.FunctionMetadata{Name: n, F: f},
-			interfaces.FunctionMetadata{Name: n + "Series", F: f},
-		)
 	}
 	return res
 }
@@ -43,12 +35,25 @@ func (f *aggregateWithWildcards) Do(ctx context.Context, e parser.Expr, from, un
 		return nil, err
 	}
 
-	callback, err := e.GetStringArg(1)
-	if err != nil {
-		return nil, err
+	var callback string
+	fieldsArgsIx := 1
+	switch e.Target() {
+	case "aggregateWithWildcards":
+		callback, err = e.GetStringArg(1)
+		if err != nil {
+			return nil, err
+		}
+		fieldsArgsIx = 2
+	case "sumSeriesWithWildcards":
+		callback = "sum"
+	case "averageSeriesWithWildcards":
+		callback = "average"
+	case "multiplySeriesWithWildcards":
+		callback = "multiply"
 	}
 
-	fields, err := e.GetIntArgs(2)
+	var fields []int
+	fields, err = e.GetIntArgs(fieldsArgsIx)
 	if err != nil {
 		return nil, err
 	}
@@ -57,10 +62,6 @@ func (f *aggregateWithWildcards) Do(ctx context.Context, e parser.Expr, from, un
 	if !ok {
 		return nil, fmt.Errorf("unsupported consolidation function %s", callback)
 	}
-	target := fmt.Sprintf("%sSeries", callback)
-	e.SetTarget(target)
-	e.SetRawArgs(e.Args()[0].Target())
-
 	groups := make(map[string][]*types.MetricData)
 	nodeList := []string{}
 
@@ -95,6 +96,7 @@ func (f *aggregateWithWildcards) Do(ctx context.Context, e parser.Expr, from, un
 			return nil, err
 		}
 		res[0].Name = node
+		res[0].Tags["aggregatedBy"] = callback
 
 		results = append(results, res...)
 	}
@@ -129,6 +131,75 @@ func (f *aggregateWithWildcards) Description() map[string]types.FunctionDescript
 					Required: true,
 				},
 			},
+		},
+		"averageSeriesWithWildcards": {
+			Description: "Call averageSeries after inserting wildcards at the given position(s).\n\nExample:\n\n.. code-block:: none\n\n  &target=averageSeriesWithWildcards(host.cpu-[0-7}.cpu-{user,system}.value, 1)\n\nThis would be the equivalent of\n\n.. code-block:: none\n\n  &target=averageSeries(host.*.cpu-user.value)&target=averageSeries(host.*.cpu-system.value)\n\nThis is an alias for :py:func:`aggregateWithWildcards <aggregateWithWildcards>` with aggregation ``average``.",
+			Function:    "averageSeriesWithWildcards(seriesList, *position)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions",
+			Name:        "averageSeriesWithWildcards",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Multiple: true,
+					Name:     "position",
+					Type:     types.Node,
+				},
+			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
+		},
+		"multiplySeriesWithWildcards": {
+			Description: "Call multiplySeries after inserting wildcards at the given position(s).\n\nExample:\n\n.. code-block:: none\n\n  &target=multiplySeriesWithWildcards(web.host-[0-7}.{avg-response,total-request}.value, 2)\n\nThis would be the equivalent of\n\n.. code-block:: none\n\n  &target=multiplySeries(web.host-0.{avg-response,total-request}.value)&target=multiplySeries(web.host-1.{avg-response,total-request}.value)...\n\nThis is an alias for :py:func:`aggregateWithWildcards <aggregateWithWildcards>` with aggregation ``multiply``.",
+			Function:    "multiplySeriesWithWildcards(seriesList, *position)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions",
+			Name:        "multiplySeriesWithWildcards",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Multiple: true,
+					Name:     "position",
+					Type:     types.Node,
+				},
+			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
+		},
+		"sumSeriesWithWildcards": {
+			Description: "Call sumSeries after inserting wildcards at the given position(s).\n\nExample:\n\n.. code-block:: none\n\n  &target=sumSeriesWithWildcards(host.cpu-[0-7}.cpu-{user,system}.value, 1)\n\nThis would be the equivalent of\n\n.. code-block:: none\n\n  &target=sumSeries(host.cpu-[0-7}.cpu-user.value)&target=sumSeries(host.cpu-[0-7}.cpu-system.value)\n\nThis is an alias for :py:func:`aggregateWithWildcards <aggregateWithWildcards>` with aggregation ``sum``.",
+			Function:    "sumSeriesWithWildcards(seriesList, *position)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions",
+			Name:        "sumSeriesWithWildcards",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Multiple: true,
+					Name:     "position",
+					Type:     types.Node,
+				},
+			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }
