@@ -364,7 +364,7 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			a.Name = "asPercent(" + a.Name + ")"
 		}
 		return arg, nil
-	} else if e.ArgsLen() == 2 && e.Arg(1).IsConst() {
+	} else if e.ArgsLen() == 2 && (e.Arg(1).IsConst() || e.Arg(1).IsString()) {
 		// asPercent(seriesList, N)
 
 		total, err := e.GetFloatArg(1)
