@@ -265,6 +265,13 @@ func TestParseExpr(t *testing.T) {
 			},
 		},
 		{
+			`foo.b[0-9]+.qux`,
+			&expr{
+				target: "foo.b[0-9]+.qux",
+				etype:  EtName,
+			},
+		},
+		{
 			`virt.v1.*.text-match:<foo.bar.qux>`,
 			&expr{
 				target: "virt.v1.*.text-match:<foo.bar.qux>",
