@@ -2,7 +2,9 @@ package parser
 
 import (
 	"fmt"
+	"math"
 	"strconv"
+	"strings"
 
 	"runtime/debug"
 )
@@ -32,6 +34,8 @@ func (e *expr) doGetFloatArg() (float64, error) {
 		if e.etype == EtString {
 			f, err := strconv.ParseFloat(e.valStr, 64)
 			return f, err
+		} else if e.etype == EtName && strings.ToLower(e.Target()) == "inf" {
+			return math.Inf(1), nil
 		}
 		return 0, ErrBadType
 	}
