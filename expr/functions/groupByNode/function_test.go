@@ -169,6 +169,20 @@ func TestGroupByNode(t *testing.T) {
 			},
 		},
 		{
+			Name:   "groupByNodes_no_nodes",
+			Target: `groupByNodes(metric1.foo.*.*,"sum")`,
+			M: map[parser.MetricRequest][]*types.MetricData{
+				mr: {
+					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar1.bla", []float64{1, 2, 3, 4, 5}, 1, now32),
+				},
+			},
+			// If no nodes are specified, all metrics are combined to the empty string
+			Results: map[string][]*types.MetricData{
+				"": {types.MakeMetricData("", []float64{2, 4, 6, 8, 10}, 1, now32)},
+			},
+		},
+		{
 			Target: "groupByNode(metric1.foo.*.*,2,\"sum\")",
 			M: map[parser.MetricRequest][]*types.MetricData{
 				mr: {
