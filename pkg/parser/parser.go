@@ -693,7 +693,7 @@ func IsNameChar(r byte) bool {
 		r == '<' || r == '>' ||
 		r == '&' || r == '#' ||
 		r == '/' || r == '%' ||
-		r == '@'
+		r == '@' || r == '+'
 }
 
 func IsDigit(r byte) bool {
