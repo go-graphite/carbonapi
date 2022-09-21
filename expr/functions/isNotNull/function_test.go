@@ -32,7 +32,7 @@ func TestFunction(t *testing.T) {
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), -1, math.NaN(), -3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("isNonNull(metric1)",
-				[]float64{0, 1, 0, 1, 1, 1}, 1, now32).SetTag("isNonNull", "1")},
+				[]float64{0, 1, 0, 1, 1, 1}, 1, now32).SetTag("isNonNull", "1").SetNameTag("isNonNull(metric1)")},
 		},
 		{
 			"isNonNull(metric1)",
@@ -43,18 +43,14 @@ func TestFunction(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{
-				types.MakeMetricData("isNonNull(metricFoo)", []float64{0, 1, 0, 1, 1, 1}, 1, now32).SetTag("isNonNull", "1"),
-				types.MakeMetricData("isNonNull(metricBaz)", []float64{1, 1, 0, 1, 1, 1}, 1, now32).SetTag("isNonNull", "1"),
+				types.MakeMetricData("isNonNull(metricFoo)", []float64{0, 1, 0, 1, 1, 1}, 1, now32).SetTag("isNonNull", "1").SetNameTag("isNonNull(metricFoo)"),
+				types.MakeMetricData("isNonNull(metricBaz)", []float64{1, 1, 0, 1, 1, 1}, 1, now32).SetTag("isNonNull", "1").SetNameTag("isNonNull(metricBaz)"),
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		testName := tt.Target
-		for i := range tt.Want {
-			// isNotNull includes the name of the function in the 'name' tag
-			tt.Want[i].SetNameTag(tt.Want[i].Name)
-		}
 		t.Run(testName, func(t *testing.T) {
 			th.TestEvalExpr(t, &tt)
 		})

@@ -32,7 +32,7 @@ func TestTransformNull(t *testing.T) {
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now)},
 			},
 			[]*types.MetricData{types.MakeMetricData("transformNull(metric1)",
-				[]float64{1, 0, 0, 3, 4, 12}, 1, now).SetTag("transformNull", "0")},
+				[]float64{1, 0, 0, 3, 4, 12}, 1, now).SetTag("transformNull", "0").SetNameTag("transformNull(metric1)")},
 		},
 		{
 			`transformNull(metric1, default=5)`,
@@ -40,7 +40,7 @@ func TestTransformNull(t *testing.T) {
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now)},
 			},
 			[]*types.MetricData{types.MakeMetricData("transformNull(metric1,5)",
-				[]float64{1, 5, 5, 3, 4, 12}, 1, now).SetTag("transformNull", "5")},
+				[]float64{1, 5, 5, 3, 4, 12}, 1, now).SetTag("transformNull", "5").SetNameTag("transformNull(metric1,5)")},
 		},
 		{
 			`transformNull(metric1, default=5, referenceSeries=metric2.*)`,
@@ -51,22 +51,18 @@ func TestTransformNull(t *testing.T) {
 					types.MakeMetricData("metric2.bar", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now)},
 			},
 			[]*types.MetricData{types.MakeMetricData("transformNull(metric1,5)",
-				[]float64{1, 5, math.NaN(), 5, 4, 12}, 1, now).SetTag("transformNull", "5")},
+				[]float64{1, 5, math.NaN(), 5, 4, 12}, 1, now).SetTag("transformNull", "5").SetNameTag("transformNull(metric1,5)")},
 		},
 		{
 			`transformNull(metric1, default=5, defaultOnAbsent=True)`,
 			map[parser.MetricRequest][]*types.MetricData{},
 			[]*types.MetricData{types.MakeMetricData("transformNull(metric1, default=5, defaultOnAbsent=True)",
-				[]float64{5, 5}, 1, 0)},
+				[]float64{5, 5}, 1, 0).SetNameTag(`transformNull(metric1, default=5, defaultOnAbsent=True)`)},
 		},
 	}
 
 	for _, tt := range tests {
 		testName := tt.Target
-		for i := range tt.Want {
-			// transformNull includes the name of the function in the 'name' tag
-			tt.Want[i].SetNameTag(tt.Want[i].Name)
-		}
 		t.Run(testName, func(t *testing.T) {
 			th.TestEvalExpr(t, &tt)
 		})
