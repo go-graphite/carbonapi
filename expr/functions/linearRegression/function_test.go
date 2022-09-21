@@ -4,7 +4,6 @@ import (
 	"context"
 	"math"
 	"testing"
-	"time"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/metadata"
@@ -24,20 +23,18 @@ func init() {
 }
 
 func TestLinearRegression(t *testing.T) {
-	now32 := int64(time.Now().Unix())
-
 	tests := []th.EvalTestItem{
 		{
 			"linearRegression(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
 					types.MakeMetricData("metric1",
-						[]float64{1, 2, math.NaN(), math.NaN(), 5, 6}, 1, now32),
+						[]float64{1, 2, math.NaN(), math.NaN(), 5, 6}, 1, 123),
 				},
 			},
 			[]*types.MetricData{
 				types.MakeMetricData("linearRegression(metric1)",
-					[]float64{1, 2, 3, 4, 5, 6}, 1, now32),
+					[]float64{1, 2, 3, 4, 5, 6}, 1, 123).SetTag("linearRegressions", "123, 129"),
 			},
 		},
 	}
@@ -45,8 +42,7 @@ func TestLinearRegression(t *testing.T) {
 	for _, tt := range tests {
 		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
-			// Skipping tags comparison because the 'linearRegression' is complicated to assert on
-			th.TestEvalExprWithOptions(t, &tt, false)
+			th.TestEvalExpr(t, &tt)
 		})
 	}
 
