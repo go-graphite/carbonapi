@@ -63,12 +63,12 @@ func (f *aggregateWithWildcards) Do(ctx context.Context, e parser.Expr, from, un
 		return nil, fmt.Errorf("unsupported consolidation function %s", callback)
 	}
 	groups := make(map[string][]*types.MetricData)
-	nodeList := []string{}
+	nodeList := make([]string, 0, 256)
 
 	for _, a := range args {
 		metric := types.ExtractNameTag(a.Name)
 		nodes := strings.Split(metric, ".")
-		var s []string
+		s := make([]string, 0, len(nodes))
 		// Yes, this is O(n^2), but len(nodes) < 10 and len(fields) < 3
 		// Iterating an int slice is faster than a map for n ~ 30
 		// http://www.antoine.im/posts/someone_is_wrong_on_the_internet
