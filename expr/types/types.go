@@ -21,6 +21,8 @@ var (
 	ErrWildcardNotAllowed = errors.New("found wildcard where series expected")
 	// ErrTooManyArguments is an eval error returned when too many arguments are provided.
 	ErrTooManyArguments = errors.New("too many arguments")
+	// ErrTooManyArguments is an eval error returned when too many arguments are provided.
+	ErrNeedMoreArguments = errors.New("need more arguments")
 )
 
 // MetricData contains necessary data to represent parsed metric (ready to be send out or drawn)
