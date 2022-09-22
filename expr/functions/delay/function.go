@@ -46,25 +46,25 @@ func (f *delay) Do(ctx context.Context, e parser.Expr, from, until int64, values
 	for i, series := range seriesList {
 		length := len(series.Values)
 
-		newValues := make([]float64, length)
-		var prevValues []float64
-
-		for i, value := range series.Values {
-			if len(prevValues) < steps {
-				newValues[i] = math.NaN()
-			} else {
-				newValue := prevValues[0]
-				prevValues = prevValues[1:]
-
-				newValues[i] = newValue
-			}
-
-			prevValues = append(prevValues, value)
-		}
-
 		result := series.CopyName("delay(" + series.Name + "," + stepsStr + ")")
-		result.Values = newValues
 		result.Tags["delay"] = stepsStr
+
+		var newValues []float64
+		if steps < 0 {
+			newValues = make([]float64, length)
+			copy(newValues, series.Values[-steps:])
+			for i := -steps; i < length; i++ {
+				newValues[i] = math.NaN()
+			}
+			result.Values = newValues
+		} else if steps != 0 {
+			newValues = make([]float64, length)
+			for i := 0; i < steps; i++ {
+				newValues[i] = math.NaN()
+			}
+			copy(newValues[steps:], series.Values[:length-steps])
+			result.Values = newValues
+		}
 
 		results[i] = result
 	}
