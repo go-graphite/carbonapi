@@ -160,6 +160,9 @@ func (f *aliasByPostgres) Do(ctx context.Context, e parser.Expr, from, until int
 	if err != nil {
 		return nil, err
 	}
+	if len(fields) == 0 {
+		return nil, parser.ErrMissingArgument
+	}
 
 	databaseName, err := e.GetStringArg(1)
 	if err != nil {
