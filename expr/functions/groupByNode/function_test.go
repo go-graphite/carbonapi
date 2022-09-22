@@ -179,7 +179,7 @@ func TestGroupByNode(t *testing.T) {
 			},
 			// If no nodes are specified, all metrics are combined to the empty string
 			Results: map[string][]*types.MetricData{
-				"": {types.MakeMetricData("", []float64{2, 4, 6, 8, 10}, 1, now32)},
+				"": {types.MakeMetricData("", []float64{2, 4, 6, 8, 10}, 1, now32).SetTag("aggregatedBy", "sum")},
 			},
 		},
 		{
