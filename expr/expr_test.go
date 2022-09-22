@@ -286,7 +286,7 @@ func TestEvalExpression(t *testing.T) {
 					types.MakeMetricData("metric1.foo.bar3.baz", []float64{2, 2, 2, 2, 2}, 1, now32),
 				},
 			},
-			[]*types.MetricData{types.MakeMetricData("metric1.baz", []float64{22, 48, 78, 112, 150}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("metric1.baz", []float64{22, 48, 78, 112, 150}, 1, now32).SetTag("aggregatedBy", "multiply").SetNameTag("metric1.foo.*.*")},
 		},
 	}
 
