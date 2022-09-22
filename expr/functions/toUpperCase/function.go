@@ -36,13 +36,9 @@ func (f *toUpperCase) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		return nil, err
 	}
 
-	var pos []int
-
-	if e.ArgsLen() >= 2 {
-		pos, err = e.GetIntArgs(1)
-		if err != nil {
-			return nil, err
-		}
+	pos, err := e.GetIntArgs(1)
+	if err != nil {
+		return nil, err
 	}
 
 	results := make([]*types.MetricData, 0, len(args)+1)
