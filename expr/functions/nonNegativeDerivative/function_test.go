@@ -54,6 +54,13 @@ func TestNonNegativeDerivative(t *testing.T) {
 			},
 			[]*types.MetricData{types.MakeMetricData("nonNegativeDerivative(metric1,minValue=1)", []float64{math.NaN(), 2, 1, 8, 0, math.NaN(), math.NaN(), 32, 36}, 1, now32).SetTag("nonNegativeDerivative", "1")},
 		},
+		{
+			"nonNegativeDerivative(metric1)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData("nonNegativeDerivative(metric1)", []float64{}, 1, now32).SetTag("nonNegativeDerivative", "1")},
+		},
 	}
 
 	for _, tt := range tests {
