@@ -32,7 +32,7 @@ func TestDelay(t *testing.T) {
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("delay(metric1,3)",
-				[]float64{math.NaN(), math.NaN(), math.NaN(), 1, 2, 3}, 1, now32)},
+				[]float64{math.NaN(), math.NaN(), math.NaN(), 1, 2, 3}, 1, now32).SetTag("delay", "3").SetNameTag("delay(metric1,3)")},
 		},
 	}
 

@@ -31,7 +31,8 @@ func TestFunction(t *testing.T) {
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{5, 1, math.NaN(), 0, 12, 125, 10.4, 1.1}, 60, now32)},
 			},
-			[]*types.MetricData{types.MakeMetricData("sigmoid(metric1)", []float64{0.9933071490757153, 0.7310585786300049, math.NaN(), 0.5, 0.9999938558253978, 1, 0.9999695684430994, 0.7502601055951177}, 60, now32)},
+			[]*types.MetricData{types.MakeMetricData("sigmoid(metric1)",
+				[]float64{0.9933071490757153, 0.7310585786300049, math.NaN(), 0.5, 0.9999938558253978, 1, 0.9999695684430994, 0.7502601055951177}, 60, now32).SetTag("sigmoid", "sigmoid")},
 		},
 	}
 

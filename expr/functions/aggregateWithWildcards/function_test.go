@@ -36,7 +36,7 @@ func TestAggregateWithWildcards(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("foo.bar.baz",
-				[]float64{2, math.NaN(), 3, 4, 5, 5.5}, 1, now32)},
+				[]float64{2, math.NaN(), 3, 4, 5, 5.5}, 1, now32).SetNameTag(`metric[123]`)},
 		},
 		{
 			`aggregateWithWildcards(metric[123],"diff",1)`,
@@ -48,8 +48,8 @@ func TestAggregateWithWildcards(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{
-				types.MakeMetricData("metric1.bar.baz", []float64{-1, math.NaN(), -1, 3, -1, -1}, 1, now32),
-				types.MakeMetricData("metric2.bar.baz", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
+				types.MakeMetricData("metric1.bar.baz", []float64{-1, math.NaN(), -1, 3, -1, -1}, 1, now32).SetNameTag(`metric[123]`),
+				types.MakeMetricData("metric2.bar.baz", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32).SetNameTag(`metric[123]`),
 			},
 		},
 		{
@@ -63,8 +63,8 @@ func TestAggregateWithWildcards(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{
-				types.MakeMetricData("metric1.foo.baz1", []float64{3, math.NaN(), 4, 5, 6, 5}, 1, now32),
-				types.MakeMetricData("metric1.foo.baz2", []float64{4, math.NaN(), 5, 6, 7, 6}, 1, now32),
+				types.MakeMetricData("metric1.foo.baz1", []float64{3, math.NaN(), 4, 5, 6, 5}, 1, now32).SetNameTag(`metric[1234]`),
+				types.MakeMetricData("metric1.foo.baz2", []float64{4, math.NaN(), 5, 6, 7, 6}, 1, now32).SetNameTag(`metric[1234]`),
 			},
 		},
 		{
@@ -78,8 +78,8 @@ func TestAggregateWithWildcards(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{
-				types.MakeMetricData("metric1.foo.bar", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32),
-				types.MakeMetricData("metric2.foo.bar", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
+				types.MakeMetricData("metric1.foo.bar", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32).SetNameTag(`metric[1234]`),
+				types.MakeMetricData("metric2.foo.bar", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32).SetNameTag(`metric[1234]`),
 			},
 		},
 		{
@@ -93,8 +93,8 @@ func TestAggregateWithWildcards(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{
-				types.MakeMetricData("foo.bar1", []float64{1.5, math.NaN(), 2.5, 3, 4.5, 5.5}, 1, now32),
-				types.MakeMetricData("foo.bar2", []float64{3.5, math.NaN(), 4.5, 5.5, 6.5, 8}, 1, now32),
+				types.MakeMetricData("foo.bar1", []float64{1.5, math.NaN(), 2.5, 3, 4.5, 5.5}, 1, now32).SetNameTag(`metric[1234]`),
+				types.MakeMetricData("foo.bar2", []float64{3.5, math.NaN(), 4.5, 5.5, 6.5, 8}, 1, now32).SetNameTag(`metric[1234]`),
 			},
 		},
 		{
@@ -108,8 +108,8 @@ func TestAggregateWithWildcards(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{
-				types.MakeMetricData("metric1.baz", []float64{2, math.NaN(), 6, math.NaN(), 20, 30}, 1, now32),
-				types.MakeMetricData("metric1.qux", []float64{12, math.NaN(), 20, 30, 42, math.NaN()}, 1, now32),
+				types.MakeMetricData("metric1.baz", []float64{2, math.NaN(), 6, math.NaN(), 20, 30}, 1, now32).SetNameTag(`metric[1234]`),
+				types.MakeMetricData("metric1.qux", []float64{12, math.NaN(), 20, 30, 42, math.NaN()}, 1, now32).SetNameTag(`metric[1234]`),
 			},
 		},
 		{
@@ -123,8 +123,8 @@ func TestAggregateWithWildcards(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{
-				types.MakeMetricData("foo.baz.1", []float64{2, math.NaN(), 2, 2, 2, 0}, 1, now32),
-				types.MakeMetricData("foo.baz", []float64{2, math.NaN(), 2, 0, 2, 3}, 1, now32),
+				types.MakeMetricData("foo.baz.1", []float64{2, math.NaN(), 2, 2, 2, 0}, 1, now32).SetNameTag(`metric[1234]`),
+				types.MakeMetricData("foo.baz", []float64{2, math.NaN(), 2, 0, 2, 3}, 1, now32).SetNameTag(`metric[1234]`),
 			},
 		},
 		{
@@ -138,8 +138,8 @@ func TestAggregateWithWildcards(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{
-				types.MakeMetricData("metric1.bar.qux", []float64{4, math.NaN(), 6, 8, 10, 6}, 1, now32),
-				types.MakeMetricData("metric1.bar.quux", []float64{6, math.NaN(), 8, 6, 12, 13}, 1, now32),
+				types.MakeMetricData("metric1.bar.qux", []float64{4, math.NaN(), 6, 8, 10, 6}, 1, now32).SetNameTag(`metric[1234]`),
+				types.MakeMetricData("metric1.bar.quux", []float64{6, math.NaN(), 8, 6, 12, 13}, 1, now32).SetNameTag(`metric[1234]`),
 			},
 		},
 		{
@@ -155,8 +155,8 @@ func TestAggregateWithWildcards(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{
-				types.MakeMetricData("baz1", []float64{1.632993161855452, math.NaN(), 1.632993161855452, 1.632993161855452, 1.632993161855452, 1.5}, 1, now32),
-				types.MakeMetricData("baz2", []float64{1.632993161855452, math.NaN(), 1.632993161855452, 1, 1.632993161855452, 2.0548046676563256}, 1, now32),
+				types.MakeMetricData("baz1", []float64{1.632993161855452, math.NaN(), 1.632993161855452, 1.632993161855452, 1.632993161855452, 1.5}, 1, now32).SetNameTag(`metric[123456]`),
+				types.MakeMetricData("baz2", []float64{1.632993161855452, math.NaN(), 1.632993161855452, 1, 1.632993161855452, 2.0548046676563256}, 1, now32).SetNameTag(`metric[123456]`),
 			},
 		},
 	}

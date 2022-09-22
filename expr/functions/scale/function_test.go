@@ -32,7 +32,7 @@ func TestFunction(t *testing.T) {
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, math.NaN(), 4, 5}, 1, now32)},
 			},
-			[]*types.MetricData{types.MakeMetricData("scale(metric1,2.5)", []float64{2.5, 5.0, math.NaN(), 10.0, 12.5}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("scale(metric1,2.5)", []float64{2.5, 5.0, math.NaN(), 10.0, 12.5}, 1, now32).SetTag("scale", "2.5")},
 		},
 		{
 			fmt.Sprintf("scale(x.y.z, -2.5, %d)", int(now32+14)),
@@ -56,7 +56,7 @@ func TestFunction(t *testing.T) {
 					[]float64{1, -2, -3, -10, math.NaN(), 0, math.NaN(), -12.5, -15},
 					5,
 					now32,
-				),
+				).SetTag("scale", "-2.5"),
 			},
 		},
 	}

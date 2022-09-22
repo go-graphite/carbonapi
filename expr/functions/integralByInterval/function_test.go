@@ -31,7 +31,7 @@ func TestFunction(t *testing.T) {
 			},
 			[]*types.MetricData{types.MakeMetricData(
 				"integralByInterval(10s,'10s')",
-				[]float64{1, 1, 3, 6, 10, 5, 5, 12, 20, 29, 10}, 2, 0),
+				[]float64{1, 1, 3, 6, 10, 5, 5, 12, 20, 29, 10}, 2, 0).SetTag("integralByInterval", "10s"),
 			},
 		},
 	}

@@ -46,8 +46,8 @@ func TestGroupByNode(t *testing.T) {
 			},
 			Name: "groupByNode",
 			Results: map[string][]*types.MetricData{
-				"baz": {types.MakeMetricData("baz", []float64{12, 14, 16, 18, 20}, 1, now32)},
-				"qux": {types.MakeMetricData("qux", []float64{13, 15, 17, 19, 21}, 1, now32)},
+				"baz": {types.MakeMetricData("baz", []float64{12, 14, 16, 18, 20}, 1, now32).SetTag("aggregatedBy", "sum")},
+				"qux": {types.MakeMetricData("qux", []float64{13, 15, 17, 19, 21}, 1, now32).SetTag("aggregatedBy", "sum")},
 			},
 		},
 		{
@@ -59,7 +59,7 @@ func TestGroupByNode(t *testing.T) {
 				},
 			},
 			Results: map[string][]*types.MetricData{
-				"metric1.foo.bar1.baz": {types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				"metric1.foo.bar1.baz": {types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32).SetTag("aggregatedBy", "sum")},
 			},
 		},
 		{
@@ -74,8 +74,8 @@ func TestGroupByNode(t *testing.T) {
 			},
 			Name: "groupByNode_names_with_int",
 			Results: map[string][]*types.MetricData{
-				"01": {types.MakeMetricData("01", []float64{12, 14, 16, 18, 20}, 1, now32)},
-				"10": {types.MakeMetricData("10", []float64{13, 15, 17, 19, 21}, 1, now32)},
+				"01": {types.MakeMetricData("01", []float64{12, 14, 16, 18, 20}, 1, now32).SetTag("aggregatedBy", "sum")},
+				"10": {types.MakeMetricData("10", []float64{13, 15, 17, 19, 21}, 1, now32).SetTag("aggregatedBy", "sum")},
 			},
 		},
 		{
@@ -90,8 +90,8 @@ func TestGroupByNode(t *testing.T) {
 			},
 			Name: "groupByNode_names_with_colons",
 			Results: map[string][]*types.MetricData{
-				"127_0_0_1:2003": {types.MakeMetricData("127_0_0_1:2003", []float64{12, 14, 16, 18, 20}, 1, now32)},
-				"127_0_0_1:2004": {types.MakeMetricData("127_0_0_1:2004", []float64{13, 15, 17, 19, 21}, 1, now32)},
+				"127_0_0_1:2003": {types.MakeMetricData("127_0_0_1:2003", []float64{12, 14, 16, 18, 20}, 1, now32).SetTag("aggregatedBy", "sum")},
+				"127_0_0_1:2004": {types.MakeMetricData("127_0_0_1:2004", []float64{13, 15, 17, 19, 21}, 1, now32).SetTag("aggregatedBy", "sum")},
 			},
 		},
 		{
@@ -106,8 +106,8 @@ func TestGroupByNode(t *testing.T) {
 			},
 			Name: "groupByNode_with_negative_index",
 			Results: map[string][]*types.MetricData{
-				"bar1": {types.MakeMetricData("bar1", []float64{7, 9, 11, 13, 15}, 1, now32)},
-				"bar2": {types.MakeMetricData("bar2", []float64{18, 20, 22, 24, 26}, 1, now32)},
+				"bar1": {types.MakeMetricData("bar1", []float64{7, 9, 11, 13, 15}, 1, now32).SetTag("aggregatedBy", "sum")},
+				"bar2": {types.MakeMetricData("bar2", []float64{18, 20, 22, 24, 26}, 1, now32).SetTag("aggregatedBy", "sum")},
 			},
 		},
 		{
@@ -122,8 +122,8 @@ func TestGroupByNode(t *testing.T) {
 			},
 			Name: "groupByNode_with_no_callback_arg",
 			Results: map[string][]*types.MetricData{
-				"bar1": {types.MakeMetricData("bar1", []float64{3.5, 4.5, 5.5, 6.5, 7.5}, 1, now32)},
-				"bar2": {types.MakeMetricData("bar2", []float64{9, 10, 11, 12, 13}, 1, now32)},
+				"bar1": {types.MakeMetricData("bar1", []float64{3.5, 4.5, 5.5, 6.5, 7.5}, 1, now32).SetTag("aggregatedBy", "avg")},
+				"bar2": {types.MakeMetricData("bar2", []float64{9, 10, 11, 12, 13}, 1, now32).SetTag("aggregatedBy", "avg")},
 			},
 		},
 		{
@@ -138,8 +138,8 @@ func TestGroupByNode(t *testing.T) {
 			},
 			Name: "groupByNodes",
 			Results: map[string][]*types.MetricData{
-				"metric1.foo.baz": {types.MakeMetricData("metric1.foo.baz", []float64{12, 14, 16, 18, 20}, 1, now32)},
-				"metric1.foo.qux": {types.MakeMetricData("metric1.foo.qux", []float64{13, 15, 17, 19, 21}, 1, now32)},
+				"metric1.foo.baz": {types.MakeMetricData("metric1.foo.baz", []float64{12, 14, 16, 18, 20}, 1, now32).SetTag("aggregatedBy", "sum")},
+				"metric1.foo.qux": {types.MakeMetricData("metric1.foo.qux", []float64{13, 15, 17, 19, 21}, 1, now32).SetTag("aggregatedBy", "sum")},
 			},
 		},
 		{
@@ -151,7 +151,7 @@ func TestGroupByNode(t *testing.T) {
 				},
 			},
 			Results: map[string][]*types.MetricData{
-				"metric1.bar1": {types.MakeMetricData("metric1.bar1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				"metric1.bar1": {types.MakeMetricData("metric1.bar1", []float64{1, 2, 3, 4, 5}, 1, now32).SetTag("aggregatedBy", "sum")},
 			},
 		},
 		{
@@ -164,8 +164,8 @@ func TestGroupByNode(t *testing.T) {
 				},
 			},
 			Results: map[string][]*types.MetricData{
-				"metric1.foo.bar1.baz.foo": {types.MakeMetricData("metric1.foo.bar1.baz.foo", []float64{1, 2, 3, 4, 5}, 1, now32)},
-				"metric1.foo.bar1.bla.foo": {types.MakeMetricData("metric1.foo.bar1.bla.foo", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				"metric1.foo.bar1.baz.foo": {types.MakeMetricData("metric1.foo.bar1.baz.foo", []float64{1, 2, 3, 4, 5}, 1, now32).SetTag("aggregatedBy", "sum")},
+				"metric1.foo.bar1.bla.foo": {types.MakeMetricData("metric1.foo.bar1.bla.foo", []float64{1, 2, 3, 4, 5}, 1, now32).SetTag("aggregatedBy", "sum")},
 			},
 		},
 		{
@@ -179,7 +179,7 @@ func TestGroupByNode(t *testing.T) {
 			},
 			// If no nodes are specified, all metrics are combined to the empty string
 			Results: map[string][]*types.MetricData{
-				"": {types.MakeMetricData("", []float64{2, 4, 6, 8, 10}, 1, now32)},
+				"": {types.MakeMetricData("", []float64{2, 4, 6, 8, 10}, 1, now32).SetTag("aggregatedBy", "sum")},
 			},
 		},
 		{
@@ -194,8 +194,8 @@ func TestGroupByNode(t *testing.T) {
 			},
 			Name: "groupByNode_names_with_special_symbol_equal",
 			Results: map[string][]*types.MetricData{
-				"Ab1==": {types.MakeMetricData("Ab1==", []float64{12, 14, 16, 18, 20}, 1, now32)},
-				"bC2=":  {types.MakeMetricData("bC2=", []float64{13, 15, 17, 19, 21}, 1, now32)},
+				"Ab1==": {types.MakeMetricData("Ab1==", []float64{12, 14, 16, 18, 20}, 1, now32).SetTag("aggregatedBy", "sum")},
+				"bC2=":  {types.MakeMetricData("bC2=", []float64{13, 15, 17, 19, 21}, 1, now32).SetTag("aggregatedBy", "sum")},
 			},
 		},
 		{
@@ -208,8 +208,8 @@ func TestGroupByNode(t *testing.T) {
 			},
 			Name: "groupByNode_tagged_names_with_special_symbol_equal",
 			Results: map[string][]*types.MetricData{
-				"lag":  {types.MakeMetricData("lag", []float64{1, 2, 3, 4, 5}, 1, now32)},
-				"lag=": {types.MakeMetricData("lag=", []float64{1, 0, 3, 4, 5}, 1, now32)},
+				"lag":  {types.MakeMetricData("lag", []float64{1, 2, 3, 4, 5}, 1, now32).SetTag("aggregatedBy", "sum")},
+				"lag=": {types.MakeMetricData("lag=", []float64{1, 0, 3, 4, 5}, 1, now32).SetTag("aggregatedBy", "sum")},
 			},
 		},
 	}

@@ -32,7 +32,7 @@ func TestLogarithm(t *testing.T) {
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 10, 100, 1000, 10000}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("logarithm(metric1)",
-				[]float64{0, 1, 2, 3, 4}, 1, now32)},
+				[]float64{0, 1, 2, 3, 4}, 1, now32).SetTag("log", "10")},
 		},
 		{
 			"logarithm(metric1,2)",
@@ -40,7 +40,7 @@ func TestLogarithm(t *testing.T) {
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 4, 8, 16, 32}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("logarithm(metric1,2)",
-				[]float64{0, 1, 2, 3, 4, 5}, 1, now32)},
+				[]float64{0, 1, 2, 3, 4, 5}, 1, now32).SetTag("log", "2")},
 		},
 	}
 

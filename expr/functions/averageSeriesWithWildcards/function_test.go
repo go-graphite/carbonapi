@@ -39,8 +39,10 @@ func TestAverageSeriesWithWildcards(t *testing.T) {
 			},
 			"averageSeriesWithWildcards",
 			map[string][]*types.MetricData{
-				"averageSeriesWithWildcards(metric1.baz)": {types.MakeMetricData("averageSeriesWithWildcards(metric1.baz)", []float64{6, 7, 8, 9, 10}, 1, now32)},
-				"averageSeriesWithWildcards(metric1.qux)": {types.MakeMetricData("averageSeriesWithWildcards(metric1.qux)", []float64{6.5, 7.5, 8.5, 9.5, 10.5}, 1, now32)},
+				"averageSeriesWithWildcards(metric1.baz)": {
+					types.MakeMetricData("averageSeriesWithWildcards(metric1.baz)", []float64{6, 7, 8, 9, 10}, 1, now32).SetTag("aggregatedBy", "average").SetNameTag("averageSeriesWithWildcards(metric1.baz)")},
+				"averageSeriesWithWildcards(metric1.qux)": {
+					types.MakeMetricData("averageSeriesWithWildcards(metric1.qux)", []float64{6.5, 7.5, 8.5, 9.5, 10.5}, 1, now32).SetTag("aggregatedBy", "average").SetNameTag("averageSeriesWithWildcards(metric1.qux)")},
 			},
 		},
 	}
