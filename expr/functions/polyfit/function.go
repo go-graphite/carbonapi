@@ -61,7 +61,7 @@ func (f *polyfit) Do(ctx context.Context, e parser.Expr, from, until int64, valu
 
 	results := make([]*types.MetricData, 0, len(arg))
 	for _, a := range arg {
-		r := *a
+		r := a.CopyLinkTags()
 		if e.ArgsLen() > 2 {
 			r.Name = "polyfit(" + a.Name + "," + degreeStr + ",'" + offsStr + "')"
 		} else if e.ArgsLen() > 1 {
@@ -84,7 +84,7 @@ func (f *polyfit) Do(ctx context.Context, e parser.Expr, from, until int64, valu
 			for i := range r.Values {
 				r.Values[i] = math.NaN()
 			}
-			results = append(results, &r)
+			results = append(results, r)
 			continue
 		}
 
@@ -106,7 +106,7 @@ func (f *polyfit) Do(ctx context.Context, e parser.Expr, from, until int64, valu
 		for i := range r.Values {
 			r.Values[i] = consolidations.Poly(float64(i), c.RawMatrix().Data...)
 		}
-		results = append(results, &r)
+		results = append(results, r)
 	}
 	return results, nil
 }

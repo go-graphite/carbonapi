@@ -44,7 +44,7 @@ func (f *lowPass) Do(ctx context.Context, e parser.Expr, from, until int64, valu
 
 	results := make([]*types.MetricData, len(arg))
 	for j, a := range arg {
-		r := *a
+		r := a.CopyLinkTags()
 		r.Name = "lowPass(" + a.Name + "," + cutPercentStr + ")"
 		r.Values = make([]float64, len(a.Values))
 		lowCut := int((cutPercent / 200) * float64(len(a.Values)))
@@ -57,7 +57,7 @@ func (f *lowPass) Do(ctx context.Context, e parser.Expr, from, until int64, valu
 			}
 		}
 
-		results[j] = &r
+		results[j] = r
 	}
 	return results, nil
 }

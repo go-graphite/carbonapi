@@ -103,7 +103,7 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 		}
 		results := make([]*types.MetricData, len(single))
 		for n, s := range single {
-			r := *s
+			r := s.CopyLinkTags()
 			r.Name = functionName + "(" + s.Name + "," + s.Name + ")"
 			r.Values = make([]float64, len(s.Values))
 			for i, v := range s.Values {
@@ -125,7 +125,7 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 				}
 
 			}
-			results[n] = &r
+			results[n] = r
 		}
 		return results, nil
 	}

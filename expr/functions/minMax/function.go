@@ -40,7 +40,7 @@ func (f *minMax) Do(ctx context.Context, e parser.Expr, from, until int64, value
 	var results []*types.MetricData
 
 	for _, a := range arg {
-		r := *a
+		r := a.CopyLinkTags()
 		r.Name = fmt.Sprintf("minMax(%s)", a.Name)
 		r.Values = make([]float64, len(a.Values))
 
@@ -64,7 +64,7 @@ func (f *minMax) Do(ctx context.Context, e parser.Expr, from, until int64, value
 				r.Values[i] = math.NaN()
 			}
 		}
-		results = append(results, &r)
+		results = append(results, r)
 	}
 
 	return results, nil

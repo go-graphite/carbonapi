@@ -47,7 +47,7 @@ func (f *ifft) Do(ctx context.Context, e parser.Expr, from, until int64, values 
 
 	results := make([]*types.MetricData, len(absSeriesList))
 	for j, a := range absSeriesList {
-		r := *a
+		r := a.CopyLinkTags()
 		r.Values = make([]float64, len(a.Values))
 		if len(phaseSeriesList) > j {
 			p := phaseSeriesList[j]
@@ -73,7 +73,7 @@ func (f *ifft) Do(ctx context.Context, e parser.Expr, from, until int64, values 
 			}
 		}
 
-		results[j] = &r
+		results[j] = r
 	}
 	return results, nil
 }
