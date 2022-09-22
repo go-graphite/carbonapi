@@ -43,10 +43,6 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 		return nil, err
 	}
 
-	if e.ArgsLen() < 2 {
-		return nil, types.ErrNeedMoreArguments
-	}
-
 	numerators, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
