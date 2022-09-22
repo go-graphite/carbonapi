@@ -30,6 +30,10 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *aggregateWithWildcards) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	if e.ArgsLen() < 3 {
+		return nil, parser.ErrMissingArgument
+	}
+
 	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err

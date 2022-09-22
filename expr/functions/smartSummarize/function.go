@@ -34,6 +34,10 @@ func New(configFile string) []interfaces.FunctionMetadata {
 // smartSummarize(seriesList, intervalString, alignToInterval=False)
 func (f *smartSummarize) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(dgryski): make sure the arrays are all the same 'size'
+	if e.ArgsLen() < 2 {
+		return nil, parser.ErrMissingArgument
+	}
+
 	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err

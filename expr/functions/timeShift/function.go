@@ -75,6 +75,9 @@ func New(configFile string) []interfaces.FunctionMetadata {
 // timeShift(seriesList, timeShift, resetEnd=True)
 func (f *timeShift) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// FIXME(civil): support alignDst
+	if e.ArgsLen() < 2 {
+		return nil, parser.ErrMissingArgument
+	}
 
 	offs, err := e.GetIntervalArg(1, -1)
 	if err != nil {

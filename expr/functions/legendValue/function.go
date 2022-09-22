@@ -33,6 +33,10 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // legendValue(seriesList, newName)
 func (f *legendValue) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	if e.ArgsLen() < 2 {
+		return nil, parser.ErrMissingArgument
+	}
+
 	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
