@@ -410,7 +410,8 @@ func (e *expr) GetBoolArgDefault(n int, b bool) (bool, error) {
 }
 
 func (e *expr) GetNodeOrTagArgs(n int, single bool) ([]NodeOrTag, error) {
-	if len(e.args) <= n {
+	// if single==false, zero nodes is OK
+	if single && len(e.args) <= n || len(e.args) < n {
 		return nil, ErrMissingArgument
 	}
 

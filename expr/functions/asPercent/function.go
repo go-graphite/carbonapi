@@ -156,14 +156,8 @@ func seriesAsPercent(arg, total []*types.MetricData) []*types.MetricData {
 			// len(seriesList) > len(totalSeriesList)
 			for n := range total {
 				a := arg[n]
-				for i := range a.Values {
-					t := total[n].Values[i]
-					if math.IsNaN(a.Values[i]) || math.IsNaN(t) || t == 0 {
-						a.Values[i] = math.NaN()
-					} else {
-						a.Values[i] *= 100 / t
-					}
-				}
+				getPercentages(a, total[n])
+
 				a.Name = "asPercent(" + a.Name + "," + total[n].Name + ")"
 			}
 			for n := len(total); n < len(arg); n++ {
@@ -370,7 +364,7 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			a.Name = "asPercent(" + a.Name + ")"
 		}
 		return arg, nil
-	} else if e.ArgsLen() == 2 && e.Arg(1).IsConst() {
+	} else if e.ArgsLen() == 2 && (e.Arg(1).IsConst() || e.Arg(1).IsString()) {
 		// asPercent(seriesList, N)
 
 		total, err := e.GetFloatArg(1)
