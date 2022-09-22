@@ -32,7 +32,7 @@ func TestFunction(t *testing.T) {
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("squareRoot(metric1)",
-				[]float64{1, 1.4142135623730951, 0, 2.6457513110645907, 2.8284271247461903, 4.47213595499958, 5.477225575051661, math.NaN()}, 1, now32)},
+				[]float64{1, 1.4142135623730951, 0, 2.6457513110645907, 2.8284271247461903, 4.47213595499958, 5.477225575051661, math.NaN()}, 1, now32).SetTag("squareRoot", "1")},
 		},
 	}
 

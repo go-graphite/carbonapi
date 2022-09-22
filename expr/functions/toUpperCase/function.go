@@ -2,8 +2,9 @@ package toUpperCase
 
 import (
 	"context"
-	"github.com/go-graphite/carbonapi/expr/helper"
 	"strings"
+
+	"github.com/go-graphite/carbonapi/expr/helper"
 
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -35,13 +36,9 @@ func (f *toUpperCase) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		return nil, err
 	}
 
-	var pos []int
-
-	if e.ArgsLen() >= 2 {
-		pos, err = e.GetIntArgs(1)
-		if err != nil {
-			return nil, err
-		}
+	pos, err := e.GetIntArgs(1)
+	if err != nil {
+		return nil, err
 	}
 
 	results := make([]*types.MetricData, 0, len(args)+1)
@@ -60,7 +57,7 @@ func (f *toUpperCase) Do(ctx context.Context, e parser.Expr, from, until int64, 
 				r.Name = r.Name[:i] + uppered + r.Name[i+1:]
 			}
 		}
-
+		r.Tags["name"] = r.Name
 		results = append(results, r)
 	}
 

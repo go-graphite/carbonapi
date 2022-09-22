@@ -30,7 +30,7 @@ func TestExponentialMovingAverage(t *testing.T) {
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{2, 4, 6, 8, 12, 14, 16, 18, 20}, 1, startTime)},
 			},
 			[]*types.MetricData{
-				types.MakeMetricData("exponentialMovingAverage(metric1,3)", []float64{4, 6, 9, 11.5, 13.75, 15.875, 17.9375}, 1, 0),
+				types.MakeMetricData("exponentialMovingAverage(metric1,3)", []float64{4, 6, 9, 11.5, 13.75, 15.875, 17.9375}, 1, 0).SetTag("exponentialMovingAverage", "3"),
 			},
 		},
 		{
@@ -41,7 +41,7 @@ func TestExponentialMovingAverage(t *testing.T) {
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, startTime)},
 			},
 			[]*types.MetricData{
-				types.MakeMetricData("exponentialMovingAverage(metric1,100)", []float64{2}, 1, 0),
+				types.MakeMetricData("exponentialMovingAverage(metric1,100)", []float64{2}, 1, 0).SetTag("exponentialMovingAverage", "100"),
 			},
 		},
 	}

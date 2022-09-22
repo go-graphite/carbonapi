@@ -161,6 +161,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 
 	for n, a := range arg {
 		r := a.CopyName(e.Target() + "(" + a.Name + "," + argstr + ")")
+		r.Tags[e.Target()] = argstr
 
 		if windowSize == 0 {
 			if *f.config.ReturnNaNsIfStepMismatch {
@@ -217,7 +218,6 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 			}
 			w.Push(v)
 		}
-		r.Tags[e.Target()] = argstr
 		result[n] = r
 	}
 	return result, nil

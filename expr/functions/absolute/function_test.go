@@ -31,7 +31,7 @@ func TestAbsolute(t *testing.T) {
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{0, -1, 2, -3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("absolute(metric1)",
-				[]float64{0, 1, 2, 3, 4, 5}, 1, now32).SetTag("name", "metric1")},
+				[]float64{0, 1, 2, 3, 4, 5}, 1, now32).SetTag("absolute", "1").SetNameTag("absolute(metric1)")},
 		},
 	}
 

@@ -2,7 +2,6 @@ package logarithm
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"strconv"
 
@@ -41,11 +40,8 @@ func (f *logarithm) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	if err != nil {
 		return nil, err
 	}
-	ok := base != 10
-	var baseStr string
-	if ok {
-		baseStr = strconv.Itoa(base)
-	}
+
+	baseStr := strconv.Itoa(base)
 
 	baseLog := math.Log(float64(base))
 
@@ -54,7 +50,7 @@ func (f *logarithm) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	for j, a := range arg {
 
 		var name string
-		if ok {
+		if base != 10 {
 			name = "logarithm(" + a.Name + "," + baseStr + ")"
 		} else {
 			name = "logarithm(" + a.Name + ")"
@@ -63,7 +59,7 @@ func (f *logarithm) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		r := a.CopyLink()
 		r.Name = name
 		r.Values = make([]float64, len(a.Values))
-		r.Tags["log"] = fmt.Sprintf("%f", baseLog)
+		r.Tags["log"] = baseStr
 
 		for i, v := range a.Values {
 			r.Values[i] = math.Log(v) / baseLog

@@ -101,7 +101,7 @@ func TestAliasByRedis(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{
-				types.MakeMetricData("new2", []float64{1, 2, 3, 4, 5}, 1, now32),
+				types.MakeMetricData("new2", []float64{1, 2, 3, 4, 5}, 1, now32).SetTag("tag1", "value1"),
 			},
 		},
 		{

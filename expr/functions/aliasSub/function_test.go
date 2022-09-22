@@ -66,7 +66,7 @@ func TestAliasSub(t *testing.T) {
 				{"*", 0, 1}: {types.MakeMetricData("diffSeries(dns.snake.sql_updated, dns.snake.zone_updated)", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("diffSeries(dns.snake.sql_updated, snake diff to sql updated)",
-				[]float64{1, 2, 3, 4, 5}, 1, now32)},
+				[]float64{1, 2, 3, 4, 5}, 1, now32).SetNameTag("diffSeries(dns.snake.sql_updated, snake diff to sql updated)")},
 		},
 	}
 

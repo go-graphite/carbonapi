@@ -2,12 +2,12 @@ package powSeries
 
 import (
 	"context"
-	"fmt"
+	"math"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"math"
 )
 
 type powSeries struct {
@@ -46,8 +46,7 @@ func (f *powSeries) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		}
 	}
 
-	r := series[largestSeriesIdx].CopyLink()
-	r.Name = fmt.Sprintf("%s(%s)", e.Target(), e.RawArgs())
+	r := series[largestSeriesIdx].CopyName("powSeries(" + e.RawArgs() + ")")
 	r.Values = make([]float64, 0)
 
 	seriesValues := make([][]float64, 0, len(series))

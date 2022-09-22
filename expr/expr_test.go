@@ -275,7 +275,18 @@ func TestEvalExpression(t *testing.T) {
 					types.MakeMetricData("devops.service.server2.filter.received.total.count", []float64{math.NaN(), math.NaN(), math.NaN()}, 1, now32),
 				},
 			},
-			[]*types.MetricData{types.MakeMetricData("sumSeries(pow(devops.service.*.filter.received.*.count, 0))", []float64{2, 2, 2}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("sumSeries(pow(devops.service.*.filter.received.*.count, 0))", []float64{2, 2, 2}, 1, now32).SetTag("aggregatedBy", "sum")},
+		},
+		{
+			"multiplySeriesWithWildcards(metric1.foo.*.*,1,2)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1.foo.*.*", 0, 1}: {
+					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar3.baz", []float64{2, 2, 2, 2, 2}, 1, now32),
+				},
+			},
+			[]*types.MetricData{types.MakeMetricData("metric1.baz", []float64{22, 48, 78, 112, 150}, 1, now32).SetTag("aggregatedBy", "multiply").SetNameTag("metric1.foo.*.*")},
 		},
 	}
 

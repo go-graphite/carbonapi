@@ -338,7 +338,7 @@ func (e *expr) GetIntArg(n int) (int, error) {
 }
 
 func (e *expr) GetIntArgs(n int) ([]int, error) {
-	if len(e.args) <= n {
+	if len(e.args) < n {
 		return nil, ErrMissingArgument
 	}
 
