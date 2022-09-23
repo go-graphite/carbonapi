@@ -150,6 +150,10 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *aliasByPostgres) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	if e.ArgsLen() < 4 {
+		return nil, parser.ErrMissingTimeseries
+	}
+
 	logger := zapwriter.Logger("functionInit").With(zap.String("function", "aliasByPostgres"))
 	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {

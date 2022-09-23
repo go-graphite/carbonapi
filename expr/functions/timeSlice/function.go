@@ -31,6 +31,10 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *timeSlice) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	if e.ArgsLen() < 2 {
+		return nil, parser.ErrMissingArgument
+	}
+
 	start32, err := e.GetIntervalArg(1, -1)
 	if err != nil {
 		return nil, err

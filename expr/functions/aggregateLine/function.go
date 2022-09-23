@@ -41,12 +41,12 @@ func (f *aggregateLine) Do(ctx context.Context, e parser.Expr, from, until int64
 	keepStep := false
 	switch e.ArgsLen() {
 	case 2:
-		callback, err = e.GetStringArg(1)
+		callback, err = e.GetStringArgDefault(1, "average")
 		if err != nil {
 			return nil, err
 		}
 	case 3:
-		callback, err = e.GetStringArg(1)
+		callback, err = e.GetStringArgDefault(1, "average")
 		if err != nil {
 			return nil, err
 		}

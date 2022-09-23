@@ -32,6 +32,10 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // mostDeviant(seriesList, n) -or- mostDeviant(n, seriesList)
 func (f *mostDeviant) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	if e.ArgsLen() < 2 {
+		return nil, parser.ErrMissingArgument
+	}
+
 	var nArg int
 	if !e.Arg(0).IsConst() {
 		// mostDeviant(seriesList, n)
