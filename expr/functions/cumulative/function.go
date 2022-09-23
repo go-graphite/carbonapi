@@ -37,9 +37,9 @@ func (f *cumulative) Do(ctx context.Context, e parser.Expr, from, until int64, v
 	results := make([]*types.MetricData, len(arg))
 
 	for i, a := range arg {
-		r := *a
+		r := a.CopyLinkTags()
 		r.AggregateFunction = consolidations.AggSum
-		results[i] = &r
+		results[i] = r
 	}
 	return results, nil
 }

@@ -47,6 +47,13 @@ func TestPerSecond(t *testing.T) {
 			},
 			[]*types.MetricData{types.MakeMetricData("perSecond(metric1,minValue=1)", []float64{math.NaN(), math.NaN(), 1, 1, 1, 26, 2, 29, math.NaN()}, 1, now32).SetTag("perSecond", "1")},
 		},
+		{
+			"perSecond(metric1)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData("perSecond(metric1)", []float64{}, 1, now32).SetTag("perSecond", "1")},
+		},
 	}
 
 	for _, tt := range tests {

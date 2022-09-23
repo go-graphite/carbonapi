@@ -89,6 +89,11 @@ func (f *nonNegativeDerivative) Do(ctx context.Context, e parser.Expr, from, unt
 		r.Name = name
 		r.Values = make([]float64, len(a.Values))
 		r.Tags["nonNegativeDerivative"] = "1"
+		result[i] = r
+
+		if len(a.Values) == 0 {
+			continue
+		}
 
 		prev := a.Values[0]
 		for i, v := range a.Values {
@@ -110,7 +115,6 @@ func (f *nonNegativeDerivative) Do(ctx context.Context, e parser.Expr, from, unt
 			}
 			prev = v
 		}
-		result[i] = r
 	}
 	return result, nil
 }

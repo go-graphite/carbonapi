@@ -43,7 +43,7 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 		return nil, err
 	}
 
-	numerators, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	numerators, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -55,9 +55,8 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 			return nil, nil
 		}
 	}
-	sort.Slice(numerators, func(i, j int) bool { return numerators[i].Name < numerators[j].Name })
 
-	denominators, err := helper.GetSeriesArg(ctx, e.Args()[1], from, until, values)
+	denominators, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -68,13 +67,15 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 			return nil, nil
 		}
 	}
-	sort.Slice(denominators, func(i, j int) bool { return denominators[i].Name < denominators[j].Name })
 
 	sizeMatch := len(denominators) == len(numerators) || len(denominators) == 1
 	useMatching, err := e.GetBoolNamedOrPosArgDefault("matching", 2, !useConstant && !sizeMatch)
 	if err != nil {
 		return nil, err
 	}
+
+	sort.Slice(numerators, func(i, j int) bool { return numerators[i].Name < numerators[j].Name })
+	sort.Slice(denominators, func(i, j int) bool { return denominators[i].Name < denominators[j].Name })
 
 	functionName := e.Target()[:len(e.Target())-len("Lists")]
 
@@ -102,7 +103,7 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 		}
 		results := make([]*types.MetricData, len(single))
 		for n, s := range single {
-			r := *s
+			r := s.CopyLinkTags()
 			r.Name = functionName + "(" + s.Name + "," + s.Name + ")"
 			r.Values = make([]float64, len(s.Values))
 			for i, v := range s.Values {
@@ -124,7 +125,7 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 				}
 
 			}
-			results[n] = &r
+			results[n] = r
 		}
 		return results, nil
 	}
