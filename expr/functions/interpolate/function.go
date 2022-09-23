@@ -39,7 +39,7 @@ func (f *interpolate) Do(ctx context.Context, e parser.Expr, from, until int64, 
 	resultSeriesList := make([]*types.MetricData, 0, len(seriesList))
 	for _, series := range seriesList {
 		pointsQty := len(series.Values)
-		resultSeries := *series
+		resultSeries := series.CopyLinkTags()
 		resultSeries.Name = "interpolate(" + series.Name + ")"
 
 		resultSeries.Values = make([]float64, pointsQty)
@@ -85,7 +85,7 @@ func (f *interpolate) Do(ctx context.Context, e parser.Expr, from, until int64, 
 			}
 		}
 
-		resultSeriesList = append(resultSeriesList, &resultSeries)
+		resultSeriesList = append(resultSeriesList, resultSeries)
 	}
 
 	return resultSeriesList, nil

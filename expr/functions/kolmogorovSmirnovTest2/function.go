@@ -58,7 +58,7 @@ func (f *kolmogorovSmirnovTest2) Do(ctx context.Context, e parser.Expr, from, un
 	w1 := &types.Windowed{Data: make([]float64, windowSize)}
 	w2 := &types.Windowed{Data: make([]float64, windowSize)}
 
-	r := *a1
+	r := a1.CopyLinkTags()
 	r.Name = "kolmogorovSmirnovTest2(" + a1.Name + "," + a2.Name + "," + windowSizeStr + ")"
 	r.Values = make([]float64, len(a1.Values))
 	r.StartTime = from
@@ -81,7 +81,7 @@ func (f *kolmogorovSmirnovTest2) Do(ctx context.Context, e parser.Expr, from, un
 			r.Values[i] = math.NaN()
 		}
 	}
-	return []*types.MetricData{&r}, nil
+	return []*types.MetricData{r}, nil
 }
 
 // TODO: Implement normal description

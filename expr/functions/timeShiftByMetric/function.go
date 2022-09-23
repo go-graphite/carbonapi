@@ -82,12 +82,12 @@ func (f *timeShiftByMetric) applyShift(params *callParams, offsets offsetByVersi
 
 		// checking if it is some version after all, otherwise this series will be omitted
 		if offsetIsSet {
-			r := *metric
+			r := metric.CopyLinkTags()
 			r.Name = "timeShiftByMetric(" + r.Name + ")"
 			r.StopTime += offset
 			r.StartTime += offset
 
-			result = append(result, &r)
+			result = append(result, r)
 		}
 	}
 

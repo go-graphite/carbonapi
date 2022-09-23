@@ -689,9 +689,9 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 		results := make([]*types.MetricData, len(arg))
 
 		for i, a := range arg {
-			r := *a
+			r := a.CopyLinkTags()
 			r.Color = color
-			results[i] = &r
+			results[i] = r
 		}
 
 		return results, nil
@@ -764,10 +764,10 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 		results := make([]*types.MetricData, len(arg))
 
 		for i, a := range arg {
-			r := *a
+			r := a.CopyLinkTags()
 			r.Alpha = alpha
 			r.HasAlpha = true
-			results[i] = &r
+			results[i] = r
 		}
 
 		return results, nil
@@ -824,10 +824,10 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 		results := make([]*types.MetricData, len(arg))
 
 		for i, a := range arg {
-			r := *a
+			r := a.CopyLinkTags()
 			r.LineWidth = width
 			r.HasLineWidth = true
-			results[i] = &r
+			results[i] = r
 		}
 
 		return results, nil

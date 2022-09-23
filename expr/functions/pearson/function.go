@@ -56,7 +56,7 @@ func (f *pearson) Do(ctx context.Context, e parser.Expr, from, until int64, valu
 	w1 := &types.Windowed{Data: make([]float64, windowSize)}
 	w2 := &types.Windowed{Data: make([]float64, windowSize)}
 
-	r := *a1
+	r := a1.CopyLinkTags()
 	r.Name = "pearson(" + a1.Name + "," + a2.Name + "," + e.Arg(2).StringValue() + ")"
 	r.Values = make([]float64, len(a1.Values))
 	r.StartTime = from
@@ -74,7 +74,7 @@ func (f *pearson) Do(ctx context.Context, e parser.Expr, from, until int64, valu
 		}
 	}
 
-	return []*types.MetricData{&r}, nil
+	return []*types.MetricData{r}, nil
 }
 
 func (f *pearson) Description() map[string]types.FunctionDescription {
