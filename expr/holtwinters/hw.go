@@ -37,6 +37,12 @@ func HoltWintersAnalysis(series []float64, step int64) ([]float64, []float64) {
 	// season is currently one day
 	seasonLength := 24 * 60 * 60 / int(step)
 
+	// seasonLength needs to be at least 2, so we force it
+	// GraphiteWeb has the same problem, still needs fixing https://github.com/graphite-project/graphite-web/issues/2780
+	if seasonLength < 2 {
+		seasonLength = 2
+	}
+
 	var (
 		intercepts  []float64
 		slopes      []float64
@@ -125,7 +131,7 @@ func HoltWintersConfidenceBands(series []float64, step int64, delta float64, day
 
 	var (
 		predictionsOfInterest []float64
-		deviationsOfInterest []float64
+		deviationsOfInterest  []float64
 	)
 	if len(predictions) < windowPoints || len(deviations) < windowPoints {
 		predictionsOfInterest = predictions
