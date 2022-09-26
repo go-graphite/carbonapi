@@ -28,7 +28,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-// squareRoot(seriesList)
+// randomWalk(name, step=60)
 func (f *randomWalk) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	name, err := e.GetStringArg(0)
 	if err != nil {

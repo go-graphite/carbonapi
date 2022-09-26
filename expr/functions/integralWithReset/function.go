@@ -53,7 +53,7 @@ func (f *integralWithReset) Do(ctx context.Context, e parser.Expr, from, until i
 
 	results := make([]*types.MetricData, len(arg))
 	for i, a := range arg {
-		r := *a
+		r := a.CopyLinkTags()
 		r.Name = "integralWithReset(" + a.Name + "," + resettingSeries.Name + ")"
 		r.Values = make([]float64, len(a.Values))
 
@@ -70,7 +70,7 @@ func (f *integralWithReset) Do(ctx context.Context, e parser.Expr, from, until i
 			}
 			r.Values[i] = current
 		}
-		results[i] = &r
+		results[i] = r
 	}
 	return results, nil
 }

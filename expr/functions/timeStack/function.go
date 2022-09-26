@@ -37,12 +37,12 @@ func (f *timeStack) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	}
 	unitStr := e.Arg(1).StringValue()
 
-	start, err := e.GetIntArg(2)
+	start, err := e.GetIntArgDefault(2, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	end, err := e.GetIntArg(3)
+	end, err := e.GetIntArgDefault(3, 7)
 	if err != nil {
 		return nil, err
 	}

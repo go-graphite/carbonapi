@@ -29,6 +29,10 @@ func New(_ string) []interfaces.FunctionMetadata {
 }
 
 func (f *aggregateSeriesLists) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	if e.ArgsLen() < 3 {
+		return nil, parser.ErrMissingArgument
+	}
+
 	seriesList1, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
 	if err != nil {
 		return nil, err

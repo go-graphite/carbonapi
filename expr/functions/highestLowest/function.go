@@ -68,7 +68,7 @@ func (f *highest) Do(ctx context.Context, e parser.Expr, from, until int64, valu
 			if err != nil {
 				// We need to support case where only function specified
 				n = 1
-				consolidation, err = e.GetStringArg(1)
+				consolidation, err = e.GetStringArgDefault(1, "average")
 				if err != nil {
 					return nil, err
 				}
@@ -79,7 +79,7 @@ func (f *highest) Do(ctx context.Context, e parser.Expr, from, until int64, valu
 			if err != nil {
 				return nil, err
 			}
-			consolidation, err = e.GetStringArg(2)
+			consolidation, err = e.GetStringArgDefault(2, "average")
 
 			if err != nil {
 				return nil, err

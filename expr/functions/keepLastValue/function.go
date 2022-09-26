@@ -60,7 +60,7 @@ func (f *keepLastValue) Do(ctx context.Context, e parser.Expr, from, until int64
 			name = "keepLastValue(" + a.Name + "," + keepStr + ")"
 		}
 
-		r := *a
+		r := a.CopyLinkTags()
 		r.Name = name
 		r.Values = make([]float64, len(a.Values))
 
@@ -83,7 +83,7 @@ func (f *keepLastValue) Do(ctx context.Context, e parser.Expr, from, until int64
 			prev = v
 			r.Values[i] = v
 		}
-		results = append(results, &r)
+		results = append(results, r)
 	}
 	return results, err
 }
