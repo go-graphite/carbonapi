@@ -3,7 +3,6 @@ package cumulative
 import (
 	"context"
 
-	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -38,7 +37,7 @@ func (f *cumulative) Do(ctx context.Context, e parser.Expr, from, until int64, v
 
 	for i, a := range arg {
 		r := a.CopyLinkTags()
-		r.AggregateFunction = consolidations.AggSum
+		r.ConsolidationFunc = "sum"
 		results[i] = r
 	}
 	return results, nil
