@@ -48,7 +48,7 @@ func (f *consolidateBy) Do(ctx context.Context, e parser.Expr, from, until int64
 	for i, a := range arg {
 		r := a.CopyLink()
 
-		r.AggregateFunction = consolidations.ConsolidationToFunc[name]
+		r.ConsolidationFunc = name
 		r.Tags["consolidateBy"] = name
 		results[i] = r
 	}
