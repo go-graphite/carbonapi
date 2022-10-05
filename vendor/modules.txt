@@ -94,6 +94,9 @@ github.com/hashicorp/hcl/hcl/token
 github.com/hashicorp/hcl/json/parser
 github.com/hashicorp/hcl/json/scanner
 github.com/hashicorp/hcl/json/token
+# github.com/leekchan/timeutil v0.0.0-20150802142658-28917288c48d
+## explicit
+github.com/leekchan/timeutil
 # github.com/lib/pq v1.10.6
 ## explicit
 github.com/lib/pq
