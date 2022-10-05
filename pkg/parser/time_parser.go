@@ -11,7 +11,16 @@ import (
 var months = []string{"jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"}
 var weekdays = []string{"sun", "mon", "tue", "wed", "thu", "fri", "sat"}
 
-func ParseDateTime(dateTime string, defaultSign int) (int64, error) {
+type dateTime struct {
+	year        int
+	month       int
+	day         int
+	seconds     int
+	nanoseconds int
+	location    time.Location
+}
+
+func ParseDateTime(dateTime string, defaultSign int, now time.Time) (int64, error) {
 	var parsed []string
 	var offset string
 	var ref string
@@ -45,7 +54,7 @@ func ParseDateTime(dateTime string, defaultSign int) (int64, error) {
 		ref = parsedTime
 	}
 
-	refTime, _ := parseTimeReference(ref)
+	refTime, _ := parseTimeReference(ref, now)
 	interval, _ := parseInterval(offset, defaultSign)
 
 	total := refTime + interval
@@ -53,33 +62,47 @@ func ParseDateTime(dateTime string, defaultSign int) (int64, error) {
 
 }
 
-func parseTimeReference(ref string) (int64, error) {
-	if ref == "" {
-		return 0, nil
+func parseTimeReference(ref string, now time.Time) (int64, error) {
+	if ref == "" || ref == "now" {
+		return now.Unix(), nil
 	}
-	var rawRef = ref
-	var err error
-	var refDate time.Time
 
-	refDate, _ = getReferenceDate(ref)
+	var hour int
+	var minute int
+	var rawRef = ref
+	//var err error
+	var refDate = now
+
+	hour, minute, ref = getReferenceDate(ref)
+	if ref == "" {
+		refDate = time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, time.UTC)
+		return refDate.Unix(), nil
+	}
 
 	// Day reference
 	if strings.Contains(ref, "today") || strings.Contains(ref, "yesterday") || strings.Contains(ref, "tomorrow") {
 		if strings.Contains(ref, "yesterday") {
-			refDate = refDate.AddDate(0, 0, -1)
+			refDate = time.Date(now.Year(), now.Month(), -1, hour, minute, 0, 0, time.UTC)
 		} else if strings.Contains(ref, "tomorrow") {
-			refDate = time.Now().AddDate(0, 0, 1)
+			refDate = time.Date(now.Year(), now.Month(), 1, hour, minute, 0, 0, time.UTC)
 		}
-	} else if strings.Count(ref, "/") == 2 { // MM/DD/YY format
-		refDate, err = time.Parse("2006/01/02", ref)
-		if err != nil {
-			return 0, err
+	} else if strings.Count(ref, "/") == 2 { // MM/DD/YY[YY] format
+		parsed := strings.SplitN(ref, "/", 3)
+		year, _ := strconv.Atoi(parsed[2])
+		month, _ := strconv.Atoi(parsed[0])
+		day, _ := strconv.Atoi(parsed[1])
+		if year < 1900 {
+			year += 1900
 		}
+		if year < 1970 {
+			year += 100
+		}
+		refDate = time.Date(year, time.Month(month), day, hour, minute, 0, 0, time.UTC)
 	} else if _, err := strconv.Atoi(ref); err == nil && len(ref) == 8 { // YYYYMMDD format
-		refDate, err = time.Parse("20060102", ref)
-		if err != nil {
-			return 0, err
-		}
+		year, _ := strconv.Atoi(ref[:4])
+		month, _ := strconv.Atoi(ref[4:6])
+		day, _ := strconv.Atoi(ref[6:])
+		refDate = time.Date(year, time.Month(month), day, hour, minute, 0, 0, time.UTC)
 	} else if len(ref) >= 3 && stringMatchesList(ref[:3], months) { // MonthName DayOfMonth
 		var day int
 		if val, err := strconv.Atoi(ref[(len(ref) - 2):]); err == nil {
@@ -100,7 +123,7 @@ func parseTimeReference(ref string) (int64, error) {
 			dayOffset += 7
 		}
 		refDate = refDate.AddDate(0, 0, -(dayOffset))
-	} else if ref == "" {
+	} else {
 		return 0, fmt.Errorf("Unknown day reference: %s", rawRef)
 	}
 
@@ -178,7 +201,7 @@ func stringMatchesList(a string, list []string) bool {
 	return false
 }
 
-func getReferenceDate(ref string) (time.Time, string) {
+func getReferenceDate(ref string) (hr int, min int, remaining string) {
 	// Time-of-day reference
 	var hour = 0
 	var minute = 0
@@ -187,7 +210,9 @@ func getReferenceDate(ref string) (time.Time, string) {
 		hour, _ = strconv.Atoi(ref[:i])
 		minute, _ = strconv.Atoi(ref[i+1 : i+3])
 		ref = ref[i+3:]
-		if ref[:2] == "am" {
+		if ref == "" {
+			return hour, minute, ref
+		} else if ref[:2] == "am" {
 			ref = ref[2:]
 		} else if ref[:2] == "pm" {
 			hour = (hour + 12) % 24
@@ -224,11 +249,17 @@ func getReferenceDate(ref string) (time.Time, string) {
 		ref = ref[7:]
 	}
 
+	//now := time.Now().UTC()
+	//timeZone := time.UTC
+	//refDate := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, timeZone)
+
+	return hour, minute, ref
+}
+
+func setHourMinute(hour, minute int) time.Time {
 	now := time.Now().UTC()
 	timeZone := time.UTC
-	refDate := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, timeZone)
-
-	return refDate, ref
+	return time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, timeZone)
 }
 
 func stringMatchesListIndex(a string, list []string) int {
