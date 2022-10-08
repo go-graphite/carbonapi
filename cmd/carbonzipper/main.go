@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"github.com/ansel1/merry"
+	"github.com/msaf1980/go-metrics"
+	"github.com/msaf1980/go-metrics/graphite"
 
 	"github.com/dgryski/httputil"
 	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
@@ -26,7 +28,6 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/go-graphite/carbonapi/intervalset"
-	"github.com/go-graphite/carbonapi/mstats"
 	util "github.com/go-graphite/carbonapi/util/ctx"
 	"github.com/go-graphite/carbonapi/util/pidfile"
 	"github.com/go-graphite/carbonapi/zipper"
@@ -34,7 +35,6 @@ import (
 	"github.com/go-graphite/carbonapi/zipper/types"
 
 	pickle "github.com/lomik/og-rek"
-	"github.com/peterbourgon/g2g"
 
 	uuid "github.com/satori/go.uuid"
 	"go.uber.org/zap"
@@ -108,45 +108,45 @@ var config = struct {
 
 // Metrics contains grouped expvars for /debug/vars and graphite
 var Metrics = struct {
-	FindRequests *expvar.Int
-	FindErrors   *expvar.Int
+	FindRequests metrics.Counter
+	FindErrors   metrics.Counter
 
-	SearchRequests *expvar.Int
+	SearchRequests metrics.Counter
 
-	RenderRequests *expvar.Int
-	RenderErrors   *expvar.Int
+	RenderRequests metrics.Counter
+	RenderErrors   metrics.Counter
 
-	InfoRequests *expvar.Int
-	InfoErrors   *expvar.Int
+	InfoRequests metrics.Counter
+	InfoErrors   metrics.Counter
 
-	Timeouts *expvar.Int
+	Timeouts metrics.Counter
 
 	CacheSize         expvar.Func
 	CacheItems        expvar.Func
-	CacheMisses       *expvar.Int
-	CacheHits         *expvar.Int
+	CacheMisses       metrics.Counter
+	CacheHits         metrics.Counter
 	SearchCacheSize   expvar.Func
 	SearchCacheItems  expvar.Func
-	SearchCacheMisses *expvar.Int
-	SearchCacheHits   *expvar.Int
+	SearchCacheMisses metrics.Counter
+	SearchCacheHits   metrics.Counter
 }{
-	FindRequests: expvar.NewInt("find_requests"),
-	FindErrors:   expvar.NewInt("find_errors"),
+	FindRequests: metrics.NewCounter(),
+	FindErrors:   metrics.NewCounter(),
 
-	SearchRequests: expvar.NewInt("search_requests"),
+	SearchRequests: metrics.NewCounter(),
 
-	RenderRequests: expvar.NewInt("render_requests"),
-	RenderErrors:   expvar.NewInt("render_errors"),
+	RenderRequests: metrics.NewCounter(),
+	RenderErrors:   metrics.NewCounter(),
 
-	InfoRequests: expvar.NewInt("info_requests"),
-	InfoErrors:   expvar.NewInt("info_errors"),
+	InfoRequests: metrics.NewCounter(),
+	InfoErrors:   metrics.NewCounter(),
 
-	Timeouts: expvar.NewInt("timeouts"),
+	Timeouts: metrics.NewCounter(),
 
-	CacheHits:         expvar.NewInt("cache_hits"),
-	CacheMisses:       expvar.NewInt("cache_misses"),
-	SearchCacheHits:   expvar.NewInt("search_cache_hits"),
-	SearchCacheMisses: expvar.NewInt("search_cache_misses"),
+	CacheHits:         metrics.NewCounter(),
+	CacheMisses:       metrics.NewCounter(),
+	SearchCacheHits:   metrics.NewCounter(),
+	SearchCacheMisses: metrics.NewCounter(),
 }
 
 // BuildVersion is defined at build and reported at startup and as expvar
@@ -743,7 +743,6 @@ func main() {
 	// only register g2g if we have a graphite host
 	if config.Graphite.Host != "" {
 		// register our metrics with graphite
-		graphite := g2g.NewGraphite(config.Graphite.Host, config.Graphite.Interval, 10*time.Second)
 
 		/* #nosec */
 		hostname, _ := os.Hostname()
@@ -755,20 +754,23 @@ func main() {
 		pattern = strings.ReplaceAll(pattern, "{prefix}", prefix)
 		pattern = strings.ReplaceAll(pattern, "{fqdn}", hostname)
 
-		graphite.Register(fmt.Sprintf("%s.find_requests", pattern), Metrics.FindRequests)
-		graphite.Register(fmt.Sprintf("%s.find_errors", pattern), Metrics.FindErrors)
+		graphite := graphite.New(config.Graphite.Interval, pattern, hostname, 10*time.Second)
 
-		graphite.Register(fmt.Sprintf("%s.render_requests", pattern), Metrics.RenderRequests)
-		graphite.Register(fmt.Sprintf("%s.render_errors", pattern), Metrics.RenderErrors)
+		metrics.Register("find_requests", Metrics.FindRequests)
+		metrics.Register("find_errors", Metrics.FindErrors)
 
-		graphite.Register(fmt.Sprintf("%s.info_requests", pattern), Metrics.InfoRequests)
-		graphite.Register(fmt.Sprintf("%s.info_errors", pattern), Metrics.InfoErrors)
+		metrics.Register("render_requests", Metrics.RenderRequests)
+		metrics.Register("render_errors", Metrics.RenderErrors)
 
-		graphite.Register(fmt.Sprintf("%s.timeouts", pattern), Metrics.Timeouts)
+		metrics.Register("info_requests", Metrics.InfoRequests)
+		metrics.Register("info_errors", Metrics.InfoErrors)
 
-		for i := 0; i <= config.Buckets; i++ {
-			graphite.Register(fmt.Sprintf("%s.requests_in_%dms_to_%dms", pattern, i*100, (i+1)*100), bucketEntry(i))
-		}
+		metrics.Register("timeouts", Metrics.Timeouts)
+
+		// TODO (msaf1980) register buckets
+		// for i := 0; i <= config.Buckets; i++ {
+		// 	graphite.Register(fmt.Sprintf("%s.requests_in_%dms_to_%dms", pattern, i*100, (i+1)*100), bucketEntry(i))
+		// }
 
 		/* TODO(civil): Find a way to return that data
 		graphite.Register(fmt.Sprintf("%s.cache_size", pattern), Metrics.CacheSize)
@@ -778,18 +780,23 @@ func main() {
 		graphite.Register(fmt.Sprintf("%s.search_cache_items", pattern), Metrics.SearchCacheItems)
 		*/
 
-		graphite.Register(fmt.Sprintf("%s.cache_hits", pattern), Metrics.CacheHits)
-		graphite.Register(fmt.Sprintf("%s.cache_misses", pattern), Metrics.CacheMisses)
+		metrics.Register("cache_hits", Metrics.CacheHits)
+		metrics.Register("cache_misses", Metrics.CacheMisses)
 
-		graphite.Register(fmt.Sprintf("%s.search_cache_hits", pattern), Metrics.SearchCacheHits)
-		graphite.Register(fmt.Sprintf("%s.search_cache_misses", pattern), Metrics.SearchCacheMisses)
+		metrics.Register("search_cache_hits", Metrics.SearchCacheHits)
+		metrics.Register("search_cache_misses", Metrics.SearchCacheMisses)
 
-		go mstats.Start(config.Graphite.Interval)
+		metrics.RegisterRuntimeMemStats(nil)
+		go metrics.CaptureRuntimeMemStats(config.Graphite.Interval)
 
-		graphite.Register(fmt.Sprintf("%s.alloc", pattern), &mstats.Alloc)
-		graphite.Register(fmt.Sprintf("%s.total_alloc", pattern), &mstats.TotalAlloc)
-		graphite.Register(fmt.Sprintf("%s.num_gc", pattern), &mstats.NumGC)
-		graphite.Register(fmt.Sprintf("%s.pause_ns", pattern), &mstats.PauseNS)
+		// go mstats.Start(config.Graphite.Interval)
+
+		// graphite.Register(fmt.Sprintf("%s.alloc", pattern), &mstats.Alloc)
+		// graphite.Register(fmt.Sprintf("%s.total_alloc", pattern), &mstats.TotalAlloc)
+		// graphite.Register(fmt.Sprintf("%s.num_gc", pattern), &mstats.NumGC)
+		// graphite.Register(fmt.Sprintf("%s.pause_ns", pattern), &mstats.PauseNS)
+
+		graphite.Start(nil)
 	}
 
 	if *pidFile != "" {

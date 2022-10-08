@@ -11,7 +11,11 @@ Some string utils
 
 `Split2(s string, sep string) (string, string, int)`  Split2 return the split string results (without memory allocations). Use Index for find separator.
 
-`SplitN(s string, sep string, buf []string) ([]string, int)` // SplitN return splitted slice (use pre-allocated buffer) and end position (for detect if string contains more fields for split). Use Index for find separator.
+`Split(s string, sep string, buf []string) []string` // Split return splitted slice (use pre-allocated buffer, reallocated if needed). Use Index for find separator.
+`SplitByte(s string, sep byte, buf []string) []string` // SplitByte return splitted slice (use pre-allocated buffer, reallocated if needed). Use Index for find separator.
+`SplitRune(s string, sep rune, buf []string) []string` // SplitByte return splitted slice (use pre-allocated buffer, reallocated if needed). Use Index for find separator. For Unicode long-width rune it's slower than Split
+
+`SplitN(s string, sep string, buf []string) []string` // SplitN deprecated and removed, use Split
 
 `Reverse(string) string` return reversed string (rune-wise left to right)
 `ReverseSegments(string, delim) string` return reversed string by segments around string delimiter (`ReverseSegments("hello, world", ", ")` return `world, hello`).

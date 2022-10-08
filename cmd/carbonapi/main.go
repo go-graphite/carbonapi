@@ -161,4 +161,11 @@ func main() {
 	}
 
 	wg.Wait()
+
+	if g != nil {
+		g.Stop()
+	}
+	if carbonapiHttp.Gstatsd != nil {
+		carbonapiHttp.Gstatsd.Close()
+	}
 }

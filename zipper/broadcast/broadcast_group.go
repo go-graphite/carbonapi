@@ -260,12 +260,12 @@ func (bg *BroadcastGroup) doMultiFetch(ctx context.Context, logger *zap.Logger, 
 				logger.Debug("got response",
 					zap.Int("metrics_in_response", len(response.Response.Metrics)),
 					zap.Int("errors_count", len(response.Err)),
-					zap.Int64("timeouts_count", response.Stats.Timeouts),
-					zap.Int64("render_requests_count", response.Stats.RenderRequests),
-					zap.Int64("render_errors_count", response.Stats.RenderErrors),
-					zap.Int64("render_timeouts_count", response.Stats.RenderTimeouts),
-					zap.Int64("zipper_requests_count", response.Stats.ZipperRequests),
-					zap.Int64("total_metric_count", response.Stats.TotalMetricsCount),
+					zap.Uint64("timeouts_count", response.Stats.Timeouts),
+					zap.Uint64("render_requests_count", response.Stats.RenderRequests),
+					zap.Uint64("render_errors_count", response.Stats.RenderErrors),
+					zap.Uint64("render_timeouts_count", response.Stats.RenderTimeouts),
+					zap.Uint64("zipper_requests_count", response.Stats.ZipperRequests),
+					zap.Uint64("total_metric_count", response.Stats.TotalMetricsCount),
 					zap.Int("servers_count", len(response.Stats.Servers)),
 					zap.Int("failed_servers_count", len(response.Stats.FailedServers)),
 				)
@@ -332,12 +332,12 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 			logger.Debug("got response",
 				zap.Int("metrics_in_response", len(r.Response.Metrics)),
 				zap.Int("errors_count", len(r.Err)),
-				zap.Int64("timeouts_count", r.Stats.Timeouts),
-				zap.Int64("render_requests_count", r.Stats.RenderRequests),
-				zap.Int64("render_errors_count", r.Stats.RenderErrors),
-				zap.Int64("render_timeouts_count", r.Stats.RenderTimeouts),
-				zap.Int64("zipper_requests_count", r.Stats.ZipperRequests),
-				zap.Int64("total_metric_count", r.Stats.TotalMetricsCount),
+				zap.Uint64("timeouts_count", r.Stats.Timeouts),
+				zap.Uint64("render_requests_count", r.Stats.RenderRequests),
+				zap.Uint64("render_errors_count", r.Stats.RenderErrors),
+				zap.Uint64("render_timeouts_count", r.Stats.RenderTimeouts),
+				zap.Uint64("zipper_requests_count", r.Stats.ZipperRequests),
+				zap.Uint64("total_metric_count", r.Stats.TotalMetricsCount),
 				zap.Int("servers_count", len(r.Stats.Servers)),
 				zap.Int("failed_servers_count", len(r.Stats.FailedServers)),
 			)
@@ -353,12 +353,12 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 	logger.Debug("got response (after merge)",
 		zap.Int("metrics_in_response", len(response.Response.Metrics)),
 		zap.Int("errors_count", len(response.Err)),
-		zap.Int64("timeouts_count", response.Stats.Timeouts),
-		zap.Int64("render_requests_count", response.Stats.RenderRequests),
-		zap.Int64("render_errors_count", response.Stats.RenderErrors),
-		zap.Int64("render_timeouts_count", response.Stats.RenderTimeouts),
-		zap.Int64("zipper_requests_count", response.Stats.ZipperRequests),
-		zap.Int64("total_metric_count", response.Stats.TotalMetricsCount),
+		zap.Uint64("timeouts_count", response.Stats.Timeouts),
+		zap.Uint64("render_requests_count", response.Stats.RenderRequests),
+		zap.Uint64("render_errors_count", response.Stats.RenderErrors),
+		zap.Uint64("render_timeouts_count", response.Stats.RenderTimeouts),
+		zap.Uint64("zipper_requests_count", response.Stats.ZipperRequests),
+		zap.Uint64("total_metric_count", response.Stats.TotalMetricsCount),
 		zap.Int("servers_count", len(response.Stats.Servers)),
 		zap.Int("failed_servers_count", len(response.Stats.FailedServers)),
 	)
@@ -589,7 +589,7 @@ func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 
 	result := types.NewServerFindResponse()
 	result.Server = bg.Name()
-	result.Stats.ZipperRequests = int64(len(backends))
+	result.Stats.ZipperRequests = uint64(len(backends))
 	resultNew, responseCount := types.DoRequest(ctxNew, logger, backends, result, request, bg.doFind)
 
 	result, ok := resultNew.Self().(*types.ServerFindResponse)
@@ -618,7 +618,7 @@ func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	}
 	result.Stats.TotalMetricsCount = 0
 	for _, x := range result.Response.Metrics {
-		result.Stats.TotalMetricsCount += int64(len(x.Matches))
+		result.Stats.TotalMetricsCount += uint64(len(x.Matches))
 	}
 	logger.Debug("got some find responses",
 		zap.Int("backends_count", len(backends)),
@@ -680,7 +680,7 @@ func (bg *BroadcastGroup) Info(ctx context.Context, request *protov3.MultiMetric
 	backends := bg.Children()
 	result := types.NewServerInfoResponse()
 	result.Server = bg.Name()
-	result.Stats.ZipperRequests = int64(len(backends))
+	result.Stats.ZipperRequests = uint64(len(backends))
 
 	resultNew, responseCount := types.DoRequest(ctxNew, logger, backends, result, request, bg.doInfoRequest)
 

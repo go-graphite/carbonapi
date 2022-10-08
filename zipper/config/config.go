@@ -10,7 +10,11 @@ import (
 
 // Config is a structure that contains zipper-related configuration bits
 type Config struct {
+	SumBuckets                bool             `mapstructure:"sumBuckets"`
 	Buckets                   int              `mapstructure:"buckets"`
+	BucketsWidth              []int64          `mapstructure:"bucketsWidth"`
+	BucketsLabels             []string         `mapstructure:"bucketsLabels"`
+	ExtendedStat              bool             `mapstructure:"extendedStat"` // extended stat metrics
 	SlowLogThreshold          time.Duration    `mapstructure:"slowLogThreshold"`
 	ConcurrencyLimitPerServer int              `mapstructure:"concurrencyLimitPerServer"`
 	MaxIdleConnsPerHost       int              `mapstructure:"maxIdleConnsPerHost"`
@@ -66,6 +70,10 @@ func SanitizeConfig(logger *zap.Logger, oldConfig Config) *Config {
 	// create a full copy of old config
 	newConfig := &Config{
 		Buckets:                   oldConfig.Buckets,
+		SumBuckets:                oldConfig.SumBuckets,
+		BucketsWidth:              oldConfig.BucketsWidth,
+		BucketsLabels:             oldConfig.BucketsLabels,
+		ExtendedStat:              oldConfig.ExtendedStat,
 		SlowLogThreshold:          oldConfig.SlowLogThreshold,
 		ConcurrencyLimitPerServer: oldConfig.ConcurrencyLimitPerServer,
 		MaxIdleConnsPerHost:       oldConfig.MaxIdleConnsPerHost,
@@ -84,6 +92,10 @@ func SanitizeConfig(logger *zap.Logger, oldConfig Config) *Config {
 		Timeouts:             oldConfig.Timeouts,
 		KeepAliveInterval:    oldConfig.KeepAliveInterval,
 		ScaleToCommonStep:    oldConfig.ScaleToCommonStep,
+	}
+
+	if len(newConfig.BucketsWidth) > 0 {
+		newConfig.Buckets = 0
 	}
 
 	if newConfig.MaxBatchSize == nil {
