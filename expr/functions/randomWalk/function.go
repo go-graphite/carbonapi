@@ -34,14 +34,20 @@ func (f *randomWalk) Do(ctx context.Context, e parser.Expr, from, until int64, v
 	if err != nil {
 		name = "randomWalk"
 	}
+	stepInt, err := e.GetIntNamedOrPosArgDefault("step", 1, 60)
+	if err != nil {
+		return nil, err
+	}
+	step := int64(stepInt)
 
-	size := until - from
+	size := (until - from) / step
+	until = from + step*size // Re-compute 'until' in case 'size' is a not a divisor of the range
 
 	r := types.MetricData{
 		FetchResponse: pb.FetchResponse{
 			Name:              name,
 			Values:            make([]float64, size),
-			StepTime:          1,
+			StepTime:          step,
 			StartTime:         from,
 			StopTime:          until,
 			ConsolidationFunc: "average",
