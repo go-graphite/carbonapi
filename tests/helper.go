@@ -352,6 +352,14 @@ type EvalTestItem struct {
 	Want   []*types.MetricData
 }
 
+type EvalTestItemWithCustomValidation struct {
+	Target    string
+	M         map[parser.MetricRequest][]*types.MetricData
+	Validator func(*testing.T, []*types.MetricData)
+	From      int64
+	Until     int64
+}
+
 type EvalTestItemWithError struct {
 	Target string
 	M      map[parser.MetricRequest][]*types.MetricData
@@ -373,6 +381,19 @@ func (r *EvalTestItemWithRange) TestItem() *EvalTestItem {
 		M:      r.M,
 		Want:   r.Want,
 	}
+}
+
+func TestEvalExprWithCustomValidation(t *testing.T, tt *EvalTestItemWithCustomValidation) {
+	evaluator := metadata.GetEvaluator()
+	exp, _, err := parser.ParseExpr(tt.Target)
+	if err != nil {
+		t.Errorf("failed to parse %s: %+v", tt.Target, err)
+	}
+	g, err := evaluator.Eval(context.Background(), exp, tt.From, tt.Until, tt.M)
+	if err != nil {
+		t.Errorf("failed to eval %s: %+v", tt.Target, err)
+	}
+	tt.Validator(t, g)
 }
 
 func TestEvalExprModifiedOrigin(t *testing.T, tt *EvalTestItem, from, until int64, strictOrder, compareTags bool) error {
