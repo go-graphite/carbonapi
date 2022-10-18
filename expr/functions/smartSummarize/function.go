@@ -70,7 +70,8 @@ func (f *smartSummarize) Do(ctx context.Context, e parser.Expr, from, until int6
 	start := args[0].StartTime
 	stop := args[0].StopTime
 	if alignToInterval != "" {
-		interval, err := parser.IntervalString(alignToInterval, 1)
+		alignTo := "1" + alignToInterval // Add a 1 before the alignTo interval, so that IntervalString properly parses it
+		interval, err := parser.IntervalString(alignTo, 1)
 		if err != nil {
 			return nil, err
 		}
