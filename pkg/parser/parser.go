@@ -574,7 +574,7 @@ func IsNameChar(r byte) bool {
 		r == '@'
 }
 
-func isDigit(r byte) bool {
+func IsDigit(r byte) bool {
 	return '0' <= r && r <= '9'
 }
 
@@ -687,7 +687,7 @@ func parseConst(s string) (float64, string, string, error) {
 	var i int
 	// All valid characters for a floating-point constant
 	// Just slurp them all in and let ParseFloat sort 'em out
-	for i < len(s) && (isDigit(s[i]) || s[i] == '.' || s[i] == '+' || s[i] == '-' || s[i] == 'e' || s[i] == 'E') {
+	for i < len(s) && (IsDigit(s[i]) || s[i] == '.' || s[i] == '+' || s[i] == '-' || s[i] == 'e' || s[i] == 'E') {
 		i++
 	}
 

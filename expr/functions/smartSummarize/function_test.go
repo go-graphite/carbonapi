@@ -43,6 +43,17 @@ func TestSummarizeEmptyData(t *testing.T) {
 func TestEvalSummarize(t *testing.T) {
 	tests := []th.SummarizeEvalTestItem{
 		{
+			"smartSummarize(metric1,'1hour','sum','1y')",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", generateValues(0, 1800+3.5*3600, 1), 1, 0)},
+			},
+			[]float64{6478200, 19438200, 32398200, 45358200},
+			"smartSummarize(metric1,'1hour','sum','1y')",
+			3600,
+			0,
+			14400,
+		},
+		{
 			"smartSummarize(metric1,'1hour','sum','y')",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", generateValues(0, 1800+3.5*3600, 1), 1, 0)},
@@ -60,6 +71,17 @@ func TestEvalSummarize(t *testing.T) {
 			},
 			[]float64{6478200, 19438200, 32398200, 45358200},
 			"smartSummarize(metric1,'1hour','sum','month')",
+			3600,
+			0,
+			14400,
+		},
+		{
+			"smartSummarize(metric1,'1hour','sum','1month')",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", generateValues(0, 1800+3.5*3600, 1), 1, 0)},
+			},
+			[]float64{6478200, 19438200, 32398200, 45358200},
+			"smartSummarize(metric1,'1hour','sum','1month')",
 			3600,
 			0,
 			14400,
@@ -71,6 +93,17 @@ func TestEvalSummarize(t *testing.T) {
 			},
 			[]float64{1770, 5370, 8970, 12570},
 			"smartSummarize(metric1,'1minute','sum','minute')",
+			60,
+			0,
+			240,
+		},
+		{
+			"smartSummarize(metric1,'1minute','sum','1minute')",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+			},
+			[]float64{1770, 5370, 8970, 12570},
+			"smartSummarize(metric1,'1minute','sum','1minute')",
 			60,
 			0,
 			240,
