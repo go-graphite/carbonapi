@@ -33,6 +33,7 @@ type CacheConfig struct {
 type GraphiteConfig struct {
 	Pattern  string
 	Host     string
+	Statsd   string
 	Interval time.Duration
 	Prefix   string
 }

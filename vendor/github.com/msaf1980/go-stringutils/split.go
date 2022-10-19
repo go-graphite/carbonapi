@@ -1,13 +1,17 @@
 package stringutils
 
-import "strings"
+import (
+	"strings"
+	"unicode/utf8"
+)
 
 var empthy = ""
 
 // Split2 return the split string results (without memory allocations)
-//   If sep string not found: 's' '' 1
-//   If s or sep string is empthy: 's' '' 1
-//   In other cases: 's0' 's2' 2
+//
+//	If sep string not found: 's' '' 1
+//	If s or sep string is empthy: 's' '' 1
+//	In other cases: 's0' 's2' 2
 func Split2(s string, sep string) (string, string, int) {
 	if len(sep) == 0 {
 		return s, empthy, 1
@@ -22,30 +26,52 @@ func Split2(s string, sep string) (string, string, int) {
 	}
 }
 
-// SplitN return splitted slice (use pre-allocated buffer) and end position (for detect if string contains more fields for split)
-func SplitN(s string, sep string, buf []string) []string {
-	n := len(buf)
-	i := 0
-	p := 0
+// Split return splitted slice (use pre-allocated buffer) (realloc if needed)
+func Split(s string, sep string, buf []string) []string {
+	buf = buf[:0]
 
-	for i < n {
+	for {
 		if pos := strings.Index(s, sep); pos == -1 {
-			buf[i] = s
-			return buf[0 : i+1]
+			buf = append(buf, s)
+			break
 		} else {
-			buf[i] = s[0:pos]
-			p += pos + len(sep)
-			i++
-			if pos+len(sep) == len(s) {
-				buf[i] = s[pos:pos]
-				return buf[0 : i+1]
-			}
+			buf = append(buf, s[0:pos])
 			s = s[pos+len(sep):]
-			if i == n-1 {
-				buf[i] = s
-				break
-			}
 		}
 	}
-	return buf[0 : i+1]
+	return buf
+}
+
+// SplitByte return splitted slice (use pre-allocated buffer) (realloc if needed)
+func SplitByte(s string, sep byte, buf []string) []string {
+	buf = buf[:0]
+
+	for {
+		if pos := strings.IndexByte(s, sep); pos == -1 {
+			buf = append(buf, s)
+			break
+		} else {
+			buf = append(buf, s[0:pos])
+			s = s[pos+1:]
+		}
+	}
+	return buf
+}
+
+// SplitRune return splitted slice (use pre-allocated buffer) (realloc if needed)
+func SplitRune(s string, sep rune, buf []string) []string {
+	buf = buf[:0]
+
+	w := utf8.RuneLen(sep)
+
+	for {
+		if pos := strings.IndexRune(s, sep); pos == -1 {
+			buf = append(buf, s)
+			break
+		} else {
+			buf = append(buf, s[0:pos])
+			s = s[pos+w:]
+		}
+	}
+	return buf
 }

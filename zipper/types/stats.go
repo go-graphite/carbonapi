@@ -2,26 +2,26 @@ package types
 
 // Stats provides zipper-related statistics
 type Stats struct {
-	Timeouts          int64
-	FindRequests      int64
-	FindErrors        int64
-	FindTimeouts      int64
-	RenderRequests    int64
-	RenderErrors      int64
-	RenderTimeouts    int64
-	InfoRequests      int64
-	InfoErrors        int64
-	InfoTimeouts      int64
-	SearchRequests    int64
-	SearchCacheHits   int64
-	SearchCacheMisses int64
-	ZipperRequests    int64
-	TotalMetricsCount int64
+	Timeouts          uint64
+	FindRequests      uint64
+	FindErrors        uint64
+	FindTimeouts      uint64
+	RenderRequests    uint64
+	RenderErrors      uint64
+	RenderTimeouts    uint64
+	InfoRequests      uint64
+	InfoErrors        uint64
+	InfoTimeouts      uint64
+	SearchRequests    uint64
+	SearchCacheHits   uint64
+	SearchCacheMisses uint64
+	ZipperRequests    uint64
+	TotalMetricsCount uint64
 
 	MemoryUsage int64
 
-	CacheMisses int64
-	CacheHits   int64
+	CacheMisses uint64
+	CacheHits   uint64
 
 	Servers       []string
 	FailedServers []string

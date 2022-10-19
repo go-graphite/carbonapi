@@ -24,6 +24,9 @@ github.com/ansel1/merry/v2
 # github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d
 ## explicit
 github.com/bradfitz/gomemcache/memcache
+# github.com/cactus/go-statsd-client/v5 v5.0.0
+## explicit
+github.com/cactus/go-statsd-client/v5/statsd
 # github.com/circonus-labs/gosnowth v1.10.5
 ## explicit
 github.com/circonus-labs/gosnowth
@@ -116,7 +119,11 @@ github.com/mitchellh/mapstructure
 ## explicit
 github.com/mjibson/go-dsp/dsputils
 github.com/mjibson/go-dsp/fft
-# github.com/msaf1980/go-stringutils v0.0.15
+# github.com/msaf1980/go-metrics v0.0.11
+## explicit
+github.com/msaf1980/go-metrics
+github.com/msaf1980/go-metrics/graphite
+# github.com/msaf1980/go-stringutils v0.1.2
 ## explicit
 github.com/msaf1980/go-stringutils
 # github.com/natefinch/atomic v1.0.1
@@ -132,9 +139,6 @@ github.com/pelletier/go-toml/v2
 github.com/pelletier/go-toml/v2/internal/ast
 github.com/pelletier/go-toml/v2/internal/danger
 github.com/pelletier/go-toml/v2/internal/tracker
-# github.com/peterbourgon/g2g v0.0.0-20161124161852-0c2bab2b173d
-## explicit
-github.com/peterbourgon/g2g
 # github.com/philhofer/fwd v1.1.1
 github.com/philhofer/fwd
 # github.com/pmezard/go-difflib v1.0.0

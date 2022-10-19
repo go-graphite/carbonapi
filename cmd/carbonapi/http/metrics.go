@@ -1,85 +1,95 @@
 package http
 
 import (
-	"expvar"
-	"strconv"
-	"sync/atomic"
+	"fmt"
 
 	"github.com/go-graphite/carbonapi/cache"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
+	"github.com/msaf1980/go-metrics"
 	"go.uber.org/zap"
 )
 
 var ApiMetrics = struct {
-	Requests              *expvar.Int
-	RenderRequests        *expvar.Int
-	RequestCacheHits      *expvar.Int
-	RequestCacheMisses    *expvar.Int
-	BackendCacheHits      *expvar.Int
-	BackendCacheMisses    *expvar.Int
-	RenderCacheOverheadNS *expvar.Int
-	RequestBuckets        expvar.Func
+	RequestCacheHits        metrics.Counter
+	RequestCacheMisses      metrics.Counter
+	BackendCacheHits        metrics.Counter
+	BackendCacheMisses      metrics.Counter
+	RequestsCacheOverheadNS metrics.Counter
+	RequestsH               metrics.Histogram
+	Requests200             metrics.Counter
+	Requests400             metrics.Counter
+	Requests403             metrics.Counter
+	Requestsxxx             metrics.Counter // failback other 4xx statuses
+	Requests500             metrics.Counter
+	Requests503             metrics.Counter
+	Requests5xx             metrics.Counter // failback other 5xx statuses
 
-	FindRequests *expvar.Int
+	RenderRequests metrics.Counter
 
-	MemcacheTimeouts expvar.Func
+	FindRequests metrics.Counter
 
-	CacheSize  expvar.Func
-	CacheItems expvar.Func
+	MemcacheTimeouts metrics.UGauge
+
+	CacheSize  metrics.UGauge
+	CacheItems metrics.Gauge
 }{
-	Requests: expvar.NewInt("requests"),
-	// TODO: request_cache -> render_cache
-	RenderRequests:        expvar.NewInt("render_requests"),
-	RequestCacheHits:      expvar.NewInt("request_cache_hits"),
-	RequestCacheMisses:    expvar.NewInt("request_cache_misses"),
-	BackendCacheHits:      expvar.NewInt("backend_cache_hits"),
-	BackendCacheMisses:    expvar.NewInt("backend_cache_misses"),
-	RenderCacheOverheadNS: expvar.NewInt("render_cache_overhead_ns"),
+	RenderRequests:          metrics.NewCounter(),
+	RequestCacheHits:        metrics.NewCounter(),
+	RequestCacheMisses:      metrics.NewCounter(),
+	BackendCacheHits:        metrics.NewCounter(),
+	BackendCacheMisses:      metrics.NewCounter(),
+	RequestsCacheOverheadNS: metrics.NewCounter(),
 
-	FindRequests: expvar.NewInt("find_requests"),
+	Requests200: metrics.NewCounter(),
+	Requests400: metrics.NewCounter(),
+	Requests403: metrics.NewCounter(),
+	Requestsxxx: metrics.NewCounter(),
+	Requests500: metrics.NewCounter(),
+	Requests503: metrics.NewCounter(),
+	Requests5xx: metrics.NewCounter(),
+
+	FindRequests: metrics.NewCounter(),
 }
 
 var ZipperMetrics = struct {
-	FindRequests *expvar.Int
-	FindTimeouts *expvar.Int
-	FindErrors   *expvar.Int
+	FindRequests metrics.Counter
+	FindTimeouts metrics.Counter
+	FindErrors   metrics.Counter
 
-	SearchRequests *expvar.Int
+	SearchRequests metrics.Counter
 
-	RenderRequests *expvar.Int
-	RenderTimeouts *expvar.Int
-	RenderErrors   *expvar.Int
+	RenderRequests metrics.Counter
+	RenderTimeouts metrics.Counter
+	RenderErrors   metrics.Counter
 
-	InfoRequests *expvar.Int
-	InfoTimeouts *expvar.Int
-	InfoErrors   *expvar.Int
+	InfoRequests metrics.Counter
+	InfoTimeouts metrics.Counter
+	InfoErrors   metrics.Counter
 
-	Timeouts *expvar.Int
+	Timeouts metrics.Counter
 
-	CacheSize   expvar.Func
-	CacheItems  expvar.Func
-	CacheMisses *expvar.Int
-	CacheHits   *expvar.Int
+	CacheMisses metrics.Counter
+	CacheHits   metrics.Counter
 }{
-	FindRequests: expvar.NewInt("zipper_find_requests"),
-	FindTimeouts: expvar.NewInt("zipper_find_timeouts"),
-	FindErrors:   expvar.NewInt("zipper_find_errors"),
+	FindRequests: metrics.NewCounter(),
+	FindTimeouts: metrics.NewCounter(),
+	FindErrors:   metrics.NewCounter(),
 
-	SearchRequests: expvar.NewInt("zipper_search_requests"),
+	SearchRequests: metrics.NewCounter(),
 
-	RenderRequests: expvar.NewInt("zipper_render_requests"),
-	RenderTimeouts: expvar.NewInt("zipper_render_timeouts"),
-	RenderErrors:   expvar.NewInt("zipper_render_errors"),
+	RenderRequests: metrics.NewCounter(),
+	RenderTimeouts: metrics.NewCounter(),
+	RenderErrors:   metrics.NewCounter(),
 
-	InfoRequests: expvar.NewInt("zipper_info_requests"),
-	InfoTimeouts: expvar.NewInt("zipper_info_timeouts"),
-	InfoErrors:   expvar.NewInt("zipper_info_errors"),
+	InfoRequests: metrics.NewCounter(),
+	InfoTimeouts: metrics.NewCounter(),
+	InfoErrors:   metrics.NewCounter(),
 
-	Timeouts: expvar.NewInt("zipper_timeouts"),
+	Timeouts: metrics.NewCounter(),
 
-	CacheHits:   expvar.NewInt("zipper_cache_hits"),
-	CacheMisses: expvar.NewInt("zipper_cache_misses"),
+	CacheHits:   metrics.NewCounter(),
+	CacheMisses: metrics.NewCounter(),
 }
 
 func ZipperStats(stats *zipperTypes.Stats) {
@@ -101,44 +111,78 @@ func ZipperStats(stats *zipperTypes.Stats) {
 	ZipperMetrics.CacheHits.Add(stats.CacheHits)
 }
 
-type BucketEntry int
-
-var TimeBuckets []int64
-
-func (b BucketEntry) String() string {
-	return strconv.Itoa(int(atomic.LoadInt64(&TimeBuckets[b])))
-}
-
-func RenderTimeBuckets() interface{} {
-	return TimeBuckets
-}
-
 func SetupMetrics(logger *zap.Logger) {
 	switch config.Config.ResponseCacheConfig.Type {
 	case "memcache":
 		mcache := config.Config.ResponseCache.(*cache.MemcachedCache)
 
-		ApiMetrics.MemcacheTimeouts = expvar.Func(func() interface{} {
-			return mcache.Timeouts()
-		})
-		expvar.Publish("memcache_timeouts", ApiMetrics.MemcacheTimeouts)
-
+		ApiMetrics.MemcacheTimeouts = metrics.NewFunctionalUGauge(mcache.Timeouts)
 	case "mem":
 		qcache := config.Config.ResponseCache.(*cache.ExpireCache)
 
-		ApiMetrics.CacheSize = expvar.Func(func() interface{} {
-			return qcache.Size()
+		ApiMetrics.CacheSize = metrics.NewFunctionalUGauge(qcache.Size)
+		ApiMetrics.CacheItems = metrics.NewFunctionalGauge(func() int64 {
+			return int64(qcache.Items())
 		})
-		expvar.Publish("cache_size", ApiMetrics.CacheSize)
-
-		ApiMetrics.CacheItems = expvar.Func(func() interface{} {
-			return qcache.Items()
-		})
-		expvar.Publish("cache_items", ApiMetrics.CacheItems)
 	default:
 	}
 
-	// +1 to track every over the number of buckets we track
-	TimeBuckets = make([]int64, config.Config.Upstreams.Buckets+1)
-	expvar.Publish("requestBuckets", expvar.Func(RenderTimeBuckets))
+	ApiMetrics.RequestsH = initRequestsHistogram()
+}
+
+func initRequestsHistogram() metrics.Histogram {
+	if config.Config.Upstreams.SumBuckets {
+		if len(config.Config.Upstreams.BucketsWidth) > 0 {
+			labels := make([]string, len(config.Config.Upstreams.BucketsWidth)+1)
+
+			for i := 0; i <= len(config.Config.Upstreams.BucketsWidth); i++ {
+				if i >= len(config.Config.Upstreams.BucketsLabels) || config.Config.Upstreams.BucketsLabels[i] == "" {
+					if i < len(config.Config.Upstreams.BucketsWidth) {
+						labels[i] = fmt.Sprintf("_to_%dms", config.Config.Upstreams.BucketsWidth[i])
+					} else {
+						labels[i] = "_to_inf"
+					}
+				} else {
+					labels[i] = config.Config.Upstreams.BucketsLabels[i]
+				}
+			}
+			return metrics.NewVSumHistogram(config.Config.Upstreams.BucketsWidth, labels).
+				SetNameTotal("")
+		} else {
+			labels := make([]string, config.Config.Upstreams.Buckets+1)
+
+			for i := 0; i <= config.Config.Upstreams.Buckets; i++ {
+				labels[i] = fmt.Sprintf("_to_%dms", (i+1)*100)
+			}
+			return metrics.NewFixedSumHistogram(100, int64(config.Config.Upstreams.Buckets)*100, 100).
+				SetLabels(labels).
+				SetNameTotal("")
+		}
+	} else if len(config.Config.Upstreams.BucketsWidth) > 0 {
+		labels := make([]string, len(config.Config.Upstreams.BucketsWidth)+1)
+
+		for i := 0; i <= len(config.Config.Upstreams.BucketsWidth); i++ {
+			if i >= len(config.Config.Upstreams.BucketsLabels) || config.Config.Upstreams.BucketsLabels[i] == "" {
+				if i == 0 {
+					labels[i] = fmt.Sprintf("_in_0ms_to_%dms", config.Config.Upstreams.BucketsWidth[0])
+				} else if i < len(config.Config.Upstreams.BucketsWidth) {
+					labels[i] = fmt.Sprintf("_in_%dms_to_%dms", config.Config.Upstreams.BucketsWidth[i-1], config.Config.Upstreams.BucketsWidth[i])
+				} else {
+					labels[i] = fmt.Sprintf("_in_%dms_to_inf", config.Config.Upstreams.BucketsWidth[i-1])
+				}
+			} else {
+				labels[i] = config.Config.Upstreams.BucketsLabels[i]
+			}
+		}
+		return metrics.NewVSumHistogram(config.Config.Upstreams.BucketsWidth, labels).SetNameTotal("")
+	} else {
+		labels := make([]string, config.Config.Upstreams.Buckets+1)
+
+		for i := 0; i <= config.Config.Upstreams.Buckets; i++ {
+			labels[i] = fmt.Sprintf("_in_%dms_to_%dms", i*100, (i+1)*100)
+		}
+		return metrics.NewFixedSumHistogram(100, int64(config.Config.Upstreams.Buckets)*100, 100).
+			SetLabels(labels).
+			SetNameTotal("")
+	}
 }
