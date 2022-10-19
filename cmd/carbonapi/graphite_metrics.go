@@ -1,16 +1,21 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/http"
-	"github.com/go-graphite/carbonapi/mstats"
-	"github.com/peterbourgon/g2g"
+
+	"github.com/cactus/go-statsd-client/v5/statsd"
+	"github.com/msaf1980/go-metrics"
+	"github.com/msaf1980/go-metrics/graphite"
 	"go.uber.org/zap"
+)
+
+var (
+	g *graphite.Graphite
 )
 
 func setupGraphiteMetrics(logger *zap.Logger) {
@@ -32,9 +37,6 @@ func setupGraphiteMetrics(logger *zap.Logger) {
 	)
 
 	if host != "" {
-		// register our metrics with graphite
-		graphite := g2g.NewGraphite(host, config.Config.Graphite.Interval, 10*time.Second)
-
 		hostname, _ := os.Hostname()
 		hostname = strings.ReplaceAll(hostname, ".", "_")
 
@@ -44,47 +46,77 @@ func setupGraphiteMetrics(logger *zap.Logger) {
 		pattern = strings.ReplaceAll(pattern, "{prefix}", prefix)
 		pattern = strings.ReplaceAll(pattern, "{fqdn}", hostname)
 
-		graphite.Register(fmt.Sprintf("%s.requests", pattern), http.ApiMetrics.Requests)
-		graphite.Register(fmt.Sprintf("%s.request_cache_hits", pattern), http.ApiMetrics.RequestCacheHits)
-		graphite.Register(fmt.Sprintf("%s.request_cache_misses", pattern), http.ApiMetrics.RequestCacheMisses)
-		graphite.Register(fmt.Sprintf("%s.request_cache_overhead_ns", pattern), http.ApiMetrics.RenderCacheOverheadNS)
-		graphite.Register(fmt.Sprintf("%s.backend_cache_hits", pattern), http.ApiMetrics.BackendCacheHits)
-		graphite.Register(fmt.Sprintf("%s.backend_cache_misses", pattern), http.ApiMetrics.BackendCacheMisses)
+		// register our metrics with graphite
+		g = graphite.New(config.Config.Graphite.Interval, pattern, host, 10*time.Second)
 
-		for i := 0; i <= config.Config.Upstreams.Buckets; i++ {
-			graphite.Register(fmt.Sprintf("%s.requests_in_%dms_to_%dms", pattern, i*100, (i+1)*100), http.BucketEntry(i))
+		// StatsD client
+		if config.Config.Graphite.Statsd != "" && config.Config.Upstreams.ExtendedStat {
+			var err error
+			config := &statsd.ClientConfig{
+				Address:       config.Config.Graphite.Statsd,
+				Prefix:        pattern,
+				ResInterval:   5 * time.Minute,
+				UseBuffered:   true,
+				FlushInterval: 300 * time.Millisecond,
+			}
+			http.Gstatsd, err = statsd.NewClientWithConfig(config)
+			if err != nil {
+				logger.Error("statsd init", zap.Error(err))
+			}
 		}
 
-		graphite.Register(fmt.Sprintf("%s.find_requests", pattern), http.ApiMetrics.FindRequests)
-		graphite.Register(fmt.Sprintf("%s.render_requests", pattern), http.ApiMetrics.RenderRequests)
+		if http.Gstatsd == nil {
+			http.Gstatsd = http.NullSender{}
+		}
+
+		metrics.Register("request_cache_hits", http.ApiMetrics.RequestCacheHits)
+		metrics.Register("request_cache_misses", http.ApiMetrics.RequestCacheMisses)
+		metrics.Register("request_cache_overhead_ns", http.ApiMetrics.RequestsCacheOverheadNS)
+		metrics.Register("backend_cache_hits", http.ApiMetrics.BackendCacheHits)
+		metrics.Register("backend_cache_misses", http.ApiMetrics.BackendCacheMisses)
+
+		if config.Config.Upstreams.ExtendedStat {
+			metrics.Register("requests_status_code.200", http.ApiMetrics.Requests200)
+			metrics.Register("requests_status_code.400", http.ApiMetrics.Requests400)
+			metrics.Register("requests_status_code.403", http.ApiMetrics.Requests403)
+			metrics.Register("requests_status_code.4xx", http.ApiMetrics.Requestsxxx)
+			metrics.Register("requests_status_code.500", http.ApiMetrics.Requests500)
+			metrics.Register("requests_status_code.503", http.ApiMetrics.Requests503)
+			metrics.Register("requests_status_code.5xx", http.ApiMetrics.Requests5xx)
+		}
+
+		// requests histogram
+		metrics.Register("requests", http.ApiMetrics.RequestsH)
+
+		metrics.Register("find_requests", http.ApiMetrics.FindRequests)
+		metrics.Register("render_requests", http.ApiMetrics.RenderRequests)
 
 		if http.ApiMetrics.MemcacheTimeouts != nil {
-			graphite.Register(fmt.Sprintf("%s.memcache_timeouts", pattern), http.ApiMetrics.MemcacheTimeouts)
+			metrics.Register("memcache_timeouts", http.ApiMetrics.MemcacheTimeouts)
 		}
 
 		if http.ApiMetrics.CacheSize != nil {
-			graphite.Register(fmt.Sprintf("%s.cache_size", pattern), http.ApiMetrics.CacheSize)
-			graphite.Register(fmt.Sprintf("%s.cache_items", pattern), http.ApiMetrics.CacheItems)
+			metrics.Register("cache_size", http.ApiMetrics.CacheSize)
+			metrics.Register("cache_items", http.ApiMetrics.CacheItems)
 		}
 
-		graphite.Register(fmt.Sprintf("%s.zipper.find_requests", pattern), http.ZipperMetrics.FindRequests)
-		graphite.Register(fmt.Sprintf("%s.zipper.find_errors", pattern), http.ZipperMetrics.FindErrors)
+		metrics.Register("zipper.find_requests", http.ZipperMetrics.FindRequests)
+		metrics.Register("zipper.find_errors", http.ZipperMetrics.FindErrors)
 
-		graphite.Register(fmt.Sprintf("%s.zipper.render_requests", pattern), http.ZipperMetrics.RenderRequests)
-		graphite.Register(fmt.Sprintf("%s.zipper.render_errors", pattern), http.ZipperMetrics.RenderErrors)
+		metrics.Register("zipper.render_requests", http.ZipperMetrics.RenderRequests)
+		metrics.Register("zipper.render_errors", http.ZipperMetrics.RenderErrors)
 
-		graphite.Register(fmt.Sprintf("%s.zipper.info_requests", pattern), http.ZipperMetrics.InfoRequests)
-		graphite.Register(fmt.Sprintf("%s.zipper.info_errors", pattern), http.ZipperMetrics.InfoErrors)
+		metrics.Register("zipper.info_requests", http.ZipperMetrics.InfoRequests)
+		metrics.Register("zipper.info_errors", http.ZipperMetrics.InfoErrors)
 
-		graphite.Register(fmt.Sprintf("%s.zipper.timeouts", pattern), http.ZipperMetrics.Timeouts)
+		metrics.Register("zipper.timeouts", http.ZipperMetrics.Timeouts)
 
-		graphite.Register(fmt.Sprintf("%s.zipper.cache_hits", pattern), http.ZipperMetrics.CacheHits)
-		graphite.Register(fmt.Sprintf("%s.zipper.cache_misses", pattern), http.ZipperMetrics.CacheMisses)
+		metrics.Register("zipper.cache_hits", http.ZipperMetrics.CacheHits)
+		metrics.Register("zipper.cache_misses", http.ZipperMetrics.CacheMisses)
 
-		go mstats.Start(config.Config.Graphite.Interval)
-		graphite.Register(fmt.Sprintf("%s.alloc", pattern), &mstats.Alloc)
-		graphite.Register(fmt.Sprintf("%s.total_alloc", pattern), &mstats.TotalAlloc)
-		graphite.Register(fmt.Sprintf("%s.num_gc", pattern), &mstats.NumGC)
-		graphite.Register(fmt.Sprintf("%s.pause_ns", pattern), &mstats.PauseNS)
+		metrics.RegisterRuntimeMemStats(nil)
+		go metrics.CaptureRuntimeMemStats(config.Config.Graphite.Interval)
+
+		g.Start(nil)
 	}
 }

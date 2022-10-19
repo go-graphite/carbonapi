@@ -2,14 +2,12 @@ package timeSlice
 
 import (
 	"context"
-	"math"
-	"strconv"
-	"time"
-
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
+	"math"
+	"strconv"
 )
 
 type timeSlice struct {
@@ -35,19 +33,16 @@ func (f *timeSlice) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		return nil, parser.ErrMissingArgument
 	}
 
-	start32, err := e.GetIntervalArg(1, -1)
+	start32, err := e.GetIntervalArg(1, 1)
 	if err != nil {
 		return nil, err
 	}
 	start := int64(start32)
 
-	end, err := e.GetIntervalNamedOrPosArgDefault("endSliceAt", 2, -1, 0)
+	end, err := e.GetIntervalNamedOrPosArgDefault("endSliceAt", 2, 1, 0)
 	if err != nil {
 		return nil, err
 	}
-	now := time.Now().Unix()
-	start += now
-	end += now
 
 	startStr := strconv.FormatInt(start, 10)
 	endStr := strconv.FormatInt(end, 10)

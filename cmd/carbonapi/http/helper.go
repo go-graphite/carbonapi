@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/go-graphite/carbonapi/carbonapipb"
@@ -194,20 +193,11 @@ func writeResponse(w http.ResponseWriter, returnCode int, b []byte, format respo
 }
 
 func bucketRequestTimes(req *http.Request, t time.Duration) {
-	logger := zapwriter.Logger("slow")
-
 	ms := t.Nanoseconds() / int64(time.Millisecond)
-
-	bucket := int(ms / 100)
-
-	if bucket < config.Config.Upstreams.Buckets {
-		atomic.AddInt64(&TimeBuckets[bucket], 1)
-	} else {
-		// Too big? Increment overflow bucket
-		atomic.AddInt64(&TimeBuckets[config.Config.Upstreams.Buckets], 1)
-	}
+	ApiMetrics.RequestsH.Add(ms)
 
 	if t > config.Config.Upstreams.SlowLogThreshold {
+		logger := zapwriter.Logger("slow")
 		referer := req.Header.Get("Referer")
 		logger.Warn("Slow Request",
 			zap.Duration("time", t),
@@ -247,9 +237,29 @@ func deferredAccessLogging(accessLogger *zap.Logger, accessLogDetails *carbonapi
 	accessLogDetails.Runtime = time.Since(t).Seconds()
 	if logAsError {
 		accessLogger.Error("request failed", zap.Any("data", *accessLogDetails))
+		if config.Config.Upstreams.ExtendedStat {
+			switch accessLogDetails.HTTPCode {
+			case 400:
+				ApiMetrics.Requests400.Add(1)
+			case 403:
+				ApiMetrics.Requests403.Add(1)
+			case 500:
+				ApiMetrics.Requests500.Add(1)
+			case 503:
+				ApiMetrics.Requests503.Add(1)
+			default:
+				if accessLogDetails.HTTPCode > 500 {
+					ApiMetrics.Requests5xx.Add(1)
+				} else {
+					ApiMetrics.Requestsxxx.Add(1)
+				}
+			}
+		}
 	} else {
 		accessLogDetails.HTTPCode = http.StatusOK
 		accessLogger.Info("request served", zap.Any("data", *accessLogDetails))
+		ApiMetrics.Requests200.Add(1)
+		Gstatsd.Timing("stat.all.response_size", accessLogDetails.CarbonapiResponseSizeBytes, 1.0)
 	}
 }
 

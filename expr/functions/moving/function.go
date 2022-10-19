@@ -114,20 +114,20 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		return arg, nil
 	}
 
-	if len(e.Args()) >= 3 && e.Target() == "movingWindow" {
+	if e.ArgsLen() >= 3 && e.Target() == "movingWindow" {
 		cons, err = e.GetStringArgDefault(2, "average")
 		if err != nil {
 			return nil, err
 		}
 
-		if len(e.Args()) == 4 {
+		if e.ArgsLen() == 4 {
 			xFilesFactor, err = e.GetFloatArgDefault(3, float64(arg[0].XFilesFactor))
 
 			if err != nil {
 				return nil, err
 			}
 		}
-	} else if len(e.Args()) == 3 {
+	} else if e.ArgsLen() == 3 {
 		xFilesFactor, err = e.GetFloatArgDefault(2, float64(arg[0].XFilesFactor))
 
 		if err != nil {

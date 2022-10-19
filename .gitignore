@@ -1,9 +1,7 @@
 .idea
 /carbonapi
-/carbonzipper
 /mockbackend
 /cmd/mockbackend/mockbackend
 /cmd/carbonapi/carbonapi
-/cmd/carbonzipper/carbonzipper
 /cmd/functiondiff/functiondiff
 /cmd/carbonapi/*.log

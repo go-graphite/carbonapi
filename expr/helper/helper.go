@@ -121,8 +121,9 @@ type seriesFunc1 func(*types.MetricData) *types.MetricData
 func ForEachSeriesDo1(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData, function seriesFunc1) ([]*types.MetricData, error) {
 	arg, err := GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
-		return nil, parser.ErrMissingTimeseries
+		return nil, err
 	}
+
 	var results []*types.MetricData
 
 	for _, a := range arg {
@@ -137,8 +138,9 @@ type seriesFunc func(*types.MetricData, *types.MetricData) *types.MetricData
 func ForEachSeriesDo(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData, function seriesFunc) ([]*types.MetricData, error) {
 	arg, err := GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
-		return nil, parser.ErrMissingTimeseries
+		return nil, err
 	}
+
 	var results []*types.MetricData
 
 	for _, a := range arg {
