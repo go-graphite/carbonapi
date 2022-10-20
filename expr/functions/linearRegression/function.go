@@ -44,9 +44,9 @@ func (f *linearRegression) Do(ctx context.Context, e parser.Expr, from, until in
 
 	for _, a := range arg {
 		r := a.CopyLink()
-		if len(e.Args()) > 2 {
+		if e.ArgsLen() > 2 {
 			r.Name = "linearRegression(" + a.GetName() + ",'" + e.Arg(1).StringValue() + "','" + e.Arg(2).StringValue() + "')"
-		} else if len(e.Args()) > 1 {
+		} else if e.ArgsLen() > 1 {
 			r.Name = "linearRegression(" + a.GetName() + ",'" + e.Arg(1).StringValue() + "')"
 		} else {
 			r.Name = "linearRegression(" + a.Name + ")"
@@ -56,7 +56,7 @@ func (f *linearRegression) Do(ctx context.Context, e parser.Expr, from, until in
 		r.StopTime = a.GetStopTime()
 
 		// Removing absent values from original dataset
-		nonNulls := make([]float64, 0)
+		nonNulls := make([]float64, 0, len(a.Values))
 		for i, v := range a.Values {
 			if !math.IsNaN(v) {
 				nonNulls = append(nonNulls, a.Values[i])

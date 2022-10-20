@@ -34,7 +34,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 // summarize(seriesList, intervalString, func='sum', alignToFrom=False)
 func (f *summarize) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(dgryski): make sure the arrays are all the same 'size'
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (f *summarize) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	results := make([]*types.MetricData, 0, len(args))
 	for _, arg := range args {
 
-		name := fmt.Sprintf("summarize(%s,'%s'", arg.Name, e.Args()[1].StringValue())
+		name := fmt.Sprintf("summarize(%s,'%s'", arg.Name, e.Arg(1).StringValue())
 		if funcOk || alignOk {
 			// we include the "func" argument in the presence of
 			// "alignToFrom", even if the former was omitted
@@ -127,7 +127,7 @@ func (f *summarize) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			},
 			Tags: helper.CopyTags(arg),
 		}
-		r.Tags["summarize"] = e.Args()[1].StringValue()
+		r.Tags["summarize"] = e.Arg(1).StringValue()
 		r.Tags["summarizeFunction"] = summarizeFunction
 
 		t := arg.StartTime // unadjusted

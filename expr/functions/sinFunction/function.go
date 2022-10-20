@@ -37,13 +37,13 @@ func (f *sinFunction) Do(ctx context.Context, e parser.Expr, from, until int64, 
 
 	var amplitude = 1.0
 	var stepInt = 60
-	if len(e.Args()) >= 2 {
+	if e.ArgsLen() >= 2 {
 		amplitude, err = e.GetFloatArgDefault(1, 1.0)
 		if err != nil {
 			return nil, err
 		}
 	}
-	if len(e.Args()) == 3 {
+	if e.ArgsLen() == 3 {
 		stepInt, err = e.GetIntArgDefault(2, 60)
 		if err != nil {
 			return nil, err

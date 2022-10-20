@@ -32,29 +32,30 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *exponentialMovingAverage) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	var n int
-	var err error
+	var (
+		windowSize int
+		argstr     string
+		err        error
+	)
 
-	var argstr string
-
-	if len(e.Args()) < 2 {
+	if e.ArgsLen() < 2 {
 		return nil, parser.ErrMissingArgument
 	}
 
-	switch e.Args()[1].Type() {
+	switch e.Arg(1).Type() {
 	case parser.EtConst:
 		// In this case, zipper does not request additional retrospective points,
 		// and leading `n` values, that used to calculate window, become NaN
-		n, err = e.GetIntArg(1)
-		argstr = strconv.Itoa(n)
+		windowSize, err = e.GetIntArg(1)
+		argstr = strconv.Itoa(windowSize)
 	case parser.EtString:
 		var n32 int32
 		n32, err = e.GetIntervalArg(1, 1)
 		if err != nil {
 			return nil, err
 		}
-		argstr = fmt.Sprintf("%q", e.Args()[1].StringValue())
-		n = int(n32)
+		argstr = strconv.Quote(e.Arg(1).StringValue())
+		windowSize = int(n32)
 	default:
 		err = parser.ErrBadType
 	}
@@ -63,15 +64,16 @@ func (f *exponentialMovingAverage) Do(ctx context.Context, e parser.Expr, from, 
 	}
 
 	var results []*types.MetricData
-	windowSize := n
 
 	if windowSize < 1 {
 		return nil, fmt.Errorf("invalid window size %d", windowSize)
 	}
 
+	windowStr := strconv.Itoa(windowSize)
+
 	start := from
 
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], start, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), start, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +106,7 @@ func (f *exponentialMovingAverage) Do(ctx context.Context, e parser.Expr, from, 
 			}
 		}
 
-		r.Tags[e.Target()] = fmt.Sprintf("%d", windowSize)
+		r.Tags[e.Target()] = windowStr
 		r.Values = vals
 		r.StartTime = (from + r.StepTime - 1) / r.StepTime * r.StepTime // align StartTime to closest >= StepTime
 		r.StopTime = r.StartTime + int64(len(r.Values))*r.StepTime
