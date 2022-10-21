@@ -35,17 +35,43 @@ type MetricData struct {
 	AggregateFunction func([]float64) float64 `json:"-"`
 }
 
+func appendInt2(b []byte, n int64) []byte {
+	if n > 9 {
+		return strconv.AppendInt(b, n, 10)
+	}
+	b = append(b, '0')
+	return strconv.AppendInt(b, n, 10)
+}
+
 // MarshalCSV marshals metric data to CSV
 func MarshalCSV(results []*MetricData) []byte {
-
-	var b []byte
+	if len(results) == 0 {
+		return []byte("[]")
+	}
+	n := len(results) * (len(results[0].Name) + len(results[0].PathExpression) + 128*len(results[0].Values) + 128)
+	b := make([]byte, 0, n)
 
 	for _, r := range results {
 
 		step := r.StepTime
 		t := r.StartTime
 		for _, v := range r.Values {
-			b = append(b, "\""+r.Name+"\","+time.Unix(t, 0).UTC().Format("2006-01-02 15:04:05")+","...)
+			b = append(b, '"')
+			b = append(b, r.Name...)
+			b = append(b, `",`...)
+			tm := time.Unix(t, 0).UTC()
+			b = strconv.AppendInt(b, int64(tm.Year()), 10)
+			b = append(b, '-')
+			b = appendInt2(b, int64(tm.Month()))
+			b = append(b, '-')
+			b = appendInt2(b, int64(tm.Day()))
+			b = append(b, ' ')
+			b = appendInt2(b, int64(tm.Hour()))
+			b = append(b, ':')
+			b = appendInt2(b, int64(tm.Minute()))
+			b = append(b, ':')
+			b = appendInt2(b, int64(tm.Second()))
+			b = append(b, ',')
 			if !math.IsNaN(v) {
 				b = strconv.AppendFloat(b, v, 'f', -1, 64)
 			}
@@ -91,7 +117,12 @@ func ConsolidateJSON(maxDataPoints int64, results []*MetricData) {
 
 // MarshalJSON marshals metric data to JSON
 func MarshalJSON(results []*MetricData, timestampMultiplier int64, noNullPoints bool) []byte {
-	var b []byte
+	if len(results) == 0 {
+		return []byte("[]")
+	}
+	n := len(results) * (len(results[0].Name) + len(results[0].PathExpression) + 128*len(results[0].Values) + 128)
+
+	b := make([]byte, 0, n)
 	b = append(b, '[')
 
 	var topComma bool
@@ -248,8 +279,11 @@ func MarshalProtobufV3(results []*MetricData) ([]byte, error) {
 
 // MarshalRaw marshals metric data to graphite's internal format, called 'raw'
 func MarshalRaw(results []*MetricData) []byte {
-
-	var b []byte
+	if len(results) == 0 {
+		return []byte{}
+	}
+	n := len(results) * (len(results[0].Name) + len(results[0].PathExpression) + 128*len(results[0].Values) + 128)
+	b := make([]byte, 0, n)
 
 	for _, r := range results {
 
