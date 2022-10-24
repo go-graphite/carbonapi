@@ -111,7 +111,6 @@ _When `format=png`_ (default if not specified)
 | :------------------------------------------------------------------------ |
 | aliasQuery |
 | events |
-| holtWintersConfidenceArea |
 | pct |
 
 ### Partly supported functions
@@ -220,6 +219,7 @@ reverse: default value mismatch: got (empty), should be false |
 | hitcount(seriesList, intervalString, alignToInterval=False)                                             | no |
 | holtWintersAberration(seriesList, delta=3, bootstrapInterval='7d')                                      | no |
 | holtWintersConfidenceBands(seriesList, delta=3, bootstrapInterval='7d')                                 | no |
+| holtWintersConfidenceArea(seriesList, delta=3, bootstrapInterval='7d', seasonality='1d')                | no |
 | holtWintersForecast(seriesList, bootstrapInterval='7d')                                                 | no |
 | logit(seriesList)                                                                                       | no |
 | identity(name)                                                                                          | no |
