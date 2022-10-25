@@ -3,6 +3,7 @@ package moving
 import (
 	"context"
 	"math"
+	"strconv"
 	"testing"
 	"time"
 
@@ -134,13 +135,12 @@ func TestMoving(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
+	for n, tt := range tests {
 		testName := tt.Target
-		t.Run(testName, func(t *testing.T) {
+		t.Run(testName+"#"+strconv.Itoa(n), func(t *testing.T) {
 			th.TestEvalExpr(t, &tt)
 		})
 	}
-
 }
 
 func TestMovingXFilesFactor(t *testing.T) {
@@ -181,6 +181,49 @@ func TestMovingXFilesFactor(t *testing.T) {
 			th.TestEvalExpr(t, &tt)
 		})
 	}
+}
+
+func TestMovingError(t *testing.T) {
+	now32 := int64(time.Now().Unix())
+
+	tests := []th.EvalTestItemWithError{
+		{
+			Target: "movingWindow(metric1,'','average')",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", -3, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 1, 2, 3}, 1, now32)},
+			},
+			Error: parser.ErrBadType,
+		},
+		{
+			Target: "movingWindow(metric1,'-','average')",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", -3, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 1, 2, 3}, 1, now32)},
+			},
+			Error: parser.ErrBadType,
+		},
+		{
+			Target: "movingWindow(metric1,'+','average')",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", -3, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 1, 2, 3}, 1, now32)},
+			},
+			Error: parser.ErrBadType,
+		},
+		{
+			Target: "movingWindow(metric1,'-s1','average')",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", -3, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 1, 2, 3}, 1, now32)},
+			},
+			Error: parser.ErrBadType,
+		},
+	}
+
+	for n, tt := range tests {
+		testName := tt.Target
+		t.Run(testName+"#"+strconv.Itoa(n), func(t *testing.T) {
+			th.TestEvalExprWithError(t, &tt)
+		})
+	}
+
 }
 
 func BenchmarkMoving(b *testing.B) {
