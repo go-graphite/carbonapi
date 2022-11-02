@@ -28,7 +28,7 @@ test:
                   expectedResults:
                           - metrics:
                                   - target: "diffSeries(time(\"t\", 1), some.metric)"
-                                    datapoints: [[236,120],[356,240],[357,360]]
+                                    datapoints: [[176.5,120],[296.5,240],[357,360]]
 
 listeners:
         - address: ":9070"
