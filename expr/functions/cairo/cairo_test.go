@@ -1,3 +1,4 @@
+//go:build cairo
 // +build cairo
 
 package cairo
@@ -26,38 +27,38 @@ func TestEvalExpressionGraph(t *testing.T) {
 			"threshold(42.42)",
 			map[parser.MetricRequest][]*types.MetricData{},
 			[]*types.MetricData{types.MakeMetricData("42.42",
-				[]float64{42.42, 42.42}, 1, 0)},
+				[]float64{42.42, 42.42}, 1, 0).SetConsolidationFunc("average")},
 		},
 		{
 			"threshold(42.42,\"fourty-two\")",
 			map[parser.MetricRequest][]*types.MetricData{},
 			[]*types.MetricData{types.MakeMetricData("fourty-two",
-				[]float64{42.42, 42.42}, 1, 0)},
+				[]float64{42.42, 42.42}, 1, 0).SetConsolidationFunc("average")},
 		},
 		{
 			"threshold(42.42,\"fourty-two\",\"blue\")",
 			map[parser.MetricRequest][]*types.MetricData{},
 			[]*types.MetricData{types.MakeMetricData("fourty-two",
-				[]float64{42.42, 42.42}, 1, 0)},
+				[]float64{42.42, 42.42}, 1, 0).SetConsolidationFunc("average")},
 		},
 		{
 			"threshold(42.42,label=\"fourty-two\")",
 			map[parser.MetricRequest][]*types.MetricData{},
 			[]*types.MetricData{types.MakeMetricData("fourty-two",
-				[]float64{42.42, 42.42}, 1, 0)},
+				[]float64{42.42, 42.42}, 1, 0).SetConsolidationFunc("average")},
 		},
 		{
 			"threshold(42.42,color=\"blue\")",
 			map[parser.MetricRequest][]*types.MetricData{},
 			[]*types.MetricData{types.MakeMetricData("42.42",
-				[]float64{42.42, 42.42}, 1, 0)},
+				[]float64{42.42, 42.42}, 1, 0).SetConsolidationFunc("average")},
 		},
 		{
 			//TODO(nnuss): test blue is being set rather than just not causing expression to parse/fail
 			"threshold(42.42,label=\"fourty-two-blue\",color=\"blue\")",
 			map[parser.MetricRequest][]*types.MetricData{},
 			[]*types.MetricData{types.MakeMetricData("fourty-two-blue",
-				[]float64{42.42, 42.42}, 1, 0)},
+				[]float64{42.42, 42.42}, 1, 0).SetConsolidationFunc("average")},
 		},
 		{
 			// BUG(nnuss): This test actually fails with color = "" because of
@@ -67,7 +68,7 @@ func TestEvalExpressionGraph(t *testing.T) {
 			"threshold(42.42,gold,label=\"fourty-two-aurum\")",
 			map[parser.MetricRequest][]*types.MetricData{},
 			[]*types.MetricData{types.MakeMetricData("fourty-two-aurum",
-				[]float64{42.42, 42.42}, 1, 0)},
+				[]float64{42.42, 42.42}, 1, 0).SetConsolidationFunc("average")},
 		},
 	}
 
