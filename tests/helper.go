@@ -443,6 +443,9 @@ func TestEvalExprModifiedOrigin(t *testing.T, tt *EvalTestItem, from, until int6
 		if actual.Name != want.Name {
 			t.Errorf("bad Name for %s metric[%d]: got %s, Want %s", testName, i, actual.Name, want.Name)
 		}
+		if actual.ConsolidationFunc != want.ConsolidationFunc {
+			t.Errorf("different ConsolidationFunc for %s metric[%d] %s: got %v, Want %v", testName, i, actual.Name, actual.ConsolidationFunc, want.ConsolidationFunc)
+		}
 		if !compare.NearlyEqualMetrics(actual, want) {
 			t.Errorf("different values for %s metric[%d] %s: got %v, Want %v", testName, i, actual.Name, actual.Values, want.Values)
 		}
