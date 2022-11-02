@@ -17,7 +17,7 @@ test:
                   expectedResults:
                           - metrics:
                                   - target: "diffSeries(time(\"t\"), some.metric)"
-                                    datapoints: [[177,120],[297,240],[357,360]]
+                                    datapoints: [[147,120],[267,240],[357,360]]
             - endpoint: "http://127.0.0.1:8081"
               delay: 1
               type: "GET"
