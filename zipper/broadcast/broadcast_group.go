@@ -691,7 +691,7 @@ func (bg *BroadcastGroup) Expand(ctx context.Context, request *protov3.MultiGlob
 
 	result := types.NewServerExpandResponse()
 	result.Server = bg.Name()
-	result.Stats.ZipperRequests = int64(len(backends))
+	result.Stats.ZipperRequests = uint64(len(backends))
 	resultNew, responseCount := types.DoRequest(ctxNew, logger, backends, result, request, bg.doExpand)
 
 	result, ok := resultNew.Self().(*types.ServerExpandResponse)
@@ -720,7 +720,7 @@ func (bg *BroadcastGroup) Expand(ctx context.Context, request *protov3.MultiGlob
 	}
 	result.Stats.TotalMetricsCount = 0
 	for _, x := range result.Response.Metrics {
-		result.Stats.TotalMetricsCount += int64(len(x.Matches))
+		result.Stats.TotalMetricsCount += uint64(len(x.Matches))
 	}
 	logger.Debug("got some find responses",
 		zap.Int("backends_count", len(backends)),
