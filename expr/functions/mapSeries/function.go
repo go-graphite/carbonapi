@@ -2,7 +2,6 @@ package mapSeries
 
 import (
 	"context"
-	"strings"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -31,31 +30,25 @@ func New(configFile string) []interfaces.FunctionMetadata {
 // mapSeries(seriesList, *mapNodes)
 // Alias: map
 func (f *mapSeries) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	if e.ArgsLen() < 2 {
+		return nil, parser.ErrMissingArgument
+	}
+
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
-	var fields []int
-
-	fields, err = e.GetIntArgs(1)
+	nodesOrTags, err := e.GetNodeOrTagArgs(1, false)
 	if err != nil {
 		return nil, err
 	}
-
-	var results []*types.MetricData
 
 	groups := make(map[string][]*types.MetricData)
 	var nodeList []string
 
 	for _, a := range args {
-		metric := helper.ExtractMetric(a.Name)
-		nodes := strings.Split(metric, ".")
-		nodeKey := make([]string, 0, len(fields))
-		for _, f := range fields {
-			nodeKey = append(nodeKey, nodes[f])
-		}
-		node := strings.Join(nodeKey, ".")
+		node := helper.AggKey(a, nodesOrTags)
 		if len(groups[node]) == 0 {
 			nodeList = append(nodeList, node)
 		}
@@ -63,6 +56,7 @@ func (f *mapSeries) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		groups[node] = append(groups[node], a)
 	}
 
+	results := make([]*types.MetricData, 0, len(args))
 	for _, node := range nodeList {
 		results = append(results, groups[node]...)
 	}
@@ -92,6 +86,10 @@ func (f *mapSeries) Description() map[string]types.FunctionDescription {
 					Type:     types.NodeOrTag,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 		"map": {
 			Description: "Short form: ``map()``\n\nTakes a seriesList and maps it to a list of seriesList. Each seriesList has the\ngiven mapNodes in common.\n\n.. note:: This function is not very useful alone. It should be used with :py:func:`reduceSeries`\n\n.. code-block:: none\n\n  mapSeries(servers.*.cpu.*,1) =>\n\n    [\n      servers.server1.cpu.*,\n      servers.server2.cpu.*,\n      ...\n      servers.serverN.cpu.*\n    }\n\nEach node may be an integer referencing a node in the series name or a string identifying a tag.",

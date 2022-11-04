@@ -33,6 +33,7 @@ type CacheConfig struct {
 type GraphiteConfig struct {
 	Pattern  string
 	Host     string
+	Statsd   string
 	Interval time.Duration
 	Prefix   string
 }
@@ -75,6 +76,7 @@ type ConfigType struct {
 	PidFile                    string             `mapstructure:"pidFile"`
 	SendGlobsAsIs              *bool              `mapstructure:"sendGlobsAsIs"`
 	AlwaysSendGlobsAsIs        *bool              `mapstructure:"alwaysSendGlobsAsIs"`
+	ExtractTagsFromArgs        bool               `mapstructure:"extractTagsFromArgs"`
 	MaxBatchSize               int                `mapstructure:"maxBatchSize"`
 	Zipper                     string             `mapstructure:"zipper"`
 	Upstreams                  zipperCfg.Config   `mapstructure:"upstreams"`

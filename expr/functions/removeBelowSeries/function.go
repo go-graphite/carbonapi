@@ -2,8 +2,8 @@ package removeBelowSeries
 
 import (
 	"context"
-	"fmt"
 	"math"
+	"strconv"
 	"strings"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
@@ -33,7 +33,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // removeBelowValue(seriesLists, n), removeAboveValue(seriesLists, n), removeBelowPercentile(seriesLists, percent), removeAbovePercentile(seriesLists, percent)
 func (f *removeBelowSeries) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -42,6 +42,7 @@ func (f *removeBelowSeries) Do(ctx context.Context, e parser.Expr, from, until i
 	if err != nil {
 		return nil, err
 	}
+	numberStr := e.Arg(1).StringValue()
 
 	condition := func(v float64, threshold float64) bool {
 		return v < threshold
@@ -53,9 +54,9 @@ func (f *removeBelowSeries) Do(ctx context.Context, e parser.Expr, from, until i
 		}
 	}
 
-	var results []*types.MetricData
+	results := make([]*types.MetricData, len(args))
 
-	for _, a := range args {
+	for n, a := range args {
 		threshold := number
 		if strings.HasSuffix(e.Target(), "Percentile") {
 			var values []float64
@@ -68,20 +69,20 @@ func (f *removeBelowSeries) Do(ctx context.Context, e parser.Expr, from, until i
 			threshold = consolidations.Percentile(values, number, true)
 		}
 
-		r := *a
-		r.Name = fmt.Sprintf("%s(%s, %g)", e.Target(), a.Name, number)
+		r := a.CopyLink()
+		r.Name = e.Target() + "(" + a.Name + ", " + numberStr + ")"
 		r.Values = make([]float64, len(a.Values))
+		r.Tags["removeBelowSeries"] = strconv.FormatFloat(threshold, 'f', -1, 64)
 
 		for i, v := range a.Values {
 			if math.IsNaN(v) || condition(v, threshold) {
 				r.Values[i] = math.NaN()
-				continue
+			} else {
+				r.Values[i] = v
 			}
-
-			r.Values[i] = v
 		}
 
-		results = append(results, &r)
+		results[n] = r
 	}
 
 	return results, nil
@@ -108,6 +109,8 @@ func (f *removeBelowSeries) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 		"removeAboveValue": {
 			Description: "Removes data above the given threshold from the series or list of series provided.\nValues above this threshold are assigned a value of None.",
@@ -127,6 +130,8 @@ func (f *removeBelowSeries) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 		"removeBelowPercentile": {
 			Description: "Removes data below the nth percentile from the series or list of series provided.\nValues below this percentile are assigned a value of None.",
@@ -146,6 +151,8 @@ func (f *removeBelowSeries) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 		"removeAbovePercentile": {
 			Description: "Removes data above the nth percentile from the series or list of series provided.\nValues above this percentile are assigned a value of None.",
@@ -165,6 +172,8 @@ func (f *removeBelowSeries) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

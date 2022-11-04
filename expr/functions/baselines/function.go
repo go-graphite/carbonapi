@@ -2,7 +2,6 @@ package baselines
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
@@ -58,7 +57,7 @@ func (f *baselines) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	}
 
 	current := make(map[string]*types.MetricData)
-	arg, _ := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg, _ := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	for _, a := range arg {
 		current[a.Name] = a
 	}
@@ -69,25 +68,26 @@ func (f *baselines) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			continue
 		}
 		offs := int64(i * unit)
-		arg, _ := helper.GetSeriesArg(ctx, e.Args()[0], from+offs, until+offs, values)
+		arg, _ := helper.GetSeriesArg(ctx, e.Arg(0), from+offs, until+offs, values)
 		for _, a := range arg {
-			r := *a
+			r := a.CopyLinkTags()
 			if _, ok := current[r.Name]; ok || !isAberration {
 				r.StartTime = a.StartTime - offs
 				r.StopTime = a.StopTime - offs
-				groups[r.Name] = append(groups[r.Name], &r)
+				groups[r.Name] = append(groups[r.Name], r)
 			}
 		}
 	}
 
 	results := make([]*types.MetricData, 0, len(groups))
 	for name, args := range groups {
-		r := *args[0]
+		var newName string
 		if isAberration {
-			r.Name = fmt.Sprintf("baselineAberration(%s)", name)
+			newName = "baselineAberration(" + name + ")"
 		} else {
-			r.Name = fmt.Sprintf("baseline(%s)", name)
+			newName = "baseline(" + name + ")"
 		}
+		r := args[0].CopyName(newName)
 		r.Values = make([]float64, len(args[0].Values))
 
 		tmp := make([][]float64, len(args[0].Values)) // number of points
@@ -139,7 +139,7 @@ func (f *baselines) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			}
 		}
 
-		results = append(results, &r)
+		results = append(results, r)
 	}
 
 	return results, nil
@@ -203,6 +203,10 @@ func (f *baselines) Description() map[string]types.FunctionDescription {
 					Type:    types.Integer,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 		"baselineAberration": {
 			Description: baselineAberrationDescription,
@@ -247,6 +251,10 @@ func (f *baselines) Description() map[string]types.FunctionDescription {
 					Type:    types.Float,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

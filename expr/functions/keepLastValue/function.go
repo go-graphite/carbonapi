@@ -2,13 +2,12 @@ package keepLastValue
 
 import (
 	"context"
-	"fmt"
-	"math"
-
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
+	"math"
+	"strconv"
 )
 
 type keepLastValue struct {
@@ -31,36 +30,42 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // keepLastValue(seriesList, limit=inf)
 func (f *keepLastValue) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
-	keep, err := e.GetIntNamedOrPosArgDefault("limit", 1, -1)
+	var keep float64
+	var keepStr string
+
+	keep, err = e.GetFloatNamedOrPosArgDefault("limit", 1, math.Inf(1))
 	if err != nil {
 		return nil, err
 	}
-	_, ok := e.NamedArgs()["limit"]
-	if !ok {
-		ok = len(e.Args()) > 1
+
+	if !math.IsInf(keep, 1) {
+		keepStr = strconv.Itoa(int(keep))
+	} else {
+		keepStr = "inf"
 	}
 
 	var results []*types.MetricData
 
 	for _, a := range arg {
 		var name string
-		if ok {
-			name = fmt.Sprintf("keepLastValue(%s,%d)", a.Name, keep)
+		if e.ArgsLen() < 2 {
+			name = "keepLastValue(" + a.Name + ")"
 		} else {
-			name = fmt.Sprintf("keepLastValue(%s)", a.Name)
+			name = "keepLastValue(" + a.Name + "," + keepStr + ")"
 		}
 
-		r := *a
+		r := a.CopyLinkTags()
 		r.Name = name
 		r.Values = make([]float64, len(a.Values))
 
 		prev := math.NaN()
-		missing := 0
+		missing := 0.0
 
 		for i, v := range a.Values {
 			if math.IsNaN(v) {
@@ -78,7 +83,7 @@ func (f *keepLastValue) Do(ctx context.Context, e parser.Expr, from, until int64
 			prev = v
 			r.Values[i] = v
 		}
-		results = append(results, &r)
+		results = append(results, r)
 	}
 	return results, err
 }
@@ -104,6 +109,9 @@ func (f *keepLastValue) Description() map[string]types.FunctionDescription {
 					Type:    types.Integer,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

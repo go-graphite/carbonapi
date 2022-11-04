@@ -3,7 +3,6 @@ package cumulative
 import (
 	"context"
 
-	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -30,16 +29,18 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // cumulative(seriesList)
 func (f *cumulative) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
-	var results []*types.MetricData
+	results := make([]*types.MetricData, len(arg))
 
-	for _, a := range arg {
-		r := *a
-		r.AggregateFunction = consolidations.AggSum
-		results = append(results, &r)
+	for i, a := range arg {
+		r := a.CopyLink()
+		r.ConsolidationFunc = "sum"
+		r.Name = "consolidateBy(" + a.Name + ",\"sum\")"
+		r.Tags["consolidateBy"] = "sum"
+		results[i] = r
 	}
 	return results, nil
 }

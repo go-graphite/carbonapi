@@ -2,7 +2,7 @@ package constantLine
 
 import (
 	"context"
-	"fmt"
+	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -37,19 +37,19 @@ func (f *constantLine) Do(ctx context.Context, e parser.Expr, from, until int64,
 	newValues := []float64{value, value}
 	stepTime := until - from
 	stopTime := from + stepTime*int64(len(newValues))
-	p := types.MetricData{
+	name := strconv.FormatFloat(value, 'g', -1, 64)
+	p := &types.MetricData{
 		FetchResponse: pb.FetchResponse{
-			Name:              fmt.Sprintf("%g", value),
-			StartTime:         from,
-			StopTime:          stopTime,
-			StepTime:          stepTime,
-			Values:            newValues,
-			ConsolidationFunc: "max",
+			Name:      name,
+			StartTime: from,
+			StopTime:  stopTime,
+			StepTime:  stepTime,
+			Values:    newValues,
 		},
-		Tags: map[string]string{"name": fmt.Sprintf("%g", value)},
+		Tags: map[string]string{"name": name},
 	}
 
-	return []*types.MetricData{&p}, nil
+	return []*types.MetricData{p}, nil
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web

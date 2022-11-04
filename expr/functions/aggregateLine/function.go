@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
 type aggregateLine struct {
@@ -32,21 +32,21 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // aggregateLine(*seriesLists)
 func (f *aggregateLine) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
 	callback := "avg"
 	keepStep := false
-	switch len(e.Args()) {
+	switch e.ArgsLen() {
 	case 2:
-		callback, err = e.GetStringArg(1)
+		callback, err = e.GetStringArgDefault(1, "average")
 		if err != nil {
 			return nil, err
 		}
 	case 3:
-		callback, err = e.GetStringArg(1)
+		callback, err = e.GetStringArgDefault(1, "average")
 		if err != nil {
 			return nil, err
 		}
@@ -62,42 +62,31 @@ func (f *aggregateLine) Do(ctx context.Context, e parser.Expr, from, until int64
 		return nil, fmt.Errorf("unsupported consolidation function %s", callback)
 	}
 
-	var results []*types.MetricData
-	for _, a := range args {
-		val := aggFunc(a.Values)
+	results := make([]*types.MetricData, len(args))
+	for i, a := range args {
 		var name string
+
+		val := aggFunc(a.Values)
 		if !math.IsNaN(val) {
-			name = fmt.Sprintf("aggregateLine(%s, %g)", a.Name, val)
+			name = "aggregateLine(" + a.Name + ", " + strconv.FormatFloat(val, 'g', -1, 64) + ")"
 		} else {
-			name = fmt.Sprintf("aggregateLine(%s, None)", a.Name)
+			name = "aggregateLine(" + a.Name + ", None)"
 		}
 
-		r := types.MetricData{
-			FetchResponse: pb.FetchResponse{
-				Name:              name,
-				StartTime:         a.FetchResponse.StartTime,
-				StopTime:          a.FetchResponse.StopTime,
-				PathExpression:    a.FetchResponse.PathExpression,
-				ConsolidationFunc: a.FetchResponse.ConsolidationFunc,
-				RequestStartTime:  a.FetchResponse.RequestStartTime,
-				RequestStopTime:   a.FetchResponse.RequestStopTime,
-				XFilesFactor:      a.FetchResponse.XFilesFactor,
-			},
-			Tags: a.Tags,
-		}
+		r := a.CopyTag(name, a.Tags)
+
 		if keepStep {
-			r.FetchResponse.Values = make([]float64, len(a.Values))
+			r.Values = make([]float64, len(a.Values))
 			for i := range r.Values {
 				r.Values[i] = val
 			}
-			r.FetchResponse.StepTime = a.FetchResponse.StepTime
 		} else {
-			r.FetchResponse.StepTime = a.FetchResponse.StopTime - a.FetchResponse.StartTime
-			r.FetchResponse.Values = []float64{val, val}
-			r.FetchResponse.StopTime = r.StartTime + int64(len(r.FetchResponse.Values))*r.FetchResponse.StepTime
+			r.StepTime = a.StopTime - a.FetchResponse.StartTime
+			r.Values = []float64{val, val}
+			r.StopTime = r.StartTime + int64(len(r.FetchResponse.Values))*r.FetchResponse.StepTime
 		}
 
-		results = append(results, &r)
+		results[i] = r
 	}
 
 	return results, nil
@@ -137,6 +126,10 @@ func (f *aggregateLine) Description() map[string]types.FunctionDescription {
 					},
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

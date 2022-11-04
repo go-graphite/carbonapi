@@ -44,8 +44,6 @@ var (
 	ErrMissingArgument = errors.New("missing argument")
 	// ErrMissingTimeseries is an eval error returned when a time series argument is missing.
 	ErrMissingTimeseries = errors.New("missing time series argument")
-	// ErrSeriesDoesNotExist is an eval error returned when a requested time series argument does not exist.
-	ErrSeriesDoesNotExist = errors.New("no timeseries with that name")
 	// ErrUnknownTimeUnits is an eval error returned when a time unit is unknown to system
 	ErrUnknownTimeUnits = errors.New("unknown time units")
 )
@@ -90,10 +88,16 @@ type Expr interface {
 	// MutateValString changes ValString for the expression and returns new interface. Please note that it doesn't copy object yet
 	MutateValString(string) Expr
 
+	// Arg returns argument with index (parsed, as Expr interface as well)
+	Arg(int) Expr
 	// Args returns slice of arguments (parsed, as Expr interface as well)
 	Args() []Expr
+	// ArgsLen return arguments count
+	ArgsLen() int
 	// NamedArgs returns map of named arguments. E.x. for nonNegativeDerivative(metric1,maxValue=32) it will return map{"maxValue": constExpr(32)}
 	NamedArgs() map[string]Expr
+	// NamedArg returns named argument and boolean flag for check arg exist.
+	NamedArg(string) (Expr, bool)
 	// RawArgs returns string that contains all arguments of expression exactly the same order they appear
 	RawArgs() string
 	// SetRawArgs changes raw argument list for current expression.
@@ -146,8 +150,8 @@ type Expr interface {
 	// GetBoolNamedOrPosArgDefault returns specific positioned bool-typed argument or replace it with default if none found.
 	GetBoolNamedOrPosArgDefault(k string, n int, b bool) (bool, error)
 
-	// GetNodeOrTagArgs returns n-th argument as slice of NodeOrTag structures.
-	GetNodeOrTagArgs(n int) ([]NodeOrTag, error)
+	// GetNodeOrTagArgs returns the last arguments starting from the n-th as a slice of NodeOrTag structures. If `single` is `true`, only the n-th argument is taken.
+	GetNodeOrTagArgs(n int, single bool) ([]NodeOrTag, error)
 
 	IsInterfaceNil() bool
 

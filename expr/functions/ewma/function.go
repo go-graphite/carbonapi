@@ -2,7 +2,6 @@ package ewma
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	"github.com/dgryski/go-onlinestats"
@@ -32,7 +31,11 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // ewma(seriesList, alpha)
 func (f *ewma) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	if e.ArgsLen() < 2 {
+		return nil, parser.ErrMissingArgument
+	}
+
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -41,16 +44,16 @@ func (f *ewma) Do(ctx context.Context, e parser.Expr, from, until int64, values 
 	if err != nil {
 		return nil, err
 	}
+	alphaStr := e.Arg(1).StringValue()
 
 	e.SetTarget("ewma")
 
 	// ugh, helper.ForEachSeriesDo does not handle arguments properly
-	var results []*types.MetricData
-	for _, a := range arg {
-		name := fmt.Sprintf("ewma(%s,%v)", a.Name, alpha)
+	results := make([]*types.MetricData, len(arg))
+	for i, a := range arg {
+		name := "ewma(" + a.Name + "," + alphaStr + ")"
 
-		r := *a
-		r.Name = name
+		r := a.CopyTag(name, a.Tags)
 		r.Values = make([]float64, len(a.Values))
 
 		ewma := onlinestats.NewExpWeight(alpha)
@@ -64,7 +67,7 @@ func (f *ewma) Do(ctx context.Context, e parser.Expr, from, until int64, values 
 			ewma.Push(v)
 			r.Values[i] = ewma.Mean()
 		}
-		results = append(results, &r)
+		results[i] = r
 	}
 	return results, nil
 }
@@ -94,6 +97,8 @@ func (f *ewma) Description() map[string]types.FunctionDescription {
 					Type: types.Float,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 		"ewma": {
 			Description: "Takes a series of values and a alpha and produces an exponential moving\naverage using algorithm described at https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average\n\nExample:\n\n.. code-block:: none\n\n  &target=exponentialWeightedMovingAverage(*.transactions.count, 0.1)",
@@ -118,6 +123,8 @@ func (f *ewma) Description() map[string]types.FunctionDescription {
 					Type: types.Float,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

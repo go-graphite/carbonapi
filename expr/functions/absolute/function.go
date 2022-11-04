@@ -36,6 +36,7 @@ func (f *absolute) Do(ctx context.Context, e parser.Expr, from, until int64, val
 			}
 			r.Values[i] = math.Abs(v)
 		}
+		r.Tags["absolute"] = "1"
 		return r
 	})
 }
@@ -56,6 +57,7 @@ func (f *absolute) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
+			ValuesChange: true,
 		},
 	}
 }

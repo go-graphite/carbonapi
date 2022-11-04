@@ -1,6 +1,7 @@
 package aliasSub
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -21,7 +22,7 @@ func init() {
 	}
 }
 
-func TestAliasByNode(t *testing.T) {
+func TestAliasSub(t *testing.T) {
 	now32 := int64(time.Now().Unix())
 
 	tests := []th.EvalTestItem{
@@ -65,7 +66,7 @@ func TestAliasByNode(t *testing.T) {
 				{"*", 0, 1}: {types.MakeMetricData("diffSeries(dns.snake.sql_updated, dns.snake.zone_updated)", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("diffSeries(dns.snake.sql_updated, snake diff to sql updated)",
-				[]float64{1, 2, 3, 4, 5}, 1, now32)},
+				[]float64{1, 2, 3, 4, 5}, 1, now32).SetNameTag("diffSeries(dns.snake.sql_updated, snake diff to sql updated)")},
 		},
 	}
 
@@ -76,4 +77,27 @@ func TestAliasByNode(t *testing.T) {
 		})
 	}
 
+}
+
+func BenchmarkAverageAlias(b *testing.B) {
+	target := `aliasSub(metric1.TCP100,"^.*TCP(\\d+)","$1")`
+	metrics := map[parser.MetricRequest][]*types.MetricData{
+		{"metric1.TCP100", 0, 1}:  {types.MakeMetricData("metric1.TCP100", []float64{1, 2, 3, 4, 5}, 1, 1)},
+		{"metric1.TCP1024", 0, 1}: {types.MakeMetricData("metric1.TCP1024", []float64{1, 2, 3, 4, 5}, 1, 1)},
+	}
+
+	evaluator := metadata.GetEvaluator()
+	exp, _, err := parser.ParseExpr(target)
+	if err != nil {
+		b.Fatalf("failed to parse %s: %+v", target, err)
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		g, err := evaluator.Eval(context.Background(), exp, 0, 1, metrics)
+		if err != nil {
+			b.Fatalf("failed to eval %s: %+v", target, err)
+		}
+		_ = g
+	}
 }

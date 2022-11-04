@@ -2,9 +2,8 @@ package timeSlice
 
 import (
 	"context"
-	"fmt"
 	"math"
-	"time"
+	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -31,31 +30,37 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *timeSlice) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	start32, err := e.GetIntervalArg(1, -1)
+	if e.ArgsLen() < 2 {
+		return nil, parser.ErrMissingArgument
+	}
+
+	start32, err := e.GetIntervalArg(1, 1)
 	if err != nil {
 		return nil, err
 	}
 	start := int64(start32)
 
-	end, err := e.GetIntervalNamedOrPosArgDefault("endSliceAt", 2, -1, 0)
-	if err != nil {
-		return nil, err
-	}
-	now := time.Now().Unix()
-	start += now
-	end += now
-
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	end, err := e.GetIntervalNamedOrPosArgDefault("endSliceAt", 2, 1, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	var results []*types.MetricData
+	startStr := strconv.FormatInt(start, 10)
+	endStr := strconv.FormatInt(end, 10)
 
-	for _, a := range arg {
-		r := *a
-		r.Name = fmt.Sprintf("timeSlice(%s, %d, %d)", a.Name, start, end)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]*types.MetricData, len(arg))
+
+	for n, a := range arg {
+		r := a.CopyLink()
+		r.Name = "timeSlice(" + a.Name + "," + startStr + "," + endStr + ")"
 		r.Values = make([]float64, len(a.Values))
+		r.Tags["timeSliceStart"] = startStr
+		r.Tags["timeSliceEnd"] = endStr
 
 		current := from
 		for i, v := range a.Values {
@@ -66,7 +71,8 @@ func (f *timeSlice) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			}
 			current += a.StepTime
 		}
-		results = append(results, &r)
+
+		results[n] = r
 	}
 
 	return results, nil
@@ -98,6 +104,8 @@ func (f *timeSlice) Description() map[string]types.FunctionDescription {
 					Default: types.NewSuggestion("now"),
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

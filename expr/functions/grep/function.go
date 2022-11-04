@@ -30,7 +30,11 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // grep(seriesList, pattern)
 func (f *grep) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	if e.ArgsLen() < 2 {
+		return nil, parser.ErrMissingArgument
+	}
+
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +49,7 @@ func (f *grep) Do(ctx context.Context, e parser.Expr, from, until int64, values 
 		return nil, err
 	}
 
-	var results []*types.MetricData
+	results := make([]*types.MetricData, 0, len(arg))
 
 	for _, a := range arg {
 		if patre.MatchString(a.Name) {
@@ -77,6 +81,7 @@ func (f *grep) Description() map[string]types.FunctionDescription {
 					Type:     types.String,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
 		},
 	}
 }

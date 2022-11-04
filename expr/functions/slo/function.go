@@ -38,7 +38,7 @@ func (f *slo) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 	)
 
 	// requested data points' window
-	argsWindowed, err = helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	argsWindowed, err = helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if len(argsWindowed) == 0 || err != nil {
 		return nil, err
 	}
@@ -48,6 +48,7 @@ func (f *slo) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 		return nil, err
 	}
 	bucketSize := int64(bucketSize32)
+	intervalStringValue := e.Arg(1).StringValue()
 
 	// there is an opportunity that requested data points' window is smaller than slo interval
 	// e.g.: requesting slo(some.data.series, '30days', above, 0) with window of 6 hours
@@ -58,7 +59,7 @@ func (f *slo) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 	windowSize = until - from
 	if bucketSize > windowSize && !(from == 0 && until == 1) {
 		delta = bucketSize - windowSize
-		argsExtended, err = helper.GetSeriesArg(ctx, e.Args()[0], from-delta, until, values)
+		argsExtended, err = helper.GetSeriesArg(ctx, e.Arg(0), from-delta, until, values)
 
 		if err != nil {
 			return nil, err
@@ -79,6 +80,7 @@ func (f *slo) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 	if err != nil {
 		return nil, err
 	}
+	valueStr := e.Arg(3).StringValue()
 
 	methodFoo, methodName, err := f.buildMethod(e, 2, value)
 	if err != nil {
@@ -88,6 +90,7 @@ func (f *slo) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 	var (
 		isErrorBudget bool
 		objective     float64
+		objectiveStr  string
 	)
 
 	isErrorBudget = e.Target() == "sloErrorBudget"
@@ -96,9 +99,9 @@ func (f *slo) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 		if err != nil {
 			return nil, err
 		}
+		objectiveStr = e.Arg(4).StringValue()
 	}
 
-	intervalStringValue := e.Args()[1].StringValue()
 	results := make([]*types.MetricData, 0, len(argsWindowed))
 
 	for i, argWnd := range argsWindowed {
@@ -108,9 +111,9 @@ func (f *slo) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 		)
 
 		if isErrorBudget {
-			resultName = fmt.Sprintf("sloErrorBudget(%s, %s, %s, %v, %v)", argWnd.Name, intervalStringValue, methodName, value, objective)
+			resultName = "sloErrorBudget(" + argWnd.Name + ", " + intervalStringValue + ", " + methodName + ", " + valueStr + ", " + objectiveStr + ")"
 		} else {
-			resultName = fmt.Sprintf("slo(%s, %s, %s, %v)", argWnd.Name, intervalStringValue, methodName, value)
+			resultName = "slo(" + argWnd.Name + ", " + intervalStringValue + ", " + methodName + ", " + valueStr + ")"
 		}
 
 		// buckets qty is calculated based on requested window
@@ -242,6 +245,10 @@ func (f *slo) Description() map[string]types.FunctionDescription {
 					Type:     types.Float,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 		"sloErrorBudget": {
 			Description: "Returns rest failure/error budget for this time interval\n\nExample:\n\n.. code-block:: none\n\n  &target=sloErrorBudget(some.data.series, \"1hour\", \"above\", 117, 9999e-4)",
@@ -290,6 +297,10 @@ func (f *slo) Description() map[string]types.FunctionDescription {
 					Type:     types.Float,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

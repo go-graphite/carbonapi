@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strconv"
 
 	pbv3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
@@ -33,7 +34,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // transformNull(seriesList, default=0)
 func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -46,10 +47,11 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 		return nil, err
 	}
 
-	_, ok := e.NamedArgs()["default"]
+	_, ok := e.NamedArg("default")
 	if !ok {
-		ok = len(e.Args()) > 1
+		ok = e.ArgsLen() > 1
 	}
+	defvStr := strconv.FormatFloat(defv, 'g', -1, 64)
 
 	var valMap []bool
 	referenceSeriesExpr := e.GetNamedArg("referenceSeries")
@@ -77,18 +79,18 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 		}
 	}
 
-	results := make([]*types.MetricData, 0, len(arg))
+	results := make([]*types.MetricData, 0, len(arg)+1)
 	for _, a := range arg {
 		var name string
 		if ok {
-			name = fmt.Sprintf("transformNull(%s,%g)", a.Name, defv)
+			name = "transformNull(" + a.Name + "," + defvStr + ")"
 		} else {
-			name = fmt.Sprintf("transformNull(%s)", a.Name)
+			name = "transformNull(" + a.Name + ")"
 		}
 
-		r := *a
-		r.Name = name
+		r := a.CopyName(name)
 		r.Values = make([]float64, len(a.Values))
+		r.Tags["transformNull"] = defvStr
 
 		for i, v := range a.Values {
 			if math.IsNaN(v) {
@@ -102,7 +104,7 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 			r.Values[i] = v
 		}
 
-		results = append(results, &r)
+		results = append(results, r)
 	}
 	if len(arg) == 0 && defaultOnAbsent {
 		values := []float64{defv, defv}
@@ -163,6 +165,8 @@ func (f *transformNull) Description() map[string]types.FunctionDescription {
 					Type: types.Boolean,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

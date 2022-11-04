@@ -29,7 +29,11 @@ func New(configFile string) []interfaces.FunctionMetadata {
 // stdev(seriesList, points, missingThreshold=0.1)
 // Alias: stddev
 func (f *stdev) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	if e.ArgsLen() < 2 {
+		return nil, parser.ErrMissingArgument
+	}
+
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -38,6 +42,7 @@ func (f *stdev) Do(ctx context.Context, e parser.Expr, from, until int64, values
 	if err != nil {
 		return nil, err
 	}
+	pointsStr := e.Arg(1).StringValue()
 
 	missingThreshold, err := e.GetFloatArgDefault(2, 0.1)
 	if err != nil {
@@ -46,14 +51,15 @@ func (f *stdev) Do(ctx context.Context, e parser.Expr, from, until int64, values
 
 	minLen := int((1 - missingThreshold) * float64(points))
 
-	var result []*types.MetricData
+	result := make([]*types.MetricData, len(arg))
 
-	for _, a := range arg {
+	for n, a := range arg {
 		w := &types.Windowed{Data: make([]float64, points)}
 
-		r := *a
-		r.Name = fmt.Sprintf("stdev(%s,%d)", a.Name, points)
+		r := a.CopyLink()
+		r.Name = "stdev(" + a.Name + "," + pointsStr + ")"
 		r.Values = make([]float64, len(a.Values))
+		r.Tags["stdev"] = fmt.Sprintf("%d", points)
 
 		for i, v := range a.Values {
 			w.Push(v)
@@ -62,7 +68,7 @@ func (f *stdev) Do(ctx context.Context, e parser.Expr, from, until int64, values
 				r.Values[i] = math.NaN()
 			}
 		}
-		result = append(result, &r)
+		result[n] = r
 	}
 	return result, nil
 }

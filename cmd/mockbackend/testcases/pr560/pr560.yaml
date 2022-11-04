@@ -31,13 +31,6 @@ test:
             - endpoint: "http://127.0.0.1:8081"
               delay: 1
               type: "GET"
-              URL: "/render?target=constantLine('2222')"
-              expectedResponse:
-                  httpCode: 400
-                  contentType: "text/plain; charset=utf-8"
-            - endpoint: "http://127.0.0.1:8081"
-              delay: 1
-              type: "GET"
               URL: "/render?target=polyfit(a.b.c.d.e, 2, '12dd')"
               expectedResponse:
                   httpCode: 400

@@ -50,7 +50,7 @@ func (e *expr) Type() ExprType {
 func (e *expr) ToString() string {
 	switch e.etype {
 	case EtFunc:
-		return fmt.Sprintf("%s(%s)", e.target, e.argString)
+		return e.target + "(" + e.argString + ")"
 	case EtConst:
 		return e.valStr
 	case EtString:
@@ -116,12 +116,25 @@ func (e *expr) Args() []Expr {
 	return ret
 }
 
+func (e *expr) Arg(i int) Expr {
+	return e.args[i]
+}
+
+func (e *expr) ArgsLen() int {
+	return len(e.args)
+}
+
 func (e *expr) NamedArgs() map[string]Expr {
 	ret := make(map[string]Expr)
 	for k, v := range e.namedArgs {
 		ret[k] = v
 	}
 	return ret
+}
+
+func (e *expr) NamedArg(name string) (Expr, bool) {
+	expr, exist := e.namedArgs[name]
+	return expr, exist
 }
 
 func (e *expr) Metrics() []MetricRequest {
@@ -185,7 +198,7 @@ func (e *expr) Metrics() []MetricRequest {
 			for i := range r {
 				r[i].From -= 7 * 86400 // starts -7 days from where the original starts
 			}
-		case "movingAverage", "movingMedian", "movingMin", "movingMax", "movingSum":
+		case "movingAverage", "movingMedian", "movingMin", "movingMax", "movingSum", "exponentialMovingAverage":
 			if len(e.args) < 2 {
 				return nil
 			}
@@ -227,7 +240,7 @@ func (e *expr) GetIntervalNamedOrPosArgDefault(k string, n, defaultSign int, v i
 	var val string
 	var err error
 	if a := e.getNamedArg(k); a != nil {
-		val, err = e.doGetStringArg()
+		val, err = a.doGetStringArg()
 		if err != nil {
 			return 0, ErrBadType
 		}
@@ -263,7 +276,7 @@ func (e *expr) GetStringArgs(n int) ([]string, error) {
 		return nil, ErrMissingArgument
 	}
 
-	var strs []string
+	strs := make([]string, 0, len(e.args)-n)
 
 	for i := n; i < len(e.args); i++ {
 		a, err := e.GetStringArg(i)
@@ -325,11 +338,11 @@ func (e *expr) GetIntArg(n int) (int, error) {
 }
 
 func (e *expr) GetIntArgs(n int) ([]int, error) {
-	if len(e.args) <= n {
+	if len(e.args) < n {
 		return nil, ErrMissingArgument
 	}
 
-	var ints []int
+	ints := make([]int, 0, len(e.args)-n)
 
 	for i := n; i < len(e.args); i++ {
 		a, err := e.GetIntArg(i)
@@ -396,15 +409,20 @@ func (e *expr) GetBoolArgDefault(n int, b bool) (bool, error) {
 	return e.args[n].doGetBoolArg()
 }
 
-func (e *expr) GetNodeOrTagArgs(n int) ([]NodeOrTag, error) {
-	if len(e.args) <= n {
+func (e *expr) GetNodeOrTagArgs(n int, single bool) ([]NodeOrTag, error) {
+	// if single==false, zero nodes is OK
+	if single && len(e.args) <= n || len(e.args) < n {
 		return nil, ErrMissingArgument
 	}
 
-	var nodeTags []NodeOrTag
+	nodeTags := make([]NodeOrTag, 0, len(e.args)-n)
 
 	var err error
-	for i := n; i < len(e.args); i++ {
+	until := len(e.args)
+	if single {
+		until = n + 1
+	}
+	for i := n; i < until; i++ {
 		var nodeTag NodeOrTag
 		nodeTag.Value, err = e.GetIntArg(i)
 		if err != nil {
@@ -552,10 +570,11 @@ func IsNameChar(r byte) bool {
 		r == '^' || r == '$' ||
 		r == '<' || r == '>' ||
 		r == '&' || r == '#' ||
-		r == '/' || r == '%'
+		r == '/' || r == '%' ||
+		r == '@'
 }
 
-func isDigit(r byte) bool {
+func IsDigit(r byte) bool {
 	return '0' <= r && r <= '9'
 }
 
@@ -668,7 +687,7 @@ func parseConst(s string) (float64, string, string, error) {
 	var i int
 	// All valid characters for a floating-point constant
 	// Just slurp them all in and let ParseFloat sort 'em out
-	for i < len(s) && (isDigit(s[i]) || s[i] == '.' || s[i] == '+' || s[i] == '-' || s[i] == 'e' || s[i] == 'E') {
+	for i < len(s) && (IsDigit(s[i]) || s[i] == '.' || s[i] == '+' || s[i] == '-' || s[i] == 'e' || s[i] == 'E') {
 		i++
 	}
 
@@ -684,12 +703,12 @@ func parseConst(s string) (float64, string, string, error) {
 var RangeTables []*unicode.RangeTable
 
 var disallowedCharactersInMetricName = map[rune]struct{}{
-	'(': struct{}{},
-	')': struct{}{},
-	'"': struct{}{},
+	'(':  struct{}{},
+	')':  struct{}{},
+	'"':  struct{}{},
 	'\'': struct{}{},
-	' ': struct{}{},
-	'/': struct{}{},
+	' ':  struct{}{},
+	'/':  struct{}{},
 }
 
 func unicodeRuneAllowedInName(r rune) bool {
@@ -704,47 +723,86 @@ func parseName(s string) (string, string) {
 	var (
 		braces, i, w int
 		r            rune
+		isEscape     bool
+		isDefault    bool
 	)
+
+	buf := bytes.NewBuffer(make([]byte, 0, len(s)))
 
 FOR:
 	for braces, i, w = 0, 0, 0; i < len(s); i += w {
-
+		if s[i] != '\\' {
+			err := buf.WriteByte(s[i])
+			if err != nil {
+				break FOR
+			}
+		}
+		isDefault = false
 		w = 1
 		if IsNameChar(s[i]) {
 			continue
 		}
 
 		switch s[i] {
-		case '{':
-			braces++
-		case '}':
-			if braces == 0 {
-				break FOR
+		case '\\':
+			if isEscape {
+				err := buf.WriteByte(s[i])
+				if err != nil {
+					break FOR
+				}
+				isEscape = false
+				continue
 			}
-			braces--
+			isEscape = true
+		case '{':
+			if isEscape {
+				isDefault = true
+			} else {
+				braces++
+			}
+		case '}':
+			if isEscape {
+				isDefault = true
+			} else {
+				if braces == 0 {
+					break FOR
+				}
+				braces--
+			}
 		case ',':
-			if braces == 0 {
+			if isEscape {
+				isDefault = true
+			} else if braces == 0 {
 				break FOR
 			}
 		/* */
 		case '=':
 			// allow metric name to end with any amount of `=` without treating it as a named arg or tag
-			if s[i+1] == '=' || s[i+1] == ',' || s[i+1] == ')' {
-				continue
+			if !isEscape {
+				if s[i+1] == '=' || s[i+1] == ',' || s[i+1] == ')' {
+					continue
+				}
 			}
 			fallthrough
 		/* */
 		default:
+			isDefault = true
+		}
+		if isDefault {
 			r, w = utf8.DecodeRuneInString(s[i:])
 			if unicodeRuneAllowedInName(r) && unicode.In(r, RangeTables...) {
 				continue
 			}
-			break FOR
+			if !isEscape {
+				break FOR
+			}
+			isEscape = false
+			continue
 		}
 	}
 
 	if i == len(s) {
-		return s, ""
+		return buf.String(), ""
 	}
 
 	return s[:i], s[i:]

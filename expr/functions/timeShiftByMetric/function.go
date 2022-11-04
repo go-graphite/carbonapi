@@ -2,7 +2,6 @@ package timeShiftByMetric
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"regexp"
 	"strings"
@@ -59,15 +58,14 @@ func (f *timeShiftByMetric) applyShift(params *callParams, offsets offsetByVersi
 		offset := int64(0)
 		var possibleVersion string
 
-		name := metric.Name
+		name := metric.Tags["name"]
 		nameSplit := strings.Split(name, ".")
 
 		// make sure that there is desired rank at all
 		if params.versionRank >= len(nameSplit) {
 			continue
-		} else {
-			possibleVersion = nameSplit[params.versionRank]
 		}
+		possibleVersion = nameSplit[params.versionRank]
 
 		if possibleOffset, ok := offsets[possibleVersion]; !ok {
 			for key, value := range offsets {
@@ -84,12 +82,12 @@ func (f *timeShiftByMetric) applyShift(params *callParams, offsets offsetByVersi
 
 		// checking if it is some version after all, otherwise this series will be omitted
 		if offsetIsSet {
-			r := *metric
-			r.Name = fmt.Sprintf("timeShiftByMetric(%s)", r.Name)
+			r := metric.CopyLinkTags()
+			r.Name = "timeShiftByMetric(" + r.Name + ")"
 			r.StopTime += offset
 			r.StartTime += offset
 
-			result = append(result, &r)
+			result = append(result, r)
 		}
 	}
 
@@ -109,12 +107,12 @@ func (f *timeShiftByMetric) calculateOffsets(params *callParams, versions versio
 
 // extractCallParams (preliminarily) validates and extracts parameters of timeShiftByMetric's call as structure
 func (f *timeShiftByMetric) extractCallParams(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (*callParams, error) {
-	metrics, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	metrics, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
-	marks, err := helper.GetSeriesArg(ctx, e.Args()[1], from, until, values)
+	marks, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -163,21 +161,23 @@ func (f *timeShiftByMetric) extractCallParams(ctx context.Context, e parser.Expr
 	return result, nil
 }
 
+var reLocateMark *regexp.Regexp = regexp.MustCompile(`(\d+)_(\d+)`)
+
 // locateLatestMarks gets the series with marks those look like "65_4"
 // and looks for the latest ones by _major_ versions
 // e.g. among set [63_0, 64_0, 64_1, 64_2, 65_0, 65_1] it locates 63_0, 64_4 and 65_1
 // returns located elements
 func (f *timeShiftByMetric) locateLatestMarks(params *callParams) (versionInfos, error) {
-	re := regexp.MustCompile(`(\d+)_(\d+)`)
+
 	versions := make(versionInfos, 0, len(params.marks))
 
 	// noinspection SpellCheckingInspection
 	for _, mark := range params.marks {
-		markSplit := strings.Split(mark.Name, ".")
+		markSplit := strings.Split(mark.Tags["name"], ".")
 		markVersion := markSplit[len(markSplit)-1]
 
 		// for mark that matches pattern (\d+)_(\d+), this should return slice of 3 strings exactly
-		submatch := re.FindStringSubmatch(markVersion)
+		submatch := reLocateMark.FindStringSubmatch(markVersion)
 		if len(submatch) != 3 {
 			continue
 		}
@@ -193,15 +193,14 @@ func (f *timeShiftByMetric) locateLatestMarks(params *callParams) (versionInfos,
 		if position == -1 {
 			// weird, but mark series has no data in it - skipping
 			continue
-		} else {
-			// collecting all marks found
-			versions = append(versions, versionInfo{
-				mark:         markVersion,
-				position:     position,
-				versionMajor: mustAtoi(submatch[1]),
-				versionMinor: mustAtoi(submatch[2]),
-			})
 		}
+		// collecting all marks found
+		versions = append(versions, versionInfo{
+			mark:         markVersion,
+			position:     position,
+			versionMajor: mustAtoi(submatch[1]),
+			versionMinor: mustAtoi(submatch[2]),
+		})
 	}
 
 	// obtain top versions for each major version
@@ -238,6 +237,8 @@ func (f *timeShiftByMetric) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

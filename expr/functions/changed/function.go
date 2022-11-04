@@ -2,7 +2,6 @@ package changed
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -31,15 +30,14 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // changed(SeriesList)
 func (f *changed) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
-	var result []*types.MetricData
-	for _, a := range args {
-		r := *a
-		r.Name = fmt.Sprintf("%s(%s)", e.Target(), a.Name)
+	result := make([]*types.MetricData, len(args))
+	for i, a := range args {
+		r := a.CopyTag(e.Target()+"("+a.Name+")", a.Tags)
 		r.Values = make([]float64, len(a.Values))
 
 		prev := math.NaN()
@@ -54,7 +52,7 @@ func (f *changed) Do(ctx context.Context, e parser.Expr, from, until int64, valu
 				r.Values[i] = 0
 			}
 		}
-		result = append(result, &r)
+		result[i] = r
 	}
 	return result, nil
 }
@@ -75,6 +73,8 @@ func (f *changed) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

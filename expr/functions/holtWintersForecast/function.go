@@ -2,7 +2,6 @@ package holtWintersForecast
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/holtwinters"
@@ -42,8 +41,8 @@ func (f *holtWintersForecast) Do(ctx context.Context, e parser.Expr, from, until
 	}
 
 	var predictionsOfInterest []float64
-	results := make([]*types.MetricData, 0, len(args))
-	for _, arg := range args {
+	results := make([]*types.MetricData, len(args))
+	for i, arg := range args {
 		stepTime := arg.StepTime
 
 		predictions, _ := holtwinters.HoltWintersAnalysis(arg.Values, stepTime)
@@ -55,20 +54,22 @@ func (f *holtWintersForecast) Do(ctx context.Context, e parser.Expr, from, until
 			predictionsOfInterest = predictions[windowPoints:]
 		}
 
-		r := types.MetricData{
+		name := "holtWintersForecast(" + arg.Name + ")"
+		r := &types.MetricData{
 			FetchResponse: pb.FetchResponse{
-				Name:              fmt.Sprintf("holtWintersForecast(%s)", arg.Name),
+				Name:              name,
 				Values:            predictionsOfInterest,
 				StepTime:          arg.StepTime,
 				StartTime:         arg.StartTime + bootstrapInterval,
 				StopTime:          arg.StopTime,
-				PathExpression:    fmt.Sprintf("holtWintersForecast(%s)", arg.Name),
+				PathExpression:    name,
 				XFilesFactor:      arg.XFilesFactor,
 				ConsolidationFunc: arg.ConsolidationFunc,
 			},
-			Tags: arg.Tags,
+			Tags: helper.CopyTags(arg),
 		}
-		results = append(results, &r)
+		r.Tags["holtWintersConfidenceBands"] = "1"
+		results[i] = r
 	}
 	return results, nil
 }
@@ -98,6 +99,9 @@ func (f *holtWintersForecast) Description() map[string]types.FunctionDescription
 					Type: types.Interval,
 				},
 			},
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

@@ -181,7 +181,7 @@ func TestFetchRequests(t *testing.T) {
 				},
 			},
 			fetchResponses: map[string]dummy.FetchResponse{
-				"client1": dummy.FetchResponse{
+				"client1": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -199,7 +199,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client2": dummy.FetchResponse{
+				"client2": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -261,7 +261,7 @@ func TestFetchRequests(t *testing.T) {
 				},
 			},
 			fetchResponses: map[string]dummy.FetchResponse{
-				"client1": dummy.FetchResponse{
+				"client1": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -279,7 +279,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client2": dummy.FetchResponse{
+				"client2": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -330,7 +330,7 @@ func TestFetchRequests(t *testing.T) {
 				},
 			},
 			fetchResponses: map[string]dummy.FetchResponse{
-				"client1": dummy.FetchResponse{
+				"client1": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -348,7 +348,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client2": dummy.FetchResponse{
+				"client2": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -399,7 +399,7 @@ func TestFetchRequests(t *testing.T) {
 				},
 			},
 			fetchResponses: map[string]dummy.FetchResponse{
-				"client1": dummy.FetchResponse{
+				"client1": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -417,7 +417,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client2": dummy.FetchResponse{
+				"client2": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -488,7 +488,7 @@ func TestFetchRequests(t *testing.T) {
 				},
 			},
 			fetchResponses: map[string]dummy.FetchResponse{
-				"client1": dummy.FetchResponse{
+				"client1": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -506,7 +506,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client2": dummy.FetchResponse{
+				"client2": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -534,7 +534,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client3": dummy.FetchResponse{
+				"client3": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -562,7 +562,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client4": dummy.FetchResponse{
+				"client4": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -590,7 +590,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client5": dummy.FetchResponse{
+				"client5": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -618,7 +618,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client6": dummy.FetchResponse{
+				"client6": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -646,7 +646,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client7": dummy.FetchResponse{
+				"client7": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -674,7 +674,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client8": dummy.FetchResponse{
+				"client8": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -702,7 +702,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client9": dummy.FetchResponse{
+				"client9": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -730,7 +730,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client10": dummy.FetchResponse{
+				"client10": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -758,7 +758,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client11": dummy.FetchResponse{
+				"client11": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -786,7 +786,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client12": dummy.FetchResponse{
+				"client12": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -814,7 +814,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client13": dummy.FetchResponse{
+				"client13": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -842,7 +842,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client14": dummy.FetchResponse{
+				"client14": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -870,7 +870,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client15": dummy.FetchResponse{
+				"client15": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -898,7 +898,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client16": dummy.FetchResponse{
+				"client16": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -926,7 +926,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client17": dummy.FetchResponse{
+				"client17": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -954,7 +954,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client18": dummy.FetchResponse{
+				"client18": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -982,7 +982,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client19": dummy.FetchResponse{
+				"client19": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -1010,7 +1010,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client20": dummy.FetchResponse{
+				"client20": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -1038,7 +1038,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client21": dummy.FetchResponse{
+				"client21": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{
@@ -1066,7 +1066,7 @@ func TestFetchRequests(t *testing.T) {
 					Stats:  &types.Stats{},
 					Errors: nil,
 				},
-				"client22": dummy.FetchResponse{
+				"client22": {
 					Response: &protov3.MultiFetchResponse{
 						Metrics: []protov3.FetchResponse{
 							{

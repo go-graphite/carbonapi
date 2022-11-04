@@ -2,12 +2,19 @@ package parser
 
 import (
 	"fmt"
+	"math"
+	"strconv"
+	"strings"
 
 	"runtime/debug"
 )
 
 func (e *expr) doGetIntArg() (int, error) {
 	if e.etype != EtConst {
+		if e.etype == EtString {
+			f, err := strconv.ParseInt(e.valStr, 0, 32)
+			return int(f), err
+		}
 		return 0, ErrBadType
 	}
 
@@ -24,6 +31,12 @@ func (e *expr) getNamedArg(name string) *expr {
 
 func (e *expr) doGetFloatArg() (float64, error) {
 	if e.etype != EtConst {
+		if e.etype == EtString {
+			f, err := strconv.ParseFloat(e.valStr, 64)
+			return f, err
+		} else if e.etype == EtName && strings.ToLower(e.Target()) == "inf" {
+			return math.Inf(1), nil
+		}
 		return 0, ErrBadType
 	}
 

@@ -34,13 +34,13 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // highestAverage(seriesList, n) , highestCurrent(seriesList, n), highestMax(seriesList, n)
 func (f *highest) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
 	n := 1
-	if len(e.Args()) > 1 && e.Target() != "highest" && e.Target() != "lowest" {
+	if e.ArgsLen() > 1 && e.Target() != "highest" && e.Target() != "lowest" {
 		n, err = e.GetIntArg(1)
 		if err != nil {
 			return nil, err
@@ -62,13 +62,13 @@ func (f *highest) Do(ctx context.Context, e parser.Expr, from, until int64, valu
 	switch e.Target() {
 	case "highest", "lowest":
 		consolidation := "average"
-		switch len(e.Args()) {
+		switch e.ArgsLen() {
 		case 2:
 			n, err = e.GetIntArg(1)
 			if err != nil {
 				// We need to support case where only function specified
 				n = 1
-				consolidation, err = e.GetStringArg(1)
+				consolidation, err = e.GetStringArgDefault(1, "average")
 				if err != nil {
 					return nil, err
 				}
@@ -79,7 +79,7 @@ func (f *highest) Do(ctx context.Context, e parser.Expr, from, until int64, valu
 			if err != nil {
 				return nil, err
 			}
-			consolidation, err = e.GetStringArg(2)
+			consolidation, err = e.GetStringArgDefault(2, "average")
 
 			if err != nil {
 				return nil, err
@@ -175,6 +175,7 @@ func (f *highest) Description() map[string]types.FunctionDescription {
 					Options: types.StringsToSuggestionList(consolidations.AvailableConsolidationFuncs()),
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
 		},
 		"highestAverage": {
 			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\nOut of all metrics passed, draws only the top N metrics with the highest\naverage value for the time period specified.\n\nExample:\n\n.. code-block:: none\n\n  &target=highestAverage(server*.instance*.threads.busy,5)\n\nDraws the top 5 servers with the highest average value.\n\nThis is an alias for :py:func:`highest <highest>` with aggregation ``average``.",
@@ -194,6 +195,7 @@ func (f *highest) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
 		},
 		"highestCurrent": {
 			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\nOut of all metrics passed, draws only the N metrics with the highest value\nat the end of the time period specified.\n\nExample:\n\n.. code-block:: none\n\n  &target=highestCurrent(server*.instance*.threads.busy,5)\n\nDraws the 5 servers with the highest busy threads.\n\nThis is an alias for :py:func:`highest <highest>` with aggregation ``current``.",
@@ -213,6 +215,7 @@ func (f *highest) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
 		},
 		"highestMax": {
 			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\n\nOut of all metrics passed, draws only the N metrics with the highest maximum\nvalue in the time period specified.\n\nExample:\n\n.. code-block:: none\n\n  &target=highestMax(server*.instance*.threads.busy,5)\n\nDraws the top 5 servers who have had the most busy threads during the time\nperiod specified.\n\nThis is an alias for :py:func:`highest <highest>` with aggregation ``max``.",
@@ -232,6 +235,7 @@ func (f *highest) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
 		},
 		"highestMin": {
 			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\n\nOut of all metrics passed, draws only the N metrics with the highest minimum\nvalue in the time period specified.\n\nExample:\n\n.. code-block:: none\n\n  &target=highestMin(server*.instance*.threads.busy,5)\n\nDraws the top 5 servers who have had the highest minimum of all the values during the time\nperiod specified.\n\nThis is an alias for :py:func:`highest <highest>` with aggregation ``min``.",
@@ -251,6 +255,7 @@ func (f *highest) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
 		},
 		"lowest": {
 			Name:        "lowest",
@@ -279,6 +284,7 @@ func (f *highest) Description() map[string]types.FunctionDescription {
 					Options: types.StringsToSuggestionList(consolidations.AvailableConsolidationFuncs()),
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
 		},
 		"lowestCurrent": {
 			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\nOut of all metrics passed, draws only the N metrics with the lowest value at\nthe end of the time period specified.\n\nExample:\n\n.. code-block:: none\n\n  &target=lowestCurrent(server*.instance*.threads.busy,5)\n\nDraws the 5 servers with the least busy threads right now.\n\nThis is an alias for :py:func:`lowest <lowest>` with aggregation ``current``.",
@@ -298,6 +304,7 @@ func (f *highest) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
 		},
 		"lowestAverage": {
 			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\nOut of all metrics passed, draws only the bottom N metrics with the lowest\naverage value for the time period specified.\n\nExample:\n\n.. code-block:: none\n\n  &target=lowestAverage(server*.instance*.threads.busy,5)\n\nDraws the bottom 5 servers with the lowest average value.\n\nThis is an alias for :py:func:`lowest <lowest>` with aggregation ``average``.",
@@ -317,6 +324,7 @@ func (f *highest) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
 		},
 		"lowestMax": {
 			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\nOut of all metrics passed, draws only the bottom N metrics with the lowest\nmaximum value for the time period specified.\n\nExample:\n\n.. code-block:: none\n\n  &target=lowestMax(server*.instance*.threads.busy,5)\n\nDraws the bottom 5 servers with the lowest maximum value.\n\nThis is an alias for :py:func:`lowest <lowest>` with aggregation ``max``.",
@@ -336,6 +344,7 @@ func (f *highest) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
 		},
 		"lowestMin": {
 			Description: "Takes one metric or a wildcard seriesList followed by an integer N.\nOut of all metrics passed, draws only the bottom N metrics with the lowest\nminimum value for the time period specified.\n\nExample:\n\n.. code-block:: none\n\n  &target=lowestMin(server*.instance*.threads.busy,5)\n\nDraws the bottom 5 servers with the lowest minimum value.\n\nThis is an alias for :py:func:`lowest <lowest>` with aggregation ``min``.",
@@ -355,6 +364,7 @@ func (f *highest) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
 		},
 	}
 }

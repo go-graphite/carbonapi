@@ -2,7 +2,6 @@ package groupByNode
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
@@ -33,31 +32,33 @@ func New(configFile string) []interfaces.FunctionMetadata {
 // groupByNode(seriesList, nodeNum, callback)
 // groupByNodes(seriesList, callback, *nodes)
 func (f *groupByNode) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	if e.ArgsLen() < 2 {
+		return nil, parser.ErrMissingArgument
+	}
+
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 	var callback string
-	var fields []int
+	var nodes []parser.NodeOrTag
 
 	if e.Target() == "groupByNode" {
-		field, err := e.GetIntArg(1)
+		nodes, err = e.GetNodeOrTagArgs(1, true)
 		if err != nil {
 			return nil, err
 		}
-
-		callback, err = e.GetStringArg(2)
+		callback, err = e.GetStringArgDefault(2, "avg")
 		if err != nil {
 			return nil, err
 		}
-		fields = []int{field}
 	} else {
 		callback, err = e.GetStringArg(1)
 		if err != nil {
 			return nil, err
 		}
 
-		fields, err = e.GetIntArgs(2)
+		nodes, err = e.GetNodeOrTagArgs(2, false)
 		if err != nil {
 			return nil, err
 		}
@@ -66,26 +67,15 @@ func (f *groupByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 	var results []*types.MetricData
 
 	groups := make(map[string][]*types.MetricData)
-	nodeList := []string{}
+	nodeList := make([]string, 0, 4)
 
+	// This is done to preserve the order
 	for _, a := range args {
-
-		metric := helper.ExtractMetric(a.Name)
-		nodes := strings.Split(metric, ".")
-		nodeKey := make([]string, 0, len(fields))
-		for _, f := range fields {
-			if f < 0 {
-				// Backward compatibility with python negative indecies
-				f += len(nodes)
-			}
-			nodeKey = append(nodeKey, nodes[f])
+		key := helper.AggKey(a, nodes)
+		if len(groups[key]) == 0 {
+			nodeList = append(nodeList, key)
 		}
-		node := strings.Join(nodeKey, ".")
-		if len(groups[node]) == 0 {
-			nodeList = append(nodeList, node)
-		}
-
-		groups[node] = append(groups[node], a)
+		groups[key] = append(groups[key], a)
 	}
 
 	for _, k := range nodeList {
@@ -93,7 +83,7 @@ func (f *groupByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		v := groups[k]
 
 		// Ensure that names won't be parsed as consts, appending stub to them
-		expr := fmt.Sprintf("%s(stub_%s)", callback, k)
+		expr := callback + "(stub_" + k + ")"
 
 		// create a stub context to evaluate the callback in
 		nexpr, _, err := parser.ParseExpr(expr)
@@ -116,11 +106,7 @@ func (f *groupByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		r, _ := f.Evaluator.Eval(ctx, nexpr, from, until, nvalues)
 		if r != nil {
 			// avoid overwriting, do copy-on-write
-			rg := make([]*types.MetricData, len(r))
-			copy(rg, r)
-			rg[0] = r[0].CopyLink()
-			rg[0].Name = k
-			rg[0].Tags["name"] = k
+			rg := types.CopyMetricDataSliceWithName(r, k)
 			results = append(results, rg...)
 		}
 	}
@@ -152,10 +138,14 @@ func (f *groupByNode) Description() map[string]types.FunctionDescription {
 					Default:  types.NewSuggestion("average"),
 					Name:     "callback",
 					Options:  types.StringsToSuggestionList(consolidations.AvailableSummarizers),
-					Required: true,
+					Required: false,
 					Type:     types.AggFunc,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 		"groupByNodes": {
 			Description: "Takes a serieslist and maps a callback to subgroups within as defined by multiple nodes\n\n.. code-block:: none\n\n  &target=groupByNodes(ganglia.server*.*.cpu.load*,\"sum\",1,4)\n\nWould return multiple series which are each the result of applying the \"sum\" aggregation\nto groups joined on the nodes' list (0 indexed) resulting in a list of targets like\n\n.. code-block :: none\n\n  sumSeries(ganglia.server1.*.cpu.load5),sumSeries(ganglia.server1.*.cpu.load10),sumSeries(ganglia.server1.*.cpu.load15),sumSeries(ganglia.server2.*.cpu.load5),sumSeries(ganglia.server2.*.cpu.load10),sumSeries(ganglia.server2.*.cpu.load15),...\n\nThis function can be used with all aggregation functions supported by\n:py:func:`aggregate <aggregate>`: ``average``, ``median``, ``sum``, ``min``, ``max``, ``diff``,\n``stddev``, ``range`` & ``multiply``.\n\nEach node may be an integer referencing a node in the series name or a string identifying a tag.\n\n.. code-block :: none\n\n  &target=seriesByTag(\"name=~cpu.load.*\", \"server=~server[1-9}+\", \"datacenter=~dc[1-9}+\")|groupByNodes(\"average\", \"datacenter\", 1)\n\n  # will produce output series like\n  # dc1.load5, dc2.load5, dc1.load10, dc2.load10\n\nThis complements :py:func:`aggregateWithWildcards <aggregateWithWildcards>` which takes a list of wildcard nodes.",
@@ -172,7 +162,7 @@ func (f *groupByNode) Description() map[string]types.FunctionDescription {
 				{
 					Name:     "callback",
 					Options:  types.StringsToSuggestionList(consolidations.AvailableSummarizers),
-					Required: true,
+					Required: false,
 					Type:     types.AggFunc,
 				},
 				{
@@ -182,6 +172,10 @@ func (f *groupByNode) Description() map[string]types.FunctionDescription {
 					Type:     types.NodeOrTag,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

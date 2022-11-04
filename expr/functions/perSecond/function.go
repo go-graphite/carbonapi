@@ -3,8 +3,8 @@ package perSecond
 import (
 	"context"
 	"errors"
-	"fmt"
 	"math"
+	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -33,7 +33,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // perSecond(seriesList, maxValue=None)
 func (f *perSecond) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -56,31 +56,46 @@ func (f *perSecond) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		minValue = 0
 	}
 
+	var minValueStr string
+	var maxValueStr string
+	if hasMax {
+		maxValueStr = strconv.FormatFloat(maxValue, 'g', -1, 64)
+	}
+	if hasMin {
+		minValueStr = strconv.FormatFloat(minValue, 'g', -1, 64)
+	}
+
 	argMask := 0
-	if _, ok := e.NamedArgs()["maxValue"]; ok || len(e.Args()) > 1 {
+	if _, ok := e.NamedArg("maxValue"); ok || e.ArgsLen() > 1 {
 		argMask |= 1
 	}
-	if _, ok := e.NamedArgs()["minValue"]; ok || len(e.Args()) > 2 {
+	if _, ok := e.NamedArg("minValue"); ok || e.ArgsLen() > 2 {
 		argMask |= 2
 	}
 
-	var result []*types.MetricData
-	for _, a := range args {
+	result := make([]*types.MetricData, len(args))
+	for i, a := range args {
 		var name string
 		switch argMask {
 		case 3:
-			name = fmt.Sprintf("perSecond(%s,%g,%g)", a.Name, maxValue, minValue)
+			name = "perSecond(" + a.Name + "," + maxValueStr + "," + minValueStr + ")"
 		case 2:
-			name = fmt.Sprintf("perSecond(%s,minValue=%g)", a.Name, minValue)
+			name = "perSecond(" + a.Name + ",minValue=" + minValueStr + ")"
 		case 1:
-			name = fmt.Sprintf("perSecond(%s,%g)", a.Name, maxValue)
+			name = "perSecond(" + a.Name + "," + maxValueStr + ")"
 		case 0:
-			name = fmt.Sprintf("perSecond(%s)", a.Name)
+			name = "perSecond(" + a.Name + ")"
 		}
 
-		r := *a
+		r := a.CopyLink()
 		r.Name = name
 		r.Values = make([]float64, len(a.Values))
+		r.Tags["perSecond"] = "1"
+		result[i] = r
+
+		if len(a.Values) == 0 {
+			continue
+		}
 
 		prev := a.Values[0]
 		for i, v := range a.Values {
@@ -102,7 +117,6 @@ func (f *perSecond) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			}
 			prev = v
 		}
-		result = append(result, &r)
 	}
 	return result, nil
 }
@@ -131,6 +145,8 @@ func (f *perSecond) Description() map[string]types.FunctionDescription {
 					Type: types.Float,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

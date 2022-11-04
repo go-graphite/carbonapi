@@ -52,60 +52,125 @@ func GetCommonStep(args []*types.MetricData) (commonStep int64, changed bool) {
 	return commonStep, true
 }
 
+// GetStepRange returns min(steps), changed (bool) for slice of metrics.
+// If all metrics have the same step, changed == false.
+func GetStepRange(args []*types.MetricData) (minStep, maxStep int64, needScale bool) {
+	minStep = args[0].StepTime
+	maxStep = args[0].StepTime
+	for _, arg := range args {
+		if minStep > arg.StepTime {
+			minStep = arg.StepTime
+		}
+		if maxStep < arg.StepTime {
+			maxStep = arg.StepTime
+		}
+	}
+	needScale = minStep != maxStep
+
+	return
+}
+
 // ScaleToCommonStep returns the metrics, aligned LCM of all metrics steps.
 // If commonStep == 0, then it will be calculated automatically
 // It respects xFilesFactor and fills gaps in the begin and end with NaNs if needed.
 func ScaleToCommonStep(args []*types.MetricData, commonStep int64) []*types.MetricData {
-	if commonStep < 0 {
-		// This doesn't make sence
+	if commonStep < 0 || len(args) == 0 {
+		// This doesn't make sense
 		return args
 	}
 
 	// If it's invoked with commonStep other than 0, changes are applied by default
-	changed := true
 	if commonStep == 0 {
-		commonStep, changed = GetCommonStep(args)
+		commonStep, _ = GetCommonStep(args)
 	}
 
-	if !changed {
-		return args
+	minStart := args[0].StartTime
+	for _, arg := range args {
+		if minStart > arg.StartTime {
+			minStart = arg.StartTime
+		}
 	}
+	minStart -= (minStart % commonStep) // align StartTime against step
 
-	for a, arg := range args {
+	maxVals := 0
+
+	for _, arg := range args {
 		if arg.StepTime == commonStep {
-			continue
-		}
-		arg = arg.Copy(true)
-		args[a] = arg
-		stepFactor := commonStep / arg.StepTime
-		newStart := arg.StartTime - (arg.StartTime % commonStep)
-		if (arg.StartTime % commonStep) != 0 {
-			// Fill with NaNs from newStart to arg.StartTime
-			valCnt := (arg.StartTime - newStart) / arg.StepTime
-			nans := genNaNs(int(valCnt))
-			arg.Values = append(nans, arg.Values...)
-			arg.StartTime = newStart
-		}
+			if minStart < arg.StartTime {
+				valCnt := (arg.StartTime - minStart) / arg.StepTime
+				newVals := genNaNs(int(valCnt))
+				arg.Values = append(newVals, arg.Values...)
+			}
+			arg.StartTime = minStart
 
-		newValsLen := 1 + int64(len(arg.Values)-1)/stepFactor
-		newStop := arg.StartTime + newValsLen*commonStep
-		newVals := make([]float64, 0, newValsLen)
+			if len(arg.Values) > maxVals {
+				maxVals = len(arg.Values)
+			}
+		} else {
+			// arg = arg.Copy(true)
+			// args[a] = arg
+			stepFactor := commonStep / arg.StepTime
+			// newStart := minStart - (arg.StartTime % commonStep)
+			if arg.StartTime > minStart {
+				// Fill with NaNs from newStart to arg.StartTime
+				valCnt := (arg.StartTime - minStart) / arg.StepTime
+				nans := genNaNs(int(valCnt))
+				arg.Values = append(nans, arg.Values...)
+				arg.StartTime = minStart
+			}
 
-		if len(arg.Values) != int(stepFactor*newValsLen) {
-			// Fill the last step with NaNs from newStart to (newStart + commonStep - arg.StepTime)
-			valCnt := int(stepFactor*newValsLen) - len(arg.Values)
-			nans := genNaNs(valCnt)
-			arg.Values = append(arg.Values, nans...)
+			newValsLen := 1 + int64(len(arg.Values)-1)/stepFactor
+			newStop := arg.StartTime + newValsLen*commonStep
+			newVals := make([]float64, 0, newValsLen)
+
+			if len(arg.Values) != int(stepFactor*newValsLen) {
+				// Fill the last step with NaNs from newStart to (newStart + commonStep - arg.StepTime)
+				valCnt := int(stepFactor*newValsLen) - len(arg.Values)
+				nans := genNaNs(valCnt)
+				arg.Values = append(arg.Values, nans...)
+			}
+			arg.StopTime = newStop
+			for i := 0; i < len(arg.Values); i += int(stepFactor) {
+				aggregatedBatch := aggregateBatch(arg.Values[i:i+int(stepFactor)], arg)
+				newVals = append(newVals, aggregatedBatch)
+			}
+			arg.StepTime = commonStep
+			arg.Values = newVals
+
+			if len(arg.Values) > maxVals {
+				maxVals = len(arg.Values)
+			}
 		}
-		arg.StopTime = newStop
-		for i := 0; i < len(arg.Values); i += int(stepFactor) {
-			aggregatedBatch := aggregateBatch(arg.Values[i:i+int(stepFactor)], arg)
-			newVals = append(newVals, aggregatedBatch)
-		}
-		arg.StepTime = commonStep
-		arg.Values = newVals
 	}
+
+	for _, arg := range args {
+		if maxVals > len(arg.Values) {
+			valCnt := maxVals - len(arg.Values)
+			newVals := genNaNs(valCnt)
+			arg.Values = append(arg.Values, newVals...)
+		}
+		arg.RecalcStopTime()
+	}
+
 	return args
+}
+
+// GetInterval returns minStartTime, maxStartTime for slice of metrics.
+func GetInterval(args []*types.MetricData) (minStartTime, maxStopTime int64) {
+	minStartTime = args[0].StartTime
+	maxStopTime = args[0].StopTime
+	for _, arg := range args {
+		if minStartTime > arg.StartTime {
+			minStartTime = arg.StartTime
+		}
+
+		arg.FixStopTime()
+		if maxStopTime < arg.StopTime {
+			maxStopTime = arg.StopTime
+		}
+	}
+
+	return
 }
 
 func aggregateBatch(vals []float64, arg *types.MetricData) float64 {
@@ -176,17 +241,12 @@ func AlignToBucketSize(start, stop, bucketSize int64) (int64, int64) {
 
 // AlignSeries aligns different series together. By default it only prepends and appends NaNs in case of different length, but if ExtrapolatePoints is enabled, it can extrapolate
 func AlignSeries(args []*types.MetricData) []*types.MetricData {
-	minStart := args[0].StartTime
-	maxStop := args[0].StopTime
-	maxVals := 0
-	minStepTime := args[0].StepTime
-	for j := 0; j < 2; j++ {
-		if ExtrapolatePoints {
-			for _, arg := range args {
-				if arg.StepTime < minStepTime {
-					minStepTime = arg.StepTime
-				}
+	minStart, maxStop := GetInterval(args)
 
+	if ExtrapolatePoints {
+		minStepTime, _, needScale := GetStepRange(args)
+		if needScale {
+			for _, arg := range args {
 				if arg.StepTime > minStepTime {
 					valsCnt := int(math.Ceil(float64(arg.StopTime-arg.StartTime) / float64(minStepTime)))
 					newVals := make([]float64, valsCnt)
@@ -214,14 +274,78 @@ func AlignSeries(args []*types.MetricData) []*types.MetricData {
 				}
 			}
 		}
+	}
+
+	for _, arg := range args {
+		if minStart < arg.StartTime {
+			valCnt := (arg.StartTime - minStart) / arg.StepTime
+			newVals := genNaNs(int(valCnt))
+			arg.Values = append(newVals, arg.Values...)
+		}
+
+		arg.StartTime = minStart
+
+		if maxStop > arg.StopTime {
+			valCnt := (maxStop - arg.StopTime) / arg.StepTime
+			newVals := genNaNs(int(valCnt))
+			arg.Values = append(arg.Values, newVals...)
+			arg.StopTime = maxStop
+		}
+
+		arg.RecalcStopTime()
+	}
+
+	return args
+}
+
+// ScaleSeries aligns and scale different series together. By default it only prepends and appends NaNs in case of different length, but if ExtrapolatePoints is enabled, it can extrapolate
+func ScaleSeries(args []*types.MetricData) []*types.MetricData {
+	minStart, maxStop := GetInterval(args)
+	var commonStep int64
+	var needScale bool
+
+	if ExtrapolatePoints {
+		commonStep, _, needScale = GetStepRange(args)
+		if needScale {
+			for _, arg := range args {
+				if arg.StepTime > commonStep {
+					valsCnt := int(math.Ceil(float64(arg.StopTime-arg.StartTime) / float64(commonStep)))
+					newVals := make([]float64, valsCnt)
+					ts := arg.StartTime
+					nextTs := arg.StartTime + arg.StepTime
+					i := 0
+					j := 0
+					pointsPerInterval := float64(ts-nextTs) / float64(commonStep)
+					v := arg.Values[0]
+					dv := (arg.Values[0] - arg.Values[1]) / pointsPerInterval
+					for ts < arg.StopTime {
+						newVals[i] = v
+						v += dv
+						if ts > nextTs {
+							j++
+							nextTs += arg.StepTime
+							v = arg.Values[j]
+							dv = (arg.Values[j-1] - v) / pointsPerInterval
+						}
+						ts += commonStep
+						i++
+					}
+					arg.Values = newVals
+					arg.StepTime = commonStep
+				}
+			}
+			needScale = false
+		}
+	} else {
+		commonStep, needScale = GetCommonStep(args)
+	}
+
+	if needScale {
+		ScaleToCommonStep(args, commonStep)
+	} else {
+		maxVals := 0
 
 		for _, arg := range args {
-			if len(arg.Values) > maxVals {
-				maxVals = len(arg.Values)
-			}
-			if arg.StartTime < minStart {
-				minStart = arg.StartTime
-			}
 			if minStart < arg.StartTime {
 				valCnt := (arg.StartTime - minStart) / arg.StepTime
 				newVals := genNaNs(int(valCnt))
@@ -229,18 +353,45 @@ func AlignSeries(args []*types.MetricData) []*types.MetricData {
 				arg.StartTime = minStart
 			}
 
-			if arg.StopTime > maxStop {
-				maxStop = arg.StopTime
-			}
 			if maxStop > arg.StopTime {
 				valCnt := (maxStop - arg.StopTime) / arg.StepTime
 				newVals := genNaNs(int(valCnt))
 				arg.Values = append(arg.Values, newVals...)
 				arg.StopTime = maxStop
 			}
+
+			if maxVals < len(arg.Values) {
+				maxVals = len(arg.Values)
+			}
 		}
+
+		for _, arg := range args {
+			if maxVals > len(arg.Values) {
+				valCnt := maxVals - len(arg.Values)
+				newVals := genNaNs(valCnt)
+				arg.Values = append(arg.Values, newVals...)
+			}
+			arg.RecalcStopTime()
+		}
+
 	}
+
 	return args
+}
+
+func ConsolidateSeriesByStep(numerator, denominator *types.MetricData) (*types.MetricData, *types.MetricData) {
+	pair := []*types.MetricData{numerator, denominator}
+
+	step, changed := GetCommonStep(pair)
+	if changed || len(numerator.Values) != len(denominator.Values) {
+		alignedSeries := ScaleToCommonStep(types.CopyMetricDataSlice(pair), step)
+		numerator = alignedSeries[0]
+		denominator = alignedSeries[1]
+
+		return alignedSeries[0], alignedSeries[1]
+	}
+
+	return numerator, denominator
 }
 
 func genNaNs(length int) []float64 {

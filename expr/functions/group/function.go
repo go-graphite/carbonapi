@@ -53,6 +53,7 @@ func (f *group) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
 		},
 	}
 }

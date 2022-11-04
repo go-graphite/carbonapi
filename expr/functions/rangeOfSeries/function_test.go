@@ -22,10 +22,17 @@ func init() {
 	}
 }
 
-func TestFunction(t *testing.T) {
+func TestRangeOfSeries(t *testing.T) {
 	now32 := int64(time.Now().Unix())
 
 	tests := []th.EvalTestItem{
+		{
+			"rangeOfSeries(metric*)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric*", 0, 1}: {},
+			},
+			[]*types.MetricData{},
+		},
 		{
 			"rangeOfSeries(metric*)",
 			map[parser.MetricRequest][]*types.MetricData{
@@ -36,7 +43,7 @@ func TestFunction(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("rangeOfSeries(metric*)",
-				[]float64{1, math.NaN(), math.NaN(), 12, 5, 6, 20}, 1, now32)},
+				[]float64{1, math.NaN(), math.NaN(), 12, 5, 6, 20}, 1, now32).SetNameTag("rangeOfSeries(metric*)")},
 		},
 	}
 

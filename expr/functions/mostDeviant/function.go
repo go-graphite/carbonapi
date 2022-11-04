@@ -32,8 +32,12 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // mostDeviant(seriesList, n) -or- mostDeviant(n, seriesList)
 func (f *mostDeviant) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	if e.ArgsLen() < 2 {
+		return nil, parser.ErrMissingArgument
+	}
+
 	var nArg int
-	if !e.Args()[0].IsConst() {
+	if !e.Arg(0).IsConst() {
 		// mostDeviant(seriesList, n)
 		nArg = 1
 	}
@@ -44,12 +48,12 @@ func (f *mostDeviant) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		return nil, err
 	}
 
-	args, err := helper.GetSeriesArg(ctx, e.Args()[seriesArg], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(seriesArg), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
-	var mh types.MetricHeap
+	mh := make(types.MetricHeap, 0, len(args))
 
 	for index, arg := range args {
 		variance := consolidations.VarianceValue(arg.Values)
@@ -100,6 +104,7 @@ func (f *mostDeviant) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
 		},
 	}
 }

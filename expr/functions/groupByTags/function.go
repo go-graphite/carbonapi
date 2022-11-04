@@ -2,7 +2,6 @@ package groupByTags
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"strings"
 
@@ -33,7 +32,11 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // seriesByTag("name=cpu")|groupByTags("average","dc","os")
 func (f *groupByTags) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	if e.ArgsLen() < 3 {
+		return nil, parser.ErrMissingArgument
+	}
+
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -50,9 +53,16 @@ func (f *groupByTags) Do(ctx context.Context, e parser.Expr, from, until int64, 
 
 	sort.Strings(tagNames)
 
-	var results []*types.MetricData
+	var named bool
+	for _, tag := range tagNames {
+		if tag == "name" {
+			named = true
+			break
+		}
+	}
 
 	names := make(map[string]string)
+	tags := make(map[string]map[string]string)
 	groups := make(map[string][]*types.MetricData)
 	// name := args[1].Name
 
@@ -60,21 +70,39 @@ func (f *groupByTags) Do(ctx context.Context, e parser.Expr, from, until int64, 
 	for _, a := range args {
 		metricTags := a.Tags
 		var keyBuilder strings.Builder
+		keyBuilder.Grow(len(a.Name))
+		if named {
+			keyBuilder.WriteString(metricTags["name"])
+		} else {
+			keyBuilder.WriteString(callback)
+		}
 		for _, tag := range tagNames {
-			value := metricTags[tag]
-			keyBuilder.WriteString(";" + tag + "=" + value)
+			if tag != "name" {
+				keyBuilder.WriteString(";")
+				keyBuilder.WriteString(tag)
+				keyBuilder.WriteString("=")
+				keyBuilder.WriteString(metricTags[tag])
+			}
 		}
 		key := keyBuilder.String()
 		groups[key] = append(groups[key], a)
 
-		if name, ok := names[key]; ok {
-			if name != metricTags["name"] {
-				names[key] = callback
+		if _, ok := names[key]; !ok {
+			newTags := make(map[string]string)
+			for _, tag := range tagNames {
+				newTags[tag] = metricTags[tag]
 			}
-		} else {
-			names[key] = metricTags["name"]
+			if named {
+				names[key] = metricTags["name"]
+			} else {
+				names[key] = callback
+				newTags["name"] = callback
+			}
+			tags[key] = newTags
 		}
 	}
+
+	results := make([]*types.MetricData, 0, len(groups))
 
 	for k, v := range groups {
 		k := k // k's reference is used later, so it's important to make it unique per loop
@@ -83,9 +111,9 @@ func (f *groupByTags) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		var expr string
 		_, ok := consolidations.ConsolidationToFunc[callback]
 		if ok {
-			expr = fmt.Sprintf("aggregate(stub, \"%s\")", callback)
+			expr = "aggregate(stub, \"" + callback + "\")"
 		} else {
-			expr = fmt.Sprintf("%s(stub)", callback)
+			expr = callback + "(stub)"
 		}
 
 		// create a stub context to evaluate the callback in
@@ -95,7 +123,7 @@ func (f *groupByTags) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		}
 
 		nvalues := map[parser.MetricRequest][]*types.MetricData{
-			parser.MetricRequest{"stub", from, until}: v,
+			{Metric: "stub", From: from, Until: until}: v,
 		}
 
 		r, err := f.Evaluator.Eval(ctx, nexpr, from, until, nvalues)
@@ -103,8 +131,8 @@ func (f *groupByTags) Do(ctx context.Context, e parser.Expr, from, until int64, 
 			return nil, err
 		}
 		if r != nil {
-			r[0].Name = names[k] + k
-			results = append(results, r...)
+			rg := types.CopyMetricDataSliceWithTags(r, k, tags[k])
+			results = append(results, rg...)
 		}
 	}
 
@@ -138,6 +166,10 @@ func (f *groupByTags) Description() map[string]types.FunctionDescription {
 					Type:     types.Tag,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

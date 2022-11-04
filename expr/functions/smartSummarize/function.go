@@ -34,9 +34,17 @@ func New(configFile string) []interfaces.FunctionMetadata {
 // smartSummarize(seriesList, intervalString, alignToInterval=False)
 func (f *smartSummarize) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(dgryski): make sure the arrays are all the same 'size'
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	if e.ArgsLen() < 2 {
+		return nil, parser.ErrMissingArgument
+	}
+
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(args) == 0 {
+		return []*types.MetricData{}, nil
 	}
 
 	bucketSizeInt32, err := e.GetIntervalArg(1, 1)
@@ -44,9 +52,13 @@ func (f *smartSummarize) Do(ctx context.Context, e parser.Expr, from, until int6
 		return nil, err
 	}
 	bucketSize := int64(bucketSizeInt32)
+	bucketSizeStr := e.Arg(1).StringValue()
 
 	summarizeFunction, err := e.GetStringNamedOrPosArgDefault("func", 2, "sum")
 	if err != nil {
+		return nil, err
+	}
+	if err := consolidations.CheckValidConsolidationFunc(summarizeFunction); err != nil {
 		return nil, err
 	}
 
@@ -58,7 +70,13 @@ func (f *smartSummarize) Do(ctx context.Context, e parser.Expr, from, until int6
 	start := args[0].StartTime
 	stop := args[0].StopTime
 	if alignToInterval != "" {
-		interval, err := parser.IntervalString(alignToInterval, 1)
+		var alignTo string
+		if !parser.IsDigit(alignToInterval[0]) {
+			alignTo = "1" + alignToInterval // Add a 1 before the alignTo interval, so that IntervalString properly parses it
+		} else {
+			alignTo = alignToInterval
+		}
+		interval, err := parser.IntervalString(alignTo, 1)
 		if err != nil {
 			return nil, err
 		}
@@ -66,13 +84,14 @@ func (f *smartSummarize) Do(ctx context.Context, e parser.Expr, from, until int6
 	}
 
 	buckets := helper.GetBuckets(start, stop, bucketSize)
-	results := make([]*types.MetricData, 0, len(args))
-	for _, arg := range args {
-		name := fmt.Sprintf("smartSummarize(%s,'%s','%s'", arg.Name, e.Args()[1].StringValue(), summarizeFunction)
+	results := make([]*types.MetricData, len(args))
+	for n, arg := range args {
+		var name string
+
 		if alignToInterval != "" {
-			name += fmt.Sprintf(",'%s')", alignToInterval)
+			name = "smartSummarize(" + arg.Name + ",'" + bucketSizeStr + "','" + summarizeFunction + "','" + alignToInterval + "')"
 		} else {
-			name += ")"
+			name = "smartSummarize(" + arg.Name + ",'" + bucketSizeStr + "','" + summarizeFunction + "')"
 		}
 
 		r := types.MetricData{
@@ -84,9 +103,10 @@ func (f *smartSummarize) Do(ctx context.Context, e parser.Expr, from, until int6
 				StopTime:          stop,
 				ConsolidationFunc: summarizeFunction,
 			},
-			Tags: arg.Tags,
+			Tags: helper.CopyTags(arg),
 		}
-
+		r.Tags["smartSummarize"] = fmt.Sprintf("%d", bucketSizeInt32)
+		r.Tags["smartSummarizeFunction"] = summarizeFunction
 		t := arg.StartTime // unadjusted
 		bucketEnd := start + bucketSize
 		values := make([]float64, 0, bucketSize/arg.StepTime)
@@ -121,7 +141,7 @@ func (f *smartSummarize) Do(ctx context.Context, e parser.Expr, from, until int6
 			r.Values[ridx] = rv
 		}
 
-		results = append(results, &r)
+		results[n] = &r
 	}
 	return results, nil
 }
@@ -167,6 +187,8 @@ func (f *smartSummarize) Description() map[string]types.FunctionDescription {
 					Type: types.Interval,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

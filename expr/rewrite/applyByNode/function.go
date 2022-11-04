@@ -29,7 +29,7 @@ func New(configFile string) []interfaces.RewriteFunctionMetadata {
 }
 
 func (f *applyByNode) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return false, nil, err
 	}
@@ -45,7 +45,7 @@ func (f *applyByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 	}
 
 	var newName string
-	if len(e.Args()) == 4 {
+	if e.ArgsLen() == 4 {
 		newName, err = e.GetStringArg(3)
 		if err != nil {
 			return false, nil, err
@@ -54,7 +54,7 @@ func (f *applyByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 
 	var rv []string
 	for _, a := range args {
-		metric := helper.ExtractMetric(a.Name)
+		metric := a.Tags["name"]
 		nodes := strings.Split(metric, ".")
 		node := strings.Join(nodes[0:field+1], ".")
 		newTarget := strings.ReplaceAll(callback, "%", node)

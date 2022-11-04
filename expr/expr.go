@@ -138,7 +138,7 @@ func EvalExpr(ctx context.Context, e parser.Expr, from, until int64, values map[
 	} else if e.IsConst() {
 		p := types.MetricData{
 			FetchResponse: pb.FetchResponse{
-				Name: e.Target(),
+				Name:   e.Target(),
 				Values: []float64{e.FloatValue()},
 			},
 			Tags: map[string]string{"name": e.Target()},
@@ -148,7 +148,7 @@ func EvalExpr(ctx context.Context, e parser.Expr, from, until int64, values map[
 	// evaluate the function
 
 	// all functions have arguments -- check we do too
-	if len(e.Args()) == 0 {
+	if e.ArgsLen() == 0 {
 		err := merry.WithMessagef(parser.ErrMissingArgument, "target=%s: %s", e.Target(), parser.ErrMissingArgument)
 		return nil, merry.WithHTTPCode(err, 400)
 	}
@@ -169,7 +169,6 @@ func EvalExpr(ctx context.Context, e parser.Expr, from, until int64, values map[
 				parser.ErrBadType,
 				parser.ErrMissingArgument,
 				parser.ErrMissingTimeseries,
-				parser.ErrSeriesDoesNotExist,
 				parser.ErrUnknownTimeUnits,
 			) {
 				err = merry.WithHTTPCode(err, 400)

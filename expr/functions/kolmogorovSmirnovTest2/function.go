@@ -2,7 +2,6 @@ package kolmogorovSmirnovTest2
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	"github.com/dgryski/go-onlinestats"
@@ -33,12 +32,12 @@ func New(configFile string) []interfaces.FunctionMetadata {
 // ksTest2(series, series, points|"interval")
 // https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test
 func (f *kolmogorovSmirnovTest2) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg1, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg1, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
-	arg2, err := helper.GetSeriesArg(ctx, e.Args()[1], from, until, values)
+	arg2, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -54,12 +53,13 @@ func (f *kolmogorovSmirnovTest2) Do(ctx context.Context, e parser.Expr, from, un
 	if err != nil {
 		return nil, err
 	}
+	windowSizeStr := e.Arg((2)).StringValue()
 
 	w1 := &types.Windowed{Data: make([]float64, windowSize)}
 	w2 := &types.Windowed{Data: make([]float64, windowSize)}
 
-	r := *a1
-	r.Name = fmt.Sprintf("kolmogorovSmirnovTest2(%s,%s,%d)", a1.Name, a2.Name, windowSize)
+	r := a1.CopyLinkTags()
+	r.Name = "kolmogorovSmirnovTest2(" + a1.Name + "," + a2.Name + "," + windowSizeStr + ")"
 	r.Values = make([]float64, len(a1.Values))
 	r.StartTime = from
 	r.StopTime = until
@@ -81,7 +81,7 @@ func (f *kolmogorovSmirnovTest2) Do(ctx context.Context, e parser.Expr, from, un
 			r.Values[i] = math.NaN()
 		}
 	}
-	return []*types.MetricData{&r}, nil
+	return []*types.MetricData{r}, nil
 }
 
 // TODO: Implement normal description

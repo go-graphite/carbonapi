@@ -2,7 +2,6 @@ package moving
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"strconv"
 
@@ -34,7 +33,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	logger := zapwriter.Logger("functionInit").With(zap.String("function", "moving"))
 	res := make([]interfaces.FunctionMetadata, 0)
 	f := &moving{}
-	functions := []string{"movingAverage", "movingMin", "movingMax", "movingSum"}
+	functions := []string{"movingAverage", "movingMin", "movingMax", "movingSum", "movingWindow"}
 	for _, n := range functions {
 		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
 	}
@@ -73,12 +72,15 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 	var scaleByStep bool
 
 	var argstr string
+	var cons string
 
-	if len(e.Args()) < 2 {
+	var xFilesFactor float64
+
+	if e.ArgsLen() < 2 {
 		return nil, parser.ErrMissingArgument
 	}
 
-	switch e.Args()[1].Type() {
+	switch e.Arg(1).Type() {
 	case parser.EtConst:
 		// In this case, zipper does not request additional retrospective points,
 		// and leading `n` values, that used to calculate window, become NaN
@@ -87,7 +89,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 	case parser.EtString:
 		var n32 int32
 		n32, err = e.GetIntervalArg(1, 1)
-		argstr = fmt.Sprintf("%q", e.Args()[1].StringValue())
+		argstr = "'" + e.Arg(1).StringValue() + "'"
 		n = int(n32)
 		scaleByStep = true
 	default:
@@ -104,15 +106,48 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		start -= int64(n)
 	}
 
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], start, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), start, until, values)
 	if err != nil {
 		return nil, err
 	}
+	if len(arg) == 0 {
+		return arg, nil
+	}
 
-	var result []*types.MetricData
+	if e.ArgsLen() >= 3 && e.Target() == "movingWindow" {
+		cons, err = e.GetStringArgDefault(2, "average")
+		if err != nil {
+			return nil, err
+		}
+
+		if e.ArgsLen() == 4 {
+			xFilesFactor, err = e.GetFloatArgDefault(3, float64(arg[0].XFilesFactor))
+
+			if err != nil {
+				return nil, err
+			}
+		}
+	} else if e.ArgsLen() == 3 {
+		xFilesFactor, err = e.GetFloatArgDefault(2, float64(arg[0].XFilesFactor))
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	switch e.Target() {
+	case "movingAverage":
+		cons = "average"
+	case "movingSum":
+		cons = "sum"
+	case "movingMin":
+		cons = "min"
+	case "movingMax":
+		cons = "max"
+	}
 
 	if len(arg) == 0 {
-		return result, nil
+		return nil, nil
 	}
 
 	var offset int
@@ -122,9 +157,11 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		offset = windowSize
 	}
 
-	for _, a := range arg {
-		r := *a
-		r.Name = fmt.Sprintf("%s(%s,%s)", e.Target(), a.Name, argstr)
+	result := make([]*types.MetricData, len(arg))
+
+	for n, a := range arg {
+		r := a.CopyName(e.Target() + "(" + a.Name + "," + argstr + ")")
+		r.Tags[e.Target()] = argstr
 
 		if windowSize == 0 {
 			if *f.config.ReturnNaNsIfStepMismatch {
@@ -133,7 +170,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 					r.Values[i] = math.NaN()
 				}
 			}
-			result = append(result, &r)
+			result[n] = r
 			continue
 		}
 		r.Values = make([]float64, len(a.Values)-offset)
@@ -143,25 +180,45 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		w := &types.Windowed{Data: make([]float64, windowSize)}
 		for i, v := range a.Values {
 			if ridx := i - offset; ridx >= 0 {
-				switch e.Target() {
-				case "movingAverage":
-					r.Values[ridx] = w.Mean()
-				case "movingSum":
-					r.Values[ridx] = w.Sum()
-					//TODO(cldellow): consider a linear time min/max-heap for these,
-					// e.g. http://stackoverflow.com/questions/8905525/computing-a-moving-maximum/8905575#8905575
-				case "movingMin":
-					r.Values[ridx] = w.Min()
-				case "movingMax":
-					r.Values[ridx] = w.Max()
-				}
-				if i < windowSize || math.IsNaN(r.Values[ridx]) {
+				if helper.XFilesFactorValues(w.Data, xFilesFactor) {
+					switch cons {
+					case "average":
+						r.Values[ridx] = w.Mean()
+					case "avg":
+						r.Values[ridx] = w.Mean()
+					case "avg_zero":
+						r.Values[ridx] = w.MeanZero()
+					case "sum":
+						r.Values[ridx] = w.Sum()
+					case "min":
+						r.Values[ridx] = w.Min()
+					case "max":
+						r.Values[ridx] = w.Max()
+					case "multiply":
+						r.Values[ridx] = w.Multiply()
+					case "range":
+						r.Values[ridx] = w.Range()
+					case "diff":
+						r.Values[ridx] = w.Diff()
+					case "stddev":
+						r.Values[ridx] = w.Stdev()
+					case "count":
+						r.Values[ridx] = w.Count()
+					case "last":
+						r.Values[ridx] = w.Last()
+					case "median":
+						r.Values[ridx] = w.Median()
+					}
+					if i < windowSize || math.IsNaN(r.Values[ridx]) {
+						r.Values[ridx] = math.NaN()
+					}
+				} else {
 					r.Values[ridx] = math.NaN()
 				}
 			}
 			w.Push(v)
 		}
-		result = append(result, &r)
+		result[n] = r
 	}
 	return result, nil
 }
@@ -169,6 +226,43 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
 func (f *moving) Description() map[string]types.FunctionDescription {
 	return map[string]types.FunctionDescription{
+		"movingWindow": {
+			Description: "Graphs a moving window function of a metric (or metrics) over a fixed number of past points, or a time interval.\n\nTakes one metric or a wildcard seriesList followed by a number N of datapoints\nor a quoted string with a length of time like '1hour' or '5min' (See ``from /\nuntil`` in the render\\_api_ for examples of time formats), and an xFilesFactor value to specify\nhow many points in the window must be non-null for the output to be considered valid. Graphs the\nsum of the preceeding datapoints for each point on the graph.\n\nExample:\n\n.. code-block:: none\n\n  &target=movingWindow(Server.instance01.threads.busy,10)\n  &target=movingWindow(Server.instance*.threads.idle,'5min','median',0.5)",
+			Function:    "movingWindow(seriesList, windowSize, func='average', xFilesFactor=None)",
+			Group:       "Calculate",
+			Module:      "graphite.render.functions",
+			Name:        "movingWindow",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "windowSize",
+					Required: true,
+					Suggestions: types.NewSuggestions(
+						5,
+						7,
+						10,
+						"1min",
+						"5min",
+						"10min",
+						"30min",
+						"1hour",
+					),
+					Type: types.IntOrInterval,
+				},
+				{
+					Name: "func",
+					Type: types.AggFunc,
+				},
+				{
+					Name: "xFilesFactor",
+					Type: types.Float,
+				},
+			},
+		},
 		"movingAverage": {
 			Description: "Graphs the moving average of a metric (or metrics) over a fixed number of\npast points, or a time interval.\n\nTakes one metric or a wildcard seriesList followed by a number N of datapoints\nor a quoted string with a length of time like '1hour' or '5min' (See ``from /\nuntil`` in the render\\_api_ for examples of time formats), and an xFilesFactor value to specify\nhow many points in the window must be non-null for the output to be considered valid. Graphs the\naverage of the preceeding datapoints for each point on the graph.\n\nExample:\n\n.. code-block:: none\n\n  &target=movingAverage(Server.instance01.threads.busy,10)\n  &target=movingAverage(Server.instance*.threads.idle,'5min')",
 			Function:    "movingAverage(seriesList, windowSize, xFilesFactor=None)",
@@ -201,6 +295,8 @@ func (f *moving) Description() map[string]types.FunctionDescription {
 					Type: types.Float,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 		"movingMin": {
 			Description: "Graphs the moving minimum of a metric (or metrics) over a fixed number of\npast points, or a time interval.\n\nTakes one metric or a wildcard seriesList followed by a number N of datapoints\nor a quoted string with a length of time like '1hour' or '5min' (See ``from /\nuntil`` in the render\\_api_ for examples of time formats), and an xFilesFactor value to specify\nhow many points in the window must be non-null for the output to be considered valid. Graphs the\nminimum of the preceeding datapoints for each point on the graph.\n\nExample:\n\n.. code-block:: none\n\n  &target=movingMin(Server.instance01.requests,10)\n  &target=movingMin(Server.instance*.errors,'5min')",
@@ -234,6 +330,8 @@ func (f *moving) Description() map[string]types.FunctionDescription {
 					Type: types.Float,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 		"movingMax": {
 			Description: "Graphs the moving maximum of a metric (or metrics) over a fixed number of\npast points, or a time interval.\n\nTakes one metric or a wildcard seriesList followed by a number N of datapoints\nor a quoted string with a length of time like '1hour' or '5min' (See ``from /\nuntil`` in the render\\_api_ for examples of time formats), and an xFilesFactor value to specify\nhow many points in the window must be non-null for the output to be considered valid. Graphs the\nmaximum of the preceeding datapoints for each point on the graph.\n\nExample:\n\n.. code-block:: none\n\n  &target=movingMax(Server.instance01.requests,10)\n  &target=movingMax(Server.instance*.errors,'5min')",
@@ -267,6 +365,8 @@ func (f *moving) Description() map[string]types.FunctionDescription {
 					Type: types.Float,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 		"movingSum": {
 			Description: "Graphs the moving sum of a metric (or metrics) over a fixed number of\npast points, or a time interval.\n\nTakes one metric or a wildcard seriesList followed by a number N of datapoints\nor a quoted string with a length of time like '1hour' or '5min' (See ``from /\nuntil`` in the render\\_api_ for examples of time formats), and an xFilesFactor value to specify\nhow many points in the window must be non-null for the output to be considered valid. Graphs the\nsum of the preceeding datapoints for each point on the graph.\n\nExample:\n\n.. code-block:: none\n\n  &target=movingSum(Server.instance01.requests,10)\n  &target=movingSum(Server.instance*.errors,'5min')",
@@ -300,6 +400,8 @@ func (f *moving) Description() map[string]types.FunctionDescription {
 					Type: types.Float,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

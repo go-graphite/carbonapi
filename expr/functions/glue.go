@@ -7,6 +7,8 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/absolute"
 	"github.com/go-graphite/carbonapi/expr/functions/aggregate"
 	"github.com/go-graphite/carbonapi/expr/functions/aggregateLine"
+	"github.com/go-graphite/carbonapi/expr/functions/aggregateSeriesLists"
+	"github.com/go-graphite/carbonapi/expr/functions/aggregateWithWildcards"
 	"github.com/go-graphite/carbonapi/expr/functions/alias"
 	"github.com/go-graphite/carbonapi/expr/functions/aliasByBase64"
 	"github.com/go-graphite/carbonapi/expr/functions/aliasByMetric"
@@ -15,12 +17,13 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/aliasByRedis"
 	"github.com/go-graphite/carbonapi/expr/functions/aliasSub"
 	"github.com/go-graphite/carbonapi/expr/functions/asPercent"
-	"github.com/go-graphite/carbonapi/expr/functions/averageSeriesWithWildcards"
+	"github.com/go-graphite/carbonapi/expr/functions/averageOutsidePercentile"
 	"github.com/go-graphite/carbonapi/expr/functions/baselines"
 	"github.com/go-graphite/carbonapi/expr/functions/below"
 	"github.com/go-graphite/carbonapi/expr/functions/cactiStyle"
 	"github.com/go-graphite/carbonapi/expr/functions/cairo"
 	"github.com/go-graphite/carbonapi/expr/functions/changed"
+	"github.com/go-graphite/carbonapi/expr/functions/compressPeriodicGaps"
 	"github.com/go-graphite/carbonapi/expr/functions/consolidateBy"
 	"github.com/go-graphite/carbonapi/expr/functions/constantLine"
 	"github.com/go-graphite/carbonapi/expr/functions/cumulative"
@@ -29,6 +32,8 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/divideSeries"
 	"github.com/go-graphite/carbonapi/expr/functions/ewma"
 	"github.com/go-graphite/carbonapi/expr/functions/exclude"
+	"github.com/go-graphite/carbonapi/expr/functions/exp"
+	"github.com/go-graphite/carbonapi/expr/functions/exponentialMovingAverage"
 	"github.com/go-graphite/carbonapi/expr/functions/fallbackSeries"
 	"github.com/go-graphite/carbonapi/expr/functions/fft"
 	"github.com/go-graphite/carbonapi/expr/functions/filter"
@@ -41,8 +46,10 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/highestLowest"
 	"github.com/go-graphite/carbonapi/expr/functions/hitcount"
 	"github.com/go-graphite/carbonapi/expr/functions/holtWintersAberration"
+	"github.com/go-graphite/carbonapi/expr/functions/holtWintersConfidenceArea"
 	"github.com/go-graphite/carbonapi/expr/functions/holtWintersConfidenceBands"
 	"github.com/go-graphite/carbonapi/expr/functions/holtWintersForecast"
+	"github.com/go-graphite/carbonapi/expr/functions/identity"
 	"github.com/go-graphite/carbonapi/expr/functions/ifft"
 	"github.com/go-graphite/carbonapi/expr/functions/integral"
 	"github.com/go-graphite/carbonapi/expr/functions/integralByInterval"
@@ -50,18 +57,20 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/interpolate"
 	"github.com/go-graphite/carbonapi/expr/functions/invert"
 	"github.com/go-graphite/carbonapi/expr/functions/isNotNull"
+	"github.com/go-graphite/carbonapi/expr/functions/join"
 	"github.com/go-graphite/carbonapi/expr/functions/keepLastValue"
 	"github.com/go-graphite/carbonapi/expr/functions/kolmogorovSmirnovTest2"
 	"github.com/go-graphite/carbonapi/expr/functions/legendValue"
 	"github.com/go-graphite/carbonapi/expr/functions/limit"
 	"github.com/go-graphite/carbonapi/expr/functions/linearRegression"
 	"github.com/go-graphite/carbonapi/expr/functions/logarithm"
+	"github.com/go-graphite/carbonapi/expr/functions/logit"
 	"github.com/go-graphite/carbonapi/expr/functions/lowPass"
 	"github.com/go-graphite/carbonapi/expr/functions/mapSeries"
+	"github.com/go-graphite/carbonapi/expr/functions/minMax"
 	"github.com/go-graphite/carbonapi/expr/functions/mostDeviant"
 	"github.com/go-graphite/carbonapi/expr/functions/moving"
 	"github.com/go-graphite/carbonapi/expr/functions/movingMedian"
-	"github.com/go-graphite/carbonapi/expr/functions/multiplySeriesWithWildcards"
 	"github.com/go-graphite/carbonapi/expr/functions/nPercentile"
 	"github.com/go-graphite/carbonapi/expr/functions/nonNegativeDerivative"
 	"github.com/go-graphite/carbonapi/expr/functions/offset"
@@ -72,16 +81,21 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/percentileOfSeries"
 	"github.com/go-graphite/carbonapi/expr/functions/polyfit"
 	"github.com/go-graphite/carbonapi/expr/functions/pow"
+	"github.com/go-graphite/carbonapi/expr/functions/powSeries"
 	"github.com/go-graphite/carbonapi/expr/functions/randomWalk"
 	"github.com/go-graphite/carbonapi/expr/functions/rangeOfSeries"
 	"github.com/go-graphite/carbonapi/expr/functions/reduce"
 	"github.com/go-graphite/carbonapi/expr/functions/removeBelowSeries"
+	"github.com/go-graphite/carbonapi/expr/functions/removeBetweenPercentile"
 	"github.com/go-graphite/carbonapi/expr/functions/removeEmptySeries"
 	"github.com/go-graphite/carbonapi/expr/functions/round"
 	"github.com/go-graphite/carbonapi/expr/functions/scale"
 	"github.com/go-graphite/carbonapi/expr/functions/scaleToSeconds"
 	"github.com/go-graphite/carbonapi/expr/functions/seriesByTag"
 	"github.com/go-graphite/carbonapi/expr/functions/seriesList"
+	"github.com/go-graphite/carbonapi/expr/functions/setXFilesFactor"
+	"github.com/go-graphite/carbonapi/expr/functions/sigmoid"
+	"github.com/go-graphite/carbonapi/expr/functions/sinFunction"
 	"github.com/go-graphite/carbonapi/expr/functions/slo"
 	"github.com/go-graphite/carbonapi/expr/functions/smartSummarize"
 	"github.com/go-graphite/carbonapi/expr/functions/sortBy"
@@ -89,15 +103,18 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/squareRoot"
 	"github.com/go-graphite/carbonapi/expr/functions/stdev"
 	"github.com/go-graphite/carbonapi/expr/functions/substr"
-	"github.com/go-graphite/carbonapi/expr/functions/sumSeriesWithWildcards"
 	"github.com/go-graphite/carbonapi/expr/functions/summarize"
 	"github.com/go-graphite/carbonapi/expr/functions/timeFunction"
 	"github.com/go-graphite/carbonapi/expr/functions/timeShift"
 	"github.com/go-graphite/carbonapi/expr/functions/timeShiftByMetric"
 	"github.com/go-graphite/carbonapi/expr/functions/timeSlice"
 	"github.com/go-graphite/carbonapi/expr/functions/timeStack"
+	"github.com/go-graphite/carbonapi/expr/functions/toLowerCase"
+	"github.com/go-graphite/carbonapi/expr/functions/toUpperCase"
 	"github.com/go-graphite/carbonapi/expr/functions/transformNull"
 	"github.com/go-graphite/carbonapi/expr/functions/tukey"
+	"github.com/go-graphite/carbonapi/expr/functions/unique"
+	"github.com/go-graphite/carbonapi/expr/functions/verticalLine"
 	"github.com/go-graphite/carbonapi/expr/functions/weightedAverage"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/metadata"
@@ -115,6 +132,8 @@ func New(configs map[string]string) {
 		{name: "absolute", filename: "absolute", order: absolute.GetOrder(), f: absolute.New},
 		{name: "aggregate", filename: "aggregate", order: aggregate.GetOrder(), f: aggregate.New},
 		{name: "aggregateLine", filename: "aggregateLine", order: aggregateLine.GetOrder(), f: aggregateLine.New},
+		{name: "aggregateSeriesLists", filename: "aggregateSeriesLists", order: aggregateSeriesLists.GetOrder(), f: aggregateSeriesLists.New},
+		{name: "aggregateWithWildcards", filename: "aggregateWithWildcards", order: aggregateWithWildcards.GetOrder(), f: aggregateWithWildcards.New},
 		{name: "alias", filename: "alias", order: alias.GetOrder(), f: alias.New},
 		{name: "aliasByBase64", filename: "aliasByBase64", order: aliasByBase64.GetOrder(), f: aliasByBase64.New},
 		{name: "aliasByMetric", filename: "aliasByMetric", order: aliasByMetric.GetOrder(), f: aliasByMetric.New},
@@ -123,12 +142,13 @@ func New(configs map[string]string) {
 		{name: "aliasByRedis", filename: "aliasByRedis", order: aliasByRedis.GetOrder(), f: aliasByRedis.New},
 		{name: "aliasSub", filename: "aliasSub", order: aliasSub.GetOrder(), f: aliasSub.New},
 		{name: "asPercent", filename: "asPercent", order: asPercent.GetOrder(), f: asPercent.New},
-		{name: "averageSeriesWithWildcards", filename: "averageSeriesWithWildcards", order: averageSeriesWithWildcards.GetOrder(), f: averageSeriesWithWildcards.New},
+		{name: "averageOutsidePercentile", filename: "averageOutsidePercentile", order: averageOutsidePercentile.GetOrder(), f: averageOutsidePercentile.New},
 		{name: "baselines", filename: "baselines", order: baselines.GetOrder(), f: baselines.New},
 		{name: "below", filename: "below", order: below.GetOrder(), f: below.New},
 		{name: "cactiStyle", filename: "cactiStyle", order: cactiStyle.GetOrder(), f: cactiStyle.New},
 		{name: "cairo", filename: "cairo", order: cairo.GetOrder(), f: cairo.New},
 		{name: "changed", filename: "changed", order: changed.GetOrder(), f: changed.New},
+		{name: "compressPeriodicGaps", filename: "compressPeriodicGaps", order: compressPeriodicGaps.GetOrder(), f: compressPeriodicGaps.New},
 		{name: "consolidateBy", filename: "consolidateBy", order: consolidateBy.GetOrder(), f: consolidateBy.New},
 		{name: "constantLine", filename: "constantLine", order: constantLine.GetOrder(), f: constantLine.New},
 		{name: "cumulative", filename: "cumulative", order: cumulative.GetOrder(), f: cumulative.New},
@@ -137,6 +157,8 @@ func New(configs map[string]string) {
 		{name: "divideSeries", filename: "divideSeries", order: divideSeries.GetOrder(), f: divideSeries.New},
 		{name: "ewma", filename: "ewma", order: ewma.GetOrder(), f: ewma.New},
 		{name: "exclude", filename: "exclude", order: exclude.GetOrder(), f: exclude.New},
+		{name: "exp", filename: "exp", order: exp.GetOrder(), f: exp.New},
+		{name: "exponentialMovingAverage", filename: "exponentialMovingAverage", order: exponentialMovingAverage.GetOrder(), f: exponentialMovingAverage.New},
 		{name: "fallbackSeries", filename: "fallbackSeries", order: fallbackSeries.GetOrder(), f: fallbackSeries.New},
 		{name: "fft", filename: "fft", order: fft.GetOrder(), f: fft.New},
 		{name: "filter", filename: "filter", order: filter.GetOrder(), f: filter.New},
@@ -149,8 +171,10 @@ func New(configs map[string]string) {
 		{name: "highestLowest", filename: "highestLowest", order: highestLowest.GetOrder(), f: highestLowest.New},
 		{name: "hitcount", filename: "hitcount", order: hitcount.GetOrder(), f: hitcount.New},
 		{name: "holtWintersAberration", filename: "holtWintersAberration", order: holtWintersAberration.GetOrder(), f: holtWintersAberration.New},
+		{name: "holtWintersConfidenceArea", filename: "holtWintersConfidenceArea", order: holtWintersConfidenceArea.GetOrder(), f: holtWintersConfidenceArea.New},
 		{name: "holtWintersConfidenceBands", filename: "holtWintersConfidenceBands", order: holtWintersConfidenceBands.GetOrder(), f: holtWintersConfidenceBands.New},
 		{name: "holtWintersForecast", filename: "holtWintersForecast", order: holtWintersForecast.GetOrder(), f: holtWintersForecast.New},
+		{name: "identity", filename: "identity", order: identity.GetOrder(), f: identity.New},
 		{name: "ifft", filename: "ifft", order: ifft.GetOrder(), f: ifft.New},
 		{name: "integral", filename: "integral", order: integral.GetOrder(), f: integral.New},
 		{name: "integralByInterval", filename: "integralByInterval", order: integralByInterval.GetOrder(), f: integralByInterval.New},
@@ -158,18 +182,20 @@ func New(configs map[string]string) {
 		{name: "interpolate", filename: "interpolate", order: interpolate.GetOrder(), f: interpolate.New},
 		{name: "invert", filename: "invert", order: invert.GetOrder(), f: invert.New},
 		{name: "isNotNull", filename: "isNotNull", order: isNotNull.GetOrder(), f: isNotNull.New},
+		{name: "join", filename: "join", order: join.GetOrder(), f: join.New},
 		{name: "keepLastValue", filename: "keepLastValue", order: keepLastValue.GetOrder(), f: keepLastValue.New},
 		{name: "kolmogorovSmirnovTest2", filename: "kolmogorovSmirnovTest2", order: kolmogorovSmirnovTest2.GetOrder(), f: kolmogorovSmirnovTest2.New},
 		{name: "legendValue", filename: "legendValue", order: legendValue.GetOrder(), f: legendValue.New},
 		{name: "limit", filename: "limit", order: limit.GetOrder(), f: limit.New},
 		{name: "linearRegression", filename: "linearRegression", order: linearRegression.GetOrder(), f: linearRegression.New},
 		{name: "logarithm", filename: "logarithm", order: logarithm.GetOrder(), f: logarithm.New},
+		{name: "logit", filename: "logit", order: logit.GetOrder(), f: logit.New},
 		{name: "lowPass", filename: "lowPass", order: lowPass.GetOrder(), f: lowPass.New},
 		{name: "mapSeries", filename: "mapSeries", order: mapSeries.GetOrder(), f: mapSeries.New},
+		{name: "minMax", filename: "minMax", order: minMax.GetOrder(), f: minMax.New},
 		{name: "mostDeviant", filename: "mostDeviant", order: mostDeviant.GetOrder(), f: mostDeviant.New},
 		{name: "moving", filename: "moving", order: moving.GetOrder(), f: moving.New},
 		{name: "movingMedian", filename: "movingMedian", order: movingMedian.GetOrder(), f: movingMedian.New},
-		{name: "multiplySeriesWithWildcards", filename: "multiplySeriesWithWildcards", order: multiplySeriesWithWildcards.GetOrder(), f: multiplySeriesWithWildcards.New},
 		{name: "nPercentile", filename: "nPercentile", order: nPercentile.GetOrder(), f: nPercentile.New},
 		{name: "nonNegativeDerivative", filename: "nonNegativeDerivative", order: nonNegativeDerivative.GetOrder(), f: nonNegativeDerivative.New},
 		{name: "offset", filename: "offset", order: offset.GetOrder(), f: offset.New},
@@ -180,16 +206,21 @@ func New(configs map[string]string) {
 		{name: "percentileOfSeries", filename: "percentileOfSeries", order: percentileOfSeries.GetOrder(), f: percentileOfSeries.New},
 		{name: "polyfit", filename: "polyfit", order: polyfit.GetOrder(), f: polyfit.New},
 		{name: "pow", filename: "pow", order: pow.GetOrder(), f: pow.New},
+		{name: "powSeries", filename: "powSeries", order: powSeries.GetOrder(), f: powSeries.New},
 		{name: "randomWalk", filename: "randomWalk", order: randomWalk.GetOrder(), f: randomWalk.New},
 		{name: "rangeOfSeries", filename: "rangeOfSeries", order: rangeOfSeries.GetOrder(), f: rangeOfSeries.New},
 		{name: "reduce", filename: "reduce", order: reduce.GetOrder(), f: reduce.New},
 		{name: "removeBelowSeries", filename: "removeBelowSeries", order: removeBelowSeries.GetOrder(), f: removeBelowSeries.New},
+		{name: "removeBetweenPercentile", filename: "removeBetweenPercentile", order: removeBetweenPercentile.GetOrder(), f: removeBetweenPercentile.New},
 		{name: "removeEmptySeries", filename: "removeEmptySeries", order: removeEmptySeries.GetOrder(), f: removeEmptySeries.New},
 		{name: "round", filename: "round", order: round.GetOrder(), f: round.New},
 		{name: "scale", filename: "scale", order: scale.GetOrder(), f: scale.New},
 		{name: "scaleToSeconds", filename: "scaleToSeconds", order: scaleToSeconds.GetOrder(), f: scaleToSeconds.New},
 		{name: "seriesByTag", filename: "seriesByTag", order: seriesByTag.GetOrder(), f: seriesByTag.New},
 		{name: "seriesList", filename: "seriesList", order: seriesList.GetOrder(), f: seriesList.New},
+		{name: "setXFilesFactor", filename: "setXFilesFactor", order: setXFilesFactor.GetOrder(), f: setXFilesFactor.New},
+		{name: "sigmoid", filename: "sigmoid", order: sigmoid.GetOrder(), f: sigmoid.New},
+		{name: "sinFunction", filename: "sinFunction", order: sinFunction.GetOrder(), f: sinFunction.New},
 		{name: "slo", filename: "slo", order: slo.GetOrder(), f: slo.New},
 		{name: "smartSummarize", filename: "smartSummarize", order: smartSummarize.GetOrder(), f: smartSummarize.New},
 		{name: "sortBy", filename: "sortBy", order: sortBy.GetOrder(), f: sortBy.New},
@@ -197,15 +228,18 @@ func New(configs map[string]string) {
 		{name: "squareRoot", filename: "squareRoot", order: squareRoot.GetOrder(), f: squareRoot.New},
 		{name: "stdev", filename: "stdev", order: stdev.GetOrder(), f: stdev.New},
 		{name: "substr", filename: "substr", order: substr.GetOrder(), f: substr.New},
-		{name: "sumSeriesWithWildcards", filename: "sumSeriesWithWildcards", order: sumSeriesWithWildcards.GetOrder(), f: sumSeriesWithWildcards.New},
 		{name: "summarize", filename: "summarize", order: summarize.GetOrder(), f: summarize.New},
 		{name: "timeFunction", filename: "timeFunction", order: timeFunction.GetOrder(), f: timeFunction.New},
 		{name: "timeShift", filename: "timeShift", order: timeShift.GetOrder(), f: timeShift.New},
 		{name: "timeShiftByMetric", filename: "timeShiftByMetric", order: timeShiftByMetric.GetOrder(), f: timeShiftByMetric.New},
 		{name: "timeSlice", filename: "timeSlice", order: timeSlice.GetOrder(), f: timeSlice.New},
 		{name: "timeStack", filename: "timeStack", order: timeStack.GetOrder(), f: timeStack.New},
+		{name: "toLowerCase", filename: "toLowerCase", order: toLowerCase.GetOrder(), f: toLowerCase.New},
+		{name: "toUpperCase", filename: "toUpperCase", order: toUpperCase.GetOrder(), f: toUpperCase.New},
 		{name: "transformNull", filename: "transformNull", order: transformNull.GetOrder(), f: transformNull.New},
 		{name: "tukey", filename: "tukey", order: tukey.GetOrder(), f: tukey.New},
+		{name: "unique", filename: "unique", order: unique.GetOrder(), f: unique.New},
+		{name: "verticalLine", filename: "verticalLine", order: verticalLine.GetOrder(), f: verticalLine.New},
 		{name: "weightedAverage", filename: "weightedAverage", order: weightedAverage.GetOrder(), f: weightedAverage.New},
 	}
 

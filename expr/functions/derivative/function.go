@@ -40,6 +40,7 @@ func (f *derivative) Do(ctx context.Context, e parser.Expr, from, until int64, v
 				prev = v
 			}
 		}
+		r.Tags["derivative"] = "1"
 		return r
 	})
 }
@@ -60,6 +61,7 @@ func (f *derivative) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
+			ValuesChange: true, // values changed
 		},
 	}
 }

@@ -7,6 +7,15 @@ github.com/JaderDias/movingmedian
 # github.com/aclements/go-moremath v0.0.0-20210112150236-f10218a38794
 ## explicit
 github.com/aclements/go-moremath/mathx
+# github.com/alicebob/gopher-json v0.0.0-20200520072559-a9ecdc9d1d3a
+github.com/alicebob/gopher-json
+# github.com/alicebob/miniredis/v2 v2.22.0
+## explicit
+github.com/alicebob/miniredis/v2
+github.com/alicebob/miniredis/v2/geohash
+github.com/alicebob/miniredis/v2/hyperloglog
+github.com/alicebob/miniredis/v2/metro
+github.com/alicebob/miniredis/v2/server
 # github.com/ansel1/merry v1.6.2
 ## explicit
 github.com/ansel1/merry
@@ -15,6 +24,9 @@ github.com/ansel1/merry/v2
 # github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d
 ## explicit
 github.com/bradfitz/gomemcache/memcache
+# github.com/cactus/go-statsd-client/v5 v5.0.0
+## explicit
+github.com/cactus/go-statsd-client/v5/statsd
 # github.com/circonus-labs/gosnowth v1.10.5
 ## explicit
 github.com/circonus-labs/gosnowth
@@ -38,12 +50,6 @@ github.com/dustin/go-humanize
 # github.com/evmar/gocairo v0.0.0-20160222165215-ddd30f837497
 ## explicit
 github.com/evmar/gocairo/cairo
-# github.com/facebookgo/atomicfile v0.0.0-20151019160806-2de1f203e7d5
-## explicit
-github.com/facebookgo/atomicfile
-# github.com/facebookgo/pidfile v0.0.0-20150612191647-f242e2999868
-## explicit
-github.com/facebookgo/pidfile
 # github.com/felixge/httpsnoop v1.0.3
 ## explicit
 github.com/felixge/httpsnoop
@@ -113,9 +119,16 @@ github.com/mitchellh/mapstructure
 ## explicit
 github.com/mjibson/go-dsp/dsputils
 github.com/mjibson/go-dsp/fft
-# github.com/msaf1980/go-stringutils v0.0.15
+# github.com/msaf1980/go-metrics v0.0.11
+## explicit
+github.com/msaf1980/go-metrics
+github.com/msaf1980/go-metrics/graphite
+# github.com/msaf1980/go-stringutils v0.1.2
 ## explicit
 github.com/msaf1980/go-stringutils
+# github.com/natefinch/atomic v1.0.1
+## explicit
+github.com/natefinch/atomic
 # github.com/openhistogram/circonusllhist v0.3.0
 ## explicit
 github.com/openhistogram/circonusllhist
@@ -126,9 +139,6 @@ github.com/pelletier/go-toml/v2
 github.com/pelletier/go-toml/v2/internal/ast
 github.com/pelletier/go-toml/v2/internal/danger
 github.com/pelletier/go-toml/v2/internal/tracker
-# github.com/peterbourgon/g2g v0.0.0-20161124161852-0c2bab2b173d
-## explicit
-github.com/peterbourgon/g2g
 # github.com/philhofer/fwd v1.1.1
 github.com/philhofer/fwd
 # github.com/pmezard/go-difflib v1.0.0
@@ -165,6 +175,9 @@ github.com/stretchr/testify/assert
 # github.com/subosito/gotenv v1.4.0
 ## explicit
 github.com/subosito/gotenv
+# github.com/tevino/abool v1.2.0
+## explicit
+github.com/tevino/abool
 # github.com/tinylib/msgp v1.1.6
 ## explicit
 github.com/tinylib/msgp/msgp
@@ -175,6 +188,11 @@ github.com/valyala/fastjson/fastfloat
 # github.com/wangjohn/quickselect v0.0.0-20161129230411-ed8402a42d5f
 ## explicit
 github.com/wangjohn/quickselect
+# github.com/yuin/gopher-lua v0.0.0-20210529063254-f4c35e4016d9
+github.com/yuin/gopher-lua
+github.com/yuin/gopher-lua/ast
+github.com/yuin/gopher-lua/parse
+github.com/yuin/gopher-lua/pm
 # go.uber.org/atomic v1.9.0
 ## explicit
 go.uber.org/atomic

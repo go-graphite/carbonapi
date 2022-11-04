@@ -32,7 +32,7 @@ func TestFunction(t *testing.T) {
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{-4, -2, -1, 0, 1, 2, 4}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("invert(metric1)",
-				[]float64{-0.25, -0.5, -1, math.NaN(), 1, 0.5, 0.25}, 1, now32)},
+				[]float64{-0.25, -0.5, -1, math.NaN(), 1, 0.5, 0.25}, 1, now32).SetTag("invert", "1").SetNameTag("invert(metric1)")},
 		},
 	}
 

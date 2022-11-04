@@ -3,6 +3,7 @@ package timeStack
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -34,13 +35,14 @@ func (f *timeStack) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	if err != nil {
 		return nil, err
 	}
+	unitStr := e.Arg(1).StringValue()
 
-	start, err := e.GetIntArg(2)
+	start, err := e.GetIntArgDefault(2, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	end, err := e.GetIntArg(3)
+	end, err := e.GetIntArgDefault(3, 7)
 	if err != nil {
 		return nil, err
 	}
@@ -50,17 +52,20 @@ func (f *timeStack) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		offs := i * int64(unit)
 		fromNew := from + offs
 		untilNew := until + offs
-		arg, err := helper.GetSeriesArg(ctx, e.Args()[0], fromNew, untilNew, values)
+		arg, err := helper.GetSeriesArg(ctx, e.Arg(0), fromNew, untilNew, values)
 		if err != nil {
 			return nil, err
 		}
 
+		offsStr := strconv.FormatInt(offs, 10)
 		for _, a := range arg {
-			r := *a
-			r.Name = fmt.Sprintf("timeShift(%s,%d)", a.Name, offs)
+			r := a.CopyLink()
+			r.Name = fmt.Sprintf("timeShift(%s,%s,%d)", a.Name, unitStr, offs)
 			r.StartTime = a.StartTime - offs
 			r.StopTime = a.StopTime - offs
-			results = append(results, &r)
+			r.Tags["timeShiftUnit"] = unitStr
+			r.Tags["timeShift"] = offsStr
+			results = append(results, r)
 		}
 	}
 

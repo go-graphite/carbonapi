@@ -8,7 +8,7 @@ import (
 
 type templateParam []string
 
-func initTemplateParam(s string) templateParam {
+func NewTemplateParam(s string) templateParam {
 	v := []string{s}
 	return append(v, strings.Split(s, ".")...)
 }
@@ -16,10 +16,13 @@ func initTemplateParam(s string) templateParam {
 // Template parsed and splited format string (stored in first field)
 type Template []interface{}
 
-// InitTemplate parse and split format string (format string stored in first field)
+// for backward compability
+var InitTemplate = NewTemplate
+
+// NewTemplate parse and split format string (format string stored in first field)
 //
 // @format Format string like 'string %{param} %{param1.param2}'
-func InitTemplate(format string) (Template, error) {
+func NewTemplate(format string) (Template, error) {
 	t := make([]interface{}, 1, 32)
 	t[0] = format
 	f := format
@@ -45,7 +48,7 @@ func InitTemplate(format string) (Template, error) {
 				return nil, fmt.Errorf("parse error '%s': expect }", f)
 			}
 			name := f[:end]
-			t = append(t, initTemplateParam(name))
+			t = append(t, NewTemplateParam(name))
 
 			if end+1 == len(f) {
 				break
@@ -122,10 +125,10 @@ func loopkupTemplateNode(t interface{}, params map[string]interface{}) (string, 
 //
 // @Params Params in map[string]interface{}
 //
-// 	params := map[string]interface{}{
-// 		"param":  "URL",
-// 		"param1": map[string]interface{}{ "param2": "2" },
-// 	}
+//	params := map[string]interface{}{
+//		"param":  "URL",
+//		"param1": map[string]interface{}{ "param2": "2" },
+//	}
 func (t *Template) Execute(params map[string]interface{}) (string, error) {
 	if len(*t) == 2 {
 		return loopkupTemplateNode((*t)[1], params)
@@ -142,4 +145,38 @@ func (t *Template) Execute(params map[string]interface{}) (string, error) {
 		return sb.String(), nil
 	}
 	return "", nil
+}
+
+// ExecutePartial process template with mapped params, if parameter not found - use segment as is (without error)
+//
+// @Params Params in map[string]interface{}
+//
+//	params := map[string]interface{}{
+//		"param":  "URL",
+//		"param1": map[string]interface{}{ "param2": "2" },
+//	}
+func (t *Template) ExecutePartial(params map[string]interface{}) (string, bool) {
+	if len(*t) == 2 {
+		s, err := loopkupTemplateNode((*t)[1], params)
+		if err != nil {
+			return "%{" + (*t)[1].(templateParam)[0] + "}", true
+		}
+		return s, false
+	} else if len(*t) > 2 {
+		var sb Builder
+		var part bool
+		sb.Grow(2 * len((*t)[0].(string)))
+		for i := 1; i < len(*t); i++ {
+			if s, err := loopkupTemplateNode((*t)[i], params); err == nil {
+				sb.WriteString(s)
+			} else {
+				part = true
+				sb.WriteString("%{")
+				sb.WriteString((*t)[i].(templateParam)[0])
+				sb.WriteString("}")
+			}
+		}
+		return sb.String(), part
+	}
+	return "", false
 }

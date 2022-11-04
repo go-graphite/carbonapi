@@ -24,36 +24,38 @@ Table of Contents
     * [Example](#example-8)
   * [tz](#tz)
     * [Example](#example-9)
-  * [functionsConfig](#functionsconfig)
+  * [extractTagsFromArgs](#extractTagsFromArgs)
     * [Example](#example-10)
+  * [functionsConfig](#functionsconfig)
+    * [Example](#example-11)
     * [Example for timeShift](#example-for-timeshift)
   * [graphite](#graphite)
-    * [Example](#example-11)
-  * [pidFile](#pidfile)
     * [Example](#example-12)
-  * [graphTemplates](#graphtemplates)
+  * [pidFile](#pidfile)
     * [Example](#example-13)
-  * [defaultColors](#defaultcolors)
+  * [graphTemplates](#graphtemplates)
     * [Example](#example-14)
-  * [expvar](#expvar)
+  * [defaultColors](#defaultcolors)
     * [Example](#example-15)
-  * [logger](#logger)
+  * [expvar](#expvar)
     * [Example](#example-16)
+  * [logger](#logger)
+    * [Example](#example-17)
 * [Carbonzipper configuration](#carbonzipper-configuration)
   * [concurency](#concurency)
-    * [Example](#example-17)
-  * [maxBatchSize](#maxbatchsize)
     * [Example](#example-18)
+  * [maxBatchSize](#maxbatchsize)
+    * [Example](#example-19)
   * [idleConnections](#idleconnections)
   * [upstreams](#upstreams)
-    * [Example](#example-19)
+    * [Example](#example-20)
       * [For go\-carbon and prometheus](#for-go-carbon-and-prometheus)
       * [For VictoriaMetrics](#for-victoriametrics)
       * [For graphite\-clickhouse](#for-graphite-clickhouse)
       * [For metrictank](#for-metrictank)
       * [For IRONdb](#for-irondb)
   * [expireDelaySec](#expiredelaysec)
-    * [Example](#example-20)
+    * [Example](#example-21)
 
 # General configuration for carbonapi
 
@@ -325,6 +327,18 @@ tz: "Europe/Zurich,7200"
 ```
 
 ***
+## extractTagsFromArgs
+
+By default, functions like aggregate inherit tags from first series (for compatibility with graphite-web).
+
+If set extractTagsFromArgs to true, tags are extracted from seriesByTag arguments
+
+### Example
+
+```yaml
+extractTagsFromArgs: true
+```
+
 ## functionsConfig
 
 Extra config files for specific functions

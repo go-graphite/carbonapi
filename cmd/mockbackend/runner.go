@@ -4,17 +4,22 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"sync"
 
+	"github.com/tevino/abool"
 	"go.uber.org/zap"
 )
 
 type runner struct {
 	App
 
-	isRunning bool
+	out string
+
+	isRunning *abool.AtomicBool
 	ctx       context.Context
 	cancel    context.CancelFunc
 	logger    *zap.Logger
+	wg        sync.WaitGroup
 }
 
 func new(config *App, logger *zap.Logger) *runner {
@@ -23,13 +28,17 @@ func new(config *App, logger *zap.Logger) *runner {
 		logger: logger.With(
 			zap.String("name", config.Name),
 		),
+		isRunning: abool.New(),
 	}
 
 	return r
 }
 
 func (r *runner) Run() {
-	if r.isRunning {
+	r.wg.Add(1)
+	defer r.wg.Done()
+
+	if !r.isRunning.SetToIf(false, true) {
 		r.logger.Fatal("app is already running")
 	}
 	r.logger.Debug("will start application",
@@ -39,20 +48,28 @@ func (r *runner) Run() {
 
 	cmd := exec.CommandContext(r.ctx, r.Binary, r.Args...)
 	out, err := cmd.CombinedOutput()
+	r.out = string(out)
 	if err != nil {
 		r.logger.Error("error running program",
 			zap.Any("config", r.App),
 			zap.String("output", "will follow next"),
 			zap.Error(err),
 		)
-		fmt.Print(string(out))
+		fmt.Print(r.out)
 	}
 
-	r.isRunning = true
+	r.isRunning.UnSet()
 }
 
 func (r *runner) Finish() {
 	r.cancel()
+	r.wg.Wait()
+}
 
-	r.isRunning = false
+func (r *runner) IsRunning() bool {
+	return r.isRunning.IsSet()
+}
+
+func (r *runner) Out() string {
+	return r.out
 }

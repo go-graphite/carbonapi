@@ -1,6 +1,7 @@
 package aliasByMetric
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -41,4 +42,28 @@ func TestAliasByMetric(t *testing.T) {
 		})
 	}
 
+}
+
+func BenchmarkAliasByMetric(b *testing.B) {
+	target := "aliasByMetric(metric1.foo.bar.baz)"
+	metrics := map[parser.MetricRequest][]*types.MetricData{
+		{Metric: "metric1.foo.bar.baz", From: 0, Until: 1}: {
+			types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, 1),
+		},
+	}
+
+	evaluator := metadata.GetEvaluator()
+	exp, _, err := parser.ParseExpr(target)
+	if err != nil {
+		b.Fatalf("failed to parse %s: %+v", target, err)
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		g, err := evaluator.Eval(context.Background(), exp, 0, 1, metrics)
+		if err != nil {
+			b.Fatalf("failed to eval %s: %+v", target, err)
+		}
+		_ = g
+	}
 }

@@ -1,6 +1,7 @@
 package aggregateLine
 
 import (
+	"context"
 	"math"
 	"testing"
 	"time"
@@ -36,9 +37,9 @@ func TestConstantLine(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{
-				types.MakeMetricData("aggregateLine(metric1, 3)", []float64{3, 3}, 6, now32),
-				types.MakeMetricData("aggregateLine(metric2, 4)", []float64{4, 4}, 6, now32),
-				types.MakeMetricData("aggregateLine(metric3, 4.5)", []float64{4.5, 4.5}, 6, now32),
+				types.MakeMetricData("aggregateLine(metric1, 3)", []float64{3, 3}, 6, now32).SetTag("name", "metric1"),
+				types.MakeMetricData("aggregateLine(metric2, 4)", []float64{4, 4}, 6, now32).SetTag("name", "metric2"),
+				types.MakeMetricData("aggregateLine(metric3, 4.5)", []float64{4.5, 4.5}, 6, now32).SetTag("name", "metric3"),
 			},
 		},
 		{
@@ -50,8 +51,8 @@ func TestConstantLine(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{
-				types.MakeMetricData("aggregateLine(metric1, None)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
-				types.MakeMetricData("aggregateLine(metric2, 4)", []float64{4, 4, 4, 4, 4, 4}, 1, now32),
+				types.MakeMetricData("aggregateLine(metric1, None)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32).SetTag("name", "metric1"),
+				types.MakeMetricData("aggregateLine(metric2, 4)", []float64{4, 4, 4, 4, 4, 4}, 1, now32).SetTag("name", "metric2"),
 			},
 		},
 	}
@@ -63,4 +64,29 @@ func TestConstantLine(t *testing.T) {
 		})
 	}
 
+}
+
+func BenchmarkAverageSeries(b *testing.B) {
+	target := "aggregateLine(metric[12],'avg',true)"
+	metrics := map[parser.MetricRequest][]*types.MetricData{
+		{"metric[12]", 0, 1}: {
+			types.MakeMetricData("metric1", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, 1),
+			types.MakeMetricData("metric2", []float64{2.0, 6.0, 3.0, 2.0, 5.0, 6.0}, 1, 1),
+		},
+	}
+
+	evaluator := metadata.GetEvaluator()
+	exp, _, err := parser.ParseExpr(target)
+	if err != nil {
+		b.Fatalf("failed to parse %s: %+v", target, err)
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		g, err := evaluator.Eval(context.Background(), exp, 0, 1, metrics)
+		if err != nil {
+			b.Fatalf("failed to eval %s: %+v", target, err)
+		}
+		_ = g
+	}
 }

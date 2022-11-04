@@ -6,6 +6,9 @@ on:
     branches: [ main ]
     types:
       - completed
+  push:
+    tags:
+      - v.*
 jobs:
   build-packages-rockylinux-8:
     name: Build packages for Rockylinux 8

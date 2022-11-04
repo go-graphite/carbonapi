@@ -32,7 +32,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // sortByMaxima(seriesList), sortByMinima(seriesList), sortByTotal(seriesList)
 func (f *sortBy) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	original, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	original, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -62,6 +62,9 @@ func (f *sortBy) Do(ctx context.Context, e parser.Expr, from, until int64, value
 	aggFunc, exists := aggFuncMap[target]
 	if !exists {
 		return nil, fmt.Errorf("invalid function called: %s", target)
+	}
+	if err := consolidations.CheckValidConsolidationFunc(aggFunc.name); err != nil {
+		return nil, err
 	}
 
 	// some function by default are not ascending so we need to reverse behaviour

@@ -2,8 +2,8 @@ package linearRegression
 
 import (
 	"context"
-	"fmt"
 	"math"
+	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -33,30 +33,30 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // linearRegression(seriesList, startSourceAt=None, endSourceAt=None)
 func (f *linearRegression) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
 	degree := 1
 
-	var results []*types.MetricData
+	results := make([]*types.MetricData, 0, len(arg))
 
 	for _, a := range arg {
-		r := *a
-		if len(e.Args()) > 2 {
-			r.Name = fmt.Sprintf("linearRegression(%s,'%s','%s')", a.GetName(), e.Args()[1].StringValue(), e.Args()[2].StringValue())
-		} else if len(e.Args()) > 1 {
-			r.Name = fmt.Sprintf("linearRegression(%s,'%s')", a.GetName(), e.Args()[2].StringValue())
+		r := a.CopyLink()
+		if e.ArgsLen() > 2 {
+			r.Name = "linearRegression(" + a.GetName() + ",'" + e.Arg(1).StringValue() + "','" + e.Arg(2).StringValue() + "')"
+		} else if e.ArgsLen() > 1 {
+			r.Name = "linearRegression(" + a.GetName() + ",'" + e.Arg(1).StringValue() + "')"
 		} else {
-			r.Name = fmt.Sprintf("linearRegression(%s)", a.GetName())
+			r.Name = "linearRegression(" + a.Name + ")"
 		}
 
 		r.Values = make([]float64, len(a.Values))
 		r.StopTime = a.GetStopTime()
 
 		// Removing absent values from original dataset
-		nonNulls := make([]float64, 0)
+		nonNulls := make([]float64, 0, len(a.Values))
 		for i, v := range a.Values {
 			if !math.IsNaN(v) {
 				nonNulls = append(nonNulls, a.Values[i])
@@ -66,7 +66,7 @@ func (f *linearRegression) Do(ctx context.Context, e parser.Expr, from, until in
 			for i := range r.Values {
 				r.Values[i] = math.NaN()
 			}
-			results = append(results, &r)
+			results = append(results, r)
 			continue
 		}
 
@@ -88,7 +88,9 @@ func (f *linearRegression) Do(ctx context.Context, e parser.Expr, from, until in
 		for i := range r.Values {
 			r.Values[i] = consolidations.Poly(float64(i), c.RawMatrix().Data...)
 		}
-		results = append(results, &r)
+		r.Tags["linearRegressions"] = strconv.FormatInt(a.GetStartTime(), 10) + ", " + strconv.FormatInt(a.GetStopTime(), 10)
+
+		results = append(results, r)
 	}
 	return results, nil
 }
@@ -117,6 +119,9 @@ func (f *linearRegression) Description() map[string]types.FunctionDescription {
 					Type: types.Date,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

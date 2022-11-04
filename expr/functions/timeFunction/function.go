@@ -57,12 +57,11 @@ func (f *timeFunction) Do(ctx context.Context, e parser.Expr, from, until int64,
 
 	p := types.MetricData{
 		FetchResponse: pb.FetchResponse{
-			Name:              name,
-			StartTime:         from,
-			StopTime:          until,
-			StepTime:          step,
-			Values:            newValues,
-			ConsolidationFunc: "max",
+			Name:      name,
+			StartTime: from,
+			StopTime:  until,
+			StepTime:  step,
+			Values:    newValues,
 		},
 		Tags: map[string]string{"name": name},
 	}

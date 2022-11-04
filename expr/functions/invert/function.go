@@ -38,6 +38,8 @@ func (f *invert) Do(ctx context.Context, e parser.Expr, from, until int64, value
 				r.Values[i] = 1 / v
 			}
 		}
+		r.Tags["invert"] = "1"
+
 		return r
 	})
 }
@@ -58,6 +60,8 @@ func (f *invert) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

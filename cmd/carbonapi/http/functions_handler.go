@@ -40,7 +40,7 @@ func functionsHandler(w http.ResponseWriter, r *http.Request) {
 		deferredAccessLogging(accessLogger, &accessLogDetails, t0, logAsError)
 	}()
 
-	ApiMetrics.Requests.Add(1)
+	ApiMetrics.RequestsH.Add(1)
 
 	err := r.ParseForm()
 	if err != nil {

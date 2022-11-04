@@ -420,3 +420,70 @@ func TestDoGetBoolVar(t *testing.T) {
 		})
 	}
 }
+
+func TestGetIntervalNamedOrPosArgDefault(t *testing.T) {
+	e, _, err := ParseExpr("func(metric, key='1min')")
+	assert.NoError(t, err)
+
+	val, err := e.GetIntervalNamedOrPosArgDefault("key", 1, -1, 0)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(-60), val)
+}
+
+func TestDoGetFloatArg(t *testing.T) {
+	tests := []struct {
+		s string
+		e *expr
+		r float64
+	}{
+		{
+			"parse float",
+			&expr{val: 1.0, etype: EtConst, valStr: "1.0"},
+			1.0,
+		},
+		{
+			"parse string to float",
+			&expr{etype: EtString, valStr: "1.0"},
+			1.0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.s, func(t *testing.T) {
+			assert := assert.New(t)
+
+			r, err := tt.e.doGetFloatArg()
+			if assert.NoError(err) {
+				assert.Equal(tt.r, r, tt.s)
+			}
+		})
+	}
+}
+
+func TestDoGetIntArg(t *testing.T) {
+	tests := []struct {
+		s string
+		e *expr
+		r int
+	}{
+		{
+			"parse int",
+			&expr{val: 5, etype: EtConst, valStr: "5"},
+			5,
+		},
+		{
+			"parse string to int",
+			&expr{etype: EtString, valStr: "1"},
+			1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.s, func(t *testing.T) {
+			assert := assert.New(t)
+
+			r, err := tt.e.doGetIntArg()
+			if assert.NoError(err) {
+				assert.Equal(tt.r, r, tt.s)
+			}
+		})
+	}
+}

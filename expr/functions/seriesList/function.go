@@ -2,12 +2,9 @@ package seriesList
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"sort"
 	"strconv"
-
-	"github.com/ansel1/merry"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -26,7 +23,7 @@ func GetOrder() interfaces.Order {
 func New(configFile string) []interfaces.FunctionMetadata {
 	res := make([]interfaces.FunctionMetadata, 0)
 	f := &seriesList{}
-	functions := []string{"divideSeriesLists", "diffSeriesLists", "multiplySeriesLists", "powSeriesLists"}
+	functions := []string{"divideSeriesLists", "diffSeriesLists", "multiplySeriesLists", "powSeriesLists", "sumSeriesLists"}
 	for _, n := range functions {
 		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
 	}
@@ -34,6 +31,10 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	if e.ArgsLen() < 2 {
+		return nil, parser.ErrMissingArgument
+	}
+
 	useConstant := false
 	useDenom := false
 
@@ -42,14 +43,9 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 		return nil, err
 	}
 
-	numerators, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	numerators, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
-		if merry.Is(err, parser.ErrSeriesDoesNotExist) && !math.IsNaN(defaultValue) {
-			useConstant = true
-			useDenom = true
-		} else {
-			return nil, err
-		}
+		return nil, err
 	}
 	if len(numerators) == 0 {
 		if !math.IsNaN(defaultValue) {
@@ -59,15 +55,10 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 			return nil, nil
 		}
 	}
-	sort.Slice(numerators, func(i, j int) bool { return numerators[i].Name < numerators[j].Name })
 
-	denominators, err := helper.GetSeriesArg(ctx, e.Args()[1], from, until, values)
+	denominators, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
 	if err != nil {
-		if merry.Is(err, parser.ErrSeriesDoesNotExist) && !math.IsNaN(defaultValue) && !useConstant {
-			useConstant = true
-		} else {
-			return nil, err
-		}
+		return nil, err
 	}
 	if len(denominators) == 0 {
 		if !math.IsNaN(defaultValue) && !useConstant {
@@ -76,7 +67,6 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 			return nil, nil
 		}
 	}
-	sort.Slice(denominators, func(i, j int) bool { return denominators[i].Name < denominators[j].Name })
 
 	sizeMatch := len(denominators) == len(numerators) || len(denominators) == 1
 	useMatching, err := e.GetBoolNamedOrPosArgDefault("matching", 2, !useConstant && !sizeMatch)
@@ -84,7 +74,9 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 		return nil, err
 	}
 
-	var results []*types.MetricData
+	sort.Slice(numerators, func(i, j int) bool { return numerators[i].Name < numerators[j].Name })
+	sort.Slice(denominators, func(i, j int) bool { return denominators[i].Name < denominators[j].Name })
+
 	functionName := e.Target()[:len(e.Target())-len("Lists")]
 
 	var compute func(l, r float64) float64
@@ -98,6 +90,8 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 		compute = func(l, r float64) float64 { return l - r }
 	case "powSeriesLists":
 		compute = math.Pow
+	case "sumSeriesLists":
+		compute = func(l, r float64) float64 { return l + r }
 	}
 
 	if useConstant {
@@ -107,9 +101,10 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 		} else {
 			single = numerators
 		}
-		for _, s := range single {
-			r := *s
-			r.Name = fmt.Sprintf("%s(%s,%s)", functionName, s.Name, s.Name)
+		results := make([]*types.MetricData, len(single))
+		for n, s := range single {
+			r := s.CopyLinkTags()
+			r.Name = functionName + "(" + s.Name + "," + s.Name + ")"
 			r.Values = make([]float64, len(s.Values))
 			for i, v := range s.Values {
 				if math.IsNaN(v) {
@@ -130,7 +125,7 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 				}
 
 			}
-			results = append(results, &r)
+			results[n] = r
 		}
 		return results, nil
 	}
@@ -145,7 +140,8 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 
 	var denominator *types.MetricData
 
-	for i, numerator := range numerators {
+	results := make([]*types.MetricData, 0, len(numerators))
+	for n, numerator := range numerators {
 		pairFound := false
 		if useMatching {
 			denominator, pairFound = denomMap[numerator.Name]
@@ -157,22 +153,21 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 			if len(denominators) == 1 {
 				denominator = denominators[0]
 			} else {
-				denominator = denominators[i]
+				denominator = denominators[n]
 			}
 		}
 		if pairFound {
-			if numerator.StepTime != denominator.StepTime || len(numerator.Values) != len(denominator.Values) {
-				return nil, fmt.Errorf("series %s must have the same length as %s", numerator.Name, denominator.Name)
-			}
+			numerator, denominator = helper.ConsolidateSeriesByStep(numerator, denominator)
 		}
-		r := *numerator
+
+		r := numerator.CopyLink()
 		var denomName string
 		if pairFound {
 			denomName = denominator.Name
 		} else {
 			denomName = strconv.FormatFloat(defaultValue, 'f', -1, 64)
 		}
-		r.Name = fmt.Sprintf("%s(%s,%s)", functionName, numerator.Name, denomName)
+		r.Name = functionName + "(" + numerator.Name + "," + denomName + ")"
 		r.Values = make([]float64, len(numerator.Values))
 
 		for i, v := range numerator.Values {
@@ -198,7 +193,7 @@ func (f *seriesList) Do(ctx context.Context, e parser.Expr, from, until int64, v
 				r.Values[i] = compute(v, denomValue)
 			}
 		}
-		results = append(results, &r)
+		results = append(results, r)
 	}
 	return results, nil
 }
@@ -229,6 +224,10 @@ func (f *seriesList) Description() map[string]types.FunctionDescription {
 					Type:     types.Float,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 		"diffSeriesLists": {
 			Description: "Iterates over a two lists and substracts list1[0} by list2[0}, list1[1} by list2[1} and so on.\nThe lists need to be the same length\nCarbonAPI-specific extension allows to specify default value as 3rd optional argument in case series doesn't exist or value is missing",
@@ -253,6 +252,10 @@ func (f *seriesList) Description() map[string]types.FunctionDescription {
 					Type:     types.Float,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 		"multiplySeriesLists": {
 			Description: "Iterates over a two lists and multiplies list1[0} by list2[0}, list1[1} by list2[1} and so on.\nThe lists need to be the same length\nCarbonAPI-specific extension allows to specify default value as 3rd optional argument in case series doesn't exist or value is missing",
@@ -277,6 +280,10 @@ func (f *seriesList) Description() map[string]types.FunctionDescription {
 					Type:     types.Float,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 		"powSeriesLists": {
 			Description: "Iterates over a two lists and do list1[0} in power of list2[0}, list1[1} in power of  list2[1} and so on.\nThe lists need to be the same length\nCarbonAPI-specific extension allows to specify default value as 3rd optional argument in case series doesn't exist or value is missing",
@@ -301,6 +308,38 @@ func (f *seriesList) Description() map[string]types.FunctionDescription {
 					Type:     types.Float,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
+		},
+		"sumSeriesLists": {
+			Description: "Iterates over a two lists and subtracts series lists 2 through n from series 1 list1[0] to list2[0], list1[1] to list2[1] and so on. \n The lists will need to be the same length\nCarbonAPI-specific extension allows to specify default value as 3rd optional argument in case series doesn't exist or value is missing Example:\n\n.. code-block:: none\n\n  &target=sumSeriesLists(mining.{carbon,graphite,diamond}.extracted,mining.{carbon,graphite,diamond}.shipped)\n\n",
+			Function:    "sumSeriesLists(seriesListFirstPos, seriesListSecondPos)",
+			Group:       "Combine",
+			Module:      "graphite.render.functions.custom",
+			Name:        "sumSeriesLists",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesListFirstPos",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "seriesListSecondPos",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "default",
+					Required: false,
+					Type:     types.Float,
+				},
+			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			TagsChange:   true, // name tag changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

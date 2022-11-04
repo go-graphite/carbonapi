@@ -35,17 +35,43 @@ type MetricData struct {
 	AggregateFunction func([]float64) float64 `json:"-"`
 }
 
+func appendInt2(b []byte, n int64) []byte {
+	if n > 9 {
+		return strconv.AppendInt(b, n, 10)
+	}
+	b = append(b, '0')
+	return strconv.AppendInt(b, n, 10)
+}
+
 // MarshalCSV marshals metric data to CSV
 func MarshalCSV(results []*MetricData) []byte {
-
-	var b []byte
+	if len(results) == 0 {
+		return []byte("[]")
+	}
+	n := len(results) * (len(results[0].Name) + len(results[0].PathExpression) + 128*len(results[0].Values) + 128)
+	b := make([]byte, 0, n)
 
 	for _, r := range results {
 
 		step := r.StepTime
 		t := r.StartTime
 		for _, v := range r.Values {
-			b = append(b, "\""+r.Name+"\","+time.Unix(t, 0).UTC().Format("2006-01-02 15:04:05")+","...)
+			b = append(b, '"')
+			b = append(b, r.Name...)
+			b = append(b, `",`...)
+			tm := time.Unix(t, 0).UTC()
+			b = strconv.AppendInt(b, int64(tm.Year()), 10)
+			b = append(b, '-')
+			b = appendInt2(b, int64(tm.Month()))
+			b = append(b, '-')
+			b = appendInt2(b, int64(tm.Day()))
+			b = append(b, ' ')
+			b = appendInt2(b, int64(tm.Hour()))
+			b = append(b, ':')
+			b = appendInt2(b, int64(tm.Minute()))
+			b = append(b, ':')
+			b = appendInt2(b, int64(tm.Second()))
+			b = append(b, ',')
 			if !math.IsNaN(v) {
 				b = strconv.AppendFloat(b, v, 'f', -1, 64)
 			}
@@ -91,7 +117,12 @@ func ConsolidateJSON(maxDataPoints int64, results []*MetricData) {
 
 // MarshalJSON marshals metric data to JSON
 func MarshalJSON(results []*MetricData, timestampMultiplier int64, noNullPoints bool) []byte {
-	var b []byte
+	if len(results) == 0 {
+		return []byte("[]")
+	}
+	n := len(results) * (len(results[0].Name) + len(results[0].PathExpression) + 128*len(results[0].Values) + 128)
+
+	b := make([]byte, 0, n)
 	b = append(b, '[')
 
 	var topComma bool
@@ -203,7 +234,7 @@ func MarshalPickle(results []*MetricData) []byte {
 func MarshalProtobufV2(results []*MetricData) ([]byte, error) {
 	response := pbv2.MultiFetchResponse{}
 	for _, metric := range results {
-		fmv3 := (*metric).FetchResponse
+		fmv3 := metric.FetchResponse
 		v := make([]float64, len(fmv3.Values))
 		isAbsent := make([]bool, len(fmv3.Values))
 		for i := range fmv3.Values {
@@ -236,7 +267,7 @@ func MarshalProtobufV2(results []*MetricData) ([]byte, error) {
 func MarshalProtobufV3(results []*MetricData) ([]byte, error) {
 	response := pb.MultiFetchResponse{}
 	for _, metric := range results {
-		response.Metrics = append(response.Metrics, (*metric).FetchResponse)
+		response.Metrics = append(response.Metrics, metric.FetchResponse)
 	}
 	b, err := response.Marshal()
 	if err != nil {
@@ -248,8 +279,11 @@ func MarshalProtobufV3(results []*MetricData) ([]byte, error) {
 
 // MarshalRaw marshals metric data to graphite's internal format, called 'raw'
 func MarshalRaw(results []*MetricData) []byte {
-
-	var b []byte
+	if len(results) == 0 {
+		return []byte{}
+	}
+	n := len(results) * (len(results[0].Name) + len(results[0].PathExpression) + 128*len(results[0].Values) + 128)
+	b := make([]byte, 0, n)
 
 	for _, r := range results {
 
@@ -393,7 +427,7 @@ func (r *MetricData) Copy(includeValues bool) *MetricData {
 	}
 }
 
-// Copy returns the copy of r. Values not copied and link from parent.
+// CopyLink returns the copy of MetricData, Values not copied and link from parent. Tags map are copied
 func (r *MetricData) CopyLink() *MetricData {
 	tags := make(map[string]string)
 	for k, v := range r.Tags {
@@ -423,6 +457,243 @@ func (r *MetricData) CopyLink() *MetricData {
 	}
 }
 
+// CopyLinkTags returns the copy of MetricData, Values not copied and link from parent. Tags map set by rereference without copy (so, DON'T change them for prevent naming bugs)
+func (r *MetricData) CopyLinkTags() *MetricData {
+	return &MetricData{
+		FetchResponse: pb.FetchResponse{
+			Name:                    r.Name,
+			PathExpression:          r.PathExpression,
+			ConsolidationFunc:       r.ConsolidationFunc,
+			StartTime:               r.StartTime,
+			StopTime:                r.StopTime,
+			StepTime:                r.StepTime,
+			XFilesFactor:            r.XFilesFactor,
+			HighPrecisionTimestamps: r.HighPrecisionTimestamps,
+			Values:                  r.Values,
+			AppliedFunctions:        r.AppliedFunctions,
+			RequestStartTime:        r.RequestStartTime,
+			RequestStopTime:         r.RequestStopTime,
+		},
+		GraphOptions:      r.GraphOptions,
+		ValuesPerPoint:    r.ValuesPerPoint,
+		aggregatedValues:  r.aggregatedValues,
+		Tags:              r.Tags,
+		AggregateFunction: r.AggregateFunction,
+	}
+}
+
+// CopyName returns the copy of MetricData, Values not copied and link from parent. If name set, Name and Name tag changed
+func (r *MetricData) CopyName(name string) *MetricData {
+	res := r.CopyLink()
+	res.Name = name
+	res.Tags["name"] = name
+
+	return res
+}
+
+// CopyNameWithDefault returns the copy of MetricData, Values not copied and link from parent. Name is changed, Tags will be reset.
+// If Name tag not set, it will be set with default value.
+// Use this function in aggregate function (like sumSeries)
+func (r *MetricData) CopyNameWithDefault(name, defaultName string) *MetricData {
+	if name == "" {
+		name = defaultName
+	}
+
+	tags := tags.ExtractTags(ExtractName(name))
+	if _, exist := tags["name"]; !exist {
+		tags["name"] = defaultName
+	}
+
+	return &MetricData{
+		FetchResponse: pb.FetchResponse{
+			Name:                    name,
+			PathExpression:          r.PathExpression,
+			ConsolidationFunc:       r.ConsolidationFunc,
+			StartTime:               r.StartTime,
+			StopTime:                r.StopTime,
+			StepTime:                r.StepTime,
+			XFilesFactor:            r.XFilesFactor,
+			HighPrecisionTimestamps: r.HighPrecisionTimestamps,
+			Values:                  r.Values,
+			AppliedFunctions:        r.AppliedFunctions,
+			RequestStartTime:        r.RequestStartTime,
+			RequestStopTime:         r.RequestStopTime,
+		},
+		GraphOptions:      r.GraphOptions,
+		ValuesPerPoint:    r.ValuesPerPoint,
+		aggregatedValues:  r.aggregatedValues,
+		Tags:              tags,
+		AggregateFunction: r.AggregateFunction,
+	}
+}
+
+// CopyTag returns the copy of MetricData, Values not copied and link from parent. If name set, Name and Name tag changed, Tags will be reset.
+// WARNING: can provide inconsistence beetween name and tags, if incorectly used
+func (r *MetricData) CopyTag(name string, tags map[string]string) *MetricData {
+	if name == "" {
+		return r.CopyLink()
+	}
+
+	return &MetricData{
+		FetchResponse: pb.FetchResponse{
+			Name:                    name,
+			PathExpression:          r.PathExpression,
+			ConsolidationFunc:       r.ConsolidationFunc,
+			StartTime:               r.StartTime,
+			StopTime:                r.StopTime,
+			StepTime:                r.StepTime,
+			XFilesFactor:            r.XFilesFactor,
+			HighPrecisionTimestamps: r.HighPrecisionTimestamps,
+			Values:                  r.Values,
+			AppliedFunctions:        r.AppliedFunctions,
+			RequestStartTime:        r.RequestStartTime,
+			RequestStopTime:         r.RequestStopTime,
+		},
+		GraphOptions:      r.GraphOptions,
+		ValuesPerPoint:    r.ValuesPerPoint,
+		aggregatedValues:  r.aggregatedValues,
+		Tags:              tags,
+		AggregateFunction: r.AggregateFunction,
+	}
+}
+
+// CopyNameArg returns the copy of MetricData, Values not copied and link from parent. Name is changed, tags extracted from seriesByTag args, if extractTags is true
+// For use in functions like aggregate
+func (r *MetricData) CopyNameArg(name, defaultName string, defaultTags map[string]string, extractTags bool) *MetricData {
+	if name == "" {
+		return r.CopyLink()
+	}
+
+	var tagsExtracted map[string]string
+	nameStiped := ExtractName(name)
+	if strings.HasPrefix(nameStiped, "seriesByTag(") {
+		if extractTags {
+			// from aggregation functions with seriesByTag
+			tagsExtracted = tags.ExtractSeriesByTags(nameStiped, defaultName)
+		} else {
+			tagsExtracted = defaultTags
+		}
+	} else {
+		tagsExtracted = tags.ExtractTags(nameStiped)
+	}
+
+	return &MetricData{
+		FetchResponse: pb.FetchResponse{
+			Name:                    name,
+			PathExpression:          r.PathExpression,
+			ConsolidationFunc:       r.ConsolidationFunc,
+			StartTime:               r.StartTime,
+			StopTime:                r.StopTime,
+			StepTime:                r.StepTime,
+			XFilesFactor:            r.XFilesFactor,
+			HighPrecisionTimestamps: r.HighPrecisionTimestamps,
+			Values:                  r.Values,
+			AppliedFunctions:        r.AppliedFunctions,
+			RequestStartTime:        r.RequestStartTime,
+			RequestStopTime:         r.RequestStopTime,
+		},
+		GraphOptions:      r.GraphOptions,
+		ValuesPerPoint:    r.ValuesPerPoint,
+		aggregatedValues:  r.aggregatedValues,
+		Tags:              tagsExtracted,
+		AggregateFunction: r.AggregateFunction,
+	}
+}
+
+// CopyName returns the copy of MetricData, Values not copied and link from parent. If name set, Name and Name tag changed, Tags wil be reset
+func (r *MetricData) CopyNameWithVal(name string) *MetricData {
+	if name == "" {
+		return r.Copy(true)
+	}
+
+	values := make([]float64, len(r.Values))
+	copy(values, r.Values)
+
+	tags := tags.ExtractTags(ExtractName(name))
+
+	return &MetricData{
+		FetchResponse: pb.FetchResponse{
+			Name:                    name,
+			PathExpression:          r.PathExpression,
+			ConsolidationFunc:       r.ConsolidationFunc,
+			StartTime:               r.StartTime,
+			StopTime:                r.StopTime,
+			StepTime:                r.StepTime,
+			XFilesFactor:            r.XFilesFactor,
+			HighPrecisionTimestamps: r.HighPrecisionTimestamps,
+			Values:                  values,
+			AppliedFunctions:        r.AppliedFunctions,
+			RequestStartTime:        r.RequestStartTime,
+			RequestStopTime:         r.RequestStopTime,
+		},
+		GraphOptions:      r.GraphOptions,
+		ValuesPerPoint:    r.ValuesPerPoint,
+		aggregatedValues:  r.aggregatedValues,
+		Tags:              tags,
+		AggregateFunction: r.AggregateFunction,
+	}
+}
+
+// SetConsolidationFunc set ConsolidationFunc
+func (r *MetricData) SetConsolidationFunc(f string) *MetricData {
+	r.ConsolidationFunc = f
+	return r
+}
+
+// SetXFilesFactor set XFilesFactor
+func (r *MetricData) SetXFilesFactor(x float32) *MetricData {
+	r.XFilesFactor = x
+	return r
+}
+
+// AppendStopTime append to StopTime for simulate broken time series
+func (r *MetricData) AppendStopTime(step int64) *MetricData {
+	r.StopTime += step
+	return r
+}
+
+// FixStopTime fix broken StopTime (less than need for values)
+func (r *MetricData) FixStopTime() *MetricData {
+	stop := r.StartTime + int64(len(r.Values))*r.StepTime
+	if r.StopTime < stop {
+		r.StopTime = stop
+	}
+	return r
+}
+
+// SetNameTag set name tag
+func (r *MetricData) SetNameTag(name string) *MetricData {
+	r.Tags["name"] = name
+	return r
+}
+
+// FixNameTag for safe name tag for future use without metric.ExtractMetric
+func (r *MetricData) FixNameTag() *MetricData {
+	r.Tags["name"] = ExtractName(r.Tags["name"])
+	return r
+}
+
+// SetTag allow to set custom tag (for tests)
+func (r *MetricData) SetTag(key, value string) *MetricData {
+	r.Tags[key] = value
+	return r
+}
+
+// SetTag allow to set tags
+func (r *MetricData) SetTags(tags map[string]string) *MetricData {
+	r.Tags = tags
+	return r
+}
+
+// RecalcStopTime recalc StopTime with StartTime and Values length
+func (r *MetricData) RecalcStopTime() *MetricData {
+	stop := r.StartTime + int64(len(r.Values))*r.StepTime
+	if r.StopTime != stop {
+		r.StopTime = stop
+	}
+	return r
+}
+
 // CopyMetricDataSlice returns the slice of metrics that should be changed later.
 // It allows to avoid a changing of source data, e.g. by AlignMetrics
 func CopyMetricDataSlice(args []*MetricData) (newData []*MetricData) {
@@ -433,9 +704,37 @@ func CopyMetricDataSlice(args []*MetricData) (newData []*MetricData) {
 	return newData
 }
 
+// CopyMetricDataSliceLink returns the copies slice of metrics, Values not copied and link from parent.
+func CopyMetricDataSliceLink(args []*MetricData) (newData []*MetricData) {
+	newData = make([]*MetricData, len(args))
+	for i, m := range args {
+		newData[i] = m.CopyLink()
+	}
+	return newData
+}
+
+// CopyMetricDataSliceWithName returns the copies slice of metrics with name overwrite, Values not copied and link from parent. Tags will be reset
+func CopyMetricDataSliceWithName(args []*MetricData, name string) (newData []*MetricData) {
+	newData = make([]*MetricData, len(args))
+	for i, m := range args {
+		newData[i] = m.CopyName(name)
+	}
+	return newData
+}
+
+// CopyMetricDataSliceWithTags returns the copies slice of metrics with name overwrite, Values not copied and link from parent.
+func CopyMetricDataSliceWithTags(args []*MetricData, name string, tags map[string]string) (newData []*MetricData) {
+	newData = make([]*MetricData, len(args))
+	for i, m := range args {
+		newData[i] = m.CopyTag(name, tags)
+	}
+	return newData
+}
+
 // MakeMetricData creates new metrics data with given metric timeseries
 func MakeMetricData(name string, values []float64, step, start int64) *MetricData {
-	return makeMetricDataWithTags(name, values, step, start, tags.ExtractTags(name))
+	tags := tags.ExtractTags(ExtractName(name))
+	return makeMetricDataWithTags(name, values, step, start, tags).FixNameTag()
 }
 
 // MakeMetricDataWithTags creates new metrics data with given metric Time Series (with tags)

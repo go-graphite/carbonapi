@@ -2,7 +2,6 @@ package delay
 
 import (
 	"context"
-	"fmt"
 	"math"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -31,7 +30,11 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // delay(seriesList, steps)
 func (f *delay) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	seriesList, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	if e.ArgsLen() < 2 {
+		return nil, parser.ErrMissingArgument
+	}
+
+	seriesList, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -40,33 +43,34 @@ func (f *delay) Do(ctx context.Context, e parser.Expr, from, until int64, values
 	if err != nil {
 		return nil, err
 	}
+	stepsStr := e.Arg(1).StringValue()
 
-	var results []*types.MetricData
+	results := make([]*types.MetricData, len(seriesList))
 
-	for _, series := range seriesList {
+	for i, series := range seriesList {
 		length := len(series.Values)
 
-		newValues := make([]float64, length)
-		var prevValues []float64
+		result := series.CopyName("delay(" + series.Name + "," + stepsStr + ")")
+		result.Tags["delay"] = stepsStr
 
-		for i, value := range series.Values {
-			if len(prevValues) < steps {
+		var newValues []float64
+		if steps < 0 {
+			newValues = make([]float64, length)
+			copy(newValues, series.Values[-steps:])
+			for i := -steps; i < length; i++ {
 				newValues[i] = math.NaN()
-			} else {
-				newValue := prevValues[0]
-				prevValues = prevValues[1:]
-
-				newValues[i] = newValue
 			}
-
-			prevValues = append(prevValues, value)
+			result.Values = newValues
+		} else if steps != 0 {
+			newValues = make([]float64, length)
+			for i := 0; i < steps; i++ {
+				newValues[i] = math.NaN()
+			}
+			copy(newValues[steps:], series.Values[:length-steps])
+			result.Values = newValues
 		}
 
-		result := *series
-		result.Name = fmt.Sprintf("delay(%s,%d)", series.Name, steps)
-		result.Values = newValues
-
-		results = append(results, &result)
+		results[i] = result
 	}
 
 	return results, nil
@@ -93,6 +97,8 @@ func (f *delay) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

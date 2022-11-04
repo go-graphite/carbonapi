@@ -2,12 +2,17 @@ package consolidations
 
 import (
 	"math"
+	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/ansel1/merry"
 
 	"github.com/wangjohn/quickselect"
 	"gonum.org/v1/gonum/mat"
 )
+
+var ErrInvalidConsolidationFunc = merry.New("Invalid Consolidation Function")
 
 // ConsolidationToFunc contains a map of graphite-compatible consolidation functions definitions to actual functions that can do aggregation
 // TODO(civil): take into account xFilesFactor
@@ -24,13 +29,28 @@ var ConsolidationToFunc = map[string]func([]float64) float64{
 	"minimum":  AggMin,
 	"multiply": summarizeToAggregate("multiply"),
 	"range":    summarizeToAggregate("range"),
+	"rangeOf":  summarizeToAggregate("rangeOf"),
 	"sum":      AggSum,
+	"total":    AggSum,
 	"stddev":   summarizeToAggregate("stddev"),
 	"first":    AggFirst,
 	"last":     AggLast,
+	"current":  AggLast,
 }
 
-var AvailableSummarizers = []string{"sum", "total", "avg", "average", "avg_zero", "max", "min", "last", "range", "median", "multiply", "diff", "count", "stddev"}
+var AvailableSummarizers = []string{"sum", "total", "avg", "average", "avg_zero", "max", "min", "last", "current", "first", "range", "rangeOf", "median", "multiply", "diff", "count", "stddev"}
+
+func CheckValidConsolidationFunc(functionName string) error {
+	if _, ok := ConsolidationToFunc[functionName]; ok {
+		return nil
+	} else {
+		// Check if this is a p50 - p99.9 consolidation
+		if match, _ := regexp.MatchString("p([0-9]*[.])?[0-9]+", functionName); match {
+			return nil
+		}
+	}
+	return ErrInvalidConsolidationFunc.WithMessage("invalid consolidation " + functionName)
+}
 
 // AvgValue returns average of list of values
 func AvgValue(f64s []float64) float64 {
@@ -167,10 +187,10 @@ func SummarizeValues(f string, values []float64, XFilesFactor float32) float64 {
 				}
 			}
 		}
-	case "last":
+	case "last", "current":
 		rv = values[len(values)-1]
 		total = notNans(values)
-	case "range":
+	case "range", "rangeOf":
 		vMax := math.Inf(-1)
 		vMin := math.Inf(1)
 		isNaN := true
@@ -195,11 +215,14 @@ func SummarizeValues(f string, values []float64, XFilesFactor float32) float64 {
 		rv = Percentile(values, 50, true)
 		total = notNans(values)
 	case "multiply":
-		rv = values[0]
-		for _, av := range values[1:] {
-			if !math.IsNaN(av) {
+		rv = 1.0
+		for _, v := range values {
+			if math.IsNaN(v) {
+				rv = math.NaN()
+				break
+			} else {
 				total++
-				rv *= av
+				rv *= v
 			}
 		}
 	case "diff":
@@ -216,12 +239,25 @@ func SummarizeValues(f string, values []float64, XFilesFactor float32) float64 {
 	case "stddev":
 		rv = math.Sqrt(VarianceValue(values))
 		total = notNans(values)
+	case "first":
+		if len(values) > 0 {
+			rv = values[0]
+		} else {
+			rv = math.NaN()
+		}
+		total = notNans(values)
 	default:
-		f = strings.Split(f, "p")[1]
-		percent, err := strconv.ParseFloat(f, 64)
-		if err == nil {
-			total = notNans(values)
-			rv = Percentile(values, percent, true)
+		// This processes function percentile functions such as p50 or p99.9.
+		// If a function name is passed in that does not match that format,
+		// it should be ignored
+		fn := strings.Split(f, "p")
+		if len(fn) > 1 {
+			f = fn[1]
+			percent, err := strconv.ParseFloat(f, 64)
+			if err == nil {
+				total = notNans(values)
+				rv = Percentile(values, percent, true)
+			}
 		}
 	}
 
@@ -375,19 +411,28 @@ func AggCount(v []float64) float64 {
 	return float64(n)
 }
 
-// AggCount counts non-NaN points
 func AggDiff(v []float64) float64 {
-	res := v[0]
-	if len(v) == 1 {
-		return res
-	}
-	for _, vv := range v[1:] {
+	safeValues := make([]float64, 0, len(v))
+	for _, vv := range v {
 		if !math.IsNaN(vv) {
-			res -= vv
+			safeValues = append(safeValues, vv)
 		}
 	}
 
-	return res
+	if len(safeValues) > 0 {
+		res := safeValues[0]
+		if len(safeValues) == 1 {
+			return res
+		}
+
+		for _, vv := range safeValues[1:] {
+			res -= vv
+		}
+
+		return res
+	} else {
+		return math.NaN()
+	}
 }
 
 // MaxValue returns maximum from the list

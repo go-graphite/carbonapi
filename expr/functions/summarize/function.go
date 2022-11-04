@@ -34,7 +34,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 // summarize(seriesList, intervalString, func='sum', alignToFrom=False)
 func (f *summarize) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(dgryski): make sure the arrays are all the same 'size'
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -46,16 +46,18 @@ func (f *summarize) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	if err != nil {
 		return nil, err
 	}
-
 	bucketSize := int64(bucketSizeInt32)
 
 	summarizeFunction, err := e.GetStringNamedOrPosArgDefault("func", 2, "sum")
 	if err != nil {
 		return nil, err
 	}
-	_, funcOk := e.NamedArgs()["func"]
+	_, funcOk := e.NamedArg("func")
 	if !funcOk {
-		funcOk = len(e.Args()) > 2
+		funcOk = e.ArgsLen() > 2
+	}
+	if err := consolidations.CheckValidConsolidationFunc(summarizeFunction); err != nil {
+		return nil, err
 	}
 
 	alignToFrom, err := e.GetBoolNamedOrPosArgDefault("alignToFrom", 3, false)
@@ -64,7 +66,7 @@ func (f *summarize) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	}
 	_, alignOk := e.NamedArgs()["alignToFrom"]
 	if !alignOk {
-		alignOk = len(e.Args()) > 3
+		alignOk = e.ArgsLen() > 3
 	}
 
 	start := args[0].StartTime
@@ -77,7 +79,7 @@ func (f *summarize) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	results := make([]*types.MetricData, 0, len(args))
 	for _, arg := range args {
 
-		name := fmt.Sprintf("summarize(%s,'%s'", arg.Name, e.Args()[1].StringValue())
+		name := fmt.Sprintf("summarize(%s,'%s'", arg.Name, e.Arg(1).StringValue())
 		if funcOk || alignOk {
 			// we include the "func" argument in the presence of
 			// "alignToFrom", even if the former was omitted
@@ -123,8 +125,10 @@ func (f *summarize) Do(ctx context.Context, e parser.Expr, from, until int64, va
 				PathExpression:    name,
 				ConsolidationFunc: arg.ConsolidationFunc,
 			},
-			Tags: arg.Tags,
+			Tags: helper.CopyTags(arg),
 		}
+		r.Tags["summarize"] = e.Arg(1).StringValue()
+		r.Tags["summarizeFunction"] = summarizeFunction
 
 		t := arg.StartTime // unadjusted
 		bucketEnd := start + bucketSize

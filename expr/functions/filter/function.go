@@ -39,7 +39,11 @@ var supportedOperators = map[string]struct{}{
 
 // filterSeries(*seriesLists)
 func (f *filterSeries) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	if e.ArgsLen() < 4 {
+		return nil, parser.ErrMissingArgument
+	}
+
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +72,7 @@ func (f *filterSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 		return nil, fmt.Errorf("unsupported consolidation function %s", callback)
 	}
 
-	var results []*types.MetricData
+	results := make([]*types.MetricData, 0, len(args))
 	for _, a := range args {
 		val := aggFunc(a.Values)
 		keepSeries := false

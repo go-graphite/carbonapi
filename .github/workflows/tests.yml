@@ -9,13 +9,12 @@ jobs:
 
   tests:
     name: Test code
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         go:
-          - ^1.16
-          - ^1.17
           - ^1.18
+          - ^1.19
           - ^1
     steps:
 

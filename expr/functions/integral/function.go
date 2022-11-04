@@ -40,6 +40,7 @@ func (f *integral) Do(ctx context.Context, e parser.Expr, from, until int64, val
 			current += v
 			r.Values[i] = current
 		}
+		r.Tags["integral"] = "1"
 		return r
 	})
 }
@@ -60,6 +61,8 @@ func (f *integral) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

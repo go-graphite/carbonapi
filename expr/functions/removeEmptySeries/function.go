@@ -3,6 +3,7 @@ package removeEmptySeries
 import (
 	"context"
 	"math"
+	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -30,20 +31,28 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // removeEmptySeries(seriesLists, n), removeZeroSeries(seriesLists, n)
 func (f *removeEmptySeries) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	var xFilesFactor float64
+
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
-
-	factor, err := e.GetFloatArgDefault(1, 0)
-	if err != nil {
-		return nil, err
+	if len(args) == 0 {
+		return []*types.MetricData{}, nil
 	}
 
-	var results []*types.MetricData
+	if e.ArgsLen() == 2 {
+		xFilesFactor, err = e.GetFloatArgDefault(1, float64(args[0].XFilesFactor)) // If set by setXFilesFactor, all series in a list will have the same value
+		if err != nil {
+			return nil, err
+		}
+	}
 
+	xFilesFactorStr := strconv.FormatFloat(xFilesFactor, 'f', -1, 64)
+
+	results := make([]*types.MetricData, 0, len(args))
 	for _, arg := range args {
-		nonNull := 0.0
+		nonNull := 0
 		for _, v := range arg.Values {
 			if !math.IsNaN(v) {
 				switch e.Target() {
@@ -56,8 +65,11 @@ func (f *removeEmptySeries) Do(ctx context.Context, e parser.Expr, from, until i
 				}
 			}
 		}
-		if nonNull != 0 && nonNull/float64(len(arg.Values)) >= factor {
-			results = append(results, arg)
+
+		if nonNull != 0 && helper.XFilesFactor(nonNull, len(arg.Values), xFilesFactor) {
+			r := arg.CopyLink()
+			r.Tags[e.Target()] = xFilesFactorStr
+			results = append(results, r)
 		}
 	}
 	return results, nil
@@ -84,6 +96,9 @@ func (f *removeEmptySeries) Description() map[string]types.FunctionDescription {
 					Type:     types.Float,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 		"removeZeroSeries": {
 			Description: "Takes one metric or a wildcard seriesList.\nOut of all metrics passed, draws only the metrics with not ZERO data\n\nExample:\n\n.. code-block:: none\n\n  &target=removeZeroSeries(server*.instance*.threads.busy)\n\nDraws only live servers with not empty data.\n\n`xFilesFactor` follows the same semantics as in Whisper storage schemas.  Setting it to 0 (the\ndefault) means that only a single value in the series needs to be non-null for it to be\nconsidered non-empty, setting it to 1 means that all values in the series must be non-null.\nA setting of 0.5 means that at least half the values in the series must be non-null.",
@@ -103,6 +118,9 @@ func (f *removeEmptySeries) Description() map[string]types.FunctionDescription {
 					Type:     types.Float,
 				},
 			},
+			SeriesChange: true, // function aggregate metrics or change series items count
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

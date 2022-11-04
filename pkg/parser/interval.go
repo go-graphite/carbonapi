@@ -6,6 +6,13 @@ import (
 
 // IntervalString converts a sign and string into a number of seconds
 func IntervalString(s string, defaultSign int) (int32, error) {
+	if len(s) == 0 {
+		return 0, ErrUnknownTimeUnits
+	}
+
+	if s == "-" || s == "+" {
+		return 0, ErrUnknownTimeUnits
+	}
 
 	sign := defaultSign
 

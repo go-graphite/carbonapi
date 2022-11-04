@@ -2,8 +2,7 @@ package round
 
 import (
 	"context"
-	"fmt"
-	"math"
+	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -31,40 +30,37 @@ func New(_ string) []interfaces.FunctionMetadata {
 
 // round(seriesList,precision)
 func (f *round) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 	var withPrecision bool
+	var precisionStr string
 	precision, withPrecision, err := e.GetIntNamedOrPosArgWithIndication("precision", 1)
 	if err != nil {
 		return nil, err
 	}
+	precisionStr = strconv.Itoa(precision)
 
-	results := make([]*types.MetricData, 0, len(arg))
-	for _, a := range arg {
-		r := *a
+	results := make([]*types.MetricData, len(arg))
+	for j, a := range arg {
+		r := a.CopyLink()
 		if withPrecision {
-			r.Name = fmt.Sprintf("round(%s,%d)", a.Name, precision)
+			r.Name = "round(" + a.Name + "," + precisionStr + ")"
 		} else {
-			r.Name = fmt.Sprintf("round(%s)", a.Name)
+			r.Name = "round(" + a.Name + ")"
 		}
 		r.Values = make([]float64, len(a.Values))
 
 		for i, v := range a.Values {
-			r.Values[i] = doRound(v, precision)
+			r.Values[i] = helper.SafeRound(v, precision)
 		}
-		results = append(results, &r)
+
+		r.Tags["round"] = precisionStr
+		results[j] = r
+
 	}
 	return results, nil
-}
-
-func doRound(x float64, precision int) float64 {
-	if math.IsNaN(x) {
-		return x
-	}
-	roundTo := math.Pow10(precision)
-	return math.RoundToEven(x*roundTo) / roundTo
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
@@ -88,6 +84,8 @@ func (f *round) Description() map[string]types.FunctionDescription {
 					Type:     types.Integer,
 				},
 			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
 		},
 	}
 }

@@ -30,7 +30,7 @@ type AccessLogDetails struct {
 	URI                           string            `json:"uri,omitempty"`
 	FromCache                     bool              `json:"from_cache"`
 	UsedBackendCache              bool              `json:"used_backend_cache"`
-	ZipperRequests                int64             `json:"zipper_requests,omitempty"`
-	TotalMetricsCount             int64             `json:"total_metrics_count,omitempty"`
+	ZipperRequests                uint64            `json:"zipper_requests,omitempty"`
+	TotalMetricsCount             uint64            `json:"total_metrics_count,omitempty"`
 	RequestHeaders                map[string]string `json:"request_headers"`
 }

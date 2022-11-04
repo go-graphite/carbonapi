@@ -28,7 +28,11 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *alias) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	if e.ArgsLen() < 2 {
+		return nil, parser.ErrMissingArgument
+	}
+
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -43,17 +47,15 @@ func (f *alias) Do(ctx context.Context, e parser.Expr, from, until int64, values
 		return nil, err
 	}
 
-	results := make([]*types.MetricData, 0, len(args))
-	for _, arg := range args {
-		r := *arg.CopyLink()
-
-		r.Name = alias
+	results := make([]*types.MetricData, len(args))
+	for i, arg := range args {
+		name := alias
 		if allowFormatStr {
-			r.Name = strings.ReplaceAll(r.Name, "${expr}", arg.Name)
+			name = strings.ReplaceAll(name, "${expr}", arg.Name)
 		}
-		r.Tags["name"] = r.Name
+		r := arg.CopyName(name)
 
-		results = append(results, &r)
+		results[i] = r
 	}
 
 	return results, nil
@@ -89,6 +91,8 @@ func (f *alias) Description() map[string]types.FunctionDescription {
 					Type:     types.Boolean,
 				},
 			},
+			NameChange: true, // name changed
+			TagsChange: true, // name tag changed
 		},
 	}
 }

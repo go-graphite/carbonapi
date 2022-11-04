@@ -14,6 +14,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
+	"github.com/go-graphite/carbonapi/tests/compare"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
@@ -274,7 +275,18 @@ func TestEvalExpression(t *testing.T) {
 					types.MakeMetricData("devops.service.server2.filter.received.total.count", []float64{math.NaN(), math.NaN(), math.NaN()}, 1, now32),
 				},
 			},
-			[]*types.MetricData{types.MakeMetricData("sumSeries(pow(devops.service.*.filter.received.*.count, 0))", []float64{2, 2, 2}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("sumSeries(pow(devops.service.*.filter.received.*.count, 0))", []float64{2, 2, 2}, 1, now32).SetTag("aggregatedBy", "sum")},
+		},
+		{
+			"multiplySeriesWithWildcards(metric1.foo.*.*,1,2)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1.foo.*.*", 0, 1}: {
+					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar3.baz", []float64{2, 2, 2, 2, 2}, 1, now32),
+				},
+			},
+			[]*types.MetricData{types.MakeMetricData("metric1.baz", []float64{22, 48, 78, 112, 150}, 1, now32).SetTag("aggregatedBy", "multiply").SetNameTag("metric1.foo.*.*")},
 		},
 	}
 
@@ -408,54 +420,6 @@ func TestRewriteExpr(t *testing.T) {
 	}
 }
 
-func TestExtractMetric(t *testing.T) {
-	var tests = []struct {
-		input  string
-		metric string
-	}{
-		{
-			"f",
-			"f",
-		},
-		{
-			"func(f)",
-			"f",
-		},
-		{
-			"foo.bar.baz",
-			"foo.bar.baz",
-		},
-		{
-			"nonNegativeDerivative(foo.bar.baz)",
-			"foo.bar.baz",
-		},
-		{
-			"movingAverage(foo.bar.baz,10)",
-			"foo.bar.baz",
-		},
-		{
-			"scale(scaleToSeconds(nonNegativeDerivative(foo.bar.baz),60),60)",
-			"foo.bar.baz",
-		},
-		{
-			"divideSeries(foo.bar.baz,baz.qux.zot)",
-			"foo.bar.baz",
-		},
-		{
-			"{something}",
-			"{something}",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			if m := helper.ExtractMetric(tt.input); m != tt.metric {
-				t.Errorf("extractMetric(%q)=%q, want %q", tt.input, m, tt.metric)
-			}
-		})
-	}
-}
-
 func TestEvalCustomFromUntil(t *testing.T) {
 	tests := []struct {
 		target string
@@ -494,7 +458,7 @@ func TestEvalCustomFromUntil(t *testing.T) {
 			if g[0].StepTime == 0 {
 				t.Errorf("missing step for %+v", g)
 			}
-			if !th.NearlyEqual(g[0].Values, tt.w) {
+			if !compare.NearlyEqual(g[0].Values, tt.w) {
 				t.Errorf("failed: %s: got %+v, want %+v", g[0].Name, g[0].Values, tt.w)
 			}
 			if g[0].Name != tt.name {
