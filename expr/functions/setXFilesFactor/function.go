@@ -2,6 +2,7 @@ package setXFilesFactor
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -43,10 +44,14 @@ func (f *setXFilesFactor) Do(ctx context.Context, e parser.Expr, from, until int
 		return nil, err
 	}
 
+	results := make([]*types.MetricData, 0, len(args))
 	for _, a := range args {
-		a.XFilesFactor = float32(xFilesFactor)
+		r := a.CopyLink()
+		r.XFilesFactor = float32(xFilesFactor)
+		r.Tags["xFilesFactor"] = strconv.FormatFloat(xFilesFactor, 'g', -1, 64)
+		results = append(results, r)
 	}
-	return args, nil
+	return results, nil
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
