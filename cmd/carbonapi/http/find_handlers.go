@@ -264,6 +264,8 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	accessLogDetails.Metrics = pv3Request.Metrics
+
 	multiGlobs, stats, err := config.Config.ZipperInstance.Find(ctx, pv3Request)
 	if stats != nil {
 		accessLogDetails.ZipperRequests = stats.ZipperRequests
