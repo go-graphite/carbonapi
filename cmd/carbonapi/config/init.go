@@ -287,12 +287,23 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 }
 
 func createCache(logger *zap.Logger, cacheName string, cacheConfig *CacheConfig) cache.BytesCache {
-	if cacheConfig.DefaultTimeoutSec <= 0 {
+	if cacheConfig.DefaultTimeoutSec <= 0 && cacheConfig.ShortTimeoutSec <= 0 {
 		return cache.NullCache{}
 	}
-	if cacheConfig.DefaultTimeoutSec < cacheConfig.ShortTimeoutSec || cacheConfig.ShortTimeoutSec <= 0 {
-		cacheConfig.ShortTimeoutSec = cacheConfig.DefaultTimeoutSec
+	if cacheConfig.ShortTimeoutSec < 0 || cacheConfig.DefaultTimeoutSec == cacheConfig.ShortTimeoutSec {
+		// broken value or short timeout not need due to equal
+		cacheConfig.ShortTimeoutSec = 0
 	}
+	if cacheConfig.DefaultTimeoutSec < cacheConfig.ShortTimeoutSec {
+		cacheConfig.DefaultTimeoutSec = cacheConfig.ShortTimeoutSec
+	}
+	if cacheConfig.ShortDuration == 0 {
+		cacheConfig.ShortDuration = 3 * time.Hour
+	}
+	if cacheConfig.ShortUntilOffsetSec == 0 {
+		cacheConfig.ShortUntilOffsetSec = 120
+	}
+
 	switch cacheConfig.Type {
 	case "memcache":
 		if len(cacheConfig.MemcachedServers) == 0 {
