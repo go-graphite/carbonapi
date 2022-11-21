@@ -246,7 +246,7 @@ Supported cache types:
  - `mem` - will use integrated in-memory cache. Not distributed. Fast.
  - `memcache` - will use specified memcache servers. Could be shared. Slow.
  - `null` - disable cache
- 
+
 Extra options:
  - `size_mb` - specify max size of cache, in MiB
  - `defaultTimeoutSec` - specify default cache duration. Identical to `DEFAULT_CACHE_DURATION` in graphite-web
@@ -280,18 +280,23 @@ backendCache:
        - "127.0.0.2:1235"
 ```
 
+In many cases two-level cache is useful. Additional parameters for configuration:
+- `shortDuration` until-from duration (by default "3h")
+- `shortUntilOffsetSec` now-until duration seconds (by default 120)
+- `shortTimeoutSec`  - short duration, disabled by default, used when `(from-until<=shortDuration) && (now-until<shortUntilOffsetSec)`
+
 ### Example for 2-level cache lifetime (short timeout on 1-hour window and long timeout for other) and round timestamps for tune cache efficience
 ```yaml
 cache:
    type: "mem"
    size_mb: 0
    defaultTimeoutSec: 10800 # Default cache timeout
-   shortTimeoutSec: 60 # if until - from <= 1hour && now-until < 1min, by default is equal to defaultTimeoutSec
+   shortTimeoutSec: 60 # if until - from <= 3hour && now-until < 2min
 backendCache:
    type: "mem"
    size_mb: 0
    defaultTimeoutSec: 10800 # Default cache timeout
-   shortTimeoutSec: 60 # if until - from <= 1hour && now-until < 1min, by default is equal to defaultTimeoutSec
+   shortTimeoutSec: 60 # if until - from <= 3hour && now-until < 2min
 
 truncateTime: # truncate from/until for identifical results between carbonapi instances. Also reduce load on long-range queries
   "8760h": "1h"     # Timestamp will be truncated to 1 hour round if (until - from) > 365 days
