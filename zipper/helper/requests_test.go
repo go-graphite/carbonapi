@@ -9,6 +9,7 @@ import (
 
 	"github.com/ansel1/merry"
 	"github.com/go-graphite/carbonapi/zipper/types"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMergeHttpErrors(t *testing.T) {
@@ -141,6 +142,45 @@ func TestMergeHttpErrors(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("MergeHttpErrors() got = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func Test_stripHtmlTags(t *testing.T) {
+	tests := []struct {
+		name   string
+		s      string
+		maxLen int
+		want   string
+	}{
+		{
+			name:   "Empty",
+			s:      "",
+			maxLen: 10,
+			want:   "",
+		},
+		{
+			name:   "Broken #1",
+			s:      "<html>\r\n<head",
+			maxLen: 0,
+			want:   "head",
+		},
+		{
+			name:   "Broken #2",
+			s:      "<html>\r\nhead>",
+			maxLen: 0,
+			want:   "head>",
+		},
+		{
+			name:   "Nginx Gateway Timeout",
+			s:      "<html>\r\n<head><title>504 Gateway Time-out</title></head>\r\n<body>\r\n<center><h1>504 Gateway Time-out</h1></center>\r\n<hr><center>nginx</center>\r\n</body>\r\n</html>\r",
+			maxLen: 0,
+			want:   "504 Gateway Time-out\r\n\r\n504 Gateway Time-out\r\nnginx",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, stripHtmlTags(tt.s, tt.maxLen))
 		})
 	}
 }
