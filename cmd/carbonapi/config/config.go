@@ -23,11 +23,13 @@ var DefaultLoggerConfig = zapwriter.Config{
 }
 
 type CacheConfig struct {
-	Type              string   `mapstructure:"type"`
-	Size              int      `mapstructure:"size_mb"`
-	MemcachedServers  []string `mapstructure:"memcachedServers"`
-	DefaultTimeoutSec int32    `mapstructure:"defaultTimeoutSec"`
-	ShortTimeoutSec   int32    `mapstructure:"shortTimeoutSec"`
+	Type                string        `mapstructure:"type"`
+	Size                int           `mapstructure:"size_mb"`
+	MemcachedServers    []string      `mapstructure:"memcachedServers"`
+	DefaultTimeoutSec   int32         `mapstructure:"defaultTimeoutSec"`
+	ShortTimeoutSec     int32         `mapstructure:"shortTimeoutSec"`
+	ShortDuration       time.Duration `mapstructure:"shortDuration"`
+	ShortUntilOffsetSec int64         `mapstructure:"shortUntilOffsetSec"`
 }
 
 type GraphiteConfig struct {
@@ -129,7 +131,8 @@ var Config = ConfigType{
 	ResponseCacheConfig: CacheConfig{
 		Type:              "mem",
 		DefaultTimeoutSec: 60,
-		ShortTimeoutSec:   60,
+		ShortTimeoutSec:   0,
+		ShortDuration:     0,
 	},
 	BackendCacheConfig: CacheConfig{
 		Type:              "null",
