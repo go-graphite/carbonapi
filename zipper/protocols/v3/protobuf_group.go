@@ -10,7 +10,6 @@ import (
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"go.uber.org/zap"
 
-	"github.com/go-graphite/carbonapi/internal/dns"
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/zipper/helper"
 	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
@@ -66,16 +65,9 @@ func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool) (typ
 }
 
 func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool, l limiter.ServerLimiter) (types.BackendServer, merry.Error) {
-	httpClient := &http.Client{
-		Transport: &http.Transport{
-			MaxIdleConnsPerHost: *config.MaxIdleConnsPerHost,
-			IdleConnTimeout:     0,
-			ForceAttemptHTTP2:   config.ForceAttemptHTTP2,
-			DialContext:         dns.GetDialContextWithTimeout(config.Timeouts.Connect, *config.KeepAliveInterval),
-		},
-	}
-
 	logger = logger.With(zap.String("type", "protoV3Group"), zap.String("name", config.GroupName))
+
+	httpClient := helper.GetHTTPClient(logger, config)
 
 	httpQuery := helper.NewHttpQuery(config.GroupName, config.Servers, *config.MaxTries, l, httpClient, httpHeaders.ContentTypeCarbonAPIv3PB)
 

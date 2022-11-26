@@ -192,7 +192,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 				zap.String("type_expected", "string"),
 			)
 		}
-		graphitePrefix = string(tmpStr)
+		graphitePrefix = tmpStr
 	}
 
 	snowthClient, err := gosnowth.NewClient(context.Background(), cfg)

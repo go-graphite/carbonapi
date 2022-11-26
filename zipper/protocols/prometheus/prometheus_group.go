@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-graphite/carbonapi/internal/dns"
 	"github.com/go-graphite/carbonapi/zipper/protocols/prometheus/helpers"
 	prometheusTypes "github.com/go-graphite/carbonapi/zipper/protocols/prometheus/types"
 
@@ -82,15 +81,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 	logger = logger.With(zap.String("type", "prometheus"), zap.String("protocol", config.Protocol), zap.String("name", config.GroupName))
 
 	logger.Warn("support for this backend protocol is experimental, use with caution")
-
-	httpClient := &http.Client{
-		Transport: &http.Transport{
-			MaxIdleConnsPerHost: *config.MaxIdleConnsPerHost,
-			IdleConnTimeout:     0,
-			ForceAttemptHTTP2:   config.ForceAttemptHTTP2,
-			DialContext:         dns.GetDialContextWithTimeout(config.Timeouts.Connect, *config.KeepAliveInterval),
-		},
-	}
+	httpClient := helper.GetHTTPClient(logger, config)
 
 	step := int64(15)
 	stepI, ok := config.BackendOptions["step"]
