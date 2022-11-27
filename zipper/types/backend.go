@@ -29,7 +29,7 @@ type BackendV2 struct {
 	ForceAttemptHTTP2         bool                   `mapstructure:"forceAttemptHTTP2"`
 	DoMultipleRequestsIfSplit bool                   `mapstructure:"doMultipleRequestsIfSplit"`
 	IdleConnectionTimeout     *time.Duration         `mapstructure:"idleConnectionTimeout"`
-	TLSClientConfig           *TLSClientConfig       `mapstructure:"tlsClientConfig"`
+	TLSClientConfig           *TLSConfig             `mapstructure:"tlsClientConfig"`
 }
 
 func (b *BackendV2) FillDefaults() {

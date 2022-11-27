@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"expvar"
 	"flag"
 	"log"
@@ -11,6 +13,7 @@ import (
 	"os"
 	"sync"
 
+	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 	"github.com/gorilla/handlers"
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
@@ -96,12 +99,109 @@ func main() {
 				zap.Error(err),
 			)
 		}
+		httpLogger, err := zap.NewStdLogAt(zapwriter.Logger("http"), zap.WarnLevel)
+		if err != nil {
+			logger.Fatal("failed to set up http server logger",
+				zap.Error(err),
+			)
+		}
 		for _, ip := range ips {
 			address := (&net.TCPAddr{IP: ip, Port: port}).String()
 			s := &http.Server{
-				Addr:    address,
-				Handler: handler,
+				Addr:     address,
+				Handler:  handler,
+				ErrorLog: httpLogger,
 			}
+			isTLS := false
+			if len(listen.ServerTLSConfig.CACertFiles) > 0 {
+				caCertPool := x509.NewCertPool()
+
+				for _, caCert := range listen.ServerTLSConfig.CACertFiles {
+					cert, err := os.ReadFile(caCert)
+					if err != nil {
+						logger.Fatal("failed to read CA Cert File",
+							zap.Error(err),
+						)
+					}
+					caCertPool.AppendCertsFromPEM(cert)
+				}
+
+				certificates := make([]tls.Certificate, 0, len(listen.ServerTLSConfig.CertificateParis))
+
+				for _, certPair := range listen.ServerTLSConfig.CertificateParis {
+					certificate, err := tls.LoadX509KeyPair(certPair.CertFile, certPair.PrivateKeyFile)
+					if err != nil {
+						logger.Fatal("failed to load X509 Key Pair",
+							zap.Error(err),
+						)
+					}
+					certificates = append(certificates, certificate)
+				}
+
+				minTLSVersion, err := zipperTypes.ParseTLSVersion(listen.ServerTLSConfig.MinTLSVersion)
+				if err != nil {
+					logger.Fatal("specified Min TLS version is not supported",
+						zap.Error(err),
+					)
+				}
+				maxTLSVersion, err := zipperTypes.ParseTLSVersion(listen.ServerTLSConfig.MaxTLSVersion)
+				if err != nil {
+					logger.Fatal("specified Max TLS version is not supported",
+						zap.Error(err),
+					)
+				}
+
+				curves, err := zipperTypes.ParseCurves(listen.ServerTLSConfig.Curves)
+				if err != nil {
+					logger.Fatal("specified curves are not supported",
+						zap.Error(err),
+					)
+				}
+
+				ciphers, warns, err := zipperTypes.CipherSuitesToUint16(listen.ServerTLSConfig.CipherSuites)
+				if err != nil {
+					logger.Fatal("specified curves are not supported",
+						zap.Error(err),
+					)
+				}
+				if len(warns) != 0 {
+					logger.Warn("insecure ciphers are in-use",
+						zap.Strings("insecure_ciphers", warns),
+					)
+				}
+
+				clientAuth, err := zipperTypes.ParseClientAuthType(listen.ServerTLSConfig.ClientAuth)
+
+				s.TLSConfig = &tls.Config{
+					RootCAs:            caCertPool,
+					Certificates:       certificates,
+					MinVersion:         minTLSVersion,
+					MaxVersion:         maxTLSVersion,
+					ServerName:         listen.ServerTLSConfig.ServerName,
+					InsecureSkipVerify: listen.ServerTLSConfig.InsecureSkipVerify,
+					CurvePreferences:   curves,
+					CipherSuites:       ciphers,
+					ClientCAs:          caCertPool,
+					ClientAuth:         clientAuth,
+				}
+
+				if len(listen.ClientTLSConfig.CACertFiles) > 0 {
+					clientCACertPool := x509.NewCertPool()
+
+					for _, caCert := range listen.ClientTLSConfig.CACertFiles {
+						cert, err := os.ReadFile(caCert)
+						if err != nil {
+							logger.Fatal("failed to read CA Cert File",
+								zap.Error(err),
+							)
+						}
+						clientCACertPool.AppendCertsFromPEM(cert)
+					}
+					s.TLSConfig.ClientCAs = clientCACertPool
+				}
+				isTLS = true
+			}
+
 			listener, err := l.Listen(context.Background(), "tcp", address)
 			if err != nil {
 				logger.Fatal("failed to start http server",
@@ -109,17 +209,21 @@ func main() {
 				)
 			}
 			wg.Add(1)
-			go func() {
-				err = s.Serve(listener)
+			go func(listener net.Listener, isTLS bool) {
+				if isTLS {
+					err = s.ServeTLS(listener, "", "")
+				} else {
+					err = s.Serve(listener)
+				}
 
-				if err != nil {
-					logger.Fatal("failed to start http server",
+				if err != nil && err != http.ErrServerClosed {
+					logger.Error("failed to start http server",
 						zap.Error(err),
 					)
 				}
 
 				wg.Done()
-			}()
+			}(listener, isTLS)
 		}
 	}
 

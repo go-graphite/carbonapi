@@ -53,7 +53,12 @@ type ExpvarConfig struct {
 
 type Listener struct {
 	Address string `mapstructure:"address"`
-	// TODO(civil): implement TLS and mTLS
+
+	// Server TLS
+	ServerTLSConfig zipperTypes.TLSConfig `mapstructure:"serverTLSConfig"`
+
+	// Client TLS
+	ClientTLSConfig zipperTypes.TLSConfig `mapstructure:"clientTLSConfig"`
 }
 
 type DurationTruncate struct {

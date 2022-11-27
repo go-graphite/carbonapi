@@ -21,24 +21,32 @@ func GetHTTPClient(logger *zap.Logger, config types.BackendV2) *http.Client {
 	}
 
 	if config.TLSClientConfig != nil {
-		cert, err := os.ReadFile(config.TLSClientConfig.CACertFile)
-		if err != nil {
-			logger.Fatal("failed to read CA Cert File",
-				zap.Error(err),
-			)
-		}
 		caCertPool := x509.NewCertPool()
-		caCertPool.AppendCertsFromPEM(cert)
 
-		certificate, err := tls.LoadX509KeyPair(config.TLSClientConfig.CertFile, config.TLSClientConfig.PrivateKeyFile)
-		if err != nil {
-			logger.Fatal("failed to load X509 Key Pair",
-				zap.Error(err),
-			)
+		for _, caCert := range config.TLSClientConfig.CACertFiles {
+			cert, err := os.ReadFile(caCert)
+			if err != nil {
+				logger.Fatal("failed to read CA Cert File",
+					zap.Error(err),
+				)
+			}
+			caCertPool.AppendCertsFromPEM(cert)
+		}
+
+		certificates := make([]tls.Certificate, 0, len(config.TLSClientConfig.CertificateParis))
+
+		for _, certPair := range config.TLSClientConfig.CertificateParis {
+			certificate, err := tls.LoadX509KeyPair(certPair.CertFile, certPair.PrivateKeyFile)
+			if err != nil {
+				logger.Fatal("failed to load X509 Key Pair",
+					zap.Error(err),
+				)
+			}
+			certificates = append(certificates, certificate)
 		}
 		transport.TLSClientConfig = &tls.Config{
 			RootCAs:      caCertPool,
-			Certificates: []tls.Certificate{certificate},
+			Certificates: certificates,
 			MinVersion:   tls.VersionTLS13,
 			MaxVersion:   0,
 		}
