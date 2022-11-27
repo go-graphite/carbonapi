@@ -165,12 +165,6 @@ func WithCause(err error) Wrapper {
 // other processing.  It is mainly intended as a primitive for writing Wrapper implementations.
 //
 // if err is nil, returns nil.
-//
-// Keeping this private for now.  If it proves useful, it may be made public later, but
-// for now, external packages can get the same behavor with this:
-//
-//     WithValue(key, value).Wrap(err)
-//
 func Set(err error, key, value interface{}) error {
 	if err == nil {
 		return nil
