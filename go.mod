@@ -23,6 +23,7 @@ require (
 	github.com/google/flatbuffers v2.0.6+incompatible // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/handlers v1.5.1
+	github.com/leekchan/timeutil v0.0.0-20150802142658-28917288c48d
 	github.com/lib/pq v1.10.6
 	github.com/lomik/og-rek v0.0.0-20170411191824-628eefeb8d80
 	github.com/lomik/zapwriter v0.0.0-20210624082824-c1161d1eb463
