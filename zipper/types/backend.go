@@ -2,6 +2,8 @@ package types
 
 import (
 	"time"
+
+	"github.com/go-graphite/carbonapi/pkg/tlsconfig"
 )
 
 type BackendsV2 struct {
@@ -29,7 +31,7 @@ type BackendV2 struct {
 	ForceAttemptHTTP2         bool                   `mapstructure:"forceAttemptHTTP2"`
 	DoMultipleRequestsIfSplit bool                   `mapstructure:"doMultipleRequestsIfSplit"`
 	IdleConnectionTimeout     *time.Duration         `mapstructure:"idleConnectionTimeout"`
-	TLSClientConfig           *TLSConfig             `mapstructure:"tlsClientConfig"`
+	TLSClientConfig           *tlsconfig.TLSConfig   `mapstructure:"tlsClientConfig"`
 }
 
 func (b *BackendV2) FillDefaults() {

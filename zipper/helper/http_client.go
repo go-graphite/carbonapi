@@ -1,12 +1,10 @@
 package helper
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"net/http"
-	"os"
 
 	"github.com/go-graphite/carbonapi/internal/dns"
+	"github.com/go-graphite/carbonapi/pkg/tlsconfig"
 	"github.com/go-graphite/carbonapi/zipper/types"
 	"go.uber.org/zap"
 )
@@ -21,35 +19,20 @@ func GetHTTPClient(logger *zap.Logger, config types.BackendV2) *http.Client {
 	}
 
 	if config.TLSClientConfig != nil {
-		caCertPool := x509.NewCertPool()
-
-		for _, caCert := range config.TLSClientConfig.CACertFiles {
-			cert, err := os.ReadFile(caCert)
-			if err != nil {
-				logger.Fatal("failed to read CA Cert File",
-					zap.Error(err),
-				)
-			}
-			caCertPool.AppendCertsFromPEM(cert)
+		tlsConfig, warns, err := tlsconfig.ParseClientTLSConfig(config.TLSClientConfig)
+		if err != nil {
+			logger.Fatal("failed to initialize client for group",
+				zap.String("group_name", config.GroupName),
+				zap.Error(err),
+			)
 		}
-
-		certificates := make([]tls.Certificate, 0, len(config.TLSClientConfig.CertificateParis))
-
-		for _, certPair := range config.TLSClientConfig.CertificateParis {
-			certificate, err := tls.LoadX509KeyPair(certPair.CertFile, certPair.PrivateKeyFile)
-			if err != nil {
-				logger.Fatal("failed to load X509 Key Pair",
-					zap.Error(err),
-				)
-			}
-			certificates = append(certificates, certificate)
+		if len(warns) > 0 {
+			logger.Warn("insecure options detected, while parsing HTTP Client TLS Config for backed",
+				zap.String("group_name", config.GroupName),
+				zap.Strings("warnings", warns),
+			)
 		}
-		transport.TLSClientConfig = &tls.Config{
-			RootCAs:      caCertPool,
-			Certificates: certificates,
-			MinVersion:   tls.VersionTLS13,
-			MaxVersion:   0,
-		}
+		transport.TLSClientConfig = tlsConfig
 	}
 
 	httpClient := &http.Client{

@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"expvar"
 	"flag"
 	"log"
@@ -13,7 +11,7 @@ import (
 	"os"
 	"sync"
 
-	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
+	"github.com/go-graphite/carbonapi/pkg/tlsconfig"
 	"github.com/gorilla/handlers"
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
@@ -114,53 +112,9 @@ func main() {
 			}
 			isTLS := false
 			if len(listen.ServerTLSConfig.CACertFiles) > 0 {
-				caCertPool := x509.NewCertPool()
-
-				for _, caCert := range listen.ServerTLSConfig.CACertFiles {
-					cert, err := os.ReadFile(caCert)
-					if err != nil {
-						logger.Fatal("failed to read CA Cert File",
-							zap.Error(err),
-						)
-					}
-					caCertPool.AppendCertsFromPEM(cert)
-				}
-
-				certificates := make([]tls.Certificate, 0, len(listen.ServerTLSConfig.CertificateParis))
-
-				for _, certPair := range listen.ServerTLSConfig.CertificateParis {
-					certificate, err := tls.LoadX509KeyPair(certPair.CertFile, certPair.PrivateKeyFile)
-					if err != nil {
-						logger.Fatal("failed to load X509 Key Pair",
-							zap.Error(err),
-						)
-					}
-					certificates = append(certificates, certificate)
-				}
-
-				minTLSVersion, err := zipperTypes.ParseTLSVersion(listen.ServerTLSConfig.MinTLSVersion)
+				tlsConfig, warns, err := tlsconfig.ParseServerTLSConfig(&listen.ServerTLSConfig, &listen.ClientTLSConfig)
 				if err != nil {
-					logger.Fatal("specified Min TLS version is not supported",
-						zap.Error(err),
-					)
-				}
-				maxTLSVersion, err := zipperTypes.ParseTLSVersion(listen.ServerTLSConfig.MaxTLSVersion)
-				if err != nil {
-					logger.Fatal("specified Max TLS version is not supported",
-						zap.Error(err),
-					)
-				}
-
-				curves, err := zipperTypes.ParseCurves(listen.ServerTLSConfig.Curves)
-				if err != nil {
-					logger.Fatal("specified curves are not supported",
-						zap.Error(err),
-					)
-				}
-
-				ciphers, warns, err := zipperTypes.CipherSuitesToUint16(listen.ServerTLSConfig.CipherSuites)
-				if err != nil {
-					logger.Fatal("specified curves are not supported",
+					logger.Fatal("failed to initialize TLS",
 						zap.Error(err),
 					)
 				}
@@ -169,36 +123,7 @@ func main() {
 						zap.Strings("insecure_ciphers", warns),
 					)
 				}
-
-				clientAuth, err := zipperTypes.ParseClientAuthType(listen.ServerTLSConfig.ClientAuth)
-
-				s.TLSConfig = &tls.Config{
-					RootCAs:            caCertPool,
-					Certificates:       certificates,
-					MinVersion:         minTLSVersion,
-					MaxVersion:         maxTLSVersion,
-					ServerName:         listen.ServerTLSConfig.ServerName,
-					InsecureSkipVerify: listen.ServerTLSConfig.InsecureSkipVerify,
-					CurvePreferences:   curves,
-					CipherSuites:       ciphers,
-					ClientCAs:          caCertPool,
-					ClientAuth:         clientAuth,
-				}
-
-				if len(listen.ClientTLSConfig.CACertFiles) > 0 {
-					clientCACertPool := x509.NewCertPool()
-
-					for _, caCert := range listen.ClientTLSConfig.CACertFiles {
-						cert, err := os.ReadFile(caCert)
-						if err != nil {
-							logger.Fatal("failed to read CA Cert File",
-								zap.Error(err),
-							)
-						}
-						clientCACertPool.AppendCertsFromPEM(cert)
-					}
-					s.TLSConfig.ClientCAs = clientCACertPool
-				}
+				s.TLSConfig = tlsConfig
 				isTLS = true
 			}
 

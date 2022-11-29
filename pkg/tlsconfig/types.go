@@ -1,9 +1,9 @@
-package types
+package tlsconfig
 
 import (
 	"crypto/tls"
 
-	merry2 "github.com/ansel1/merry/v2"
+	"github.com/ansel1/merry/v2"
 )
 
 type ClientCertificatePairs struct {
@@ -13,15 +13,15 @@ type ClientCertificatePairs struct {
 
 type TLSConfig struct {
 	CACertFiles      []string                 `mapstructure:"caCertFiles"`
-	CertificateParis []ClientCertificatePairs `mapstructure:"certificateParis"`
-	ClientAuth       string
+	CertificatePairs []ClientCertificatePairs `mapstructure:"certificatePairs"`
+	ClientAuth       string                   `mapstructure:"clientAuth"`
 
-	ServerName         string
-	InsecureSkipVerify bool
-	MinTLSVersion      string
-	MaxTLSVersion      string
-	CipherSuites       []string
-	Curves             []string
+	ServerName         string   `mapstructure:"serverName"`
+	InsecureSkipVerify bool     `mapstructure:"insecureSkipVerify"`
+	MinTLSVersion      string   `mapstructure:"minTLSVersion"`
+	MaxTLSVersion      string   `mapstructure:"maxTLSVersion"`
+	CipherSuites       []string `mapstructure:"cipherSuites"`
+	Curves             []string `mapstructure:"curves"`
 }
 
 // https://pkg.go.dev/crypto/tls#ClientAuthType
@@ -66,7 +66,7 @@ func ParseTLSVersion(tlsVersion string) (uint16, error) {
 	if tv, ok := tlsVersionMap[tlsVersion]; ok {
 		return tv, nil
 	} else {
-		return 0, merry2.Errorf("invalid auth type specified: %v", tlsVersion)
+		return 0, merry.Errorf("invalid auth type specified: %v", tlsVersion)
 	}
 }
 
@@ -82,7 +82,7 @@ func ParseCurves(curveNames []string) ([]tls.CurveID, error) {
 		if id, ok := supportedCurveIDs[name]; ok {
 			res = append(res, id)
 		} else {
-			return nil, merry2.Errorf("invalid curve name specified: %v", name)
+			return nil, merry.Errorf("invalid curve name specified: %v", name)
 		}
 	}
 
@@ -96,7 +96,7 @@ func ParseClientAuthType(ClientAuth string) (tls.ClientAuthType, error) {
 	if id, ok := supportedClientAuths[ClientAuth]; ok {
 		return id, nil
 	} else {
-		return tls.NoClientCert, merry2.Errorf("invalid auth type specified: %v", ClientAuth)
+		return tls.NoClientCert, merry.Errorf("invalid auth type specified: %v", ClientAuth)
 	}
 }
 
@@ -121,7 +121,7 @@ func CipherSuitesToUint16(ciphers []string) ([]uint16, []string, error) {
 		if id, ok := cipherSuites[c]; ok {
 			res = append(res, id)
 		} else {
-			return nil, nil, merry2.Errorf("unknown cipher specified: %v, supported ciphers: %+v", c, cipherNames)
+			return nil, nil, merry.Errorf("unknown cipher specified: %v, supported ciphers: %+v", c, cipherNames)
 		}
 	}
 

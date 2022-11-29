@@ -1,0 +1,56 @@
+listen: "127.0.0.1:8082"
+
+prefix: ""
+useCachingDNSResolver: false
+cachingDNSRefreshTime: "1m"
+expvar:
+  enabled: false
+notFoundStatusCode: 200
+concurency: 1000
+cache:
+   type: "null"
+cpus: 0
+tz: ""
+maxBatchSize: 100
+graphite:
+    host: ""
+idleConnections: 10
+pidFile: ""
+upstreams:
+    tldCacheDisabled: true
+    buckets: 10
+    slowLogThreshold: "1s"
+    timeouts:
+        find: "2s"
+        render: "10s"
+        connect: "200ms"
+    concurrencyLimitPerServer: 0
+    keepAliveInterval: "30s"
+    maxIdleConnsPerHost: 100
+    doMultipleRequestsIfSplit: false
+    #backends section will override this one!
+    backendsv2:
+        backends:
+          -
+            groupName: "group1"
+            protocol: "carbonapi_v3_pb"
+            lbMethod: "broadcast"
+            maxTries: 3
+            maxBatchSize: 100
+            keepAliveInterval: "10s"
+            concurrencyLimit: 0
+            maxIdleConnsPerHost: 1000
+            forceAttemptHTTP2: false
+            doMultipleRequestsIfSplit: false
+            servers:
+                - "http://127.0.0.2:8080"
+    graphite09compat: false
+expireDelaySec: 10
+logger:
+    - logger: ""
+      file: "stderr"
+      level: "debug"
+      encoding: "json"
+      encodingTime: "iso8601"
+      encodingDuration: "seconds"
+

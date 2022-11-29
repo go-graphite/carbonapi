@@ -7,6 +7,7 @@ import (
 	"github.com/go-graphite/carbonapi/cache"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/interfaces"
 	"github.com/go-graphite/carbonapi/limiter"
+	"github.com/go-graphite/carbonapi/pkg/tlsconfig"
 	zipperCfg "github.com/go-graphite/carbonapi/zipper/config"
 	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 
@@ -55,10 +56,10 @@ type Listener struct {
 	Address string `mapstructure:"address"`
 
 	// Server TLS
-	ServerTLSConfig zipperTypes.TLSConfig `mapstructure:"serverTLSConfig"`
+	ServerTLSConfig tlsconfig.TLSConfig `mapstructure:"serverTLSConfig"`
 
 	// Client TLS
-	ClientTLSConfig zipperTypes.TLSConfig `mapstructure:"clientTLSConfig"`
+	ClientTLSConfig tlsconfig.TLSConfig `mapstructure:"clientTLSConfig"`
 }
 
 type DurationTruncate struct {
