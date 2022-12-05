@@ -1,0 +1,36 @@
+version: "v1"
+test:
+    apps:
+        - name: "carbonapi"
+          binary: "./carbonapi"
+          args:
+              - "-config"
+              - "./cmd/mockbackend/testcases/pr743/carbonapi.yaml"
+    queries:
+            - endpoint: "http://127.0.0.1:8081"
+              delay: 1
+              type: "GET"
+              URL: "/render/?target=a.b.c&target=a.b.d&format=json"
+              expectedResponse:
+                  httpCode: 200
+                  contentType: "application/json"
+                  expectedResults:
+                          - metrics:
+                                  - target: "a.b.c"
+                                    datapoints: [[0,1],[1,2],[2,3],[2,4],[3,5]]
+                                  - target: "a.b.d"
+                                    datapoints: [[31,1],[10,2],[4,3],[7,4],[3,5]]
+
+listeners:
+  - address: ":9070"
+    expressions:
+      "a.b.c":
+        pathExpression: "a.b.c"
+        data:
+            - metricName: "a.b.c"
+              values: [0,1,2,2,3]
+      "a.b.d":
+        pathExpression: "a.b.d"
+        data:
+            - metricName: "a.b.d"
+              values: [31,10,4,7,3]

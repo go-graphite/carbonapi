@@ -107,6 +107,8 @@ type ConfigType struct {
 	TruncateTimeMap map[time.Duration]time.Duration `mapstructure:"truncateTime"`
 	TruncateTime    []DurationTruncate              `mapstructure:"-" json:"-"` // produce from TruncateTimeMap and sort in reverse order
 
+	CombineMultipleTargetsInOne bool `mapstructure:"combineMultipleTargetsInOne"`
+
 	ResponseCache cache.BytesCache `mapstructure:"-" json:"-"`
 	BackendCache  cache.BytesCache `mapstructure:"-" json:"-"`
 
