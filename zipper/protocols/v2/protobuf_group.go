@@ -13,7 +13,6 @@ import (
 	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
-	"github.com/go-graphite/carbonapi/internal/dns"
 	"github.com/go-graphite/carbonapi/limiter"
 	utilctx "github.com/go-graphite/carbonapi/util/ctx"
 	"github.com/go-graphite/carbonapi/zipper/helper"
@@ -62,14 +61,7 @@ func (c *ClientProtoV2Group) Children() []types.BackendServer {
 func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool, l limiter.ServerLimiter) (types.BackendServer, merry.Error) {
 	logger = logger.With(zap.String("type", "protoV2Group"), zap.String("name", config.GroupName))
 
-	httpClient := &http.Client{
-		Transport: &http.Transport{
-			MaxIdleConnsPerHost: *config.MaxIdleConnsPerHost,
-			IdleConnTimeout:     0,
-			ForceAttemptHTTP2:   config.ForceAttemptHTTP2,
-			DialContext:         dns.GetDialContextWithTimeout(config.Timeouts.Connect, *config.KeepAliveInterval),
-		},
-	}
+	httpClient := helper.GetHTTPClient(logger, config)
 
 	httpLimiter := limiter.NewServerLimiter(config.Servers, *config.ConcurrencyLimit)
 	httpQuery := helper.NewHttpQuery(config.GroupName, config.Servers, *config.MaxTries, httpLimiter, httpClient, httpHeaders.ContentTypeCarbonAPIv2PB)

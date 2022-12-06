@@ -39,6 +39,10 @@ jobs:
     - name: Run e2e tests
       run: |
         ./e2e_test.sh
+    - name: Run config integration tests
+      run: |
+        ./config_tests.sh
+
     - name: Check packaging
       if: matrix.go == '^1'
       env:

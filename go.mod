@@ -8,6 +8,7 @@ require (
 	github.com/aclements/go-moremath v0.0.0-20210112150236-f10218a38794 // indirect
 	github.com/alicebob/miniredis/v2 v2.22.0
 	github.com/ansel1/merry v1.6.2
+	github.com/ansel1/merry/v2 v2.0.2 // indirect
 	github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d
 	github.com/cactus/go-statsd-client/v5 v5.0.0
 	github.com/circonus-labs/gosnowth v1.10.5

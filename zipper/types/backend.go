@@ -2,6 +2,8 @@ package types
 
 import (
 	"time"
+
+	"github.com/go-graphite/carbonapi/pkg/tlsconfig"
 )
 
 type BackendsV2 struct {
@@ -28,6 +30,8 @@ type BackendV2 struct {
 	BackendOptions            map[string]interface{} `mapstructure:"backendOptions"`
 	ForceAttemptHTTP2         bool                   `mapstructure:"forceAttemptHTTP2"`
 	DoMultipleRequestsIfSplit bool                   `mapstructure:"doMultipleRequestsIfSplit"`
+	IdleConnectionTimeout     *time.Duration         `mapstructure:"idleConnectionTimeout"`
+	TLSClientConfig           *tlsconfig.TLSConfig   `mapstructure:"tlsClientConfig"`
 }
 
 func (b *BackendV2) FillDefaults() {
@@ -46,15 +50,4 @@ func (b *BackendV2) FillDefaults() {
 	if b.Timeouts.Connect == 0 {
 		b.Timeouts.Connect = 200 * time.Millisecond
 	}
-}
-
-// CarbonSearch is a structure that contains carbonsearch related configuration bits
-type CarbonSearch struct {
-	Backend string `mapstructure:"backend"`
-	Prefix  string `mapstructure:"prefix"`
-}
-
-type CarbonSearchV2 struct {
-	BackendsV2
-	Prefix string `mapstructure:"prefix"`
 }

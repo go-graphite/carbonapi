@@ -25,9 +25,6 @@ type Config struct {
 	MaxTries                  int              `mapstructure:"maxTries"`
 	DoMultipleRequestsIfSplit bool             `mapstructure:"doMultipleRequestsIfSplit"`
 
-	CarbonSearch   types.CarbonSearch
-	CarbonSearchV2 types.CarbonSearchV2
-
 	ExpireDelaySec       int32
 	TLDCacheDisabled     bool `mapstructure:"tldCacheDisabled"`
 	InternalRoutingCache time.Duration
@@ -83,9 +80,6 @@ func SanitizeConfig(logger *zap.Logger, oldConfig Config) *Config {
 		FallbackMaxBatchSize:      oldConfig.FallbackMaxBatchSize,
 		MaxTries:                  oldConfig.MaxTries,
 
-		CarbonSearch:   oldConfig.CarbonSearch,
-		CarbonSearchV2: oldConfig.CarbonSearchV2,
-
 		ExpireDelaySec:       oldConfig.ExpireDelaySec,
 		TLDCacheDisabled:     oldConfig.TLDCacheDisabled,
 		InternalRoutingCache: oldConfig.InternalRoutingCache,
@@ -113,31 +107,7 @@ func SanitizeConfig(logger *zap.Logger, oldConfig Config) *Config {
 	}
 
 	// Convert old config format to new one
-	if newConfig.CarbonSearch.Backend != "" {
-		newConfig.CarbonSearchV2.BackendsV2 = types.BackendsV2{
-			Backends: []types.BackendV2{{
-				GroupName:                 newConfig.CarbonSearch.Backend,
-				Protocol:                  "carbonapi_v2_pb",
-				LBMethod:                  "roundrobin",
-				Servers:                   []string{newConfig.CarbonSearch.Backend},
-				Timeouts:                  &newConfig.Timeouts,
-				DoMultipleRequestsIfSplit: true,
-				ConcurrencyLimit:          &newConfig.ConcurrencyLimitPerServer,
-				KeepAliveInterval:         &newConfig.KeepAliveInterval,
-				MaxIdleConnsPerHost:       &newConfig.MaxIdleConnsPerHost,
-				MaxTries:                  &newConfig.MaxTries,
-			}},
-			MaxIdleConnsPerHost:       newConfig.MaxIdleConnsPerHost,
-			ConcurrencyLimitPerServer: newConfig.ConcurrencyLimitPerServer,
-			Timeouts:                  newConfig.Timeouts,
-			KeepAliveInterval:         newConfig.KeepAliveInterval,
-			MaxTries:                  newConfig.MaxTries,
-		}
-
-		newConfig.CarbonSearchV2.Prefix = newConfig.CarbonSearch.Prefix
-	}
-
-	// Convert old config format to new one
+	defaultIdleConnTimeout := 3600 * time.Second
 	if newConfig.Backends != nil && len(newConfig.Backends) != 0 {
 		newConfig.BackendsV2 = types.BackendsV2{
 			Backends: []types.BackendV2{
@@ -153,6 +123,7 @@ func SanitizeConfig(logger *zap.Logger, oldConfig Config) *Config {
 					MaxIdleConnsPerHost:       &newConfig.MaxIdleConnsPerHost,
 					MaxTries:                  &newConfig.MaxTries,
 					MaxBatchSize:              newConfig.MaxBatchSize,
+					IdleConnectionTimeout:     &defaultIdleConnTimeout,
 				},
 			},
 			MaxIdleConnsPerHost:       newConfig.MaxIdleConnsPerHost,
@@ -174,26 +145,13 @@ func SanitizeConfig(logger *zap.Logger, oldConfig Config) *Config {
 		}
 		timeouts := sanitizeTimeouts(*(newConfig.BackendsV2.Backends[i].Timeouts), newConfig.BackendsV2.Timeouts)
 		newConfig.BackendsV2.Backends[i].Timeouts = &timeouts
+		if newConfig.BackendsV2.Backends[i].IdleConnectionTimeout == nil {
+			newConfig.BackendsV2.Backends[i].IdleConnectionTimeout = &defaultIdleConnTimeout
+		}
 	}
 
 	if newConfig.BackendsV2.MaxBatchSize == nil {
 		newConfig.BackendsV2.MaxBatchSize = newConfig.MaxBatchSize
-	}
-
-	for i := range newConfig.CarbonSearchV2.Backends {
-		if newConfig.CarbonSearchV2.Backends[i].MaxBatchSize == nil {
-			newConfig.CarbonSearchV2.Backends[i].MaxBatchSize = newConfig.CarbonSearchV2.MaxBatchSize
-		}
-	}
-
-	if newConfig.CarbonSearchV2.MaxBatchSize == nil {
-		newConfig.CarbonSearchV2.MaxBatchSize = newConfig.MaxBatchSize
-	}
-
-	for i := range newConfig.CarbonSearchV2.Backends {
-		if newConfig.CarbonSearchV2.Backends[i].MaxBatchSize == nil {
-			newConfig.CarbonSearchV2.Backends[i].MaxBatchSize = newConfig.CarbonSearchV2.MaxBatchSize
-		}
 	}
 
 	newConfig.isSanitized = true

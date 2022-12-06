@@ -269,7 +269,7 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 	}
 
 	if len(Config.Listeners) == 0 {
-		Config.Listeners = append(Config.Listeners, Listener{Address: "localhost:8081"})
+		Config.Listeners = append(Config.Listeners, Listener{Address: "127.0.0.1:8081"})
 	}
 
 	for _, define := range Config.Define {
