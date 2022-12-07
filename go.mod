@@ -8,6 +8,7 @@ require (
 	github.com/alicebob/miniredis/v2 v2.22.0
 	github.com/ansel1/merry v1.6.2
 	github.com/ansel1/merry/v2 v2.0.2
+	github.com/barkimedes/go-deepcopy v0.0.0-20220514131651-17c30cfc62df
 	github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d
 	github.com/cactus/go-statsd-client/v5 v5.0.0
 	github.com/circonus-labs/gosnowth v1.10.5

@@ -23,6 +23,9 @@ github.com/ansel1/merry
 # github.com/ansel1/merry/v2 v2.0.2
 ## explicit; go 1.12
 github.com/ansel1/merry/v2
+# github.com/barkimedes/go-deepcopy v0.0.0-20220514131651-17c30cfc62df
+## explicit
+github.com/barkimedes/go-deepcopy
 # github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d
 ## explicit; go 1.12
 github.com/bradfitz/gomemcache/memcache

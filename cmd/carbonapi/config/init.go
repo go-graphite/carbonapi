@@ -16,6 +16,10 @@ import (
 	zipperConfig "github.com/go-graphite/carbonapi/zipper/config"
 
 	"github.com/ansel1/merry"
+	"github.com/lomik/zapwriter"
+	"github.com/spf13/viper"
+	"go.uber.org/zap"
+
 	"github.com/go-graphite/carbonapi/cache"
 	"github.com/go-graphite/carbonapi/expr/functions"
 	"github.com/go-graphite/carbonapi/expr/functions/cairo/png"
@@ -25,9 +29,6 @@ import (
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
-	"github.com/lomik/zapwriter"
-	"github.com/spf13/viper"
-	"go.uber.org/zap"
 )
 
 var graphTemplates map[string]png.PictureParams

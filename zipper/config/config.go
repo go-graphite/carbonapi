@@ -3,6 +3,7 @@ package config
 import (
 	"time"
 
+	"github.com/barkimedes/go-deepcopy"
 	"go.uber.org/zap"
 
 	"github.com/go-graphite/carbonapi/zipper/types"
@@ -65,28 +66,11 @@ func sanitizeTimeouts(timeouts, defaultTimeouts types.Timeouts) types.Timeouts {
 // SanitizeConfig perform old kind of checks and conversions for zipper's configuration
 func SanitizeConfig(logger *zap.Logger, oldConfig Config) *Config {
 	// create a full copy of old config
-	newConfig := &Config{
-		Buckets:                   oldConfig.Buckets,
-		SumBuckets:                oldConfig.SumBuckets,
-		BucketsWidth:              oldConfig.BucketsWidth,
-		BucketsLabels:             oldConfig.BucketsLabels,
-		ExtendedStat:              oldConfig.ExtendedStat,
-		SlowLogThreshold:          oldConfig.SlowLogThreshold,
-		ConcurrencyLimitPerServer: oldConfig.ConcurrencyLimitPerServer,
-		MaxIdleConnsPerHost:       oldConfig.MaxIdleConnsPerHost,
-		Backends:                  oldConfig.Backends,
-		BackendsV2:                oldConfig.BackendsV2,
-		MaxBatchSize:              oldConfig.MaxBatchSize,
-		FallbackMaxBatchSize:      oldConfig.FallbackMaxBatchSize,
-		MaxTries:                  oldConfig.MaxTries,
-
-		ExpireDelaySec:       oldConfig.ExpireDelaySec,
-		TLDCacheDisabled:     oldConfig.TLDCacheDisabled,
-		InternalRoutingCache: oldConfig.InternalRoutingCache,
-		Timeouts:             oldConfig.Timeouts,
-		KeepAliveInterval:    oldConfig.KeepAliveInterval,
-		ScaleToCommonStep:    oldConfig.ScaleToCommonStep,
+	newConfigPtr, err := deepcopy.Anything(oldConfig)
+	if err != nil {
+		logger.Fatal("failed to copy old config", zap.Error(err))
 	}
+	newConfig := newConfigPtr.(Config)
 
 	if len(newConfig.BucketsWidth) > 0 {
 		newConfig.Buckets = 0
@@ -155,5 +139,5 @@ func SanitizeConfig(logger *zap.Logger, oldConfig Config) *Config {
 	}
 
 	newConfig.isSanitized = true
-	return newConfig
+	return &newConfig
 }
