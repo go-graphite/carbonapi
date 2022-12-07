@@ -5,13 +5,19 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/ansel1/merry"
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
+	"github.com/lomik/zapwriter"
+	"github.com/msaf1980/go-stringutils"
+	uuid "github.com/satori/go.uuid"
+	"go.uber.org/zap"
+
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 	"github.com/go-graphite/carbonapi/date"
@@ -21,11 +27,6 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	utilctx "github.com/go-graphite/carbonapi/util/ctx"
 	"github.com/go-graphite/carbonapi/zipper/helper"
-	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"github.com/lomik/zapwriter"
-	"github.com/msaf1980/go-stringutils"
-	uuid "github.com/satori/go.uuid"
-	"go.uber.org/zap"
 )
 
 func cleanupParams(r *http.Request) {
@@ -205,7 +206,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if format == protoV3Format {
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			accessLogDetails.HTTPCode = http.StatusBadRequest
 			accessLogDetails.Reason = "failed to parse message body: " + err.Error()
