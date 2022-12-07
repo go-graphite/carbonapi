@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"sort"
@@ -84,15 +84,15 @@ func isFunctionParamEqual(fp1, fp2 types.FunctionParam) []string {
 	return incompatibilities
 }
 
-// type FunctionParam struct {
-// 	Name        string        `json:"name"`
-// 	Multiple    bool          `json:"multiple,omitempty"`
-// 	Required    bool          `json:"required,omitempty"`
-// 	Type        FunctionType  `json:"type,omitempty"`
-// 	Options     []string      `json:"options,omitempty"`
-// 	Suggestions []*Suggestion `json:"suggestions,omitempty"`
-// 	Default     *Suggestion   `json:"default,omitempty"`
-// }
+//	type FunctionParam struct {
+//		Name        string        `json:"name"`
+//		Multiple    bool          `json:"multiple,omitempty"`
+//		Required    bool          `json:"required,omitempty"`
+//		Type        FunctionType  `json:"type,omitempty"`
+//		Options     []string      `json:"options,omitempty"`
+//		Suggestions []*Suggestion `json:"suggestions,omitempty"`
+//		Default     *Suggestion   `json:"default,omitempty"`
+//	}
 func isFunctionParamsEqual(carbonapi, graphiteweb []types.FunctionParam) []string {
 	carbonapiToMap := make(map[string]types.FunctionParam)
 	var incompatibilities []string
@@ -128,7 +128,7 @@ func main() {
 		log.Fatal("failed to get response from carbonapi", err)
 	}
 
-	resp1, err := ioutil.ReadAll(res.Body)
+	resp1, err := io.ReadAll(res.Body)
 	if err != nil {
 		log.Fatalf("failed to read response body for %v: %v", *carbonapiURL, err)
 	}
@@ -150,7 +150,7 @@ func main() {
 		log.Fatalf("failed to read response body for %v: %v", *graphiteWebURL, err)
 	}
 
-	resp2, err := ioutil.ReadAll(res.Body)
+	resp2, err := io.ReadAll(res.Body)
 	if err != nil {
 		log.Fatal("failed to read response body for graphiteWeb", err)
 	}
@@ -201,7 +201,7 @@ func main() {
 		log.Fatalf("failed to read response body for %v: %v", *graphiteWebURL, err)
 	}
 
-	resp2, err = ioutil.ReadAll(res.Body)
+	resp2, err = io.ReadAll(res.Body)
 	if err != nil {
 		log.Fatal("failed to read response body for graphiteWeb", err)
 	}
@@ -232,82 +232,82 @@ Reason behind that change is that on dark background it's much nicer to read old
 
 ### /render/?...
 
-* ` + "`target` : graphite series, seriesList or function (likely containing series or seriesList)\n" +
-		"* `from`, `until` : time specifiers. Eg. \"1d\", \"10min\", \"04:37_20150822\", \"now\", \"today\", ... (**NOTE** does not handle timezones the same as graphite)\n" +
-		"* `format` : support graphite values of { json, raw, pickle, csv, png, svg } adds { protobuf } and does not support { pdf }\n" +
-		"* `jsonp` : (...)\n" +
-		"* `noCache` : prevent query-response caching (which is 60s if enabled)\n" +
-		"* `cacheTimeout` : override default result cache (60s)\n" +
-		"* `rawdata` -or- `rawData` : true for `format=raw`\n" + `
+* `+"`target` : graphite series, seriesList or function (likely containing series or seriesList)\n"+
+		"* `from`, `until` : time specifiers. Eg. \"1d\", \"10min\", \"04:37_20150822\", \"now\", \"today\", ... (**NOTE** does not handle timezones the same as graphite)\n"+
+		"* `format` : support graphite values of { json, raw, pickle, csv, png, svg } adds { protobuf } and does not support { pdf }\n"+
+		"* `jsonp` : (...)\n"+
+		"* `noCache` : prevent query-response caching (which is 60s if enabled)\n"+
+		"* `cacheTimeout` : override default result cache (60s)\n"+
+		"* `rawdata` -or- `rawData` : true for `format=raw`\n"+`
 **Explicitly NOT supported**
-* ` + "`_salt`\n" +
-		"* `_ts`\n" +
-		"* `_t`\n" + `
-_When ` + "`format=png`_ (default if not specified)\n" +
-		"* `width`, `height` : number of pixels (default: width=330 , height=250)\n" +
-		"* `pixelRatio` : (1.0)\n" +
-		"* `margin` : (10)\n" +
-		"* `logBase` : Y-scale should use. Recognizes \"e\" or a floating point ( >= 1 )\n" +
-		"* `fgcolor` : foreground color\n" +
-		"* `bgcolor` : background color\n" +
-		"* `majorLine` : major line color\n" +
-		"* `minorLine` : minor line color\n" +
-		"* `fontName` : (\"Sans\")\n" +
-		"* `fontSize` : (10.0)\n" +
-		"* `fontBold` : (false)\n" +
-		"* `fontItalic` : (false)\n" +
-		"* `graphOnly` : (false)\n" +
-		"* `hideLegend` : (false) (**NOTE** if not defined and >10 result metrics this becomes true)\n" +
-		"* `hideGrid` : (false)\n" +
-		"* `hideAxes` : (false)\n" +
-		"* `hideYAxis` : (false)\n" +
-		"* `hideXAxis` : (false)\n" +
-		"* `yAxisSide` : (\"left\")\n" +
-		"* `connectedLimit` : number of missing points to bridge when `linemode` is not one of { \"slope\", \"staircase\" } likely \"connected\" (4294967296)\n" +
-		"* `lineMode` : (\"slope\")\n" +
-		"* `areaMode` : (\"none\") also recognizes { \"first\", \"all\", \"stacked\" }\n" +
-		"* `areaAlpha` : ( <not defined> ) float value for area alpha\n" +
-		"* `pieMode` : (\"average\") also recognizes { \"maximum\", \"minimum\" } (**NOTE** pie graph support is explicitly unplanned)\n" +
-		"* `lineWidth` : (1.2) float value for line width\n" +
-		"* `dashed` : (false) dashed lines\n" +
-		"* `rightWidth` : (1.2) ...\n" +
-		"* `rightDashed` : (false)\n" +
-		"* `rightColor` : ...\n" +
-		"* `leftWidth` : (1.2)\n" +
-		"* `leftDashed` : (false)\n" +
-		"* `leftColor` : ...\n" +
-		"* `title` : (\"\") graph title\n" +
-		"* `vtitle` : (\"\") ...\n" +
-		"* `vtitleRight` : (\"\") ...\n" +
-		"* `colorList` : (\"blue,green,red,purple,yellow,aqua,grey,magenta,pink,gold,rose\")\n" +
-		"* `majorGridLineColor` : (\"rose\")\n" +
-		"* `minorGridLineColor` : (\"grey\")\n" +
-		"* `uniqueLegend` : (false)\n" +
-		"* `drawNullAsZero` : (false) (**NOTE** affects display only - does not translate missing values to zero in functions. For that use ...)\n" +
-		"* `drawAsInfinite` : (false) ...\n" +
-		"* `yMin` : <undefined>\n" +
-		"* `yMax` : <undefined>\n" +
-		"* `yStep` : <undefined>\n" +
-		"* `xMin` : <undefined>\n" +
-		"* `xMax` : <undefined>\n" +
-		"* `xStep` : <undefined>\n" +
-		"* `xFormat` : (\"\") ...\n" +
-		"* `minorY` : (1) ...\n" +
-		"* `yMinLeft` : <undefined>\n" +
-		"* `yMinRight` : <undefined>\n" +
-		"* `yMaxLeft` : <undefined>\n" +
-		"* `yMaxRight` : <undefined>\n" +
-		"* `yStepL` : <undefined>\n" +
-		"* `ySTepR` : <undefined>\n" +
-		"* `yLimitLeft` : <undefined>\n" +
-		"* `yLimitRight` : <undefined>\n" +
-		"* `yUnitSystem` : (\"si\") also recognizes { \"binary\" }\n" +
-		"* `yDivisors` : (4,5,6) ...\n" + `
+* `+"`_salt`\n"+
+		"* `_ts`\n"+
+		"* `_t`\n"+`
+_When `+"`format=png`_ (default if not specified)\n"+
+		"* `width`, `height` : number of pixels (default: width=330 , height=250)\n"+
+		"* `pixelRatio` : (1.0)\n"+
+		"* `margin` : (10)\n"+
+		"* `logBase` : Y-scale should use. Recognizes \"e\" or a floating point ( >= 1 )\n"+
+		"* `fgcolor` : foreground color\n"+
+		"* `bgcolor` : background color\n"+
+		"* `majorLine` : major line color\n"+
+		"* `minorLine` : minor line color\n"+
+		"* `fontName` : (\"Sans\")\n"+
+		"* `fontSize` : (10.0)\n"+
+		"* `fontBold` : (false)\n"+
+		"* `fontItalic` : (false)\n"+
+		"* `graphOnly` : (false)\n"+
+		"* `hideLegend` : (false) (**NOTE** if not defined and >10 result metrics this becomes true)\n"+
+		"* `hideGrid` : (false)\n"+
+		"* `hideAxes` : (false)\n"+
+		"* `hideYAxis` : (false)\n"+
+		"* `hideXAxis` : (false)\n"+
+		"* `yAxisSide` : (\"left\")\n"+
+		"* `connectedLimit` : number of missing points to bridge when `linemode` is not one of { \"slope\", \"staircase\" } likely \"connected\" (4294967296)\n"+
+		"* `lineMode` : (\"slope\")\n"+
+		"* `areaMode` : (\"none\") also recognizes { \"first\", \"all\", \"stacked\" }\n"+
+		"* `areaAlpha` : ( <not defined> ) float value for area alpha\n"+
+		"* `pieMode` : (\"average\") also recognizes { \"maximum\", \"minimum\" } (**NOTE** pie graph support is explicitly unplanned)\n"+
+		"* `lineWidth` : (1.2) float value for line width\n"+
+		"* `dashed` : (false) dashed lines\n"+
+		"* `rightWidth` : (1.2) ...\n"+
+		"* `rightDashed` : (false)\n"+
+		"* `rightColor` : ...\n"+
+		"* `leftWidth` : (1.2)\n"+
+		"* `leftDashed` : (false)\n"+
+		"* `leftColor` : ...\n"+
+		"* `title` : (\"\") graph title\n"+
+		"* `vtitle` : (\"\") ...\n"+
+		"* `vtitleRight` : (\"\") ...\n"+
+		"* `colorList` : (\"blue,green,red,purple,yellow,aqua,grey,magenta,pink,gold,rose\")\n"+
+		"* `majorGridLineColor` : (\"rose\")\n"+
+		"* `minorGridLineColor` : (\"grey\")\n"+
+		"* `uniqueLegend` : (false)\n"+
+		"* `drawNullAsZero` : (false) (**NOTE** affects display only - does not translate missing values to zero in functions. For that use ...)\n"+
+		"* `drawAsInfinite` : (false) ...\n"+
+		"* `yMin` : <undefined>\n"+
+		"* `yMax` : <undefined>\n"+
+		"* `yStep` : <undefined>\n"+
+		"* `xMin` : <undefined>\n"+
+		"* `xMax` : <undefined>\n"+
+		"* `xStep` : <undefined>\n"+
+		"* `xFormat` : (\"\") ...\n"+
+		"* `minorY` : (1) ...\n"+
+		"* `yMinLeft` : <undefined>\n"+
+		"* `yMinRight` : <undefined>\n"+
+		"* `yMaxLeft` : <undefined>\n"+
+		"* `yMaxRight` : <undefined>\n"+
+		"* `yStepL` : <undefined>\n"+
+		"* `ySTepR` : <undefined>\n"+
+		"* `yLimitLeft` : <undefined>\n"+
+		"* `yLimitRight` : <undefined>\n"+
+		"* `yUnitSystem` : (\"si\") also recognizes { \"binary\" }\n"+
+		"* `yDivisors` : (4,5,6) ...\n"+`
 ### /metrics/find/?
 
-* ` + "`format` : (\"treejson\") also recognizes { \"json\" (same as \"treejson\"), \"completer\", \"raw\" }\n" +
-		"* `jsonp` : ...\n" +
-		"* `query` : the metric or glob-pattern to find\n" + `
+* `+"`format` : (\"treejson\") also recognizes { \"json\" (same as \"treejson\"), \"completer\", \"raw\" }\n"+
+		"* `jsonp` : ...\n"+
+		"* `query` : the metric or glob-pattern to find\n"+`
 
 `, version)
 	fmt.Printf(`

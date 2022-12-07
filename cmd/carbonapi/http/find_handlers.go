@@ -4,24 +4,25 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/ansel1/merry"
-	"github.com/go-graphite/carbonapi/carbonapipb"
-	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
-	"github.com/go-graphite/carbonapi/date"
-	"github.com/go-graphite/carbonapi/intervalset"
-	utilctx "github.com/go-graphite/carbonapi/util/ctx"
 	pbv2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	pbv3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	pickle "github.com/lomik/og-rek"
 	"github.com/lomik/zapwriter"
 	"github.com/maruel/natural"
 	uuid "github.com/satori/go.uuid"
+
+	"github.com/go-graphite/carbonapi/carbonapipb"
+	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
+	"github.com/go-graphite/carbonapi/date"
+	"github.com/go-graphite/carbonapi/intervalset"
+	utilctx "github.com/go-graphite/carbonapi/util/ctx"
 )
 
 // Find handler and it's helper functions
@@ -235,7 +236,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	var pv3Request pbv3.MultiGlobRequest
 
 	if format == protoV3Format {
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			accessLogDetails.HTTPCode = http.StatusBadRequest
 			accessLogDetails.Reason = "failed to parse message body: " + err.Error()

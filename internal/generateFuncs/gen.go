@@ -1,3 +1,4 @@
+//go:build ignore
 // +build ignore
 
 package main
@@ -6,14 +7,13 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
 )
 
 func main() {
-	files, err := ioutil.ReadDir("./")
+	files, err := os.ReadDir("./")
 	if err != nil {
 		log.Fatal(err)
 	}

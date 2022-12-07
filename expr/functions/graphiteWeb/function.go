@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -12,15 +12,16 @@ import (
 	"sync/atomic"
 	"time"
 
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
+	"github.com/lomik/zapwriter"
+	"github.com/spf13/viper"
+	"go.uber.org/zap"
+
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"github.com/lomik/zapwriter"
-	"github.com/spf13/viper"
-	"go.uber.org/zap"
 )
 
 type graphiteWeb struct {
@@ -186,7 +187,7 @@ smartSummarise will be performed by graphite-web and then results will be passed
 			continue
 		}
 
-		body, err = ioutil.ReadAll(resp.Body)
+		body, err = io.ReadAll(resp.Body)
 		if err != nil {
 			logger.Warn("failed to obtain list of functions, will try next fallbackUrl",
 				zap.String("backend", srv),
@@ -378,7 +379,7 @@ func (f *graphiteWeb) Do(ctx context.Context, e parser.Expr, from, until int64, 
 			continue
 		}
 
-		body, err = ioutil.ReadAll(resp.Body)
+		body, err = io.ReadAll(resp.Body)
 		if err != nil {
 			errors = append(errors, graphiteError{srv, err})
 			_ = resp.Body.Close()
@@ -455,7 +456,7 @@ func (f *graphiteWeb) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		}
 		res = append(res, &types.MetricData{
 			FetchResponse: pbResp,
-			Tags: tags,
+			Tags:          tags,
 		})
 	}
 

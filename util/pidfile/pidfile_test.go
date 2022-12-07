@@ -1,7 +1,6 @@
 package pidfile
 
 import (
-	"io/ioutil"
 	"os"
 	"strconv"
 	"testing"
@@ -18,7 +17,7 @@ func TestWritePidFile(t *testing.T) {
 	err = WritePidFile(fname)
 	assert.NoError(t, err)
 
-	data, err := ioutil.ReadFile(fname)
+	data, err := os.ReadFile(fname)
 	assert.NoError(t, err)
 	pid, err := strconv.Atoi(string(data))
 	assert.NoError(t, err)

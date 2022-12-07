@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -13,10 +12,11 @@ import (
 	"unicode/utf8"
 
 	"github.com/ansel1/merry"
+	"go.uber.org/zap"
+
 	"github.com/go-graphite/carbonapi/limiter"
 	util "github.com/go-graphite/carbonapi/util/ctx"
 	"github.com/go-graphite/carbonapi/zipper/types"
-	"go.uber.org/zap"
 )
 
 func min(a, b int) int {
@@ -286,7 +286,7 @@ func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, server, u
 		return &ServerResponse{Server: server}, nil
 	}
 
-	body, err = ioutil.ReadAll(resp.Body)
+	body, err = io.ReadAll(resp.Body)
 	if err != nil {
 		logger.Debug("error reading body",
 			zap.Error(err),

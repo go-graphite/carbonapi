@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -51,7 +50,7 @@ func main() {
 		logger.Fatal("failed to get config, it should be non-null")
 	}
 
-	d, err := ioutil.ReadFile(*config)
+	d, err := os.ReadFile(*config)
 	if err != nil {
 		logger.Fatal("failed to read config", zap.Error(err))
 	}

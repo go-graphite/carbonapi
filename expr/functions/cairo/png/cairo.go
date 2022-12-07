@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 	"image/color"
-	"io/ioutil"
 	"math"
 	"net/http"
 	"os"
@@ -17,10 +16,11 @@ import (
 	"strings"
 	"time"
 
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
 	"bitbucket.org/tebeka/strftime"
 	"github.com/evmar/gocairo/cairo"
@@ -982,7 +982,7 @@ func marshalCairo(p PictureParams, results []*types.MetricData, backend cairoBac
 	switch backend {
 	case cairoSVG:
 		var err error
-		tmpfile, err = ioutil.TempFile("/dev/shm", "cairosvg")
+		tmpfile, err = os.CreateTemp("/dev/shm", "cairosvg")
 		if err != nil {
 			return nil
 		}
@@ -1018,7 +1018,7 @@ func marshalCairo(p PictureParams, results []*types.MetricData, backend cairoBac
 		b = buf.Bytes()
 	case cairoSVG:
 		surface.Finish()
-		b, _ = ioutil.ReadFile(tmpfile.Name())
+		b, _ = os.ReadFile(tmpfile.Name())
 		// NOTE(dgryski): This is the dumbest thing ever, but needed
 		// for compatibility.  I'm not doing the rest of the svg
 		// munging that graphite does.
