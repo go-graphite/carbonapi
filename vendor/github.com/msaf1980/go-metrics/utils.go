@@ -14,7 +14,55 @@ func Min(a, b int) int {
 	return b
 }
 
-func searchInt64Ge(a []int64, v int64) int {
+func IsSortedSliceInt64Ge(a []int64) (sorted bool) {
+	if len(a) == 0 {
+		return
+	}
+	sorted = true
+	prev := a[0]
+	for i := 1; i < len(a); i++ {
+		if a[i] <= prev {
+			sorted = false
+			break
+		}
+		prev = a[i]
+	}
+	return
+}
+
+func IsSortedSliceUint64Le(a []uint64) (sorted bool) {
+	if len(a) == 0 {
+		return
+	}
+	sorted = true
+	prev := a[0]
+	for i := 1; i < len(a); i++ {
+		if a[i] <= prev {
+			sorted = false
+			break
+		}
+		prev = a[i]
+	}
+	return
+}
+
+func IsSortedSliceFloat64Le(a []float64) (sorted bool) {
+	if len(a) == 0 {
+		return
+	}
+	sorted = true
+	prev := a[0]
+	for i := 1; i < len(a); i++ {
+		if a[i] <= prev {
+			sorted = false
+			break
+		}
+		prev = a[i]
+	}
+	return
+}
+
+func SearchInt64Le(a []int64, v int64) int {
 	if v <= a[0] {
 		return 0
 	}
@@ -36,7 +84,7 @@ func searchInt64Ge(a []int64, v int64) int {
 	return end
 }
 
-func searchUint64Ge(a []uint64, v uint64) int {
+func SearchUint64Le(a []uint64, v uint64) int {
 	if v <= a[0] {
 		return 0
 	}
@@ -58,7 +106,7 @@ func searchUint64Ge(a []uint64, v uint64) int {
 	return end
 }
 
-func searchFloat64Ge(a []float64, v float64) int {
+func SearchFloat64Le(a []float64, v float64) int {
 	if v <= a[0] {
 		return 0
 	}

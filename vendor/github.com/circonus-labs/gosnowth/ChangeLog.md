@@ -6,6 +6,69 @@ to [Semantic Versioning](http://semver.org/) rules.
 
 ## [Next Release]
 
+## [v1.11.3] - 2022-11-30
+
+* upd: Updates the WatchAndUpdate() functionality of SnowthClient to correctly
+update cluster topology and node active status on a configured interval.
+
+## [v1.11.2] - 2022-08-18
+
+* upd: Removes all use of the deprecated ioutil package, includes some code
+cleanup and adds additional linters.
+* upd: Updates the minumum go build version to 1.17.
+
+## [v1.11.1] - 2022-07-29
+
+* upd: Simplifies to gosnowth.Config type to no longer implement unneeded
+thread safety and JSON marshaling functionality. No longer uses getters and
+setters to access configuration properties.
+* add: Allows a CtxKeyTraceID value to be set when configuring a gosnowth
+SnowthClient. This will be used to retrieve a trace ID from the context passed
+into gosnowth functions, allowing gosnowth log entries to contain the same
+trace ID being used by the caller of the gosnowth function. If this is not
+configured, or the context does not contain a trace ID, gosnowth will still
+generate its own trace ID using the previous behavior.
+
+## [v1.11.0] - 2022-07-21
+
+* upd: Changes the DF4 data types to include fields that were missing for
+`head.error` and `head.warning`. Adds functionality to allow extracting typed
+data from DF4 data values.
+
+## [v1.10.11] - 2022-07-15
+
+* fix: Corrects a bug in how check tag encoding is handled that was preventing
+UpdateCheckTags() from correctly updating check tags requiring base64 encoding.
+
+## [v1.10.10] - 2022-06-15
+
+* upd: Changes the method used to stop retrying when contexts are canceled
+or reach timeout. This is to support upcoming changes in go v1.19.
+
+## [v1.10.9] - 2022-06-14
+
+* upd: Improves request handling so that requests are not retried for 4XX
+status codes returned from snowth.
+
+## [v1.10.8] - 2022-06-14
+
+* fix: Corrects a bug that was causing gosnowth to retry requests that should
+not be retried because they failed due to context cancelation or due to a
+user facing error.
+* upd: Improves the gosnowth debug logging for readability and allows the
+traceID to be used to track requests across multiple retries.
+
+## [v1.10.7] - 2022-06-13
+
+* upd: Bump github.com/openhistogram/circonusllhist from 0.2.1 to 0.3.0 by @dependabot in #69
+* upd: Bump github.com/google/uuid from 1.1.1 to 1.3.0 by @dependabot in #68
+* upd: Bump github.com/google/flatbuffers from 1.12.0 to 2.0.6+incompatible by @dependabot in #67
+
+## [v1.10.6] - 2022-06-10
+
+* fix: Corrects a bug that was causing the process to fail that randomly
+retries other nodes in a snowth cluster when there are connection issues.
+
 ## [v1.10.5] - 2022-05-03
 
 * fix: Fixes the metric name parser to correctly use curly brackets when
@@ -347,6 +410,16 @@ writing to histogram endpoints.
 any delay, once started. Created: 2019-03-12. Fixed: 2019-03-13.
 
 [Next Release]: https://github.com/circonus-labs/gosnowth
+[v1.11.3]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.11.3
+[v1.11.2]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.11.2
+[v1.11.1]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.11.1
+[v1.11.0]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.11.0
+[v1.10.11]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.10.11
+[v1.10.10]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.10.10
+[v1.10.9]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.10.9
+[v1.10.8]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.10.8
+[v1.10.7]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.10.7
+[v1.10.6]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.10.6
 [v1.10.5]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.10.5
 [v1.10.4]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.10.4
 [v1.10.3]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.10.3

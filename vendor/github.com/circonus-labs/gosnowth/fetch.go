@@ -5,14 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
 
-	flatbuffers "github.com/google/flatbuffers/go"
-
 	"github.com/circonus-labs/gosnowth/fb/fetch"
+	flatbuffers "github.com/google/flatbuffers/go"
 )
 
 // FetchStream values represent queries for individual data streams in an
@@ -52,6 +51,7 @@ func (fq *FetchQuery) MarshalJSON() ([]byte, error) {
 		Streams []FetchStream `json:"streams"`
 		Reduce  []FetchReduce `json:"reduce"`
 	}{}
+
 	fv, err := strconv.ParseFloat(formatTimestamp(fq.Start), 64)
 	if err != nil {
 		return nil, fmt.Errorf("invalid fetch start value: " +
@@ -61,6 +61,7 @@ func (fq *FetchQuery) MarshalJSON() ([]byte, error) {
 	v.Start = fv
 	v.Period = fq.Period.Seconds()
 	v.Count = fq.Count
+
 	if len(fq.Streams) > 0 {
 		v.Streams = fq.Streams
 	}
@@ -81,6 +82,7 @@ func (fq *FetchQuery) UnmarshalJSON(b []byte) error {
 		Streams []FetchStream `json:"streams"`
 		Reduce  []FetchReduce `json:"reduce"`
 	}{}
+
 	err := json.Unmarshal(b, &v)
 	if err != nil {
 		return err
@@ -100,23 +102,27 @@ func (fq *FetchQuery) UnmarshalJSON(b []byte) error {
 	}
 
 	fq.Period = time.Duration(v.Period*1000) * time.Millisecond
+
 	if v.Count == 0 {
 		return fmt.Errorf("fetch query missing count: " + string(b))
 	}
 
 	fq.Count = v.Count
+
 	if len(v.Streams) < 1 {
 		return fmt.Errorf("fetch query requires at least one stream: " +
 			string(b))
 	}
 
 	fq.Streams = v.Streams
+
 	if len(v.Reduce) < 1 {
 		return fmt.Errorf("fetch query requires at least one reduce: " +
 			string(b))
 	}
 
 	fq.Reduce = v.Reduce
+
 	return nil
 }
 
@@ -133,8 +139,10 @@ func (sc *SnowthClient) FetchValues(q *FetchQuery, nodes ...*SnowthNode) (*DF4Re
 
 // FetchValuesContext is the context aware version of FetchValues.
 func (sc *SnowthClient) FetchValuesContext(ctx context.Context,
-	q *FetchQuery, nodes ...*SnowthNode) (*DF4Response, error) {
+	q *FetchQuery, nodes ...*SnowthNode,
+) (*DF4Response, error) {
 	var node *SnowthNode
+
 	switch {
 	case len(nodes) > 0 && nodes[0] != nil:
 		node = nodes[0]
@@ -150,12 +158,13 @@ func (sc *SnowthClient) FetchValuesContext(ctx context.Context,
 	}
 
 	hdrs := http.Header{"Content-Type": {"application/json"}}
+
 	body, _, err := sc.DoRequestContext(ctx, node, "POST", "/fetch", buf, hdrs)
 	if err != nil {
 		return nil, err
 	}
 
-	rb, err := ioutil.ReadAll(body)
+	rb, err := io.ReadAll(body)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read IRONdb response body: %w", err)
 	}
@@ -178,13 +187,15 @@ const Df4FlatbufferAccept = "x-irondb-df4-flatbuffer"
 
 // FetchValuesFb retrieves data values using the IRONdb fetch API with FlatBuffers.
 func (sc *SnowthClient) FetchValuesFb(node *SnowthNode,
-	q *fetch.FetchT) (*fetch.DF4T, error) {
+	q *fetch.FetchT,
+) (*fetch.DF4T, error) {
 	return sc.FetchValuesFbContext(context.Background(), node, q)
 }
 
 // FetchValuesFbContext is the context aware version of FetchValuesFb.
 func (sc *SnowthClient) FetchValuesFbContext(ctx context.Context,
-	node *SnowthNode, q *fetch.FetchT) (*fetch.DF4T, error) {
+	node *SnowthNode, q *fetch.FetchT,
+) (*fetch.DF4T, error) {
 	builder := flatbuffers.NewBuilder(8192)
 	qOffset := fetch.FetchPack(builder, q)
 	builder.Finish(qOffset)
@@ -194,15 +205,17 @@ func (sc *SnowthClient) FetchValuesFbContext(ctx context.Context,
 		"Content-Type": {FetchFlatbufferContentType},
 		"Accept":       {Df4FlatbufferAccept},
 	}
+
 	body, _, err := sc.DoRequestContext(ctx, node, "POST", "/fetch", buf, hdrs)
 	if err != nil {
 		return nil, err
 	}
 
-	df4Buf, err := ioutil.ReadAll(body)
+	df4Buf, err := io.ReadAll(body)
 	if err != nil {
 		return nil, err
 	}
+
 	df4 := fetch.GetRootAsDF4(df4Buf, flatbuffers.UOffsetT(0))
 	r := df4.UnPack()
 

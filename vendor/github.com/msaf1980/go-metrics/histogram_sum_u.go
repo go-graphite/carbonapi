@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"math"
-	"sort"
 	"strconv"
 )
 
@@ -236,10 +235,12 @@ type VSumUHistogram struct {
 }
 
 func NewVSumUHistogram(weights []uint64, names []string) *VSumUHistogram {
+	if !IsSortedSliceUint64Le(weights) {
+		panic(ErrUnsortedWeights)
+	}
 	w := make([]uint64, len(weights)+1)
 	weightsAliases := make([]string, len(w))
 	copy(w, weights)
-	sort.Slice(w[:len(weights)-1], func(i, j int) bool { return w[i] < w[j] })
 	lbls := make([]string, len(w))
 
 	// fmtStr := fmt.Sprintf("%%s%%0%dd", len(strconv.FormatUint(last, 10)))

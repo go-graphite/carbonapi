@@ -1,8 +1,8 @@
 package metrics
 
 import (
+	"errors"
 	"math"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -134,6 +134,46 @@ func NewRegisteredVHistogramT(name string, tagsMap map[string]string, r Registry
 	r.RegisterT(name, tagsMap, h)
 	return h
 }
+
+type NilHistogram struct{}
+
+func (NilHistogram) Values() []uint64 {
+	return nil
+}
+
+func (NilHistogram) Labels() []string {
+	return nil
+}
+
+func (NilHistogram) SetLabels([]string) Histogram { return NilHistogram{} }
+
+func (NilHistogram) AddLabelPrefix(string) Histogram { return NilHistogram{} }
+
+func (NilHistogram) SetNameTotal(string) Histogram { return NilHistogram{} }
+
+func (NilHistogram) NameTotal() string { return "total" }
+
+func (NilHistogram) Weights() []int64 {
+	return nil
+}
+
+func (NilHistogram) WeightsAliases() []string {
+	return nil
+}
+
+func (h NilHistogram) Interface() HistogramInterface {
+	return h
+}
+
+func (h NilHistogram) Add(v int64) {}
+
+func (h NilHistogram) Clear() []uint64 {
+	return nil
+}
+
+func (NilHistogram) Snapshot() Histogram { return NilHistogram{} }
+
+func (NilHistogram) IsSummed() bool { return false }
 
 type HistogramSnapshot struct {
 	weights        []int64 // Sorted weights, by <=
@@ -285,7 +325,10 @@ type FixedHistogram struct {
 	width int64
 }
 
-func NewFixedHistogram(startVal, endVal, width int64) *FixedHistogram {
+func NewFixedHistogram(startVal, endVal, width int64) Histogram {
+	if UseNilMetrics {
+		return NilHistogram{}
+	}
 	if endVal < startVal {
 		startVal, endVal = endVal, startVal
 	}
@@ -368,11 +411,18 @@ type VHistogram struct {
 	HistogramStorage
 }
 
-func NewVHistogram(weights []int64, labels []string) *VHistogram {
+var ErrUnsortedWeights = errors.New("unsorted weights")
+
+func NewVHistogram(weights []int64, labels []string) Histogram {
+	if UseNilMetrics {
+		return NilHistogram{}
+	}
+	if !IsSortedSliceInt64Ge(weights) {
+		panic(ErrUnsortedWeights)
+	}
 	w := make([]int64, len(weights)+1)
 	weightsAliases := make([]string, len(w))
 	copy(w, weights)
-	sort.Slice(w[:len(weights)-1], func(i, j int) bool { return w[i] < w[j] })
 	// last := w[len(w)-2] + 1
 	lbls := make([]string, len(w))
 
@@ -436,7 +486,7 @@ func (h *VHistogram) Snapshot() Histogram {
 }
 
 func (h *VHistogram) Add(v int64) {
-	n := searchInt64Ge(h.weights, v)
+	n := SearchInt64Le(h.weights, v)
 	h.lock.Lock()
 	h.buckets[n]++
 	h.lock.Unlock()

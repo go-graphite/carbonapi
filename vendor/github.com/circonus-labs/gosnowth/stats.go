@@ -12,7 +12,8 @@ func (sc *SnowthClient) GetStats(nodes ...*SnowthNode) (*Stats, error) {
 
 // GetStatsContext is the context aware version of GetStats.
 func (sc *SnowthClient) GetStatsContext(ctx context.Context,
-	nodes ...*SnowthNode) (*Stats, error) {
+	nodes ...*SnowthNode,
+) (*Stats, error) {
 	var node *SnowthNode
 	if len(nodes) > 0 && nodes[0] != nil {
 		node = nodes[0]
@@ -21,7 +22,26 @@ func (sc *SnowthClient) GetStatsContext(ctx context.Context,
 	}
 
 	r := &Stats{}
+
 	body, _, err := sc.DoRequestContext(ctx, node, "GET", "/stats.json", nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := decodeJSON(body, &r); err != nil {
+		return nil, fmt.Errorf("unable to decode IRONdb response: %w", err)
+	}
+
+	return r, nil
+}
+
+// GetStatsNodeContext gets the status metrics for a single specified node.
+func (sc *SnowthClient) GetStatsNodeContext(ctx context.Context,
+	node *SnowthNode,
+) (*Stats, error) {
+	r := &Stats{}
+
+	body, _, _, err := sc.do(ctx, node, "GET", "/stats.json", nil, nil, "")
 	if err != nil {
 		return nil, err
 	}

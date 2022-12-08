@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"math"
-	"sort"
 	"strconv"
 )
 
@@ -239,10 +238,12 @@ type VSumHistogram struct {
 }
 
 func NewVSumHistogram(weights []int64, names []string) *VSumHistogram {
+	if !IsSortedSliceInt64Ge(weights) {
+		panic(ErrUnsortedWeights)
+	}
 	w := make([]int64, len(weights)+1)
 	weightsAliases := make([]string, len(w))
 	copy(w, weights)
-	sort.Slice(w[:len(weights)-1], func(i, j int) bool { return w[i] < w[j] })
 	// last := w[len(w)-2] + 1
 	lbls := make([]string, len(w))
 

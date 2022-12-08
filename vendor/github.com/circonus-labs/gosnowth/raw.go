@@ -12,9 +12,8 @@ import (
 	"strconv"
 	"time"
 
-	flatbuffers "github.com/google/flatbuffers/go"
-
 	"github.com/circonus-labs/gosnowth/fb/noit"
+	flatbuffers "github.com/google/flatbuffers/go"
 )
 
 // MetriclistFlatbufferContentType is the content type header for flatbuffer
@@ -32,12 +31,13 @@ type RawNumericValueResponse struct {
 func (rv *RawNumericValueResponse) UnmarshalJSON(b []byte) error {
 	rv.Data = []RawNumericValue{}
 	values := [][]interface{}{}
+
 	if err := json.Unmarshal(b, &values); err != nil {
 		return fmt.Errorf("failed to deserialize raw numeric response %w", err)
 	}
 
 	for _, entry := range values {
-		var rnv = RawNumericValue{}
+		rnv := RawNumericValue{}
 		if m, ok := entry[1].(float64); ok {
 			rnv.Value = m
 		}
@@ -62,7 +62,8 @@ type RawNumericValue struct {
 // ReadRawNumericValues reads raw numeric data from a node.
 func (sc *SnowthClient) ReadRawNumericValues(start time.Time, end time.Time,
 	uuid string, metric string,
-	nodes ...*SnowthNode) ([]RawNumericValue, error) {
+	nodes ...*SnowthNode,
+) ([]RawNumericValue, error) {
 	return sc.ReadRawNumericValuesContext(context.Background(), start, end,
 		uuid, metric, nodes...)
 }
@@ -71,7 +72,8 @@ func (sc *SnowthClient) ReadRawNumericValues(start time.Time, end time.Time,
 // ReadRawNumericValues.
 func (sc *SnowthClient) ReadRawNumericValuesContext(ctx context.Context,
 	start, end time.Time, uuid, metric string,
-	nodes ...*SnowthNode) ([]RawNumericValue, error) {
+	nodes ...*SnowthNode,
+) ([]RawNumericValue, error) {
 	var node *SnowthNode
 	if len(nodes) > 0 && nodes[0] != nil {
 		node = nodes[0]
@@ -84,6 +86,7 @@ func (sc *SnowthClient) ReadRawNumericValuesContext(ctx context.Context,
 	qp.Add("end_ts", formatTimestamp(end))
 
 	r := &RawNumericValueResponse{}
+
 	body, _, err := sc.DoRequestContext(ctx, node, "GET", path.Join("/raw",
 		uuid, metric)+"?"+qp.Encode(), nil, nil)
 	if err != nil {
@@ -93,13 +96,15 @@ func (sc *SnowthClient) ReadRawNumericValuesContext(ctx context.Context,
 	if err := decodeJSON(body, &r); err != nil {
 		return nil, fmt.Errorf("unable to decode IRONdb response: %w", err)
 	}
+
 	return r.Data, nil
 }
 
 // WriteRaw writes raw IRONdb data to a node.
 func (sc *SnowthClient) WriteRaw(data io.Reader,
 	fb bool, dataPoints uint64,
-	nodes ...*SnowthNode) (*IRONdbPutResponse, error) {
+	nodes ...*SnowthNode,
+) (*IRONdbPutResponse, error) {
 	return sc.WriteRawContext(context.Background(), data, fb, dataPoints,
 		nodes...)
 }
@@ -107,7 +112,8 @@ func (sc *SnowthClient) WriteRaw(data io.Reader,
 // WriteRawContext is the context aware version of WriteRaw.
 func (sc *SnowthClient) WriteRawContext(ctx context.Context,
 	data io.Reader, fb bool, dataPoints uint64,
-	nodes ...*SnowthNode) (*IRONdbPutResponse, error) {
+	nodes ...*SnowthNode,
+) (*IRONdbPutResponse, error) {
 	var node *SnowthNode
 	if len(nodes) > 0 && nodes[0] != nil {
 		node = nodes[0]
@@ -139,7 +145,8 @@ func (sc *SnowthClient) WriteRawContext(ctx context.Context,
 // WriteRawMetricList writes raw IRONdb data to a node with FlatBuffers.
 func (sc *SnowthClient) WriteRawMetricList(metricList *noit.MetricListT,
 	builder *flatbuffers.Builder,
-	nodes ...*SnowthNode) (*IRONdbPutResponse, error) {
+	nodes ...*SnowthNode,
+) (*IRONdbPutResponse, error) {
 	return sc.WriteRawMetricListContext(context.Background(),
 		metricList, builder, nodes...)
 }
@@ -147,7 +154,8 @@ func (sc *SnowthClient) WriteRawMetricList(metricList *noit.MetricListT,
 // WriteRawMetricListContext is the context aware version of WriteRawMetricList.
 func (sc *SnowthClient) WriteRawMetricListContext(ctx context.Context,
 	metricList *noit.MetricListT, builder *flatbuffers.Builder,
-	nodes ...*SnowthNode) (*IRONdbPutResponse, error) {
+	nodes ...*SnowthNode,
+) (*IRONdbPutResponse, error) {
 	if metricList == nil {
 		return nil, fmt.Errorf("metric list cannot be nil")
 	}

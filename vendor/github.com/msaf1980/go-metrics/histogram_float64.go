@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"math"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -23,80 +22,80 @@ type FHistogram interface {
 
 // GetOrRegisterFHistogram returns an existing FHistogram or constructs and registers
 // a new FFixedHistorgam.
-func GetOrRegisterFFixedHistogram(name string, r Registry, startVal, endVal, width float64) FHistogram {
+func GetOrRegisterFixedFHistogram(name string, r Registry, startVal, endVal, width float64) FHistogram {
 	if nil == r {
 		r = DefaultRegistry
 	}
 	return r.GetOrRegister(name, func() interface{} {
-		return NewFFixedHistogram(startVal, endVal, width)
+		return NewFixedFHistogram(startVal, endVal, width)
 	}).(FHistogram)
 }
 
 // GetOrRegisterHistogramT returns an existing Histogram or constructs and registers
 // a new FixedHistorgam.
-func GetOrRegisterFFixedHistogramT(name string, tagsMap map[string]string, r Registry, startVal, endVal, width float64) FHistogram {
+func GetOrRegisterFixedFHistogramT(name string, tagsMap map[string]string, r Registry, startVal, endVal, width float64) FHistogram {
 	if nil == r {
 		r = DefaultRegistry
 	}
 	return r.GetOrRegisterT(name, tagsMap, func() interface{} {
-		return NewFFixedHistogram(startVal, endVal, width)
+		return NewFixedFHistogram(startVal, endVal, width)
 	}).(FHistogram)
 }
 
 // NewRegisteredFixedHistogram constructs and registers a new FixedHistogram.
-func NewRegisteredFFixedHistogram(name string, r Registry, startVal, endVal, width float64) FHistogram {
+func NewRegisteredFixedFHistogram(name string, r Registry, startVal, endVal, width float64) FHistogram {
 	if nil == r {
 		r = DefaultRegistry
 	}
-	h := NewFFixedHistogram(startVal, endVal, width)
+	h := NewFixedFHistogram(startVal, endVal, width)
 	r.Register(name, h)
 	return h
 }
 
 // NewRegisteredFixedHistogramT constructs and registers a new FixedHistogram.
-func NewRegisteredFFixedHistogramT(name string, tagsMap map[string]string, r Registry, startVal, endVal, width float64) FHistogram {
+func NewRegisteredFixedFHistogramT(name string, tagsMap map[string]string, r Registry, startVal, endVal, width float64) FHistogram {
 	if nil == r {
 		r = DefaultRegistry
 	}
-	h := NewFFixedHistogram(startVal, endVal, width)
+	h := NewFixedFHistogram(startVal, endVal, width)
 	r.RegisterT(name, tagsMap, h)
 	return h
 }
 
-func GetOrRegisterFVHistogram(name string, r Registry, weights []float64, names []string) FHistogram {
+func GetOrRegisterFUHistogram(name string, r Registry, weights []float64, names []string) FHistogram {
 	if nil == r {
 		r = DefaultRegistry
 	}
 	return r.GetOrRegister(name, func() interface{} {
-		return NewFVHistogram(weights, names)
+		return NewFUHistogram(weights, names)
 	}).(FHistogram)
 }
 
-func GetOrRegisterFVHistogramT(name string, tagsMap map[string]string, r Registry, weights []float64, names []string) FHistogram {
+func GetOrRegisterFUHistogramT(name string, tagsMap map[string]string, r Registry, weights []float64, names []string) FHistogram {
 	if nil == r {
 		r = DefaultRegistry
 	}
 	return r.GetOrRegisterT(name, tagsMap, func() interface{} {
-		return NewFVHistogram(weights, names)
+		return NewFUHistogram(weights, names)
 	}).(FHistogram)
 }
 
 // NewRegisteredVHistogram constructs and registers a new VHistogram.
-func NewRegisteredFVHistogram(name string, r Registry, weights []float64, names []string) FHistogram {
+func NewRegisteredFUHistogram(name string, r Registry, weights []float64, names []string) FHistogram {
 	if nil == r {
 		r = DefaultRegistry
 	}
-	h := NewFVHistogram(weights, names)
+	h := NewFUHistogram(weights, names)
 	r.Register(name, h)
 	return h
 }
 
 // NewRegisteredVHistogramT constructs and registers a new VHistogram.
-func NewRegisteredFVHistogramT(name string, tagsMap map[string]string, r Registry, weights []float64, names []string) FHistogram {
+func NewRegisteredFUHistogramT(name string, tagsMap map[string]string, r Registry, weights []float64, names []string) FHistogram {
 	if nil == r {
 		r = DefaultRegistry
 	}
-	h := NewFVHistogram(weights, names)
+	h := NewFUHistogram(weights, names)
 	r.RegisterT(name, tagsMap, h)
 	return h
 }
@@ -113,6 +112,46 @@ func trimFloatZero(f string) string {
 	}
 	return f[:d]
 }
+
+type NilFHistogram struct{}
+
+func (NilFHistogram) Values() []uint64 {
+	return nil
+}
+
+func (NilFHistogram) Labels() []string {
+	return nil
+}
+
+func (NilFHistogram) SetLabels([]string) FHistogram { return NilFHistogram{} }
+
+func (NilFHistogram) AddLabelPrefix(string) FHistogram { return NilFHistogram{} }
+
+func (NilFHistogram) SetNameTotal(string) FHistogram { return NilFHistogram{} }
+
+func (NilFHistogram) NameTotal() string { return "total" }
+
+func (NilFHistogram) Weights() []float64 {
+	return nil
+}
+
+func (NilFHistogram) WeightsAliases() []string {
+	return nil
+}
+
+func (h NilFHistogram) Interface() HistogramInterface {
+	return h
+}
+
+func (h NilFHistogram) Add(v float64) {}
+
+func (h NilFHistogram) Clear() []uint64 {
+	return nil
+}
+
+func (NilFHistogram) Snapshot() FHistogram { return NilFHistogram{} }
+
+func (NilFHistogram) IsSummed() bool { return false }
 
 type FHistogramSnapshot struct {
 	weights        []float64 // Sorted weights, by <=
@@ -257,14 +296,17 @@ func (h *FHistogramStorage) Clear() []uint64 {
 
 func (h *FHistogramStorage) IsSummed() bool { return false }
 
-// A FFixedHistogram is implementation of FHistogram with fixed-size buckets.
-type FFixedHistogram struct {
+// A FixedFHistogram is implementation of FHistogram with fixed-size buckets.
+type FixedFHistogram struct {
 	FHistogramStorage
 	start float64
 	width float64
 }
 
-func NewFFixedHistogram(startVal, endVal, width float64) FHistogram {
+func NewFixedFHistogram(startVal, endVal, width float64) FHistogram {
+	if UseNilMetrics {
+		return NilFHistogram{}
+	}
 	if endVal < startVal {
 		startVal, endVal = endVal, startVal
 	}
@@ -301,7 +343,7 @@ func NewFFixedHistogram(startVal, endVal, width float64) FHistogram {
 		}
 	}
 
-	return &FFixedHistogram{
+	return &FixedFHistogram{
 		FHistogramStorage: FHistogramStorage{
 			weights:        weights,
 			weightsAliases: weightsAliases,
@@ -314,7 +356,7 @@ func NewFFixedHistogram(startVal, endVal, width float64) FHistogram {
 	}
 }
 
-func (h *FFixedHistogram) Add(v float64) {
+func (h *FixedFHistogram) Add(v float64) {
 	var (
 		n int
 		f float64
@@ -335,30 +377,35 @@ func (h *FFixedHistogram) Add(v float64) {
 	h.lock.Unlock()
 }
 
-func (h *FFixedHistogram) SetLabels(labels []string) FHistogram {
+func (h *FixedFHistogram) SetLabels(labels []string) FHistogram {
 	h.FHistogramStorage.SetLabels(labels)
 	return h
 }
 
-func (h *FFixedHistogram) AddLabelPrefix(labelPrefix string) FHistogram {
+func (h *FixedFHistogram) AddLabelPrefix(labelPrefix string) FHistogram {
 	h.FHistogramStorage.AddLabelPrefix(labelPrefix)
 	return h
 }
-func (h *FFixedHistogram) SetNameTotal(total string) FHistogram {
+func (h *FixedFHistogram) SetNameTotal(total string) FHistogram {
 	h.FHistogramStorage.SetNameTotal(total)
 	return h
 }
 
-// A FVHistogram is implementation of FHistogram with varibale-size buckets.
-type FVHistogram struct {
+// A FUHistogram is implementation of FHistogram with varibale-size buckets.
+type FUHistogram struct {
 	FHistogramStorage
 }
 
-func NewFVHistogram(weights []float64, names []string) *FVHistogram {
+func NewFUHistogram(weights []float64, names []string) FHistogram {
+	if UseNilMetrics {
+		return NilFHistogram{}
+	}
+	if !IsSortedSliceFloat64Le(weights) {
+		panic(ErrUnsortedWeights)
+	}
 	w := make([]float64, len(weights)+1)
 	weightsAliases := make([]string, len(w))
 	copy(w, weights)
-	sort.Slice(w[:len(weights)-1], func(i, j int) bool { return w[i] < w[j] })
 	// last := w[len(w)-2] + 1
 	lbls := make([]string, len(w))
 
@@ -383,7 +430,7 @@ func NewFVHistogram(weights []float64, names []string) *FVHistogram {
 		}
 	}
 
-	return &FVHistogram{
+	return &FUHistogram{
 		FHistogramStorage: FHistogramStorage{
 			weights:        w,
 			weightsAliases: weightsAliases,
@@ -394,7 +441,7 @@ func NewFVHistogram(weights []float64, names []string) *FVHistogram {
 	}
 }
 
-func (h *FVHistogram) Values() []uint64 {
+func (h *FUHistogram) Values() []uint64 {
 	buckets := make([]uint64, len(h.buckets))
 	h.lock.Lock()
 	copy(buckets, h.buckets)
@@ -402,7 +449,7 @@ func (h *FVHistogram) Values() []uint64 {
 	return buckets
 }
 
-func (h *FVHistogram) Snapshot() FHistogram {
+func (h *FUHistogram) Snapshot() FHistogram {
 	return &FHistogramSnapshot{
 		weights:        h.weights,
 		weightsAliases: h.weightsAliases,
@@ -412,23 +459,23 @@ func (h *FVHistogram) Snapshot() FHistogram {
 	}
 }
 
-func (h *FVHistogram) Add(v float64) {
-	n := searchFloat64Ge(h.weights, v)
+func (h *FUHistogram) Add(v float64) {
+	n := SearchFloat64Le(h.weights, v)
 	h.lock.Lock()
 	h.buckets[n]++
 	h.lock.Unlock()
 }
 
-func (h *FVHistogram) SetLabels(labels []string) FHistogram {
+func (h *FUHistogram) SetLabels(labels []string) FHistogram {
 	h.FHistogramStorage.SetLabels(labels)
 	return h
 }
 
-func (h *FVHistogram) AddLabelPrefix(labelPrefix string) FHistogram {
+func (h *FUHistogram) AddLabelPrefix(labelPrefix string) FHistogram {
 	h.FHistogramStorage.AddLabelPrefix(labelPrefix)
 	return h
 }
-func (h *FVHistogram) SetNameTotal(total string) FHistogram {
+func (h *FUHistogram) SetNameTotal(total string) FHistogram {
 	h.FHistogramStorage.SetNameTotal(total)
 	return h
 }
