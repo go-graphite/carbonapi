@@ -17,12 +17,13 @@ Changes
 
 CHANGELOG
 ---------
-**0.16.0 (WIP)**
+**0.16.0**
  - [Improvement] Deprecate and remove carbonzipper binary (thx to @msaf1980)
  - [Improvement] Remove deprecated carbonsearch support
  - [Improvement] Refactor HTTP client (used to talk to databases) to properly do keepAlive and respect specified amount of connections
  - [Improvement] HTTP client should now support mTLS checking
  - [Improvement] Listeners now support TLS (including mTLS)
+ - [Improvement] Update all vendored libraries to their latest stable version
  - [Code] fix various panics in tags and use copy tags to avoid mutating input (thx to @npazosmendez)
  - [Feature] Port `join` function from Avito carbonapi fork (https://github.com/el-yurchito/carbonapi/commit/bccdb90a90492314c18696eb4f064b818c5fff70 and https://github.com/el-yurchito/carbonapi/commit/47177771d60b7af0f5ac865634ecf3d1c3aa2802)
  - [Feature] Implement exp() function (thx to @carrieedwards)
