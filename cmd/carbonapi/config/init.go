@@ -16,6 +16,10 @@ import (
 	zipperConfig "github.com/go-graphite/carbonapi/zipper/config"
 
 	"github.com/ansel1/merry"
+	"github.com/lomik/zapwriter"
+	"github.com/spf13/viper"
+	"go.uber.org/zap"
+
 	"github.com/go-graphite/carbonapi/cache"
 	"github.com/go-graphite/carbonapi/expr/functions"
 	"github.com/go-graphite/carbonapi/expr/functions/cairo/png"
@@ -25,9 +29,6 @@ import (
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
-	"github.com/lomik/zapwriter"
-	"github.com/spf13/viper"
-	"go.uber.org/zap"
 )
 
 var graphTemplates map[string]png.PictureParams
@@ -394,13 +395,12 @@ func SetUpViper(logger *zap.Logger, configPath *string, viperPrefix string) {
 	viper.SetDefault("upstreams.concurrencyLimit", 0)
 	viper.SetDefault("upstreams.keepAliveInterval", "30s")
 	viper.SetDefault("upstreams.maxIdleConnsPerHost", 100)
-	viper.SetDefault("upstreams.carbonsearch.backend", "")
-	viper.SetDefault("upstreams.carbonsearch.prefix", "virt.v1.*")
 	viper.SetDefault("upstreams.scaleToCommonStep", true)
 	viper.SetDefault("upstreams.graphite09compat", false)
 	viper.SetDefault("expireDelaySec", 600)
 	viper.SetDefault("useCachingDNSResolver", false)
 	viper.SetDefault("logger", map[string]string{})
+	viper.SetDefault("combineMultipleTargetsInOne", false)
 	viper.AutomaticEnv()
 
 	err := viper.Unmarshal(&Config)

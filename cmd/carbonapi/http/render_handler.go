@@ -5,13 +5,19 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/ansel1/merry"
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
+	"github.com/lomik/zapwriter"
+	"github.com/msaf1980/go-stringutils"
+	uuid "github.com/satori/go.uuid"
+	"go.uber.org/zap"
+
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 	"github.com/go-graphite/carbonapi/date"
@@ -21,11 +27,6 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	utilctx "github.com/go-graphite/carbonapi/util/ctx"
 	"github.com/go-graphite/carbonapi/zipper/helper"
-	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"github.com/lomik/zapwriter"
-	stringutils "github.com/msaf1980/go-stringutils"
-	uuid "github.com/satori/go.uuid"
-	"go.uber.org/zap"
 )
 
 func cleanupParams(r *http.Request) {
@@ -205,7 +206,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if format == protoV3Format {
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			accessLogDetails.HTTPCode = http.StatusBadRequest
 			accessLogDetails.Reason = "failed to parse message body: " + err.Error()
@@ -291,23 +292,46 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		results = make([]*types.MetricData, 0)
 		values := make(map[parser.MetricRequest][]*types.MetricData)
 
-		for _, target := range targets {
-			exp, e, err := parser.ParseExpr(target)
-			if err != nil || e != "" {
-				msg := buildParseErrorString(target, e, err)
-				setError(w, accessLogDetails, msg, http.StatusBadRequest, uid.String())
-				logAsError = true
-				return
+		if config.Config.CombineMultipleTargetsInOne && len(targets) > 0 {
+			exprs := make([]parser.Expr, 0, len(targets))
+			for _, target := range targets {
+				exp, e, err := parser.ParseExpr(target)
+				if err != nil || e != "" {
+					msg := buildParseErrorString(target, e, err)
+					setError(w, accessLogDetails, msg, http.StatusBadRequest, uid.String())
+					logAsError = true
+					return
+				}
+				exprs = append(exprs, exp)
 			}
 
 			ApiMetrics.RenderRequests.Add(1)
 
-			result, err := expr.FetchAndEvalExp(ctx, exp, from32, until32, values)
-			if err != nil {
-				errors[target] = merry.Wrap(err)
+			result, errs := expr.FetchAndEvalExprs(ctx, exprs, from32, until32, values)
+			if errs != nil {
+				errors = errs
 			}
 
 			results = append(results, result...)
+		} else {
+			for _, target := range targets {
+				exp, e, err := parser.ParseExpr(target)
+				if err != nil || e != "" {
+					msg := buildParseErrorString(target, e, err)
+					setError(w, accessLogDetails, msg, http.StatusBadRequest, uid.String())
+					logAsError = true
+					return
+				}
+
+				ApiMetrics.RenderRequests.Add(1)
+
+				result, err := expr.FetchAndEvalExp(ctx, exp, from32, until32, values)
+				if err != nil {
+					errors[target] = merry.Wrap(err)
+				}
+
+				results = append(results, result...)
+			}
 		}
 
 		for mFetch := range values {

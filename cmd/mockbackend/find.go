@@ -2,18 +2,19 @@ package main
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/ansel1/merry"
-	"github.com/go-graphite/carbonapi/intervalset"
 	"github.com/go-graphite/protocol/carbonapi_v2_pb"
 	"github.com/go-graphite/protocol/carbonapi_v3_pb"
 	ogórek "github.com/lomik/og-rek"
 	"go.uber.org/zap"
+
+	"github.com/go-graphite/carbonapi/intervalset"
 )
 
 func (cfg *listener) findHandler(wr http.ResponseWriter, req *http.Request) {
@@ -48,7 +49,7 @@ func (cfg *listener) findHandler(wr http.ResponseWriter, req *http.Request) {
 	query := req.Form["query"]
 
 	if format == protoV3Format {
-		body, err := ioutil.ReadAll(req.Body)
+		body, err := io.ReadAll(req.Body)
 		if err != nil {
 			logger.Error("failed to read request body",
 				zap.Error(err),

@@ -52,13 +52,16 @@ func WithGroupName(name string) Option {
 }
 
 func WithSplitMultipleRequests(multiRequests bool) Option {
-	return func(bg *BroadcastGroup) {
-		bg.doMultipleRequestsIfSplit = multiRequests
-		if multiRequests {
+	if multiRequests {
+		return func(bg *BroadcastGroup) {
+			bg.doMultipleRequestsIfSplit = true
 			bg.fetcher = bg.doMultiFetch
-		} else {
-			bg.fetcher = bg.doSingleFetch
 		}
+	}
+
+	return func(bg *BroadcastGroup) {
+		bg.doMultipleRequestsIfSplit = false
+		bg.fetcher = bg.doSingleFetch
 	}
 }
 
@@ -294,7 +297,7 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 		)
 	}
 
-	//TODO(Civil): migrate limiter to merry
+	// TODO(Civil): migrate limiter to merry
 	requests, splitErr := bg.splitRequest(ctx, request, backend)
 	if len(requests) == 0 && splitErr != nil {
 		response := types.NewServerFetchResponse()

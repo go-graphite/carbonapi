@@ -11,10 +11,11 @@ import (
 	"os"
 	"sync"
 
-	"github.com/go-graphite/carbonapi/pkg/tlsconfig"
 	"github.com/gorilla/handlers"
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
+
+	"github.com/go-graphite/carbonapi/pkg/tlsconfig"
 
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/helper"
