@@ -1,14 +1,10 @@
 name: Upload Docker images to ghcr.io
 on:
-  workflow_run:
-    workflows: ["Tests"]
-    tags: [ 'v*' ]
-    types:
-      - completed
+  release:
+    types: [created]
 jobs:
   docker:
     name: Build image
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -28,7 +24,6 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}.{{minor}}.{{patch}}
       - name: Login to ghcr.io
-        if: github.event_name != 'pull_request'
         uses: docker/login-action@v2
         with:
           registry: ghcr.io

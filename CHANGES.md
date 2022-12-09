@@ -17,6 +17,11 @@ Changes
 
 CHANGELOG
 ---------
+**0.16.0.1**
+ - [Build] Fix automation that builds docker images
+ - [Build] Add rockylinux-9 packages (RHEL 9)
+ - [Build] Update build version of golang to 1.19.4
+
 **0.16.0**
  - [Improvement] Deprecate and remove carbonzipper binary (thx to @msaf1980)
  - [Improvement] Remove deprecated carbonsearch support
