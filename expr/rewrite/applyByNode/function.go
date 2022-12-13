@@ -2,9 +2,9 @@ package applyByNode
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
+	"github.com/ansel1/merry"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -34,7 +34,7 @@ func (f *applyByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		return false, nil, err
 	}
 
-	field, err := e.GetIntArg(1)
+	nodeNum, err := e.GetIntArg(1)
 	if err != nil {
 		return false, nil, err
 	}
@@ -52,15 +52,22 @@ func (f *applyByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		}
 	}
 
-	var rv []string
+	rv := make([]string, 0, len(args))
 	for _, a := range args {
+		var node string
 		metric := a.Tags["name"]
 		nodes := strings.Split(metric, ".")
-		node := strings.Join(nodes[0:field+1], ".")
+		if nodeNum >= len(nodes) {
+			// field overflow
+			err := merry.WithMessagef(parser.ErrInvalidArg, "name=%s: nodeNum must be less than %d", metric, len(nodes))
+			return false, nil, err
+		} else {
+			node = strings.Join(nodes[0:nodeNum+1], ".")
+		}
 		newTarget := strings.ReplaceAll(callback, "%", node)
 
 		if newName != "" {
-			newTarget = fmt.Sprintf("alias(%s,\"%s\")", newTarget, strings.ReplaceAll(newName, "%", node))
+			newTarget = "alias(" + newTarget + ",\"" + strings.ReplaceAll(newName, "%", node) + "\")"
 		}
 		rv = append(rv, newTarget)
 	}

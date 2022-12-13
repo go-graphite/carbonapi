@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/go-graphite/carbonapi/limiter"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 	util "github.com/go-graphite/carbonapi/util/ctx"
 	"github.com/go-graphite/carbonapi/zipper/types"
 )
@@ -109,7 +110,11 @@ func MergeHttpErrors(errors []merry.Error) (int, []string) {
 		code := merry.HTTPCode(err)
 		if code == http.StatusNotFound {
 			continue
+		} else if code == http.StatusInternalServerError && merry.Is(c, parser.ErrInvalidArg) {
+			// check for invalid args, see applyByNode rewrite function
+			code = http.StatusBadRequest
 		}
+
 		if msg := merry.Message(c); len(msg) > 0 {
 			errMsgs = append(errMsgs, strings.TrimRight(msg, "\n"))
 		} else {
