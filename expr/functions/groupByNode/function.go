@@ -89,6 +89,8 @@ func (f *groupByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		nexpr, _, err := parser.ParseExpr(expr)
 		if err != nil {
 			return nil, err
+		} else if nexpr.Type() != parser.EtFunc {
+			return nil, parser.ErrAggFunc
 		}
 		// remove all stub_ prefixes we've prepended before
 		nexpr.SetRawArgs(strings.Replace(nexpr.RawArgs(), "stub_", "", 1))
