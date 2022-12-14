@@ -223,6 +223,35 @@ func TestGroupByNode(t *testing.T) {
 
 }
 
+func TestGroupByNodeError(t *testing.T) {
+	now32 := int64(time.Now().Unix())
+
+	mr := parser.MetricRequest{Metric: "metric1.foo.*.*", From: 0, Until: 1}
+
+	tests := []th.EvalTestItemWithError{
+		{
+			Target: "groupByNode(metric1.foo.*.*,3,\"4\")",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				mr: {
+					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
+					types.MakeMetricData("metric1.foo.bar2.qux", []float64{7, 8, 9, 10, 11}, 1, now32),
+				},
+			},
+			Error: parser.ErrInvalidArg,
+		},
+	}
+
+	for _, tt := range tests {
+		testName := tt.Target
+		t.Run(testName, func(t *testing.T) {
+			th.TestEvalExprWithError(t, &tt)
+		})
+	}
+
+}
+
 func BenchmarkGroupByNode(b *testing.B) {
 	target := "groupByNodes(metric1.foo.bar.*,\"sum\",0,2)"
 	metrics := map[parser.MetricRequest][]*types.MetricData{

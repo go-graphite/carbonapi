@@ -15,6 +15,13 @@ test:
                   httpCode: 400
                   contentType: "text/plain; charset=utf-8"
                   emptyBody: true
+            - endpoint: "http://127.0.0.1:8081"
+              type: "GET"
+              URL: "/render?format=json&target=applyByNode(metric[123], 2, 'transform')"
+              expectedResponse:
+                  httpCode: 400
+                  contentType: "text/plain; charset=utf-8"
+                  emptyBody: true                  
 listeners:
         - address: ":9070"
           expressions:
