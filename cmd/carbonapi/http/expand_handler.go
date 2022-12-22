@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"html"
 	"net/http"
 	"sort"
 	"time"
@@ -68,7 +69,7 @@ func expandHandler(w http.ResponseWriter, r *http.Request) {
 	query := r.Form["query"]
 
 	if !ok || !format.ValidExpandFormat() {
-		http.Error(w, "unsupported format: "+formatRaw, http.StatusBadRequest)
+		http.Error(w, "unsupported format: "+html.EscapeString(formatRaw), http.StatusBadRequest)
 		accessLogDetails.HTTPCode = http.StatusBadRequest
 		accessLogDetails.Reason = "unsupported format: " + formatRaw
 		logAsError = true
