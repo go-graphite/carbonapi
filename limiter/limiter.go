@@ -2,7 +2,6 @@ package limiter
 
 import (
 	"context"
-	"errors"
 )
 
 // ServerLimiter provides interface to limit amount of requests
@@ -44,7 +43,7 @@ func (sl RealLimiter) Enter(ctx context.Context, s string) error {
 	case sl.m[s] <- struct{}{}:
 		return nil
 	case <-ctx.Done():
-		return errors.New("timeout exceeded")
+		return ErrTimeout
 	}
 }
 
