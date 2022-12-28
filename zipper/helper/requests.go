@@ -4,19 +4,83 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"sync/atomic"
+	"unicode/utf8"
 
 	"github.com/ansel1/merry"
+	"go.uber.org/zap"
+
 	"github.com/go-graphite/carbonapi/limiter"
+	"github.com/go-graphite/carbonapi/pkg/parser"
 	util "github.com/go-graphite/carbonapi/util/ctx"
 	"github.com/go-graphite/carbonapi/zipper/types"
-	"go.uber.org/zap"
 )
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+const (
+	htmlTagStart = 60 // Unicode `<`
+	htmlTagEnd   = 62 // Unicode `>`
+)
+
+// Aggressively strips HTML tags from a string.
+// It will only keep anything between `>` and `<`.
+func stripHtmlTags(s string, maxLen int) string {
+	var n int
+	if !strings.Contains(s, "<html>") {
+		if maxLen == 0 || maxLen > len(s) {
+			return s
+		}
+		return s[:maxLen]
+	}
+	// Setup a string builder and allocate enough memory for the new string.
+	var builder strings.Builder
+	if maxLen == 0 {
+		n = len(s) + utf8.UTFMax
+	} else {
+		n = min(len(s), maxLen)
+	}
+
+	builder.Grow(n)
+
+	in := false // True if we are inside an HTML tag.
+	start := 0  // The index of the previous start tag character `<`
+	end := 0    // The index of the previous end tag character `>`
+
+	for i, c := range s {
+		// If this is the last character and we are not in an HTML tag, save it.
+		if (i+1) == len(s) && end >= start {
+			builder.WriteString(s[end:])
+		}
+
+		if c == htmlTagStart {
+			// Only update the start if we are not in a tag.
+			// This make sure we strip out `<<br>` not just `<br>`
+			if !in {
+				start = i
+			}
+			in = true
+
+			// Write the valid string between the close and start of the two tags.
+			builder.WriteString(s[end:start])
+			end = i + 1
+		} else if c == htmlTagEnd {
+			in = false
+			end = i + 1
+		}
+	}
+	s = strings.Trim(builder.String(), "\r\n")
+	return s
+}
 
 func requestError(err error, server string) merry.Error {
 	// with code InternalServerError by default, overwritten by custom error
@@ -46,7 +110,11 @@ func MergeHttpErrors(errors []merry.Error) (int, []string) {
 		code := merry.HTTPCode(err)
 		if code == http.StatusNotFound {
 			continue
+		} else if code == http.StatusInternalServerError && merry.Is(c, parser.ErrInvalidArg) {
+			// check for invalid args, see applyByNode rewrite function
+			code = http.StatusBadRequest
 		}
+
 		if msg := merry.Message(c); len(msg) > 0 {
 			errMsgs = append(errMsgs, strings.TrimRight(msg, "\n"))
 		} else {
@@ -89,7 +157,7 @@ func HttpErrorByCode(err merry.Error) merry.Error {
 		returnErr = types.ErrNoMetricsFetched
 	} else {
 		code := merry.HTTPCode(err)
-		msg := merry.Message(err)
+		msg := stripHtmlTags(merry.Message(err), 0)
 		if code == http.StatusForbidden {
 			returnErr = types.ErrForbidden
 			if len(msg) > 0 {
@@ -97,9 +165,9 @@ func HttpErrorByCode(err merry.Error) merry.Error {
 				returnErr = returnErr.WithMessage(msg)
 			}
 		} else if code == http.StatusServiceUnavailable || code == http.StatusBadGateway || code == http.StatusGatewayTimeout {
-			returnErr = types.ErrFailedToFetch.WithHTTPCode(code)
+			returnErr = types.ErrFailedToFetch.WithHTTPCode(code).WithMessage(msg)
 		} else {
-			returnErr = types.ErrFailed.WithHTTPCode(code)
+			returnErr = types.ErrFailed.WithHTTPCode(code).WithMessage(msg)
 		}
 	}
 
@@ -223,7 +291,7 @@ func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, server, u
 		return &ServerResponse{Server: server}, nil
 	}
 
-	body, err = ioutil.ReadAll(resp.Body)
+	body, err = io.ReadAll(resp.Body)
 	if err != nil {
 		logger.Debug("error reading body",
 			zap.Error(err),

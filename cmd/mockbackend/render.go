@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"log"
 	"math"
 	"math/rand"
@@ -50,7 +50,7 @@ func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
 	maxDataPoints := int64(0)
 
 	if format == protoV3Format {
-		body, err := ioutil.ReadAll(req.Body)
+		body, err := io.ReadAll(req.Body)
 		if err != nil {
 			logger.Error("bad request, failed to read request body",
 				zap.Error(err),

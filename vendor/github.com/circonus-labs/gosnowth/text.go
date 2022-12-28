@@ -17,12 +17,13 @@ type TextValueResponse []TextValue
 func (tvr *TextValueResponse) UnmarshalJSON(b []byte) error {
 	*tvr = TextValueResponse{}
 	values := [][]interface{}{}
+
 	if err := json.Unmarshal(b, &values); err != nil {
 		return fmt.Errorf("failed to decode JSON response: %w", err)
 	}
 
 	for _, entry := range values {
-		var tv = TextValue{}
+		tv := TextValue{}
 		if v, ok := entry[0].(float64); ok {
 			tv.Time = time.Unix(int64(v), 0)
 		}
@@ -46,7 +47,8 @@ type TextValue struct {
 
 // ReadTextValues reads text data values from an IRONdb node.
 func (sc *SnowthClient) ReadTextValues(uuid, metric string,
-	start, end time.Time, nodes ...*SnowthNode) ([]TextValue, error) {
+	start, end time.Time, nodes ...*SnowthNode,
+) ([]TextValue, error) {
 	return sc.ReadTextValuesContext(context.Background(), uuid, metric,
 		start, end, nodes...)
 }
@@ -54,7 +56,8 @@ func (sc *SnowthClient) ReadTextValues(uuid, metric string,
 // ReadTextValuesContext is the context aware version of ReadTextValues.
 func (sc *SnowthClient) ReadTextValuesContext(ctx context.Context,
 	uuid, metric string, start, end time.Time,
-	nodes ...*SnowthNode) ([]TextValue, error) {
+	nodes ...*SnowthNode,
+) ([]TextValue, error) {
 	var node *SnowthNode
 	if len(nodes) > 0 && nodes[0] != nil {
 		node = nodes[0]
@@ -63,6 +66,7 @@ func (sc *SnowthClient) ReadTextValuesContext(ctx context.Context,
 	}
 
 	r := TextValueResponse{}
+
 	body, _, err := sc.DoRequestContext(ctx, node, "GET", path.Join("/read",
 		strconv.FormatInt(start.Unix(), 10),
 		strconv.FormatInt(end.Unix(), 10), uuid, metric), nil, nil)
@@ -92,7 +96,8 @@ func (sc *SnowthClient) WriteText(data []TextData, nodes ...*SnowthNode) error {
 
 // WriteTextContext is the context aware version of WriteText.
 func (sc *SnowthClient) WriteTextContext(ctx context.Context,
-	data []TextData, nodes ...*SnowthNode) error {
+	data []TextData, nodes ...*SnowthNode,
+) error {
 	var node *SnowthNode
 	if len(nodes) > 0 && nodes[0] != nil {
 		node = nodes[0]
@@ -107,5 +112,6 @@ func (sc *SnowthClient) WriteTextContext(ctx context.Context,
 	}
 
 	_, _, err := sc.DoRequestContext(ctx, node, "POST", "/write/text", buf, nil)
+
 	return err
 }

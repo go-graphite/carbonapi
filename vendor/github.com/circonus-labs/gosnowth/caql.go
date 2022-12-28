@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"strings"
 )
 
@@ -83,13 +83,15 @@ func (ce *CAQLError) Error() string {
 
 // GetCAQLQuery retrieves data values for metrics matching a CAQL format.
 func (sc *SnowthClient) GetCAQLQuery(q *CAQLQuery,
-	nodes ...*SnowthNode) (*DF4Response, error) {
+	nodes ...*SnowthNode,
+) (*DF4Response, error) {
 	return sc.GetCAQLQueryContext(context.Background(), q, nodes...)
 }
 
 // GetCAQLQueryContext is the context aware version of GetCAQLQuery.
 func (sc *SnowthClient) GetCAQLQueryContext(ctx context.Context, q *CAQLQuery,
-	nodes ...*SnowthNode) (*DF4Response, error) {
+	nodes ...*SnowthNode,
+) (*DF4Response, error) {
 	var node *SnowthNode
 	if len(nodes) > 0 && nodes[0] != nil {
 		node = nodes[0]
@@ -101,14 +103,15 @@ func (sc *SnowthClient) GetCAQLQueryContext(ctx context.Context, q *CAQLQuery,
 		q = &CAQLQuery{}
 	}
 
-	u := sc.getURL(node, "/extension/lua/public/caql_v1")
+	u := "/extension/lua/public/caql_v1"
 	q.Format = "DF4"
+
 	qBuf, err := encodeJSON(q)
 	if err != nil {
 		return nil, err
 	}
 
-	bBuf, err := ioutil.ReadAll(qBuf)
+	bBuf, err := io.ReadAll(qBuf)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read request body buffer: %w", err)
 	}
@@ -119,6 +122,7 @@ func (sc *SnowthClient) GetCAQLQueryContext(ctx context.Context, q *CAQLQuery,
 	}
 
 	r := &DF4Response{}
+
 	body, _, err := sc.DoRequestContext(ctx, node, "POST", u,
 		bytes.NewBuffer(bBuf), nil)
 	if err != nil {
@@ -132,7 +136,7 @@ func (sc *SnowthClient) GetCAQLQueryContext(ctx context.Context, q *CAQLQuery,
 		return nil, err
 	}
 
-	rb, err := ioutil.ReadAll(body)
+	rb, err := io.ReadAll(body)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read IRONdb response body: %w", err)
 	}
@@ -142,6 +146,8 @@ func (sc *SnowthClient) GetCAQLQueryContext(ctx context.Context, q *CAQLQuery,
 	if err := decodeJSON(bytes.NewBuffer(rb), &r); err != nil {
 		return nil, fmt.Errorf("unable to decode IRONdb response: %w", err)
 	}
+
+	r.Query = q.Query
 
 	return r, err
 }

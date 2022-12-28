@@ -11,6 +11,9 @@ func TestParseExpr(t *testing.T) {
 		s string
 		e *expr
 	}{
+		{"metric=",
+			&expr{target: "metric="},
+		},
 		{"metric",
 			&expr{target: "metric"},
 		},

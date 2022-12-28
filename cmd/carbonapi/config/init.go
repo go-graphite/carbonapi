@@ -16,6 +16,10 @@ import (
 	zipperConfig "github.com/go-graphite/carbonapi/zipper/config"
 
 	"github.com/ansel1/merry"
+	"github.com/lomik/zapwriter"
+	"github.com/spf13/viper"
+	"go.uber.org/zap"
+
 	"github.com/go-graphite/carbonapi/cache"
 	"github.com/go-graphite/carbonapi/expr/functions"
 	"github.com/go-graphite/carbonapi/expr/functions/cairo/png"
@@ -25,9 +29,6 @@ import (
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
-	"github.com/lomik/zapwriter"
-	"github.com/spf13/viper"
-	"go.uber.org/zap"
 )
 
 var graphTemplates map[string]png.PictureParams
@@ -269,7 +270,7 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 	}
 
 	if len(Config.Listeners) == 0 {
-		Config.Listeners = append(Config.Listeners, Listener{Address: "localhost:8081"})
+		Config.Listeners = append(Config.Listeners, Listener{Address: "127.0.0.1:8081"})
 	}
 
 	for _, define := range Config.Define {
@@ -287,12 +288,23 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 }
 
 func createCache(logger *zap.Logger, cacheName string, cacheConfig *CacheConfig) cache.BytesCache {
-	if cacheConfig.DefaultTimeoutSec <= 0 {
+	if cacheConfig.DefaultTimeoutSec <= 0 && cacheConfig.ShortTimeoutSec <= 0 {
 		return cache.NullCache{}
 	}
-	if cacheConfig.DefaultTimeoutSec < cacheConfig.ShortTimeoutSec || cacheConfig.ShortTimeoutSec <= 0 {
-		cacheConfig.ShortTimeoutSec = cacheConfig.DefaultTimeoutSec
+	if cacheConfig.ShortTimeoutSec < 0 || cacheConfig.DefaultTimeoutSec == cacheConfig.ShortTimeoutSec {
+		// broken value or short timeout not need due to equal
+		cacheConfig.ShortTimeoutSec = 0
 	}
+	if cacheConfig.DefaultTimeoutSec < cacheConfig.ShortTimeoutSec {
+		cacheConfig.DefaultTimeoutSec = cacheConfig.ShortTimeoutSec
+	}
+	if cacheConfig.ShortDuration == 0 {
+		cacheConfig.ShortDuration = 3 * time.Hour
+	}
+	if cacheConfig.ShortUntilOffsetSec == 0 {
+		cacheConfig.ShortUntilOffsetSec = 120
+	}
+
 	switch cacheConfig.Type {
 	case "memcache":
 		if len(cacheConfig.MemcachedServers) == 0 {
@@ -383,13 +395,12 @@ func SetUpViper(logger *zap.Logger, configPath *string, viperPrefix string) {
 	viper.SetDefault("upstreams.concurrencyLimit", 0)
 	viper.SetDefault("upstreams.keepAliveInterval", "30s")
 	viper.SetDefault("upstreams.maxIdleConnsPerHost", 100)
-	viper.SetDefault("upstreams.carbonsearch.backend", "")
-	viper.SetDefault("upstreams.carbonsearch.prefix", "virt.v1.*")
 	viper.SetDefault("upstreams.scaleToCommonStep", true)
 	viper.SetDefault("upstreams.graphite09compat", false)
 	viper.SetDefault("expireDelaySec", 600)
 	viper.SetDefault("useCachingDNSResolver", false)
 	viper.SetDefault("logger", map[string]string{})
+	viper.SetDefault("combineMultipleTargetsInOne", false)
 	viper.AutomaticEnv()
 
 	err := viper.Unmarshal(&Config)

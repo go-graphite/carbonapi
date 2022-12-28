@@ -33,7 +33,7 @@ func (f *stdev) Do(ctx context.Context, e parser.Expr, from, until int64, values
 		return nil, parser.ErrMissingArgument
 	}
 
-	arg, err := helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +63,11 @@ func (f *stdev) Do(ctx context.Context, e parser.Expr, from, until int64, values
 
 		for i, v := range a.Values {
 			w.Push(v)
-			r.Values[i] = w.Stdev()
+			if !math.IsNaN(v) {
+				r.Values[i] = w.Stdev()
+			} else {
+				r.Values[i] = math.NaN()
+			}
 			if math.IsNaN(r.Values[i]) || (i >= minLen && w.Len() < minLen) {
 				r.Values[i] = math.NaN()
 			}

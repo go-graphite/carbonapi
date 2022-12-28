@@ -33,17 +33,20 @@ type LuaExtension struct {
 type LuaExtensions map[string]*LuaExtension
 
 // UnmarshalJSON decodes a byte slice of JSON data into a LuaExtensions map.
-func (le *LuaExtensions) UnmarshalJSON(b []byte) error { // nolint gocyclo
+func (le *LuaExtensions) UnmarshalJSON(b []byte) error { //nolint:gocyclo
 	r := map[string]interface{}{}
+
 	err := json.NewDecoder(bytes.NewBuffer(b)).Decode(&r)
 	if err != nil {
 		return err
 	}
 
 	*le = make(map[string]*LuaExtension, len(r))
+
 	for k, ext := range r {
 		(*le)[k] = &LuaExtension{Name: k}
-		if v, ok := ext.(map[string]interface{}); ok {
+
+		if v, ok := ext.(map[string]interface{}); ok { //nolint:nestif
 			for key, val := range v {
 				switch key {
 				case "documentation":
@@ -62,9 +65,11 @@ func (le *LuaExtensions) UnmarshalJSON(b []byte) error { // nolint gocyclo
 					if value, ok := val.(map[string]interface{}); ok {
 						(*le)[k].Params = make(map[string]*ExtensionParam,
 							len(value))
+
 						for pk, pv := range value {
 							if pMap, ok := pv.(map[string]interface{}); ok {
 								(*le)[k].Params[pk] = &ExtensionParam{Name: pk}
+
 								for pKey, pVal := range pMap {
 									switch pKey {
 									case "type":
@@ -83,8 +88,8 @@ func (le *LuaExtensions) UnmarshalJSON(b []byte) error { // nolint gocyclo
 										}
 									case "alias_list":
 										if pV, ok := pVal.([]interface{}); ok {
-											(*le)[k].Params[pk].AliasList =
-												make([]string, len(pV))
+											(*le)[k].Params[pk].AliasList = make([]string, len(pV))
+
 											for n, iV := range pV {
 												if itV, ok := iV.(string); ok {
 													(*le)[k].Params[pk].
@@ -123,13 +128,15 @@ func (le *LuaExtensions) UnmarshalJSON(b []byte) error { // nolint gocyclo
 
 // GetLuaExtensions retrieves information about available Lua extensions.
 func (sc *SnowthClient) GetLuaExtensions(nodes ...*SnowthNode) (LuaExtensions,
-	error) {
+	error,
+) {
 	return sc.GetLuaExtensionsContext(context.Background(), nodes...)
 }
 
 // GetLuaExtensionsContext is the context aware version of GetLuaExtensions.
 func (sc *SnowthClient) GetLuaExtensionsContext(ctx context.Context,
-	nodes ...*SnowthNode) (LuaExtensions, error) {
+	nodes ...*SnowthNode,
+) (LuaExtensions, error) {
 	var node *SnowthNode
 	if len(nodes) > 0 && nodes[0] != nil {
 		node = nodes[0]
@@ -137,8 +144,9 @@ func (sc *SnowthClient) GetLuaExtensionsContext(ctx context.Context,
 		node = sc.GetActiveNode()
 	}
 
-	u := sc.getURL(node, "/extension/lua")
+	u := "/extension/lua"
 	r := LuaExtensions{}
+
 	body, _, err := sc.DoRequestContext(ctx, node, "GET", u, nil, nil)
 	if err != nil {
 		return nil, err
@@ -160,7 +168,8 @@ type ExtParam struct {
 // ExecLuaExtension executes the specified Lua extension and returns the
 // response as a JSON map.
 func (sc *SnowthClient) ExecLuaExtension(name string,
-	params []ExtParam, nodes ...*SnowthNode) (map[string]interface{}, error) {
+	params []ExtParam, nodes ...*SnowthNode,
+) (map[string]interface{}, error) {
 	return sc.ExecLuaExtensionContext(context.Background(), name,
 		params, nodes...)
 }
@@ -168,7 +177,8 @@ func (sc *SnowthClient) ExecLuaExtension(name string,
 // ExecLuaExtensionContext is the context aware version of ExecLuaExtension.
 func (sc *SnowthClient) ExecLuaExtensionContext(ctx context.Context,
 	name string, params []ExtParam,
-	nodes ...*SnowthNode) (map[string]interface{}, error) {
+	nodes ...*SnowthNode,
+) (map[string]interface{}, error) {
 	var node *SnowthNode
 	if len(nodes) > 0 && nodes[0] != nil {
 		node = nodes[0]
@@ -176,7 +186,8 @@ func (sc *SnowthClient) ExecLuaExtensionContext(ctx context.Context,
 		node = sc.GetActiveNode()
 	}
 
-	u := sc.getURL(node, "/extension/lua/"+name)
+	u := "/extension/lua/" + name
+
 	if len(params) > 0 {
 		qp := url.Values{}
 		for _, p := range params {
@@ -187,6 +198,7 @@ func (sc *SnowthClient) ExecLuaExtensionContext(ctx context.Context,
 	}
 
 	r := map[string]interface{}{}
+
 	body, _, err := sc.DoRequestContext(ctx, node, "GET", u, nil, nil)
 	if err != nil {
 		return nil, err

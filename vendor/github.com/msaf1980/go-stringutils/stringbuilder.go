@@ -58,6 +58,13 @@ func (sb *Builder) Reset() {
 	}
 }
 
+// Truncate descrease the Builder length (dangerouse for partually truncated UTF strings).
+func (sb *Builder) Truncate(length int) {
+	if sb.length > length {
+		sb.length = length
+	}
+}
+
 // Release resets the Builder to be empty and free buffer
 func (sb *Builder) Release() {
 	if cap(sb.data) > 0 {

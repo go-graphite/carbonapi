@@ -1,7 +1,7 @@
 package expr
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -24,7 +24,7 @@ func TestCorpus(t *testing.T) {
 
 		t.Log(corpusFile)
 
-		contents, err := ioutil.ReadFile(corpusFile)
+		contents, err := os.ReadFile(corpusFile)
 
 		if err != nil {
 			t.Errorf("error opening workdir/crashers/%s: %v", corpusFile, err)

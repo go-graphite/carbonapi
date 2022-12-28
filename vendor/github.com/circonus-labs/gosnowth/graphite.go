@@ -44,7 +44,8 @@ type GraphiteDatapoints struct {
 // graphite metric search query.
 func (sc *SnowthClient) GraphiteFindMetrics(accountID int64,
 	prefix, query string, options *GraphiteOptions,
-	nodes ...*SnowthNode) ([]GraphiteMetric, error) {
+	nodes ...*SnowthNode,
+) ([]GraphiteMetric, error) {
 	return sc.GraphiteFindMetricsContext(context.Background(), accountID,
 		prefix, query, options, nodes...)
 }
@@ -53,7 +54,8 @@ func (sc *SnowthClient) GraphiteFindMetrics(accountID int64,
 // GraphiteFindMetrics.
 func (sc *SnowthClient) GraphiteFindMetricsContext(ctx context.Context,
 	accountID int64, prefix, query string, options *GraphiteOptions,
-	nodes ...*SnowthNode) ([]GraphiteMetric, error) {
+	nodes ...*SnowthNode,
+) ([]GraphiteMetric, error) {
 	var node *SnowthNode
 	if len(nodes) > 0 && nodes[0] != nil {
 		node = nodes[0]
@@ -62,8 +64,8 @@ func (sc *SnowthClient) GraphiteFindMetricsContext(ctx context.Context,
 	}
 
 	u := fmt.Sprintf("%s?query=%s",
-		sc.getURL(node, fmt.Sprintf("/graphite/%d/%s/metrics/find",
-			accountID, url.QueryEscape(prefix))), url.QueryEscape(query))
+		fmt.Sprintf("/graphite/%d/%s/metrics/find",
+			accountID, url.QueryEscape(prefix)), url.QueryEscape(query))
 
 	hdrs := http.Header{}
 	if options != nil && options.Limit != 0 {
@@ -88,7 +90,8 @@ func (sc *SnowthClient) GraphiteFindMetricsContext(ctx context.Context,
 // graphite tag search query.
 func (sc *SnowthClient) GraphiteFindTags(accountID int64,
 	prefix, query string, options *GraphiteOptions,
-	nodes ...*SnowthNode) ([]GraphiteMetric, error) {
+	nodes ...*SnowthNode,
+) ([]GraphiteMetric, error) {
 	return sc.GraphiteFindTagsContext(context.Background(), accountID,
 		prefix, query, options, nodes...)
 }
@@ -97,7 +100,8 @@ func (sc *SnowthClient) GraphiteFindTags(accountID int64,
 // GraphiteFindTags.
 func (sc *SnowthClient) GraphiteFindTagsContext(ctx context.Context,
 	accountID int64, prefix, query string, options *GraphiteOptions,
-	nodes ...*SnowthNode) ([]GraphiteMetric, error) {
+	nodes ...*SnowthNode,
+) ([]GraphiteMetric, error) {
 	var node *SnowthNode
 	if len(nodes) > 0 && nodes[0] != nil {
 		node = nodes[0]
@@ -106,8 +110,8 @@ func (sc *SnowthClient) GraphiteFindTagsContext(ctx context.Context,
 	}
 
 	u := fmt.Sprintf("%s?query=%s",
-		sc.getURL(node, fmt.Sprintf("/graphite/%d/%s/tags/find",
-			accountID, url.QueryEscape(prefix))), url.QueryEscape(query))
+		fmt.Sprintf("/graphite/%d/%s/tags/find",
+			accountID, url.QueryEscape(prefix)), url.QueryEscape(query))
 
 	hdrs := http.Header{}
 	if options != nil && options.Limit != 0 {
@@ -132,7 +136,8 @@ func (sc *SnowthClient) GraphiteFindTagsContext(ctx context.Context,
 // metrics for a specified time range.
 func (sc *SnowthClient) GraphiteGetDatapoints(accountID int64,
 	prefix string, lookup *GraphiteLookup, options *GraphiteOptions,
-	nodes ...*SnowthNode) (*GraphiteDatapoints, error) {
+	nodes ...*SnowthNode,
+) (*GraphiteDatapoints, error) {
 	return sc.GraphiteGetDatapointsContext(context.Background(), accountID,
 		prefix, lookup, options, nodes...)
 }
@@ -142,7 +147,8 @@ func (sc *SnowthClient) GraphiteGetDatapoints(accountID int64,
 func (sc *SnowthClient) GraphiteGetDatapointsContext(ctx context.Context,
 	accountID int64, prefix string, lookup *GraphiteLookup,
 	options *GraphiteOptions,
-	nodes ...*SnowthNode) (*GraphiteDatapoints, error) {
+	nodes ...*SnowthNode,
+) (*GraphiteDatapoints, error) {
 	var node *SnowthNode
 	if len(nodes) > 0 && nodes[0] != nil {
 		node = nodes[0]
@@ -150,8 +156,8 @@ func (sc *SnowthClient) GraphiteGetDatapointsContext(ctx context.Context,
 		node = sc.GetActiveNode()
 	}
 
-	u := sc.getURL(node, fmt.Sprintf("/graphite/%d/%s/series_multi",
-		accountID, url.QueryEscape(prefix)))
+	u := fmt.Sprintf("/graphite/%d/%s/series_multi",
+		accountID, url.QueryEscape(prefix))
 
 	buf := &bytes.Buffer{}
 	if err := json.NewEncoder(buf).Encode(&lookup); err != nil {

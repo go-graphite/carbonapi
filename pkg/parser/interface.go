@@ -46,6 +46,8 @@ var (
 	ErrMissingTimeseries = errors.New("missing time series argument")
 	// ErrUnknownTimeUnits is an eval error returned when a time unit is unknown to system
 	ErrUnknownTimeUnits = errors.New("unknown time units")
+	// ErrInvalidArg is eval error for invalid or mismatch function arg
+	ErrInvalidArg = errors.New("invalid function arg")
 )
 
 // NodeOrTag structure contains either Node (=integer) or Tag (=string)

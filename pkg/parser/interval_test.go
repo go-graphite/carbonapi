@@ -38,6 +38,9 @@ func TestInterval(t *testing.T) {
 		err     string
 		sign    int
 	}{
+		{"", 0, "unknown time units", 1},
+		{"-", 0, "unknown time units", 1},
+		{"+", 0, "unknown time units", 1},
 		{"10x10s", 0, "unknown time units", 1},
 		{"10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000y", 0, "value out of range", 1},
 	}

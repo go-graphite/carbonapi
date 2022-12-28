@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"net/http"
 	"net/url"
@@ -220,7 +219,7 @@ func doTest(logger *zap.Logger, t *Query) []error {
 		)
 	}
 
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		err = merry2.Prepend(err, "failed to read body")
 		failures = append(failures, err)

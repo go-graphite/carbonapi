@@ -15,6 +15,8 @@ import (
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
 
+	"github.com/go-graphite/carbonapi/pkg/tlsconfig"
+
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/helper"
 	carbonapiHttp "github.com/go-graphite/carbonapi/cmd/carbonapi/http"
@@ -96,12 +98,36 @@ func main() {
 				zap.Error(err),
 			)
 		}
+		httpLogger, err := zap.NewStdLogAt(zapwriter.Logger("http"), zap.WarnLevel)
+		if err != nil {
+			logger.Fatal("failed to set up http server logger",
+				zap.Error(err),
+			)
+		}
 		for _, ip := range ips {
 			address := (&net.TCPAddr{IP: ip, Port: port}).String()
 			s := &http.Server{
-				Addr:    address,
-				Handler: handler,
+				Addr:     address,
+				Handler:  handler,
+				ErrorLog: httpLogger,
 			}
+			isTLS := false
+			if len(listen.ServerTLSConfig.CACertFiles) > 0 {
+				tlsConfig, warns, err := tlsconfig.ParseServerTLSConfig(&listen.ServerTLSConfig, &listen.ClientTLSConfig)
+				if err != nil {
+					logger.Fatal("failed to initialize TLS",
+						zap.Error(err),
+					)
+				}
+				if len(warns) != 0 {
+					logger.Warn("insecure ciphers are in-use",
+						zap.Strings("insecure_ciphers", warns),
+					)
+				}
+				s.TLSConfig = tlsConfig
+				isTLS = true
+			}
+
 			listener, err := l.Listen(context.Background(), "tcp", address)
 			if err != nil {
 				logger.Fatal("failed to start http server",
@@ -109,17 +135,21 @@ func main() {
 				)
 			}
 			wg.Add(1)
-			go func() {
-				err = s.Serve(listener)
+			go func(listener net.Listener, isTLS bool) {
+				if isTLS {
+					err = s.ServeTLS(listener, "", "")
+				} else {
+					err = s.Serve(listener)
+				}
 
-				if err != nil {
-					logger.Fatal("failed to start http server",
+				if err != nil && err != http.ErrServerClosed {
+					logger.Error("failed to start http server",
 						zap.Error(err),
 					)
 				}
 
 				wg.Done()
-			}()
+			}(listener, isTLS)
 		}
 	}
 

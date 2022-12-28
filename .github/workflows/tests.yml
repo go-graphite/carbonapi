@@ -19,12 +19,12 @@ jobs:
     steps:
 
     - name: Set up Go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3
       with:
         go-version: ${{ matrix.go }}
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 200
 
@@ -39,6 +39,10 @@ jobs:
     - name: Run e2e tests
       run: |
         ./e2e_test.sh
+    - name: Run config integration tests
+      run: |
+        ./config_tests.sh
+
     - name: Check packaging
       if: matrix.go == '^1'
       env:

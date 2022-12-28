@@ -5,13 +5,19 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/ansel1/merry"
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
+	"github.com/lomik/zapwriter"
+	"github.com/msaf1980/go-stringutils"
+	uuid "github.com/satori/go.uuid"
+	"go.uber.org/zap"
+
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 	"github.com/go-graphite/carbonapi/date"
@@ -21,11 +27,6 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	utilctx "github.com/go-graphite/carbonapi/util/ctx"
 	"github.com/go-graphite/carbonapi/zipper/helper"
-	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"github.com/lomik/zapwriter"
-	stringutils "github.com/msaf1980/go-stringutils"
-	uuid "github.com/satori/go.uuid"
-	"go.uber.org/zap"
 )
 
 func cleanupParams(r *http.Request) {
@@ -48,7 +49,7 @@ func setError(w http.ResponseWriter, accessLogDetails *carbonapipb.AccessLogDeta
 	accessLogDetails.HTTPCode = int32(status)
 }
 
-func getCacheTimeout(logger *zap.Logger, r *http.Request, defaultTimeout int32) int32 {
+func getCacheTimeout(logger *zap.Logger, r *http.Request, now32, until32 int64, duration time.Duration, cacheConfig *config.CacheConfig) int32 {
 	if tstr := r.FormValue("cacheTimeout"); tstr != "" {
 		t, err := strconv.Atoi(tstr)
 		if err != nil {
@@ -60,8 +61,14 @@ func getCacheTimeout(logger *zap.Logger, r *http.Request, defaultTimeout int32) 
 			return int32(t)
 		}
 	}
-
-	return defaultTimeout
+	if now32 == 0 || cacheConfig.ShortTimeoutSec == 0 || cacheConfig.ShortDuration == 0 {
+		return cacheConfig.DefaultTimeoutSec
+	}
+	if duration > cacheConfig.ShortDuration || now32-until32 > cacheConfig.ShortUntilOffsetSec {
+		return cacheConfig.DefaultTimeoutSec
+	}
+	// short cache ttl
+	return cacheConfig.ShortTimeoutSec
 }
 
 func renderHandler(w http.ResponseWriter, r *http.Request) {
@@ -147,32 +154,39 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responseCacheTimeout := getCacheTimeout(logger, r, config.Config.ResponseCacheConfig.DefaultTimeoutSec)
-	backendCacheTimeout := getCacheTimeout(logger, r, config.Config.BackendCacheConfig.DefaultTimeoutSec)
+	now := timeNow()
+	now32 := now.Unix()
 
 	cleanupParams(r)
 
 	// normalize from and until values
-	now := timeNow()
-	now32 := now.Unix()
 	qtz := r.FormValue("tz")
 	from32 := date.DateParamToEpoch(from, qtz, now.Add(-24*time.Hour).Unix(), config.Config.DefaultTimeZone)
 	until32 := date.DateParamToEpoch(until, qtz, now.Unix(), config.Config.DefaultTimeZone)
 
-	var responseCacheKey string
+	var (
+		responseCacheKey     string
+		responseCacheTimeout int32
+		backendCacheTimeout  int32
+	)
 
+	duration := time.Second * time.Duration(until32-from32)
 	if len(config.Config.TruncateTime) > 0 {
-		duration := time.Second * time.Duration(until32-from32)
 		from32 = timestampTruncate(from32, duration, config.Config.TruncateTime)
 		until32 = timestampTruncate(until32, duration, config.Config.TruncateTime)
+		// recalc duration
+		duration = time.Second * time.Duration(until32-from32)
 		responseCacheKey = responseCacheComputeKey(from32, until32, targets, formatRaw, maxDataPoints, noNullPoints, template)
-		if duration <= time.Hour && now32-until32 < 60 {
-			// short cache ttl
-			responseCacheTimeout = config.Config.ResponseCacheConfig.ShortTimeoutSec
-			backendCacheTimeout = config.Config.BackendCacheConfig.ShortTimeoutSec
+		if useCache {
+			responseCacheTimeout = getCacheTimeout(logger, r, now32, until32, duration, &config.Config.ResponseCacheConfig)
+			backendCacheTimeout = getCacheTimeout(logger, r, now32, until32, duration, &config.Config.BackendCacheConfig)
 		}
 	} else {
 		responseCacheKey = r.Form.Encode()
+		if useCache {
+			responseCacheTimeout = getCacheTimeout(logger, r, now32, until32, duration, &config.Config.ResponseCacheConfig)
+			backendCacheTimeout = getCacheTimeout(logger, r, now32, until32, duration, &config.Config.BackendCacheConfig)
+		}
 	}
 
 	accessLogDetails.UseCache = useCache
@@ -192,7 +206,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if format == protoV3Format {
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			accessLogDetails.HTTPCode = http.StatusBadRequest
 			accessLogDetails.Reason = "failed to parse message body: " + err.Error()
@@ -265,9 +279,9 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	var backendCacheKey string
 	if len(config.Config.TruncateTime) > 0 {
-		backendCacheKey = backendCacheComputeKeyAbs(from32, until32, targets)
+		backendCacheKey = backendCacheComputeKeyAbs(from32, until32, targets, maxDataPoints, noNullPoints)
 	} else {
-		backendCacheKey = backendCacheComputeKey(from, until, targets)
+		backendCacheKey = backendCacheComputeKey(from, until, targets, maxDataPoints, noNullPoints)
 	}
 
 	results, err := backendCacheFetchResults(logger, useCache, backendCacheKey, accessLogDetails)
@@ -278,23 +292,46 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		results = make([]*types.MetricData, 0)
 		values := make(map[parser.MetricRequest][]*types.MetricData)
 
-		for _, target := range targets {
-			exp, e, err := parser.ParseExpr(target)
-			if err != nil || e != "" {
-				msg := buildParseErrorString(target, e, err)
-				setError(w, accessLogDetails, msg, http.StatusBadRequest, uid.String())
-				logAsError = true
-				return
+		if config.Config.CombineMultipleTargetsInOne && len(targets) > 0 {
+			exprs := make([]parser.Expr, 0, len(targets))
+			for _, target := range targets {
+				exp, e, err := parser.ParseExpr(target)
+				if err != nil || e != "" {
+					msg := buildParseErrorString(target, e, err)
+					setError(w, accessLogDetails, msg, http.StatusBadRequest, uid.String())
+					logAsError = true
+					return
+				}
+				exprs = append(exprs, exp)
 			}
 
 			ApiMetrics.RenderRequests.Add(1)
 
-			result, err := expr.FetchAndEvalExp(ctx, exp, from32, until32, values)
-			if err != nil {
-				errors[target] = merry.Wrap(err)
+			result, errs := expr.FetchAndEvalExprs(ctx, exprs, from32, until32, values)
+			if errs != nil {
+				errors = errs
 			}
 
 			results = append(results, result...)
+		} else {
+			for _, target := range targets {
+				exp, e, err := parser.ParseExpr(target)
+				if err != nil || e != "" {
+					msg := buildParseErrorString(target, e, err)
+					setError(w, accessLogDetails, msg, http.StatusBadRequest, uid.String())
+					logAsError = true
+					return
+				}
+
+				ApiMetrics.RenderRequests.Add(1)
+
+				result, err := expr.FetchAndEvalExp(ctx, exp, from32, until32, values)
+				if err != nil {
+					errors[target] = merry.Wrap(err)
+				}
+
+				results = append(results, result...)
+			}
 		}
 
 		for mFetch := range values {
@@ -409,18 +446,25 @@ func responseCacheComputeKey(from, until int64, targets []string, format string,
 	return responseCacheKey.String()
 }
 
-func backendCacheComputeKey(from, until string, targets []string) string {
-	var backendCacheKey bytes.Buffer
+func backendCacheComputeKey(from, until string, targets []string, maxDataPoints int64, noNullPoints bool) string {
+	var backendCacheKey stringutils.Builder
 	backendCacheKey.WriteString("from:")
 	backendCacheKey.WriteString(from)
 	backendCacheKey.WriteString(" until:")
 	backendCacheKey.WriteString(until)
 	backendCacheKey.WriteString(" targets:")
 	backendCacheKey.WriteString(strings.Join(targets, ","))
+	if maxDataPoints > 0 {
+		backendCacheKey.WriteString(" maxDataPoints:")
+		backendCacheKey.WriteInt(maxDataPoints, 10)
+	}
+	if noNullPoints {
+		backendCacheKey.WriteString(" noNullPoints")
+	}
 	return backendCacheKey.String()
 }
 
-func backendCacheComputeKeyAbs(from, until int64, targets []string) string {
+func backendCacheComputeKeyAbs(from, until int64, targets []string, maxDataPoints int64, noNullPoints bool) string {
 	var backendCacheKey stringutils.Builder
 	backendCacheKey.Grow(128)
 	backendCacheKey.WriteString("from:")
@@ -429,6 +473,13 @@ func backendCacheComputeKeyAbs(from, until int64, targets []string) string {
 	backendCacheKey.WriteInt(until, 10)
 	backendCacheKey.WriteString(" targets:")
 	backendCacheKey.WriteString(strings.Join(targets, ","))
+	if maxDataPoints > 0 {
+		backendCacheKey.WriteString(" maxDataPoints:")
+		backendCacheKey.WriteInt(maxDataPoints, 10)
+	}
+	if noNullPoints {
+		backendCacheKey.WriteString(" noNullPoints")
+	}
 	return backendCacheKey.String()
 }
 

@@ -40,12 +40,11 @@ func (f *constantLine) Do(ctx context.Context, e parser.Expr, from, until int64,
 	name := strconv.FormatFloat(value, 'g', -1, 64)
 	p := &types.MetricData{
 		FetchResponse: pb.FetchResponse{
-			Name:              name,
-			StartTime:         from,
-			StopTime:          stopTime,
-			StepTime:          stepTime,
-			Values:            newValues,
-			ConsolidationFunc: "max",
+			Name:      name,
+			StartTime: from,
+			StopTime:  stopTime,
+			StepTime:  stepTime,
+			Values:    newValues,
 		},
 		Tags: map[string]string{"name": name},
 	}

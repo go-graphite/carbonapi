@@ -69,8 +69,10 @@ func (me multiError) Error() string {
 // encodeJSON create a reader of JSON data representing an interface.
 func encodeJSON(v interface{}) (io.Reader, error) {
 	buf := &bytes.Buffer{}
+
 	enc := json.NewEncoder(buf)
 	enc.SetEscapeHTML(false)
+
 	if err := enc.Encode(v); err != nil {
 		return nil, fmt.Errorf("failed to encode JSON: %w", err)
 	}
@@ -127,7 +129,9 @@ func formatTimestamp(t time.Time) string {
 func parseTimestamp(s string) (time.Time, error) {
 	sp := strings.Split(s, ".")
 	sec, nsec := int64(0), int64(0)
+
 	var err error
+
 	if len(sp) > 0 {
 		if sec, err = strconv.ParseInt(sp[0], 10, 64); err != nil {
 			return time.Time{}, fmt.Errorf("unable to parse timestamp %s: %s",

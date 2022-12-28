@@ -47,7 +47,7 @@ func (f *consolidateBy) Do(ctx context.Context, e parser.Expr, from, until int64
 
 	for i, a := range arg {
 		r := a.CopyLink()
-
+		r.Name = "consolidateBy(" + a.Name + ",\"" + name + "\")"
 		r.ConsolidationFunc = name
 		r.Tags["consolidateBy"] = name
 		results[i] = r

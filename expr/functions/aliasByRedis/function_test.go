@@ -2,13 +2,13 @@ package aliasByRedis
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"runtime"
 	"testing"
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -30,7 +30,7 @@ func init() {
 	r.HSet("alias", "metric1", "new1")
 	r.HSet("alias", "metric2", "new2")
 
-	config, err := ioutil.TempFile("", "carbonapi-redis-*.yaml")
+	config, err := os.CreateTemp("", "carbonapi-redis-*.yaml")
 	if err != nil {
 		panic(err)
 	}

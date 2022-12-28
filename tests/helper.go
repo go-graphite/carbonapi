@@ -301,6 +301,13 @@ type RewriteTestItem struct {
 	Want   RewriteTestResult
 }
 
+type RewriteTestError struct {
+	//E    parser.Expr
+	Target string
+	M      map[parser.MetricRequest][]*types.MetricData
+	Want   error
+}
+
 func rewriteExpr(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
 	if e.IsFunc() {
 		metadata.FunctionMD.RLock()
@@ -318,23 +325,22 @@ func TestRewriteExpr(t *testing.T, tt *RewriteTestItem) {
 	testName := tt.Target
 	exp, _, err := parser.ParseExpr(tt.Target)
 	if err != nil {
-		t.Errorf("failed to parse %s: %+v", tt.Target, err)
-		return
+		t.Fatalf("failed to parse %s: %+v", tt.Target, err)
 	}
 
 	rewritten, targets, err := rewriteExpr(exp, 0, 1, tt.M)
 	if err != tt.Want.Err {
-		t.Errorf("unexpected error while calling rewrite for '%s': got '%+v', expected '%+v'", testName, err, tt.Want.Err)
-		return
+		if err == nil || tt.Want.Err == nil || !merry.Is(err, tt.Want.Err) {
+			t.Fatalf("unexpected error while calling rewrite for '%s': got '%+v', expected '%+v'", testName, err, tt.Want.Err)
+		}
 	}
 	if rewritten != tt.Want.Rewritten {
-		t.Errorf("unexpected result for rewritten for '%s': got '%v', expected '%v'", testName, rewritten, tt.Want.Rewritten)
+		t.Fatalf("unexpected result for rewritten for '%s': got '%v', expected '%v'", testName, rewritten, tt.Want.Rewritten)
 		return
 	}
 
 	if len(targets) != len(tt.Want.Targets) {
-		t.Errorf("%s returned a different number of metrics, actual %v, Want %v", testName, len(targets), len(tt.Want.Targets))
-		return
+		t.Fatalf("%s returned a different number of metrics, actual %v, Want %v", testName, len(targets), len(tt.Want.Targets))
 	}
 	DeepEqual(t, testName, originalMetrics, tt.M, false)
 
@@ -442,6 +448,9 @@ func TestEvalExprModifiedOrigin(t *testing.T, tt *EvalTestItem, from, until int6
 		}
 		if actual.Name != want.Name {
 			t.Errorf("bad Name for %s metric[%d]: got %s, Want %s", testName, i, actual.Name, want.Name)
+		}
+		if actual.ConsolidationFunc != want.ConsolidationFunc {
+			t.Errorf("different ConsolidationFunc for %s metric[%d] %s: got %v, Want %v", testName, i, actual.Name, actual.ConsolidationFunc, want.ConsolidationFunc)
 		}
 		if !compare.NearlyEqualMetrics(actual, want) {
 			t.Errorf("different values for %s metric[%d] %s: got %v, Want %v", testName, i, actual.Name, actual.Values, want.Values)

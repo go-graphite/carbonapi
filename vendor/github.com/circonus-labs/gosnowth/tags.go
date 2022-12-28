@@ -70,6 +70,7 @@ type FindTagsLatestNumeric struct {
 // slice.
 func (ftl *FindTagsLatestNumeric) MarshalJSON() ([]byte, error) {
 	v := []interface{}{ftl.Time, ftl.Value}
+
 	return json.Marshal(v)
 }
 
@@ -77,14 +78,14 @@ func (ftl *FindTagsLatestNumeric) MarshalJSON() ([]byte, error) {
 // value.
 func (ftl *FindTagsLatestNumeric) UnmarshalJSON(b []byte) error {
 	v := []interface{}{}
-	err := json.Unmarshal(b, &v)
-	if err != nil {
+
+	if err := json.Unmarshal(b, &v); err != nil {
 		return err
 	}
 
 	if len(v) != 2 {
 		return fmt.Errorf("unable to decode latest numeric value, "+
-			"invalid length: %v: %v", string(b), err)
+			"invalid length: %v", string(b))
 	}
 
 	if fv, ok := v[0].(float64); ok {
@@ -115,6 +116,7 @@ type FindTagsLatestText struct {
 // MarshalJSON encodes a FindTagsLatestText value into a JSON format byte slice.
 func (ftl *FindTagsLatestText) MarshalJSON() ([]byte, error) {
 	v := []interface{}{ftl.Time, ftl.Value}
+
 	return json.Marshal(v)
 }
 
@@ -122,14 +124,14 @@ func (ftl *FindTagsLatestText) MarshalJSON() ([]byte, error) {
 // value.
 func (ftl *FindTagsLatestText) UnmarshalJSON(b []byte) error {
 	v := []interface{}{}
-	err := json.Unmarshal(b, &v)
-	if err != nil {
+
+	if err := json.Unmarshal(b, &v); err != nil {
 		return err
 	}
 
 	if len(v) != 2 {
 		return fmt.Errorf("unable to decode latest text value, "+
-			"invalid length: %v: %v", string(b), err)
+			"invalid length: %v", string(b))
 	}
 
 	if fv, ok := v[0].(float64); ok {
@@ -161,6 +163,7 @@ type FindTagsLatestHistogram struct {
 // slice.
 func (ftl *FindTagsLatestHistogram) MarshalJSON() ([]byte, error) {
 	v := []interface{}{ftl.Time, ftl.Value}
+
 	return json.Marshal(v)
 }
 
@@ -168,14 +171,14 @@ func (ftl *FindTagsLatestHistogram) MarshalJSON() ([]byte, error) {
 // FindTagsLatestHistogram value.
 func (ftl *FindTagsLatestHistogram) UnmarshalJSON(b []byte) error {
 	v := []interface{}{}
-	err := json.Unmarshal(b, &v)
-	if err != nil {
+
+	if err := json.Unmarshal(b, &v); err != nil {
 		return err
 	}
 
 	if len(v) != 2 {
 		return fmt.Errorf("unable to decode latest histogram value, "+
-			"invalid length: %v: %v", string(b), err)
+			"invalid length: %v", string(b))
 	}
 
 	if fv, ok := v[0].(float64); ok {
@@ -199,7 +202,8 @@ func (ftl *FindTagsLatestHistogram) UnmarshalJSON(b []byte) error {
 
 // FindTags retrieves metrics that are associated with the provided tag query.
 func (sc *SnowthClient) FindTags(accountID int64, query string,
-	options *FindTagsOptions, nodes ...*SnowthNode) (*FindTagsResult, error) {
+	options *FindTagsOptions, nodes ...*SnowthNode,
+) (*FindTagsResult, error) {
 	return sc.FindTagsContext(context.Background(), accountID, query,
 		options, nodes...)
 }
@@ -207,7 +211,8 @@ func (sc *SnowthClient) FindTags(accountID int64, query string,
 // FindTagsContext is the context aware version of FindTags.
 func (sc *SnowthClient) FindTagsContext(ctx context.Context, accountID int64,
 	query string, options *FindTagsOptions,
-	nodes ...*SnowthNode) (*FindTagsResult, error) {
+	nodes ...*SnowthNode,
+) (*FindTagsResult, error) {
 	var node *SnowthNode
 	if len(nodes) > 0 && nodes[0] != nil {
 		node = nodes[0]
@@ -216,7 +221,7 @@ func (sc *SnowthClient) FindTagsContext(ctx context.Context, accountID int64,
 	}
 
 	u := fmt.Sprintf("%s?query=%s",
-		sc.getURL(node, fmt.Sprintf("/find/%d/tags", accountID)),
+		fmt.Sprintf("/find/%d/tags", accountID),
 		url.QueryEscape(query))
 
 	starts, ends := "", ""
@@ -258,6 +263,7 @@ func (sc *SnowthClient) FindTagsContext(ctx context.Context, accountID int64,
 	}
 
 	r := &FindTagsResult{}
+
 	body, header, err := sc.DoRequestContext(ctx, node, "GET", u, nil, hdrs)
 	if err != nil {
 		return nil, err
@@ -275,6 +281,7 @@ func (sc *SnowthClient) FindTagsContext(ctx context.Context, accountID int64,
 
 	// Return a results count and capture it from the header , if provided.
 	r.Count = int64(len(r.Items))
+
 	if header != nil {
 		c := header.Get("X-Snowth-Search-Result-Count")
 		if c != "" {
@@ -290,14 +297,16 @@ func (sc *SnowthClient) FindTagsContext(ctx context.Context, accountID int64,
 // FindTagCats retrieves tag categories that are associated with the
 // provided query.
 func (sc *SnowthClient) FindTagCats(accountID int64, query string,
-	nodes ...*SnowthNode) ([]string, error) {
+	nodes ...*SnowthNode,
+) ([]string, error) {
 	return sc.FindTagCatsContext(context.Background(), accountID, query,
 		nodes...)
 }
 
 // FindTagCatsContext is the context aware version of FindTagCats.
 func (sc *SnowthClient) FindTagCatsContext(ctx context.Context,
-	accountID int64, query string, nodes ...*SnowthNode) ([]string, error) {
+	accountID int64, query string, nodes ...*SnowthNode,
+) ([]string, error) {
 	var node *SnowthNode
 	if len(nodes) > 0 && nodes[0] != nil {
 		node = nodes[0]
@@ -306,10 +315,11 @@ func (sc *SnowthClient) FindTagCatsContext(ctx context.Context,
 	}
 
 	u := fmt.Sprintf("%s?query=%s",
-		sc.getURL(node, fmt.Sprintf("/find/%d/tag_cats", accountID)),
+		fmt.Sprintf("/find/%d/tag_cats", accountID),
 		url.QueryEscape(query))
 
 	r := []string{}
+
 	body, _, err := sc.DoRequestContext(ctx, node, "GET", u, nil, nil)
 	if err != nil {
 		return nil, err
@@ -325,7 +335,8 @@ func (sc *SnowthClient) FindTagCatsContext(ctx context.Context,
 // FindTagVals retrieves tag values that are associated with the
 // provided query.
 func (sc *SnowthClient) FindTagVals(accountID int64, query, category string,
-	nodes ...*SnowthNode) ([]string, error) {
+	nodes ...*SnowthNode,
+) ([]string, error) {
 	return sc.FindTagValsContext(context.Background(), accountID, query,
 		category, nodes...)
 }
@@ -333,7 +344,8 @@ func (sc *SnowthClient) FindTagVals(accountID int64, query, category string,
 // FindTagValsContext is the context aware version of FindTagVals.
 func (sc *SnowthClient) FindTagValsContext(ctx context.Context,
 	accountID int64, query, category string,
-	nodes ...*SnowthNode) ([]string, error) {
+	nodes ...*SnowthNode,
+) ([]string, error) {
 	var node *SnowthNode
 	if len(nodes) > 0 && nodes[0] != nil {
 		node = nodes[0]
@@ -342,10 +354,11 @@ func (sc *SnowthClient) FindTagValsContext(ctx context.Context,
 	}
 
 	u := fmt.Sprintf("%s?query=%s&category=%s",
-		sc.getURL(node, fmt.Sprintf("/find/%d/tag_vals", accountID)),
+		fmt.Sprintf("/find/%d/tag_vals", accountID),
 		url.QueryEscape(query), url.QueryEscape(category))
 
 	r := []string{}
+
 	body, _, err := sc.DoRequestContext(ctx, node, "GET", u, nil, nil)
 	if err != nil {
 		return nil, err
@@ -369,13 +382,15 @@ type ModifyTags struct {
 
 // GetCheckTags retrieves check tags from IRONdb for a specified check.
 func (sc *SnowthClient) GetCheckTags(checkUUID string,
-	nodes ...*SnowthNode) (CheckTags, error) {
+	nodes ...*SnowthNode,
+) (CheckTags, error) {
 	return sc.GetCheckTagsContext(context.Background(), checkUUID, nodes...)
 }
 
 // GetCheckTagsContext is the context aware version of GetCheckTags.
 func (sc *SnowthClient) GetCheckTagsContext(ctx context.Context,
-	checkUUID string, nodes ...*SnowthNode) (CheckTags, error) {
+	checkUUID string, nodes ...*SnowthNode,
+) (CheckTags, error) {
 	if _, err := uuid.Parse(checkUUID); err != nil {
 		return nil, fmt.Errorf("invalid check uuid: %w", err)
 	}
@@ -387,7 +402,7 @@ func (sc *SnowthClient) GetCheckTagsContext(ctx context.Context,
 		node = sc.GetActiveNode()
 	}
 
-	u := sc.getURL(node, fmt.Sprintf("/meta/check/tag/%s", checkUUID))
+	u := fmt.Sprintf("/meta/check/tag/%s", checkUUID)
 
 	r := CheckTags{}
 
@@ -405,13 +420,15 @@ func (sc *SnowthClient) GetCheckTagsContext(ctx context.Context,
 
 // DeleteCheckTags removes check tags from IRONdb for a specified check.
 func (sc *SnowthClient) DeleteCheckTags(checkUUID string,
-	nodes ...*SnowthNode) error {
+	nodes ...*SnowthNode,
+) error {
 	return sc.DeleteCheckTagsContext(context.Background(), checkUUID, nodes...)
 }
 
 // DeleteCheckTagsContext is the context aware version of DeleteCheckTags.
 func (sc *SnowthClient) DeleteCheckTagsContext(ctx context.Context,
-	checkUUID string, nodes ...*SnowthNode) error {
+	checkUUID string, nodes ...*SnowthNode,
+) error {
 	if _, err := uuid.Parse(checkUUID); err != nil {
 		return fmt.Errorf("invalid check uuid: %w", err)
 	}
@@ -423,7 +440,7 @@ func (sc *SnowthClient) DeleteCheckTagsContext(ctx context.Context,
 		node = sc.GetActiveNode()
 	}
 
-	u := sc.getURL(node, fmt.Sprintf("/meta/check/tag/%s", checkUUID))
+	u := fmt.Sprintf("/meta/check/tag/%s", checkUUID)
 
 	_, _, err := sc.DoRequestContext(ctx, node, "DELETE", u, nil, nil)
 	if err != nil {
@@ -438,14 +455,16 @@ func (sc *SnowthClient) DeleteCheckTagsContext(ctx context.Context,
 // independently of the Circonus API. Doing so could result in tag data
 // corruption, and malfunctioning metric searches.
 func (sc *SnowthClient) UpdateCheckTags(checkUUID string,
-	tags []string, nodes ...*SnowthNode) (int64, error) {
+	tags []string, nodes ...*SnowthNode,
+) (int64, error) {
 	return sc.UpdateCheckTagsContext(context.Background(), checkUUID, tags,
 		nodes...)
 }
 
 // UpdateCheckTagsContext is the context aware version of UpdateCheckTags.
 func (sc *SnowthClient) UpdateCheckTagsContext(ctx context.Context,
-	checkUUID string, tags []string, nodes ...*SnowthNode) (int64, error) {
+	checkUUID string, tags []string, nodes ...*SnowthNode,
+) (int64, error) {
 	if _, err := uuid.Parse(checkUUID); err != nil {
 		return 0, fmt.Errorf("invalid check uuid: %w", err)
 	}
@@ -490,6 +509,7 @@ func (sc *SnowthClient) UpdateCheckTagsContext(ctx context.Context,
 		for _, newTag := range tags {
 			if oldTag == newTag {
 				d = false
+
 				break
 			}
 		}
@@ -505,6 +525,7 @@ func (sc *SnowthClient) UpdateCheckTagsContext(ctx context.Context,
 		for _, oldTag := range ex {
 			if oldTag == newTag {
 				a = false
+
 				break
 			}
 		}
@@ -528,7 +549,7 @@ func (sc *SnowthClient) UpdateCheckTagsContext(ctx context.Context,
 		return 0, fmt.Errorf("unable to encode payload: %w", err)
 	}
 
-	u := sc.getURL(node, fmt.Sprintf("/meta/check/tag/%s", checkUUID))
+	u := fmt.Sprintf("/meta/check/tag/%s", checkUUID)
 
 	_, _, err = sc.DoRequestContext(ctx, node, "POST", u, buf, nil)
 	if err != nil {
@@ -540,7 +561,7 @@ func (sc *SnowthClient) UpdateCheckTagsContext(ctx context.Context,
 
 // encodeTags performs base64 encoding on tags when needed.
 func encodeTags(tags []string) ([]string, error) {
-	keyTest := regexp.MustCompile("^[`+A-Za-z0-9!@#\\$%^&\"'\\/\\?\\._\\-]*$")
+	catTest := regexp.MustCompile("^[`+A-Za-z0-9!@#\\$%^&\"'\\/\\?\\._\\-]*$")
 	valTest := regexp.MustCompile("^[`+A-Za-z0-9!@#\\$%^&\"'\\/\\?\\._\\-:=]*$")
 	res := []string{}
 
@@ -549,34 +570,36 @@ func encodeTags(tags []string) ([]string, error) {
 			continue
 		}
 
-		rk, rv := "", ""
-
 		parts := strings.SplitN(tag, ":", 2)
-		if len(parts) != 2 {
+
+		cat := parts[0]
+
+		if strings.HasPrefix(cat, `b"`) && strings.HasSuffix(cat, `"`) {
+			cat = strings.TrimPrefix(strings.TrimSuffix(cat, `"`), `b"`)
+
+			cat, err := base64.StdEncoding.DecodeString(cat)
+			if err != nil {
+				return nil, fmt.Errorf("invalid base64 tag category: %v %w",
+					cat, err)
+			}
+		}
+
+		if !catTest.MatchString(cat) {
+			cat = `b"` + base64.StdEncoding.EncodeToString([]byte(cat)) + `"`
+		}
+
+		if cat == "" {
 			return nil, fmt.Errorf("invalid tag passed: %v", tag)
 		}
 
-		key := parts[0]
-		if strings.HasPrefix(key, `b"`) && strings.HasSuffix(key, `"`) {
-			key = strings.TrimPrefix(strings.TrimSuffix(key, `"`), `b"`)
+		if len(parts) < 2 {
+			res = append(res, cat+":")
 
-			key, err := base64.StdEncoding.DecodeString(key)
-			if err != nil {
-				return nil, fmt.Errorf("invalid base64 tag key: %v %w",
-					key, err)
-			}
-
-			rk = string(key)
-
-			if keyTest.Match(key) {
-				rk = `b"` + base64.StdEncoding.EncodeToString(key) +
-					`"`
-			}
-		} else {
-			rk = key
+			continue
 		}
 
 		val := parts[1]
+
 		if strings.HasPrefix(val, `b"`) && strings.HasSuffix(val, `"`) {
 			val = strings.TrimPrefix(strings.TrimSuffix(val, `"`), `b"`)
 
@@ -585,18 +608,13 @@ func encodeTags(tags []string) ([]string, error) {
 				return nil, fmt.Errorf("invalid base64 tag value: %v %w",
 					val, err)
 			}
-
-			rv = string(val)
-
-			if valTest.Match(val) {
-				rv = `b"` + base64.StdEncoding.EncodeToString(val) +
-					`"`
-			}
-		} else {
-			rv = val
 		}
 
-		res = append(res, rk+":"+rv)
+		if !valTest.MatchString(val) {
+			val = `b"` + base64.StdEncoding.EncodeToString([]byte(val)) + `"`
+		}
+
+		res = append(res, cat+":"+val)
 	}
 
 	return res, nil

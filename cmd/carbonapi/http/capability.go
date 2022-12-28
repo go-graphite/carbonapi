@@ -2,15 +2,16 @@ package http
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
+
+	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 )
 
 func capabilityHandler(wr http.ResponseWriter, req *http.Request) {
@@ -33,7 +34,7 @@ func capabilityHandler(wr http.ResponseWriter, req *http.Request) {
 	}
 
 	if formatCode, ok := knownFormats[format]; ok {
-		body, err := ioutil.ReadAll(req.Body)
+		body, err := io.ReadAll(req.Body)
 		if err != nil {
 			accessLogger.Error("find failed",
 				zap.Duration("runtime_seconds", time.Since(t0)),

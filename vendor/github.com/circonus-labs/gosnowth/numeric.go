@@ -20,13 +20,15 @@ type NumericAllValueResponse struct {
 func (nv *NumericAllValueResponse) UnmarshalJSON(b []byte) error {
 	nv.Data = []NumericAllValue{}
 	values := [][]interface{}{}
+
 	if err := json.Unmarshal(b, &values); err != nil {
 		return fmt.Errorf("failed to deserialize numeric average response: %w",
 			err)
 	}
 
 	for _, entry := range values {
-		var nav = NumericAllValue{}
+		nav := NumericAllValue{}
+
 		if m, ok := entry[1].(map[string]interface{}); ok {
 			valueBytes, err := json.Marshal(m)
 			if err != nil {
@@ -76,6 +78,7 @@ type NumericValueResponse struct {
 func (nv *NumericValueResponse) UnmarshalJSON(b []byte) error {
 	nv.Data = []NumericValue{}
 	values := [][]int64{}
+
 	if err := json.Unmarshal(b, &values); err != nil {
 		return fmt.Errorf("failed to deserialize numeric average response: %w",
 			err)
@@ -136,6 +139,7 @@ func (p *NumericParts) MarshalJSON() ([]byte, error) {
 	tuple = append(tuple, p.Period, p.Data)
 	buf := bytes.NewBuffer([]byte{})
 	enc := json.NewEncoder(buf)
+
 	if err := enc.Encode(tuple); err != nil {
 		return buf.Bytes(), err
 	}
@@ -145,13 +149,15 @@ func (p *NumericParts) MarshalJSON() ([]byte, error) {
 
 // WriteNumeric writes numeric data to a node.
 func (sc *SnowthClient) WriteNumeric(data []NumericWrite,
-	nodes ...*SnowthNode) error {
+	nodes ...*SnowthNode,
+) error {
 	return sc.WriteNumericContext(context.Background(), data, nodes...)
 }
 
 // WriteNumericContext is the context aware version of WriteNumeric.
 func (sc *SnowthClient) WriteNumericContext(ctx context.Context,
-	data []NumericWrite, nodes ...*SnowthNode) error {
+	data []NumericWrite, nodes ...*SnowthNode,
+) error {
 	buf := new(bytes.Buffer)
 	if err := json.NewEncoder(buf).Encode(data); err != nil {
 		return fmt.Errorf("failed to encode NumericWrite for write: %w", err)
@@ -167,12 +173,14 @@ func (sc *SnowthClient) WriteNumericContext(ctx context.Context,
 
 	_, _, err := sc.DoRequestContext(ctx, node, "POST",
 		"/write/numeric", buf, nil)
+
 	return err
 }
 
 // ReadNumericValues reads numeric data from a node.
 func (sc *SnowthClient) ReadNumericValues(start, end time.Time, period int64,
-	t, id, metric string, nodes ...*SnowthNode) ([]NumericValue, error) {
+	t, id, metric string, nodes ...*SnowthNode,
+) ([]NumericValue, error) {
 	return sc.ReadNumericValuesContext(context.Background(), start, end,
 		period, t, id, metric, nodes...)
 }
@@ -180,7 +188,8 @@ func (sc *SnowthClient) ReadNumericValues(start, end time.Time, period int64,
 // ReadNumericValuesContext is the context aware version of ReadNumericValues.
 func (sc *SnowthClient) ReadNumericValuesContext(ctx context.Context,
 	start, end time.Time, period int64,
-	t, id, metric string, nodes ...*SnowthNode) ([]NumericValue, error) {
+	t, id, metric string, nodes ...*SnowthNode,
+) ([]NumericValue, error) {
 	var node *SnowthNode
 	if len(nodes) > 0 && nodes[0] != nil {
 		node = nodes[0]
@@ -189,6 +198,7 @@ func (sc *SnowthClient) ReadNumericValuesContext(ctx context.Context,
 	}
 
 	r := &NumericValueResponse{}
+
 	body, _, err := sc.DoRequestContext(ctx, node, "GET", path.Join("/read",
 		strconv.FormatInt(start.Unix(), 10),
 		strconv.FormatInt(end.Unix(), 10),
@@ -206,7 +216,8 @@ func (sc *SnowthClient) ReadNumericValuesContext(ctx context.Context,
 
 // ReadNumericAllValues reads all numeric data from a node.
 func (sc *SnowthClient) ReadNumericAllValues(start, end time.Time, period int64,
-	id, metric string, nodes ...*SnowthNode) ([]NumericAllValue, error) {
+	id, metric string, nodes ...*SnowthNode,
+) ([]NumericAllValue, error) {
 	return sc.ReadNumericAllValuesContext(context.Background(), start, end,
 		period, id, metric, nodes...)
 }
@@ -215,7 +226,8 @@ func (sc *SnowthClient) ReadNumericAllValues(start, end time.Time, period int64,
 // ReadNumericAllValues.
 func (sc *SnowthClient) ReadNumericAllValuesContext(ctx context.Context,
 	start, end time.Time, period int64,
-	id, metric string, nodes ...*SnowthNode) ([]NumericAllValue, error) {
+	id, metric string, nodes ...*SnowthNode,
+) ([]NumericAllValue, error) {
 	var node *SnowthNode
 	if len(nodes) > 0 && nodes[0] != nil {
 		node = nodes[0]
@@ -224,6 +236,7 @@ func (sc *SnowthClient) ReadNumericAllValuesContext(ctx context.Context,
 	}
 
 	r := &NumericAllValueResponse{}
+
 	body, _, err := sc.DoRequestContext(ctx, node, "GET", path.Join("/read",
 		strconv.FormatInt(start.Unix(), 10),
 		strconv.FormatInt(end.Unix(), 10),
@@ -235,5 +248,6 @@ func (sc *SnowthClient) ReadNumericAllValuesContext(ctx context.Context,
 	if err := decodeJSON(body, &r); err != nil {
 		return nil, fmt.Errorf("unable to decode IRONdb response: %w", err)
 	}
+
 	return r.Data, nil
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/go-graphite/carbonapi/cache"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/interfaces"
 	"github.com/go-graphite/carbonapi/limiter"
+	"github.com/go-graphite/carbonapi/pkg/tlsconfig"
 	zipperCfg "github.com/go-graphite/carbonapi/zipper/config"
 	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 
@@ -23,11 +24,13 @@ var DefaultLoggerConfig = zapwriter.Config{
 }
 
 type CacheConfig struct {
-	Type              string   `mapstructure:"type"`
-	Size              int      `mapstructure:"size_mb"`
-	MemcachedServers  []string `mapstructure:"memcachedServers"`
-	DefaultTimeoutSec int32    `mapstructure:"defaultTimeoutSec"`
-	ShortTimeoutSec   int32    `mapstructure:"shortTimeoutSec"`
+	Type                string        `mapstructure:"type"`
+	Size                int           `mapstructure:"size_mb"`
+	MemcachedServers    []string      `mapstructure:"memcachedServers"`
+	DefaultTimeoutSec   int32         `mapstructure:"defaultTimeoutSec"`
+	ShortTimeoutSec     int32         `mapstructure:"shortTimeoutSec"`
+	ShortDuration       time.Duration `mapstructure:"shortDuration"`
+	ShortUntilOffsetSec int64         `mapstructure:"shortUntilOffsetSec"`
 }
 
 type GraphiteConfig struct {
@@ -51,7 +54,12 @@ type ExpvarConfig struct {
 
 type Listener struct {
 	Address string `mapstructure:"address"`
-	// TODO(civil): implement TLS and mTLS
+
+	// Server TLS
+	ServerTLSConfig tlsconfig.TLSConfig `mapstructure:"serverTLSConfig"`
+
+	// Client TLS
+	ClientTLSConfig tlsconfig.TLSConfig `mapstructure:"clientTLSConfig"`
 }
 
 type DurationTruncate struct {
@@ -99,6 +107,8 @@ type ConfigType struct {
 	TruncateTimeMap map[time.Duration]time.Duration `mapstructure:"truncateTime"`
 	TruncateTime    []DurationTruncate              `mapstructure:"-" json:"-"` // produce from TruncateTimeMap and sort in reverse order
 
+	CombineMultipleTargetsInOne bool `mapstructure:"combineMultipleTargetsInOne"`
+
 	ResponseCache cache.BytesCache `mapstructure:"-" json:"-"`
 	BackendCache  cache.BytesCache `mapstructure:"-" json:"-"`
 
@@ -129,7 +139,8 @@ var Config = ConfigType{
 	ResponseCacheConfig: CacheConfig{
 		Type:              "mem",
 		DefaultTimeoutSec: 60,
-		ShortTimeoutSec:   60,
+		ShortTimeoutSec:   0,
+		ShortDuration:     0,
 	},
 	BackendCacheConfig: CacheConfig{
 		Type:              "null",

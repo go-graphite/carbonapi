@@ -56,14 +56,10 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 	logger.Warn("support for this backend protocol is experimental, use with caution")
 
 	// initializing config with list of servers from upstream
-	cfg, err := gosnowth.NewConfig(config.Servers...)
-	if err != nil {
-		logger.Fatal("failed to create snowth configuration",
-			zap.Error(err))
-	}
+	cfg := gosnowth.NewConfig(config.Servers...)
 
 	// enabling discovery.
-	cfg.SetDiscover(true)
+	cfg.Discover = true
 
 	// parse backend options
 	var tmpInt int
@@ -92,7 +88,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 	if maxTries > retries {
 		retries = maxTries
 	}
-	cfg.SetRetries(retries)
+	cfg.Retries = retries
 
 	connectRetries := int64(-1)
 	if connectRetriesOpt, ok := config.BackendOptions["irondb_connect_retries"]; ok {
@@ -104,7 +100,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		}
 		connectRetries = int64(tmpInt)
 	}
-	cfg.SetConnectRetries(connectRetries)
+	cfg.ConnectRetries = connectRetries
 
 	var tmpStr string
 	dialTimeout := 500 * time.Millisecond
@@ -127,7 +123,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 			)
 		}
 	}
-	cfg.SetDialTimeout(dialTimeout)
+	cfg.DialTimeout = dialTimeout
 
 	irondbTimeout := 10 * time.Second
 	if irondbTimeoutOpt, ok := config.BackendOptions["irondb_timeout"]; ok {
@@ -149,7 +145,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 			)
 		}
 	}
-	cfg.SetTimeout(irondbTimeout)
+	cfg.Timeout = irondbTimeout
 
 	watchInterval := 30 * time.Second
 	if watchIntervalOpt, ok := config.BackendOptions["irondb_watch_interval"]; ok {
@@ -171,7 +167,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 			)
 		}
 	}
-	cfg.SetWatchInterval(watchInterval)
+	cfg.WatchInterval = watchInterval
 
 	graphiteRollup := int64(60)
 	if graphiteRollupOpt, ok := config.BackendOptions["irondb_graphite_rollup"]; ok {
@@ -192,7 +188,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 				zap.String("type_expected", "string"),
 			)
 		}
-		graphitePrefix = string(tmpStr)
+		graphitePrefix = tmpStr
 	}
 
 	snowthClient, err := gosnowth.NewClient(context.Background(), cfg)

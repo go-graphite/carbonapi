@@ -28,14 +28,14 @@ type GossipLatency map[string]string
 // response body will include a list of "GossipDetail" which provide
 // the identifier of the node, the node's gossip_time, gossip_age, as well
 // as topology state, current and next topology.
-func (sc *SnowthClient) GetGossipInfo(
-	nodes ...*SnowthNode) (gossip *Gossip, err error) {
+func (sc *SnowthClient) GetGossipInfo(nodes ...*SnowthNode) (*Gossip, error) {
 	return sc.GetGossipInfoContext(context.Background(), nodes...)
 }
 
 // GetGossipInfoContext is the context aware version of GetGossipInfo.
 func (sc *SnowthClient) GetGossipInfoContext(ctx context.Context,
-	nodes ...*SnowthNode) (*Gossip, error) {
+	nodes ...*SnowthNode,
+) (*Gossip, error) {
 	var node *SnowthNode
 	if len(nodes) > 0 && nodes[0] != nil {
 		node = nodes[0]
@@ -44,6 +44,7 @@ func (sc *SnowthClient) GetGossipInfoContext(ctx context.Context,
 	}
 
 	r := &Gossip{}
+
 	body, _, err := sc.DoRequestContext(ctx, node, "GET", "/gossip/json",
 		nil, nil)
 	if err != nil {

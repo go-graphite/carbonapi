@@ -38,7 +38,7 @@ func (f *slo) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 	)
 
 	// requested data points' window
-	argsWindowed, err = helper.GetSeriesArg(ctx, e.Args()[0], from, until, values)
+	argsWindowed, err = helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if len(argsWindowed) == 0 || err != nil {
 		return nil, err
 	}
@@ -48,6 +48,7 @@ func (f *slo) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 		return nil, err
 	}
 	bucketSize := int64(bucketSize32)
+	intervalStringValue := e.Arg(1).StringValue()
 
 	// there is an opportunity that requested data points' window is smaller than slo interval
 	// e.g.: requesting slo(some.data.series, '30days', above, 0) with window of 6 hours
@@ -58,7 +59,7 @@ func (f *slo) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 	windowSize = until - from
 	if bucketSize > windowSize && !(from == 0 && until == 1) {
 		delta = bucketSize - windowSize
-		argsExtended, err = helper.GetSeriesArg(ctx, e.Args()[0], from-delta, until, values)
+		argsExtended, err = helper.GetSeriesArg(ctx, e.Arg(0), from-delta, until, values)
 
 		if err != nil {
 			return nil, err
@@ -101,7 +102,6 @@ func (f *slo) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 		objectiveStr = e.Arg(4).StringValue()
 	}
 
-	intervalStringValue := e.Args()[1].StringValue()
 	results := make([]*types.MetricData, 0, len(argsWindowed))
 
 	for i, argWnd := range argsWindowed {

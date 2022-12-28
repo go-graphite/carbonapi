@@ -779,7 +779,7 @@ FOR:
 		case '=':
 			// allow metric name to end with any amount of `=` without treating it as a named arg or tag
 			if !isEscape {
-				if s[i+1] == '=' || s[i+1] == ',' || s[i+1] == ')' {
+				if len(s) < i+2 || s[i+1] == '=' || s[i+1] == ',' || s[i+1] == ')' {
 					continue
 				}
 			}

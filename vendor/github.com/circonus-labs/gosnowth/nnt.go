@@ -19,12 +19,14 @@ type NNTAllValueResponse struct {
 func (nv *NNTAllValueResponse) UnmarshalJSON(b []byte) error {
 	nv.Data = []NNTAllValue{}
 	values := [][]interface{}{}
+
 	if err := json.Unmarshal(b, &values); err != nil {
 		return fmt.Errorf("failed to deserialize nnt average response: %w", err)
 	}
 
 	for _, entry := range values {
-		var nav = NNTAllValue{}
+		nav := NNTAllValue{}
+
 		if m, ok := entry[1].(map[string]interface{}); ok {
 			valueBytes, err := json.Marshal(m)
 			if err != nil {
@@ -74,6 +76,7 @@ type NNTValueResponse struct {
 func (nv *NNTValueResponse) UnmarshalJSON(b []byte) error {
 	nv.Data = []NNTValue{}
 	values := [][]int64{}
+
 	if err := json.Unmarshal(b, &values); err != nil {
 		return fmt.Errorf("failed to deserialize nnt average response: %w",
 			err)
@@ -133,6 +136,7 @@ func (p *Parts) MarshalJSON() ([]byte, error) {
 	tuple = append(tuple, p.Period, p.Data)
 	buf := bytes.NewBuffer([]byte{})
 	enc := json.NewEncoder(buf)
+
 	if err := enc.Encode(tuple); err != nil {
 		return buf.Bytes(), err
 	}
@@ -147,7 +151,8 @@ func (sc *SnowthClient) WriteNNT(data []NNTData, nodes ...*SnowthNode) error {
 
 // WriteNNTContext is the context aware version of WriteNNT.
 func (sc *SnowthClient) WriteNNTContext(ctx context.Context,
-	data []NNTData, nodes ...*SnowthNode) error {
+	data []NNTData, nodes ...*SnowthNode,
+) error {
 	buf := new(bytes.Buffer)
 	if err := json.NewEncoder(buf).Encode(data); err != nil {
 		return fmt.Errorf("failed to encode NNTData for write: %w", err)
@@ -162,12 +167,14 @@ func (sc *SnowthClient) WriteNNTContext(ctx context.Context,
 	}
 
 	_, _, err := sc.DoRequestContext(ctx, node, "POST", "/write/nnt", buf, nil)
+
 	return err
 }
 
 // ReadNNTValues reads NNT data from a node.
 func (sc *SnowthClient) ReadNNTValues(start, end time.Time, period int64,
-	t, id, metric string, nodes ...*SnowthNode) ([]NNTValue, error) {
+	t, id, metric string, nodes ...*SnowthNode,
+) ([]NNTValue, error) {
 	return sc.ReadNNTValuesContext(context.Background(), start, end,
 		period, t, id, metric, nodes...)
 }
@@ -175,7 +182,8 @@ func (sc *SnowthClient) ReadNNTValues(start, end time.Time, period int64,
 // ReadNNTValuesContext is the context aware version of ReadNNTValues.
 func (sc *SnowthClient) ReadNNTValuesContext(ctx context.Context,
 	start, end time.Time, period int64,
-	t, id, metric string, nodes ...*SnowthNode) ([]NNTValue, error) {
+	t, id, metric string, nodes ...*SnowthNode,
+) ([]NNTValue, error) {
 	var node *SnowthNode
 	if len(nodes) > 0 && nodes[0] != nil {
 		node = nodes[0]
@@ -184,6 +192,7 @@ func (sc *SnowthClient) ReadNNTValuesContext(ctx context.Context,
 	}
 
 	r := &NNTValueResponse{}
+
 	body, _, err := sc.DoRequestContext(ctx, node, "GET", path.Join("/read",
 		strconv.FormatInt(start.Unix(), 10),
 		strconv.FormatInt(end.Unix(), 10),
@@ -201,7 +210,8 @@ func (sc *SnowthClient) ReadNNTValuesContext(ctx context.Context,
 
 // ReadNNTAllValues reads all NNT data from a node.
 func (sc *SnowthClient) ReadNNTAllValues(start, end time.Time, period int64,
-	id, metric string, nodes ...*SnowthNode) ([]NNTAllValue, error) {
+	id, metric string, nodes ...*SnowthNode,
+) ([]NNTAllValue, error) {
 	return sc.ReadNNTAllValuesContext(context.Background(), start, end,
 		period, id, metric, nodes...)
 }
@@ -209,7 +219,8 @@ func (sc *SnowthClient) ReadNNTAllValues(start, end time.Time, period int64,
 // ReadNNTAllValuesContext is the context aware version of ReadNNTAllValues.
 func (sc *SnowthClient) ReadNNTAllValuesContext(ctx context.Context,
 	start, end time.Time, period int64,
-	id, metric string, nodes ...*SnowthNode) ([]NNTAllValue, error) {
+	id, metric string, nodes ...*SnowthNode,
+) ([]NNTAllValue, error) {
 	var node *SnowthNode
 	if len(nodes) > 0 && nodes[0] != nil {
 		node = nodes[0]
@@ -218,6 +229,7 @@ func (sc *SnowthClient) ReadNNTAllValuesContext(ctx context.Context,
 	}
 
 	r := &NNTAllValueResponse{}
+
 	body, _, err := sc.DoRequestContext(ctx, node, "GET", path.Join("/read",
 		strconv.FormatInt(start.Unix(), 10),
 		strconv.FormatInt(end.Unix(), 10),
@@ -229,5 +241,6 @@ func (sc *SnowthClient) ReadNNTAllValuesContext(ctx context.Context,
 	if err := decodeJSON(body, &r); err != nil {
 		return nil, fmt.Errorf("unable to decode IRONdb response: %w", err)
 	}
+
 	return r.Data, nil
 }

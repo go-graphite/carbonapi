@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/ansel1/merry"
 	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -43,7 +44,8 @@ func (f *groupByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 	var callback string
 	var nodes []parser.NodeOrTag
 
-	if e.Target() == "groupByNode" {
+	target := e.Target()
+	if target == "groupByNode" {
 		nodes, err = e.GetNodeOrTagArgs(1, true)
 		if err != nil {
 			return nil, err
@@ -88,6 +90,9 @@ func (f *groupByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		// create a stub context to evaluate the callback in
 		nexpr, _, err := parser.ParseExpr(expr)
 		if err != nil {
+			return nil, err
+		} else if nexpr.Type() != parser.EtFunc {
+			err = merry.WithMessagef(parser.ErrInvalidArg, "unsupported "+target+" callback function")
 			return nil, err
 		}
 		// remove all stub_ prefixes we've prepended before

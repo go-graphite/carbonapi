@@ -17,8 +17,49 @@ Changes
 
 CHANGELOG
 ---------
-**WIP**
- - [Improvement] Port `join` function from Avito carbonapi fork (https://github.com/el-yurchito/carbonapi/commit/bccdb90a90492314c18696eb4f064b818c5fff70 and https://github.com/el-yurchito/carbonapi/commit/47177771d60b7af0f5ac865634ecf3d1c3aa2802)
+**0.16.0.1**
+ - [Build] Fix automation that builds docker images
+ - [Build] Add rockylinux-9 packages (RHEL 9)
+ - [Build] Update build version of golang to 1.19.4
+
+**0.16.0**
+ - [Improvement] Deprecate and remove carbonzipper binary (thx to @msaf1980)
+ - [Improvement] Remove deprecated carbonsearch support
+ - [Improvement] Refactor HTTP client (used to talk to databases) to properly do keepAlive and respect specified amount of connections
+ - [Improvement] HTTP client should now support mTLS checking
+ - [Improvement] Listeners now support TLS (including mTLS)
+ - [Improvement] Update all vendored libraries to their latest stable version
+ - [Code] fix various panics in tags and use copy tags to avoid mutating input (thx to @npazosmendez)
+ - [Feature] Port `join` function from Avito carbonapi fork (https://github.com/el-yurchito/carbonapi/commit/bccdb90a90492314c18696eb4f064b818c5fff70 and https://github.com/el-yurchito/carbonapi/commit/47177771d60b7af0f5ac865634ecf3d1c3aa2802)
+ - [Feature] Implement exp() function (thx to @carrieedwards)
+ - [Feature] Implement logit() function (thx to @carrieedwards)
+ - [Feature] Implement unique() function (thx to @carrieedwards)
+ - [Feature] Implement sinFunction() function (thx to @carrieedwards)
+ - [Feature] Implement legendValue() function (thx to @carrieedwards)
+ - [Feature] Implement aggregateWithWildcards() function (thx to @carrieedwards)
+ - [Feature] Implement powSeries() function (thx to @leizor)
+ - [Feature] Implement averageOutsidePercentile() function (thx to @carrieedwards)
+ - [Feature] Implement sigmoid() function (thx to @carrieedwards)
+ - [Feature] Support for xFilesFactor and setXFilesFactor (thx to @carrieedwards)
+ - [Feature] Implement removeBetweenPercentile() function (thx to @carrieedwards)
+ - [Feature] Implement identity() function (thx to @carrieedwards)
+ - [Feature] Implement minMax() function (thx to @carrieedwards)
+ - [Feature] Implement aggregateSeriesLists() function (thx to @leizor)
+ - [Feature] Implement movingWindow() function (thx to @carrieedwards)
+ - [Feature] Implement exponentialMovingAverage() function (thx to @carrieedwards)
+ - [Feature] Implement verticalLine() function (thx to @leizor)
+ - [Feature] Implement toLowerCase() function (thx to @carrieedwards)
+ - [Feature] Implement toUpperCase() function (thx to @carrieedwards)
+ - [Feature] Implement sumSeriesLists() function (thx to @carrieedwards)
+ - [Feature] Implement compressPeriodicGaps() function (thx to @carrieedwards)
+ - [Feature] Implement holtWintersConfidenceArea() function (thx to @carrieedwards)
+ - [Fix] Numerous compatibility fixes for functions, mostly for graphite-web compatibility (thx to @carrieedwards and @npazosmendez, @msaf1980)
+ - [Fix] Refactor scaling and re-aligning series (thx to @msaf1980)
+ - [Fix] Fix logic that extracts names when metric name contains non-ascii characters (thx to @msaf1980)
+ - [Fix] Parser now accepts escaped characters
+ - [Fix] IronDB adjuststep logic now works properly
+ - [Fix] Fix tag extractions in seriesByTag (thx to @msaf1980)
+ - [Fix] Fix tag handling in nested functions (thx to @carrieedwards)
 
 **0.15.6**
  - [Improvement] Significant improvement in sorting metrics from backends (thx to @Felixoid)

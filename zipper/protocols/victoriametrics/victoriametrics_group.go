@@ -11,7 +11,6 @@ import (
 	"github.com/ansel1/merry"
 	"github.com/valyala/fastjson"
 
-	"github.com/go-graphite/carbonapi/internal/dns"
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/zipper/helper"
 	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
@@ -67,12 +66,7 @@ type VictoriaMetricsGroup struct {
 
 func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool, limiter limiter.ServerLimiter) (types.BackendServer, merry.Error) {
 	logger = logger.With(zap.String("type", "victoriametrics"), zap.String("protocol", config.Protocol), zap.String("name", config.GroupName))
-	httpClient := &http.Client{
-		Transport: &http.Transport{
-			MaxIdleConnsPerHost: *config.MaxIdleConnsPerHost,
-			DialContext:         dns.GetDialContextWithTimeout(config.Timeouts.Connect, *config.KeepAliveInterval),
-		},
-	}
+	httpClient := helper.GetHTTPClient(logger, config)
 
 	step := int64(15)
 	var vmClusterTenantID string = ""
