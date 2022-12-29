@@ -2,7 +2,10 @@ package limiter
 
 import (
 	"context"
+	"errors"
 )
+
+var ErrTimeout = errors.New("timeout exceeded")
 
 type ServerLimiter interface {
 	Capacity() int
