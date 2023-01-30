@@ -186,8 +186,8 @@ github.com/stretchr/testify/assert
 # github.com/subosito/gotenv v1.4.1
 ## explicit; go 1.18
 github.com/subosito/gotenv
-# github.com/tebeka/strftime v0.0.0-20121209190902-f22f5d2dce0f
-## explicit
+# github.com/tebeka/strftime v0.1.5
+## explicit; go 1.14
 github.com/tebeka/strftime
 # github.com/tevino/abool v1.2.0
 ## explicit; go 1.14

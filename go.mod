@@ -32,7 +32,7 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/spf13/viper v1.14.0
 	github.com/stretchr/testify v1.8.1
-	github.com/tebeka/strftime v0.0.0-20121209190902-f22f5d2dce0f
+	github.com/tebeka/strftime v0.1.5
 	github.com/tevino/abool v1.2.0
 	github.com/tinylib/msgp v1.1.6
 	github.com/valyala/fastjson v1.6.3
