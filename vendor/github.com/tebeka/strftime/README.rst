@@ -15,7 +15,7 @@ Installing
 ==========
 ::
 
-    go get bitbucket.org/tebeka/strftime
+    go get bitbucket.org/tebeka/strtime
 
 Example
 =======

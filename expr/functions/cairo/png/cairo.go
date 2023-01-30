@@ -22,7 +22,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 
-	"bitbucket.org/tebeka/strftime"
+	"github.com/tebeka/strftime"
 	"github.com/evmar/gocairo/cairo"
 )
 

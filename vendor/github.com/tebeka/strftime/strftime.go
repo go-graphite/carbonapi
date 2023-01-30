@@ -26,8 +26,6 @@ Directives:
 	%y - Year without century as a decimal number [00,99]
 	%Y - Year with century as a decimal number
 	%Z - Time zone name (no characters if no time zone exists)
-
-Note that %c returns RFC1123 which is a bit different from what Python does
 */
 package strftime
 
@@ -45,23 +43,23 @@ const (
 
 // See http://docs.python.org/2/library/time.html#time.strftime
 var conv = map[string]string{
-	"%a": "Mon",        // Locale’s abbreviated weekday name
-	"%A": "Monday",     // Locale’s full weekday name
-	"%b": "Jan",        // Locale’s abbreviated month name
-	"%B": "January",    // Locale’s full month name
-	"%c": time.RFC1123, // Locale’s appropriate date and time representation
-	"%d": "02",         // Day of the month as a decimal number [01,31]
-	"%H": "15",         // Hour (24-hour clock) as a decimal number [00,23]
-	"%I": "3",          // Hour (12-hour clock) as a decimal number [01,12]
-	"%m": "01",         // Month as a decimal number [01,12]
-	"%M": "04",         // Minute as a decimal number [00,59]
-	"%p": "PM",         // Locale’s equivalent of either AM or PM
-	"%S": "05",         // Second as a decimal number [00,61]
-	"%x": "01/02/06",   // Locale’s appropriate date representation
-	"%X": "15:04:05",   // Locale’s appropriate time representation
-	"%y": "06",         // Year without century as a decimal number [00,99]
-	"%Y": "2006",       // Year with century as a decimal number
-	"%Z": "MST",        // Time zone name (no characters if no time zone exists)
+	"%a": "Mon",         // Locale’s abbreviated weekday name
+	"%A": "Monday",      // Locale’s full weekday name
+	"%b": "Jan",         // Locale’s abbreviated month name
+	"%B": "January",     // Locale’s full month name
+	"%c": time.RFC1123,  // Locale’s appropriate date and time representation
+	"%d": "02",          // Day of the month as a decimal number [01,31]
+	"%H": "15",          // Hour (24-hour clock) as a decimal number [00,23]
+	"%I": "3",           // Hour (12-hour clock) as a decimal number [01,12]
+	"%m": "01",          // Month as a decimal number [01,12]
+	"%M": "04",          // Minute as a decimal number [00,59]
+	"%p": "PM",          // Locale’s equivalent of either AM or PM
+	"%S": "05",          // Second as a decimal number [00,61]
+	"%x": "01/02/2006",  // Locale’s appropriate date representation
+	"%X": "15:04:05 PM", // Locale’s appropriate time representation
+	"%y": "06",          // Year without century as a decimal number [00,99]
+	"%Y": "2006",        // Year with century as a decimal number
+	"%Z": "MST",         // Time zone name (no characters if no time zone exists)
 }
 
 var fmtRe *regexp.Regexp
