@@ -70,7 +70,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 
 	step := int64(15)
 	var vmClusterTenantID string = ""
-	vmClusterTenantIDI, ok := config.BackendOptions["vmClusterTenantID"]
+	vmClusterTenantIDI, ok := config.BackendOptions["vmclustertenantid"]
 	if ok {
 		vmClusterTenantID = vmClusterTenantIDI.(string)
 	}
