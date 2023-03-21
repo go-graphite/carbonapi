@@ -45,7 +45,7 @@ func (f *aliasByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 
 	for i, a := range args {
 		name := helper.AggKey(a, nodesOrTags)
-		r := a.CopyTag(name, map[string]string{"name": name})
+		r := a.CopyName(name)
 		results[i] = r
 	}
 
