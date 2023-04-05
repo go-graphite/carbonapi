@@ -45,6 +45,18 @@ func TestHitcount(t *testing.T) {
 
 	tests := []th.SummarizeEvalTestItem{
 		{
+			"hitcount(metric1,\"6m\")",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{
+					2, 4, 6}, 600, 100)},
+			},
+			[]float64{720, 960, 1440, 1920, 2160},
+			"hitcount(metric1,'6m')",
+			360,
+			100,
+			2200,
+		},
+		{
 			"hitcount(metric1,\"30s\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{
@@ -102,6 +114,18 @@ func TestHitcount(t *testing.T) {
 			3600,
 			tenFiftyNine - (59 * 60),
 			tenFiftyNine + 25*5,
+		},
+		{
+			"hitcount(metric1,\"6m\")",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{
+					2, 4, 6}, 600, 100)},
+			},
+			[]float64{720, 960, 1440, 1920, 2160},
+			"hitcount(metric1,'6m')",
+			360,
+			100,
+			2200,
 		},
 	}
 
