@@ -6,6 +6,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -54,6 +55,8 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 	}
 	interval := int64(bucketSizeInt32)
 
+	// Note: the request for the data is adjusted in expr.Metrics() so that the fetched
+	// data is already aligned by interval if this parameter is set to true
 	alignToInterval, err := e.GetBoolNamedOrPosArgDefault("alignToInterval", 2, false)
 	if err != nil {
 		return nil, err
@@ -61,9 +64,11 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 
 	start := args[0].StartTime
 	stop := args[0].StopTime
-	if alignToInterval {
-		start = helper.AlignStartToInterval(start, stop, interval)
-	}
+	//if alignToInterval {
+	//	start = helper.AlignStartToInterval(start, stop, interval)
+	//	intervalCount := (stop - start) / interval
+	//	stop = start + (intervalCount * interval) + interval
+	//}
 
 	results := make([]*types.MetricData, 0, len(args))
 	for _, arg := range args {
@@ -97,8 +102,11 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 		r.Tags["hitcount"] = fmt.Sprintf("%d", bucketSizeInt32)
 
 		step := arg.StepTime
-		buckets := make([]float64, bucketCount)
-		newStart := arg.StopTime - bucketCount*interval
+		buckets := make([][]float64, bucketCount)
+		newStart := stop - bucketCount*interval
+		r.StartTime = newStart
+		newStartDateTime := time.Unix(newStart, 0)
+		fmt.Println("New start time is: ", newStartDateTime)
 
 		for i, v := range arg.Values {
 			if math.IsNaN(v) {
@@ -106,9 +114,9 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 			}
 
 			start_time := arg.StartTime + int64(i)*step
-			startBucket, startMod := divmod(start_time-newStart, interval)
+			startBucket, startMod := helper.Divmod(start_time-newStart, interval)
 			end_time := start_time + step
-			endBucket, endMod := divmod(end_time-newStart, interval)
+			endBucket, endMod := helper.Divmod(end_time-newStart, interval)
 
 			if endBucket >= bucketCount {
 				endBucket = bucketCount - 1
@@ -118,23 +126,35 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 			if startBucket == endBucket {
 				// All hits go into a single bucket
 				if startBucket >= 0 {
-					buckets[startBucket] += v * float64(endMod-startMod)
+					buckets[startBucket] = append(buckets[startBucket], v*float64(endMod-startMod))
 				}
 			} else {
 				// Spread the hits amongst 2 or more buckets
 				if startBucket >= 0 {
-					buckets[startBucket] += v * float64(interval-startMod)
+					buckets[startBucket] = append(buckets[startBucket], v*float64(interval-startMod))
 				}
 				hitsPerBucket := v * float64(interval)
 				for j := startBucket + 1; j < endBucket; j++ {
-					buckets[j] += hitsPerBucket
+					buckets[j] = append(buckets[j], hitsPerBucket)
 				}
 				if endMod > 0 {
-					buckets[endBucket] += v * float64(endMod)
+					buckets[endBucket] = append(buckets[endBucket], v*float64(endMod))
 				}
 			}
 		}
-		r.Values = buckets
+		newValues := make([]float64, bucketCount)
+		for i, bucket := range buckets {
+			if bucket != nil {
+				var sum float64
+				for _, v := range bucket {
+					sum += v
+				}
+				newValues[i] = sum
+			} else {
+				newValues[i] = math.NaN()
+			}
+		}
+		r.Values = newValues
 
 		results = append(results, r)
 	}
@@ -176,10 +196,4 @@ func (f *hitcount) Description() map[string]types.FunctionDescription {
 			ValuesChange: true, // values changed
 		},
 	}
-}
-
-func divmod(numerator, denominator int64) (quotient, remainder int64) {
-	quotient = numerator / denominator // integer division, decimals are truncated
-	remainder = numerator % denominator
-	return
 }
