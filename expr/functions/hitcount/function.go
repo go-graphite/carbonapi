@@ -55,8 +55,6 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 	}
 	interval := int64(bucketSizeInt32)
 
-	// Note: the request for the data is adjusted in expr.Metrics() so that the fetched
-	// data is already aligned by interval if this parameter is set to true
 	alignToInterval, err := e.GetBoolNamedOrPosArgDefault("alignToInterval", 2, false)
 	if err != nil {
 		return nil, err
@@ -64,11 +62,13 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 
 	start := args[0].StartTime
 	stop := args[0].StopTime
-	//if alignToInterval {
-	//	start = helper.AlignStartToInterval(start, stop, interval)
-	//	intervalCount := (stop - start) / interval
-	//	stop = start + (intervalCount * interval) + interval
-	//}
+
+	// Note: the start time for the fetch request is adjusted in expr.Metrics() so that the fetched
+	// data is already aligned by interval if this parameter is set to true
+	if alignToInterval {
+		intervalCount := (stop - start) / interval
+		stop = start + (intervalCount * interval) + interval
+	}
 
 	results := make([]*types.MetricData, 0, len(args))
 	for _, arg := range args {
