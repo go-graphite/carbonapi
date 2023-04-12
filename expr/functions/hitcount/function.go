@@ -3,16 +3,14 @@ package hitcount
 import (
 	"context"
 	"fmt"
-	"math"
-	"strconv"
-	"strings"
-	"time"
-
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
+	"math"
+	"strconv"
+	"strings"
 )
 
 type hitcount struct {
@@ -105,8 +103,6 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 		buckets := make([][]float64, bucketCount)
 		newStart := stop - bucketCount*interval
 		r.StartTime = newStart
-		newStartDateTime := time.Unix(newStart, 0)
-		fmt.Println("New start time is: ", newStartDateTime)
 
 		for i, v := range arg.Values {
 			if math.IsNaN(v) {

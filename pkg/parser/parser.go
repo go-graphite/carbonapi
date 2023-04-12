@@ -228,8 +228,9 @@ func (e *expr) Metrics(from, until int64) []MetricRequest {
 						return nil
 					}
 					interval := int64(bucketSizeInt32)
-					var r2 []MetricRequest
-					for _, v := range r {
+					// This is done in order to replicate the behavior in Graphite web when alignToInterval is set,
+					// in which new data is fetched with the adjusted start time.
+					for i, _ := range r {
 						start := from
 						for _, v := range []int64{86400, 3600, 60} {
 							if interval >= v {
@@ -237,16 +238,9 @@ func (e *expr) Metrics(from, until int64) []MetricRequest {
 								break
 							}
 						}
-						intervalCount := (until - start) / interval
-						stop := start + (intervalCount * interval) + interval
-						r2 = append(r2, MetricRequest{
-							Metric: v.Metric,
-							From:   start,
-							Until:  stop,
-						})
-					}
 
-					return r2
+						r[i].From = start
+					}
 				}
 			}
 		}
