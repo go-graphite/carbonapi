@@ -60,7 +60,7 @@ func TestHitcount(t *testing.T) {
 			"hitcount(metric1,'30s')",
 			30,
 			1410344975,
-			1410345155,
+			now32 + 31*5,
 		},
 		{
 			"hitcount(metric1,\"1h\")",
@@ -74,7 +74,7 @@ func TestHitcount(t *testing.T) {
 			"hitcount(metric1,'1h')",
 			3600,
 			1410343265,
-			1410346865,
+			tenFiftyNine + 25*5,
 		},
 		{
 			"hitcount(metric1,\"1h\",true)",
@@ -87,8 +87,8 @@ func TestHitcount(t *testing.T) {
 			[]float64{375},
 			"hitcount(metric1,'1h',true)",
 			3600,
-			1410346740,
-			1410350340,
+			tenFiftyNine,
+			tenFiftyNine + (((tenFiftyNine + 25*5) - tenFiftyNine) / 3600) + 3600, // The end time is adjusted because of alignToInterval being set to true
 		},
 		{
 			"hitcount(metric1,\"1h\",alignToInterval=true)",
@@ -101,8 +101,8 @@ func TestHitcount(t *testing.T) {
 			[]float64{375},
 			"hitcount(metric1,'1h',true)",
 			3600,
-			1410346740,
-			1410350340,
+			tenFiftyNine,
+			tenFiftyNine + (((tenFiftyNine + 25*5) - tenFiftyNine) / 3600) + 3600, // The end time is adjusted because of alignToInterval being set to true
 		},
 		{
 			"hitcount(metric1,\"15s\")", // Test having a smaller interval than the data's step
@@ -114,8 +114,8 @@ func TestHitcount(t *testing.T) {
 
 			"hitcount(metric1,'15s')",
 			15,
-			1410345000,
-			1410345150,
+			now32,
+			now32 + 5*30,
 		},
 	}
 
