@@ -3,7 +3,6 @@ module github.com/go-graphite/carbonapi
 go 1.18
 
 require (
-	bitbucket.org/tebeka/strftime v0.0.0-20140926081919-2194253a23c0
 	github.com/JaderDias/movingmedian v0.0.0-20220813210630-d8c6b6de8835
 	github.com/alicebob/miniredis/v2 v2.22.0
 	github.com/ansel1/merry v1.6.2
@@ -33,6 +32,7 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/spf13/viper v1.14.0
 	github.com/stretchr/testify v1.8.1
+	github.com/tebeka/strftime v0.1.5
 	github.com/tevino/abool v1.2.0
 	github.com/tinylib/msgp v1.1.6
 	github.com/valyala/fastjson v1.6.3

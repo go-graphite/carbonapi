@@ -14,22 +14,23 @@ fi
 
 set -e
 
-TEST_DIR=$(dirname ${0})
-TEST_NAME=$(basename ${0})
+source "$(dirname "${0}")/common.sh"
+
+TEST_DIR=$(dirname "${0}")
+TEST_NAME=$(basename "${0}")
 STATUS=0
-echo ${TEST_NAME/.sh/.yaml}
+echo "${TEST_NAME/.sh/.yaml}"
 
 EXPECTED_LISTENERS=(
 	"127.0.0.1:8082"
 )
 
-
-echo "carbonapi -config ${TEST_DIR}/${TEST_NAME/.sh/.yaml} &"
-./carbonapi -config ${TEST_DIR}/${TEST_NAME/.sh/.yaml} &
-
+trap "cleanup" SIGINT SIGTERM EXIT INT QUIT TERM EXIT
+echo "carbonapi -config \"${TEST_DIR}/${TEST_NAME/.sh/.yaml}\" &"
+./carbonapi -config "${TEST_DIR}/${TEST_NAME/.sh/.yaml}" &
 sleep 2
 
-LISTENERS=$(ss -ltpn | grep carbonapi | awk '{print $4}' | sort -u)
+LISTENERS=$(get_listeners "carbonapi")
 
 set +e
 
@@ -77,12 +78,18 @@ fi
 OUT=$(curl --tlsv1.3 -kvvI https://127.0.0.1:8082 2>&1)
 CURL_STATUS=${?}
 if [[ ${CURL_STATUS} -ne 0 ]]; then
-	echo "${OUT}"
-	echo "${TEST_NAME} FAIL"
-	STATUS=1
-	kill %1
-	wait
-	exit ${STATUS}
+  echo "${OUT}"
+  STATUS=1
+  if [[ ${CURL_STATUS} -eq 4 ]] && [[ ${_RUNNING_OS} == "Darwin" ]]; then
+    echo "tls1.3 not supported on OSX in brew version of curl, assuming it's ok"
+    echo "${TEST_NAME} OK"
+    STATUS=0
+  else
+    echo "${TEST_NAME} FAIL"
+  fi
+  kill %1
+  wait
+  exit ${STATUS}
 fi
 
 EXPECTED_CURL_OUTPUT=(

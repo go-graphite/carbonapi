@@ -62,6 +62,15 @@ func (r responseFormat) String() string {
 	}
 }
 
+func (r responseFormat) ValidExpandFormat() bool {
+	switch r {
+	case jsonFormat:
+		return true
+	default:
+		return false
+	}
+}
+
 func (r responseFormat) ValidFindFormat() bool {
 	switch r {
 	case jsonFormat:

@@ -18,6 +18,9 @@ func InitHandlers(headersToPass, headersToLog []string) *http.ServeMux {
 	r.HandleFunc(config.Config.Prefix+"/metrics/find/", httputil.TrackConnections(httputil.TimeHandler(enrichContextWithHeaders(headersToPass, headersToLog, ctx.ParseCtx(findHandler, ctx.HeaderUUIDAPI)), bucketRequestTimes)))
 	r.HandleFunc(config.Config.Prefix+"/metrics/find", httputil.TrackConnections(httputil.TimeHandler(enrichContextWithHeaders(headersToPass, headersToLog, ctx.ParseCtx(findHandler, ctx.HeaderUUIDAPI)), bucketRequestTimes)))
 
+	r.HandleFunc(config.Config.Prefix+"/metrics/expand/", httputil.TrackConnections(httputil.TimeHandler(enrichContextWithHeaders(headersToPass, headersToLog, ctx.ParseCtx(expandHandler, ctx.HeaderUUIDAPI)), bucketRequestTimes)))
+	r.HandleFunc(config.Config.Prefix+"/metrics/expand", httputil.TrackConnections(httputil.TimeHandler(enrichContextWithHeaders(headersToPass, headersToLog, ctx.ParseCtx(expandHandler, ctx.HeaderUUIDAPI)), bucketRequestTimes)))
+
 	r.HandleFunc(config.Config.Prefix+"/info/", httputil.TrackConnections(httputil.TimeHandler(enrichContextWithHeaders(headersToPass, headersToLog, ctx.ParseCtx(infoHandler, ctx.HeaderUUIDAPI)), bucketRequestTimes)))
 	r.HandleFunc(config.Config.Prefix+"/info", httputil.TrackConnections(httputil.TimeHandler(enrichContextWithHeaders(headersToPass, headersToLog, ctx.ParseCtx(infoHandler, ctx.HeaderUUIDAPI)), bucketRequestTimes)))
 

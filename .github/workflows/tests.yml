@@ -1,6 +1,7 @@
 name: Tests
 
 on:
+  merge_group:
   push:
     branches: [ main ]
   pull_request:
@@ -13,8 +14,8 @@ jobs:
     strategy:
       matrix:
         go:
-          - ^1.18
           - ^1.19
+          - ^1.20
           - ^1
     steps:
 

@@ -12,10 +12,18 @@ if [[ ${CURL_MAJOR_V} -le 7 ]]; then
 	fi
 fi
 
+CURL_SSL=$(curl --version | grep -E -o "[^ ]+SSL" | head -n 1)
+if [[ "${CURL_SSL}" == "LibreSSL" ]]; then
+  echo "CURL with LibreSSL is known to fail with ed25519 curves required for tls 1.3, so mTLS test WILL fail"
+  sleep 1
+fi
+
 set -e
 
-TEST_DIR=$(dirname ${0})
-TEST_NAME=$(basename ${0})
+source "$(dirname "${0}")/common.sh"
+
+TEST_DIR=$(dirname "${0}")
+TEST_NAME=$(basename "${0}")
 STATUS=0
 echo ${TEST_NAME/.sh/.yaml}
 
@@ -23,13 +31,12 @@ EXPECTED_LISTENERS=(
 	"127.0.0.1:8082"
 )
 
-
-echo "carbonapi -config ${TEST_DIR}/${TEST_NAME/.sh/.yaml} &"
-./carbonapi -config ${TEST_DIR}/${TEST_NAME/.sh/.yaml} &
-
+trap "cleanup" SIGINT SIGTERM EXIT INT QUIT TERM EXIT
+echo "carbonapi -config \"${TEST_DIR}/${TEST_NAME/.sh/.yaml}\" &"
+./carbonapi -config "${TEST_DIR}/${TEST_NAME/.sh/.yaml}" &
 sleep 2
 
-LISTENERS=$(ss -ltpn | grep carbonapi | awk '{print $4}' | sort -u)
+LISTENERS=$(get_listeners "carbonapi")
 
 set +e
 

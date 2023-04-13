@@ -75,6 +75,7 @@ func (c *VictoriaMetricsGroup) Fetch(ctx context.Context, request *protov3.Multi
 			// Make local copy
 			stepLocalStr := target.step
 			if strings.HasPrefix(target.name, "seriesByTag") {
+				target.name = strings.ReplaceAll(target.name, "'name=", "'__name__=")
 				stepLocalStr, target.name = helpers.SeriesByTagToPromQL(stepLocalStr, target.name)
 			} else {
 				target.name = fmt.Sprintf("{__graphite__=%q}", target.name)

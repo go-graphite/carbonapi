@@ -41,6 +41,11 @@ func (c *VictoriaMetricsGroup) Find(ctx context.Context, request *protov3.MultiG
 	defer c.parserPool.Put(parser)
 
 	for _, query := range request.Metrics {
+		// Find only graphite metric name for first find
+		if query == "*" {
+			query = "*."
+		}
+
 		v := url.Values{
 			"query": []string{query},
 		}

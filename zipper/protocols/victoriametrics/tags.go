@@ -3,6 +3,7 @@ package victoriametrics
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/url"
 
 	"github.com/ansel1/merry"
@@ -14,10 +15,22 @@ func (c *VictoriaMetricsGroup) doTagQuery(ctx context.Context, isTagName bool, q
 	var rewrite *url.URL
 	if isTagName {
 		logger = logger.With(zap.String("type", "tagName"))
-		rewrite, _ = url.Parse("http://127.0.0.1/tags/autoComplete/tags")
+		var serverUrl string
+		if len(c.vmClusterTenantID) > 0 {
+			serverUrl = fmt.Sprintf("http://127.0.0.1/select/%s/graphite/tags/autoComplete/tags", c.vmClusterTenantID)
+		} else {
+			serverUrl = "http://127.0.0.1/tags/autoComplete/tags"
+		}
+		rewrite, _ = url.Parse(serverUrl)
 	} else {
 		logger = logger.With(zap.String("type", "tagValues"))
-		rewrite, _ = url.Parse("http://127.0.0.1/tags/autoComplete/values")
+		var serverUrl string
+		if len(c.vmClusterTenantID) > 0 {
+			serverUrl = fmt.Sprintf("http://127.0.0.1/select/%s/graphite/tags/autoComplete/values", c.vmClusterTenantID)
+		} else {
+			serverUrl = "http://127.0.0.1/tags/autoComplete/values"
+		}
+		rewrite, _ = url.Parse(serverUrl)
 	}
 
 	var r []string
