@@ -2,7 +2,6 @@ package hitcount
 
 import (
 	"context"
-	"fmt"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -88,16 +87,14 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 
 		r := &types.MetricData{
 			FetchResponse: pb.FetchResponse{
-				Name:              nameBuf.String(),
-				Values:            make([]float64, bucketCount, bucketCount+1),
-				StepTime:          interval,
-				StartTime:         start,
-				StopTime:          stop,
-				ConsolidationFunc: "max",
+				Name:      nameBuf.String(),
+				StepTime:  interval,
+				StartTime: start,
+				StopTime:  stop,
 			},
 			Tags: helper.CopyTags(arg),
 		}
-		r.Tags["hitcount"] = fmt.Sprintf("%d", bucketSizeInt32)
+		r.Tags["hitcount"] = strconv.FormatInt(int64(bucketSizeInt32), 10)
 
 		step := arg.StepTime
 		buckets := make([][]float64, bucketCount)
@@ -138,19 +135,18 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 				}
 			}
 		}
-		newValues := make([]float64, bucketCount)
+		r.Values = make([]float64, len(buckets))
 		for i, bucket := range buckets {
-			if bucket != nil {
+			if len(bucket) != 0 {
 				var sum float64
 				for _, v := range bucket {
 					sum += v
 				}
-				newValues[i] = sum
+				r.Values[i] = sum
 			} else {
-				newValues[i] = math.NaN()
+				r.Values[i] = math.NaN()
 			}
 		}
-		r.Values = newValues
 
 		results = append(results, r)
 	}
