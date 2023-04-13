@@ -542,6 +542,36 @@ func TestMetrics(t *testing.T) {
 				},
 			},
 		},
+		{
+			"hitcount(timeShift(metric1, '-1h'),'1h')",
+			&expr{
+				target: "hitcount",
+				etype:  EtFunc,
+				args: []*expr{
+					{
+						target: "timeShift",
+						etype:  EtFunc,
+						args: []*expr{
+							{target: "metric1"},
+							{valStr: "-1h", etype: EtString},
+						},
+						argString: "metric1, '-1h'",
+					},
+					{valStr: "1h", etype: EtString},
+					{valStr: "true", etype: EtBool},
+				},
+				argString: "timeShift(metric1, '-1h'),'1h'",
+			},
+			1410346740,
+			1410346865,
+			[]MetricRequest{
+				{
+					Metric: "metric1",
+					From:   1410339600,
+					Until:  1410343265,
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.s, func(t *testing.T) {

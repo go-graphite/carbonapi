@@ -231,7 +231,7 @@ func (e *expr) Metrics(from, until int64) []MetricRequest {
 					// This is done in order to replicate the behavior in Graphite web when alignToInterval is set,
 					// in which new data is fetched with the adjusted start time.
 					for i, _ := range r {
-						start := from
+						start := r[i].From
 						for _, v := range []int64{86400, 3600, 60} {
 							if interval >= v {
 								start -= start % v
