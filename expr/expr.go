@@ -240,10 +240,13 @@ func EvalExpr(ctx context.Context, e parser.Expr, from, until int64, values map[
 	} else if e.IsConst() {
 		p := types.MetricData{
 			FetchResponse: pb.FetchResponse{
-				Name:   e.Target(),
-				Values: []float64{e.FloatValue()},
+				Name:      e.ToString(),
+				Values:    []float64{e.FloatValue()},
+				StartTime: from,
+				StopTime:  until,
+				StepTime:  until - from,
 			},
-			Tags: map[string]string{"name": e.Target()},
+			Tags: map[string]string{"name": e.ToString()},
 		}
 		return []*types.MetricData{&p}, nil
 	}

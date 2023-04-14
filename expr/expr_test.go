@@ -226,6 +226,11 @@ func TestEvalExpression(t *testing.T) {
 			[]*types.MetricData{types.MakeMetricData("metric", []float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
 		{
+			"42",
+			map[parser.MetricRequest][]*types.MetricData{},
+			[]*types.MetricData{types.MakeMetricData("42", []float64{42}, 1, 0)},
+		},
+		{
 			"metric*",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric*", 0, 1}: {
