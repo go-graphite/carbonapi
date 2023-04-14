@@ -137,23 +137,23 @@ func (e *expr) NamedArg(name string) (Expr, bool) {
 	return expr, exist
 }
 
-func (e *expr) Metrics() []MetricRequest {
+func (e *expr) Metrics(from, until int64) []MetricRequest {
 	switch e.etype {
 	case EtName:
-		return []MetricRequest{{Metric: e.target}}
+		return []MetricRequest{{Metric: e.target, From: from, Until: until}}
 	case EtConst, EtString:
 		return nil
 	case EtFunc:
 		var r []MetricRequest
 		for _, a := range e.args {
-			r = append(r, a.Metrics()...)
+			r = append(r, a.Metrics(from, until)...)
 		}
 
 		switch e.target {
 		case "transformNull":
 			referenceSeriesExpr := e.GetNamedArg("referenceSeries")
 			if !referenceSeriesExpr.IsInterfaceNil() {
-				r = append(r, referenceSeriesExpr.Metrics()...)
+				r = append(r, referenceSeriesExpr.Metrics(from, until)...)
 			}
 		case "timeShift":
 			offs, err := e.GetIntervalArg(1, -1)
@@ -210,6 +210,37 @@ func (e *expr) Metrics() []MetricRequest {
 				for i := range r {
 					fromNew := r[i].From - int64(offs)
 					r[i].From = fromNew
+				}
+			}
+		case "hitcount":
+			if len(e.args) < 2 {
+				return nil
+			}
+
+			if len(e.args) == 3 {
+				alignToInterval, err := e.GetBoolNamedOrPosArgDefault("alignToInterval", 2, false)
+				if err != nil {
+					return nil
+				}
+				if alignToInterval {
+					bucketSizeInt32, err := e.GetIntervalArg(1, 1)
+					if err != nil {
+						return nil
+					}
+					interval := int64(bucketSizeInt32)
+					// This is done in order to replicate the behavior in Graphite web when alignToInterval is set,
+					// in which new data is fetched with the adjusted start time.
+					for i, _ := range r {
+						start := r[i].From
+						for _, v := range []int64{86400, 3600, 60} {
+							if interval >= v {
+								start -= start % v
+								break
+							}
+						}
+
+						r[i].From = start
+					}
 				}
 			}
 		}
