@@ -20,7 +20,7 @@ jobs:
           - ^1
     steps:
     - name: Set up Go
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v4
       with:
         go-version: ${{ matrix.go }}
     - name: Set up Ruby for package_cloud uploader to work
