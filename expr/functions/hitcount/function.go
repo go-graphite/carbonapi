@@ -37,15 +37,6 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 		return nil, parser.ErrMissingArgument
 	}
 
-	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(args) == 0 {
-		return []*types.MetricData{}, nil
-	}
-
 	bucketSizeInt32, err := e.GetIntervalArg(1, 1)
 	if err != nil {
 		return nil, err
@@ -55,6 +46,20 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 	alignToInterval, err := e.GetBoolNamedOrPosArgDefault("alignToInterval", 2, false)
 	if err != nil {
 		return nil, err
+	}
+
+	if alignToInterval {
+		// from needs to be adjusted before grabbing the series arg as it has been adjusted in the metric request
+		from = helper.AlignStartToInterval(from, until, interval)
+	}
+
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(args) == 0 {
+		return []*types.MetricData{}, nil
 	}
 
 	start := args[0].StartTime
