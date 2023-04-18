@@ -217,32 +217,32 @@ func (e *expr) Metrics(from, until int64) []MetricRequest {
 				return nil
 			}
 
-			if len(e.args) == 3 {
-				alignToInterval, err := e.GetBoolNamedOrPosArgDefault("alignToInterval", 2, false)
+			alignToInterval, err := e.GetBoolNamedOrPosArgDefault("alignToInterval", 2, false)
+			if err != nil {
+				return nil
+			}
+			if alignToInterval {
+				bucketSizeInt32, err := e.GetIntervalArg(1, 1)
 				if err != nil {
 					return nil
 				}
-				if alignToInterval {
-					bucketSizeInt32, err := e.GetIntervalArg(1, 1)
-					if err != nil {
-						return nil
-					}
-					interval := int64(bucketSizeInt32)
-					// This is done in order to replicate the behavior in Graphite web when alignToInterval is set,
-					// in which new data is fetched with the adjusted start time.
-					for i, _ := range r {
-						start := r[i].From
-						for _, v := range []int64{86400, 3600, 60} {
-							if interval >= v {
-								start -= start % v
-								break
-							}
-						}
 
-						r[i].From = start
+				interval := int64(bucketSizeInt32)
+				// This is done in order to replicate the behavior in Graphite web when alignToInterval is set,
+				// in which new data is fetched with the adjusted start time.
+				for i, _ := range r {
+					start := r[i].From
+					for _, v := range []int64{86400, 3600, 60} {
+						if interval >= v {
+							start -= start % v
+							break
+						}
 					}
+
+					r[i].From = start
 				}
 			}
+
 		}
 		return r
 	}
