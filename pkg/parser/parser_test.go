@@ -522,6 +522,34 @@ func TestMetrics(t *testing.T) {
 			},
 		},
 		{
+			"hitcount(metric1, '1h', alignToInterval=True)",
+			&expr{
+				target: "hitcount",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{valStr: "1h", etype: EtString},
+				},
+				namedArgs: map[string]*expr{
+					"alignToInterval": {
+						target: "true",
+						etype:  EtBool,
+						valStr: "true",
+					},
+				},
+				argString: "metric1, '1h', alignToInterval=True",
+			},
+			1410346740,
+			1410346865,
+			[]MetricRequest{
+				{
+					Metric: "metric1",
+					From:   1410343200,
+					Until:  1410346865,
+				},
+			},
+		},
+		{
 			"hitcount(metric1, '1h')",
 			&expr{
 				target: "hitcount",
