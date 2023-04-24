@@ -48,6 +48,8 @@ var (
 	ErrUnknownTimeUnits = errors.New("unknown time units")
 	// ErrInvalidArg is eval error for invalid or mismatch function arg
 	ErrInvalidArg = errors.New("invalid function arg")
+	//ErrInvalidInterval is an eval error returned when an interval is set to 0
+	ErrInvalidInterval = errors.New("invalid interval arg")
 )
 
 // NodeOrTag structure contains either Node (=integer) or Tag (=string)
