@@ -600,6 +600,167 @@ func TestMetrics(t *testing.T) {
 				},
 			},
 		},
+		{
+			"smartSummarize(metric1, '1h', 'sum', 'seconds')",
+			&expr{
+				target: "smartSummarize",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{valStr: "1h", etype: EtString},
+					{valStr: "sum", etype: EtString},
+					{valStr: "seconds", etype: EtString},
+				},
+				argString: "metric1, '1h', 'sum', 'seconds'",
+			},
+			1410346740,
+			1410346865,
+			[]MetricRequest{
+				{
+					Metric: "metric1",
+					From:   1410346740,
+					Until:  1410346865,
+				},
+			},
+		},
+		{
+			"smartSummarize(metric1, '1h', 'sum', '1minutes')",
+			&expr{
+				target: "smartSummarize",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{valStr: "1h", etype: EtString},
+					{valStr: "sum", etype: EtString},
+					{valStr: "1minutes", etype: EtString},
+				},
+				argString: "metric1, '1h', 'sum', '1minutes'",
+			},
+			1410346745,
+			1410346865,
+			[]MetricRequest{
+				{
+					Metric: "metric1",
+					From:   1410346740,
+					Until:  1410346865,
+				},
+			},
+		},
+		{
+			"smartSummarize(metric1, '1h', 'sum', 'hours')",
+			&expr{
+				target: "smartSummarize",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{valStr: "1h", etype: EtString},
+					{valStr: "sum", etype: EtString},
+					{valStr: "hours", etype: EtString},
+				},
+				argString: "metric1, '1h', 'sum', 'hours'",
+			},
+			1410346740,
+			1410346865,
+			[]MetricRequest{
+				{
+					Metric: "metric1",
+					From:   1410343200,
+					Until:  1410346865,
+				},
+			},
+		},
+		{
+			"smartSummarize(metric1, '1h', 'sum', 'days')",
+			&expr{
+				target: "smartSummarize",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{valStr: "1h", etype: EtString},
+					{valStr: "sum", etype: EtString},
+					{valStr: "days", etype: EtString},
+				},
+				argString: "metric1, '1h', 'sum', 'days'",
+			},
+			1410346740,
+			1410346865,
+			[]MetricRequest{
+				{
+					Metric: "metric1",
+					From:   1410307200,
+					Until:  1410346865,
+				},
+			},
+		},
+		{
+			"smartSummarize(metric1, '1hours','sum','weeks5')",
+			&expr{
+				target: "smartSummarize",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{valStr: "1h", etype: EtString},
+					{valStr: "sum", etype: EtString},
+					{valStr: "weeks5", etype: EtString},
+				},
+				argString: "metric1, '1h', 'sum', 'weeks5'",
+			},
+			1410346740,
+			1410346865,
+			[]MetricRequest{
+				{
+					Metric: "metric1",
+					From:   1409875200,
+					Until:  1410346865,
+				},
+			},
+		},
+		{
+			"smartSummarize(metric1, '1hours','sum','months')",
+			&expr{
+				target: "smartSummarize",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{valStr: "1h", etype: EtString},
+					{valStr: "sum", etype: EtString},
+					{valStr: "months", etype: EtString},
+				},
+				argString: "metric1, '1h', 'sum', 'months'",
+			},
+			1410346740,
+			1410346865,
+			[]MetricRequest{
+				{
+					Metric: "metric1",
+					From:   1409529600,
+					Until:  1410346865,
+				},
+			},
+		},
+		{
+			"smartSummarize(metric1, '1hours','sum','y')",
+			&expr{
+				target: "smartSummarize",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{valStr: "1h", etype: EtString},
+					{valStr: "sum", etype: EtString},
+					{valStr: "years", etype: EtString},
+				},
+				argString: "metric1, '1h', 'sum', 'years'",
+			},
+			1410346740,
+			1410346865,
+			[]MetricRequest{
+				{
+					Metric: "metric1",
+					From:   1388534400,
+					Until:  1410346865,
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.s, func(t *testing.T) {
