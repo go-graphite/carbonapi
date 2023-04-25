@@ -45,9 +45,9 @@ func TestHitcount(t *testing.T) {
 
 	tests := []th.SummarizeEvalTestItem{
 		{
-			"hitcount(metric1,\"30s\")",
-			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{
+			Target: "hitcount(metric1,\"30s\")",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", now32, now32 + 31*5}: {types.MakeMetricData("metric1", []float64{
 					1, 1, 1, 1, 1, 2,
 					2, 2, 2, 2, 3, 3,
 					3, 3, 3, 4, 4, 4,
@@ -55,67 +55,75 @@ func TestHitcount(t *testing.T) {
 					math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(),
 					5}, 5, now32)},
 			},
-			[]float64{5, 40, 75, 110, 120, 25},
-
-			"hitcount(metric1,'30s')",
-			30,
-			1410344975,
-			now32 + 31*5,
+			Want:  []float64{5, 40, 75, 110, 120, 25},
+			From:  now32,
+			Until: now32 + 31*5,
+			Name:  "hitcount(metric1,'30s')",
+			Step:  30,
+			Start: 1410344975,
+			Stop:  now32 + 31*5,
 		},
 		{
-			"hitcount(metric1,\"1h\")",
-			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{
+			Target: "hitcount(metric1,\"1h\")",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", tenFiftyNine, tenFiftyNine + 25*5}: {types.MakeMetricData("metric1", []float64{
 					1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3,
 					3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5,
 					5}, 5, tenFiftyNine)},
 			},
-			[]float64{375},
-			"hitcount(metric1,'1h')",
-			3600,
-			1410343265,
-			tenFiftyNine + 25*5,
+			Want:  []float64{375},
+			From:  tenFiftyNine,
+			Until: tenFiftyNine + 25*5,
+			Name:  "hitcount(metric1,'1h')",
+			Step:  3600,
+			Start: 1410343265,
+			Stop:  tenFiftyNine + 25*5,
 		},
 		{
-			"hitcount(metric1,\"1h\",true)",
-			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{
+			Target: "hitcount(metric1,\"1h\",true)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", 1410343200, 1410350340}: {types.MakeMetricData("metric1", []float64{
 					1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3,
 					3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5,
 					5}, 5, tenFiftyNine)},
 			},
-			[]float64{375},
-			"hitcount(metric1,'1h',true)",
-			3600,
-			tenFiftyNine,
-			tenFiftyNine + (((tenFiftyNine + 25*5) - tenFiftyNine) / 3600) + 3600, // The end time is adjusted because of alignToInterval being set to true
+			Want:  []float64{375},
+			From:  1410343200,
+			Until: 1410350340,
+			Name:  "hitcount(metric1,'1h',true)",
+			Step:  3600,
+			Start: tenFiftyNine,
+			Stop:  tenFiftyNine + (((tenFiftyNine + 25*5) - tenFiftyNine) / 3600) + 3600, // The end time is adjusted because of alignToInterval being set to true
 		},
 		{
-			"hitcount(metric1,\"1h\",alignToInterval=true)",
-			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{
+			Target: "hitcount(metric1,\"1h\",alignToInterval=true)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", 1410343200, 1410350340}: {types.MakeMetricData("metric1", []float64{
 					1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3,
 					3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5,
 					5}, 5, tenFiftyNine)},
 			},
-			[]float64{375},
-			"hitcount(metric1,'1h',true)",
-			3600,
-			tenFiftyNine,
-			tenFiftyNine + (((tenFiftyNine + 25*5) - tenFiftyNine) / 3600) + 3600, // The end time is adjusted because of alignToInterval being set to true
+			Want:  []float64{375},
+			From:  1410343200,
+			Until: 1410350340,
+			Name:  "hitcount(metric1,'1h',true)",
+			Step:  3600,
+			Start: tenFiftyNine,
+			Stop:  tenFiftyNine + (((tenFiftyNine + 25*5) - tenFiftyNine) / 3600) + 3600, // The end time is adjusted because of alignToInterval being set to true
 		},
 		{
-			"hitcount(metric1,\"15s\")", // Test having a smaller interval than the data's step
-			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{
+			Target: "hitcount(metric1,\"15s\")", // Test having a smaller interval than the data's step
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", now32, now32 + 5*30}: {types.MakeMetricData("metric1", []float64{
 					11, 7, 19, 32, 23}, 30, now32)},
 			},
-			[]float64{165, 165, 105, 105, 285, 285, 480, 480, 345, 345},
-
-			"hitcount(metric1,'15s')",
-			15,
-			now32,
-			now32 + 5*30,
+			Want:  []float64{165, 165, 105, 105, 285, 285, 480, 480, 345, 345},
+			From:  now32,
+			Until: now32 + 5*30,
+			Name:  "hitcount(metric1,'15s')",
+			Step:  15,
+			Start: now32,
+			Stop:  now32 + 5*30,
 		},
 	}
 

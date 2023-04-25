@@ -146,7 +146,9 @@ func DeepEqual(t *testing.T, target string, original, modified map[parser.Metric
 type SummarizeEvalTestItem struct {
 	Target string
 	M      map[parser.MetricRequest][]*types.MetricData
-	W      []float64
+	Want   []float64
+	From   int64
+	Until  int64
 	Name   string
 	Step   int64
 	Start  int64
@@ -184,7 +186,7 @@ func TestSummarizeEvalExpr(t *testing.T, tt *SummarizeEvalTestItem) {
 	t.Run(tt.Name, func(t *testing.T) {
 		originalMetrics := DeepClone(tt.M)
 		exp, _, _ := parser.ParseExpr(tt.Target)
-		g, err := evaluator.Eval(context.Background(), exp, 0, 1, tt.M)
+		g, err := evaluator.Eval(context.Background(), exp, tt.From, tt.Until, tt.M)
 		if err != nil {
 			t.Errorf("failed to eval %v: %+v", tt.Name, err)
 			return
@@ -200,8 +202,8 @@ func TestSummarizeEvalExpr(t *testing.T, tt *SummarizeEvalTestItem) {
 			t.Errorf("bad Stop for %s: got %s want %s", g[0].Name, time.Unix(g[0].StopTime, 0).Format(time.StampNano), time.Unix(tt.Stop, 0).Format(time.StampNano))
 		}
 
-		if !compare.NearlyEqual(g[0].Values, tt.W) {
-			t.Errorf("failed: %s:\ngot  %+v,\nwant %+v", g[0].Name, g[0].Values, tt.W)
+		if !compare.NearlyEqual(g[0].Values, tt.Want) {
+			t.Errorf("failed: %s:\ngot  %+v,\nwant %+v", g[0].Name, g[0].Values, tt.Want)
 		}
 		if g[0].Name != tt.Name {
 			t.Errorf("bad Name for %+v: got %v, want %v", g, g[0].Name, tt.Name)
