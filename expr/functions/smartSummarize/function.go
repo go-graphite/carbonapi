@@ -115,7 +115,7 @@ func (f *smartSummarize) Do(ctx context.Context, e parser.Expr, from, until int6
 			r.Values = append(r.Values, rv)
 			ts = bucketUpperBound
 		}
-
+		r.StopTime = ts
 		results[n] = &r
 	}
 	return results, nil
