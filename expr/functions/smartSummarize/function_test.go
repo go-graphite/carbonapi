@@ -214,6 +214,21 @@ func TestEvalSummarize(t *testing.T) {
 			Start: 0,
 			Stop:  240,
 		},
+		{
+			// This test case is to check that the stop time of the results will be updated to the final bucket's lower bound
+			// if it is smaller than the final bucket's upper bound
+			Target: "smartSummarize(metric1,'5s','sum')",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", 0, 243}: {types.MakeMetricData("metric1", generateValues(0, 243, 3), 3, 0)},
+			},
+			Want:  []float64{3, 15, 12, 33, 45, 27, 63, 75, 42, 93, 105, 57, 123, 135, 72, 153, 165, 87, 183, 195, 102, 213, 225, 117, 243, 255, 132, 273, 285, 147, 303, 315, 162, 333, 345, 177, 363, 375, 192, 393, 405, 207, 423, 435, 222, 453, 465, 237, 240},
+			Name:  "smartSummarize(metric1,'5s','sum')",
+			From:  0,
+			Until: 243,
+			Step:  5,
+			Start: 0,
+			Stop:  245,
+		},
 	}
 
 	for _, tt := range tests {
