@@ -128,6 +128,20 @@ func TestSummarizeValues(t *testing.T) {
 			xFilesFactor: 0,
 			expected:     3,
 		},
+		{
+			name:         "Only NaN",
+			function:     "sum",
+			values:       []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN()},
+			xFilesFactor: 0,
+			expected:     math.NaN(),
+		},
+		{
+			name:         "Only 0",
+			function:     "sum",
+			values:       []float64{0, 0, 0, 0, 0},
+			xFilesFactor: 0,
+			expected:     0,
+		},
 	}
 
 	for _, tt := range tests {
