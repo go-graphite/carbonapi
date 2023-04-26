@@ -94,7 +94,7 @@ func (f *smartSummarize) Do(ctx context.Context, e parser.Expr, from, until int6
 				StepTime:          bucketSize,
 				StartTime:         arg.StartTime,
 				StopTime:          arg.StopTime,
-				ConsolidationFunc: summarizeFunction,
+				ConsolidationFunc: arg.ConsolidationFunc,
 			},
 			Tags: helper.CopyTags(arg),
 		}
