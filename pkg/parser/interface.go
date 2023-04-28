@@ -108,7 +108,7 @@ type Expr interface {
 	MutateRawArgs(args string) Expr
 
 	// Metrics returns list of metric requests
-	Metrics() []MetricRequest
+	Metrics(from, until int64) []MetricRequest
 
 	// GetIntervalArg returns interval typed argument.
 	GetIntervalArg(n int, defaultSign int) (int32, error)

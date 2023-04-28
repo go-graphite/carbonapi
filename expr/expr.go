@@ -31,12 +31,12 @@ func (eval evaluator) FetchAndEvalExprs(ctx context.Context, exprs []parser.Expr
 
 	haveFallbackSeries := false
 	for _, exp := range exprs {
-		for _, m := range exp.Metrics() {
+		for _, m := range exp.Metrics(from, until) {
 			fetchRequest := pb.FetchRequest{
 				Name:           m.Metric,
 				PathExpression: m.Metric,
-				StartTime:      m.From + from,
-				StopTime:       m.Until + until,
+				StartTime:      m.From,
+				StopTime:       m.Until,
 				MaxDataPoints:  maxDataPoints,
 			}
 			metricRequest := parser.MetricRequest{
@@ -126,12 +126,12 @@ func (eval evaluator) FetchAndEvalExp(ctx context.Context, exp parser.Expr, from
 	// values related to this particular `target=`
 	targetValues := make(map[parser.MetricRequest][]*types.MetricData)
 
-	for _, m := range exp.Metrics() {
+	for _, m := range exp.Metrics(from, until) {
 		fetchRequest := pb.FetchRequest{
 			Name:           m.Metric,
 			PathExpression: m.Metric,
-			StartTime:      m.From + from,
-			StopTime:       m.Until + until,
+			StartTime:      m.From,
+			StopTime:       m.Until,
 			MaxDataPoints:  maxDataPoints,
 		}
 		metricRequest := parser.MetricRequest{

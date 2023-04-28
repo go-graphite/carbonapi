@@ -55,10 +55,11 @@ func TestHitcount(t *testing.T) {
 					math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(),
 					5}, 5, now32)},
 			},
-			[]float64{35, 70, 105, 140, math.NaN(), 25},
+			[]float64{5, 40, 75, 110, 120, 25},
+
 			"hitcount(metric1,'30s')",
 			30,
-			now32,
+			1410344975,
 			now32 + 31*5,
 		},
 		{
@@ -72,7 +73,7 @@ func TestHitcount(t *testing.T) {
 			[]float64{375},
 			"hitcount(metric1,'1h')",
 			3600,
-			tenFiftyNine,
+			1410343265,
 			tenFiftyNine + 25*5,
 		},
 		{
@@ -83,11 +84,11 @@ func TestHitcount(t *testing.T) {
 					3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5,
 					5}, 5, tenFiftyNine)},
 			},
-			[]float64{105, 270},
+			[]float64{375},
 			"hitcount(metric1,'1h',true)",
 			3600,
-			tenFiftyNine - (59 * 60),
-			tenFiftyNine + 25*5,
+			tenFiftyNine,
+			tenFiftyNine + (((tenFiftyNine + 25*5) - tenFiftyNine) / 3600) + 3600, // The end time is adjusted because of alignToInterval being set to true
 		},
 		{
 			"hitcount(metric1,\"1h\",alignToInterval=true)",
@@ -97,11 +98,24 @@ func TestHitcount(t *testing.T) {
 					3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5,
 					5}, 5, tenFiftyNine)},
 			},
-			[]float64{105, 270},
+			[]float64{375},
 			"hitcount(metric1,'1h',true)",
 			3600,
-			tenFiftyNine - (59 * 60),
-			tenFiftyNine + 25*5,
+			tenFiftyNine,
+			tenFiftyNine + (((tenFiftyNine + 25*5) - tenFiftyNine) / 3600) + 3600, // The end time is adjusted because of alignToInterval being set to true
+		},
+		{
+			"hitcount(metric1,\"15s\")", // Test having a smaller interval than the data's step
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{
+					11, 7, 19, 32, 23}, 30, now32)},
+			},
+			[]float64{165, 165, 105, 105, 285, 285, 480, 480, 345, 345},
+
+			"hitcount(metric1,'15s')",
+			15,
+			now32,
+			now32 + 5*30,
 		},
 	}
 
