@@ -1,0 +1,139 @@
+package aliasQuery
+
+import (
+	"context"
+	"fmt"
+	"regexp"
+
+	"github.com/ansel1/merry"
+
+	"github.com/go-graphite/carbonapi/expr/helper"
+	"github.com/go-graphite/carbonapi/expr/interfaces"
+	"github.com/go-graphite/carbonapi/expr/types"
+	"github.com/go-graphite/carbonapi/pkg/parser"
+)
+
+type aliasQuery struct {
+	interfaces.FunctionBase
+}
+
+func GetOrder() interfaces.Order {
+	return interfaces.Any
+}
+
+func New(_ string) []interfaces.FunctionMetadata {
+	return []interfaces.FunctionMetadata{
+		{Name: "aliasQuery", F: &aliasQuery{}},
+	}
+}
+
+func (f *aliasQuery) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	seriesList, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	if err != nil {
+		return nil, err
+	}
+	search, err := e.GetStringArg(1)
+	if err != nil {
+		return nil, err
+	}
+	replace, err := e.GetStringArg(2)
+	if err != nil {
+		return nil, err
+	}
+	newName, err := e.GetStringArg(3)
+	if err != nil {
+		return nil, err
+	}
+
+	re, err := regexp.Compile(search)
+	if err != nil {
+		return nil, err
+	}
+	replace = helper.Backref.ReplaceAllString(replace, "$${$1}")
+
+	results := make([]*types.MetricData, len(seriesList))
+
+	for i, series := range seriesList {
+		newTarget := re.ReplaceAllString(series.Name, replace)
+		v, err := f.getLastValueOfSeries(ctx, newTarget, from, until, values)
+		if err != nil {
+			return nil, merry.WithHTTPCode(err, 400)
+		}
+
+		n := fmt.Sprintf(newName, v)
+
+		var r *types.MetricData
+		if series.Name == n {
+			r = series.CopyLinkTags()
+			r.Tags["name"] = r.Name
+		} else {
+			r = series.CopyName(n)
+		}
+
+		results[i] = r
+	}
+
+	return results, nil
+}
+
+func (f *aliasQuery) getLastValueOfSeries(ctx context.Context, target string, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (float64, error) {
+	e, _, err := parser.ParseExpr(target)
+	if err != nil {
+		return 0, err
+	}
+
+	targetValues, err := f.GetEvaluator().Fetch(ctx, []parser.Expr{e}, from, until, values)
+	if err != nil {
+		return 0, err
+	}
+	res, err := f.GetEvaluator().Eval(ctx, e, from, until, targetValues)
+	if err != nil {
+		return 0, err
+	}
+
+	if res == nil || len(res) == 0 {
+		return 0, fmt.Errorf("no series for target: %s", target)
+	}
+
+	if len(res[0].Values) == 0 {
+		return 0, fmt.Errorf("no values in series: %s", res[0].Name)
+	}
+
+	return res[0].Values[len(res[0].Values)-1], nil
+}
+
+func (f *aliasQuery) Description() map[string]types.FunctionDescription {
+	return map[string]types.FunctionDescription{
+		"aliasQuery": {
+			Description: "Performs a query to alias the metrics in seriesList.\nThe series in seriesList will be aliased by first translating the series names using the search & replace parameters, then using the last value of the resulting series to construct the alias using sprintf-style syntax.",
+			Function:    "aliasQuery(seriesList, search, replace, newName)",
+			Group:       "Alias",
+			Module:      "graphite.render.functions",
+			Name:        "aliasQuery",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "search",
+					Required: true,
+					Type:     types.String,
+				},
+				{
+					Name:     "replace",
+					Required: true,
+					Type:     types.String,
+				},
+				{
+					Name:     "newName",
+					Required: true,
+					Type:     types.String,
+				},
+			},
+			NameChange: true,
+			TagsChange: true,
+		},
+	}
+}

@@ -56,7 +56,7 @@ type Function interface {
 	Description() map[string]types.FunctionDescription
 }
 
-// Function is interface that all graphite functions should follow
+// RewriteFunction is interface that graphite functions that rewrite expressions should follow
 type RewriteFunction interface {
 	SetEvaluator(evaluator Evaluator)
 	GetEvaluator() Evaluator
