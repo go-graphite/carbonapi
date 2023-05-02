@@ -98,6 +98,41 @@ func requestError(err error, server string) merry.Error {
 	return types.ErrResponceError.WithValue("server", server)
 }
 
+func MergeHttpErrorsCode(errors []merry.Error) (returnCode int) {
+	returnCode = http.StatusNotFound
+	for _, err := range errors {
+		c := merry.RootCause(err)
+		if c == nil {
+			c = err
+		}
+
+		code := merry.HTTPCode(err)
+		if code == http.StatusNotFound {
+			continue
+		} else if code == http.StatusInternalServerError && merry.Is(c, parser.ErrInvalidArg) {
+			// check for invalid args, see applyByNode rewrite function
+			code = http.StatusBadRequest
+		}
+
+		if code == http.StatusGatewayTimeout || code == http.StatusBadGateway {
+			// simplify code, one error type for communications errors, all we can retry
+			code = http.StatusServiceUnavailable
+		}
+
+		if code == http.StatusBadRequest {
+			// The 400 is returned on wrong requests, e.g. non-existent functions
+			returnCode = code
+		} else if returnCode == http.StatusNotFound || code == http.StatusForbidden {
+			// First error or access denied (may be limits or other)
+			returnCode = code
+		} else if code != http.StatusServiceUnavailable {
+			returnCode = code
+		}
+	}
+
+	return returnCode
+}
+
 func MergeHttpErrors(errors []merry.Error) (int, []string) {
 	returnCode := http.StatusNotFound
 	errMsgs := make([]string, 0)
