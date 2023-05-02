@@ -21,6 +21,10 @@ type FuncEvaluator struct {
 	eval func(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
 }
 
+func (evaluator *FuncEvaluator) Fetch(_ context.Context, _ []parser.Expr, _, _ int64, _ map[parser.MetricRequest][]*types.MetricData) error {
+	return nil
+}
+
 func (evaluator *FuncEvaluator) Eval(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if e.IsName() {
 		return values[parser.MetricRequest{Metric: e.Target(), From: from, Until: until}], nil

@@ -22,8 +22,12 @@ func (b *FunctionBase) GetEvaluator() Evaluator {
 	return b.Evaluator
 }
 
-// Evaluator is a interface for any existing expression parser
+// Evaluator is an interface for any existing expression parser.
 type Evaluator interface {
+	// Fetch populates the values map being passed into it by translating input expressions into a series of
+	// parser.MetricRequest structs and fetching the raw data from the configured backend.
+	Fetch(ctx context.Context, e []parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) error
+	// Eval uses the raw data within the values map being passed into it to in order to evaluate the input expression.
 	Eval(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
 }
 

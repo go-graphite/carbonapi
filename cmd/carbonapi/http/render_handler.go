@@ -290,7 +290,6 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		ApiMetrics.BackendCacheMisses.Add(1)
 
 		results = make([]*types.MetricData, 0)
-		values := make(map[parser.MetricRequest][]*types.MetricData)
 
 		if config.Config.CombineMultipleTargetsInOne && len(targets) > 0 {
 			exprs := make([]parser.Expr, 0, len(targets))
@@ -307,7 +306,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 			ApiMetrics.RenderRequests.Add(1)
 
-			result, errs := expr.FetchAndEvalExprs(ctx, exprs, from32, until32, values)
+			result, errs := expr.FetchAndEvalExprs(ctx, exprs, from32, until32)
 			if errs != nil {
 				errors = errs
 			}
@@ -325,17 +324,13 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 				ApiMetrics.RenderRequests.Add(1)
 
-				result, err := expr.FetchAndEvalExp(ctx, exp, from32, until32, values)
+				result, err := expr.FetchAndEvalExp(ctx, exp, from32, until32)
 				if err != nil {
 					errors[target] = merry.Wrap(err)
 				}
 
 				results = append(results, result...)
 			}
-		}
-
-		for mFetch := range values {
-			expr.SortMetrics(values[mFetch], mFetch)
 		}
 
 		if len(errors) == 0 && backendCacheTimeout > 0 {
