@@ -3,21 +3,21 @@ package expr
 import (
 	"context"
 
-	utilctx "github.com/go-graphite/carbonapi/util/ctx"
-
 	"github.com/ansel1/merry"
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
+
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 	_ "github.com/go-graphite/carbonapi/expr/functions"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
+	utilctx "github.com/go-graphite/carbonapi/util/ctx"
 )
 
 type evaluator struct{}
 
-func (eval evaluator) Fetch(ctx context.Context, exprs []parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) error {
+func (eval evaluator) Fetch(ctx context.Context, exprs []parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (map[parser.MetricRequest][]*types.MetricData, error) {
 	config.Config.Limiter.Enter()
 	defer config.Config.Limiter.Leave()
 
@@ -75,7 +75,7 @@ func (eval evaluator) Fetch(ctx context.Context, exprs []parser.Expr, from, unti
 		metrics, _, err := config.Config.ZipperInstance.Render(ctx, multiFetchRequest)
 		// If we had only partial result, we want to do our best to actually do our job
 		if err != nil && merry.HTTPCode(err) >= 400 && !haveFallbackSeries {
-			return err
+			return nil, err
 		}
 		for _, metric := range metrics {
 			metricRequest := metricRequestCache[metric.PathExpression]
@@ -99,7 +99,7 @@ func (eval evaluator) Fetch(ctx context.Context, exprs []parser.Expr, from, unti
 		targetValues = helper.ScaleValuesToCommonStep(targetValues)
 	}
 
-	return nil
+	return targetValues, nil
 }
 
 // Eval evaluates expressions.
@@ -114,11 +114,11 @@ func (eval evaluator) Eval(ctx context.Context, exp parser.Expr, from, until int
 			if err != nil {
 				return nil, err
 			}
-			err = eval.Fetch(ctx, []parser.Expr{exp}, from, until, values)
+			targetValues, err := eval.Fetch(ctx, []parser.Expr{exp}, from, until, values)
 			if err != nil {
 				return nil, err
 			}
-			result, err := eval.Eval(ctx, exp, from, until, values)
+			result, err := eval.Eval(ctx, exp, from, until, targetValues)
 			if err != nil {
 				return nil, err
 			}
@@ -137,14 +137,13 @@ func init() {
 }
 
 // FetchAndEvalExp fetch data and evaluates expressions
-func FetchAndEvalExp(ctx context.Context, e parser.Expr, from, until int64) ([]*types.MetricData, merry.Error) {
-	values := make(map[parser.MetricRequest][]*types.MetricData)
-	err := _evaluator.Fetch(ctx, []parser.Expr{e}, from, until, values)
+func FetchAndEvalExp(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, merry.Error) {
+	targetValues, err := _evaluator.Fetch(ctx, []parser.Expr{e}, from, until, values)
 	if err != nil {
 		return nil, merry.Wrap(err)
 	}
 
-	res, err := _evaluator.Eval(ctx, e, from, until, values)
+	res, err := _evaluator.Eval(ctx, e, from, until, targetValues)
 	if err != nil {
 		return nil, merry.Wrap(err)
 	}
@@ -156,9 +155,8 @@ func FetchAndEvalExp(ctx context.Context, e parser.Expr, from, until int64) ([]*
 	return res, nil
 }
 
-func FetchAndEvalExprs(ctx context.Context, exprs []parser.Expr, from, until int64) ([]*types.MetricData, map[string]merry.Error) {
-	values := make(map[parser.MetricRequest][]*types.MetricData)
-	err := _evaluator.Fetch(ctx, exprs, from, until, values)
+func FetchAndEvalExprs(ctx context.Context, exprs []parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, map[string]merry.Error) {
+	targetValues, err := _evaluator.Fetch(ctx, exprs, from, until, values)
 	if err != nil {
 		return nil, map[string]merry.Error{"*": merry.Wrap(err)}
 	}
@@ -166,7 +164,7 @@ func FetchAndEvalExprs(ctx context.Context, exprs []parser.Expr, from, until int
 	res := make([]*types.MetricData, 0, len(exprs))
 	var errors map[string]merry.Error
 	for _, exp := range exprs {
-		evaluationResult, err := _evaluator.Eval(ctx, exp, from, until, values)
+		evaluationResult, err := _evaluator.Eval(ctx, exp, from, until, targetValues)
 		if err != nil {
 			if errors == nil {
 				errors = make(map[string]merry.Error)
