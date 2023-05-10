@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/tags"
+	"github.com/go-graphite/carbonapi/expr/types/config"
 	pbv2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	pickle "github.com/lomik/og-rek"
@@ -141,7 +142,7 @@ func MarshalJSON(results []*MetricData, timestampMultiplier int64, noNullPoints 
 		b = append(b, `,"datapoints":[`...)
 
 		var innerComma bool
-		t := r.StartTime * timestampMultiplier
+		t := r.AggregatedStartTime() * timestampMultiplier
 		for _, v := range r.AggregatedValues() {
 			if noNullPoints && math.IsNaN(v) {
 				t += r.AggregatedTimeStep() * timestampMultiplier
@@ -330,6 +331,60 @@ func (r *MetricData) AggregatedTimeStep() int64 {
 	return r.StepTime * int64(r.ValuesPerPoint)
 }
 
+// AggregatedStartTime returns the start time of the aggregated series.
+// This can be different from the original start time if NudgeStartTimeOnAggregation
+// or UseBucketsHighestTimestampOnAggregation are enabled.
+func (r *MetricData) AggregatedStartTime() int64 {
+	start := r.StartTime + r.nudgePointsCount()*r.StepTime
+	if config.Config.UseBucketsHighestTimestampOnAggregation {
+		return start + r.AggregatedTimeStep() - r.StepTime
+	}
+	return start
+}
+
+// nudgePointsCount returns the number of points to discard at the beginning of
+// the series when aggregating. This is done if NudgeStartTimeOnAggregation is
+// enabled, and has the purpose of assigning timestamps of a series to buckets
+// consistently across different time ranges. To simplify the aggregation
+// logic, we discard points at the beginning of the series so that a bucket
+// starts right at the beginning. This function calculates how many points to
+// discard.
+func (r *MetricData) nudgePointsCount() int64 {
+	if !config.Config.NudgeStartTimeOnAggregation {
+		return 0
+	}
+
+	if len(r.Values) <= 2*r.ValuesPerPoint {
+		// There would be less than 2 points after aggregation, removing one would be too impactful.
+		return 0
+	}
+
+	// Suppose r.StartTime=4, r.StepTime=3 and aggTimeStep=6.
+	// - ts:                       00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 ...
+	// - original buckets:         -- -- --|        |        |        |        |     |   ...
+	// - aggregated buckets:       -- -- --|                 |                 |         ...
+
+	// We start counting our aggTimeStep buckets at absolute time r.StepTime.
+	// Notice the following:
+	// - ts:                       00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 ...
+	// - bucket #:                  -  -  -  1  1  1  1  1  1  2  2  2  2  2  2  3  3 ...
+	// - (ts-step) % aggTimeStep:   -  -  -  0  1  2  3  4  5  0  1  2  3  4  5  0  1 ...
+
+	// Given a timestamp 'ts', we can calculate how far it is from the beginning
+	// of the nearest bucket to the right by doing:
+	// * aggTimeStep - ((ts-r.StepTime) % aggTimeStep)
+	// Using this, we calculate the 'distance' from r.StartTime to the
+	// nearest bucket to the right. If this distance is less than aggTimeStep,
+	// then r.StartTime is not the beginning of a bucket. We need to discard
+	// dist / r.StepTime points (which could be zero if dist < r.StepTime).
+	aggTimeStep := r.AggregatedTimeStep()
+	dist := aggTimeStep - ((r.StartTime - r.StepTime) % aggTimeStep)
+	if dist < aggTimeStep {
+		return dist / r.StepTime
+	}
+	return 0
+}
+
 // GetAggregateFunction returns MetricData.AggregateFunction and set it, if it's not yet
 func (r *MetricData) GetAggregateFunction() func([]float64) float64 {
 	if r.AggregateFunction == nil {
@@ -363,7 +418,8 @@ func (r *MetricData) AggregateValues() {
 	n := len(r.Values)/r.ValuesPerPoint + 1
 	aggV := make([]float64, 0, n)
 
-	v := r.Values
+	nudgeCount := r.nudgePointsCount()
+	v := r.Values[nudgeCount:]
 
 	for len(v) >= r.ValuesPerPoint {
 		val := aggFunc(v[:r.ValuesPerPoint])
