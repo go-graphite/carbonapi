@@ -334,10 +334,6 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		for mFetch := range values {
-			expr.SortMetrics(values[mFetch], mFetch)
-		}
-
 		if len(errors) == 0 && backendCacheTimeout > 0 {
 			w.Header().Set("X-Carbonapi-Backend-Cached", strconv.FormatInt(int64(backendCacheTimeout), 10))
 			backendCacheStoreResults(logger, backendCacheKey, results, backendCacheTimeout)
