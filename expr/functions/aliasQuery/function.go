@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/ansel1/merry"
-
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -56,7 +54,7 @@ func (f *aliasQuery) Do(ctx context.Context, e parser.Expr, from, until int64, v
 		newTarget := re.ReplaceAllString(series.Name, replace)
 		expr, _, err := parser.ParseExpr(newTarget)
 		if err != nil {
-			return nil, merry.WithHTTPCode(err, 400)
+			return nil, err
 		}
 		fetchTargets[i] = expr
 	}
@@ -67,7 +65,7 @@ func (f *aliasQuery) Do(ctx context.Context, e parser.Expr, from, until int64, v
 	for i, series := range seriesList {
 		v, err := f.getLastValueOfSeries(ctx, fetchTargets[i], from, until, targetValues)
 		if err != nil {
-			return nil, merry.WithHTTPCode(err, 400)
+			return nil, err
 		}
 
 		n := fmt.Sprintf(newName, v)
@@ -93,11 +91,11 @@ func (f *aliasQuery) getLastValueOfSeries(ctx context.Context, e parser.Expr, fr
 	}
 
 	if res == nil || len(res) == 0 {
-		return 0, fmt.Errorf("no series for target: %s", e.Target())
+		return 0, parser.ErrMissingTimeseries
 	}
 
 	if len(res[0].Values) == 0 {
-		return 0, fmt.Errorf("no values in series: %s", res[0].Name)
+		return 0, parser.ErrMissingValues
 	}
 
 	return res[0].Values[len(res[0].Values)-1], nil
