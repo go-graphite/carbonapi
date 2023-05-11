@@ -51,11 +51,21 @@ func (f *aliasQuery) Do(ctx context.Context, e parser.Expr, from, until int64, v
 	}
 	replace = helper.Backref.ReplaceAllString(replace, "$${$1}")
 
+	fetchTargets := make([]parser.Expr, len(seriesList))
+	for i, series := range seriesList {
+		newTarget := re.ReplaceAllString(series.Name, replace)
+		expr, _, err := parser.ParseExpr(newTarget)
+		if err != nil {
+			return nil, merry.WithHTTPCode(err, 400)
+		}
+		fetchTargets[i] = expr
+	}
+	targetValues, err := f.GetEvaluator().Fetch(ctx, fetchTargets, from, until, values)
+
 	results := make([]*types.MetricData, len(seriesList))
 
 	for i, series := range seriesList {
-		newTarget := re.ReplaceAllString(series.Name, replace)
-		v, err := f.getLastValueOfSeries(ctx, newTarget, from, until, values)
+		v, err := f.getLastValueOfSeries(ctx, fetchTargets[i], from, until, targetValues)
 		if err != nil {
 			return nil, merry.WithHTTPCode(err, 400)
 		}
@@ -76,23 +86,14 @@ func (f *aliasQuery) Do(ctx context.Context, e parser.Expr, from, until int64, v
 	return results, nil
 }
 
-func (f *aliasQuery) getLastValueOfSeries(ctx context.Context, target string, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (float64, error) {
-	e, _, err := parser.ParseExpr(target)
-	if err != nil {
-		return 0, err
-	}
-
-	targetValues, err := f.GetEvaluator().Fetch(ctx, []parser.Expr{e}, from, until, values)
-	if err != nil {
-		return 0, err
-	}
+func (f *aliasQuery) getLastValueOfSeries(ctx context.Context, e parser.Expr, from, until int64, targetValues map[parser.MetricRequest][]*types.MetricData) (float64, error) {
 	res, err := f.GetEvaluator().Eval(ctx, e, from, until, targetValues)
 	if err != nil {
 		return 0, err
 	}
 
 	if res == nil || len(res) == 0 {
-		return 0, fmt.Errorf("no series for target: %s", target)
+		return 0, fmt.Errorf("no series for target: %s", e.Target())
 	}
 
 	if len(res[0].Values) == 0 {
