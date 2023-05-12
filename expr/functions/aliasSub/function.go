@@ -2,13 +2,12 @@ package aliasSub
 
 import (
 	"context"
+	"regexp"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-
-	"regexp"
 )
 
 type aliasSub struct {
