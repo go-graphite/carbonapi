@@ -85,7 +85,7 @@ func (f *aliasQuery) Do(ctx context.Context, e parser.Expr, from, until int64, v
 }
 
 func (f *aliasQuery) getLastValueOfSeries(ctx context.Context, e parser.Expr, from, until int64, targetValues map[parser.MetricRequest][]*types.MetricData) (float64, error) {
-	res, err := f.GetEvaluator().Eval(ctx, e, from, until, targetValues)
+	res, err := helper.GetSeriesArg(ctx, e, from, until, targetValues)
 	if err != nil {
 		return 0, err
 	}
