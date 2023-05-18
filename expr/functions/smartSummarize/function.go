@@ -3,7 +3,6 @@ package smartSummarize
 import (
 	"context"
 	"fmt"
-	"math"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -31,13 +30,27 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-// smartSummarize(seriesList, intervalString, alignToInterval=False)
+// smartSummarize(seriesList, intervalString, func='sum', alignTo=None)
 func (f *smartSummarize) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(dgryski): make sure the arrays are all the same 'size'
 	if e.ArgsLen() < 2 {
 		return nil, parser.ErrMissingArgument
 	}
 
+	alignToInterval, err := e.GetStringNamedOrPosArgDefault("alignTo", 3, "")
+	if err != nil {
+		return nil, err
+	}
+
+	if alignToInterval != "" {
+		// Note: the start time for the fetch request is adjusted in expr.Metrics() so that the fetched
+		// data is already aligned by interval if this parameter specifics an interval to align to
+		newStart, err := parser.StartAlignTo(from, alignToInterval)
+		if err != nil {
+			return nil, err
+		}
+		from = newStart
+	}
 	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
@@ -51,6 +64,9 @@ func (f *smartSummarize) Do(ctx context.Context, e parser.Expr, from, until int6
 	if err != nil {
 		return nil, err
 	}
+	if bucketSizeInt32 <= 0 {
+		return nil, parser.ErrInvalidInterval
+	}
 	bucketSize := int64(bucketSizeInt32)
 	bucketSizeStr := e.Arg(1).StringValue()
 
@@ -62,28 +78,6 @@ func (f *smartSummarize) Do(ctx context.Context, e parser.Expr, from, until int6
 		return nil, err
 	}
 
-	alignToInterval, err := e.GetStringNamedOrPosArgDefault("alignTo", 3, "")
-	if err != nil {
-		return nil, err
-	}
-
-	start := args[0].StartTime
-	stop := args[0].StopTime
-	if alignToInterval != "" {
-		var alignTo string
-		if !parser.IsDigit(alignToInterval[0]) {
-			alignTo = "1" + alignToInterval // Add a 1 before the alignTo interval, so that IntervalString properly parses it
-		} else {
-			alignTo = alignToInterval
-		}
-		interval, err := parser.IntervalString(alignTo, 1)
-		if err != nil {
-			return nil, err
-		}
-		start = helper.AlignStartToInterval(start, stop, int64(interval))
-	}
-
-	buckets := helper.GetBuckets(start, stop, bucketSize)
 	results := make([]*types.MetricData, len(args))
 	for n, arg := range args {
 		var name string
@@ -97,50 +91,31 @@ func (f *smartSummarize) Do(ctx context.Context, e parser.Expr, from, until int6
 		r := types.MetricData{
 			FetchResponse: pb.FetchResponse{
 				Name:              name,
-				Values:            make([]float64, buckets, buckets+1),
 				StepTime:          bucketSize,
-				StartTime:         start,
-				StopTime:          stop,
-				ConsolidationFunc: summarizeFunction,
+				StartTime:         arg.StartTime,
+				StopTime:          arg.StopTime,
+				ConsolidationFunc: arg.ConsolidationFunc,
 			},
 			Tags: helper.CopyTags(arg),
 		}
 		r.Tags["smartSummarize"] = fmt.Sprintf("%d", bucketSizeInt32)
 		r.Tags["smartSummarizeFunction"] = summarizeFunction
-		t := arg.StartTime // unadjusted
-		bucketEnd := start + bucketSize
-		values := make([]float64, 0, bucketSize/arg.StepTime)
-		ridx := 0
-		bucketItems := 0
-		for _, v := range arg.Values {
-			bucketItems++
-			if !math.IsNaN(v) {
-				values = append(values, v)
+
+		ts := arg.StartTime
+		for ts < arg.StopTime {
+			bucketUpperBound := ts + bucketSize
+			bucketStart := (ts - arg.StartTime + arg.StepTime - 1) / arg.StepTime             // equivalent to ceil((ts-arg.StartTime) / arg.StepTime)
+			bucketEnd := (bucketUpperBound - arg.StartTime + arg.StepTime - 1) / arg.StepTime // equivalent to ceil((until-arg.StartTime) / arg.StepTime)
+
+			if bucketEnd > int64(len(arg.Values)) {
+				bucketEnd = int64(len(arg.Values))
 			}
 
-			t += arg.StepTime
-
-			if t >= stop {
-				break
-			}
-
-			if t >= bucketEnd {
-				rv := consolidations.SummarizeValues(summarizeFunction, values, arg.XFilesFactor)
-
-				r.Values[ridx] = rv
-				ridx++
-				bucketEnd += bucketSize
-				bucketItems = 0
-				values = values[:0]
-			}
+			rv := consolidations.SummarizeValues(summarizeFunction, arg.Values[bucketStart:bucketEnd], arg.XFilesFactor)
+			r.Values = append(r.Values, rv)
+			ts = bucketUpperBound
 		}
-
-		// last partial bucket
-		if bucketItems > 0 {
-			rv := consolidations.SummarizeValues(summarizeFunction, values, arg.XFilesFactor)
-			r.Values[ridx] = rv
-		}
-
+		r.StopTime = ts
 		results[n] = &r
 	}
 	return results, nil

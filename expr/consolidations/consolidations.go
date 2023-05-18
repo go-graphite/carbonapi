@@ -261,6 +261,10 @@ func SummarizeValues(f string, values []float64, XFilesFactor float32) float64 {
 		}
 	}
 
+	if total == 0 {
+		return math.NaN()
+	}
+
 	if float32(total)/float32(len(values)) < XFilesFactor {
 		return math.NaN()
 	}
