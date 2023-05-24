@@ -26,8 +26,8 @@ func TestAliasQuery(t *testing.T) {
 
 	tests := []th.EvalTestItem{
 		{
-			"aliasQuery(channel.power.*, \"channel\\.power\\.([0-9]+)\", \"channel.frequency.\\1\", \"Channel %.f MHz\")",
-			map[parser.MetricRequest][]*types.MetricData{
+			Target: "aliasQuery(channel.power.*, \"channel\\.power\\.([0-9]+)\", \"channel.frequency.\\1\", \"Channel %.f MHz\")",
+			M: map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "channel.frequency.1", From: 0, Until: 1}: {types.MakeMetricData("channel.frequency.1", []float64{0, 200}, 1, now)},
 				{Metric: "channel.frequency.2", From: 0, Until: 1}: {types.MakeMetricData("channel.frequency.2", []float64{400}, 1, now)},
 				{Metric: "channel.power.*", From: 0, Until: 1}: {
@@ -35,7 +35,7 @@ func TestAliasQuery(t *testing.T) {
 					types.MakeMetricData("channel.power.2", []float64{10, 20, 30, 40, 50}, 1, now),
 				},
 			},
-			[]*types.MetricData{
+			Want: []*types.MetricData{
 				types.MakeMetricData("Channel 200 MHz", []float64{1, 2, 3, 4, 5}, 1, now),
 				types.MakeMetricData("Channel 400 MHz", []float64{10, 20, 30, 40, 50}, 1, now),
 			},
