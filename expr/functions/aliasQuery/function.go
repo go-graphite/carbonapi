@@ -59,6 +59,9 @@ func (f *aliasQuery) Do(ctx context.Context, e parser.Expr, from, until int64, v
 		fetchTargets[i] = expr
 	}
 	targetValues, err := f.GetEvaluator().Fetch(ctx, fetchTargets, from, until, values)
+	if err != nil {
+		return nil, err
+	}
 
 	results := make([]*types.MetricData, len(seriesList))
 
@@ -90,7 +93,7 @@ func (f *aliasQuery) getLastValueOfSeries(ctx context.Context, e parser.Expr, fr
 		return 0, err
 	}
 
-	if res == nil || len(res) == 0 {
+	if len(res) == 0 {
 		return 0, parser.ErrMissingTimeseries
 	}
 
