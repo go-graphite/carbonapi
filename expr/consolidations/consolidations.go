@@ -234,8 +234,8 @@ func SummarizeValues(f string, values []float64, XFilesFactor float32) float64 {
 			}
 		}
 	case "count":
-		rv = float64(len(values))
 		total = notNans(values)
+		rv = float64(total)
 	case "stddev":
 		rv = math.Sqrt(VarianceValue(values))
 		total = notNans(values)
