@@ -22,7 +22,7 @@ func GetOrder() interfaces.Order {
 func New(configFile string) []interfaces.FunctionMetadata {
 	res := make([]interfaces.FunctionMetadata, 0)
 	f := &toUpperCase{}
-	functions := []string{"toLowerCase"}
+	functions := []string{"upper", "toUpperCase"}
 	for _, n := range functions {
 		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
 	}
@@ -67,6 +67,27 @@ func (f *toUpperCase) Do(ctx context.Context, e parser.Expr, from, until int64, 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
 func (f *toUpperCase) Description() map[string]types.FunctionDescription {
 	return map[string]types.FunctionDescription{
+		"upper": {
+			Description: "Takes one metric or a wildcard seriesList and uppers the case of each letter. \n Optionally, a letter position to upper case can be specified, in which case only the letter at the specified position gets upper-cased.\n The position parameter may be given multiple times. The position parameter may be negative to define a position relative to the end of the metric name.",
+			Function:    "upper(seriesList, *pos)",
+			Group:       "Alias",
+			Module:      "graphite.render.functions",
+			Name:        "upper",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Multiple: true,
+					Name:     "pos",
+					Type:     types.Node,
+				},
+			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
+		},
 		"toUpperCase": {
 			Description: "Takes one metric or a wildcard seriesList and uppers the case of each letter. \n Optionally, a letter position to upper case can be specified, in which case only the letter at the specified position gets upper-cased.\n The position parameter may be given multiple times. The position parameter may be negative to define a position relative to the end of the metric name.",
 			Function:    "toUpperCase(seriesList, *pos)",
