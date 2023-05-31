@@ -22,7 +22,7 @@ func GetOrder() interfaces.Order {
 func New(configFile string) []interfaces.FunctionMetadata {
 	res := make([]interfaces.FunctionMetadata, 0)
 	f := &toLowerCase{}
-	functions := []string{"toLowerCase"}
+	functions := []string{"lower", "toLowerCase"}
 	for _, n := range functions {
 		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
 	}
@@ -68,6 +68,28 @@ func (f *toLowerCase) Do(ctx context.Context, e parser.Expr, from, until int64, 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
 func (f *toLowerCase) Description() map[string]types.FunctionDescription {
 	return map[string]types.FunctionDescription{
+		"lower": {
+			Description: "Takes one metric or a wildcard seriesList and lowers the case of each letter. \n Optionally, a letter position to lower case can be specified, in which case only the letter at the specified position gets lower-cased.\n The position parameter may be given multiple times. The position parameter may be negative to define a position relative to the end of the metric name.",
+			Function:    "lower(seriesList, *pos)",
+			Group:       "Alias",
+			Module:      "graphite.render.functions",
+			Name:        "lower",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Multiple: true,
+					Name:     "pos",
+					Type:     types.Node,
+					Required: false,
+				},
+			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
+		},
 		"toLowerCase": {
 			Description: "Takes one metric or a wildcard seriesList and lowers the case of each letter. \n Optionally, a letter position to lower case can be specified, in which case only the letter at the specified position gets lower-cased.\n The position parameter may be given multiple times. The position parameter may be negative to define a position relative to the end of the metric name.",
 			Function:    "toLowerCase(seriesList, *pos)",
