@@ -511,11 +511,19 @@ func (e *expr) insertFirstArg(exp *expr) error {
 	return nil
 }
 
-func parseExprWithoutPipe(e string) (Expr, string, error) {
-	// skip whitespace
-	for len(e) > 1 && e[0] == ' ' {
-		e = e[1:]
+func skipWhitespace(e string) string {
+	skipTo := len(e)
+	for i, r := range e {
+		if !unicode.IsSpace(r) {
+			skipTo = i
+			break
+		}
 	}
+	return e[skipTo:]
+}
+
+func parseExprWithoutPipe(e string) (Expr, string, error) {
+	e = skipWhitespace(e)
 
 	if e == "" {
 		return nil, "", ErrMissingExpr
@@ -583,9 +591,7 @@ func ParseExpr(e string) (Expr, string, error) {
 }
 
 func pipe(exp *expr, e string) (*expr, string, error) {
-	for len(e) > 1 && e[0] == ' ' {
-		e = e[1:]
-	}
+	e = skipWhitespace(e)
 
 	if e == "" || e[0] != '|' {
 		return exp, e, nil
@@ -645,7 +651,7 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 	e = e[1:]
 
 	// check for empty args
-	t := strings.TrimLeft(e, " ")
+	t := skipWhitespace(e)
 	if t != "" && t[0] == ')' {
 		return "", posArgs, namedArgs, t[1:], nil
 	}
@@ -718,9 +724,7 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 		}
 
 		// after the argument, trim any trailing spaces
-		for len(e) > 0 && e[0] == ' ' {
-			e = e[1:]
-		}
+		e = skipWhitespace(e)
 
 		if e[0] == ')' {
 			return argStringBuffer.String(), posArgs, namedArgs, e[1:], nil
@@ -860,7 +864,6 @@ FOR:
 }
 
 func parseString(s string) (string, string, error) {
-
 	if s[0] != '\'' && s[0] != '"' {
 		panic("string should start with open quote")
 	}
