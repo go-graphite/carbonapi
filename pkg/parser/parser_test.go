@@ -719,6 +719,72 @@ func TestMetrics(t *testing.T) {
 			},
 		},
 		{
+			"holtWintersConfidenceBands(metric1)",
+			&expr{
+				target: "holtWintersConfidenceBands",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "metric1"},
+				},
+				argString: "metric1, 4, '1d'",
+			},
+			1410346740,
+			1410346865,
+			[]MetricRequest{
+				{
+					Metric: "metric1",
+					From:   1409741940,
+					Until:  1410346865,
+				},
+			},
+		},
+		{
+			"holtWintersConfidenceBands(metric1, 4, '1d')",
+			&expr{
+				target: "holtWintersConfidenceBands",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{valStr: "4", etype: EtConst},
+					{valStr: "1d", etype: EtString},
+				},
+				argString: "metric1, 4, '1d'",
+			},
+			1410346740,
+			1410346865,
+			[]MetricRequest{
+				{
+					Metric: "metric1",
+					From:   1410260340,
+					Until:  1410346865,
+				},
+			},
+		},
+		{
+			"holtWintersConfidenceBands(metric1, 4, bootstrapInterval='3d')",
+			&expr{
+				target: "holtWintersConfidenceBands",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{valStr: "4", etype: EtConst},
+				},
+				namedArgs: map[string]*expr{
+					"bootstrapInterval": {etype: EtString, valStr: "3d"},
+				},
+				argString: "metric1, 4, '3d'",
+			},
+			1410346740,
+			1410346865,
+			[]MetricRequest{
+				{
+					Metric: "metric1",
+					From:   1410087540,
+					Until:  1410346865,
+				},
+			},
+		},
+		{
 			"smartSummarize(metric1, '1h', 'sum', 'seconds')",
 			&expr{
 				target: "smartSummarize",
