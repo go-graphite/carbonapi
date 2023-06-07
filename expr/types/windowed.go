@@ -175,3 +175,12 @@ func (w *Windowed) Last() float64 {
 
 	return w.Data[w.head-1]
 }
+
+// IsNonNull checks if the window's data contains only NaN values
+// This is to prevent returning -Inf when the window's data contains only NaN values
+func (w *Windowed) IsNonNull() bool {
+	if len(w.Data) == w.nans {
+		return false
+	}
+	return true
+}

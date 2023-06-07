@@ -180,7 +180,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		w := &types.Windowed{Data: make([]float64, windowSize)}
 		for i, v := range a.Values {
 			if ridx := i - offset; ridx >= 0 {
-				if helper.XFilesFactorValues(w.Data, xFilesFactor) {
+				if w.IsNonNull() && helper.XFilesFactorValues(w.Data, xFilesFactor) {
 					switch cons {
 					case "average":
 						r.Values[ridx] = w.Mean()
