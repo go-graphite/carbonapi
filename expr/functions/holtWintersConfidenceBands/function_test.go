@@ -24,19 +24,41 @@ func TestHoltWintersConfidenceBands(t *testing.T) {
 	var startTime int64 = 2678400
 	var step int64 = 600
 	var points int64 = 10
-	var weekSeconds int64 = 7 * 86400
-
-	seriesValues := generateHwRange(0, ((weekSeconds/step)+points)*step, step)
+	var seconds int64 = 86400
 
 	tests := []th.EvalTestItemWithRange{
 		{
 			Target: "holtWintersConfidenceBands(metric1)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", startTime - weekSeconds, startTime + step*points}: {types.MakeMetricData("metric1", seriesValues, step, startTime-weekSeconds)},
+				{"metric1", startTime - 7*seconds, startTime + step*points}: {types.MakeMetricData("metric1", generateHwRange(0, (((7*seconds)/step)+points)*step, step), step, startTime-(7*seconds))},
 			},
 			Want: []*types.MetricData{
 				types.MakeMetricData("holtWintersConfidenceLower(metric1)", []float64{0.2841206166091448, 1.0581027098774411, 0.3338172102994683, 0.5116859493263242, -0.18199175514936972, 0.2366173792019426, -1.2941554508809152, -0.513426806531049, -0.7970905542723132, 0.09868900726536012}, step, startTime).SetTag("holtWintersConfidenceLower", "1"),
 				types.MakeMetricData("holtWintersConfidenceUpper(metric1)", []float64{8.424944558327624, 9.409422251880809, 10.607070189221787, 10.288439865038768, 9.491556863132963, 9.474595784593738, 8.572310478053845, 8.897670449095346, 8.941566968508148, 9.409728797779282}, step, startTime).SetTag("holtWintersConfidenceUpper", "1"),
+			},
+			From:  startTime,
+			Until: startTime + step*points,
+		},
+		{
+			Target: "holtWintersConfidenceBands(metric1,4,'6d')",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", startTime - 6*seconds, startTime + step*points}: {types.MakeMetricData("metric1", generateHwRange(0, ((6*seconds/step)+points)*step, step), step, startTime-6*seconds)},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData("holtWintersConfidenceLower(metric1)", []float64{-0.6535362793382391, -0.26554972418633316, -1.1060549683277792, -0.5788026852576289, -1.4594446935142829, -0.6933311085203409, -1.6566119269969288, -1.251651025511391, -1.7938581852717226, -1.1791817117029604}, step, startTime).SetTag("holtWintersConfidenceLower", "1"),
+				types.MakeMetricData("holtWintersConfidenceUpper(metric1)", []float64{8.166528156512886, 8.759008839563066, 9.250962452510654, 9.994110161265208, 10.511931730022393, 11.34313475259535, 12.639554646464758, 11.972601342482212, 10.920216551100442, 10.618692557967133}, step, startTime).SetTag("holtWintersConfidenceUpper", "1"),
+			},
+			From:  startTime,
+			Until: startTime + step*points,
+		},
+		{
+			Target: "holtWintersConfidenceBands(metric1,4,'1d','2d')",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", startTime - seconds, startTime + step*points}: {types.MakeMetricData("metric1", generateHwRange(0, ((seconds/step)+points)*step, step), step, startTime-seconds)},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData("holtWintersConfidenceLower(metric1)", []float64{4.106587168490873, 3.8357974803355406, 3.564589629688576, 3.421354957735917, 3.393696278743315, 3.470415673952413, 3.2748850646377368, 3.3539750816574316, 3.5243322056965765, 3.7771201010598134}, step, startTime).SetTag("holtWintersConfidenceLower", "1"),
+				types.MakeMetricData("holtWintersConfidenceUpper(metric1)", []float64{4.24870339314537, 4.501056063000946, 4.956252698437961, 5.466294981886822, 6.0258698337471355, 6.630178145979606, 7.6413984841547204, 6.492608523867341, 5.556775146625346, 4.813280235806231}, step, startTime).SetTag("holtWintersConfidenceUpper", "1"),
 			},
 			From:  startTime,
 			Until: startTime + step*points,
