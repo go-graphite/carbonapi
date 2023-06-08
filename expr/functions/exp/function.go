@@ -56,7 +56,7 @@ func (f *exp) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
 func (f *exp) Description() map[string]types.FunctionDescription {
 	return map[string]types.FunctionDescription{
-		"add": {
+		"exp": {
 			Description: "Raise e to the power of the datapoint, where e = 2.718281… is the base of natural logarithms.\n\nExample:\n\n.. code-block:: none\n\n  &target=exp(Server.instance01.threads.busy)",
 			Function:    "exp(seriesList)",
 			Group:       "Transform",
