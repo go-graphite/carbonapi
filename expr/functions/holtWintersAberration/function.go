@@ -46,6 +46,11 @@ func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, unt
 		return nil, err
 	}
 
+	seasonality, err := e.GetIntervalNamedOrPosArgDefault("seasonality", 3, 1, 86400)
+	if err != nil {
+		return nil, err
+	}
+
 	results := make([]*types.MetricData, 0, len(args))
 	for _, arg := range args {
 		var (
@@ -55,7 +60,7 @@ func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, unt
 
 		stepTime := arg.StepTime
 
-		lowerBand, upperBand := holtwinters.HoltWintersConfidenceBands(arg.Values, stepTime, delta, bootstrapInterval/86400)
+		lowerBand, upperBand := holtwinters.HoltWintersConfidenceBands(arg.Values, stepTime, delta, bootstrapInterval, seasonality)
 
 		windowPoints := int(bootstrapInterval / stepTime)
 		if len(arg.Values) > windowPoints {

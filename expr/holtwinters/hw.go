@@ -27,15 +27,14 @@ func holtWintersDeviation(gamma, actual, prediction, lastSeasonalDev float64) fl
 }
 
 // HoltWintersAnalysis do Holt-Winters Analysis
-func HoltWintersAnalysis(series []float64, step int64) ([]float64, []float64) {
+func HoltWintersAnalysis(series []float64, step int64, seasonality int64) ([]float64, []float64) {
 	const (
 		alpha = 0.1
 		beta  = 0.0035
 		gamma = 0.1
 	)
 
-	// season is currently one day
-	seasonLength := 24 * 60 * 60 / int(step)
+	seasonLength := seasonality / step
 
 	// seasonLength needs to be at least 2, so we force it
 	// GraphiteWeb has the same problem, still needs fixing https://github.com/graphite-project/graphite-web/issues/2780
@@ -52,7 +51,7 @@ func HoltWintersAnalysis(series []float64, step int64) ([]float64, []float64) {
 	)
 
 	getLastSeasonal := func(i int) float64 {
-		j := i - seasonLength
+		j := i - int(seasonLength)
 		if j >= 0 {
 			return seasonals[j]
 		}
@@ -60,7 +59,7 @@ func HoltWintersAnalysis(series []float64, step int64) ([]float64, []float64) {
 	}
 
 	getLastDeviation := func(i int) float64 {
-		j := i - seasonLength
+		j := i - int(seasonLength)
 		if j >= 0 {
 			return deviations[j]
 		}
@@ -122,12 +121,12 @@ func HoltWintersAnalysis(series []float64, step int64) ([]float64, []float64) {
 }
 
 // HoltWintersConfidenceBands do Holt-Winters Confidence Bands
-func HoltWintersConfidenceBands(series []float64, step int64, delta float64, days int64) ([]float64, []float64) {
+func HoltWintersConfidenceBands(series []float64, step int64, delta float64, bootstrapInterval int64, seasonality int64) ([]float64, []float64) {
 	var lowerBand, upperBand []float64
 
-	predictions, deviations := HoltWintersAnalysis(series, step)
+	predictions, deviations := HoltWintersAnalysis(series, step, seasonality)
 
-	windowPoints := int(days * 86400 / step)
+	windowPoints := int(bootstrapInterval / step)
 
 	var (
 		predictionsOfInterest []float64

@@ -30,7 +30,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *holtWintersForecast) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	bootstrapInterval, err := e.GetIntervalNamedOrPosArgDefault("bootstrapInterval", 2, 1, 7*86400)
+	bootstrapInterval, err := e.GetIntervalNamedOrPosArgDefault("bootstrapInterval", 1, 1, 7*86400)
 	if err != nil {
 		return nil, err
 	}
@@ -40,12 +40,17 @@ func (f *holtWintersForecast) Do(ctx context.Context, e parser.Expr, from, until
 		return nil, err
 	}
 
+	seasonality, err := e.GetIntervalNamedOrPosArgDefault("seasonality", 2, 1, 86400)
+	if err != nil {
+		return nil, err
+	}
+
 	var predictionsOfInterest []float64
 	results := make([]*types.MetricData, len(args))
 	for i, arg := range args {
 		stepTime := arg.StepTime
 
-		predictions, _ := holtwinters.HoltWintersAnalysis(arg.Values, stepTime)
+		predictions, _ := holtwinters.HoltWintersAnalysis(arg.Values, stepTime, seasonality)
 
 		windowPoints := int(bootstrapInterval / stepTime)
 		if len(predictions) < windowPoints {
@@ -68,7 +73,7 @@ func (f *holtWintersForecast) Do(ctx context.Context, e parser.Expr, from, until
 			},
 			Tags: helper.CopyTags(arg),
 		}
-		r.Tags["holtWintersConfidenceBands"] = "1"
+		r.Tags["holtWintersForecast"] = "1"
 		results[i] = r
 	}
 	return results, nil
