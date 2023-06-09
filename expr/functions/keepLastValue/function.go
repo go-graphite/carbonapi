@@ -2,12 +2,13 @@ package keepLastValue
 
 import (
 	"context"
+	"math"
+	"strconv"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
-	"math"
-	"strconv"
 )
 
 type keepLastValue struct {
@@ -36,16 +37,16 @@ func (f *keepLastValue) Do(ctx context.Context, e parser.Expr, from, until int64
 		return nil, err
 	}
 
-	var keep float64
+	var keep parser.IntOrInf
 	var keepStr string
 
-	keep, err = e.GetFloatNamedOrPosArgDefault("limit", 1, math.Inf(1))
+	keep, err = e.GetIntOrInfNamedOrPosArgDefault("limit", 1, parser.IntOrInf{IsInf: true})
 	if err != nil {
 		return nil, err
 	}
 
-	if !math.IsInf(keep, 1) {
-		keepStr = strconv.Itoa(int(keep))
+	if !keep.IsInf {
+		keepStr = strconv.Itoa(keep.IntVal)
 	} else {
 		keepStr = "inf"
 	}
@@ -65,12 +66,12 @@ func (f *keepLastValue) Do(ctx context.Context, e parser.Expr, from, until int64
 		r.Values = make([]float64, len(a.Values))
 
 		prev := math.NaN()
-		missing := 0.0
+		missing := 0
 
 		for i, v := range a.Values {
 			if math.IsNaN(v) {
 
-				if (keep < 0 || missing < keep) && !math.IsNaN(prev) {
+				if (keep.IsInf || keep.IntVal < 0 || missing < keep.IntVal) && !math.IsNaN(prev) {
 					r.Values[i] = prev
 					missing++
 				} else {
@@ -104,9 +105,9 @@ func (f *keepLastValue) Description() map[string]types.FunctionDescription {
 					Type:     types.SeriesList,
 				},
 				{
-					Default: types.NewSuggestion("INF"),
+					Default: types.NewSuggestion(math.Inf(1)),
 					Name:    "limit",
-					Type:    types.Integer,
+					Type:    types.IntOrInf,
 				},
 			},
 			SeriesChange: true, // function aggregate metrics or change series items count

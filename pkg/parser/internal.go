@@ -3,10 +3,9 @@ package parser
 import (
 	"fmt"
 	"math"
+	"runtime/debug"
 	"strconv"
 	"strings"
-
-	"runtime/debug"
 )
 
 func (e *expr) doGetIntArg() (int, error) {
@@ -19,6 +18,18 @@ func (e *expr) doGetIntArg() (int, error) {
 	}
 
 	return int(e.val), nil
+}
+
+func (e *expr) doGetIntOrInfArg() (IntOrInf, error) {
+	if e.etype == EtName && strings.ToLower(e.Target()) == "inf" ||
+		e.etype == EtString && strings.ToLower(e.valStr) == "inf" {
+		return IntOrInf{IsInf: true}, nil
+	}
+	intVal, err := e.doGetIntArg()
+	if err != nil {
+		return IntOrInf{}, err
+	}
+	return IntOrInf{IntVal: intVal}, nil
 }
 
 func (e *expr) getNamedArg(name string) *expr {
