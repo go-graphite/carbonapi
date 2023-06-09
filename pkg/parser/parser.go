@@ -3,6 +3,7 @@ package parser
 import (
 	"bytes"
 	"fmt"
+	"github.com/go-graphite/carbonapi/expr/holtwinters"
 	"regexp"
 	"strconv"
 	"strings"
@@ -197,7 +198,7 @@ func (e *expr) Metrics(from, until int64) []MetricRequest {
 
 			return r2
 		case "holtWintersForecast", "holtWintersConfidenceBands", "holtWintersConfidenceArea", "holtWintersAberration":
-			bootstrapInterval, err := e.GetIntervalNamedOrPosArgDefault("bootstrapInterval", 2, 1, 7*86400)
+			bootstrapInterval, err := e.GetIntervalNamedOrPosArgDefault("bootstrapInterval", 2, 1, holtwinters.DefaultBootstrapInterval)
 			if err != nil {
 				return nil
 			}

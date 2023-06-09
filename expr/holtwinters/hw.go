@@ -7,6 +7,12 @@ import (
 	"math"
 )
 
+const (
+	DefaultSeasonality       = 86400  // Seconds in 1 day
+	DefaultBootstrapInterval = 604800 // Seconds in 7 days
+	SecondsPerDay            = 86400
+)
+
 func holtWintersIntercept(alpha, actual, lastSeason, lastIntercept, lastSlope float64) float64 {
 	return alpha*(actual-lastSeason) + (1-alpha)*(lastIntercept+lastSlope)
 }
