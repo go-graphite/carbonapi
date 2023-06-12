@@ -209,6 +209,8 @@ func (t *Suggestion) UnmarshalJSON(d []byte) error {
 		switch string(d) {
 		case "1e9999":
 			res = math.Inf(1)
+		case "-1e9999":
+			res = math.Inf(-1)
 		default:
 			return err
 		}

@@ -128,6 +128,31 @@ func TestInterpolate_Do(t *testing.T) {
 				),
 			},
 		},
+		{
+			"interpolate(x1.y1.z1, inf)",
+			map[parser.MetricRequest][]*types.MetricData{
+				parser.MetricRequest{
+					Metric: "x1.y1.z1",
+					From:   0,
+					Until:  1,
+				}: {
+					types.MakeMetricData(
+						"x1.y1.z1",
+						[]float64{1, 2, 3, 4, nan, nan, nan, 6, 7, 8},
+						1,
+						now32,
+					),
+				},
+			},
+			[]*types.MetricData{
+				types.MakeMetricData(
+					"interpolate(x1.y1.z1)",
+					[]float64{1, 2, 3, 4, 4.5, 5, 5.5, 6, 7, 8},
+					1,
+					now32,
+				),
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
