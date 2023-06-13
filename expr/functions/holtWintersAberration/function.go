@@ -36,9 +36,22 @@ func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, unt
 		return nil, err
 	}
 
-	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from-bootstrapInterval, until, values)
+	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
+	}
+
+	// Note: additional fetch requests are added with an adjusted start time in expr.Metrics() (in
+	// pkg/parser/parser.go) so that the appropriate data corresponding to the adjusted start time
+	// can be pre-fetched.
+	adjustedStartArgs, err := helper.GetSeriesArg(ctx, e.Arg(0), from-bootstrapInterval, until, values)
+	if err != nil {
+		return nil, err
+	}
+
+	adjustedStartSeries := make(map[string]*types.MetricData)
+	for _, serie := range adjustedStartArgs {
+		adjustedStartSeries[serie.Name] = serie
 	}
 
 	delta, err := e.GetFloatNamedOrPosArgDefault("delta", 1, 3)
@@ -55,25 +68,22 @@ func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, unt
 	for _, arg := range args {
 		var (
 			aberration []float64
-			series     []float64
 		)
 
 		stepTime := arg.StepTime
 
-		lowerBand, upperBand := holtwinters.HoltWintersConfidenceBands(arg.Values, stepTime, delta, bootstrapInterval, seasonality)
-
-		windowPoints := int(bootstrapInterval / stepTime)
-		if len(arg.Values) > windowPoints {
-			series = arg.Values[windowPoints:]
+		if v, ok := adjustedStartSeries[arg.Name]; !ok || v == nil {
+			continue
 		}
 
-		for i := range series {
-			if math.IsNaN(series[i]) {
+		lowerBand, upperBand := holtwinters.HoltWintersConfidenceBands(adjustedStartSeries[arg.Name].Values, stepTime, delta, bootstrapInterval, seasonality)
+		for i, v := range arg.Values {
+			if math.IsNaN(v) {
 				aberration = append(aberration, 0)
-			} else if !math.IsNaN(upperBand[i]) && series[i] > upperBand[i] {
-				aberration = append(aberration, series[i]-upperBand[i])
-			} else if !math.IsNaN(lowerBand[i]) && series[i] < lowerBand[i] {
-				aberration = append(aberration, series[i]-lowerBand[i])
+			} else if !math.IsNaN(upperBand[i]) && v > upperBand[i] {
+				aberration = append(aberration, v-upperBand[i])
+			} else if !math.IsNaN(lowerBand[i]) && v < lowerBand[i] {
+				aberration = append(aberration, v-lowerBand[i])
 			} else {
 				aberration = append(aberration, 0)
 			}
@@ -85,7 +95,7 @@ func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, unt
 				Name:              name,
 				Values:            aberration,
 				StepTime:          arg.StepTime,
-				StartTime:         arg.StartTime + bootstrapInterval,
+				StartTime:         arg.StartTime,
 				StopTime:          arg.StopTime,
 				PathExpression:    name,
 				ConsolidationFunc: arg.ConsolidationFunc,

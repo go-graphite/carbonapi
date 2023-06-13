@@ -31,6 +31,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 func (f *holtWintersForecast) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	bootstrapInterval, err := e.GetIntervalNamedOrPosArgDefault("bootstrapInterval", 1, 1, holtwinters.DefaultBootstrapInterval)
+
 	if err != nil {
 		return nil, err
 	}

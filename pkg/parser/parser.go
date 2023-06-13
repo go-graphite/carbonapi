@@ -197,7 +197,7 @@ func (e *expr) Metrics(from, until int64) []MetricRequest {
 			}
 
 			return r2
-		case "holtWintersForecast", "holtWintersConfidenceBands", "holtWintersConfidenceArea", "holtWintersAberration":
+		case "holtWintersForecast", "holtWintersConfidenceBands", "holtWintersConfidenceArea":
 			bootstrapInterval, err := e.GetIntervalNamedOrPosArgDefault("bootstrapInterval", 2, 1, holtwinters.DefaultBootstrapInterval)
 			if err != nil {
 				return nil
@@ -205,6 +205,23 @@ func (e *expr) Metrics(from, until int64) []MetricRequest {
 
 			for i := range r {
 				r[i].From -= bootstrapInterval
+			}
+		case "holtWintersAberration":
+			bootstrapInterval, err := e.GetIntervalNamedOrPosArgDefault("bootstrapInterval", 2, 1, holtwinters.DefaultBootstrapInterval)
+			if err != nil {
+				return nil
+			}
+
+			// For this function, we also need to pull data with an adjusted From time,
+			// so additional requests are added with the adjusted start time based on the
+			// bootstrapInterval
+			for i := range r {
+				adjustedReq := MetricRequest{
+					Metric: r[i].Metric,
+					From:   r[i].From - bootstrapInterval,
+					Until:  r[i].Until,
+				}
+				r = append(r, adjustedReq)
 			}
 		case "movingAverage", "movingMedian", "movingMin", "movingMax", "movingSum", "exponentialMovingAverage":
 			if len(e.args) < 2 {

@@ -719,6 +719,58 @@ func TestMetrics(t *testing.T) {
 			},
 		},
 		{
+			"holtWintersAberration(metric1)",
+			&expr{
+				target: "holtWintersAberration",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "metric1"},
+				},
+				argString: "metric1",
+			},
+			1410346740,
+			1410346865,
+			[]MetricRequest{
+				{
+					Metric: "metric1",
+					From:   1410346740,
+					Until:  1410346865,
+				},
+				{
+					Metric: "metric1",
+					From:   1409741940,
+					Until:  1410346865,
+				},
+			},
+		},
+		{
+			"holtWintersAberration(metric1,3,'6d')",
+			&expr{
+				target: "holtWintersAberration",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{valStr: "3", etype: EtConst},
+					{valStr: "6d", etype: EtString},
+				},
+				argString: "metric1, 3, '6d'",
+			},
+			1410346740,
+			1410346865,
+			[]MetricRequest{
+				{
+					Metric: "metric1",
+					From:   1410346740,
+					Until:  1410346865,
+				},
+				{
+					Metric: "metric1",
+					From:   1409828340,
+					Until:  1410346865,
+				},
+			},
+		},
+		{
 			"holtWintersConfidenceBands(metric1)",
 			&expr{
 				target: "holtWintersConfidenceBands",
