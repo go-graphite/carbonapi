@@ -197,7 +197,16 @@ func (e *expr) Metrics(from, until int64) []MetricRequest {
 			}
 
 			return r2
-		case "holtWintersForecast", "holtWintersConfidenceBands", "holtWintersConfidenceArea":
+		case "holtWintersForecast":
+			bootstrapInterval, err := e.GetIntervalNamedOrPosArgDefault("bootstrapInterval", 1, 1, holtwinters.DefaultBootstrapInterval)
+			if err != nil {
+				return nil
+			}
+
+			for i := range r {
+				r[i].From -= bootstrapInterval
+			}
+		case "holtWintersConfidenceBands", "holtWintersConfidenceArea":
 			bootstrapInterval, err := e.GetIntervalNamedOrPosArgDefault("bootstrapInterval", 2, 1, holtwinters.DefaultBootstrapInterval)
 			if err != nil {
 				return nil

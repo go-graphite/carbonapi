@@ -77,6 +77,7 @@ func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, unt
 		}
 
 		lowerBand, upperBand := holtwinters.HoltWintersConfidenceBands(adjustedStartSeries[arg.Name].Values, stepTime, delta, bootstrapInterval, seasonality)
+
 		for i, v := range arg.Values {
 			if math.IsNaN(v) {
 				aberration = append(aberration, 0)

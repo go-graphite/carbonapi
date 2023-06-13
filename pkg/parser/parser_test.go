@@ -778,7 +778,7 @@ func TestMetrics(t *testing.T) {
 				args: []*expr{
 					{target: "metric1"},
 				},
-				argString: "metric1, 4, '1d'",
+				argString: "metric1",
 			},
 			1410346740,
 			1410346865,
@@ -832,6 +832,26 @@ func TestMetrics(t *testing.T) {
 				{
 					Metric: "metric1",
 					From:   1410087540,
+					Until:  1410346865,
+				},
+			},
+		},
+		{
+			"holtWintersForecast(metric1,'1d')",
+			&expr{
+				target: "holtWintersConfidenceBands",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "metric1"},
+				},
+				argString: "metric1",
+			},
+			1410346740,
+			1410346865,
+			[]MetricRequest{
+				{
+					Metric: "metric1",
+					From:   1409741940,
 					Until:  1410346865,
 				},
 			},
