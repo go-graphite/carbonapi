@@ -2,6 +2,7 @@ package parser
 
 import (
 	"strconv"
+	"strings"
 )
 
 // IntervalString converts a sign and string into a number of seconds
@@ -42,7 +43,7 @@ func IntervalString(s string, defaultSign int) (int32, error) {
 		unitStr, s = s[:j], s[j:]
 
 		var units int
-		switch unitStr {
+		switch strings.ToLower(unitStr) {
 		case "s", "sec", "secs", "second", "seconds":
 			units = 1
 		case "m", "min", "mins", "minute", "minutes":
