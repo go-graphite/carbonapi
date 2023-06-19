@@ -62,7 +62,7 @@ type NodeOrTag struct {
 }
 
 // IntOrInf is either positive infinity or an integer value.
-// They are distinguised by "IfInf" = true if it is positive infinity.
+// They are distinguished by "IsInf" = true if it is positive infinity.
 type IntOrInf struct {
 	IsInf  bool
 	IntVal int
