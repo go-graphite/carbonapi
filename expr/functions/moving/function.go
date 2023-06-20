@@ -69,8 +69,6 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 	var n int
 	var err error
 
-	var scaleByStep bool
-
 	var argstr string
 	var cons string
 
@@ -162,18 +160,16 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		cons = "min"
 	case "movingMax":
 		cons = "max"
-	}
-
-	if len(arg) == 0 {
-		return nil, nil
+	case "movingMedian":
+		cons = "median"
 	}
 
 	var offset int
 
-	if scaleByStep {
+	if e.Arg(1).Type() == parser.EtString {
 		windowSize /= int(arg[0].StepTime)
-		offset = windowSize
 	}
+	offset = windowSize
 
 	result := make([]*types.MetricData, len(arg))
 
@@ -188,15 +184,19 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 					r.Values[i] = math.NaN()
 				}
 			}
-			result[n] = r
+			r.StartTime += int64(n)
+			r.StopTime += int64(n)
+			result[j] = r
 			continue
 		}
 		r.Values = make([]float64, len(a.Values)-offset)
-		r.StartTime = (from + r.StepTime - 1) / r.StepTime * r.StepTime // align StartTime to closest >= StepTime
+		r.StartTime = a.StartTime + int64(windowSize)
 		r.StopTime = r.StartTime + int64(len(r.Values))*r.StepTime
 
 		w := &types.Windowed{Data: make([]float64, windowSize)}
-		for i, v := range a.Values {
+		for i := 1; i < len(a.Values); i++ {
+			w.Push(a.Values[i])
+
 			if ridx := i - offset; ridx >= 0 {
 				if w.IsNonNull() && helper.XFilesFactorValues(w.Data, xFilesFactor) {
 					switch cons {
