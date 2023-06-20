@@ -80,18 +80,36 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		return nil, parser.ErrMissingArgument
 	}
 
+	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	if err != nil {
+		return nil, err
+	}
+	if len(arg) == 0 {
+		return arg, nil
+	}
+
+	adjustedStart := from
+
 	switch e.Arg(1).Type() {
 	case parser.EtConst:
 		// In this case, zipper does not request additional retrospective points,
 		// and leading `n` values, that used to calculate window, become NaN
 		n, err = e.GetIntArg(1)
 		argstr = strconv.Itoa(n)
+		// Find the maximum step to use for the windowPoints
+		var maxStep int64
+		for _, a := range arg {
+			if a.StepTime > maxStep {
+				maxStep = a.StepTime
+			}
+		}
+		adjustedStart -= maxStep * int64(n)
 	case parser.EtString:
 		var n32 int32
 		n32, err = e.GetIntervalArg(1, 1)
 		argstr = "'" + e.Arg(1).StringValue() + "'"
-		n = int(n32)
-		scaleByStep = true
+		n = int(math.Abs(float64(n32)))
+		adjustedStart -= int64(n)
 	default:
 		err = parser.ErrBadType
 	}
@@ -101,20 +119,20 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 
 	windowSize := n
 
-	start := from
-	if scaleByStep {
-		start -= int64(n)
-	}
-
-	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), start, until, values)
+	targetValues, err := f.GetEvaluator().Fetch(ctx, []parser.Expr{e.Arg(0)}, adjustedStart, until, values)
 	if err != nil {
 		return nil, err
 	}
-	if len(arg) == 0 {
+
+	adjustedArgs, err := helper.GetSeriesArg(ctx, e.Arg(0), adjustedStart, until, targetValues)
+	if err != nil {
+		return nil, err
+	}
+	if len(adjustedArgs) == 0 {
 		return arg, nil
 	}
 
-	if e.ArgsLen() >= 3 && e.Target() == "movingWindow" {
+	if e.ArgsLen() >= 2 && e.Target() == "movingWindow" {
 		cons, err = e.GetStringArgDefault(2, "average")
 		if err != nil {
 			return nil, err
@@ -159,7 +177,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 
 	result := make([]*types.MetricData, len(arg))
 
-	for n, a := range arg {
+	for j, a := range adjustedArgs {
 		r := a.CopyName(e.Target() + "(" + a.Name + "," + argstr + ")")
 		r.Tags[e.Target()] = argstr
 
@@ -216,9 +234,8 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 					r.Values[ridx] = math.NaN()
 				}
 			}
-			w.Push(v)
 		}
-		result[n] = r
+		result[j] = r
 	}
 	return result, nil
 }
