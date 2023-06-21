@@ -94,7 +94,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		// and leading `n` values, that used to calculate window, become NaN
 		n, err = e.GetIntArg(1)
 		argstr = strconv.Itoa(n)
-		// Find the maximum step to use for the windowPoints
+		// Find the maximum step to use for determining the altered start time
 		var maxStep int64
 		for _, a := range arg {
 			if a.StepTime > maxStep {
@@ -106,7 +106,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		var n32 int32
 		n32, err = e.GetIntervalArg(1, 1)
 		argstr = "'" + e.Arg(1).StringValue() + "'"
-		n = int(math.Abs(float64(n32)))
+		n = int(math.Abs(float64(n32))) // Absolute is used in order to handle negative string intervals
 		adjustedStart -= int64(n)
 	default:
 		err = parser.ErrBadType
@@ -194,7 +194,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		r.StopTime = r.StartTime + int64(len(r.Values))*r.StepTime
 
 		w := &types.Windowed{Data: make([]float64, windowSize)}
-		for i := 1; i < len(a.Values); i++ {
+		for i := 1; i < len(a.Values); i++ { // ignoring the first value in the series to avoid shifting of results one step in the future
 			w.Push(a.Values[i])
 
 			if ridx := i - offset; ridx >= 0 {

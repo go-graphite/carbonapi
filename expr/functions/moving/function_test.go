@@ -25,6 +25,8 @@ func init() {
 	}
 }
 
+// Note: some of these tests are influenced by the testcases for moving* functions
+// in Graphite-web. See: https://github.com/graphite-project/graphite-web/blob/master/webapp/tests/test_functions.py
 func TestMoving(t *testing.T) {
 	tests := []th.EvalTestItemWithRange{
 		{
