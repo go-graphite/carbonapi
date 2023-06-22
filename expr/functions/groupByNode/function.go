@@ -110,8 +110,16 @@ func (f *groupByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 
 		r, _ := f.Evaluator.Eval(ctx, nexpr, from, until, nvalues)
 		if r != nil {
+			var res []*types.MetricData
+			if len(r) > 0 {
+				// Only the first result is used. See implementation in Graphite-web:
+				// https://github.com/graphite-project/graphite-web/blob/master/webapp/graphite/render/functions.py
+				res = []*types.MetricData{r[0]}
+			} else {
+				res = r
+			}
 			// avoid overwriting, do copy-on-write
-			rg := types.CopyMetricDataSliceWithName([]*types.MetricData{r[0]}, k) // Only the first result is used. See implementation in Graphite-web: https://github.com/graphite-project/graphite-web/blob/master/webapp/graphite/render/functions.py
+			rg := types.CopyMetricDataSliceWithName(res, k)
 			results = append(results, rg...)
 		}
 	}
