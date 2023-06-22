@@ -146,7 +146,7 @@ func TestMoving(t *testing.T) {
 				{"metric1", 607, 710}: {types.MakeMetricData("metric1", []float64{1, 2, math.NaN(), 1, math.NaN(), 3}, 1, 607)},
 			},
 			Want: []*types.MetricData{types.MakeMetricData(`movingWindow(metric1,'3sec')`,
-				[]float64{1.5, 1, 2}, 1, 610).SetTag("movingWindow", "'3sec'").SetNameTag(`movingWindow(metric1,'3sec')`)},
+				[]float64{1, 0.3333333333333333, 1.3333333333333333}, 1, 610).SetTag("movingWindow", "'3sec'").SetNameTag(`movingWindow(metric1,'3sec')`)},
 			From:  610,
 			Until: 710,
 		},

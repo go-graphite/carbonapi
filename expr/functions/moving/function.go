@@ -87,11 +87,11 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 	}
 
 	adjustedStart := from
+	var windowPoints int
+	var preview int64
 
 	switch e.Arg(1).Type() {
 	case parser.EtConst:
-		// In this case, zipper does not request additional retrospective points,
-		// and leading `n` values, that used to calculate window, become NaN
 		n, err = e.GetIntArg(1)
 		argstr = strconv.Itoa(n)
 		// Find the maximum step to use for determining the altered start time
@@ -101,21 +101,22 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 				maxStep = a.StepTime
 			}
 		}
+		preview = maxStep * int64(n)
 		adjustedStart -= maxStep * int64(n)
+		windowPoints = int(preview)
 	case parser.EtString:
 		var n32 int32
 		n32, err = e.GetIntervalArg(1, 1)
 		argstr = "'" + e.Arg(1).StringValue() + "'"
-		n = int(math.Abs(float64(n32))) // Absolute is used in order to handle negative string intervals
-		adjustedStart -= int64(n)
+		preview = int64(math.Abs(float64(n32))) // Absolute is used in order to handle negative string intervals
+		adjustedStart -= preview
+		windowPoints = int(preview / arg[0].StepTime)
 	default:
 		err = parser.ErrBadType
 	}
 	if err != nil {
 		return nil, err
 	}
-
-	windowSize := n
 
 	targetValues, err := f.GetEvaluator().Fetch(ctx, []parser.Expr{e.Arg(0)}, adjustedStart, until, values)
 	if err != nil {
@@ -126,6 +127,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 	if err != nil {
 		return nil, err
 	}
+
 	if len(adjustedArgs) == 0 {
 		return arg, nil
 	}
@@ -164,40 +166,33 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		cons = "median"
 	}
 
-	var offset int
-
-	if e.Arg(1).Type() == parser.EtString {
-		windowSize /= int(arg[0].StepTime)
-	}
-	offset = windowSize
-
-	result := make([]*types.MetricData, len(arg))
+	result := make([]*types.MetricData, len(adjustedArgs))
 
 	for j, a := range adjustedArgs {
 		r := a.CopyName(e.Target() + "(" + a.Name + "," + argstr + ")")
 		r.Tags[e.Target()] = argstr
 
-		if windowSize == 0 {
+		if windowPoints == 0 {
 			if *f.config.ReturnNaNsIfStepMismatch {
 				r.Values = make([]float64, len(a.Values))
 				for i := range a.Values {
 					r.Values[i] = math.NaN()
 				}
 			}
-			r.StartTime += int64(n)
-			r.StopTime += int64(n)
+			r.StartTime += preview
+			r.StopTime += preview
 			result[j] = r
 			continue
 		}
-		r.Values = make([]float64, len(a.Values)-offset)
-		r.StartTime = a.StartTime + int64(windowSize)
+		r.Values = make([]float64, len(a.Values)-int(windowPoints))
+		r.StartTime = a.StartTime + preview
 		r.StopTime = r.StartTime + int64(len(r.Values))*r.StepTime
 
-		w := &types.Windowed{Data: make([]float64, windowSize)}
+		w := &types.Windowed{Data: make([]float64, windowPoints)}
 		for i := 1; i < len(a.Values); i++ { // ignoring the first value in the series to avoid shifting of results one step in the future
 			w.Push(a.Values[i])
 
-			if ridx := i - offset; ridx >= 0 {
+			if ridx := i - windowPoints; ridx >= 0 {
 				if w.IsNonNull() && helper.XFilesFactorValues(w.Data, xFilesFactor) {
 					switch cons {
 					case "average":
@@ -227,7 +222,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 					case "median":
 						r.Values[ridx] = w.Median()
 					}
-					if i < windowSize || math.IsNaN(r.Values[ridx]) {
+					if i < windowPoints || math.IsNaN(r.Values[ridx]) {
 						r.Values[ridx] = math.NaN()
 					}
 				} else {
