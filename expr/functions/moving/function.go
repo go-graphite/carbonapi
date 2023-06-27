@@ -78,15 +78,8 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		return nil, parser.ErrMissingArgument
 	}
 
-	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
-	if err != nil {
-		return nil, err
-	}
-	if len(arg) == 0 {
-		return arg, nil
-	}
-
 	adjustedStart := from
+	var refetch bool
 	var windowPoints int
 	var preview int64
 
@@ -94,6 +87,15 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 	case parser.EtConst:
 		n, err = e.GetIntArg(1)
 		argstr = strconv.Itoa(n)
+
+		arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+		if err != nil {
+			return nil, err
+		}
+		if len(arg) == 0 {
+			return arg, nil
+		}
+
 		// Find the maximum step to use for determining the altered start time
 		var maxStep int64
 		for _, a := range arg {
@@ -104,13 +106,13 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		preview = maxStep * int64(n)
 		adjustedStart -= maxStep * int64(n)
 		windowPoints = int(preview)
+		refetch = true
 	case parser.EtString:
 		var n32 int32
 		n32, err = e.GetIntervalArg(1, 1)
 		argstr = "'" + e.Arg(1).StringValue() + "'"
 		preview = int64(math.Abs(float64(n32))) // Absolute is used in order to handle negative string intervals
 		adjustedStart -= preview
-		windowPoints = int(preview / arg[0].StepTime)
 	default:
 		err = parser.ErrBadType
 	}
@@ -118,9 +120,14 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		return nil, err
 	}
 
-	targetValues, err := f.GetEvaluator().Fetch(ctx, []parser.Expr{e.Arg(0)}, adjustedStart, until, values)
-	if err != nil {
-		return nil, err
+	var targetValues map[parser.MetricRequest][]*types.MetricData
+	if refetch {
+		targetValues, err = f.GetEvaluator().Fetch(ctx, []parser.Expr{e.Arg(0)}, adjustedStart, until, values)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		targetValues = values
 	}
 
 	adjustedArgs, err := helper.GetSeriesArg(ctx, e.Arg(0), adjustedStart, until, targetValues)
@@ -129,7 +136,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 	}
 
 	if len(adjustedArgs) == 0 {
-		return arg, nil
+		return adjustedArgs, nil
 	}
 
 	if e.ArgsLen() >= 2 && e.Target() == "movingWindow" {
@@ -139,14 +146,14 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		}
 
 		if e.ArgsLen() == 4 {
-			xFilesFactor, err = e.GetFloatArgDefault(3, float64(arg[0].XFilesFactor))
+			xFilesFactor, err = e.GetFloatArgDefault(3, float64(adjustedArgs[0].XFilesFactor))
 
 			if err != nil {
 				return nil, err
 			}
 		}
 	} else if e.ArgsLen() == 3 {
-		xFilesFactor, err = e.GetFloatArgDefault(2, float64(arg[0].XFilesFactor))
+		xFilesFactor, err = e.GetFloatArgDefault(2, float64(adjustedArgs[0].XFilesFactor))
 
 		if err != nil {
 			return nil, err
@@ -171,6 +178,10 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 	for j, a := range adjustedArgs {
 		r := a.CopyName(e.Target() + "(" + a.Name + "," + argstr + ")")
 		r.Tags[e.Target()] = argstr
+
+		if e.Arg(1).Type() == parser.EtString {
+			windowPoints = int(preview / a.StepTime)
+		}
 
 		if windowPoints == 0 {
 			if *f.config.ReturnNaNsIfStepMismatch {

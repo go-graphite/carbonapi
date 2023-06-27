@@ -232,7 +232,7 @@ func (e *expr) Metrics(from, until int64) []MetricRequest {
 				}
 				r = append(r, adjustedReq)
 			}
-		case "exponentialMovingAverage":
+		case "movingAverage", "movingMedian", "movingMin", "movingMax", "movingSum", "exponentialMovingAverage":
 			if len(e.args) < 2 {
 				return nil
 			}
