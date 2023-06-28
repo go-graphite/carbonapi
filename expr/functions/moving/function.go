@@ -105,7 +105,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		}
 		preview = maxStep * int64(n)
 		adjustedStart -= maxStep * int64(n)
-		windowPoints = int(preview)
+		windowPoints = n
 		refetch = true
 	case parser.EtString:
 		var n32 int32
@@ -195,7 +195,12 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 			result[j] = r
 			continue
 		}
-		r.Values = make([]float64, len(a.Values)-int(windowPoints))
+
+		size := len(a.Values) - windowPoints
+		if size < 0 {
+			size = 0
+		}
+		r.Values = make([]float64, size)
 		r.StartTime = a.StartTime + preview
 		r.StopTime = r.StartTime + int64(len(r.Values))*r.StepTime
 

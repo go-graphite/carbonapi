@@ -238,6 +238,17 @@ func TestMoving(t *testing.T) {
 			From:  610,
 			Until: 710,
 		},
+		{
+			Target: "movingAverage(metric1,10)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{"metric1", 610, 700}: {types.MakeMetricData("metric1", []float64{1, 2, 3}, 30, 610)}, // step > windowSize
+				{"metric1", 310, 700}: {types.MakeMetricData("metric1", []float64{1, 2, 3}, 30, 310)},
+			},
+			Want: []*types.MetricData{types.MakeMetricData(`movingAverage(metric1,10)`,
+				[]float64{}, 30, 610).SetTag("movingAverage", "10").SetNameTag(`movingAverage(metric1,10)`)},
+			From:  610,
+			Until: 700,
+		},
 	}
 
 	for n, tt := range tests {
