@@ -33,6 +33,7 @@ func TestBelow(t *testing.T) {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
 					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 7}, 1, now32),
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("metricB",
@@ -55,13 +56,12 @@ func TestBelow(t *testing.T) {
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1", 0, 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
-					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
-					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32), // avg=5.5
+					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32), // avg=5
 				},
 			},
 			[]*types.MetricData{
 				types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
-				types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 			},
 		},
 		{

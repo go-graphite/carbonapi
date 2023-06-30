@@ -46,7 +46,6 @@ func (f *below) Do(ctx context.Context, e parser.Expr, from, until int64, values
 	}
 
 	isAbove := strings.HasSuffix(e.Target(), "Above")
-	isInclusive := true
 	var compute func([]float64) float64
 	switch {
 	case strings.HasPrefix(e.Target(), "average"):
@@ -55,28 +54,18 @@ func (f *below) Do(ctx context.Context, e parser.Expr, from, until int64, values
 		compute = consolidations.CurrentValue
 	case strings.HasPrefix(e.Target(), "maximum"):
 		compute = consolidations.MaxValue
-		isInclusive = false
 	case strings.HasPrefix(e.Target(), "minimum"):
 		compute = consolidations.MinValue
-		isInclusive = false
 	}
 	results := make([]*types.MetricData, 0, len(args))
 	for _, a := range args {
 		value := compute(a.Values)
 		if isAbove {
-			if isInclusive {
-				if value >= n {
-					results = append(results, a)
-				}
-			} else {
-				if value > n {
-					results = append(results, a)
-				}
-			}
-		} else {
-			if value <= n {
+			if value > n {
 				results = append(results, a)
 			}
+		} else if value <= n {
+			results = append(results, a)
 		}
 	}
 
