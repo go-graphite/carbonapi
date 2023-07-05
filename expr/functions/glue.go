@@ -15,6 +15,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/aliasByNode"
 	"github.com/go-graphite/carbonapi/expr/functions/aliasByPostgres"
 	"github.com/go-graphite/carbonapi/expr/functions/aliasByRedis"
+	"github.com/go-graphite/carbonapi/expr/functions/aliasQuery"
 	"github.com/go-graphite/carbonapi/expr/functions/aliasSub"
 	"github.com/go-graphite/carbonapi/expr/functions/asPercent"
 	"github.com/go-graphite/carbonapi/expr/functions/averageOutsidePercentile"
@@ -140,6 +141,7 @@ func New(configs map[string]string) {
 		{name: "aliasByNode", filename: "aliasByNode", order: aliasByNode.GetOrder(), f: aliasByNode.New},
 		{name: "aliasByPostgres", filename: "aliasByPostgres", order: aliasByPostgres.GetOrder(), f: aliasByPostgres.New},
 		{name: "aliasByRedis", filename: "aliasByRedis", order: aliasByRedis.GetOrder(), f: aliasByRedis.New},
+		{name: "aliasQuery", filename: "aliasQuery", order: aliasQuery.GetOrder(), f: aliasQuery.New},
 		{name: "aliasSub", filename: "aliasSub", order: aliasSub.GetOrder(), f: aliasSub.New},
 		{name: "asPercent", filename: "asPercent", order: asPercent.GetOrder(), f: asPercent.New},
 		{name: "averageOutsidePercentile", filename: "averageOutsidePercentile", order: averageOutsidePercentile.GetOrder(), f: averageOutsidePercentile.New},

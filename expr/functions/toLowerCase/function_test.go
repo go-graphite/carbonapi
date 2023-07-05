@@ -27,7 +27,7 @@ func TestToLowerCaseFunction(t *testing.T) {
 
 	tests := []th.EvalTestItem{
 		{
-			"toLowerCase(METRIC.TEST.FOO)",
+			"lower(METRIC.TEST.FOO)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"METRIC.TEST.FOO", 0, 1}: {types.MakeMetricData("METRIC.TEST.FOO", []float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
@@ -35,7 +35,7 @@ func TestToLowerCaseFunction(t *testing.T) {
 				[]float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 		},
 		{
-			"toLowerCase(METRIC.TEST.FOO,7)",
+			"lower(METRIC.TEST.FOO,7)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"METRIC.TEST.FOO", 0, 1}: {types.MakeMetricData("METRIC.TEST.FOO", []float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
@@ -43,7 +43,7 @@ func TestToLowerCaseFunction(t *testing.T) {
 				[]float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 		},
 		{
-			"toLowerCase(METRIC.TEST.FOO,-3)",
+			"lower(METRIC.TEST.FOO,-3)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"METRIC.TEST.FOO", 0, 1}: {types.MakeMetricData("METRIC.TEST.FOO", []float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
@@ -51,11 +51,19 @@ func TestToLowerCaseFunction(t *testing.T) {
 				[]float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 		},
 		{
-			"toLowerCase(METRIC.TEST.FOO,0,7,12)",
+			"lower(METRIC.TEST.FOO,0,7,12)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"METRIC.TEST.FOO", 0, 1}: {types.MakeMetricData("METRIC.TEST.FOO", []float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("mETRIC.tEST.fOO",
+				[]float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+		},
+		{
+			"toLowerCase(METRIC.TEST.FOO)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"METRIC.TEST.FOO", 0, 1}: {types.MakeMetricData("METRIC.TEST.FOO", []float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData("metric.test.foo",
 				[]float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 		},
 	}
