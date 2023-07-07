@@ -196,9 +196,14 @@ func (e *expr) Metrics(from, until int64) []MetricRequest {
 			}
 
 			return r2
-		case "holtWintersForecast", "holtWintersConfidenceBands", "holtWintersAberration":
+		case "holtWintersForecast", "holtWintersConfidenceBands", "holtWintersConfidenceArea", "holtWintersAberration":
+			bootstrapInterval, err := e.GetIntervalNamedOrPosArgDefault("bootstrapInterval", 2, 1, 7*86400)
+			if err != nil {
+				return nil
+			}
+
 			for i := range r {
-				r[i].From -= 7 * 86400 // starts -7 days from where the original starts
+				r[i].From -= bootstrapInterval
 			}
 		case "movingAverage", "movingMedian", "movingMin", "movingMax", "movingSum", "exponentialMovingAverage":
 			if len(e.args) < 2 {
