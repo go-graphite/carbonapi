@@ -28,6 +28,8 @@ func init() {
 	helper.SetEvaluator(evaluator)
 }
 
+// Note: some of these tests are influenced by the testcases for groupByNode and groupByNodes functions
+// in Graphite-web. See: https://github.com/graphite-project/graphite-web/blob/master/webapp/tests/test_functions.py
 func TestGroupByNode(t *testing.T) {
 	now32 := int64(time.Now().Unix())
 
@@ -210,6 +212,37 @@ func TestGroupByNode(t *testing.T) {
 			Results: map[string][]*types.MetricData{
 				"lag":  {types.MakeMetricData("lag", []float64{1, 2, 3, 4, 5}, 1, now32).SetTag("aggregatedBy", "sum")},
 				"lag=": {types.MakeMetricData("lag=", []float64{1, 0, 3, 4, 5}, 1, now32).SetTag("aggregatedBy", "sum")},
+			},
+		},
+		{
+			Name:   "groupByNodes_range",
+			Target: `groupByNodes(test.metric*.foo*,"range",1,0)`,
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{"test.metric*.foo*", 0, 1}: {
+					types.MakeMetricData("test.metric1.foo1", []float64{0}, 1, now32),
+					types.MakeMetricData("test.metric1.foo2", []float64{0}, 1, now32),
+					types.MakeMetricData("test.metric2.foo1", []float64{0}, 1, now32),
+					types.MakeMetricData("test.metric2.foo2", []float64{0}, 1, now32),
+				},
+			},
+			Results: map[string][]*types.MetricData{
+				"metric1.test": {types.MakeMetricData("metric1.test", []float64{0}, 1, now32).SetTag("aggregatedBy", "range")},
+				"metric2.test": {types.MakeMetricData("metric2.test", []float64{0}, 1, now32).SetTag("aggregatedBy", "range")},
+			},
+		},
+		{
+			Name:   "groupByNodes_average_no_nodes",
+			Target: `groupByNodes(test.metric*.foo*,"average")`,
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{"test.metric*.foo*", 0, 1}: {
+					types.MakeMetricData("test.metric1.foo1", []float64{0}, 1, now32),
+					types.MakeMetricData("test.metric1.foo2", []float64{0}, 1, now32),
+					types.MakeMetricData("test.metric2.foo1", []float64{0}, 1, now32),
+					types.MakeMetricData("test.metric2.foo2", []float64{0}, 1, now32),
+				},
+			},
+			Results: map[string][]*types.MetricData{
+				"": {types.MakeMetricData("", []float64{0}, 1, now32).SetTag("aggregatedBy", "average")},
 			},
 		},
 	}
