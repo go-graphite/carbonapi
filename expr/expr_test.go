@@ -293,6 +293,65 @@ func TestEvalExpression(t *testing.T) {
 			},
 			[]*types.MetricData{types.MakeMetricData("metric1.baz", []float64{22, 48, 78, 112, 150}, 1, now32).SetTag("aggregatedBy", "multiply").SetNameTag("metric1.foo.*.*")},
 		},
+		{
+			"groupByNode(metric1foo.*,0,\"asPercent\")",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"metric1foo.*", 0, 1}: {
+					types.MakeMetricData("metric1foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric1foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, now32),
+					types.MakeMetricData("metric1foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
+					types.MakeMetricData("metric1foo.bar2.qux", []float64{7, 8, 9, 10, 11}, 1, now32),
+				},
+			},
+			[]*types.MetricData{types.MakeMetricData("metric1foo", []float64{4, 6.896551724137931, 9.09090909090909, 10.81081081081081, 12.195121951219512}, 1, now32)},
+		},
+		{
+			"groupByNodes(test.metric*.foo*,\"keepLastValue\",1,0)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"test.metric*.foo*", 0, 1}: {
+					types.MakeMetricData("test.metric1.foo1", []float64{0}, 1, now32),
+					types.MakeMetricData("test.metric1.foo2", []float64{0}, 1, now32),
+					types.MakeMetricData("test.metric2.foo1", []float64{0}, 1, now32),
+					types.MakeMetricData("test.metric2.foo2", []float64{0}, 1, now32),
+				},
+			},
+			[]*types.MetricData{
+				types.MakeMetricData("metric1.test", []float64{0}, 1, now32),
+				types.MakeMetricData("metric2.test", []float64{0}, 1, now32),
+			},
+		},
+		{
+			"groupByNodes(test.metric*.foo*,\"keepLastValue\",1,2)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"test.metric*.foo*", 0, 1}: {
+					types.MakeMetricData("test.metric1.foo1", []float64{0}, 1, now32),
+					types.MakeMetricData("test.metric1.foo2", []float64{0}, 1, now32),
+					types.MakeMetricData("test.metric2.foo1", []float64{0}, 1, now32),
+					types.MakeMetricData("test.metric2.foo2", []float64{0}, 1, now32),
+				},
+			},
+			[]*types.MetricData{
+				types.MakeMetricData("metric1.foo1", []float64{0}, 1, now32),
+				types.MakeMetricData("metric1.foo2", []float64{0}, 1, now32),
+				types.MakeMetricData("metric2.foo1", []float64{0}, 1, now32),
+				types.MakeMetricData("metric2.foo2", []float64{0}, 1, now32),
+			},
+		},
+		{
+			"groupByNodes(test.metric*.foo*,\"keepLastValue\",1)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{"test.metric*.foo*", 0, 1}: {
+					types.MakeMetricData("test.metric1.foo1", []float64{0}, 1, now32),
+					types.MakeMetricData("test.metric1.foo2", []float64{0}, 1, now32),
+					types.MakeMetricData("test.metric2.foo1", []float64{0}, 1, now32),
+					types.MakeMetricData("test.metric2.foo2", []float64{0}, 1, now32),
+				},
+			},
+			[]*types.MetricData{
+				types.MakeMetricData("metric1", []float64{0}, 1, now32),
+				types.MakeMetricData("metric2", []float64{0}, 1, now32),
+			},
+		},
 	}
 
 	for _, tt := range tests {
