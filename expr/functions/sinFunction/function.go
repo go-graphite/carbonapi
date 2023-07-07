@@ -81,10 +81,10 @@ func (f *sinFunction) Description() map[string]types.FunctionDescription {
 				"Example:\n\n.. code-block:: none\n\n &target=sin(\"The.time.series\", 2)\n\n" +
 				"This would create a series named “The.time.series” that contains sin(x)*2. Accepts optional second argument as ‘amplitude’ parameter (default amplitude is 1)\n Accepts optional third argument as ‘step’ parameter (default step is 60 sec)\n\n" +
 				"Alias: sin",
-			Function: "sinFunction(name, amplitude=1, step=60)",
+			Function: "sin(name, amplitude=1, step=60)",
 			Group:    "Transform",
 			Module:   "graphite.render.functions",
-			Name:     "scale",
+			Name:     "sin",
 			Params: []types.FunctionParam{
 				{
 					Name:     "name",
@@ -113,7 +113,7 @@ func (f *sinFunction) Description() map[string]types.FunctionDescription {
 			Function: "sinFunction(name, amplitude=1, step=60)",
 			Group:    "Transform",
 			Module:   "graphite.render.functions",
-			Name:     "scale",
+			Name:     "sinFunction",
 			Params: []types.FunctionParam{
 				{
 					Name:     "name",

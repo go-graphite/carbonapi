@@ -76,5 +76,24 @@ func (f *setXFilesFactor) Description() map[string]types.FunctionDescription {
 				},
 			},
 		},
+		"xFilesFactor": {
+			Description: "Takes one metric or a wildcard seriesList and an xFilesFactor value between 0 and 1. When a series needs to be consolidated, this sets the fraction of values in an interval that must\nnot be null for the consolidation to be considered valid. If there are not enough values then None will be returned for that interval.\n\nExample:\n\n.. code-block:: none\n\n  &target=xFilesFactor(Sales.widgets.largeBlue, 0.5)\n  &target=Servers.web01.sda1.free_space|consolidateBy('max')|xFilesFactor(0.5)",
+			Function:    "xFilesFactor(seriesList, xFilesFactor)",
+			Group:       "Transform",
+			Module:      "graphite.render.functions",
+			Name:        "xFilesFactor",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "xFilesFactor",
+					Required: false,
+					Type:     types.Float,
+				},
+			},
+		},
 	}
 }
