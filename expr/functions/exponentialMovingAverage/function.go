@@ -33,70 +33,97 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 func (f *exponentialMovingAverage) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	var (
-		windowSize int
-		argstr     string
-		err        error
+		windowPoints   int
+		previewSeconds int
+		argstr         string
+		err            error
+		constant       float64
 	)
 
 	if e.ArgsLen() < 2 {
 		return nil, parser.ErrMissingArgument
 	}
 
+	refetch := false
 	switch e.Arg(1).Type() {
 	case parser.EtConst:
-		// In this case, zipper does not request additional retrospective points,
-		// and leading `n` values, that used to calculate window, become NaN
-		windowSize, err = e.GetIntArg(1)
-		argstr = strconv.Itoa(windowSize)
+		windowPoints, err = e.GetIntArg(1)
+		argstr = strconv.Itoa(windowPoints)
+		if windowPoints < 0 {
+			// we only care about the absolute value
+			windowPoints = windowPoints * -1
+		}
+
+		// When the window is an integer, we check the fetched data to get the
+		// step, and use it to calculate the preview window, to then refetch the
+		// data. The already fetched values are discarded.
+		refetch = true
+		var maxStep int64
+		arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+		if err != nil || len(arg) == 0 {
+			return arg, err
+		}
+		for _, a := range arg {
+			if a.StepTime > maxStep {
+				maxStep = a.StepTime
+			}
+		}
+		previewSeconds = int(maxStep) * windowPoints
+		constant = float64(2 / (float64(windowPoints) + 1))
 	case parser.EtString:
+		// When the window is a string, we already adjusted the fetch request using the preview window.
+		// No need to refetch.
 		var n32 int32
 		n32, err = e.GetIntervalArg(1, 1)
 		if err != nil {
 			return nil, err
 		}
 		argstr = strconv.Quote(e.Arg(1).StringValue())
-		windowSize = int(n32)
+		previewSeconds = int(n32)
+		if previewSeconds < 0 {
+			// we only care about the absolute value
+			previewSeconds = previewSeconds * -1
+		}
+		constant = float64(2 / (float64(previewSeconds) + 1))
+
 	default:
-		err = parser.ErrBadType
+		return nil, parser.ErrBadType
 	}
+
+	if previewSeconds < 1 {
+		return nil, fmt.Errorf("invalid window size %s", e.Arg(1).StringValue())
+	}
+	from = from - int64(previewSeconds)
+	if refetch {
+		f.GetEvaluator().Fetch(ctx, []parser.Expr{e.Arg(0)}, from, until, values)
+	}
+	previewList, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
 	var results []*types.MetricData
-
-	if windowSize < 1 {
-		return nil, fmt.Errorf("invalid window size %d", windowSize)
-	}
-
-	windowStr := strconv.Itoa(windowSize)
-
-	start := from
-
-	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), start, until, values)
-	if err != nil {
-		return nil, err
-	}
-	if len(arg) == 0 {
-		return results, nil
-	}
-
-	constant := float64(2 / (float64(windowSize) + 1))
-
-	for _, a := range arg {
+	for _, a := range previewList {
 		r := a.CopyLink()
 		r.Name = e.Target() + "(" + a.Name + "," + argstr + ")"
+		if e.Arg(1).Type() == parser.EtString {
+			// If the window is a string (time interval), we adjust depending on the step
+			windowPoints = previewSeconds / int(a.StepTime)
+		}
 
-		var vals []float64
+		vals := make([]float64, 0, len(a.Values)/windowPoints+1)
 
-		if windowSize > len(a.Values) {
+		if windowPoints > len(a.Values) {
 			mean := consolidations.AggMean(a.Values)
 			vals = append(vals, helper.SafeRound(mean, 6))
 		} else {
-			ema := consolidations.AggMean(a.Values[:windowSize])
+			ema := consolidations.AggMean(a.Values[:windowPoints])
+			if math.IsNaN(ema) {
+				ema = 0
+			}
 
 			vals = append(vals, helper.SafeRound(ema, 6))
-			for _, v := range a.Values[windowSize:] {
+			for _, v := range a.Values[windowPoints:] {
 				if math.IsNaN(v) {
 					vals = append(vals, math.NaN())
 					continue
@@ -106,9 +133,9 @@ func (f *exponentialMovingAverage) Do(ctx context.Context, e parser.Expr, from, 
 			}
 		}
 
-		r.Tags[e.Target()] = windowStr
+		r.Tags[e.Target()] = argstr
 		r.Values = vals
-		r.StartTime = (from + r.StepTime - 1) / r.StepTime * r.StepTime // align StartTime to closest >= StepTime
+		r.StartTime = r.StartTime + int64(previewSeconds)
 		r.StopTime = r.StartTime + int64(len(r.Values))*r.StepTime
 		results = append(results, r)
 	}
