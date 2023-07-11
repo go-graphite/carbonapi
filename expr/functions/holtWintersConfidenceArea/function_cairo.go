@@ -34,7 +34,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *holtWintersConfidenceArea) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	bootstrapInterval, err := e.GetIntervalNamedOrPosArgDefault("bootstrapInterval", 2, 1, 7*86400)
+	bootstrapInterval, err := e.GetIntervalNamedOrPosArgDefault("bootstrapInterval", 2, 1, holtwinters.DefaultBootstrapInterval)
 	if err != nil {
 		return nil, err
 	}
@@ -49,22 +49,27 @@ func (f *holtWintersConfidenceArea) Do(ctx context.Context, e parser.Expr, from,
 		return nil, err
 	}
 
+	seasonality, err := e.GetIntervalNamedOrPosArgDefault("seasonality", 3, 1, holtwinters.DefaultSeasonality)
+	if err != nil {
+		return nil, err
+	}
+
 	results := make([]*types.MetricData, 0, len(args)*2)
 	for _, arg := range args {
 		stepTime := arg.StepTime
 
-		lowerBand, upperBand := holtwinters.HoltWintersConfidenceBands(arg.Values, stepTime, delta, bootstrapInterval/86400)
+		lowerBand, upperBand := holtwinters.HoltWintersConfidenceBands(arg.Values, stepTime, delta, bootstrapInterval, seasonality)
 
 		lowerSeries := types.MetricData{
 			FetchResponse: pb.FetchResponse{
-				Name:              fmt.Sprintf("holtWintersConfidenceLower(%s)", arg.Name),
+				Name:              fmt.Sprintf("holtWintersConfidenceArea(%s)", arg.Name),
 				Values:            lowerBand,
 				StepTime:          arg.StepTime,
 				StartTime:         arg.StartTime + bootstrapInterval,
 				StopTime:          arg.StopTime,
 				ConsolidationFunc: arg.ConsolidationFunc,
 				XFilesFactor:      arg.XFilesFactor,
-				PathExpression:    fmt.Sprintf("holtWintersConfidenceLower(%s)", arg.Name),
+				PathExpression:    fmt.Sprintf("holtWintersConfidenceArea(%s)", arg.Name),
 			},
 			Tags: helper.CopyTags(arg),
 			GraphOptions: types.GraphOptions{
@@ -77,14 +82,14 @@ func (f *holtWintersConfidenceArea) Do(ctx context.Context, e parser.Expr, from,
 
 		upperSeries := types.MetricData{
 			FetchResponse: pb.FetchResponse{
-				Name:              fmt.Sprintf("holtWintersConfidenceUpper(%s)", arg.Name),
+				Name:              fmt.Sprintf("holtWintersConfidenceArea(%s)", arg.Name),
 				Values:            upperBand,
 				StepTime:          arg.StepTime,
 				StartTime:         arg.StartTime + bootstrapInterval,
 				StopTime:          arg.StopTime,
 				ConsolidationFunc: arg.ConsolidationFunc,
 				XFilesFactor:      arg.XFilesFactor,
-				PathExpression:    fmt.Sprintf("holtWintersConfidenceLower(%s)", arg.Name),
+				PathExpression:    fmt.Sprintf("holtWintersConfidenceArea(%s)", arg.Name),
 			},
 			Tags: helper.CopyTags(arg),
 			GraphOptions: types.GraphOptions{

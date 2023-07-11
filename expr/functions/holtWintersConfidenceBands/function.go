@@ -2,7 +2,6 @@ package holtWintersConfidenceBands
 
 import (
 	"context"
-
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/holtwinters"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -30,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *holtWintersConfidenceBands) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	bootstrapInterval, err := e.GetIntervalNamedOrPosArgDefault("bootstrapInterval", 2, 1, 7*86400)
+	bootstrapInterval, err := e.GetIntervalNamedOrPosArgDefault("bootstrapInterval", 2, 1, holtwinters.DefaultBootstrapInterval)
 	if err != nil {
 		return nil, err
 	}
@@ -45,11 +44,16 @@ func (f *holtWintersConfidenceBands) Do(ctx context.Context, e parser.Expr, from
 		return nil, err
 	}
 
+	seasonality, err := e.GetIntervalNamedOrPosArgDefault("seasonality", 3, 1, holtwinters.DefaultSeasonality)
+	if err != nil {
+		return nil, err
+	}
+
 	results := make([]*types.MetricData, 0, len(args)*2)
 	for _, arg := range args {
 		stepTime := arg.StepTime
 
-		lowerBand, upperBand := holtwinters.HoltWintersConfidenceBands(arg.Values, stepTime, delta, bootstrapInterval/86400)
+		lowerBand, upperBand := holtwinters.HoltWintersConfidenceBands(arg.Values, stepTime, delta, bootstrapInterval, seasonality)
 
 		name := "holtWintersConfidenceLower(" + arg.Name + ")"
 		lowerSeries := &types.MetricData{
