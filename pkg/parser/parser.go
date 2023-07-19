@@ -472,6 +472,30 @@ func (e *expr) GetIntNamedOrPosArgDefault(k string, n, d int) (int, error) {
 	return e.GetIntArgDefault(n, d)
 }
 
+func (e *expr) GetIntOrInfArg(n int) (IntOrInf, error) {
+	if len(e.args) <= n {
+		return IntOrInf{}, ErrMissingArgument
+	}
+
+	return e.args[n].doGetIntOrInfArg()
+}
+
+func (e *expr) GetIntOrInfArgDefault(n int, d IntOrInf) (IntOrInf, error) {
+	if len(e.args) <= n {
+		return d, nil
+	}
+
+	return e.args[n].doGetIntOrInfArg()
+}
+
+func (e *expr) GetIntOrInfNamedOrPosArgDefault(k string, n int, d IntOrInf) (IntOrInf, error) {
+	if a := e.getNamedArg(k); a != nil {
+		return a.doGetIntOrInfArg()
+	}
+
+	return e.GetIntOrInfArgDefault(n, d)
+}
+
 func (e *expr) GetNamedArg(name string) Expr {
 	return e.getNamedArg(name)
 }

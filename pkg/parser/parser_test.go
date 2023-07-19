@@ -609,6 +609,50 @@ func TestDoGetIntArg(t *testing.T) {
 	}
 }
 
+func TestDoGetIntOrInf(t *testing.T) {
+	tests := []struct {
+		s string
+		e *expr
+		r IntOrInf
+	}{
+		{
+			"parse int",
+			&expr{val: 5, etype: EtConst, valStr: "5"},
+			IntOrInf{IntVal: 5},
+		},
+		{
+			"parse string to int",
+			&expr{etype: EtString, valStr: "1"},
+			IntOrInf{IntVal: 1},
+		},
+		{
+			"parse inf",
+			&expr{etype: EtName, target: "inf"},
+			IntOrInf{IsInf: true},
+		},
+		{
+			"parse capitalized inf",
+			&expr{etype: EtName, target: "INF"},
+			IntOrInf{IsInf: true},
+		},
+		{
+			"parse string to inf",
+			&expr{etype: EtString, valStr: "inf"},
+			IntOrInf{IsInf: true},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.s, func(t *testing.T) {
+			assert := assert.New(t)
+
+			r, err := tt.e.doGetIntOrInfArg()
+			if assert.NoError(err) {
+				assert.Equal(tt.r, r, tt.s)
+			}
+		})
+	}
+}
+
 func TestMetrics(t *testing.T) {
 	tests := []struct {
 		s        string

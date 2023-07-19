@@ -61,6 +61,13 @@ type NodeOrTag struct {
 	Value interface{}
 }
 
+// IntOrInf is either positive infinity or an integer value.
+// They are distinguished by "IsInf" = true if it is positive infinity.
+type IntOrInf struct {
+	IsInf  bool
+	IntVal int
+}
+
 // Expr defines an interface to talk with expressions
 type Expr interface {
 	// IsName checks if Expression is 'Series Name' expression
@@ -148,6 +155,10 @@ type Expr interface {
 	GetIntNamedOrPosArgWithIndication(k string, n int) (int, bool, error)
 	// GetIntNamedOrPosArgDefault returns specific positioned int-typed argument or replace it with default if none found.
 	GetIntNamedOrPosArgDefault(k string, n int, d int) (int, error)
+
+	GetIntOrInfArg(n int) (IntOrInf, error)
+	GetIntOrInfArgDefault(n int, d IntOrInf) (IntOrInf, error)
+	GetIntOrInfNamedOrPosArgDefault(k string, n int, d IntOrInf) (IntOrInf, error)
 
 	GetNamedArg(name string) Expr
 

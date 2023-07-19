@@ -31,7 +31,7 @@ func (f *interpolate) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		return nil, err
 	}
 
-	limit, err := e.GetFloatArgDefault(1, math.Inf(1))
+	limit, err := e.GetIntOrInfArgDefault(1, parser.IntOrInf{IsInf: true})
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (f *interpolate) Do(ctx context.Context, e parser.Expr, from, until int64, 
 				// have a value and can interpolate
 				// if a non-null value is seen before the limit is hit
 				// backfill all the missing datapoints with the last known value
-				if consecutiveNulls > 0 && float64(consecutiveNulls) <= limit {
+				if consecutiveNulls > 0 && (limit.IsInf || consecutiveNulls <= limit.IntVal) {
 					lastNotNullIndex := i - consecutiveNulls - 1
 					lastNotNullValue := resultSeries.Values[lastNotNullIndex]
 
@@ -110,7 +110,8 @@ func (f *interpolate) Description() map[string]types.FunctionDescription {
 				{
 					Name:     "limit",
 					Required: false,
-					Type:     types.Float,
+					Type:     types.IntOrInf,
+					Default:  types.NewSuggestion(math.Inf(1)),
 				},
 			},
 			NameChange:   true, // name changed

@@ -178,7 +178,14 @@ func (t Suggestion) MarshalJSON() ([]byte, error) {
 	case SUint64:
 		return json.Marshal(t.Value.(uint64))
 	case SFloat64:
-		return json.Marshal(t.Value.(float64))
+		fVal := t.Value.(float64)
+		if math.IsInf(fVal, 1) {
+			return []byte("1e9999"), nil
+		}
+		if math.IsInf(fVal, -1) {
+			return []byte("-1e9999"), nil
+		}
+		return json.Marshal(fVal)
 	case SString:
 		return json.Marshal(t.Value.(string))
 	case SBool:
@@ -202,6 +209,8 @@ func (t *Suggestion) UnmarshalJSON(d []byte) error {
 		switch string(d) {
 		case "1e9999":
 			res = math.Inf(1)
+		case "-1e9999":
+			res = math.Inf(-1)
 		default:
 			return err
 		}
