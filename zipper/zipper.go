@@ -161,6 +161,7 @@ func NewZipper(sender func(*types.Stats), cfg *config.Config, logger *zap.Logger
 		)
 	}
 
+
 	logger.Error("DEBUG ERROR LOGGGGG", zap.Any("cfg", cfg))
 	broadcastGroup, err := broadcast.New(
 		broadcast.WithLogger(logger),

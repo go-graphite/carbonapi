@@ -607,8 +607,7 @@ func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	if len(result.Response.Metrics) == 0 {
 		nonNotFoundErrors := types.ReturnNonNotFoundError(result.Err)
 		if nonNotFoundErrors != nil {
-			code := helper.MergeHttpErrorsCode(result.Err)
-			err := types.ErrFailedToFetch.WithHTTPCode(code)
+			err := types.ErrFailedToFetch.WithHTTPCode(500)
 			for _, e := range nonNotFoundErrors {
 				err = err.WithCause(e)
 			}
@@ -819,8 +818,10 @@ func (bg *BroadcastGroup) tagEverything(ctx context.Context, isTagName bool, que
 
 	var err merry.Error
 	if result.Err != nil {
-		code := helper.MergeHttpErrorsCode(result.Err)
-		err = types.ErrFailedToFetch.WithHTTPCode(code)
+		err = types.ErrNonFatalErrors
+		for _, e := range result.Err {
+			err = err.WithCause(e)
+		}
 	}
 
 	return result.Response, err
