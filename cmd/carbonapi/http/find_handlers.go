@@ -23,7 +23,6 @@ import (
 	"github.com/go-graphite/carbonapi/date"
 	"github.com/go-graphite/carbonapi/intervalset"
 	utilctx "github.com/go-graphite/carbonapi/util/ctx"
-	"github.com/go-graphite/carbonapi/zipper/helper"
 )
 
 // Find handler and it's helper functions
@@ -176,7 +175,6 @@ func findList(multiGlobs *pbv3.MultiGlobResponse) ([]byte, error) {
 func findHandler(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
 	uid := uuid.NewV4()
-	carbonapiUUID := uid.String()
 	// TODO: Migrate to context.WithTimeout
 	// ctx, _ := context.WithTimeout(context.TODO(), config.Config.ZipperTimeout)
 	ctx := utilctx.SetUUID(r.Context(), uid.String())
@@ -199,7 +197,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	var accessLogDetails = carbonapipb.AccessLogDetails{
 		Handler:        "find",
 		Username:       username,
-		CarbonapiUUID:  carbonapiUUID,
+		CarbonapiUUID:  uid.String(),
 		URL:            r.URL.RequestURI(),
 		PeerIP:         srcIP,
 		PeerPort:       srcPort,
@@ -216,9 +214,10 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	if !ok || !format.ValidFindFormat() {
+		http.Error(w, "unsupported format: "+formatRaw, http.StatusBadRequest)
 		accessLogDetails.HTTPCode = http.StatusBadRequest
 		accessLogDetails.Reason = "unsupported format: " + formatRaw
-		writeErrorResponse(w, int(accessLogDetails.HTTPCode), accessLogDetails.Reason, carbonapiUUID)
+		logAsError = true
 		return
 	}
 
@@ -241,16 +240,15 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			accessLogDetails.HTTPCode = http.StatusBadRequest
 			accessLogDetails.Reason = "failed to parse message body: " + err.Error()
-			writeErrorResponse(w, http.StatusBadRequest, accessLogDetails.Reason, carbonapiUUID)
+			http.Error(w, "bad request (failed to parse format): "+err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		err = pv3Request.Unmarshal(body)
 		if err != nil {
-			w.Header().Set(ctxHeaderUUID, carbonapiUUID)
 			accessLogDetails.HTTPCode = http.StatusBadRequest
 			accessLogDetails.Reason = "failed to parse message body: " + err.Error()
-			writeErrorResponse(w, http.StatusBadRequest, accessLogDetails.Reason, carbonapiUUID)
+			http.Error(w, "bad request (failed to parse format): "+err.Error(), http.StatusBadRequest)
 			return
 		}
 	} else {
@@ -260,9 +258,10 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(pv3Request.Metrics) == 0 {
+		http.Error(w, "missing parameter `query`", http.StatusBadRequest)
 		accessLogDetails.HTTPCode = http.StatusBadRequest
 		accessLogDetails.Reason = "missing parameter `query`"
-		writeErrorResponse(w, http.StatusBadRequest, accessLogDetails.Reason, carbonapiUUID)
+		logAsError = true
 		return
 	}
 
@@ -274,7 +273,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		accessLogDetails.TotalMetricsCount += stats.TotalMetricsCount
 	}
 	if err != nil {
-		returnCode := merry.HTTPCode(helper.HttpErrorByCode(err))
+		returnCode := merry.HTTPCode(err)
 		if returnCode != http.StatusOK || multiGlobs == nil {
 			// Allow override status code for 404-not-found replies.
 			if returnCode == http.StatusNotFound {
@@ -284,9 +283,9 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 			if returnCode < 300 {
 				multiGlobs = &pbv3.MultiGlobResponse{Metrics: []pbv3.GlobResponse{}}
 			} else {
+				http.Error(w, http.StatusText(returnCode), returnCode)
 				accessLogDetails.HTTPCode = int32(returnCode)
 				accessLogDetails.Reason = err.Error()
-				writeErrorResponse(w, returnCode, accessLogDetails.Reason, carbonapiUUID)
 				// We don't want to log this as an error if it's something normal
 				// Normal is everything that is >= 500. So if config.Config.NotFoundStatusCode is 500 - this will be
 				// logged as error
@@ -366,13 +365,12 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		accessLogDetails.HTTPCode = http.StatusInternalServerError
 		accessLogDetails.Reason = err.Error()
-		writeErrorResponse(w, http.StatusInternalServerError, accessLogDetails.Reason, carbonapiUUID)
-
 		logAsError = true
 		return
 	}
 
-	writeResponse(w, http.StatusOK, b, format, jsonp, carbonapiUUID)
+	writeResponse(w, http.StatusOK, b, format, jsonp, uid.String())
 }
