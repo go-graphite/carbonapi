@@ -29,7 +29,7 @@ func TestConstantLine(t *testing.T) {
 		{
 			"filterSeries(metric[123], 'max', '>', 5)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[123]", 0, 1}: {
+				{Metric: "metric[123]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1.0, math.NaN(), 2.0, 3.0, 4.0, 5.0}, 1, now32),
 					types.MakeMetricData("metric2", []float64{2.0, math.NaN(), 3.0, math.NaN(), 5.0, 6.0}, 1, now32),
 					types.MakeMetricData("metric3", []float64{3.0, math.NaN(), 4.0, 5.0, 6.0, math.NaN()}, 1, now32),
@@ -43,7 +43,7 @@ func TestConstantLine(t *testing.T) {
 		{
 			"filterSeries(metric[123], 'max', '=', 5)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[123]", 0, 1}: {
+				{Metric: "metric[123]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1.0, math.NaN(), 2.0, 3.0, 4.0, 5.0}, 1, now32),
 					types.MakeMetricData("metric2", []float64{2.0, math.NaN(), 3.0, math.NaN(), 5.0, 6.0}, 1, now32),
 					types.MakeMetricData("metric3", []float64{3.0, math.NaN(), 4.0, 5.0, 6.0, math.NaN()}, 1, now32),
@@ -56,7 +56,7 @@ func TestConstantLine(t *testing.T) {
 		{
 			"filterSeries(metric[123], 'max', '!=', 6)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[123]", 0, 1}: {
+				{Metric: "metric[123]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1.0, math.NaN(), 2.0, 3.0, 4.0, 5.0}, 1, now32),
 					types.MakeMetricData("metric2", []float64{2.0, math.NaN(), 3.0, math.NaN(), 5.0, 6.0}, 1, now32),
 					types.MakeMetricData("metric3", []float64{3.0, math.NaN(), 4.0, 5.0, 6.0, math.NaN()}, 1, now32),
@@ -69,7 +69,7 @@ func TestConstantLine(t *testing.T) {
 		{
 			"filterSeries(metric[123], 'max', '<', 6)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[123]", 0, 1}: {
+				{Metric: "metric[123]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1.0, math.NaN(), 2.0, 3.0, 4.0, 5.0}, 1, now32),
 					types.MakeMetricData("metric2", []float64{2.0, math.NaN(), 3.0, math.NaN(), 5.0, 6.0}, 1, now32),
 					types.MakeMetricData("metric3", []float64{3.0, math.NaN(), 4.0, 5.0, 6.0, math.NaN()}, 1, now32),
@@ -82,7 +82,7 @@ func TestConstantLine(t *testing.T) {
 		{
 			"filterSeries(metric[123], 'max', '>=', 5)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[123]", 0, 1}: {
+				{Metric: "metric[123]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1.0, math.NaN(), 2.0, 3.0, 4.0, 5.0}, 1, now32),
 					types.MakeMetricData("metric2", []float64{2.0, math.NaN(), 3.0, math.NaN(), 5.0, 6.0}, 1, now32),
 					types.MakeMetricData("metric3", []float64{3.0, math.NaN(), 4.0, 5.0, 6.0, math.NaN()}, 1, now32),
@@ -97,7 +97,7 @@ func TestConstantLine(t *testing.T) {
 		{
 			"filterSeries(metric[123], 'max', '<=', 5)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[123]", 0, 1}: {
+				{Metric: "metric[123]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1.0, math.NaN(), 2.0, 3.0, 4.0, 5.0}, 1, now32),
 					types.MakeMetricData("metric2", []float64{2.0, math.NaN(), 3.0, math.NaN(), 5.0, 6.0}, 1, now32),
 					types.MakeMetricData("metric3", []float64{3.0, math.NaN(), 4.0, 5.0, 6.0, math.NaN()}, 1, now32),

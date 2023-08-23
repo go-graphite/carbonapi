@@ -29,7 +29,7 @@ func TestFunction(t *testing.T) {
 		{
 			"keepLastValue(metric1,3)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("keepLastValue(metric1,3)", []float64{math.NaN(), 2, 2, 2, 2, math.NaN(), 4, 5}, 1, now32)},
 		},
@@ -37,7 +37,7 @@ func TestFunction(t *testing.T) {
 			"keepLastValue(metric1)",
 
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("keepLastValue(metric1)", []float64{math.NaN(), 2, 2, 2, 2, 2, 4, 5}, 1, now32)},
 		},
@@ -45,7 +45,7 @@ func TestFunction(t *testing.T) {
 			"keepLastValue(metric1,inf)",
 
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("keepLastValue(metric1,inf)", []float64{math.NaN(), 2, 2, 2, 2, 2, 4, 5}, 1, now32)},
 		},
@@ -53,14 +53,14 @@ func TestFunction(t *testing.T) {
 			"keepLastValue(metric1,'INF')",
 
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("keepLastValue(metric1,inf)", []float64{math.NaN(), 2, 2, 2, 2, 2, 4, 5}, 1, now32)},
 		},
 		{
 			"keepLastValue(metric*)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32),
 					types.MakeMetricData("metric2", []float64{math.NaN(), 2, math.NaN(), math.NaN(), math.NaN(), math.NaN(), 4, 5}, 1, now32),
 				},

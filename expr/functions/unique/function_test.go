@@ -29,7 +29,7 @@ func TestUnique(t *testing.T) {
 		{
 			`unique(metric[1234])`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[1234]", 0, 1}: {
+				{Metric: "metric[1234]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar.baz", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric2.foo.bar.baz", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32),
 					types.MakeMetricData("metric3.foo.bar.baz", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),

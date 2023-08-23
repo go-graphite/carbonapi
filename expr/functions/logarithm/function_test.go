@@ -29,7 +29,7 @@ func TestLogarithm(t *testing.T) {
 		{
 			"logarithm(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 10, 100, 1000, 10000}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 10, 100, 1000, 10000}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("logarithm(metric1)",
 				[]float64{0, 1, 2, 3, 4}, 1, now32).SetTag("log", "10")},
@@ -37,7 +37,7 @@ func TestLogarithm(t *testing.T) {
 		{
 			"logarithm(metric1,2)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 4, 8, 16, 32}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 4, 8, 16, 32}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("logarithm(metric1,2)",
 				[]float64{0, 1, 2, 3, 4, 5}, 1, now32).SetTag("log", "2")},
@@ -61,13 +61,13 @@ func BenchmarkLogarithm(b *testing.B) {
 		{
 			target: "logarithm(metric1)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 10, 100, 1000, 10000}, 1, 1)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 10, 100, 1000, 10000}, 1, 1)},
 			},
 		},
 		{
 			target: "logarithm(metric1,2)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 4, 8, 16, 32}, 1, 1)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 4, 8, 16, 32}, 1, 1)},
 			},
 		},
 	}

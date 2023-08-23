@@ -27,7 +27,7 @@ func TestLinearRegression(t *testing.T) {
 		{
 			"linearRegression(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {
+				{Metric: "metric1", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1",
 						[]float64{1, 2, math.NaN(), math.NaN(), 5, 6}, 1, 123),
 				},
@@ -51,7 +51,7 @@ func TestLinearRegression(t *testing.T) {
 func BenchmarkLinearRegression(b *testing.B) {
 	target := "linearRegression(metric1)"
 	metrics := map[parser.MetricRequest][]*types.MetricData{
-		{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, math.NaN(), math.NaN(), 5, 6}, 1, 1)},
+		{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, math.NaN(), math.NaN(), 5, 6}, 1, 1)},
 	}
 
 	evaluator := metadata.GetEvaluator()

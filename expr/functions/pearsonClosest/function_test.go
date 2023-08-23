@@ -29,10 +29,10 @@ func TestFunction(t *testing.T) {
 		{
 			"pearsonClosest(metric1,metric2,1,direction=\"abs\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {
+				{Metric: "metric1", From: 0, Until: 1}: {
 					types.MakeMetricData("metricX", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
 				},
-				{"metric2", 0, 1}: {
+				{Metric: "metric2", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{3, math.NaN(), 5, 6, 7, 8}, 1, now32),
 					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
@@ -59,14 +59,14 @@ func TestFunctionMultiReturn(t *testing.T) {
 		{
 			"pearsonClosest(metricC,metric*,2)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
 					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 					types.MakeMetricData("metricD", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 					types.MakeMetricData("metricE", []float64{4, 7, 7, 7, 7, 1}, 1, now32),
 				},
-				{"metricC", 0, 1}: {
+				{Metric: "metricC", From: 0, Until: 1}: {
 					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 				},
 			},
@@ -79,14 +79,14 @@ func TestFunctionMultiReturn(t *testing.T) {
 		{
 			"pearsonClosest(metricC,metric*,3)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
 					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 					types.MakeMetricData("metricD", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 					types.MakeMetricData("metricE", []float64{4, 7, 7, 7, 7, 1}, 1, now32),
 				},
-				{"metricC", 0, 1}: {
+				{Metric: "metricC", From: 0, Until: 1}: {
 					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 				},
 			},

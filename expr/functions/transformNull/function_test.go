@@ -29,7 +29,7 @@ func TestTransformNull(t *testing.T) {
 		{
 			`transformNull(metric1)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now)},
 			},
 			[]*types.MetricData{types.MakeMetricData("transformNull(metric1)",
 				[]float64{1, 0, 0, 3, 4, 12}, 1, now).SetTag("transformNull", "0").SetNameTag("transformNull(metric1)")},
@@ -37,7 +37,7 @@ func TestTransformNull(t *testing.T) {
 		{
 			`transformNull(metric1, default=5)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now)},
 			},
 			[]*types.MetricData{types.MakeMetricData("transformNull(metric1,5)",
 				[]float64{1, 5, 5, 3, 4, 12}, 1, now).SetTag("transformNull", "5").SetNameTag("transformNull(metric1,5)")},
@@ -45,8 +45,8 @@ func TestTransformNull(t *testing.T) {
 		{
 			`transformNull(metric1, default=5, referenceSeries=metric2.*)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), math.NaN(), 4, 12}, 1, now)},
-				{"metric2.*", 0, 1}: {
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), math.NaN(), 4, 12}, 1, now)},
+				{Metric: "metric2.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric2.foo", []float64{math.NaN(), 3, math.NaN(), 3, math.NaN(), 12}, 1, now),
 					types.MakeMetricData("metric2.bar", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now)},
 			},

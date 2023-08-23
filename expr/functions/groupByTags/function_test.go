@@ -35,7 +35,7 @@ func TestGroupByTags(t *testing.T) {
 		{
 			`groupByTags(metric1.foo.*, "sum", "dc")`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.*", 0, 1}: {
+				{Metric: "metric1.foo.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo;cpu=cpu1;dc=dc1", []float64{1, 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric1.foo;cpu=cpu2;dc=dc1", []float64{6, 7, 8, 9, 10}, 1, now32),
 					types.MakeMetricData("metric1.foo;cpu=cpu3;dc=dc1", []float64{11, 12, 13, 14, 15}, 1, now32),
@@ -50,7 +50,7 @@ func TestGroupByTags(t *testing.T) {
 		{
 			`groupByTags(metric1.foo.*, "sum", "name", "dc")`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.*", 0, 1}: {
+				{Metric: "metric1.foo.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo;cpu=cpu1;dc=dc1", []float64{1, 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric1.foo;cpu=cpu2;dc=dc1", []float64{6, 7, 8, 9, 10}, 1, now32),
 					types.MakeMetricData("metric2.foo;cpu=cpu3;dc=dc1", []float64{11, 12, 13, 14, 15}, 1, now32),
@@ -66,7 +66,7 @@ func TestGroupByTags(t *testing.T) {
 		{
 			`groupByTags(metric1.foo.*, "diff", "dc")`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.*", 0, 1}: {
+				{Metric: "metric1.foo.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo;cpu=cpu1;dc=dc1", []float64{1, 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric1.foo;cpu=cpu2;dc=dc1", []float64{6, 7, 8, 9, 10}, 1, now32),
 				},
@@ -79,7 +79,7 @@ func TestGroupByTags(t *testing.T) {
 		{
 			`groupByTags(metric1.foo.*, "sum", "dc", "cpu", "rack")`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.*", 0, 1}: {
+				{Metric: "metric1.foo.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo;cpu=cpu1;dc=dc1", []float64{1, 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric1.foo;cpu=cpu2;dc=dc1", []float64{6, 7, 8, 9, 10}, 1, now32),
 					types.MakeMetricData("metric1.foo;cpu=cpu3;dc=dc1", []float64{11, 12, 13, 14, 15}, 1, now32),

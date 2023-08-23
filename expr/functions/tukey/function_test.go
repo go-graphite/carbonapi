@@ -28,7 +28,7 @@ func TestFunctionMultiReturn(t *testing.T) {
 		{
 			"tukeyAbove(metric*,1.5,5)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32),
 					types.MakeMetricData("metricB", []float64{20, 18, 21, 19, 20, 20}, 1, now32),
 					types.MakeMetricData("metricC", []float64{19, 19, 21, 17, 23, 20}, 1, now32),
@@ -47,7 +47,7 @@ func TestFunctionMultiReturn(t *testing.T) {
 		{
 			"tukeyAbove(metric*, 3, 5)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32),
 					types.MakeMetricData("metricB", []float64{20, 18, 21, 19, 20, 20}, 1, now32),
 					types.MakeMetricData("metricC", []float64{19, 19, 21, 17, 23, 20}, 1, now32),
@@ -64,7 +64,7 @@ func TestFunctionMultiReturn(t *testing.T) {
 		{
 			"tukeyAbove(metric*, 1.5, 5, 6)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{20, 20, 20, 20, 21, 17, 20, 20, 10, 29}, 1, now32),
 					types.MakeMetricData("metricB", []float64{20, 20, 20, 20, 20, 18, 21, 19, 20, 20}, 1, now32),
 					types.MakeMetricData("metricC", []float64{20, 20, 20, 20, 19, 19, 21, 17, 23, 20}, 1, now32),
@@ -83,7 +83,7 @@ func TestFunctionMultiReturn(t *testing.T) {
 		{
 			"tukeyAbove(metric*,1.5,5,\"6s\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{20, 20, 20, 20, 21, 17, 20, 20, 10, 29}, 1, now32),
 					types.MakeMetricData("metricB", []float64{20, 20, 20, 20, 20, 18, 21, 19, 20, 20}, 1, now32),
 					types.MakeMetricData("metricC", []float64{20, 20, 20, 20, 19, 19, 21, 17, 23, 20}, 1, now32),
@@ -102,7 +102,7 @@ func TestFunctionMultiReturn(t *testing.T) {
 		{
 			"tukeyBelow(metric*,1.5,5)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32),
 					types.MakeMetricData("metricB", []float64{20, 18, 21, 19, 20, 20}, 1, now32),
 					types.MakeMetricData("metricC", []float64{19, 19, 21, 17, 23, 20}, 1, now32),
@@ -120,7 +120,7 @@ func TestFunctionMultiReturn(t *testing.T) {
 		{
 			"tukeyBelow(metric*,1.5,5,-4)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{21, 17, 20, 20, 10, 29, 20, 20, 20, 20}, 1, now32),
 					types.MakeMetricData("metricB", []float64{20, 18, 21, 19, 20, 20, 20, 20, 20, 20}, 1, now32),
 					types.MakeMetricData("metricC", []float64{19, 19, 21, 17, 23, 20, 20, 20, 20, 20}, 1, now32),
@@ -138,7 +138,7 @@ func TestFunctionMultiReturn(t *testing.T) {
 		{
 			"tukeyBelow(metric*,1.5,5,\"-4s\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{21, 17, 20, 20, 10, 29, 20, 20, 20, 20}, 1, now32),
 					types.MakeMetricData("metricB", []float64{20, 18, 21, 19, 20, 20, 20, 20, 20, 20}, 1, now32),
 					types.MakeMetricData("metricC", []float64{19, 19, 21, 17, 23, 20, 20, 20, 20, 20}, 1, now32),
@@ -156,7 +156,7 @@ func TestFunctionMultiReturn(t *testing.T) {
 		{
 			"tukeyBelow(metric*,3,5)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{21, 17, 20, 20, 10, 29}, 1, now32),
 					types.MakeMetricData("metricB", []float64{20, 18, 21, 19, 20, 20}, 1, now32),
 					types.MakeMetricData("metricC", []float64{19, 19, 21, 17, 23, 20}, 1, now32),

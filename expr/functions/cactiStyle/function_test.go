@@ -29,7 +29,7 @@ func TestCactiStyle(t *testing.T) {
 		{
 			"cactiStyle(metric1,\"si\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {
+				{Metric: "metric1", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1",
 						[]float64{math.NaN(), 20531.733333333334, 20196.4, 17925.333333333332, 20950.4, 35168.13333333333, 19965.866666666665, 24556.4, 22266.4, 58039.86666666667}, 1, now32),
 				},
@@ -43,7 +43,7 @@ func TestCactiStyle(t *testing.T) {
 		{
 			"cactiStyle(metric1,\"si\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {
+				{Metric: "metric1", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1",
 						[]float64{1.432729, 1.434207, 1.404762, 1.414609, 1.399159, 1.411343, 1.406217, 1.407123, 1.392078, math.NaN()}, 1, now32).SetNameTag("metric1"),
 				},
@@ -56,7 +56,7 @@ func TestCactiStyle(t *testing.T) {
 		{
 			"cactiStyle(metric1,\"si\",\"carrot\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {
+				{Metric: "metric1", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1",
 						[]float64{1.432729, 1.434207, 1.404762, 1.414609, 1.399159, 1.411343, 1.406217, 1.407123, 1.392078, math.NaN()}, 1, now32).SetNameTag("metric1"),
 				},
@@ -69,7 +69,7 @@ func TestCactiStyle(t *testing.T) {
 		{
 			"cactiStyle(metric1,\"si\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {
+				{Metric: "metric1", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1",
 						[]float64{math.NaN(), 88364212.53333333, 79008410.93333334, 80312920.0, 69860465.2, 83876830.0, 80399148.8, 90481297.46666667, 79628113.73333333, math.NaN()}, 1, now32),
 				},
@@ -83,7 +83,7 @@ func TestCactiStyle(t *testing.T) {
 		{
 			"cactiStyle(metric1,\"si\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {
+				{Metric: "metric1", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1",
 						[]float64{1000}, 1, now32),
 				},
@@ -95,7 +95,7 @@ func TestCactiStyle(t *testing.T) {
 		{
 			"cactiStyle(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {
+				{Metric: "metric1", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1",
 						[]float64{1000}, 1, now32),
 				},
@@ -107,7 +107,7 @@ func TestCactiStyle(t *testing.T) {
 		{
 			"cactiStyle(metric1,units=\"apples\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {
+				{Metric: "metric1", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1",
 						[]float64{10}, 1, now32),
 				},
@@ -119,7 +119,7 @@ func TestCactiStyle(t *testing.T) {
 		{
 			"cactiStyle(metric1,\"si\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {
+				{Metric: "metric1", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1",
 						[]float64{240.0, 240.0, 240.0, 240.0, 240.0, 240.0, 240.0, 240.0, 240.0, math.NaN()}, 1, now32),
 				},
@@ -132,7 +132,7 @@ func TestCactiStyle(t *testing.T) {
 		{
 			"cactiStyle(metric1,\"si\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {
+				{Metric: "metric1", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1",
 						[]float64{-1.0, -2.0, -1.0, -3.0, -1.0, -1.0, -0.0, -0.0, -0.0}, 1, now32),
 				},
@@ -145,7 +145,7 @@ func TestCactiStyle(t *testing.T) {
 		{
 			"cactiStyle(metric1,\"si\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {
+				{Metric: "metric1", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1",
 						[]float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
 				},

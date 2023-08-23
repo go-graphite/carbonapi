@@ -29,7 +29,7 @@ func TestToUpperCaseFunction(t *testing.T) {
 		{
 			"upper(metric.test.foo)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric.test.foo", 0, 1}: {types.MakeMetricData("metric.test.foo", []float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+				{Metric: "metric.test.foo", From: 0, Until: 1}: {types.MakeMetricData("metric.test.foo", []float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("METRIC.TEST.FOO",
 				[]float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
@@ -37,7 +37,7 @@ func TestToUpperCaseFunction(t *testing.T) {
 		{
 			"upper(metric.test.foo,7)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric.test.foo", 0, 1}: {types.MakeMetricData("metric.test.foo", []float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+				{Metric: "metric.test.foo", From: 0, Until: 1}: {types.MakeMetricData("metric.test.foo", []float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("metric.Test.foo",
 				[]float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
@@ -45,7 +45,7 @@ func TestToUpperCaseFunction(t *testing.T) {
 		{
 			"upper(metric.test.foo,-3)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric.test.foo", 0, 1}: {types.MakeMetricData("metric.test.foo", []float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+				{Metric: "metric.test.foo", From: 0, Until: 1}: {types.MakeMetricData("metric.test.foo", []float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("metric.test.Foo",
 				[]float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
@@ -53,7 +53,7 @@ func TestToUpperCaseFunction(t *testing.T) {
 		{
 			"upper(metric.test.foo,0,7,12)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric.test.foo", 0, 1}: {types.MakeMetricData("metric.test.foo", []float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+				{Metric: "metric.test.foo", From: 0, Until: 1}: {types.MakeMetricData("metric.test.foo", []float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("Metric.Test.Foo",
 				[]float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
@@ -61,7 +61,7 @@ func TestToUpperCaseFunction(t *testing.T) {
 		{
 			"toUpperCase(metric.test.foo)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric.test.foo", 0, 1}: {types.MakeMetricData("metric.test.foo", []float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+				{Metric: "metric.test.foo", From: 0, Until: 1}: {types.MakeMetricData("metric.test.foo", []float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("METRIC.TEST.FOO",
 				[]float64{1, 2, 0, 7, 8, 20, 30, math.NaN()}, 1, now32)},

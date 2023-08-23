@@ -31,7 +31,7 @@ func TestDelay(t *testing.T) {
 		{
 			"delay(metric1,3)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("delay(metric1,3)",
 				[]float64{math.NaN(), math.NaN(), math.NaN(), 1, 2, 3, math.NaN()}, 1, now32).SetTag("delay", "3").SetNameTag("delay(metric1,3)")},
@@ -39,7 +39,7 @@ func TestDelay(t *testing.T) {
 		{
 			"delay(metric1,-3)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), math.NaN(), math.NaN(), 1, 2, 3, math.NaN()}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), math.NaN(), math.NaN(), 1, 2, 3, math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("delay(metric1,-3)",
 				[]float64{1, 2, 3, math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32).SetTag("delay", "-3").SetNameTag("delay(metric1,-3)")},
@@ -47,7 +47,7 @@ func TestDelay(t *testing.T) {
 		{
 			"delay(metric1,0)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("delay(metric1,0)",
 				[]float64{1, 2, 3, math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32).SetTag("delay", "0").SetNameTag("delay(metric1,0)")},

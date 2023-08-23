@@ -1,8 +1,9 @@
 package holtWintersConfidenceBands
 
 import (
-	"github.com/go-graphite/carbonapi/expr/holtwinters"
 	"testing"
+
+	"github.com/go-graphite/carbonapi/expr/holtwinters"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/metadata"
@@ -30,7 +31,7 @@ func TestHoltWintersConfidenceBands(t *testing.T) {
 		{
 			Target: "holtWintersConfidenceBands(metric1)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", startTime - holtwinters.DefaultBootstrapInterval, startTime + step*points}: {types.MakeMetricData("metric1", generateHwRange(0, (((holtwinters.DefaultBootstrapInterval)/step)+points)*step, step), step, startTime-(holtwinters.DefaultBootstrapInterval))},
+				{Metric: "metric1", From: startTime - holtwinters.DefaultBootstrapInterval, Until: startTime + step*points}: {types.MakeMetricData("metric1", generateHwRange(0, (((holtwinters.DefaultBootstrapInterval)/step)+points)*step, step), step, startTime-(holtwinters.DefaultBootstrapInterval))},
 			},
 			Want: []*types.MetricData{
 				types.MakeMetricData("holtWintersConfidenceLower(metric1)", []float64{0.2841206166091448, 1.0581027098774411, 0.3338172102994683, 0.5116859493263242, -0.18199175514936972, 0.2366173792019426, -1.2941554508809152, -0.513426806531049, -0.7970905542723132, 0.09868900726536012}, step, startTime).SetTag("holtWintersConfidenceLower", "1"),
@@ -42,7 +43,7 @@ func TestHoltWintersConfidenceBands(t *testing.T) {
 		{
 			Target: "holtWintersConfidenceBands(metric1,4,'6d')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", startTime - 6*holtwinters.SecondsPerDay, startTime + step*points}: {types.MakeMetricData("metric1", generateHwRange(0, ((6*holtwinters.SecondsPerDay/step)+points)*step, step), step, startTime-6*holtwinters.SecondsPerDay)},
+				{Metric: "metric1", From: startTime - 6*holtwinters.SecondsPerDay, Until: startTime + step*points}: {types.MakeMetricData("metric1", generateHwRange(0, ((6*holtwinters.SecondsPerDay/step)+points)*step, step), step, startTime-6*holtwinters.SecondsPerDay)},
 			},
 			Want: []*types.MetricData{
 				types.MakeMetricData("holtWintersConfidenceLower(metric1)", []float64{-0.6535362793382391, -0.26554972418633316, -1.1060549683277792, -0.5788026852576289, -1.4594446935142829, -0.6933311085203409, -1.6566119269969288, -1.251651025511391, -1.7938581852717226, -1.1791817117029604}, step, startTime).SetTag("holtWintersConfidenceLower", "1"),
@@ -54,7 +55,7 @@ func TestHoltWintersConfidenceBands(t *testing.T) {
 		{
 			Target: "holtWintersConfidenceBands(metric1,4,'1d','2d')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", startTime - holtwinters.SecondsPerDay, startTime + step*points}: {types.MakeMetricData("metric1", generateHwRange(0, ((holtwinters.SecondsPerDay/step)+points)*step, step), step, startTime-holtwinters.SecondsPerDay)},
+				{Metric: "metric1", From: startTime - holtwinters.SecondsPerDay, Until: startTime + step*points}: {types.MakeMetricData("metric1", generateHwRange(0, ((holtwinters.SecondsPerDay/step)+points)*step, step), step, startTime-holtwinters.SecondsPerDay)},
 			},
 			Want: []*types.MetricData{
 				types.MakeMetricData("holtWintersConfidenceLower(metric1)", []float64{4.106587168490873, 3.8357974803355406, 3.564589629688576, 3.421354957735917, 3.393696278743315, 3.470415673952413, 3.2748850646377368, 3.3539750816574316, 3.5243322056965765, 3.7771201010598134}, step, startTime).SetTag("holtWintersConfidenceLower", "1"),
@@ -79,7 +80,7 @@ func TestNoPanicOnBigStep(t *testing.T) {
 	test := th.EvalTestItem{
 		"holtWintersConfidenceBands(metric1,3)",
 		map[parser.MetricRequest][]*types.MetricData{
-			{"metric1", -604800, 1}: {types.MakeMetricData("metric1", []float64{1}, 604800, -604800)},
+			{Metric: "metric1", From: -604800, Until: 1}: {types.MakeMetricData("metric1", []float64{1}, 604800, -604800)},
 		},
 		[]*types.MetricData{
 			types.MakeMetricData("holtWintersConfidenceLower(metric1)", []float64{}, 604800, 0).SetTag("holtWintersConfidenceLower", "1"),

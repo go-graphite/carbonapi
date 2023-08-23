@@ -29,7 +29,7 @@ func TestFunction(t *testing.T) {
 		{
 			"isNonNull(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), -1, math.NaN(), -3, 4, 5}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), -1, math.NaN(), -3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("isNonNull(metric1)",
 				[]float64{0, 1, 0, 1, 1, 1}, 1, now32).SetTag("isNonNull", "1").SetNameTag("isNonNull(metric1)")},
@@ -37,7 +37,7 @@ func TestFunction(t *testing.T) {
 		{
 			"isNonNull(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {
+				{Metric: "metric1", From: 0, Until: 1}: {
 					types.MakeMetricData("metricFoo", []float64{math.NaN(), -1, math.NaN(), -3, 4, 5}, 1, now32),
 					types.MakeMetricData("metricBaz", []float64{1, -1, math.NaN(), -3, 4, 5}, 1, now32),
 				},

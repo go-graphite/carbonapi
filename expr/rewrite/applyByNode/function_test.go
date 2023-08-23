@@ -30,7 +30,7 @@ func TestApplyByNode(t *testing.T) {
 		{
 			`applyByNode(test.metric*.name, 1, "%.transform")`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"test.metric*.name", 0, 1}: {
+				{Metric: "test.metric*.name", From: 0, Until: 1}: {
 					types.MakeMetricData("test.metric1.name", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("test.metric2.name", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 				},
@@ -48,7 +48,7 @@ func TestApplyByNode(t *testing.T) {
 			// overflow
 			`applyByNode(metric*.name, 2, "%.transform")`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*.name", 0, 1}: {
+				{Metric: "metric*.name", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.name", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 				},
 			},

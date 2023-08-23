@@ -29,7 +29,7 @@ func TestFunction(t *testing.T) {
 		{
 			"offset(metric1,10)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{93, 94, 95, math.NaN(), 97, 98, 99, 100, 101}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{93, 94, 95, math.NaN(), 97, 98, 99, 100, 101}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("offset(metric1,10)",
 				[]float64{103, 104, 105, math.NaN(), 107, 108, 109, 110, 111}, 1, now32).SetTag("offset", "10")},
@@ -37,7 +37,7 @@ func TestFunction(t *testing.T) {
 		{
 			"offset(metric1,'10')", // Verify string input can be parsed into int or float
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{93, 94, 95, math.NaN(), 97, 98, 99, 100, 101}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{93, 94, 95, math.NaN(), 97, 98, 99, 100, 101}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("offset(metric1,10)",
 				[]float64{103, 104, 105, math.NaN(), 107, 108, 109, 110, 111}, 1, now32).SetTag("offset", "10")},
@@ -45,7 +45,7 @@ func TestFunction(t *testing.T) {
 		{
 			"add(metric*,-10)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{93, 94, 95, math.NaN(), 97, 98, 99, 100, 101}, 1, now32),
 					types.MakeMetricData("metric2", []float64{193, 194, 195, math.NaN(), 197, 198, 199, 200, 201}, 1, now32),
 				},
@@ -58,7 +58,7 @@ func TestFunction(t *testing.T) {
 		{
 			"add(metric*,'-10')", // Verify string input can be parsed into int or float
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{93, 94, 95, math.NaN(), 97, 98, 99, 100, 101}, 1, now32),
 					types.MakeMetricData("metric2", []float64{193, 194, 195, math.NaN(), 197, 198, 199, 200, 201}, 1, now32),
 				},
