@@ -29,7 +29,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "summarize(metric1,'5s')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", now32, now32 + 35}: {types.MakeMetricData("metric1", []float64{
+				{Metric: "metric1", From: now32, Until: now32 + 35}: {types.MakeMetricData("metric1", []float64{
 					1, 1, 1, 1, 1,
 					2, 2, 2, 2, 2,
 					3, 3, 3, 3, 3,
@@ -50,7 +50,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "summarize(metric1,'5s')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", now32, now32 + 50}: {types.MakeMetricData("metric1", []float64{
+				{Metric: "metric1", From: now32, Until: now32 + 50}: {types.MakeMetricData("metric1", []float64{
 					1, 2, 3, 4, 5,
 				}, 10, now32)},
 			},
@@ -65,7 +65,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "summarize(metric1,'5s','avg')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", now32, now32 + 35}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 1, 2, 3, math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
+				{Metric: "metric1", From: now32, Until: now32 + 35}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 1, 2, 3, math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
 			},
 			Want:  []float64{1, 2, 3, 4, 5, 2, math.NaN(), math.NaN()},
 			From:  now32,
@@ -78,7 +78,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "summarize(metric1,'5s','max')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", now32, now32 + 25*1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+				{Metric: "metric1", From: now32, Until: now32 + 25*1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
 			Want:  []float64{1, 2, 3, 4.5, 5, math.NaN()},
 			From:  now32,
@@ -91,7 +91,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "summarize(metric1,'5s','min')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", now32, now32 + 25*1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+				{Metric: "metric1", From: now32, Until: now32 + 25*1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
 			Want:  []float64{0, 1, 1.5, 2, 5, math.NaN()},
 			From:  now32,
@@ -104,7 +104,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "summarize(metric1,'5s','last')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", now32, now32 + 25*1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+				{Metric: "metric1", From: now32, Until: now32 + 25*1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
 			Want:  []float64{1, 2, 3, 4.5, 5, math.NaN()},
 			From:  now32,
@@ -117,7 +117,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "summarize(metric1,'5s','count')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", now32, now32 + 35}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), 1, 1, math.NaN(), math.NaN(), 2, 2, 2, 2, 3, math.NaN(), math.NaN(), 3, 3, 4, 4, 4, math.NaN(), 4, 5, 5, math.NaN(), 5, 5, 1, 2, 3, math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
+				{Metric: "metric1", From: now32, Until: now32 + 35}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), 1, 1, math.NaN(), math.NaN(), 2, 2, 2, 2, 3, math.NaN(), math.NaN(), 3, 3, 4, 4, 4, math.NaN(), 4, 5, 5, math.NaN(), 5, 5, 1, 2, 3, math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32)},
 			},
 			Want:  []float64{3, 4, 3, 4, 4, 3, math.NaN(), math.NaN()},
 			From:  now32,
@@ -130,7 +130,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "summarize(metric1,'5s','p50')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", now32, now32 + 25*1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+				{Metric: "metric1", From: now32, Until: now32 + 25*1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
 			Want:  []float64{0.5, 1.5, 2, 3, 5, math.NaN()},
 			From:  now32,
@@ -143,7 +143,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "summarize(metric1,'5s','p25')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", now32, now32 + 25*1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+				{Metric: "metric1", From: now32, Until: now32 + 25*1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
 			Want:  []float64{0, 1, 2, 3, 5, math.NaN()},
 			From:  now32,
@@ -156,7 +156,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "summarize(metric1,'5s','p99.9')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", now32, now32 + 25*1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+				{Metric: "metric1", From: now32, Until: now32 + 25*1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
 			Want:  []float64{1, 2, 3, 4.498, 5, math.NaN()},
 			From:  now32,
@@ -169,7 +169,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "summarize(metric1,'5s','p100.1')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", now32, now32 + 25*1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+				{Metric: "metric1", From: now32, Until: now32 + 25*1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
 			Want:  []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()},
 			From:  now32,
@@ -182,7 +182,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "summarize(metric1,'1s','p50')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", now32, now32 + 25*1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
+				{Metric: "metric1", From: now32, Until: now32 + 25*1}: {types.MakeMetricData("metric1", []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5}, 1, now32)},
 			},
 			Want:  []float64{1, 0, 0, 0.5, 1, 2, 1, 1, 1.5, 2, 3, 2, 2, 1.5, 3, 4, 3, 2, 3, 4.5, 5, 5, 5, 5, 5, math.NaN()},
 			From:  now32,
@@ -195,7 +195,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "summarize(metric1,'10min')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", tenThirtyTwo, tenThirty + 30*60}: {types.MakeMetricData("metric1", []float64{
+				{Metric: "metric1", From: tenThirtyTwo, Until: tenThirty + 30*60}: {types.MakeMetricData("metric1", []float64{
 					1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
 					3, 3, 3, 3, 3, 4, 4, 4, 4, 4,
 					5, 5, 5, 5, 5}, 60, tenThirtyTwo)},
@@ -211,7 +211,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "summarize(metric1,'10min','sum',true)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", tenThirtyTwo, tenThirtyTwo + 25*60}: {types.MakeMetricData("metric1", []float64{
+				{Metric: "metric1", From: tenThirtyTwo, Until: tenThirtyTwo + 25*60}: {types.MakeMetricData("metric1", []float64{
 					1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
 					3, 3, 3, 3, 3, 4, 4, 4, 4, 4,
 					5, 5, 5, 5, 5}, 60, tenThirtyTwo)},
@@ -237,7 +237,7 @@ func TestEvalSummarize1Minute(t *testing.T) {
 		{
 			Target: "summarize(metric1,'1min','sum')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{1770, 5370, 8970, 12570, math.NaN()},
 			From:  0,
@@ -250,7 +250,7 @@ func TestEvalSummarize1Minute(t *testing.T) {
 		{
 			Target: "summarize(metric1,'1min','avg')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{29.5, 89.5, 149.5, 209.5, math.NaN()},
 			From:  0,
@@ -263,7 +263,7 @@ func TestEvalSummarize1Minute(t *testing.T) {
 		{
 			Target: "summarize(metric1,'1min','last')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{59, 119, 179, 239, math.NaN()},
 			From:  0,
@@ -276,7 +276,7 @@ func TestEvalSummarize1Minute(t *testing.T) {
 		{
 			Target: "summarize(metric1,'1min','max')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{59, 119, 179, 239, math.NaN()},
 			From:  0,
@@ -289,7 +289,7 @@ func TestEvalSummarize1Minute(t *testing.T) {
 		{
 			Target: "summarize(metric1,'1min','min')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{0, 60, 120, 180, math.NaN()},
 			From:  0,
@@ -302,7 +302,7 @@ func TestEvalSummarize1Minute(t *testing.T) {
 		{
 			Target: "summarize(metric1,'1min','sum',true)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{1770, 5370, 8970, 12570},
 			From:  0,
@@ -315,7 +315,7 @@ func TestEvalSummarize1Minute(t *testing.T) {
 		{
 			Target: "summarize(metric1,'1min','avg',true)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{29.5, 89.5, 149.5, 209.5},
 			From:  0,
@@ -328,7 +328,7 @@ func TestEvalSummarize1Minute(t *testing.T) {
 		{
 			Target: "summarize(metric1,'1min','last',true)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{59, 119, 179, 239},
 			From:  0,
@@ -341,7 +341,7 @@ func TestEvalSummarize1Minute(t *testing.T) {
 		{
 			Target: "summarize(metric1,'1min','max',true)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{59, 119, 179, 239},
 			From:  0,
@@ -354,7 +354,7 @@ func TestEvalSummarize1Minute(t *testing.T) {
 		{
 			Target: "summarize(metric1,'1min','min',true)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{0, 60, 120, 180},
 			From:  0,

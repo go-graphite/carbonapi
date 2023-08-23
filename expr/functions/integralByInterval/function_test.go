@@ -25,7 +25,7 @@ func TestFunction(t *testing.T) {
 		{
 			"integralByInterval(10s,'10s')",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"10s", 0, 1}: {
+				{Metric: "10s", From: 0, Until: 1}: {
 					types.MakeMetricData("10s", []float64{1, 0, 2, 3, 4, 5, 0, 7, 8, 9, 10}, 2, 0),
 				},
 			},

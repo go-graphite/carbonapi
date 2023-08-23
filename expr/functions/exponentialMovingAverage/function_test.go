@@ -30,7 +30,7 @@ func TestExponentialMovingAverage(t *testing.T) {
 		{
 			Target: "exponentialMovingAverage(metric1,'30s')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", from - 30, from + step*6}: {types.MakeMetricData("metric1", []float64{2, 4, 6, 8, 12, 14, 16, 18, 20}, step, from-30)},
+				{Metric: "metric1", From: from - 30, Until: from + step*6}: {types.MakeMetricData("metric1", []float64{2, 4, 6, 8, 12, 14, 16, 18, 20}, step, from-30)},
 			},
 			Want: []*types.MetricData{
 				types.MakeMetricData("exponentialMovingAverage(metric1,\"30s\")", []float64{4, 4.258065, 4.757544, 5.353832, 6.040681, 6.81225, 7.663073}, step, from).SetTag("exponentialMovingAverage", `"30s"`),
@@ -43,8 +43,8 @@ func TestExponentialMovingAverage(t *testing.T) {
 			M: map[parser.MetricRequest][]*types.MetricData{
 				// When the window is an integer, the original from-until range is used to get the step.
 				// That's why two requests are made.
-				{"empty", from, from + step*4}:          {},
-				{"empty", from - step*3, from + step*4}: {},
+				{Metric: "empty", From: from, Until: from + step*4}:          {},
+				{Metric: "empty", From: from - step*3, Until: from + step*4}: {},
 			},
 			Want:  []*types.MetricData{},
 			From:  from,
@@ -53,9 +53,9 @@ func TestExponentialMovingAverage(t *testing.T) {
 		{
 			Target: "exponentialMovingAverage(metric_changes_rollup,4)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric_changes_rollup", from, from + step*6}: {types.MakeMetricData("metric_changes_rollup", []float64{8, 12, 14, 16, 18, 20}, step, from)},
+				{Metric: "metric_changes_rollup", From: from, Until: from + step*6}: {types.MakeMetricData("metric_changes_rollup", []float64{8, 12, 14, 16, 18, 20}, step, from)},
 				// when querying for the preview window, the store changes the rollup and the step changes
-				{"metric_changes_rollup", from - step*4, from + step*6}: {types.MakeMetricData("metric_changes_rollup", []float64{10, 20}, step*10, from-step*4)},
+				{Metric: "metric_changes_rollup", From: from - step*4, Until: from + step*6}: {types.MakeMetricData("metric_changes_rollup", []float64{10, 20}, step*10, from-step*4)},
 			},
 			Want: []*types.MetricData{
 				// since the input is shorter than the window, the result should be just the average
@@ -68,8 +68,8 @@ func TestExponentialMovingAverage(t *testing.T) {
 			// copied from Graphite Web
 			Target: "exponentialMovingAverage(halfNone,10)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"halfNone", from, from + 10}:      {types.MakeMetricData("halfNone", append(append(append(nans(10), rangeFloats(0, 5, 1)...), math.NaN()), rangeFloats(5, 9, 1)...), 1, from)},
-				{"halfNone", from - 10, from + 10}: {types.MakeMetricData("halfNone", append(append(append(nans(10), rangeFloats(0, 5, 1)...), math.NaN()), rangeFloats(5, 9, 1)...), 1, from-10)},
+				{Metric: "halfNone", From: from, Until: from + 10}:      {types.MakeMetricData("halfNone", append(append(append(nans(10), rangeFloats(0, 5, 1)...), math.NaN()), rangeFloats(5, 9, 1)...), 1, from)},
+				{Metric: "halfNone", From: from - 10, Until: from + 10}: {types.MakeMetricData("halfNone", append(append(append(nans(10), rangeFloats(0, 5, 1)...), math.NaN()), rangeFloats(5, 9, 1)...), 1, from-10)},
 			},
 			Want: []*types.MetricData{
 				types.MakeMetricData("exponentialMovingAverage(halfNone,10)", []float64{0, 0.0, 0.181818, 0.512397, 0.964688, 1.516563, math.NaN(), 2.149915, 2.849931, 3.604489, 4.403673}, 1, from).SetTag("exponentialMovingAverage", `10`),
@@ -81,7 +81,7 @@ func TestExponentialMovingAverage(t *testing.T) {
 		{
 			Target: `exponentialMovingAverage(collectd.test-db0.load.value,"-30s")`,
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"collectd.test-db0.load.value", from - 30, from + 30}: {types.MakeMetricData("collectd.test-db0.load.value", rangeFloats(0, 60, 1), 1, from-30)},
+				{Metric: "collectd.test-db0.load.value", From: from - 30, Until: from + 30}: {types.MakeMetricData("collectd.test-db0.load.value", rangeFloats(0, 60, 1), 1, from-30)},
 			},
 			Want: []*types.MetricData{
 				types.MakeMetricData("exponentialMovingAverage(collectd.test-db0.load.value,\"-30s\")", []float64{
@@ -122,7 +122,7 @@ func rangeFloats(start, end, step float64) []float64 {
 func BenchmarkExponentialMovingAverage(b *testing.B) {
 	target := "exponentialMovingAverage(metric1,3)"
 	metrics := map[parser.MetricRequest][]*types.MetricData{
-		{"metric[1234]", 0, 1}: {types.MakeMetricData("metric1", []float64{2, 4, 6, 8, 12, 14, 16, 18, 20}, 1, 0)},
+		{Metric: "metric[1234]", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{2, 4, 6, 8, 12, 14, 16, 18, 20}, 1, 0)},
 	}
 
 	eval := th.EvaluatorFromFunc(md[0].F)
@@ -144,7 +144,7 @@ func BenchmarkExponentialMovingAverage(b *testing.B) {
 func BenchmarkExponentialMovingAverageStr(b *testing.B) {
 	target := "exponentialMovingAverage(metric1,'3s')"
 	metrics := map[parser.MetricRequest][]*types.MetricData{
-		{"metric[1234]", 0, 1}: {types.MakeMetricData("metric1", []float64{2, 4, 6, 8, 12, 14, 16, 18, 20}, 1, 0)},
+		{Metric: "metric[1234]", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{2, 4, 6, 8, 12, 14, 16, 18, 20}, 1, 0)},
 	}
 
 	eval := th.EvaluatorFromFunc(md[0].F)

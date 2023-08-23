@@ -29,7 +29,7 @@ func TestSortByName(t *testing.T) {
 		{
 			"sortByName(metric*)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricX", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricA", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{0, 0, 2, 0, 0, 0}, 1, now32),
@@ -46,7 +46,7 @@ func TestSortByName(t *testing.T) {
 		{
 			"sortByName(metric*,natural=true)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metric12", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metric1234567890", []float64{0, 0, 0, 5, 0, 0}, 1, now32),

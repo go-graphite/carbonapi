@@ -27,7 +27,7 @@ func TestSummarizeEmptyData(t *testing.T) {
 		{
 			"smartSummarize(metric1,'1hour','sum','1y')",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"foo.bar", 0, 1}: {},
+				{Metric: "foo.bar", From: 0, Until: 1}: {},
 			},
 			[]*types.MetricData{},
 		},
@@ -48,7 +48,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1hour','sum','1y')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{6478200, 19438200, 32398200, 45358200},
 			From:  0,
@@ -61,7 +61,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1hour','sum','y')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{6478200, 19438200, 32398200, 45358200},
 			Name:  "smartSummarize(metric1,'1hour','sum','y')",
@@ -74,7 +74,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1hour','sum','month')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{6478200, 19438200, 32398200, 45358200},
 			Name:  "smartSummarize(metric1,'1hour','sum','month')",
@@ -87,7 +87,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1hour','sum','1month')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{6478200, 19438200, 32398200, 45358200},
 			Name:  "smartSummarize(metric1,'1hour','sum','1month')",
@@ -100,7 +100,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1minute','sum','minute')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{1770, 5370, 8970, 12570},
 			From:  0,
@@ -113,7 +113,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1minute','sum','1minute')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{1770, 5370, 8970, 12570},
 			Name:  "smartSummarize(metric1,'1minute','sum','1minute')",
@@ -126,7 +126,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1minute','avg','minute')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{29.5, 89.5, 149.5, 209.5},
 			From:  0,
@@ -139,7 +139,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1minute','last','minute')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{59, 119, 179, 239},
 			From:  0,
@@ -152,7 +152,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1d','sum','days')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 86400}: {types.MakeMetricData("metric1", generateValues(0, 86400, 60), 60, 0)},
+				{Metric: "metric1", From: 0, Until: 86400}: {types.MakeMetricData("metric1", generateValues(0, 86400, 60), 60, 0)},
 			},
 			Want:  []float64{62164800},
 			From:  0,
@@ -165,7 +165,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1minute','sum','seconds')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{1770, 5370, 8970, 12570},
 			From:  0,
@@ -178,7 +178,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1hour','max','hours')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{3599, 7199, 10799, 14399},
 			From:  0,
@@ -191,7 +191,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'6m','sum', 'minutes')", // Test having a smaller interval than the data's step
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 1410345000, 1410345000 + 3*600}: {types.MakeMetricData("metric1", []float64{
+				{Metric: "metric1", From: 1410345000, Until: 1410345000 + 3*600}: {types.MakeMetricData("metric1", []float64{
 					2, 4, 6}, 600, 1410345000)},
 			},
 			Want:  []float64{2, 4, math.NaN(), 6, math.NaN()},
@@ -205,7 +205,7 @@ func TestEvalSummarize(t *testing.T) {
 		{
 			Target: "smartSummarize(metric2,'2minute','sum')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric2", 0, 300}: {types.MakeMetricData("metric2", []float64{1, 2, 3, 4}, 60, 0)},
+				{Metric: "metric2", From: 0, Until: 300}: {types.MakeMetricData("metric2", []float64{1, 2, 3, 4}, 60, 0)},
 			},
 			Want:  []float64{3, 7},
 			From:  0,
@@ -220,7 +220,7 @@ func TestEvalSummarize(t *testing.T) {
 			// if it is smaller than the final bucket's upper bound
 			Target: "smartSummarize(metric1,'5s','sum')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 243}: {types.MakeMetricData("metric1", generateValues(0, 243, 3), 3, 0)},
+				{Metric: "metric1", From: 0, Until: 243}: {types.MakeMetricData("metric1", generateValues(0, 243, 3), 3, 0)},
 			},
 			Want:  []float64{3, 15, 12, 33, 45, 27, 63, 75, 42, 93, 105, 57, 123, 135, 72, 153, 165, 87, 183, 195, 102, 213, 225, 117, 243, 255, 132, 273, 285, 147, 303, 315, 162, 333, 345, 177, 363, 375, 192, 393, 405, 207, 423, 435, 222, 453, 465, 237, 240},
 			Name:  "smartSummarize(metric1,'5s','sum')",
@@ -243,7 +243,7 @@ func TestSmartSummarizeAlignTo1Year(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1hour','sum','1y')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{6478200, 19438200, 32398200, 45358200},
 			From:  1800,
@@ -256,7 +256,7 @@ func TestSmartSummarizeAlignTo1Year(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1hour','avg','1y')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{1799.5, 5399.5, 8999.5, 12599.5},
 			From:  1800,
@@ -269,7 +269,7 @@ func TestSmartSummarizeAlignTo1Year(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1hour','last','1y')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{3599, 7199, 10799, 14399},
 			From:  1800,
@@ -282,7 +282,7 @@ func TestSmartSummarizeAlignTo1Year(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1hour','max','1y')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{3599, 7199, 10799, 14399},
 			From:  1800,
@@ -295,7 +295,7 @@ func TestSmartSummarizeAlignTo1Year(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1hour','min','1y')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{0, 3600, 7200, 10800},
 			From:  1800,
@@ -318,7 +318,7 @@ func TestSmartSummarizeAlignToMonths(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1hour','sum','months')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{6478200, 19438200, 32398200, 45358200},
 			From:  1800,
@@ -331,7 +331,7 @@ func TestSmartSummarizeAlignToMonths(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1hour','avg','months')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{1799.5, 5399.5, 8999.5, 12599.5},
 			Name:  "smartSummarize(metric1,'1hour','avg','months')",
@@ -344,7 +344,7 @@ func TestSmartSummarizeAlignToMonths(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1hour','last','months')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{3599, 7199, 10799, 14399},
 			From:  1800,
@@ -357,7 +357,7 @@ func TestSmartSummarizeAlignToMonths(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1hour','max','months')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{3599, 7199, 10799, 14399},
 			From:  1800,
@@ -370,7 +370,7 @@ func TestSmartSummarizeAlignToMonths(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1hour','min','months')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{0, 3600, 7200, 10800},
 			From:  1800,
@@ -393,7 +393,7 @@ func TestSmartSummarizeAlignToWeeksThursday(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'4hours','sum','weeks4')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{103672800},
 			From:  174600,
@@ -406,7 +406,7 @@ func TestSmartSummarizeAlignToWeeksThursday(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'4hours','avg','weeks4')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{7199.5},
 			From:  174600,
@@ -419,7 +419,7 @@ func TestSmartSummarizeAlignToWeeksThursday(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'4hours','last','weeks4')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{14399},
 			From:  174600,
@@ -432,7 +432,7 @@ func TestSmartSummarizeAlignToWeeksThursday(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'4hours','max','weeks4')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{14399},
 			From:  174600,
@@ -445,7 +445,7 @@ func TestSmartSummarizeAlignToWeeksThursday(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'4hours','min','weeks4')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{0},
 			From:  174600,
@@ -468,7 +468,7 @@ func TestSmartSummarizeAlignToDays(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1day','sum','days')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 86400}: {types.MakeMetricData("metric1", generateValues(0, 86400, 60), 60, 0)},
+				{Metric: "metric1", From: 0, Until: 86400}: {types.MakeMetricData("metric1", generateValues(0, 86400, 60), 60, 0)},
 			},
 			Want:  []float64{62164800},
 			From:  86399,
@@ -481,7 +481,7 @@ func TestSmartSummarizeAlignToDays(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1day','avg','days')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 86400}: {types.MakeMetricData("metric1", generateValues(0, 86400, 60), 60, 0)},
+				{Metric: "metric1", From: 0, Until: 86400}: {types.MakeMetricData("metric1", generateValues(0, 86400, 60), 60, 0)},
 			},
 			Want:  []float64{43170.0},
 			From:  86399,
@@ -494,7 +494,7 @@ func TestSmartSummarizeAlignToDays(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1day','last','days')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 86400}: {types.MakeMetricData("metric1", generateValues(0, 86400, 60), 60, 0)},
+				{Metric: "metric1", From: 0, Until: 86400}: {types.MakeMetricData("metric1", generateValues(0, 86400, 60), 60, 0)},
 			},
 			Want:  []float64{86340},
 			From:  86399,
@@ -507,7 +507,7 @@ func TestSmartSummarizeAlignToDays(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1day','max','days')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 86400}: {types.MakeMetricData("metric1", generateValues(0, 86400, 60), 60, 0)},
+				{Metric: "metric1", From: 0, Until: 86400}: {types.MakeMetricData("metric1", generateValues(0, 86400, 60), 60, 0)},
 			},
 			Want:  []float64{86340},
 			From:  86399,
@@ -520,7 +520,7 @@ func TestSmartSummarizeAlignToDays(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1day','min','days')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 86400}: {types.MakeMetricData("metric1", generateValues(0, 86400, 60), 60, 0)},
+				{Metric: "metric1", From: 0, Until: 86400}: {types.MakeMetricData("metric1", generateValues(0, 86400, 60), 60, 0)},
 			},
 			Want:  []float64{0},
 			From:  86399,
@@ -543,7 +543,7 @@ func TestSmartSummarizeAlignToHours(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1hour','sum','hours')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{6478200, 19438200, 32398200, 45358200},
 			From:  1800,
@@ -556,7 +556,7 @@ func TestSmartSummarizeAlignToHours(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1hour','avg','hours')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{1799.5, 5399.5, 8999.5, 12599.5},
 			From:  1800,
@@ -569,7 +569,7 @@ func TestSmartSummarizeAlignToHours(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1hour','last','hours')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{3599, 7199, 10799, 14399},
 			From:  1800,
@@ -582,7 +582,7 @@ func TestSmartSummarizeAlignToHours(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1hour','max','hours')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{3599, 7199, 10799, 14399},
 			From:  1800,
@@ -595,7 +595,7 @@ func TestSmartSummarizeAlignToHours(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1hour','min','hours')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
 			},
 			Want:  []float64{0, 3600, 7200, 10800},
 			From:  1800,
@@ -618,7 +618,7 @@ func TestSmartSummarizeAlignToMinutes(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1minute','sum','minutes')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{1770, 5370, 8970, 12570},
 			From:  59,
@@ -631,7 +631,7 @@ func TestSmartSummarizeAlignToMinutes(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1minute','avg','minutes')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{29.5, 89.5, 149.5, 209.5},
 			From:  59,
@@ -644,7 +644,7 @@ func TestSmartSummarizeAlignToMinutes(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1minute','last','minutes')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{59, 119, 179, 239},
 			From:  59,
@@ -657,7 +657,7 @@ func TestSmartSummarizeAlignToMinutes(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1minute','max','minutes')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{59, 119, 179, 239},
 			From:  59,
@@ -670,7 +670,7 @@ func TestSmartSummarizeAlignToMinutes(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1minute','min','minutes')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{0, 60, 120, 180},
 			From:  59,
@@ -693,7 +693,7 @@ func TestSmartSummarizeAlignToSeconds(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1minute','sum','seconds')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{1770, 5370, 8970, 12570},
 			From:  0,
@@ -706,7 +706,7 @@ func TestSmartSummarizeAlignToSeconds(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1minute','avg','seconds')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{29.5, 89.5, 149.5, 209.5},
 			From:  0,
@@ -719,7 +719,7 @@ func TestSmartSummarizeAlignToSeconds(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1minute','last','seconds')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{59, 119, 179, 239},
 			From:  0,
@@ -732,7 +732,7 @@ func TestSmartSummarizeAlignToSeconds(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1minute','max','seconds')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{59, 119, 179, 239},
 			From:  0,
@@ -745,7 +745,7 @@ func TestSmartSummarizeAlignToSeconds(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'1minute','min','seconds')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Want:  []float64{0, 60, 120, 180},
 			From:  0,
@@ -768,7 +768,7 @@ func TestFunctionUseNameWithWildcards(t *testing.T) {
 		{
 			"smartSummarize(metric1.*,'1minute','last')",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.*", 0, 1}: {
+				{Metric: "metric1.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo", generateValues(0, 240, 1), 1, 0),
 					types.MakeMetricData("metric1.bar", generateValues(0, 240, 1), 1, 0),
 				},
@@ -797,7 +797,7 @@ func TestSmartSummarizeErrors(t *testing.T) {
 		{
 			Target: "smartSummarize(metric1,'-1minute','sum','minute')", // Test to make sure error occurs when a negative interval is used
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
 			Error: parser.ErrInvalidInterval,
 		},

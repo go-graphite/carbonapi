@@ -29,7 +29,7 @@ func TestAliasSub(t *testing.T) {
 		{
 			"aliasSub(metric1.foo.bar.baz, \"foo\", \"replaced\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.bar.baz", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{Metric: "metric1.foo.bar.baz", From: 0, Until: 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("metric1.replaced.bar.baz",
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
@@ -37,7 +37,7 @@ func TestAliasSub(t *testing.T) {
 		{
 			"aliasSub(metric1.TCP100,\"^.*TCP(\\d+)\",\"$1\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.TCP100", 0, 1}: {types.MakeMetricData("metric1.TCP100", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{Metric: "metric1.TCP100", From: 0, Until: 1}: {types.MakeMetricData("metric1.TCP100", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("100",
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
@@ -45,7 +45,7 @@ func TestAliasSub(t *testing.T) {
 		{
 			"aliasSub(metric1.TCP100,\"^.*TCP(\\d+)\", \"\\1\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.TCP100", 0, 1}: {types.MakeMetricData("metric1.TCP100", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{Metric: "metric1.TCP100", From: 0, Until: 1}: {types.MakeMetricData("metric1.TCP100", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("100",
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
@@ -53,7 +53,7 @@ func TestAliasSub(t *testing.T) {
 		{
 			"aliasSub(metric1.foo.bar.baz, \"foo\", \"replaced\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.bar.baz", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{Metric: "metric1.foo.bar.baz", From: 0, Until: 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("metric1.replaced.bar.baz",
 				[]float64{1, 2, 3, 4, 5}, 1, now32)},
@@ -63,7 +63,7 @@ func TestAliasSub(t *testing.T) {
 			//"aliasSub(*, '.dns.([^.]+).zone.', '\\1 diff to sql')",
 			"aliasSub(*, 'dns.([^.]*).zone.', '\\1 diff to sql ')",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"*", 0, 1}: {types.MakeMetricData("diffSeries(dns.snake.sql_updated, dns.snake.zone_updated)", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{Metric: "*", From: 0, Until: 1}: {types.MakeMetricData("diffSeries(dns.snake.sql_updated, dns.snake.zone_updated)", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("diffSeries(dns.snake.sql_updated, snake diff to sql updated)",
 				[]float64{1, 2, 3, 4, 5}, 1, now32).SetNameTag("diffSeries(dns.snake.sql_updated, snake diff to sql updated)")},
@@ -83,8 +83,8 @@ func TestAliasSub(t *testing.T) {
 func BenchmarkAverageAlias(b *testing.B) {
 	target := `aliasSub(metric1.TCP100,"^.*TCP(\\d+)","$1")`
 	metrics := map[parser.MetricRequest][]*types.MetricData{
-		{"metric1.TCP100", 0, 1}:  {types.MakeMetricData("metric1.TCP100", []float64{1, 2, 3, 4, 5}, 1, 1)},
-		{"metric1.TCP1024", 0, 1}: {types.MakeMetricData("metric1.TCP1024", []float64{1, 2, 3, 4, 5}, 1, 1)},
+		{Metric: "metric1.TCP100", From: 0, Until: 1}:  {types.MakeMetricData("metric1.TCP100", []float64{1, 2, 3, 4, 5}, 1, 1)},
+		{Metric: "metric1.TCP1024", From: 0, Until: 1}: {types.MakeMetricData("metric1.TCP1024", []float64{1, 2, 3, 4, 5}, 1, 1)},
 	}
 
 	eval := th.EvaluatorFromFunc(md[0].F)

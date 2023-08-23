@@ -30,11 +30,11 @@ func TestIntegralWithResetMultiReturn(t *testing.T) {
 		{
 			"integralWithReset(metric[12], reset)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[12]", 0, 1}: {
+				{Metric: "metric[12]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1, 1, 3, 5, 8, 13, 21}, 1, now32),
 					types.MakeMetricData("metric2", []float64{1, 1, 1, 1, 1, 1, 1}, 1, now32),
 				},
-				{"reset", 0, 1}: {
+				{Metric: "reset", From: 0, Until: 1}: {
 					types.MakeMetricData("reset", []float64{0, 0, 0, 1, 1, 0, 0}, 1, now32),
 				},
 			},
@@ -71,8 +71,8 @@ func TestIntegralWithReset(t *testing.T) {
 		{
 			"integralWithReset(metric1, metric2)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12, 15}, 1, now32)},
-				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{0, math.NaN(), 0, math.NaN(), 0, 6, 0}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12, 15}, 1, now32)},
+				{Metric: "metric2", From: 0, Until: 1}: {types.MakeMetricData("metric2", []float64{0, math.NaN(), 0, math.NaN(), 0, 6, 0}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("integralWithReset(metric1,metric2)",
 				[]float64{1, math.NaN(), math.NaN(), 4, 8, 0, 15}, 1, now32)},

@@ -29,7 +29,7 @@ func TestAliasByMetric(t *testing.T) {
 		{
 			"aliasByMetric(metric1.foo.bar.baz)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.bar.baz", 0, 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{Metric: "metric1.foo.bar.baz", From: 0, Until: 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 		},

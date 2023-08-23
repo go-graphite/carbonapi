@@ -19,11 +19,11 @@ var (
 
 	M = map[parser.MetricRequest][]*types.MetricData{
 		// for refetch
-		{"metric*", 10, 25}: {
+		{Metric: "metric*", From: 10, Until: 25}: {
 			types.MakeMetricData("metric1", []float64{math.NaN(), math.NaN(), 2, math.NaN(), 4, math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, 10).
 				SetNameTag(`movingAverage(metric1,10)`).SetPathExpression("metric*"),
 		},
-		{"metric1", 10, 25}: {
+		{Metric: "metric1", From: 10, Until: 25}: {
 			types.MakeMetricData("metric1", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, 10).
 				SetNameTag(`movingAverage(metric1,10)`).SetPathExpression("metric1"),
 		},
@@ -41,7 +41,7 @@ func TestMovingRefetch(t *testing.T) {
 		{
 			Target: "movingAverage(metric*,10)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 20, 25}: {types.MakeMetricData("metric1", th.GenerateValues(10, 25, 1), 1, 20).SetPathExpression("metric*")},
+				{Metric: "metric*", From: 20, Until: 25}: {types.MakeMetricData("metric1", th.GenerateValues(10, 25, 1), 1, 20).SetPathExpression("metric*")},
 			},
 			Want: []*types.MetricData{types.MakeMetricData(`movingAverage(metric1,10)`,
 				[]float64{3, 3, 4, 4, math.NaN()}, 1, 20).SetTag("movingAverage", "10").
@@ -53,7 +53,7 @@ func TestMovingRefetch(t *testing.T) {
 		{
 			Target: "movingAverage(metric1,10)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 20, 25}: {types.MakeMetricData("metric1", th.GenerateValues(10, 25, 1), 1, 20).SetPathExpression("metric1")},
+				{Metric: "metric1", From: 20, Until: 25}: {types.MakeMetricData("metric1", th.GenerateValues(10, 25, 1), 1, 20).SetPathExpression("metric1")},
 			},
 			Want: []*types.MetricData{types.MakeMetricData(`movingAverage(metric1,10)`,
 				[]float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, 20).SetTag("movingAverage", "10").SetNameTag(`movingAverage(metric1,10)`)},

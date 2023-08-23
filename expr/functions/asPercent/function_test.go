@@ -31,8 +31,8 @@ func TestAsPercent(t *testing.T) {
 		{
 			"asPercent(metric1,metric2)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, NaN, NaN, 3, 4, 12}, 1, now32)},
-				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, NaN, 3, NaN, 0, 6}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, NaN, NaN, 3, 4, 12}, 1, now32)},
+				{Metric: "metric2", From: 0, Until: 1}: {types.MakeMetricData("metric2", []float64{2, NaN, 3, NaN, 0, 6}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("asPercent(metric1,metric2)",
 				[]float64{50, NaN, NaN, NaN, NaN, 200}, 1, now32)},
@@ -40,7 +40,7 @@ func TestAsPercent(t *testing.T) {
 		{
 			"asPercent(metric1,'5')", // Ensure quoted numeric values are handled
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, NaN, NaN, 3, 4, 12}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, NaN, NaN, 3, 4, 12}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("asPercent(metric1,5)",
 				[]float64{20, NaN, NaN, 60, 80, 240}, 1, now32)},
@@ -48,11 +48,11 @@ func TestAsPercent(t *testing.T) {
 		{
 			"asPercent(metricA*,metricB*)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metricA*", 0, 1}: {
+				{Metric: "metricA*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA1", []float64{1, 20, 10}, 1, now32),
 					types.MakeMetricData("metricA2", []float64{1, 10, 20}, 1, now32),
 				},
-				{"metricB*", 0, 1}: {
+				{Metric: "metricB*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricB1", []float64{4, 4, 8}, 1, now32),
 					types.MakeMetricData("metricB2", []float64{4, 16, 2}, 1, now32),
 				},
@@ -65,11 +65,11 @@ func TestAsPercent(t *testing.T) {
 		{
 			"asPercent(Server{1,2}.memory.used,Server{1,3}.memory.total)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"Server{1,2}.memory.used", 0, 1}: {
+				{Metric: "Server{1,2}.memory.used", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.memory.used", []float64{1, 20, 10}, 1, now32),
 					types.MakeMetricData("Server2.memory.used", []float64{1, 10, 20}, 1, now32),
 				},
-				{"Server{1,3}.memory.total", 0, 1}: {
+				{Metric: "Server{1,3}.memory.total", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.memory.total", []float64{4, 4, 8}, 1, now32),
 					types.MakeMetricData("Server3.memory.total", []float64{4, 16, 2}, 1, now32),
 				},
@@ -82,11 +82,11 @@ func TestAsPercent(t *testing.T) {
 		{
 			"asPercent(metricC*,metricD*)", // This test is to verify that passing in metrics with different number of values and different step values for the series and the totalSeries does not throw an error
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metricC*", 0, 1}: {
+				{Metric: "metricC*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricC1", []float64{1, 20, 10, 15, 5}, 1, now32), // Test that error isn't thrown when seriesList has more values than totalSeries
 					types.MakeMetricData("metricC2", []float64{1, 10, 20, 15, 5}, 1, now32),
 				},
-				{"metricD*", 0, 1}: {
+				{Metric: "metricD*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricD1", []float64{4, 4, 8}, 2, now32),
 					types.MakeMetricData("metricD2", []float64{4, 16, 2}, 2, now32),
 				},
@@ -99,12 +99,12 @@ func TestAsPercent(t *testing.T) {
 		{
 			"asPercent(metricE*,metricF*)", // This test is to verify that passing in metrics with different lengths and different number of values and different step values for the series and the totalSeries does not throw an error
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metricE*", 0, 1}: {
+				{Metric: "metricE*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricE1", []float64{1, 20, 10, 15, 5}, 1, now32), // Test that error isn't thrown when seriesList has more values than totalSeries
 					types.MakeMetricData("metricE2", []float64{1, 10, 20, 15, 5}, 1, now32),
 					types.MakeMetricData("metricE3", []float64{1, 10, 20, 15, 5}, 1, now32),
 				},
-				{"metricF*", 0, 1}: {
+				{Metric: "metricF*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricF1", []float64{4, 4, 8}, 2, now32),
 					types.MakeMetricData("metricF2", []float64{4, 16, 2}, 2, now32),
 				},
@@ -121,7 +121,7 @@ func TestAsPercent(t *testing.T) {
 		{
 			"asPercent(metric*)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1, NaN, NaN, 3, 4, 14}, 1, now32),
 					types.MakeMetricData("metric2", []float64{4, NaN, 3, NaN, 0, 6}, 1, now32),
 				},
@@ -134,11 +134,11 @@ func TestAsPercent(t *testing.T) {
 		{
 			"asPercent(Server{1,2}.memory.used,Server{1,2}.memory.total)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"Server{1,2}.memory.used", 0, 1}: {
+				{Metric: "Server{1,2}.memory.used", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.memory.used", []float64{1, 20, 10}, 1, now32),
 					types.MakeMetricData("Server2.memory.used", []float64{1, 11, 20}, 1, now32),
 				},
-				{"Server{1,2}.memory.total", 0, 1}: {
+				{Metric: "Server{1,2}.memory.total", From: 0, Until: 1}: {
 					types.MakeMetricData("Server2.memory.total", []float64{4, 2, 2}, 1, now32),
 					types.MakeMetricData("Server1.memory.total", []float64{4, 4, 8}, 1, now32),
 				},
@@ -151,11 +151,11 @@ func TestAsPercent(t *testing.T) {
 		{
 			"asPercent(Server{1,2}.memory.used,Server{1,2,3}.memory.total)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"Server{1,2}.memory.used", 0, 1}: {
+				{Metric: "Server{1,2}.memory.used", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.memory.used", []float64{1, 20, 15}, 1, now32),
 					types.MakeMetricData("Server2.memory.used", []float64{1, 11, 20}, 1, now32),
 				},
-				{"Server{1,2,3}.memory.total", 0, 1}: {
+				{Metric: "Server{1,2,3}.memory.total", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.memory.total", []float64{4, 40, 25}, 1, now32),
 					types.MakeMetricData("Server2.memory.total", []float64{4, 20, 40}, 1, now32),
 					types.MakeMetricData("Server3.memory.total", []float64{4, 20, 40}, 1, now32),
@@ -170,12 +170,12 @@ func TestAsPercent(t *testing.T) {
 		{
 			"asPercent(Server{1,2,3}.memory.used,Server{1,2}.memory.total)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"Server{1,2,3}.memory.used", 0, 1}: {
+				{Metric: "Server{1,2,3}.memory.used", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.memory.used", []float64{1, 20, 15}, 1, now32),
 					types.MakeMetricData("Server2.memory.used", []float64{1, 11, 20}, 1, now32),
 					types.MakeMetricData("Server3.memory.used", []float64{1, 11, 20}, 1, now32),
 				},
-				{"Server{1,2}.memory.total", 0, 1}: {
+				{Metric: "Server{1,2}.memory.total", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.memory.total", []float64{4, 40, 25}, 1, now32),
 					types.MakeMetricData("Server2.memory.total", []float64{4, 20, 40}, 1, now32),
 				},
@@ -190,11 +190,11 @@ func TestAsPercent(t *testing.T) {
 		{
 			"asPercent(seriesByTag('name=metric', 'tag=A*'),metricB*)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"seriesByTag('name=metric', 'tag=A*')", 0, 1}: {
+				{Metric: "seriesByTag('name=metric', 'tag=A*')", From: 0, Until: 1}: {
 					types.MakeMetricData("metric;tag=A1", []float64{1, 20, 10}, 1, now32),
 					types.MakeMetricData("metric;tag=A2", []float64{1, 10, 20}, 1, now32),
 				},
-				{"metricB*", 0, 1}: {
+				{Metric: "metricB*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricB1", []float64{4, 4, 8}, 1, now32),
 					types.MakeMetricData("metricB2", []float64{4, 16, 2}, 1, now32),
 				},
@@ -222,11 +222,11 @@ func TestAsPercentAlignment(t *testing.T) {
 		{
 			"asPercent(Server{1,2}.aligned.memory.used,Server{1,3}.aligned.memory.total)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"Server{1,2}.aligned.memory.used", 0, 1}: {
+				{Metric: "Server{1,2}.aligned.memory.used", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.aligned.memory.used", []float64{1, 20, 10, 20}, 1, now32),
 					types.MakeMetricData("Server2.aligned.memory.used", []float64{0, 1, 10, 20}, 1, now32-1),
 				},
-				{"Server{1,3}.aligned.memory.total", 0, 1}: {
+				{Metric: "Server{1,3}.aligned.memory.total", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.aligned.memory.total", []float64{1, 4, 4, 8}, 1, now32-1),
 					types.MakeMetricData("Server3.aligned.memory.total", []float64{4, 16, 2, 10}, 1, now32),
 				},
@@ -239,11 +239,11 @@ func TestAsPercentAlignment(t *testing.T) {
 		{
 			"asPercent(Server{1,2}.aligned.memory.used,Server3.aligned.memory.total)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"Server{1,2}.aligned.memory.used", 0, 1}: {
+				{Metric: "Server{1,2}.aligned.memory.used", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.aligned.memory.used", []float64{1, 20, 10, 20}, 1, now32),
 					types.MakeMetricData("Server2.aligned.memory.used", []float64{0, 2, 10, 20}, 1, now32-1),
 				},
-				{"Server3.aligned.memory.total", 0, 1}: {
+				{Metric: "Server3.aligned.memory.total", From: 0, Until: 1}: {
 					types.MakeMetricData("Server3.aligned.memory.total", []float64{4, 16, 2, 10, 40}, 1, now32-1),
 				},
 			},
@@ -255,7 +255,7 @@ func TestAsPercentAlignment(t *testing.T) {
 		{
 			"asPercent(Server{1,2}.aligned.memory.used,100)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"Server{1,2}.aligned.memory.used", 0, 1}: {
+				{Metric: "Server{1,2}.aligned.memory.used", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.aligned.memory.used", []float64{1, 20, 10, 20}, 1, now32),
 					types.MakeMetricData("Server2.aligned.memory.used", []float64{0, 1, 10, 20}, 1, now32-1),
 				},
@@ -284,11 +284,11 @@ func TestAsPercentGroup(t *testing.T) {
 		{
 			"asPercent(Server{1,2}.memory.used,Server{1,3}.memory.total,0)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"Server{1,2}.memory.used", 0, 1}: {
+				{Metric: "Server{1,2}.memory.used", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.memory.used", []float64{1, 20, 10}, 1, now32),
 					types.MakeMetricData("Server2.memory.used", []float64{1, 10, 20}, 1, now32),
 				},
-				{"Server{1,3}.memory.total", 0, 1}: {
+				{Metric: "Server{1,3}.memory.total", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.memory.total", []float64{4, 4, 8}, 1, now32),
 					types.MakeMetricData("Server3.memory.total", []float64{4, 16, 2}, 1, now32),
 				},
@@ -304,13 +304,13 @@ func TestAsPercentGroup(t *testing.T) {
 		{
 			"asPercent(Server{1,2}.memory.{used,free},Server{1,3}.memory.total,0)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"Server{1,2}.memory.{used,free}", 0, 1}: {
+				{Metric: "Server{1,2}.memory.{used,free}", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.memory.used", []float64{1, 20, 10}, 1, now32),
 					types.MakeMetricData("Server1.memory.free", []float64{1, 20, 10}, 1, now32),
 					types.MakeMetricData("Server2.memory.used", []float64{1, 10, 20}, 1, now32),
 					types.MakeMetricData("Server2.memory.free", []float64{1, 20, 10}, 1, now32),
 				},
-				{"Server{1,3}.memory.total", 0, 1}: {
+				{Metric: "Server{1,3}.memory.total", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.memory.total", []float64{4, 4, 8}, 1, now32),
 					types.MakeMetricData("Server3.memory.total", []float64{4, 16, 2}, 1, now32),
 				},
@@ -326,7 +326,7 @@ func TestAsPercentGroup(t *testing.T) {
 		{
 			"asPercent(Server{1,2}.memory.{used,free},None,0)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"Server{1,2}.memory.{used,free}", 0, 1}: {
+				{Metric: "Server{1,2}.memory.{used,free}", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.memory.used", []float64{2, 1, NaN}, 1, now32),
 					types.MakeMetricData("Server1.memory.free", []float64{3, NaN, 8}, 1, now32),
 					types.MakeMetricData("Server2.memory.used", []float64{4, NaN, 2}, 1, now32),
@@ -358,7 +358,7 @@ func BenchmarkAsPercent(b *testing.B) {
 		{
 			target: "asPercent(metric*)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1, NaN, NaN, 3, 4, 14}, 1, 1),
 					types.MakeMetricData("metric2", []float64{4, NaN, 3, NaN, 0, 6}, 1, 1),
 				},
@@ -367,18 +367,18 @@ func BenchmarkAsPercent(b *testing.B) {
 		{
 			target: "asPercent(metric1,metric2)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, NaN, NaN, 3, 4, 12}, 1, 1)},
-				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, NaN, 3, NaN, 0, 6}, 1, 1)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, NaN, NaN, 3, 4, 12}, 1, 1)},
+				{Metric: "metric2", From: 0, Until: 1}: {types.MakeMetricData("metric2", []float64{2, NaN, 3, NaN, 0, 6}, 1, 1)},
 			},
 		},
 		{
 			target: "asPercent(Server{1,2}.memory.used,Server{1,2,3}.memory.total)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"Server{1,2}.memory.used", 0, 1}: {
+				{Metric: "Server{1,2}.memory.used", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.aligned.memory.used", []float64{1, 20, 10, 20}, 1, 2),
 					types.MakeMetricData("Server2.aligned.memory.used", []float64{0, 1, 10, 20}, 1, 1),
 				},
-				{"Server{1,2,3}.memory.total", 0, 1}: {
+				{Metric: "Server{1,2,3}.memory.total", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.aligned.memory.total", []float64{1, 4, 4, 8}, 1, 1),
 					types.MakeMetricData("Server2.aligned.memory.total", []float64{4, 16, 2, 10}, 1, 2),
 					types.MakeMetricData("Server3.aligned.memory.total", []float64{4, 16, 2, 10}, 1, 2),
@@ -388,12 +388,12 @@ func BenchmarkAsPercent(b *testing.B) {
 		{
 			target: "asPercent(Server{1,2,3}.memory.used,Server{1,2}.memory.total)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"Server{1,2,3}.memory.used", 0, 1}: {
+				{Metric: "Server{1,2,3}.memory.used", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.aligned.memory.used", []float64{1, 20, 10, 20}, 1, 2),
 					types.MakeMetricData("Server2.aligned.memory.used", []float64{0, 1, 10, 20}, 1, 1),
 					types.MakeMetricData("Server3.aligned.memory.used", []float64{0, 1, 10, 20}, 1, 1),
 				},
-				{"Server{1,2}.memory.total", 0, 1}: {
+				{Metric: "Server{1,2}.memory.total", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.aligned.memory.total", []float64{1, 4, 4, 8}, 1, 1),
 					types.MakeMetricData("Server2.aligned.memory.total", []float64{4, 16, 2, 10}, 1, 2),
 				},
@@ -402,13 +402,13 @@ func BenchmarkAsPercent(b *testing.B) {
 		{
 			target: "asPercent(Server{1,2}.memory.{used,free},Server{1,2}.memory.total)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"Server{1,2}.memory.{used,free}", 0, 1}: {
+				{Metric: "Server{1,2}.memory.{used,free}", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.aligned.memory.used", []float64{1, 20, 10, 20}, 1, 2),
 					types.MakeMetricData("Server2.aligned.memory.used", []float64{0, 1, 10, 20}, 1, 1),
 					types.MakeMetricData("Server1.aligned.memory.free", []float64{1, 20, 10, 20}, 1, 2),
 					types.MakeMetricData("Server2.aligned.memory.free", []float64{0, 1, 10, 20}, 1, 1),
 				},
-				{"Server{1,2}.memory.total", 0, 1}: {
+				{Metric: "Server{1,2}.memory.total", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.aligned.memory.total", []float64{1, 4, 4, 8}, 1, 1),
 					types.MakeMetricData("Server2.aligned.memory.total", []float64{4, 16, 2, 10}, 1, 2),
 				},
@@ -417,11 +417,11 @@ func BenchmarkAsPercent(b *testing.B) {
 		{
 			target: "asPercent(Server{1,2}.aligned.memory.used,Server{1,3}.aligned.memory.total)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"Server{1,2}.aligned.memory.used", 0, 1}: {
+				{Metric: "Server{1,2}.aligned.memory.used", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.aligned.memory.used", []float64{1, 20, 10, 20}, 1, 2),
 					types.MakeMetricData("Server2.aligned.memory.used", []float64{0, 1, 10, 20}, 1, 1),
 				},
-				{"Server{1,3}.aligned.memory.total", 0, 1}: {
+				{Metric: "Server{1,3}.aligned.memory.total", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.aligned.memory.total", []float64{1, 4, 4, 8}, 1, 1),
 					types.MakeMetricData("Server3.aligned.memory.total", []float64{4, 16, 2, 10}, 1, 2),
 				},
@@ -430,11 +430,11 @@ func BenchmarkAsPercent(b *testing.B) {
 		{
 			target: "asPercent(Server{1,2}.aligned.memory.used,Server3.aligned.memory.total)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"Server{1,2}.aligned.memory.used", 0, 1}: {
+				{Metric: "Server{1,2}.aligned.memory.used", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.aligned.memory.used", []float64{1, 20, 10, 20}, 1, 2),
 					types.MakeMetricData("Server2.aligned.memory.used", []float64{0, 2, 10, 20}, 1, 1),
 				},
-				{"Server3.aligned.memory.total", 0, 1}: {
+				{Metric: "Server3.aligned.memory.total", From: 0, Until: 1}: {
 					types.MakeMetricData("Server3.aligned.memory.total", []float64{4, 16, 2, 10, 40}, 1, 1),
 				},
 			},
@@ -481,11 +481,11 @@ func BenchmarkAsPercentGroup(b *testing.B) {
 		{
 			target: "asPercent(Server{1,2}.memory.used,Server{1,3}.memory.total,0)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"Server{1,2}.memory.used", 0, 1}: {
+				{Metric: "Server{1,2}.memory.used", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.memory.used", []float64{1, 20, 10}, 1, 1),
 					types.MakeMetricData("Server2.memory.used", []float64{1, 10, 20}, 1, 1),
 				},
-				{"Server{1,3}.memory.total", 0, 1}: {
+				{Metric: "Server{1,3}.memory.total", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.memory.total", []float64{4, 4, 8}, 1, 1),
 					types.MakeMetricData("Server3.memory.total", []float64{4, 16, 2}, 1, 1),
 				},
@@ -494,7 +494,7 @@ func BenchmarkAsPercentGroup(b *testing.B) {
 		{
 			target: "asPercent(Server{1,2}.memory.{used,free},None,0)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"Server{1,2}.memory.{used,free}", 0, 1}: {
+				{Metric: "Server{1,2}.memory.{used,free}", From: 0, Until: 1}: {
 					types.MakeMetricData("Server1.memory.used", []float64{2, 1, NaN}, 1, 1),
 					types.MakeMetricData("Server1.memory.free", []float64{3, NaN, 8}, 1, 1),
 					types.MakeMetricData("Server2.memory.used", []float64{4, NaN, 2}, 1, 1),

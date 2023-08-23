@@ -225,7 +225,7 @@ func TestEvalExpression(t *testing.T) {
 		{
 			"metric",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric", 0, 1}: {types.MakeMetricData("metric", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{Metric: "metric", From: 0, Until: 1}: {types.MakeMetricData("metric", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("metric", []float64{1, 2, 3, 4, 5}, 1, now32)},
 		},
@@ -250,7 +250,7 @@ func TestEvalExpression(t *testing.T) {
 		{
 			"reduceSeries(mapSeries(devops.service.*.filter.received.*.count,2), \"asPercent\", 5,\"valid\",\"total\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"devops.service.*.filter.received.*.count", 0, 1}: {
+				{Metric: "devops.service.*.filter.received.*.count", From: 0, Until: 1}: {
 					types.MakeMetricData("devops.service.server1.filter.received.valid.count", []float64{2, 4, 8}, 1, now32),
 					types.MakeMetricData("devops.service.server1.filter.received.total.count", []float64{8, 2, 4}, 1, now32),
 					types.MakeMetricData("devops.service.server2.filter.received.valid.count", []float64{3, 9, 12}, 1, now32),
@@ -265,7 +265,7 @@ func TestEvalExpression(t *testing.T) {
 		{
 			"reduceSeries(mapSeries(devops.service.*.filter.received.*.count,2), \"asPercent\", 5,\"valid\",\"total\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"devops.service.*.filter.received.*.count", 0, 1}: {
+				{Metric: "devops.service.*.filter.received.*.count", From: 0, Until: 1}: {
 					types.MakeMetricData("devops.service.server1.filter.received.total.count", []float64{8, 2, 4}, 1, now32),
 					types.MakeMetricData("devops.service.server2.filter.received.valid.count", []float64{3, 9, 12}, 1, now32),
 					types.MakeMetricData("devops.service.server2.filter.received.total.count", []float64{12, 9, 3}, 1, now32),
@@ -278,7 +278,7 @@ func TestEvalExpression(t *testing.T) {
 		{
 			"sumSeries(pow(devops.service.*.filter.received.*.count, 0))",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"devops.service.*.filter.received.*.count", 0, 1}: {
+				{Metric: "devops.service.*.filter.received.*.count", From: 0, Until: 1}: {
 					types.MakeMetricData("devops.service.server1.filter.received.total.count", []float64{8, 2, 4}, 1, now32),
 					types.MakeMetricData("devops.service.server2.filter.received.valid.count", []float64{3, 9, 12}, 1, now32),
 					types.MakeMetricData("devops.service.server2.filter.received.total.count", []float64{math.NaN(), math.NaN(), math.NaN()}, 1, now32),
@@ -289,7 +289,7 @@ func TestEvalExpression(t *testing.T) {
 		{
 			"multiplySeriesWithWildcards(metric1.foo.*.*,1,2)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.*.*", 0, 1}: {
+				{Metric: "metric1.foo.*.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar3.baz", []float64{2, 2, 2, 2, 2}, 1, now32),
@@ -300,7 +300,7 @@ func TestEvalExpression(t *testing.T) {
 		{
 			"groupByNode(metric1foo.*,0,\"asPercent\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1foo.*", 0, 1}: {
+				{Metric: "metric1foo.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric1foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, now32),
 					types.MakeMetricData("metric1foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
@@ -312,7 +312,7 @@ func TestEvalExpression(t *testing.T) {
 		{
 			"groupByNodes(test.metric*.foo*,\"keepLastValue\",1,0)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"test.metric*.foo*", 0, 1}: {
+				{Metric: "test.metric*.foo*", From: 0, Until: 1}: {
 					types.MakeMetricData("test.metric1.foo1", []float64{0}, 1, now32),
 					types.MakeMetricData("test.metric1.foo2", []float64{0}, 1, now32),
 					types.MakeMetricData("test.metric2.foo1", []float64{0}, 1, now32),
@@ -327,7 +327,7 @@ func TestEvalExpression(t *testing.T) {
 		{
 			"groupByNodes(test.metric*.foo*,\"keepLastValue\",1,2)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"test.metric*.foo*", 0, 1}: {
+				{Metric: "test.metric*.foo*", From: 0, Until: 1}: {
 					types.MakeMetricData("test.metric1.foo1", []float64{0}, 1, now32),
 					types.MakeMetricData("test.metric1.foo2", []float64{0}, 1, now32),
 					types.MakeMetricData("test.metric2.foo1", []float64{0}, 1, now32),
@@ -344,7 +344,7 @@ func TestEvalExpression(t *testing.T) {
 		{
 			"groupByNodes(test.metric*.foo*,\"keepLastValue\",1)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"test.metric*.foo*", 0, 1}: {
+				{Metric: "test.metric*.foo*", From: 0, Until: 1}: {
 					types.MakeMetricData("test.metric1.foo1", []float64{0}, 1, now32),
 					types.MakeMetricData("test.metric1.foo2", []float64{0}, 1, now32),
 					types.MakeMetricData("test.metric2.foo1", []float64{0}, 1, now32),
@@ -388,10 +388,10 @@ func TestRewriteExpr(t *testing.T) {
 				"metric*",
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32),
 				},
-				{"metric1", 0, 1}: {
+				{Metric: "metric1", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32),
 				},
 			},
@@ -407,10 +407,10 @@ func TestRewriteExpr(t *testing.T) {
 				parser.ArgValue("%.count"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32),
 				},
-				{"metric1", 0, 1}: {
+				{Metric: "metric1", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32),
 				},
 			},
@@ -427,10 +427,10 @@ func TestRewriteExpr(t *testing.T) {
 				parser.ArgValue("% count"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32),
 				},
-				{"metric1", 0, 1}: {
+				{Metric: "metric1", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32),
 				},
 			},
@@ -446,14 +446,14 @@ func TestRewriteExpr(t *testing.T) {
 				parser.ArgValue("%.count"),
 			),
 			map[parser.MetricRequest][]*types.MetricData{
-				{"foo.metric*", 0, 1}: {
+				{Metric: "foo.metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("foo.metric1", []float64{1, 2, 3}, 1, now32),
 					types.MakeMetricData("foo.metric2", []float64{1, 2, 3}, 1, now32),
 				},
-				{"foo.metric1", 0, 1}: {
+				{Metric: "foo.metric1", From: 0, Until: 1}: {
 					types.MakeMetricData("foo.metric1", []float64{1, 2, 3}, 1, now32),
 				},
-				{"foo.metric2", 0, 1}: {
+				{Metric: "foo.metric2", From: 0, Until: 1}: {
 					types.MakeMetricData("foo.metric2", []float64{1, 2, 3}, 1, now32),
 				},
 			},
