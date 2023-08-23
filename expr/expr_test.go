@@ -8,6 +8,8 @@ import (
 	"time"
 	"unicode"
 
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
+
 	"github.com/go-graphite/carbonapi/expr/functions"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/rewrite"
@@ -15,7 +17,6 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
 	"github.com/go-graphite/carbonapi/tests/compare"
-	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
 func init() {
@@ -236,7 +237,7 @@ func TestEvalExpression(t *testing.T) {
 		{
 			"metric*",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{"metric*", "", 0, 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric2", []float64{2, 3, 4, 5, 6}, 1, now32),
 				},

@@ -48,9 +48,16 @@ func (eval Evaluator) Fetch(ctx context.Context, exprs []parser.Expr, from, unti
 				MaxDataPoints:  maxDataPoints,
 			}
 			metricRequest := parser.MetricRequest{
-				Metric: fetchRequest.PathExpression,
-				From:   fetchRequest.StartTime,
-				Until:  fetchRequest.StopTime,
+				Metric:            fetchRequest.PathExpression,
+				From:              fetchRequest.StartTime,
+				Until:             fetchRequest.StopTime,
+				ConsolidationFunc: m.ConsolidationFunc,
+			}
+
+			if m.ConsolidationFunc != "" {
+				fetchRequest.FilterFunctions = append(fetchRequest.FilterFunctions, &pb.FilteringFunction{
+					Name: m.ConsolidationFunc,
+				})
 			}
 
 			if exp.Target() == "fallbackSeries" {
