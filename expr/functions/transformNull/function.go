@@ -42,7 +42,7 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 	if err != nil {
 		return nil, err
 	}
-	defaultOnAbsent, err := e.GetBoolNamedOrPosArgDefault("defaultOnAbsent", 2, false)
+	defaultOnAbsent, err := e.GetBoolNamedOrPosArgDefault("defaultOnAbsent", 3, false)
 	if err != nil {
 		return nil, err
 	}
