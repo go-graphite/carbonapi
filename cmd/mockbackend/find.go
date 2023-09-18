@@ -48,6 +48,13 @@ func (cfg *listener) findHandler(wr http.ResponseWriter, req *http.Request) {
 
 	query := req.Form["query"]
 
+	if len(query) == 0 {
+		logger.Error("Bad request (no query)")
+		http.Error(wr, "Bad request (no query)",
+			http.StatusBadRequest)
+		return
+	}
+
 	if format == protoV3Format {
 		body, err := io.ReadAll(req.Body)
 		if err != nil {
@@ -56,6 +63,7 @@ func (cfg *listener) findHandler(wr http.ResponseWriter, req *http.Request) {
 			)
 			http.Error(wr, "Bad request (unsupported format)",
 				http.StatusBadRequest)
+			return
 		}
 
 		var pv3Request carbonapi_v3_pb.MultiGlobRequest
@@ -73,7 +81,7 @@ func (cfg *listener) findHandler(wr http.ResponseWriter, req *http.Request) {
 	}
 
 	if query[0] != "*" {
-		for m := range cfg.Listener.Expressions {
+		for _, m := range query {
 			globMatches := []carbonapi_v3_pb.GlobMatch{}
 
 			for _, metric := range cfg.Expressions[m].Data {

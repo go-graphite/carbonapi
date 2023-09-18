@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -48,14 +49,24 @@ type ExpectedResponse struct {
 }
 
 type ExpectedResult struct {
-	SHA256  []string `yaml:"sha256"`
-	Metrics []CarbonAPIResponse
+	SHA256      []string              `yaml:"sha256"`
+	Metrics     []RenderResponse      `json:"metrics" yaml:"metrics"`
+	MetricsFind []MetricsFindResponse `json:"metricsFind" yaml:"metricsFind"`
 }
 
-type CarbonAPIResponse struct {
+type RenderResponse struct {
 	Target     string            `json:"target" yaml:"target"`
 	Datapoints []Datapoint       `json:"datapoints" yaml:"datapoints"`
 	Tags       map[string]string `json:"tags" yaml:"tags"`
+}
+
+type MetricsFindResponse struct {
+	AllowChildren int               `json:"allowChildren" yaml:"allowChildren"`
+	Expandable    int               `json:"expandable" yaml:"expandable"`
+	Leaf          int               `json:"leaf" yaml:"leaf"`
+	Id            string            `json:"id" yaml:"id"`
+	Text          string            `json:"text" yaml:"text"`
+	Context       map[string]string `json:"context" yaml:"context"`
 }
 
 type Datapoint struct {
@@ -121,7 +132,7 @@ func (d *Datapoint) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
-func isMetricsEqual(m1, m2 CarbonAPIResponse) error {
+func isRenderEqual(m1, m2 RenderResponse) error {
 	if m1.Target != m2.Target {
 		return fmt.Errorf("target mismatch, got '%v', expected '%v'", m1.Target, m2.Target)
 	}
@@ -249,30 +260,61 @@ func doTest(logger *zap.Logger, t *Query) []error {
 			return failures
 		}
 	case "application/json":
-		res := make([]CarbonAPIResponse, 0, 1)
-		err := json.Unmarshal(b, &res)
-		if err != nil {
-			err = merry2.Prepend(err, "failed to parse response")
-			failures = append(failures, err)
-			return failures
-		}
-
-		if len(t.ExpectedResponse.ExpectedResults) == 0 {
-			return failures
-		}
-
-		if len(res) != len(t.ExpectedResponse.ExpectedResults[0].Metrics) {
-			failures = append(failures, merry2.Errorf("unexpected amount of results, got %v, expected %v",
-				len(res),
-				len(t.ExpectedResponse.ExpectedResults[0].Metrics)))
-			return failures
-		}
-
-		for i := range res {
-			err := isMetricsEqual(res[i], t.ExpectedResponse.ExpectedResults[0].Metrics[i])
+		if strings.HasPrefix(t.URL, "/metrics/find") {
+			// metrics/find
+			res := make([]MetricsFindResponse, 0, 1)
+			err := json.Unmarshal(b, &res)
 			if err != nil {
-				err = merry2.Prependf(err, "metrics are not equal, got=`%+v`, expected=`%+v`", res[i], t.ExpectedResponse.ExpectedResults[0].Metrics[i])
+				err = merry2.Prepend(err, "failed to parse response")
 				failures = append(failures, err)
+				return failures
+			}
+
+			if len(t.ExpectedResponse.ExpectedResults) == 0 {
+				return failures
+			}
+
+			if len(res) != len(t.ExpectedResponse.ExpectedResults[0].MetricsFind) {
+				failures = append(failures, merry2.Errorf("unexpected amount of results, got %v, expected %v",
+					len(res),
+					len(t.ExpectedResponse.ExpectedResults[0].Metrics)))
+				return failures
+			}
+
+			for i := range res {
+				if !reflect.DeepEqual(res[i], t.ExpectedResponse.ExpectedResults[0].MetricsFind[i]) {
+					err = fmt.Errorf("metrics[%d] are not equal, got=`%+v`, expected=`%+v`", i, res[i], t.ExpectedResponse.ExpectedResults[0].MetricsFind[i])
+					failures = append(failures, err)
+				}
+			}
+
+		} else {
+			// render
+			res := make([]RenderResponse, 0, 1)
+			err := json.Unmarshal(b, &res)
+			if err != nil {
+				err = merry2.Prepend(err, "failed to parse response")
+				failures = append(failures, err)
+				return failures
+			}
+
+			if len(t.ExpectedResponse.ExpectedResults) == 0 {
+				return failures
+			}
+
+			if len(res) != len(t.ExpectedResponse.ExpectedResults[0].Metrics) {
+				failures = append(failures, merry2.Errorf("unexpected amount of results, got %v, expected %v",
+					len(res),
+					len(t.ExpectedResponse.ExpectedResults[0].Metrics)))
+				return failures
+			}
+
+			for i := range res {
+				err := isRenderEqual(res[i], t.ExpectedResponse.ExpectedResults[0].Metrics[i])
+				if err != nil {
+					err = merry2.Prependf(err, "metrics[%d] are not equal, got=`%+v`, expected=`%+v`", i, res[i], t.ExpectedResponse.ExpectedResults[0].Metrics[i])
+					failures = append(failures, err)
+				}
 			}
 		}
 
