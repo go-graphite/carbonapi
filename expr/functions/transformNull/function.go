@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
+	"github.com/go-graphite/carbonapi/expr/tags"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
@@ -88,7 +89,8 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 			name = "transformNull(" + a.Name + ")"
 		}
 
-		r := a.CopyName(name)
+		r := a.CopyLink()
+		r.Name = name
 		r.Values = make([]float64, len(a.Values))
 		r.Tags["transformNull"] = defvStr
 
@@ -109,15 +111,18 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 	if len(arg) == 0 && defaultOnAbsent {
 		values := []float64{defv, defv}
 		step := until - from
+		name := e.ToString()
+		tags := tags.ExtractTags(types.ExtractName(name))
+		tags["transformNull"] = defvStr
 		results = append(results, &types.MetricData{
 			FetchResponse: pbv3.FetchResponse{
-				Name:      e.ToString(),
+				Name:      name,
 				StartTime: from,
 				StopTime:  from + step*int64(len(values)),
 				StepTime:  step,
 				Values:    values,
 			},
-			Tags: map[string]string{"name": e.ToString()},
+			Tags: tags,
 		})
 	}
 	return results, nil
