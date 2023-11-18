@@ -156,18 +156,19 @@ Internal Metrics
 ----------------------------------
 The internal metrics are configured inside the [graphite](https://github.com/go-graphite/carbonapi/blob/main/doc/configuration.md#graphite) subsection and sent to your destinated host on an specified interval. The metrics are:
 
-cache_items - if caching is enabled, this metric will contain many metrics are stored in cache
-cache_size - configured query cache size in bytes
-request_cache_hits - how many requests were served from cache. (this is for requests to /render endpoint)
-request_cache_misses - how many requests were not in cache. (this is for requests to /render endpoint)
-request_cache_overhead_ns - how much time in ns it took to talk to cache (that is useful to assess if cache actually helps you in terms of latency) (this is for requests to /render endpoint)
-find_requests - requests server by endpoint /metrics/find
-requests - requests served by endpoint /render
-requests_in_XX_to_XX - request response times in percentiles
-timeouts - number of timeouts while fetching from backend
-backend_cache_hits - how many requests were not read from backend
-backend_cache_misses - how many requests were not found in the backend
-
+| Metric Name | Description |
+| ----------- | ----------- |
+| cache_items | if caching is enabled, this metric will contain many metrics are stored in cache |
+| cache_size | configured query cache size in bytes |
+| request_cache_hits | how many requests were served from cache. (this is for requests to /render endpoint) |
+| request_cache_misses | how many requests were not in cache. (this is for requests to /render endpoint) |
+| request_cache_overhead_ns | how much time in ns it took to talk to cache (that is useful to assess if cache actually helps you in terms of latency) (this is for  |requests to /render endpoint)
+| find_requests | requests server by endpoint /metrics/find |
+| requests | requests served by endpoint /render |
+| requests_in_XX_to_XX | request response times in percentiles |
+| timeouts | number of timeouts while fetching from backend |
+| backend_cache_hits | how many requests were not read from backend |
+| backend_cache_misses | how many requests were not found in the backend |
 
 OSX Build Notes
 ---------------
