@@ -61,7 +61,7 @@ func main() {
 		dns.UseDNSCache(config.Config.CachingDNSRefreshTime)
 	}
 
-	config.Config.ZipperInstance = newZipper(carbonapiHttp.ZipperStats, &config.Config.Upstreams, config.Config.IgnoreClientTimeout, zapwriter.Logger("zipper"))
+	config.Config.SetZipper(newZipper(carbonapiHttp.ZipperStats, &config.Config.Upstreams, config.Config.IgnoreClientTimeout, zapwriter.Logger("zipper")))
 
 	wg := sync.WaitGroup{}
 	serve := func(listen config.Listener, handler http.Handler) {

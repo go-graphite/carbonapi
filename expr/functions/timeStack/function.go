@@ -52,7 +52,7 @@ func (f *timeStack) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		offs := i * int64(unit)
 		fromNew := from + offs
 		untilNew := until + offs
-		arg, err := helper.GetSeriesArg(ctx, e.Arg(0), fromNew, untilNew, values)
+		arg, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), fromNew, untilNew, values)
 		if err != nil {
 			return nil, err
 		}

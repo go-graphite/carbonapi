@@ -3,13 +3,14 @@ package summarize
 import (
 	"context"
 	"fmt"
+	"math"
+
 	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"math"
 )
 
 type summarize struct {
@@ -33,7 +34,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 // summarize(seriesList, intervalString, func='sum', alignToFrom=False)
 func (f *summarize) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(dgryski): make sure the arrays are all the same 'size'
-	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	args, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}

@@ -32,7 +32,7 @@ func New(_ string) []interfaces.FunctionMetadata {
 	}
 }
 
-func (_ *join) Description() map[string]types.FunctionDescription {
+func (f *join) Description() map[string]types.FunctionDescription {
 	return map[string]types.FunctionDescription{
 		"join": {
 			Description: `Performs set operations on 'seriesA' and 'seriesB'. Following options are available:
@@ -77,12 +77,12 @@ Example:
 	}
 }
 
-func (_ *join) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (results []*types.MetricData, err error) {
-	seriesA, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+func (f *join) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (results []*types.MetricData, err error) {
+	seriesA, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
-	seriesB, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
+	seriesB, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(1), from, until, values)
 	if err != nil {
 		return nil, err
 	}

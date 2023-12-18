@@ -36,7 +36,7 @@ func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, unt
 		return nil, err
 	}
 
-	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	args, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, unt
 	// Note: additional fetch requests are added with an adjusted start time in expr.Metrics() (in
 	// pkg/parser/parser.go) so that the appropriate data corresponding to the adjusted start time
 	// can be pre-fetched.
-	adjustedStartArgs, err := helper.GetSeriesArg(ctx, e.Arg(0), from-bootstrapInterval, until, values)
+	adjustedStartArgs, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), from-bootstrapInterval, until, values)
 	if err != nil {
 		return nil, err
 	}

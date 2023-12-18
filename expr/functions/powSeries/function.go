@@ -31,7 +31,7 @@ func New(_ string) []interfaces.FunctionMetadata {
 }
 
 func (f *powSeries) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	series, err := helper.GetSeriesArgs(ctx, e.Args(), from, until, values)
+	series, err := helper.GetSeriesArgs(ctx, f.GetEvaluator(), e.Args(), from, until, values)
 	if err != nil {
 		return nil, err
 	}

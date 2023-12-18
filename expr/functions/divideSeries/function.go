@@ -36,7 +36,7 @@ func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 		return nil, parser.ErrMissingTimeseries
 	}
 
-	firstArg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	firstArg, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 	if e.ArgsLen() == 2 {
 		useMetricNames = true
 		numerators = firstArg
-		denominators, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
+		denominators, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(1), from, until, values)
 		if err != nil {
 			return nil, err
 		}

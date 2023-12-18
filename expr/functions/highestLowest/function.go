@@ -34,7 +34,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // highestAverage(seriesList, n) , highestCurrent(seriesList, n), highestMax(seriesList, n)
 func (f *highest) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}

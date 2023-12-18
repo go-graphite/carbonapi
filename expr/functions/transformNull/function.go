@@ -35,7 +35,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // transformNull(seriesList, default=0)
 func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (f *transformNull) Do(ctx context.Context, e parser.Expr, from, until int64
 	var valMap []bool
 	referenceSeriesExpr := e.GetNamedArg("referenceSeries")
 	if !referenceSeriesExpr.IsInterfaceNil() {
-		referenceSeries, err := helper.GetSeriesArg(ctx, referenceSeriesExpr, from, until, values)
+		referenceSeries, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), referenceSeriesExpr, from, until, values)
 		if err != nil {
 			return nil, err
 		}

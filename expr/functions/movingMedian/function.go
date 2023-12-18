@@ -102,7 +102,7 @@ func (f *movingMedian) Do(ctx context.Context, e parser.Expr, from, until int64,
 		start -= int64(n)
 	}
 
-	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), start, until, values)
+	arg, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), start, until, values)
 	if err != nil {
 		return nil, err
 	}

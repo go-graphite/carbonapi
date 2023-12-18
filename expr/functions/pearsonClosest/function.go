@@ -37,7 +37,7 @@ func (f *pearsonClosest) Do(ctx context.Context, e parser.Expr, from, until int6
 		return nil, types.ErrTooManyArguments
 	}
 
-	ref, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	ref, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func (f *pearsonClosest) Do(ctx context.Context, e parser.Expr, from, until int6
 		return nil, types.ErrWildcardNotAllowed
 	}
 
-	compare, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
+	compare, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(1), from, until, values)
 	if err != nil {
 		return nil, err
 	}

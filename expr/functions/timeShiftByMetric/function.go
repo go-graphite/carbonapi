@@ -107,12 +107,12 @@ func (f *timeShiftByMetric) calculateOffsets(params *callParams, versions versio
 
 // extractCallParams (preliminarily) validates and extracts parameters of timeShiftByMetric's call as structure
 func (f *timeShiftByMetric) extractCallParams(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (*callParams, error) {
-	metrics, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	metrics, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
-	marks, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
+	marks, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(1), from, until, values)
 	if err != nil {
 		return nil, err
 	}

@@ -49,7 +49,7 @@ func (f *aggregate) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		if e.Target() == "aggregate" {
 			return nil, err
 		} else {
-			args, err = helper.GetSeriesArgsAndRemoveNonExisting(ctx, e, from, until, values)
+			args, err = helper.GetSeriesArgsAndRemoveNonExisting(ctx, f.GetEvaluator(), e, from, until, values)
 			if err != nil {
 				return nil, err
 			}
@@ -61,7 +61,7 @@ func (f *aggregate) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			xFilesFactor = -1 // xFilesFactor is not used by the ...Series functions
 		}
 	} else {
-		args, err = helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+		args, err = helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), from, until, values)
 		if err != nil {
 			return nil, err
 		}

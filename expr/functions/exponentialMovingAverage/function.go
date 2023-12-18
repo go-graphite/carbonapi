@@ -59,7 +59,7 @@ func (f *exponentialMovingAverage) Do(ctx context.Context, e parser.Expr, from, 
 		// data. The already fetched values are discarded.
 		refetch = true
 		var maxStep int64
-		arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+		arg, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), from, until, values)
 		if err != nil || len(arg) == 0 {
 			return arg, err
 		}
@@ -97,7 +97,7 @@ func (f *exponentialMovingAverage) Do(ctx context.Context, e parser.Expr, from, 
 	if refetch {
 		f.GetEvaluator().Fetch(ctx, []parser.Expr{e.Arg(0)}, from, until, values)
 	}
-	previewList, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	previewList, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}

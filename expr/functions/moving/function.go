@@ -88,7 +88,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		n, err = e.GetIntArg(1)
 		argstr = strconv.Itoa(n)
 
-		arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+		arg, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -106,7 +106,9 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		preview = maxStep * int64(n)
 		adjustedStart -= maxStep * int64(n)
 		windowPoints = n
-		refetch = true
+		if adjustedStart != from {
+			refetch = true
+		}
 	case parser.EtString:
 		var n32 int32
 		n32, err = e.GetIntervalArg(1, 1)
@@ -130,7 +132,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		targetValues = values
 	}
 
-	adjustedArgs, err := helper.GetSeriesArg(ctx, e.Arg(0), adjustedStart, until, targetValues)
+	adjustedArgs, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), adjustedStart, until, targetValues)
 	if err != nil {
 		return nil, err
 	}

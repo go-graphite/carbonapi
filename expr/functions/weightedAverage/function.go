@@ -38,12 +38,12 @@ func (f *weightedAverage) Do(ctx context.Context, e parser.Expr, from, until int
 	aggKeyPairs := make(map[string]map[string]*types.MetricData)
 	var productList []*types.MetricData
 
-	avgs, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	avgs, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
-	weights, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
+	weights, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(1), from, until, values)
 	if err != nil {
 		return nil, err
 	}

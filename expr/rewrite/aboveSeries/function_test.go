@@ -4,8 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-graphite/carbonapi/expr/helper"
-
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -14,7 +12,6 @@ import (
 
 func init() {
 	evaluator := th.DummyEvaluator()
-	helper.SetEvaluator(evaluator)
 	metadata.SetEvaluator(evaluator)
 
 	md := New("")

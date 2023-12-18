@@ -31,12 +31,12 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // pearson(series, series, windowSize)
 func (f *pearson) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg1, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	arg1, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
-	arg2, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
+	arg2, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(1), from, until, values)
 	if err != nil {
 		return nil, err
 	}

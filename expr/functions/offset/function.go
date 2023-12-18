@@ -34,7 +34,7 @@ func (f *offset) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		return nil, parser.ErrMissingArgument
 	}
 
-	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}

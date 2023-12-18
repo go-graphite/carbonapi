@@ -36,7 +36,7 @@ func (f *reduce) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		return nil, parser.ErrMissingArgument
 	}
 
-	seriesList, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	seriesList, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}

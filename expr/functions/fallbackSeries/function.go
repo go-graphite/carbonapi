@@ -37,8 +37,8 @@ func (f *fallbackSeries) Do(ctx context.Context, e parser.Expr, from, until int6
 		return nil, parser.ErrMissingTimeseries
 	}
 
-	seriesList, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
-	fallback, errFallback := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
+	seriesList, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), from, until, values)
+	fallback, errFallback := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(1), from, until, values)
 	if errFallback != nil && err != nil {
 		return nil, errFallback
 	}

@@ -57,7 +57,7 @@ func (f *baselines) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	}
 
 	current := make(map[string]*types.MetricData)
-	arg, _ := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	arg, _ := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), from, until, values)
 	for _, a := range arg {
 		current[a.Name] = a
 	}
@@ -68,7 +68,7 @@ func (f *baselines) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			continue
 		}
 		offs := int64(i * unit)
-		arg, _ := helper.GetSeriesArg(ctx, e.Arg(0), from+offs, until+offs, values)
+		arg, _ := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), from+offs, until+offs, values)
 		for _, a := range arg {
 			r := a.CopyLinkTags()
 			if _, ok := current[r.Name]; ok || !isAberration {

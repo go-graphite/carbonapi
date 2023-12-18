@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ansel1/merry"
+	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -532,4 +533,54 @@ func TestEvalExprOrdered(t *testing.T, tt *EvalTestItem) {
 		return
 	}
 	DeepEqual(t, tt.Target, originalMetrics, tt.M, true)
+}
+
+type TestZipper struct {
+	M map[parser.MetricRequest][]*types.MetricData
+}
+
+func NewTestZipper(m map[parser.MetricRequest][]*types.MetricData) TestZipper {
+	return TestZipper{M: m}
+}
+
+func (zp TestZipper) Find(ctx context.Context, request pb.MultiGlobRequest) (*pb.MultiGlobResponse, *zipperTypes.Stats, merry.Error) {
+	return nil, nil, zipperTypes.ErrNotImplementedYet
+}
+
+func (zp TestZipper) Info(ctx context.Context, metrics []string) (*pb.ZipperInfoResponse, *zipperTypes.Stats, merry.Error) {
+	return nil, nil, zipperTypes.ErrNotImplementedYet
+}
+
+func (zp TestZipper) RenderCompat(ctx context.Context, metrics []string, from, until int64) ([]*types.MetricData, *zipperTypes.Stats, merry.Error) {
+	return nil, nil, zipperTypes.ErrNotImplementedYet
+}
+
+func (zp TestZipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*types.MetricData, *zipperTypes.Stats, merry.Error) {
+	var resp []*types.MetricData
+	for _, r := range request.Metrics {
+		metricRequest := parser.MetricRequest{Metric: r.PathExpression, From: r.StartTime, Until: r.StopTime}
+		if v, ok := zp.M[metricRequest]; ok {
+			resp = append(resp, v...)
+		}
+	}
+	return resp, nil, nil
+}
+
+func (zp TestZipper) TagNames(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+	return nil, zipperTypes.ErrNotImplementedYet
+}
+
+func (zp TestZipper) TagValues(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+	return nil, zipperTypes.ErrNotImplementedYet
+}
+
+func (zp TestZipper) ScaleToCommonStep() bool {
+	return false
+}
+
+func GenerateValues(start, stop, step int64) (values []float64) {
+	for i := start; i < stop; i += step {
+		values = append(values, float64(i))
+	}
+	return
 }

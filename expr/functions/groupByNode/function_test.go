@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/go-graphite/carbonapi/expr/functions/aggregate"
-	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -25,7 +24,6 @@ func init() {
 
 	evaluator := th.EvaluatorFromFuncWithMetadata(metadata.FunctionMD.Functions)
 	metadata.SetEvaluator(evaluator)
-	helper.SetEvaluator(evaluator)
 }
 
 // Note: some of these tests are influenced by the testcases for groupByNode and groupByNodes functions

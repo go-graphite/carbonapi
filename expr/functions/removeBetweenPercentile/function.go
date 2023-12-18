@@ -36,7 +36,7 @@ func (f *removeBetweenPercentile) Do(ctx context.Context, e parser.Expr, from, u
 		return nil, parser.ErrMissingArgument
 	}
 
-	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	args, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}

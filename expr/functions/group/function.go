@@ -29,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // group(*seriesLists)
 func (f *group) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := helper.GetSeriesArgsAndRemoveNonExisting(ctx, e, from, until, values)
+	args, err := helper.GetSeriesArgsAndRemoveNonExisting(ctx, f.GetEvaluator(), e, from, until, values)
 	if err != nil {
 		return nil, err
 	}

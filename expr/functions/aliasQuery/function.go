@@ -26,7 +26,7 @@ func New(_ string) []interfaces.FunctionMetadata {
 }
 
 func (f *aliasQuery) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	seriesList, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	seriesList, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (f *aliasQuery) Do(ctx context.Context, e parser.Expr, from, until int64, v
 }
 
 func (f *aliasQuery) getLastValueOfSeries(ctx context.Context, e parser.Expr, from, until int64, targetValues map[parser.MetricRequest][]*types.MetricData) (float64, error) {
-	res, err := helper.GetSeriesArg(ctx, e, from, until, targetValues)
+	res, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e, from, until, targetValues)
 	if err != nil {
 		return 0, err
 	}

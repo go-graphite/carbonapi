@@ -21,6 +21,7 @@ import (
 func init() {
 	rewrite.New(make(map[string]string))
 	functions.New(make(map[string]string))
+	InitWithZipper(nil, nil)
 }
 
 func TestGetBuckets(t *testing.T) {

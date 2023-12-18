@@ -9,7 +9,6 @@ import (
 
 	"github.com/alicebob/miniredis/v2"
 
-	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -46,7 +45,6 @@ enabled: true
 	md := New(config.Name())
 	evaluator := th.EvaluatorFromFunc(md[0].F)
 	metadata.SetEvaluator(evaluator)
-	helper.SetEvaluator(evaluator)
 	for _, m := range md {
 		metadata.RegisterFunction(m.Name, m.F)
 	}

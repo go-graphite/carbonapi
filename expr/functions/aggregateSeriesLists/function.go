@@ -33,11 +33,11 @@ func (f *aggregateSeriesLists) Do(ctx context.Context, e parser.Expr, from, unti
 		return nil, parser.ErrMissingArgument
 	}
 
-	seriesList1, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	seriesList1, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
-	seriesList2, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
+	seriesList2, err := helper.GetSeriesArg(ctx, f.GetEvaluator(), e.Arg(1), from, until, values)
 	if err != nil {
 		return nil, err
 	}
