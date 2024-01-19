@@ -25,6 +25,7 @@ type Config struct {
 	FallbackMaxBatchSize      int              `mapstructure:"-"`
 	MaxTries                  int              `mapstructure:"maxTries"`
 	DoMultipleRequestsIfSplit bool             `mapstructure:"doMultipleRequestsIfSplit"`
+	RequireSuccessAll         bool             `mapstructure:"requireSuccessAll"` // require full success for upstreams queries (for multi-target query)
 
 	ExpireDelaySec       int32
 	TLDCacheDisabled     bool `mapstructure:"tldCacheDisabled"`

@@ -1,0 +1,57 @@
+listen: "localhost:8081"
+expvar:
+  enabled: true
+  pprofEnabled: false
+  listen: ""
+concurency: 1000
+notFoundStatusCode: 200
+cache:
+   type: "mem"
+   size_mb: 0
+   defaultTimeoutSec: 60
+cpus: 0
+tz: ""
+maxBatchSize: 0
+graphite:
+    host: ""
+    interval: "60s"
+    prefix: "carbon.api"
+    pattern: "{prefix}.{fqdn}"
+idleConnections: 10
+pidFile: ""
+upstreams:
+    buckets: 10
+    timeouts:
+        find: "2s"
+        render: "5s"
+        connect: "200ms"
+    concurrencyLimitPerServer: 0
+    keepAliveInterval: "30s"
+    maxIdleConnsPerHost: 100
+    backendsv2:
+        backends:
+          -
+            groupName: "mock-001"
+            protocol: "auto"
+            lbMethod: "all"
+            maxTries: 1
+            maxBatchSize: 0
+            keepAliveInterval: "10s"
+            concurrencyLimit: 0
+            forceAttemptHTTP2: true
+            maxIdleConnsPerHost: 1000
+            timeouts:
+                find: "3s"
+                render: "5s"
+                connect: "200ms"
+            servers:
+                - "http://127.0.0.1:9070"
+    graphite09compat: false
+expireDelaySec: 10
+logger:
+    - logger: ""
+      file: "stderr"
+      level: "debug"
+      encoding: "console"
+      encodingTime: "iso8601"
+      encodingDuration: "seconds"

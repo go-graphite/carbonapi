@@ -7,6 +7,7 @@ import (
 )
 
 type Response struct {
+	Code           int      `yaml:"code"`
 	ReplyDelayMS   int      `yaml:"replyDelayMS"`
 	PathExpression string   `yaml:"pathExpression"`
 	Data           []Metric `yaml:"data"`

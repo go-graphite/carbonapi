@@ -1,0 +1,137 @@
+version: "v1"
+test:
+    apps:
+        - name: "carbonapi"
+          binary: "./carbonapi"
+          args:
+              - "-config"
+              - "./cmd/mockbackend/testcases/render_error_all_rr/carbonapi.yaml"
+    queries:
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/render/?target=a&format=json"
+          expectedResponse:
+              httpCode: 200
+              contentType: "application/json"
+              expectedResults:
+                      - metrics:
+                          - target: "a"
+                            datapoints: [[0,1],[1,2],[2,3],[2,4],[3,5]]
+
+        # empty
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/render/?target=b&format=json"
+          expectedResponse:
+              httpCode: 200
+              contentType: "application/json"
+
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/render/?target=a&target=b&format=json"
+          expectedResponse:
+            httpCode: 200
+            contentType: "application/json"
+            expectedResults:
+              - metrics:
+                  - target: "a"
+                    datapoints: [[0,1],[1,2],[2,3],[2,4],[3,5]]
+
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/render/?target=c&format=json"
+          expectedResponse:
+            httpCode: 200
+            contentType: "application/json"
+            expectedResults:
+              - metrics:
+                  - target: "c"
+                    datapoints: [[0,1],[1,2],[2,3],[2,4],[4,5]]
+
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/render/?target=a&target=b&target=c&format=json"
+          expectedResponse:
+            httpCode: 200
+            contentType: "application/json"
+            expectedResults:
+              - metrics:
+                  - target: "a"
+                    datapoints: [[0,1],[1,2],[2,3],[2,4],[3,5]]
+                  - target: "c"
+                    datapoints: [[0,1],[1,2],[2,3],[2,4],[4,5]]
+
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/render/?target=divideSeries(a,c)&format=json"
+          expectedResponse:
+            httpCode: 200
+            contentType: "application/json"
+            expectedResults:
+              - metrics:
+                  - target: "divideSeries(a,c)"
+                    tags: {"name": "a"}
+                    datapoints: [[NaN,1],[1,2],[1,3],[1,4],[0.75,5]]
+
+        # 503
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/render/?target=d&format=json"
+          expectedResponse:
+              httpCode: 503
+              contentType: "text/plain; charset=utf-8"
+
+        # partial success
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/render/?target=a&target=d&format=json"
+          expectedResponse:
+              httpCode: 503
+              contentType: "text/plain; charset=utf-8"
+
+        # partial success
+        # TODO: must fail, target d failed
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/render/?target=divideSeries(a,d)&format=json"
+          expectedResponse:
+            httpCode: 503
+            contentType: "text/plain; charset=utf-8"
+
+listeners:
+      - address: ":9070"
+        expressions:
+            "a":
+                pathExpression: "a"
+                emptyBody: true
+                code: 503        
+
+            # 503
+            "c":
+                pathExpression: "c"
+                mptyBody: true
+                code: 503
+
+            "d":
+                pathExpression: "d"
+                emptyBody: true
+                code: 503
+
+      - address: ":9071"
+        expressions:
+            "a":
+                pathExpression: "a"
+                data:
+                    - metricName: "a"
+                      values: [0,1,2,2,3]
+
+            "c":
+                pathExpression: "c"
+                data:
+                    - metricName: "c"
+                      values: [0,1,2,2,4]
+
+            "d":
+                pathExpression: "d"
+                emptyBody: true
+                code: 503

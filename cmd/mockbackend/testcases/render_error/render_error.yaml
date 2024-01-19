@@ -1,0 +1,99 @@
+version: "v1"
+test:
+    apps:
+        - name: "carbonapi"
+          binary: "./carbonapi"
+          args:
+              - "-config"
+              - "./cmd/mockbackend/testcases/render_error/carbonapi.yaml"
+    queries:
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/render/?target=a&format=json"
+          expectedResponse:
+              httpCode: 200
+              contentType: "application/json"
+              expectedResults:
+                      - metrics:
+                          - target: "a"
+                            datapoints: [[0,1],[1,2],[2,3],[2,4],[3,5]]
+
+        # empty
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/render/?target=b&format=json"
+          expectedResponse:
+              httpCode: 200
+              contentType: "application/json"
+
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/render/?target=a&target=b&format=json"
+          expectedResponse:
+              httpCode: 200
+              contentType: "application/json"
+              expectedResults:
+                      - metrics:
+                          - target: "a"
+                            datapoints: [[0,1],[1,2],[2,3],[2,4],[3,5]]              
+
+        # timeout
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/render/?target=c&format=json"
+          expectedResponse:
+              httpCode: 503
+              contentType: "text/plain; charset=utf-8"
+
+        # 503
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/render/?target=d&format=json"
+          expectedResponse:
+              httpCode: 503
+              contentType: "text/plain; charset=utf-8"
+
+        # partial success
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/render/?target=a&target=d&format=json"
+          expectedResponse:
+              httpCode: 200
+              contentType: "application/json"
+              expectedResults:
+                      - metrics:
+                          - target: "a"
+                            datapoints: [[0,1],[1,2],[2,3],[2,4],[3,5]]
+
+        # partial success
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/render/?target=divideSeries(a,d)&format=json"
+          expectedResponse:
+              httpCode: 200
+              contentType: "application/json"
+              expectedResults:
+                      - metrics:
+                          - target: "divideSeries(a,MISSING)"
+                            datapoints: [[nan,1],[nan,2],[nan,3],[nan,4],[nan,5]]
+
+listeners:
+      - address: ":9070"
+        expressions:
+            "a":
+                pathExpression: "a"
+                data:
+                    - metricName: "a"
+                      values: [0,1,2,2,3]
+
+            # timeout
+            "c":
+                pathExpression: "c"
+                emptyBody: true
+                code: 404
+                replyDelayMS: 7000
+
+            "d":
+                pathExpression: "d"
+                emptyBody: true
+                code: 503

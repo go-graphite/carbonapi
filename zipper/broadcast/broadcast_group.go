@@ -30,6 +30,7 @@ type BroadcastGroup struct {
 	doMultipleRequestsIfSplit bool
 	tldCacheDisabled          bool
 	concurrencyLimit          int
+	requireSuccessAll         bool
 
 	fetcher   types.Fetcher
 	pathCache pathcache.PathCache
@@ -112,6 +113,12 @@ func WithDialer(dialer *net.Dialer) Option {
 	}
 }
 
+func WithSuccess(requireSuccessAll bool) Option {
+	return func(bg *BroadcastGroup) {
+		bg.requireSuccessAll = requireSuccessAll
+	}
+}
+
 func New(opts ...Option) (*BroadcastGroup, merry.Error) {
 	bg := &BroadcastGroup{
 		limiter: limiter.NoopLimiter{},
@@ -152,7 +159,7 @@ func (bg *BroadcastGroup) SetDoMultipleRequestIfSplit(v bool) {
 	}
 }
 
-func NewBroadcastGroup(logger *zap.Logger, groupName string, doMultipleRequestsIfSplit bool, servers []types.BackendServer, expireDelaySec int32, concurrencyLimit, maxBatchSize int, timeouts types.Timeouts, tldCacheDisabled bool) (*BroadcastGroup, merry.Error) {
+func NewBroadcastGroup(logger *zap.Logger, groupName string, doMultipleRequestsIfSplit bool, servers []types.BackendServer, expireDelaySec int32, concurrencyLimit, maxBatchSize int, timeouts types.Timeouts, tldCacheDisabled bool, requireSuccessAll bool) (*BroadcastGroup, merry.Error) {
 	return New(
 		WithLogger(logger),
 		WithGroupName(groupName),
@@ -163,6 +170,7 @@ func NewBroadcastGroup(logger *zap.Logger, groupName string, doMultipleRequestsI
 		WithMaxMetricsPerRequest(maxBatchSize),
 		WithTimeouts(timeouts),
 		WithTLDCache(!tldCacheDisabled),
+		WithSuccess(requireSuccessAll),
 	)
 }
 
@@ -530,9 +538,21 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 
 	var err merry.Error
 	if result.Err != nil && len(result.Err) > 0 {
-		err = types.ErrNonFatalErrors
-		for _, e := range result.Err {
-			err = err.WithCause(e)
+		if bg.requireSuccessAll {
+			code, errors := helper.MergeHttpErrors(result.Err)
+			if len(errors) > 0 {
+				err := types.ErrFailedToFetch.WithHTTPCode(code).WithMessage(strings.Join(errors, "\n"))
+				logger.Debug("errors while fetching data from backends",
+					zap.Int("httpCode", code),
+					zap.Strings("errors", errors),
+				)
+				return nil, result.Stats, err
+			}
+		} else {
+			err = types.ErrNonFatalErrors
+			for _, e := range result.Err {
+				err = err.WithCause(e)
+			}
 		}
 	}
 
@@ -634,7 +654,11 @@ func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 
 	var err merry.Error
 	if result.Err != nil {
-		err = types.ErrNonFatalErrors
+		if bg.requireSuccessAll {
+			err = types.ErrFailedToFetch
+		} else {
+			err = types.ErrNonFatalErrors
+		}
 		for _, e := range result.Err {
 			err = err.WithCause(e)
 		}
@@ -705,7 +729,11 @@ func (bg *BroadcastGroup) Info(ctx context.Context, request *protov3.MultiMetric
 
 	var err merry.Error
 	if result.Err != nil {
-		err = types.ErrNonFatalErrors
+		if bg.requireSuccessAll {
+			err = types.ErrFailedToFetch
+		} else {
+			err = types.ErrNonFatalErrors
+		}
 		for _, e := range result.Err {
 			err = err.WithCause(e)
 		}

@@ -21,7 +21,7 @@ type MainConfig struct {
 
 type Listener struct {
 	Address        string              `yaml:"address"`
-	Code           int                 `yaml:"httpCode"`
+	Code           int                 `yaml:"httpCode"` // global responce code
 	ShuffleResults bool                `yaml:"shuffleResults"`
 	EmptyBody      bool                `yaml:"emptyBody"`
 	Expressions    map[string]Response `yaml:"expressions"`
