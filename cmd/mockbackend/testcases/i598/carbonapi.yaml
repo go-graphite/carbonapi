@@ -65,7 +65,7 @@ upstreams:
             servers:
                 - "http://127.0.0.1:9072"
                 - "http://127.0.0.1:9073"
-    graphite09compat: false
+graphite09compat: false
 expireDelaySec: 10
 unicodeRangeTables:
     - "Latin"

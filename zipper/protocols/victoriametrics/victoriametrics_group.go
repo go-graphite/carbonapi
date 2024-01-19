@@ -64,7 +64,7 @@ type VictoriaMetricsGroup struct {
 	featureSet atomic.Value // *vmSupportedFeatures
 }
 
-func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool, limiter limiter.ServerLimiter) (types.BackendServer, merry.Error) {
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool, limiter limiter.ServerLimiter) (types.BackendServer, merry.Error) {
 	logger = logger.With(zap.String("type", "victoriametrics"), zap.String("protocol", config.Protocol), zap.String("name", config.GroupName))
 	httpClient := helper.GetHTTPClient(logger, config)
 
@@ -225,7 +225,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 	}
 
 	promLogger := logger.With(zap.String("subclass", "prometheus"))
-	c.BackendServer, _ = prometheus.NewWithEverythingInitialized(promLogger, config, tldCacheDisabled, limiter, step, maxPointsPerQuery, forceMinStepInterval, delay, httpQuery, httpClient)
+	c.BackendServer, _ = prometheus.NewWithEverythingInitialized(promLogger, config, tldCacheDisabled, requireSuccessAll, limiter, step, maxPointsPerQuery, forceMinStepInterval, delay, httpQuery, httpClient)
 
 	c.updateFeatureSet(context.Background())
 
@@ -240,7 +240,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 	return c, nil
 }
 
-func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool) (types.BackendServer, merry.Error) {
+func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool) (types.BackendServer, merry.Error) {
 	if config.ConcurrencyLimit == nil {
 		return nil, types.ErrConcurrencyLimitNotSet
 	}
@@ -249,5 +249,5 @@ func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool) (typ
 	}
 	l := limiter.NewServerLimiter([]string{config.GroupName}, *config.ConcurrencyLimit)
 
-	return NewWithLimiter(logger, config, tldCacheDisabled, l)
+	return NewWithLimiter(logger, config, tldCacheDisabled, requireSuccessAll, l)
 }

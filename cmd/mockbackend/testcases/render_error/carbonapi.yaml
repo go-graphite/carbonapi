@@ -11,8 +11,7 @@ cache:
    defaultTimeoutSec: 60
 cpus: 0
 tz: ""
-maxBatchSize: 500
-combineMultipleTargetsInOne: true
+maxBatchSize: 0
 graphite:
     host: ""
     interval: "60s"
@@ -24,28 +23,26 @@ upstreams:
     buckets: 10
     timeouts:
         find: "2s"
-        render: "10s"
+        render: "5s"
         connect: "200ms"
-    concurrencyLimitPerServer: 100
+    concurrencyLimitPerServer: 0
     keepAliveInterval: "30s"
     maxIdleConnsPerHost: 100
-    doMultipleRequestsIfSplit: true
     backendsv2:
         backends:
           -
             groupName: "mock-001"
             protocol: "auto"
             lbMethod: "all"
-            maxTries: 3
-            maxBatchSize: 500
+            maxTries: 1
+            maxBatchSize: 0
             keepAliveInterval: "10s"
             concurrencyLimit: 0
             forceAttemptHTTP2: true
             maxIdleConnsPerHost: 1000
-            doMultipleRequestsIfSplit: true
             timeouts:
-                find: "15s"
-                render: "50s"
+                find: "3s"
+                render: "5s"
                 connect: "200ms"
             servers:
                 - "http://127.0.0.1:9070"

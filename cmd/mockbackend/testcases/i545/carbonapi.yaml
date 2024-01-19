@@ -11,8 +11,8 @@ backendCache:
    size_mb: 0
    defaultTimeoutSec: 1
 
+graphite09compat: false
 upstreams:
-    graphite09compat: false
     buckets: 10
 
     concurrencyLimitPerServer: 0

@@ -46,7 +46,7 @@ func (cfg *listener) findHandler(wr http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	query := req.Form["query"]
+	var query []string
 
 	if format == protoV3Format {
 		body, err := io.ReadAll(req.Body)
@@ -56,12 +56,22 @@ func (cfg *listener) findHandler(wr http.ResponseWriter, req *http.Request) {
 			)
 			http.Error(wr, "Bad request (unsupported format)",
 				http.StatusBadRequest)
+			return
 		}
 
 		var pv3Request carbonapi_v3_pb.MultiGlobRequest
 		_ = pv3Request.Unmarshal(body)
 
 		query = pv3Request.Metrics
+	} else {
+		query = req.Form["query"]
+	}
+
+	if len(query) == 0 {
+		logger.Error("Bad request (no query)")
+		http.Error(wr, "Bad request (no query)",
+			http.StatusBadRequest)
+		return
 	}
 
 	logger.Info("request details",
@@ -72,23 +82,7 @@ func (cfg *listener) findHandler(wr http.ResponseWriter, req *http.Request) {
 		Metrics: []carbonapi_v3_pb.GlobResponse{},
 	}
 
-	if query[0] != "*" {
-		for m := range cfg.Listener.Expressions {
-			globMatches := []carbonapi_v3_pb.GlobMatch{}
-
-			for _, metric := range cfg.Expressions[m].Data {
-				globMatches = append(globMatches, carbonapi_v3_pb.GlobMatch{
-					Path:   metric.MetricName,
-					IsLeaf: true,
-				})
-			}
-			multiGlobs.Metrics = append(multiGlobs.Metrics,
-				carbonapi_v3_pb.GlobResponse{
-					Name:    cfg.Expressions[m].PathExpression,
-					Matches: globMatches,
-				})
-		}
-	} else {
+	if query[0] == "*" {
 		returnMap := make(map[string]struct{})
 		for m := range cfg.Listener.Expressions {
 			response := cfg.Expressions[m]
@@ -115,6 +109,33 @@ func (cfg *listener) findHandler(wr http.ResponseWriter, req *http.Request) {
 				Name:    "*",
 				Matches: globMatches,
 			})
+	} else {
+		for _, m := range query {
+			globMatches := []carbonapi_v3_pb.GlobMatch{}
+			if response, ok := cfg.Expressions[m]; ok {
+				if response.ReplyDelayMS > 0 {
+					delay := time.Duration(response.ReplyDelayMS) * time.Millisecond
+					time.Sleep(delay)
+				}
+				if response.Code != 0 && response.Code != http.StatusOK {
+					// return first error
+					http.Error(wr, http.StatusText(response.Code), response.Code)
+					return
+				}
+
+				for _, metric := range cfg.Expressions[m].Data {
+					globMatches = append(globMatches, carbonapi_v3_pb.GlobMatch{
+						Path:   metric.MetricName,
+						IsLeaf: true,
+					})
+				}
+				multiGlobs.Metrics = append(multiGlobs.Metrics,
+					carbonapi_v3_pb.GlobResponse{
+						Name:    cfg.Expressions[m].PathExpression,
+						Matches: globMatches,
+					})
+			}
+		}
 	}
 
 	if cfg.Listener.ShuffleResults {

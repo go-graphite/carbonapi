@@ -47,7 +47,7 @@ upstreams:
             servers:
                 - "http://127.0.0.1:9070"
                 - "http://127.0.0.1:9071"
-    graphite09compat: false
+graphite09compat: false
 expireDelaySec: 10
 logger:
     - logger: ""

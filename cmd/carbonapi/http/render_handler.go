@@ -201,9 +201,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	if format == protoV3Format {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			accessLogDetails.HTTPCode = http.StatusBadRequest
-			accessLogDetails.Reason = "failed to parse message body: " + err.Error()
-			http.Error(w, "bad request (failed to parse format): "+err.Error(), http.StatusBadRequest)
+			setError(w, accessLogDetails, "failed to parse message body: "+err.Error(), http.StatusBadRequest, uid.String())
 			return
 		}
 
@@ -211,9 +209,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		err = pv3Request.Unmarshal(body)
 
 		if err != nil {
-			accessLogDetails.HTTPCode = http.StatusBadRequest
-			accessLogDetails.Reason = "failed to parse message body: " + err.Error()
-			http.Error(w, "bad request (failed to parse format): "+err.Error(), http.StatusBadRequest)
+			setError(w, accessLogDetails, "failed to parse message body: "+err.Error(), http.StatusBadRequest, uid.String())
 			return
 		}
 
@@ -327,6 +323,12 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 				result, err := expr.FetchAndEvalExp(ctx, config.Config.Evaluator, exp, from32, until32, values)
 				if err != nil {
 					errors[target] = merry.Wrap(err)
+					if config.Config.Upstreams.RequireSuccessAll {
+						code := merry.HTTPCode(err)
+						if code != http.StatusOK && code != http.StatusNotFound {
+							break
+						}
+					}
 				}
 
 				results = append(results, result...)
@@ -347,7 +349,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	var body []byte
 
 	returnCode := http.StatusOK
-	if len(results) == 0 {
+	if len(results) == 0 || (len(errors) > 0 && config.Config.Upstreams.RequireSuccessAll) {
 		// Obtain error code from the errors
 		// In case we have only "Not Found" errors, result should be 404
 		// Otherwise it should be 500
@@ -355,11 +357,11 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		returnCode, errMsgs = helper.MergeHttpErrorMap(errors)
 		logger.Debug("error response or no response", zap.Strings("error", errMsgs))
 		// Allow override status code for 404-not-found replies.
-		if returnCode == 404 {
+		if returnCode == http.StatusNotFound {
 			returnCode = config.Config.NotFoundStatusCode
 		}
 
-		if returnCode == 400 || returnCode == http.StatusForbidden || returnCode >= 500 {
+		if returnCode == http.StatusBadRequest || returnCode == http.StatusNotFound || returnCode == http.StatusForbidden || returnCode >= 500 {
 			setError(w, accessLogDetails, strings.Join(errMsgs, ","), returnCode, uid.String())
 			logAsError = true
 			return

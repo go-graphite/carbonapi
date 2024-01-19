@@ -6,6 +6,7 @@ test:
           args:
               - "-config"
               - "./cmd/mockbackend/testcases/i506/carbonapi.yaml"
+              - "-exact-config"
     queries:
             - endpoint: "http://127.0.0.1:8081"
               delay: 1
@@ -21,10 +22,8 @@ test:
                             - "cbb6fb095dfcfefd44d42e86c0bf3c677693cf4fa5e45897777405ed272c8915" # sha256(nodata svg) on Arch Linux, Ubuntu Bionic (Github Actions)
                             - "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" # sha256(nodata svg) on macos
 listeners:
-        - address: ":9070"
-          expressions:
-                     "a":
-                         pathExpression: "a"
-                         emptyBody: true
-                         httpCode: 200
-
+    - address: ":9070"
+      expressions:
+          "a":
+              pathExpression: "a"
+              code: 200

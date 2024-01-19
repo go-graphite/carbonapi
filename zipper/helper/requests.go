@@ -98,6 +98,32 @@ func requestError(err error, server string) merry.Error {
 	return types.ErrResponceError.WithValue("server", server)
 }
 
+func HttpErrorCode(err merry.Error) (code int) {
+	if err == nil {
+		code = http.StatusOK
+	} else {
+		c := merry.RootCause(err)
+		if c == nil {
+			c = err
+		}
+
+		code = merry.HTTPCode(err)
+		if code == http.StatusNotFound {
+			return
+		} else if code == http.StatusInternalServerError && merry.Is(c, parser.ErrInvalidArg) {
+			// check for invalid args, see applyByNode rewrite function
+			code = http.StatusBadRequest
+		}
+
+		if code == http.StatusGatewayTimeout || code == http.StatusBadGateway || merry.Is(c, types.ErrFailedToFetch) {
+			// simplify code, one error type for communications errors, all we can retry
+			code = http.StatusServiceUnavailable
+		}
+	}
+
+	return
+}
+
 func MergeHttpErrors(errors []merry.Error) (int, []string) {
 	returnCode := http.StatusNotFound
 	errMsgs := make([]string, 0)

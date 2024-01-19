@@ -19,15 +19,14 @@ notFoundStatusCode: 200
 upstreams:
     buckets: 10
     timeouts:
-        global: "300s"
-        afterStarted: "120s"
-        connect: "500ms"
-    concurrencyLimit: 0
+        find: "15s"
+        render: "50s"
+        connect: "200ms"
     keepAliveInterval: "30s"
     maxIdleConnsPerHost: 100
     backends:
         - "http://127.0.0.1:9070"
-    graphite09compat: false
+graphite09compat: false
 expireDelaySec: 10
 logger:
     - logger: ""
