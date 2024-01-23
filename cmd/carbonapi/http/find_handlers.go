@@ -214,9 +214,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	if !ok || !format.ValidFindFormat() {
-		http.Error(w, "unsupported format: "+formatRaw, http.StatusBadRequest)
-		accessLogDetails.HTTPCode = http.StatusBadRequest
-		accessLogDetails.Reason = "unsupported format: " + formatRaw
+		setError(w, &accessLogDetails, "unsupported format: "+formatRaw, http.StatusBadRequest, uid.String())
 		logAsError = true
 		return
 	}
@@ -244,17 +242,15 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	if format == protoV3Format {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			accessLogDetails.HTTPCode = http.StatusBadRequest
-			accessLogDetails.Reason = "failed to parse message body: " + err.Error()
-			http.Error(w, "bad request (failed to parse format): "+err.Error(), http.StatusBadRequest)
+			setError(w, &accessLogDetails, "failed to parse message body: "+err.Error(), http.StatusBadRequest, uid.String())
+			logAsError = true
 			return
 		}
 
 		err = pv3Request.Unmarshal(body)
 		if err != nil {
-			accessLogDetails.HTTPCode = http.StatusBadRequest
-			accessLogDetails.Reason = "failed to parse message body: " + err.Error()
-			http.Error(w, "bad request (failed to parse format): "+err.Error(), http.StatusBadRequest)
+			setError(w, &accessLogDetails, "failed to parse message body: "+err.Error(), http.StatusBadRequest, uid.String())
+			logAsError = true
 			return
 		}
 	} else {
@@ -264,9 +260,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(pv3Request.Metrics) == 0 {
-		http.Error(w, "missing parameter `query`", http.StatusBadRequest)
-		accessLogDetails.HTTPCode = http.StatusBadRequest
-		accessLogDetails.Reason = "missing parameter `query`"
+		setError(w, &accessLogDetails, "missing parameter `query`", http.StatusBadRequest, uid.String())
 		logAsError = true
 		return
 	}
@@ -289,9 +283,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 			if returnCode < 300 {
 				multiGlobs = &pbv3.MultiGlobResponse{Metrics: []pbv3.GlobResponse{}}
 			} else {
-				http.Error(w, http.StatusText(returnCode), returnCode)
-				accessLogDetails.HTTPCode = int32(returnCode)
-				accessLogDetails.Reason = err.Error()
+				setError(w, &accessLogDetails, http.StatusText(returnCode), returnCode, uid.String())
 				// We don't want to log this as an error if it's something normal
 				// Normal is everything that is >= 500. So if config.Config.NotFoundStatusCode is 500 - this will be
 				// logged as error
@@ -371,9 +363,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		accessLogDetails.HTTPCode = http.StatusInternalServerError
-		accessLogDetails.Reason = err.Error()
+		setError(w, &accessLogDetails, err.Error(), http.StatusInternalServerError, uid.String())
 		logAsError = true
 		return
 	}

@@ -1,0 +1,94 @@
+version: "v1"
+test:
+    apps:
+        - name: "carbonapi"
+          binary: "./carbonapi"
+          args:
+              - "-config"
+              - "./cmd/mockbackend/testcases/render_error/carbonapi.yaml"
+    queries:
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/metrics/find?query=a&format=json"
+          expectedResponse:
+              httpCode: 200
+              contentType: "application/json"
+              expectedResults:
+                  - metricsFind:
+                      - allowChildren: 0
+                        expandable: 0
+                        leaf: 1
+                        id: "a"
+                        text: "a"
+                        context: {}
+
+        # empty
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/render/?target=b&format=json"
+          expectedResponse:
+              httpCode: 200
+              contentType: "application/json"
+
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/metrics/find?query=a&query=b&format=json"
+          expectedResponse:
+              httpCode: 200
+              contentType: "application/json"
+              expectedResults:
+                  - metricsFind:
+                      - allowChildren: 0
+                        expandable: 0
+                        leaf: 1
+                        id: "a"
+                        text: "a"
+                        context: {}
+
+        # timeout
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/metrics/find?query=c&format=json"
+          expectedResponse:
+              httpCode: 503
+              contentType: "text/plain; charset=utf-8"
+
+        # 503
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/metrics/find?query=d&format=json"
+          expectedResponse:
+              httpCode: 503
+              contentType: "text/plain; charset=utf-8"
+
+        # 503, partial success
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/metrics/find?query=a&query=d&format=json"
+          expectedResponse:
+              httpCode: 503
+              contentType: "text/plain; charset=utf-8"
+
+listeners:
+      - address: ":9070"
+        expressions:
+            "a":
+                pathExpression: "a"
+                data:
+                    - metricName: "a"
+                      values: [0,1,2,2,3]
+
+            # timeout
+            "c":
+                pathExpression: "b"
+                emptyBody: true
+                code: 404
+                replyDelayMS: 7000
+                data:
+                    - metricName: "c"
+                      values: [0,1,2,2,3]
+
+            "d":
+                pathExpression: "d"
+                emptyBody: true
+                code: 503

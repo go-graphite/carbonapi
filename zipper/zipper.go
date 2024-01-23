@@ -267,9 +267,9 @@ func (z Zipper) FindProtoV3(ctx context.Context, request *protov3.MultiGlobReque
 	if len(findResponse.Err) > 0 {
 		var e merry.Error
 		if len(findResponse.Err) == 1 {
-			e = findResponse.Err[0]
+			e = helper.HttpErrorByCode(findResponse.Err[0])
 		} else {
-			e = findResponse.Err[1].WithCause(findResponse.Err[0])
+			e = helper.HttpErrorByCode(findResponse.Err[1].WithCause(findResponse.Err[0]))
 		}
 		logger.Debug("had errors while fetching result",
 			zap.Any("errors", e),

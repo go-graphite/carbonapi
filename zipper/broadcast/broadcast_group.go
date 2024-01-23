@@ -625,25 +625,19 @@ func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 		)
 	}
 
-	if len(result.Response.Metrics) == 0 {
-		nonNotFoundErrors := types.ReturnNonNotFoundError(result.Err)
-		if nonNotFoundErrors != nil {
-			err := types.ErrFailedToFetch.WithHTTPCode(500)
-			for _, e := range nonNotFoundErrors {
-				err = err.WithCause(e)
-			}
-			logger.Debug("non-404 errors while fetching data from backends",
-				zap.Any("errors", result.Err),
+	var err merry.Error
+	if result.Err != nil && len(result.Err) > 0 {
+		code, errors := helper.MergeHttpErrors(result.Err)
+		if len(errors) > 0 {
+			err = types.ErrFailedToFetch.WithHTTPCode(code).WithMessage(strings.Join(errors, "\n"))
+			logger.Debug("errors while fetching data from backends",
+				zap.Int("httpCode", code),
+				zap.Strings("errors", errors),
 			)
-			return &protov3.MultiGlobResponse{}, result.Stats, err
+			return nil, result.Stats, err
 		}
+	}
 
-		return &protov3.MultiGlobResponse{}, result.Stats, types.ErrNotFound.WithHTTPCode(404)
-	}
-	result.Stats.TotalMetricsCount = 0
-	for _, x := range result.Response.Metrics {
-		result.Stats.TotalMetricsCount += uint64(len(x.Matches))
-	}
 	logger.Debug("got some find responses",
 		zap.Int("backends_count", len(backends)),
 		zap.Int("response_count", responseCount),
@@ -652,16 +646,12 @@ func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 		zap.Any("response", result.Response),
 	)
 
-	var err merry.Error
-	if result.Err != nil {
-		if bg.requireSuccessAll {
-			err = types.ErrFailedToFetch
-		} else {
-			err = types.ErrNonFatalErrors
-		}
-		for _, e := range result.Err {
-			err = err.WithCause(e)
-		}
+	if len(result.Response.Metrics) == 0 {
+		return &protov3.MultiGlobResponse{}, result.Stats, types.ErrNotFound.WithHTTPCode(404)
+	}
+	result.Stats.TotalMetricsCount = 0
+	for _, x := range result.Response.Metrics {
+		result.Stats.TotalMetricsCount += uint64(len(x.Matches))
 	}
 
 	return result.Response, result.Stats, err

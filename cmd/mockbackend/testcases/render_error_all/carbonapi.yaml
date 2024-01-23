@@ -42,7 +42,7 @@ upstreams:
             forceAttemptHTTP2: true
             maxIdleConnsPerHost: 1000
             timeouts:
-                find: "3s"
+                find: "600s"
                 render: "5s"
                 connect: "200ms"
             servers:
