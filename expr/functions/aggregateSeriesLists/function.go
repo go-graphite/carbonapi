@@ -11,9 +11,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type aggregateSeriesLists struct {
-	interfaces.FunctionBase
-}
+type aggregateSeriesLists struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -28,16 +26,16 @@ func New(_ string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *aggregateSeriesLists) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *aggregateSeriesLists) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if e.ArgsLen() < 3 {
 		return nil, parser.ErrMissingArgument
 	}
 
-	seriesList1, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	seriesList1, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
-	seriesList2, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
+	seriesList2, err := helper.GetSeriesArg(ctx, eval, e.Arg(1), from, until, values)
 	if err != nil {
 		return nil, err
 	}

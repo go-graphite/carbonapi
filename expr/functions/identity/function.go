@@ -9,9 +9,7 @@ import (
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
-type identity struct {
-	interfaces.FunctionBase
-}
+type identity struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -28,7 +26,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // identity(name)
-func (f *identity) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *identity) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	name, err := e.GetStringArg(0)
 	if err != nil {
 		return nil, err

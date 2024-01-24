@@ -11,9 +11,7 @@ import (
 	"strings"
 )
 
-type aliasByMetric struct {
-	interfaces.FunctionBase
-}
+type aliasByMetric struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -28,8 +26,8 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *aliasByMetric) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	return helper.ForEachSeriesDo1(ctx, e, from, until, values, func(a *types.MetricData) *types.MetricData {
+func (f *aliasByMetric) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	return helper.ForEachSeriesDo1(ctx, eval, e, from, until, values, func(a *types.MetricData) *types.MetricData {
 		metric := types.ExtractNameTag(a.Name)
 		part := strings.Split(metric, ".")
 		name := part[len(part)-1]

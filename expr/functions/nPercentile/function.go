@@ -12,9 +12,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type nPercentile struct {
-	interfaces.FunctionBase
-}
+type nPercentile struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -31,12 +29,12 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // nPercentile(seriesList, n)
-func (f *nPercentile) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *nPercentile) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if e.ArgsLen() < 2 {
 		return nil, parser.ErrMissingArgument
 	}
 
-	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	arg, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}

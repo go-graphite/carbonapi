@@ -16,7 +16,7 @@ func GetOrder() interfaces.Order {
 }
 
 type applyByNode struct {
-	interfaces.FunctionBase
+	interfaces.Function
 }
 
 func New(configFile string) []interfaces.RewriteFunctionMetadata {
@@ -28,8 +28,8 @@ func New(configFile string) []interfaces.RewriteFunctionMetadata {
 	return res
 }
 
-func (f *applyByNode) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
-	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+func (f *applyByNode) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
+	args, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return false, nil, err
 	}

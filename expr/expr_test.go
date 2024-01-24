@@ -205,7 +205,10 @@ func TestEvalExpr(t *testing.T) {
 				&data,
 			}
 
-			_, err = EvalExpr(context.Background(), exp, request.From, request.Until, metricMap)
+			eval, err := NewEvaluator(nil, th.NewTestZipper(nil))
+			if err == nil {
+				_, err = eval.evalExpr(context.Background(), exp, request.From, request.Until, metricMap)
+			}
 			if err != nil {
 				t.Errorf("error='%v'", err)
 			}
@@ -357,7 +360,12 @@ func TestEvalExpression(t *testing.T) {
 	for _, tt := range tests {
 		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
-			th.TestEvalExpr(t, &tt)
+			eval, err := NewEvaluator(nil, th.NewTestZipper(nil))
+			if err == nil {
+				th.TestEvalExpr(t, eval, &tt)
+			} else {
+				t.Errorf("error='%v'", err)
+			}
 		})
 	}
 }
@@ -455,30 +463,35 @@ func TestRewriteExpr(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rewritten, newTargets, err := RewriteExpr(context.Background(), tt.e, 0, 1, tt.m)
+			eval, err := NewEvaluator(nil, th.NewTestZipper(nil))
+			if err == nil {
+				rewritten, newTargets, err := eval.rewriteExpr(context.Background(), tt.e, 0, 1, tt.m)
 
-			if err != nil {
-				t.Errorf("failed to rewrite %v: %+v", tt.name, err)
-				return
-			}
-
-			if rewritten != tt.rewritten {
-				t.Errorf("failed to rewrite %v: expected rewritten=%v but was %v", tt.name, tt.rewritten, rewritten)
-				return
-			}
-
-			var targetsMatch = true
-			if len(tt.newTargets) != len(newTargets) {
-				targetsMatch = false
-			} else {
-				for i := range tt.newTargets {
-					targetsMatch = targetsMatch && tt.newTargets[i] == newTargets[i]
+				if err != nil {
+					t.Errorf("failed to rewrite %v: %+v", tt.name, err)
+					return
 				}
-			}
 
-			if !targetsMatch {
-				t.Errorf("failed to rewrite %v: expected newTargets=%v but was %v", tt.name, tt.newTargets, newTargets)
-				return
+				if rewritten != tt.rewritten {
+					t.Errorf("failed to rewrite %v: expected rewritten=%v but was %v", tt.name, tt.rewritten, rewritten)
+					return
+				}
+
+				var targetsMatch = true
+				if len(tt.newTargets) != len(newTargets) {
+					targetsMatch = false
+				} else {
+					for i := range tt.newTargets {
+						targetsMatch = targetsMatch && tt.newTargets[i] == newTargets[i]
+					}
+				}
+
+				if !targetsMatch {
+					t.Errorf("failed to rewrite %v: expected newTargets=%v but was %v", tt.name, tt.newTargets, newTargets)
+					return
+				}
+			} else {
+				t.Errorf("error='%v'", err)
 			}
 		})
 	}
@@ -507,26 +520,31 @@ func TestEvalCustomFromUntil(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			originalMetrics := th.DeepClone(tt.m)
 			exp, _, _ := parser.ParseExpr(tt.target)
-			g, err := EvalExpr(context.Background(), exp, tt.from, tt.until, tt.m)
-			if err != nil {
-				t.Errorf("failed to eval %v: %s", tt.name, err)
-				return
-			}
-			if g[0] == nil {
-				t.Errorf("returned no value %v", tt.target)
-				return
-			}
+			eval, err := NewEvaluator(nil, th.NewTestZipper(nil))
+			if err == nil {
+				g, err := eval.evalExpr(context.Background(), exp, tt.from, tt.until, tt.m)
+				if err != nil {
+					t.Errorf("failed to eval %v: %s", tt.name, err)
+					return
+				}
+				if g[0] == nil {
+					t.Errorf("returned no value %v", tt.target)
+					return
+				}
 
-			th.DeepEqual(t, tt.target, originalMetrics, tt.m, false)
+				th.DeepEqual(t, tt.target, originalMetrics, tt.m, false)
 
-			if g[0].StepTime == 0 {
-				t.Errorf("missing step for %+v", g)
-			}
-			if !compare.NearlyEqual(g[0].Values, tt.w) {
-				t.Errorf("failed: %s: got %+v, want %+v", g[0].Name, g[0].Values, tt.w)
-			}
-			if g[0].Name != tt.name {
-				t.Errorf("bad name for %+v: got %v, want %v", g, g[0].Name, tt.name)
+				if g[0].StepTime == 0 {
+					t.Errorf("missing step for %+v", g)
+				}
+				if !compare.NearlyEqual(g[0].Values, tt.w) {
+					t.Errorf("failed: %s: got %+v, want %+v", g[0].Name, g[0].Values, tt.w)
+				}
+				if g[0].Name != tt.name {
+					t.Errorf("bad name for %+v: got %v, want %v", g, g[0].Name, tt.name)
+				}
+			} else {
+				t.Errorf("error='%v'", err)
 			}
 		})
 	}

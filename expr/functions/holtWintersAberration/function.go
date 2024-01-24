@@ -12,9 +12,7 @@ import (
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
-type holtWintersAberration struct {
-	interfaces.FunctionBase
-}
+type holtWintersAberration struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -30,13 +28,13 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *holtWintersAberration) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	bootstrapInterval, err := e.GetIntervalNamedOrPosArgDefault("bootstrapInterval", 2, 1, holtwinters.DefaultBootstrapInterval)
 	if err != nil {
 		return nil, err
 	}
 
-	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	args, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +42,7 @@ func (f *holtWintersAberration) Do(ctx context.Context, e parser.Expr, from, unt
 	// Note: additional fetch requests are added with an adjusted start time in expr.Metrics() (in
 	// pkg/parser/parser.go) so that the appropriate data corresponding to the adjusted start time
 	// can be pre-fetched.
-	adjustedStartArgs, err := helper.GetSeriesArg(ctx, e.Arg(0), from-bootstrapInterval, until, values)
+	adjustedStartArgs, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from-bootstrapInterval, until, values)
 	if err != nil {
 		return nil, err
 	}

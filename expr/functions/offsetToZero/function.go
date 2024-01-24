@@ -11,9 +11,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type offsetToZero struct {
-	interfaces.FunctionBase
-}
+type offsetToZero struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -30,8 +28,8 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // offsetToZero(seriesList)
-func (f *offsetToZero) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	return helper.ForEachSeriesDo(ctx, e, from, until, values, func(a *types.MetricData, r *types.MetricData) *types.MetricData {
+func (f *offsetToZero) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	return helper.ForEachSeriesDo(ctx, eval, e, from, until, values, func(a *types.MetricData, r *types.MetricData) *types.MetricData {
 		minimum := math.Inf(1)
 		for _, v := range a.Values {
 			// NaN < val is always false

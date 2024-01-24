@@ -12,9 +12,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type mostDeviant struct {
-	interfaces.FunctionBase
-}
+type mostDeviant struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -31,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // mostDeviant(seriesList, n) -or- mostDeviant(n, seriesList)
-func (f *mostDeviant) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *mostDeviant) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if e.ArgsLen() < 2 {
 		return nil, parser.ErrMissingArgument
 	}
@@ -48,7 +46,7 @@ func (f *mostDeviant) Do(ctx context.Context, e parser.Expr, from, until int64, 
 		return nil, err
 	}
 
-	args, err := helper.GetSeriesArg(ctx, e.Arg(seriesArg), from, until, values)
+	args, err := helper.GetSeriesArg(ctx, eval, e.Arg(seriesArg), from, until, values)
 	if err != nil {
 		return nil, err
 	}

@@ -2,6 +2,7 @@ package holtWintersConfidenceBands
 
 import (
 	"context"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/holtwinters"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -10,9 +11,7 @@ import (
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
-type holtWintersConfidenceBands struct {
-	interfaces.FunctionBase
-}
+type holtWintersConfidenceBands struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -28,13 +27,13 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *holtWintersConfidenceBands) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *holtWintersConfidenceBands) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	bootstrapInterval, err := e.GetIntervalNamedOrPosArgDefault("bootstrapInterval", 2, 1, holtwinters.DefaultBootstrapInterval)
 	if err != nil {
 		return nil, err
 	}
 
-	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from-bootstrapInterval, until, values)
+	args, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from-bootstrapInterval, until, values)
 	if err != nil {
 		return nil, err
 	}

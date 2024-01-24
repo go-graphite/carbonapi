@@ -10,9 +10,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type isNotNull struct {
-	interfaces.FunctionBase
-}
+type isNotNull struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -30,10 +28,10 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // isNonNull(seriesList)
 // alias: isNotNull(seriesList)
-func (f *isNotNull) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *isNotNull) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	e.SetTarget("isNonNull")
 
-	return helper.ForEachSeriesDo(ctx, e, from, until, values, func(a *types.MetricData, r *types.MetricData) *types.MetricData {
+	return helper.ForEachSeriesDo(ctx, eval, e, from, until, values, func(a *types.MetricData, r *types.MetricData) *types.MetricData {
 		for i, v := range a.Values {
 			if math.IsNaN(v) {
 				r.Values[i] = 0

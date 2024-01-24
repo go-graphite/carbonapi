@@ -3,18 +3,18 @@ package identity
 import (
 	"testing"
 
-	"github.com/go-graphite/carbonapi/expr/helper"
+	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
 )
 
+var (
+	md []interfaces.FunctionMetadata = New("")
+)
+
 func init() {
-	md := New("")
-	evaluator := th.EvaluatorFromFunc(md[0].F)
-	metadata.SetEvaluator(evaluator)
-	helper.SetEvaluator(evaluator)
 	for _, m := range md {
 		metadata.RegisterFunction(m.Name, m.F)
 	}
@@ -39,7 +39,8 @@ func TestIdentityFunction(t *testing.T) {
 	for _, tt := range tests {
 		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
-			th.TestEvalExprWithRange(t, &tt)
+			eval := th.EvaluatorFromFunc(md[0].F)
+			th.TestEvalExprWithRange(t, eval, &tt)
 		})
 	}
 }

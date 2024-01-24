@@ -14,9 +14,7 @@ import (
 
 var UnsupportedError = fmt.Errorf("must build w/ cairo support")
 
-type holtWintersConfidenceArea struct {
-	interfaces.FunctionBase
-}
+type holtWintersConfidenceArea struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -34,7 +32,7 @@ func New(_ string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *holtWintersConfidenceArea) Do(_ context.Context, _ parser.Expr, _, _ int64, _ map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *holtWintersConfidenceArea) Do(_ context.Context, _ interfaces.Evaluator, _ parser.Expr, _, _ int64, _ map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	return nil, UnsupportedError
 }
 

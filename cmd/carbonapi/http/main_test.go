@@ -118,7 +118,7 @@ func init() {
 	config.Config.Upstreams.Backends = []string{"dummy"}
 	config.SetUpConfigUpstreams(logger)
 	config.SetUpConfig(logger, "(test)")
-	config.Config.ZipperInstance = newMockCarbonZipper()
+	config.Config.SetZipper(newMockCarbonZipper())
 	emptyStringList := make([]string, 0)
 	InitHandlers(emptyStringList, emptyStringList)
 }

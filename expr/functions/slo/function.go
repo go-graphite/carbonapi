@@ -13,9 +13,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type slo struct {
-	interfaces.FunctionBase
-}
+type slo struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -28,7 +26,7 @@ func New(string) []interfaces.FunctionMetadata {
 	}
 }
 
-func (f *slo) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *slo) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	var (
 		argsExtended, argsWindowed []*types.MetricData
 		bucketSize32               int32
@@ -38,7 +36,7 @@ func (f *slo) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 	)
 
 	// requested data points' window
-	argsWindowed, err = helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	argsWindowed, err = helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if len(argsWindowed) == 0 || err != nil {
 		return nil, err
 	}
@@ -59,7 +57,7 @@ func (f *slo) Do(ctx context.Context, e parser.Expr, from, until int64, values m
 	windowSize = until - from
 	if bucketSize > windowSize && !(from == 0 && until == 1) {
 		delta = bucketSize - windowSize
-		argsExtended, err = helper.GetSeriesArg(ctx, e.Arg(0), from-delta, until, values)
+		argsExtended, err = helper.GetSeriesArg(ctx, eval, e.Arg(0), from-delta, until, values)
 
 		if err != nil {
 			return nil, err

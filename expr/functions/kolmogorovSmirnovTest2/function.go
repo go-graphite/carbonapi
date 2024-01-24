@@ -11,9 +11,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type kolmogorovSmirnovTest2 struct {
-	interfaces.FunctionBase
-}
+type kolmogorovSmirnovTest2 struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -31,13 +29,13 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // ksTest2(series, series, points|"interval")
 // https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test
-func (f *kolmogorovSmirnovTest2) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg1, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+func (f *kolmogorovSmirnovTest2) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	arg1, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
-	arg2, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
+	arg2, err := helper.GetSeriesArg(ctx, eval, e.Arg(1), from, until, values)
 	if err != nil {
 		return nil, err
 	}

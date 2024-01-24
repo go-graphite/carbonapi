@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-graphite/carbonapi/expr/helper"
+	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -18,8 +18,11 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/transformNull"
 )
 
+var (
+	md []interfaces.FunctionMetadata = New("")
+)
+
 func init() {
-	md := New("")
 	for _, m := range md {
 		metadata.RegisterFunction(m.Name, m.F)
 	}
@@ -39,10 +42,6 @@ func init() {
 	for _, m := range aggFunc {
 		metadata.RegisterFunction(m.Name, m.F)
 	}
-
-	evaluator := th.EvaluatorFromFuncWithMetadata(metadata.FunctionMD.Functions)
-	metadata.SetEvaluator(evaluator)
-	helper.SetEvaluator(evaluator)
 }
 
 func TestAliasByNode(t *testing.T) {
@@ -179,7 +178,8 @@ func TestAliasByNode(t *testing.T) {
 	for _, tt := range tests {
 		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
-			th.TestEvalExpr(t, &tt)
+			eval := th.EvaluatorFromFuncWithMetadata(metadata.FunctionMD.Functions)
+			th.TestEvalExpr(t, eval, &tt)
 		})
 	}
 
@@ -193,7 +193,7 @@ func BenchmarkAliasByNode(b *testing.B) {
 		},
 	}
 
-	evaluator := metadata.GetEvaluator()
+	eval := th.EvaluatorFromFuncWithMetadata(metadata.FunctionMD.Functions)
 	exp, _, err := parser.ParseExpr(target)
 	if err != nil {
 		b.Fatalf("failed to parse %s: %+v", target, err)
@@ -201,7 +201,7 @@ func BenchmarkAliasByNode(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		g, err := evaluator.Eval(context.Background(), exp, 0, 1, metrics)
+		g, err := eval.Eval(context.Background(), exp, 0, 1, metrics)
 		if err != nil {
 			b.Fatalf("failed to eval %s: %+v", target, err)
 		}

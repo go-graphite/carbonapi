@@ -17,8 +17,6 @@ import (
 )
 
 type movingMedian struct {
-	interfaces.FunctionBase
-
 	config movingMedianConfig
 }
 
@@ -66,7 +64,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // movingMedian(seriesList, windowSize)
-func (f *movingMedian) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *movingMedian) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if e.ArgsLen() < 2 {
 		return nil, parser.ErrMissingArgument
 	}
@@ -102,7 +100,7 @@ func (f *movingMedian) Do(ctx context.Context, e parser.Expr, from, until int64,
 		start -= int64(n)
 	}
 
-	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), start, until, values)
+	arg, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), start, until, values)
 	if err != nil {
 		return nil, err
 	}

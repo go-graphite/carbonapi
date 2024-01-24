@@ -10,9 +10,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type absolute struct {
-	interfaces.FunctionBase
-}
+type absolute struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -27,8 +25,8 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *absolute) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	return helper.ForEachSeriesDo(ctx, e, from, until, values, func(a *types.MetricData, r *types.MetricData) *types.MetricData {
+func (f *absolute) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	return helper.ForEachSeriesDo(ctx, eval, e, from, until, values, func(a *types.MetricData, r *types.MetricData) *types.MetricData {
 		for i, v := range a.Values {
 			if math.IsNaN(a.Values[i]) {
 				r.Values[i] = math.NaN()

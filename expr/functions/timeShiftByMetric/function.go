@@ -16,9 +16,7 @@ import (
 
 type offsetByVersion map[string]int64
 
-type timeShiftByMetric struct {
-	interfaces.FunctionBase
-}
+type timeShiftByMetric struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -32,8 +30,8 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // timeShiftByMetric(seriesList, markSource, versionRankIndex)
-func (f *timeShiftByMetric) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (resultData []*types.MetricData, resultError error) {
-	params, err := f.extractCallParams(ctx, e, from, until, values)
+func (f *timeShiftByMetric) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (resultData []*types.MetricData, resultError error) {
+	params, err := f.extractCallParams(ctx, eval, e, from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -106,13 +104,13 @@ func (f *timeShiftByMetric) calculateOffsets(params *callParams, versions versio
 }
 
 // extractCallParams (preliminarily) validates and extracts parameters of timeShiftByMetric's call as structure
-func (f *timeShiftByMetric) extractCallParams(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (*callParams, error) {
-	metrics, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+func (f *timeShiftByMetric) extractCallParams(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (*callParams, error) {
+	metrics, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
-	marks, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
+	marks, err := helper.GetSeriesArg(ctx, eval, e.Arg(1), from, until, values)
 	if err != nil {
 		return nil, err
 	}

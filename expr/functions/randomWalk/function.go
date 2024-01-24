@@ -10,9 +10,7 @@ import (
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
-type randomWalk struct {
-	interfaces.FunctionBase
-}
+type randomWalk struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -29,7 +27,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // randomWalk(name, step=60)
-func (f *randomWalk) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *randomWalk) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	name, err := e.GetStringArg(0)
 	if err != nil {
 		name = "randomWalk"

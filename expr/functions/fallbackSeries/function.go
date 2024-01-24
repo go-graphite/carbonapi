@@ -9,9 +9,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type fallbackSeries struct {
-	interfaces.FunctionBase
-}
+type fallbackSeries struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -28,7 +26,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // fallbackSeries( seriesList, fallback )
-func (f *fallbackSeries) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *fallbackSeries) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	/*
 		Takes a wildcard seriesList, and a second fallback metric.
 		If the wildcard does not match any series, draws the fallback metric.
@@ -37,8 +35,8 @@ func (f *fallbackSeries) Do(ctx context.Context, e parser.Expr, from, until int6
 		return nil, parser.ErrMissingTimeseries
 	}
 
-	seriesList, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
-	fallback, errFallback := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
+	seriesList, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
+	fallback, errFallback := helper.GetSeriesArg(ctx, eval, e.Arg(1), from, until, values)
 	if errFallback != nil && err != nil {
 		return nil, errFallback
 	}

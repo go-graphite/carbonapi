@@ -11,9 +11,7 @@ import (
 	realFFT "github.com/mjibson/go-dsp/fft"
 )
 
-type fft struct {
-	interfaces.FunctionBase
-}
+type fft struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -40,8 +38,8 @@ func extractComponent(m *types.MetricData, values []complex128, t string, f func
 
 // fft(seriesList, mode)
 // mode: "", abs, phase. Empty string means "both"
-func (f *fft) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+func (f *fft) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	arg, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}

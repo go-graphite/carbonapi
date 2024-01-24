@@ -11,9 +11,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type logit struct {
-	interfaces.FunctionBase
-}
+type logit struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -31,8 +29,8 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // logarithm(seriesList, base=10)
 // Alias: log
-func (f *logit) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+func (f *logit) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	arg, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
