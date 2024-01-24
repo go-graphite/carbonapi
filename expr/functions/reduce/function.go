@@ -11,9 +11,7 @@ import (
 	"strings"
 )
 
-type reduce struct {
-	interfaces.FunctionBase
-}
+type reduce struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -29,14 +27,14 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *reduce) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *reduce) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	const matchersStartIndex = 3
 
 	if e.ArgsLen() < matchersStartIndex+1 {
 		return nil, parser.ErrMissingArgument
 	}
 
-	seriesList, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	seriesList, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +95,7 @@ AliasLoop:
 			reducedNodes[i] = parser.NewTargetExpr(matched.Name)
 		}
 
-		result, err := f.Evaluator.Eval(ctx, parser.NewExprTyped("alias", []parser.Expr{
+		result, err := eval.Eval(ctx, parser.NewExprTyped("alias", []parser.Expr{
 			parser.NewExprTyped(reduceFunction, reducedNodes),
 			parser.NewValueExpr(aliasName),
 		}), from, until, reducedValues)

@@ -12,9 +12,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type groupByNode struct {
-	interfaces.FunctionBase
-}
+type groupByNode struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -32,12 +30,12 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // groupByNode(seriesList, nodeNum, callback)
 // groupByNodes(seriesList, callback, *nodes)
-func (f *groupByNode) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *groupByNode) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if e.ArgsLen() < 2 {
 		return nil, parser.ErrMissingArgument
 	}
 
-	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	args, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +106,7 @@ func (f *groupByNode) Do(ctx context.Context, e parser.Expr, from, until int64, 
 			}
 		}
 
-		r, _ := f.Evaluator.Eval(ctx, nexpr, from, until, nvalues)
+		r, _ := eval.Eval(ctx, nexpr, from, until, nvalues)
 		if r != nil {
 			var res []*types.MetricData
 			if len(r) > 0 {

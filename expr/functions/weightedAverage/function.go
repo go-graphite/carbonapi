@@ -11,9 +11,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type weightedAverage struct {
-	interfaces.FunctionBase
-}
+type weightedAverage struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -30,7 +28,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // weightedAverage(seriesListAvg, seriesListWeight, *nodes)
-func (f *weightedAverage) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *weightedAverage) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if e.ArgsLen() < 2 {
 		return nil, parser.ErrMissingArgument
 	}
@@ -38,12 +36,12 @@ func (f *weightedAverage) Do(ctx context.Context, e parser.Expr, from, until int
 	aggKeyPairs := make(map[string]map[string]*types.MetricData)
 	var productList []*types.MetricData
 
-	avgs, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	avgs, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
-	weights, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
+	weights, err := helper.GetSeriesArg(ctx, eval, e.Arg(1), from, until, values)
 	if err != nil {
 		return nil, err
 	}

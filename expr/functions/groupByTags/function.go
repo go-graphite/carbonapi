@@ -12,9 +12,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type groupByTags struct {
-	interfaces.FunctionBase
-}
+type groupByTags struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -31,12 +29,12 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // seriesByTag("name=cpu")|groupByTags("average","dc","os")
-func (f *groupByTags) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *groupByTags) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if e.ArgsLen() < 3 {
 		return nil, parser.ErrMissingArgument
 	}
 
-	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	args, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +124,7 @@ func (f *groupByTags) Do(ctx context.Context, e parser.Expr, from, until int64, 
 			{Metric: "stub", From: from, Until: until}: v,
 		}
 
-		r, err := f.Evaluator.Eval(ctx, nexpr, from, until, nvalues)
+		r, err := eval.Eval(ctx, nexpr, from, until, nvalues)
 		if err != nil {
 			return nil, err
 		}

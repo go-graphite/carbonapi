@@ -11,9 +11,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type aliasQuery struct {
-	interfaces.FunctionBase
-}
+type aliasQuery struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -25,8 +23,8 @@ func New(_ string) []interfaces.FunctionMetadata {
 	}
 }
 
-func (f *aliasQuery) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	seriesList, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+func (f *aliasQuery) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	seriesList, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +56,7 @@ func (f *aliasQuery) Do(ctx context.Context, e parser.Expr, from, until int64, v
 		}
 		fetchTargets[i] = expr
 	}
-	targetValues, err := f.GetEvaluator().Fetch(ctx, fetchTargets, from, until, values)
+	targetValues, err := eval.Fetch(ctx, fetchTargets, from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +64,7 @@ func (f *aliasQuery) Do(ctx context.Context, e parser.Expr, from, until int64, v
 	results := make([]*types.MetricData, len(seriesList))
 
 	for i, series := range seriesList {
-		v, err := f.getLastValueOfSeries(ctx, fetchTargets[i], from, until, targetValues)
+		v, err := f.getLastValueOfSeries(ctx, eval, fetchTargets[i], from, until, targetValues)
 		if err != nil {
 			return nil, err
 		}
@@ -87,8 +85,8 @@ func (f *aliasQuery) Do(ctx context.Context, e parser.Expr, from, until int64, v
 	return results, nil
 }
 
-func (f *aliasQuery) getLastValueOfSeries(ctx context.Context, e parser.Expr, from, until int64, targetValues map[parser.MetricRequest][]*types.MetricData) (float64, error) {
-	res, err := helper.GetSeriesArg(ctx, e, from, until, targetValues)
+func (f *aliasQuery) getLastValueOfSeries(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, targetValues map[parser.MetricRequest][]*types.MetricData) (float64, error) {
+	res, err := helper.GetSeriesArg(ctx, eval, e, from, until, targetValues)
 	if err != nil {
 		return 0, err
 	}

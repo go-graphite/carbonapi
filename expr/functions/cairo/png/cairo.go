@@ -19,11 +19,12 @@ import (
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
+	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 
-	"github.com/tebeka/strftime"
 	"github.com/evmar/gocairo/cairo"
+	"github.com/tebeka/strftime"
 )
 
 const HaveGraphSupport = true
@@ -671,12 +672,12 @@ func Description() map[string]types.FunctionDescription {
 }
 
 // TODO(civil): Split this into several separate functions.
-func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func EvalExprGraph(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 
 	switch e.Target() {
 
 	case "color": // color(seriesList, theColor)
-		arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+		arg, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -697,7 +698,7 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 		return results, nil
 
 	case "stacked": // stacked(seriesList, stackname="__DEFAULT__")
-		arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+		arg, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -720,7 +721,7 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 		return results, nil
 
 	case "areaBetween":
-		arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+		arg, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -751,7 +752,7 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 		return []*types.MetricData{lower, upper}, nil
 
 	case "alpha": // alpha(seriesList, theAlpha)
-		arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+		arg, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -773,7 +774,7 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 		return results, nil
 
 	case "dashed", "drawAsInfinite", "secondYAxis":
-		arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+		arg, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -811,7 +812,7 @@ func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values
 		return results, nil
 
 	case "lineWidth": // lineWidth(seriesList, width)
-		arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+		arg, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 		if err != nil {
 			return nil, err
 		}

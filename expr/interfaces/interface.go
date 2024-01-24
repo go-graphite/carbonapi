@@ -7,21 +7,6 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-// FunctionBase is a set of base methods that partly satisfy Function interface and most probably nobody will modify
-type FunctionBase struct {
-	Evaluator Evaluator
-}
-
-// SetEvaluator sets evaluator
-func (b *FunctionBase) SetEvaluator(evaluator Evaluator) {
-	b.Evaluator = evaluator
-}
-
-// GetEvaluator returns evaluator
-func (b *FunctionBase) GetEvaluator() Evaluator {
-	return b.Evaluator
-}
-
 // Evaluator is an interface for any existing expression parser.
 type Evaluator interface {
 	// Fetch populates the values map being passed into it by translating input expressions into a series of
@@ -56,16 +41,12 @@ type FunctionMetadata struct {
 
 // Function is interface that all graphite functions should follow
 type Function interface {
-	SetEvaluator(evaluator Evaluator)
-	GetEvaluator() Evaluator
-	Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
+	Do(ctx context.Context, evaluator Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
 	Description() map[string]types.FunctionDescription
 }
 
 // RewriteFunction is interface that graphite functions that rewrite expressions should follow
 type RewriteFunction interface {
-	SetEvaluator(evaluator Evaluator)
-	GetEvaluator() Evaluator
-	Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error)
+	Do(ctx context.Context, evaluator Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error)
 	Description() map[string]types.FunctionDescription
 }

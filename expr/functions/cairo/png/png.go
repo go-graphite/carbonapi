@@ -1,3 +1,4 @@
+//go:build !cairo
 // +build !cairo
 
 package png
@@ -6,13 +7,14 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
 const HaveGraphSupport = false
 
-func EvalExprGraph(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func EvalExprGraph(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	return nil, nil
 }
 

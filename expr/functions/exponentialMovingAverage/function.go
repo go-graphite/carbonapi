@@ -13,9 +13,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type exponentialMovingAverage struct {
-	interfaces.FunctionBase
-}
+type exponentialMovingAverage struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -31,7 +29,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *exponentialMovingAverage) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *exponentialMovingAverage) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	var (
 		windowPoints   int
 		previewSeconds int
@@ -59,7 +57,7 @@ func (f *exponentialMovingAverage) Do(ctx context.Context, e parser.Expr, from, 
 		// data. The already fetched values are discarded.
 		refetch = true
 		var maxStep int64
-		arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+		arg, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 		if err != nil || len(arg) == 0 {
 			return arg, err
 		}
@@ -95,9 +93,9 @@ func (f *exponentialMovingAverage) Do(ctx context.Context, e parser.Expr, from, 
 	}
 	from = from - int64(previewSeconds)
 	if refetch {
-		f.GetEvaluator().Fetch(ctx, []parser.Expr{e.Arg(0)}, from, until, values)
+		eval.Fetch(ctx, []parser.Expr{e.Arg(0)}, from, until, values)
 	}
-	previewList, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	previewList, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}

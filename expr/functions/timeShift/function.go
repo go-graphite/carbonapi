@@ -16,8 +16,6 @@ import (
 )
 
 type timeShift struct {
-	interfaces.FunctionBase
-
 	config timeShiftConfig
 }
 
@@ -73,7 +71,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // timeShift(seriesList, timeShift, resetEnd=True)
-func (f *timeShift) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *timeShift) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// FIXME(civil): support alignDst
 	if e.ArgsLen() < 2 {
 		return nil, parser.ErrMissingArgument
@@ -91,7 +89,7 @@ func (f *timeShift) Do(ctx context.Context, e parser.Expr, from, until int64, va
 	}
 	resetEndStr := strconv.FormatBool(resetEnd)
 
-	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from+int64(offs), until+int64(offs), values)
+	arg, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from+int64(offs), until+int64(offs), values)
 	if err != nil {
 		return nil, err
 	}

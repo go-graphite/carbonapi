@@ -12,9 +12,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type nonNegativeDerivative struct {
-	interfaces.FunctionBase
-}
+type nonNegativeDerivative struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -30,8 +28,8 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *nonNegativeDerivative) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+func (f *nonNegativeDerivative) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	args, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}

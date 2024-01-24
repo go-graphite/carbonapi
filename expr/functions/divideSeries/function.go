@@ -12,9 +12,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type divideSeries struct {
-	interfaces.FunctionBase
-}
+type divideSeries struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -31,12 +29,12 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // divideSeries(dividendSeriesList, divisorSeriesList)
-func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *divideSeries) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if e.ArgsLen() < 1 {
 		return nil, parser.ErrMissingTimeseries
 	}
 
-	firstArg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	firstArg, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +48,7 @@ func (f *divideSeries) Do(ctx context.Context, e parser.Expr, from, until int64,
 	if e.ArgsLen() == 2 {
 		useMetricNames = true
 		numerators = firstArg
-		denominators, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
+		denominators, err := helper.GetSeriesArg(ctx, eval, e.Arg(1), from, until, values)
 		if err != nil {
 			return nil, err
 		}

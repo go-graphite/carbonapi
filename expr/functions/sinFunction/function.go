@@ -11,9 +11,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type sinFunction struct {
-	interfaces.FunctionBase
-}
+type sinFunction struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -30,7 +28,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // sinFunction(name, amplitude, step)
-func (f *sinFunction) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *sinFunction) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	name, err := e.GetStringArg(0)
 	if err != nil {
 		return nil, err

@@ -17,9 +17,7 @@ import (
 
 var TsOutOfRangeError = fmt.Errorf("timestamp out of range")
 
-type verticalLine struct {
-	interfaces.FunctionBase
-}
+type verticalLine struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -37,7 +35,7 @@ func New(_ string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *verticalLine) Do(_ context.Context, e parser.Expr, from, until int64, _ map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *verticalLine) Do(_ context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, _ map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	start, err := e.GetIntervalArg(0, -1)
 	if err != nil {
 		return nil, err

@@ -11,9 +11,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type pearson struct {
-	interfaces.FunctionBase
-}
+type pearson struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -30,13 +28,13 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // pearson(series, series, windowSize)
-func (f *pearson) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg1, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+func (f *pearson) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	arg1, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
-	arg2, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
+	arg2, err := helper.GetSeriesArg(ctx, eval, e.Arg(1), from, until, values)
 	if err != nil {
 		return nil, err
 	}

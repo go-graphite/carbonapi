@@ -25,8 +25,6 @@ import (
 )
 
 type graphiteWeb struct {
-	interfaces.FunctionBase
-
 	working      bool
 	strict       bool
 	maxTries     int
@@ -325,7 +323,7 @@ type graphiteError struct {
 	err    error
 }
 
-func (f *graphiteWeb) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *graphiteWeb) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	f.logger.Info("received request",
 		zap.Bool("working", f.working),
 	)

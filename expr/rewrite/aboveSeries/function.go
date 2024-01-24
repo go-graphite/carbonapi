@@ -13,7 +13,7 @@ import (
 )
 
 type aboveSeries struct {
-	interfaces.FunctionBase
+	interfaces.Function
 }
 
 func GetOrder() interfaces.Order {
@@ -30,8 +30,8 @@ func New(configFile string) []interfaces.RewriteFunctionMetadata {
 	return res
 }
 
-func (f *aboveSeries) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
-	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+func (f *aboveSeries) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
+	args, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return false, nil, err
 	}

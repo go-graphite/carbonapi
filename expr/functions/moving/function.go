@@ -16,8 +16,6 @@ import (
 )
 
 type moving struct {
-	interfaces.FunctionBase
-
 	config movingConfig
 }
 
@@ -65,7 +63,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // movingXyz(seriesList, windowSize)
-func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *moving) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	var n int
 	var err error
 
@@ -88,7 +86,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		n, err = e.GetIntArg(1)
 		argstr = strconv.Itoa(n)
 
-		arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+		arg, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -106,7 +104,9 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		preview = maxStep * int64(n)
 		adjustedStart -= maxStep * int64(n)
 		windowPoints = n
-		refetch = true
+		if adjustedStart != from {
+			refetch = true
+		}
 	case parser.EtString:
 		var n32 int32
 		n32, err = e.GetIntervalArg(1, 1)
@@ -122,7 +122,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 
 	var targetValues map[parser.MetricRequest][]*types.MetricData
 	if refetch {
-		targetValues, err = f.GetEvaluator().Fetch(ctx, []parser.Expr{e.Arg(0)}, adjustedStart, until, values)
+		targetValues, err = eval.Fetch(ctx, []parser.Expr{e.Arg(0)}, adjustedStart, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -130,7 +130,7 @@ func (f *moving) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		targetValues = values
 	}
 
-	adjustedArgs, err := helper.GetSeriesArg(ctx, e.Arg(0), adjustedStart, until, targetValues)
+	adjustedArgs, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), adjustedStart, until, targetValues)
 	if err != nil {
 		return nil, err
 	}

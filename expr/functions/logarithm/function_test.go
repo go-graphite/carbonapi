@@ -5,18 +5,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-graphite/carbonapi/expr/helper"
+	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
 )
 
+var (
+	md []interfaces.FunctionMetadata = New("")
+)
+
 func init() {
-	md := New("")
-	evaluator := th.EvaluatorFromFunc(md[0].F)
-	metadata.SetEvaluator(evaluator)
-	helper.SetEvaluator(evaluator)
 	for _, m := range md {
 		metadata.RegisterFunction(m.Name, m.F)
 	}
@@ -47,7 +47,8 @@ func TestLogarithm(t *testing.T) {
 	for _, tt := range tests {
 		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
-			th.TestEvalExpr(t, &tt)
+			eval := th.EvaluatorFromFunc(md[0].F)
+			th.TestEvalExpr(t, eval, &tt)
 		})
 	}
 
@@ -72,7 +73,7 @@ func BenchmarkLogarithm(b *testing.B) {
 		},
 	}
 
-	evaluator := metadata.GetEvaluator()
+	eval := th.EvaluatorFromFunc(md[0].F)
 
 	for _, bm := range benchmarks {
 		b.Run(bm.target, func(b *testing.B) {
@@ -84,7 +85,7 @@ func BenchmarkLogarithm(b *testing.B) {
 			b.ResetTimer()
 
 			for i := 0; i < b.N; i++ {
-				g, err := evaluator.Eval(context.Background(), exp, 0, 1, bm.M)
+				g, err := eval.Eval(context.Background(), exp, 0, 1, bm.M)
 				if err != nil {
 					b.Fatalf("failed to eval %s: %+v", bm.target, err)
 				}

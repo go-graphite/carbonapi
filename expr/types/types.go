@@ -690,6 +690,12 @@ func (r *MetricData) SetTags(tags map[string]string) *MetricData {
 	return r
 }
 
+// SetPathExpression set path expression
+func (r *MetricData) SetPathExpression(path string) *MetricData {
+	r.PathExpression = path
+	return r
+}
+
 // RecalcStopTime recalc StopTime with StartTime and Values length
 func (r *MetricData) RecalcStopTime() *MetricData {
 	stop := r.StartTime + int64(len(r.Values))*r.StepTime

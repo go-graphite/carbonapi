@@ -10,9 +10,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type invert struct {
-	interfaces.FunctionBase
-}
+type invert struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -29,8 +27,8 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // invert(seriesList)
-func (f *invert) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	return helper.ForEachSeriesDo(ctx, e, from, until, values, func(a *types.MetricData, r *types.MetricData) *types.MetricData {
+func (f *invert) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	return helper.ForEachSeriesDo(ctx, eval, e, from, until, values, func(a *types.MetricData, r *types.MetricData) *types.MetricData {
 		for i, v := range a.Values {
 			if v == 0 {
 				r.Values[i] = math.NaN()

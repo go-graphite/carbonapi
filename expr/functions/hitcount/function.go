@@ -2,19 +2,18 @@ package hitcount
 
 import (
 	"context"
+	"math"
+	"strconv"
+	"strings"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"math"
-	"strconv"
-	"strings"
 )
 
-type hitcount struct {
-	interfaces.FunctionBase
-}
+type hitcount struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -31,7 +30,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // hitcount(seriesList, intervalString, alignToInterval=False)
-func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *hitcount) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// TODO(dgryski): make sure the arrays are all the same 'size'
 	if e.ArgsLen() < 2 {
 		return nil, parser.ErrMissingArgument
@@ -53,7 +52,7 @@ func (f *hitcount) Do(ctx context.Context, e parser.Expr, from, until int64, val
 		from = helper.AlignStartToInterval(from, until, interval)
 	}
 
-	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	args, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}

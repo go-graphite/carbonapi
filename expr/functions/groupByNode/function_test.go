@@ -6,26 +6,25 @@ import (
 	"time"
 
 	"github.com/go-graphite/carbonapi/expr/functions/aggregate"
-	"github.com/go-graphite/carbonapi/expr/helper"
+	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
 )
 
+var (
+	md []interfaces.FunctionMetadata = New("")
+	s  []interfaces.FunctionMetadata = aggregate.New("")
+)
+
 func init() {
-	s := aggregate.New("")
 	for _, m := range s {
 		metadata.RegisterFunction(m.Name, m.F)
 	}
-	md := New("")
 	for _, m := range md {
 		metadata.RegisterFunction(m.Name, m.F)
 	}
-
-	evaluator := th.EvaluatorFromFuncWithMetadata(metadata.FunctionMD.Functions)
-	metadata.SetEvaluator(evaluator)
-	helper.SetEvaluator(evaluator)
 }
 
 // Note: some of these tests are influenced by the testcases for groupByNode and groupByNodes functions
@@ -250,7 +249,8 @@ func TestGroupByNode(t *testing.T) {
 	for _, tt := range tests {
 		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
-			th.TestMultiReturnEvalExpr(t, &tt)
+			eval := th.EvaluatorFromFuncWithMetadata(metadata.FunctionMD.Functions)
+			th.TestMultiReturnEvalExpr(t, eval, &tt)
 		})
 	}
 
@@ -279,7 +279,8 @@ func TestGroupByNodeError(t *testing.T) {
 	for _, tt := range tests {
 		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
-			th.TestEvalExprWithError(t, &tt)
+			eval := th.EvaluatorFromFuncWithMetadata(metadata.FunctionMD.Functions)
+			th.TestEvalExprWithError(t, eval, &tt)
 		})
 	}
 
@@ -296,7 +297,7 @@ func BenchmarkGroupByNode(b *testing.B) {
 		},
 	}
 
-	evaluator := metadata.GetEvaluator()
+	eval := th.EvaluatorFromFuncWithMetadata(metadata.FunctionMD.Functions)
 	exp, _, err := parser.ParseExpr(target)
 	if err != nil {
 		b.Fatalf("failed to parse %s: %+v", target, err)
@@ -304,7 +305,7 @@ func BenchmarkGroupByNode(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		g, err := evaluator.Eval(context.Background(), exp, 0, 1, metrics)
+		g, err := eval.Eval(context.Background(), exp, 0, 1, metrics)
 		if err != nil {
 			b.Fatalf("failed to eval %s: %+v", target, err)
 		}

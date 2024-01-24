@@ -13,9 +13,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type cactiStyle struct {
-	interfaces.FunctionBase
-}
+type cactiStyle struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -32,9 +30,9 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // cactiStyle(seriesList, system=None, units=None)
-func (f *cactiStyle) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *cactiStyle) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	// Get the series data
-	original, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	original, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}

@@ -11,9 +11,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type below struct {
-	interfaces.FunctionBase
-}
+type below struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -30,12 +28,12 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // averageAbove(seriesList, n), averageBelow(seriesList, n), currentAbove(seriesList, n), currentBelow(seriesList, n), maximumAbove(seriesList, n), maximumBelow(seriesList, n), minimumAbove(seriesList, n), minimumBelow
-func (f *below) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *below) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if e.ArgsLen() < 2 {
 		return nil, parser.ErrMissingArgument
 	}
 
-	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	args, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
