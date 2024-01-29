@@ -207,7 +207,7 @@ func TestEvalExpr(t *testing.T) {
 
 			eval, err := NewEvaluator(nil, th.NewTestZipper(nil))
 			if err == nil {
-				_, err = eval.EvalExpr(context.Background(), exp, request.From, request.Until, metricMap)
+				_, err = EvalExpr(context.Background(), eval, exp, request.From, request.Until, metricMap)
 			}
 			if err != nil {
 				t.Errorf("error='%v'", err)
@@ -465,7 +465,7 @@ func TestRewriteExpr(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			eval, err := NewEvaluator(nil, th.NewTestZipper(nil))
 			if err == nil {
-				rewritten, newTargets, err := eval.RewriteExpr(context.Background(), tt.e, 0, 1, tt.m)
+				rewritten, newTargets, err := RewriteExpr(context.Background(), eval, tt.e, 0, 1, tt.m)
 
 				if err != nil {
 					t.Errorf("failed to rewrite %v: %+v", tt.name, err)
@@ -522,7 +522,7 @@ func TestEvalCustomFromUntil(t *testing.T) {
 			exp, _, _ := parser.ParseExpr(tt.target)
 			eval, err := NewEvaluator(nil, th.NewTestZipper(nil))
 			if err == nil {
-				g, err := eval.EvalExpr(context.Background(), exp, tt.from, tt.until, tt.m)
+				g, err := EvalExpr(context.Background(), eval, exp, tt.from, tt.until, tt.m)
 				if err != nil {
 					t.Errorf("failed to eval %v: %s", tt.name, err)
 					return
