@@ -330,7 +330,7 @@ func createCache(logger *zap.Logger, cacheName string, cacheConfig *CacheConfig)
 	}
 }
 
-func SetUpViper(logger *zap.Logger, configPath *string, viperPrefix string) {
+func SetUpViper(logger *zap.Logger, configPath *string, exactConfig bool, viperPrefix string) {
 	if *configPath != "" {
 		b, err := os.ReadFile(*configPath)
 		if err != nil {
@@ -386,13 +386,13 @@ func SetUpViper(logger *zap.Logger, configPath *string, viperPrefix string) {
 	viper.SetDefault("upstreams.internalRoutingCache", "600s")
 	viper.SetDefault("upstreams.buckets", 10)
 	viper.SetDefault("upstreams.sumBuckets", false)
-	viper.SetDefault("upstreams.bucketsWeight", []int64{})
-	viper.SetDefault("upstreams.bucketsNames", []string{})
+	viper.SetDefault("upstreams.bucketsWidth", []int64{})
+	viper.SetDefault("upstreams.bucketsLabels", []string{})
 	viper.SetDefault("upstreams.slowLogThreshold", "1s")
-	viper.SetDefault("upstreams.timeouts.global", "10s")
-	viper.SetDefault("upstreams.timeouts.afterStarted", "2s")
+	viper.SetDefault("upstreams.timeouts.find", "2s")
+	viper.SetDefault("upstreams.timeouts.render", "10s")
 	viper.SetDefault("upstreams.timeouts.connect", "200ms")
-	viper.SetDefault("upstreams.concurrencyLimit", 0)
+	viper.SetDefault("upstreams.concurrencyLimitPerServer", 0)
 	viper.SetDefault("upstreams.keepAliveInterval", "30s")
 	viper.SetDefault("upstreams.maxIdleConnsPerHost", 100)
 	viper.SetDefault("upstreams.scaleToCommonStep", true)
@@ -403,7 +403,13 @@ func SetUpViper(logger *zap.Logger, configPath *string, viperPrefix string) {
 	viper.SetDefault("combineMultipleTargetsInOne", false)
 	viper.AutomaticEnv()
 
-	err := viper.Unmarshal(&Config)
+	var err error
+	if exactConfig {
+		err = viper.UnmarshalExact(&Config)
+	} else {
+		err = viper.Unmarshal(&Config)
+	}
+
 	if err != nil {
 		logger.Fatal("failed to parse config",
 			zap.Error(err),
