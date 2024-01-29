@@ -26,11 +26,6 @@ type Evaluator struct {
 }
 
 func (eval Evaluator) Fetch(ctx context.Context, exprs []parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (map[parser.MetricRequest][]*types.MetricData, error) {
-	if eval.zipper == nil {
-		// TODO: may be return error or not check. But for use expr in external applications without CarbonZipper implementation
-		return values, nil
-	}
-
 	if err := eval.limiter.Enter(ctx); err != nil {
 		return nil, err
 	}
