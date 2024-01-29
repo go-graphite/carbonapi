@@ -114,7 +114,7 @@ func (eval Evaluator) Fetch(ctx context.Context, exprs []parser.Expr, from, unti
 
 // Eval evaluates expressions.
 func (eval Evaluator) Eval(ctx context.Context, exp parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (results []*types.MetricData, err error) {
-	rewritten, targets, err := eval.rewriteExpr(ctx, exp, from, until, values)
+	rewritten, targets, err := eval.RewriteExpr(ctx, exp, from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -136,11 +136,11 @@ func (eval Evaluator) Eval(ctx context.Context, exp parser.Expr, from, until int
 		}
 		return results, nil
 	}
-	return eval.evalExpr(ctx, exp, from, until, values)
+	return eval.EvalExpr(ctx, exp, from, until, values)
 }
 
-// evalExpr is the main expression Evaluator.
-func (eval Evaluator) evalExpr(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+// EvalExpr is the main expression Evaluator.
+func (eval Evaluator) EvalExpr(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if e.IsName() {
 		return values[parser.MetricRequest{Metric: e.Target(), From: from, Until: until}], nil
 	} else if e.IsConst() {
@@ -193,12 +193,12 @@ func (eval Evaluator) evalExpr(ctx context.Context, e parser.Expr, from, until i
 	return nil, merry.WithHTTPCode(helper.ErrUnknownFunction(e.Target()), 400)
 }
 
-// rewriteExpr expands targets that use applyByNode into a new list of targets.
+// RewriteExpr expands targets that use applyByNode into a new list of targets.
 // eg:
 // applyByNode(foo*, 1, "%") -> (true, ["foo1", "foo2"], nil)
 // sumSeries(foo) -> (false, nil, nil)
 // Assumes that applyByNode only appears as the outermost function.
-func (eval Evaluator) rewriteExpr(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
+func (eval Evaluator) RewriteExpr(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
 	if e.IsFunc() {
 		metadata.FunctionMD.RLock()
 		f, ok := metadata.FunctionMD.RewriteFunctions[e.Target()]
