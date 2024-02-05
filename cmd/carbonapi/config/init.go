@@ -396,7 +396,7 @@ func SetUpViper(logger *zap.Logger, configPath *string, exactConfig bool, viperP
 	viper.SetDefault("upstreams.keepAliveInterval", "30s")
 	viper.SetDefault("upstreams.maxIdleConnsPerHost", 100)
 	viper.SetDefault("upstreams.scaleToCommonStep", true)
-	viper.SetDefault("upstreams.graphite09compat", false)
+	viper.SetDefault("graphite09compat", false)
 	viper.SetDefault("expireDelaySec", 600)
 	viper.SetDefault("useCachingDNSResolver", false)
 	viper.SetDefault("logger", map[string]string{})
