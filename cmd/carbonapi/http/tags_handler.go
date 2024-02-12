@@ -80,6 +80,12 @@ func tagHandler(w http.ResponseWriter, r *http.Request) {
 	q.Del("pretty")
 	rawQuery := q.Encode()
 
+	if queryLengthLimitExceeded(r.Form["query"], config.Config.MaxQueryLength) {
+		setError(w, accessLogDetails, "query length limit exceeded", http.StatusBadRequest, uuid.String())
+		logAsError = true
+		return
+	}
+
 	// TODO(civil): Implement caching
 	var res []string
 	if strings.HasSuffix(r.URL.Path, "tags") || strings.HasSuffix(r.URL.Path, "tags/") {

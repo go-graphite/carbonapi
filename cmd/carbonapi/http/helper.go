@@ -282,3 +282,23 @@ func timestampTruncate(ts int64, duration time.Duration, durations []config.Dura
 	}
 	return ts
 }
+
+func setError(w http.ResponseWriter, accessLogDetails *carbonapipb.AccessLogDetails, msg string, status int, carbonapiUUID string) {
+	w.Header().Set(ctxHeaderUUID, carbonapiUUID)
+	http.Error(w, http.StatusText(status)+": "+msg, status)
+	accessLogDetails.Reason = msg
+	accessLogDetails.HTTPCode = int32(status)
+}
+
+func queryLengthLimitExceeded(query []string, maxLength uint64) bool {
+	if maxLength > 0 {
+		var queryLengthSum uint64 = 0
+		for _, q := range query {
+			queryLengthSum += uint64(len(q))
+		}
+		if queryLengthSum > maxLength {
+			return true
+		}
+	}
+	return false
+}

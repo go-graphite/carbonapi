@@ -571,8 +571,9 @@ func (bg *BroadcastGroup) doFind(ctx context.Context, logger *zap.Logger, backen
 	var err merry.Error
 	r.Response, r.Stats, err = backend.Find(ctx, request)
 	r.AddError(err)
+	// TODO: Add a separate logger that would log full response
 	logger.Debug("fetched response",
-		zap.Any("response", r),
+		zap.Any("response_length", len(r)),
 	)
 	resCh <- r
 }
