@@ -114,7 +114,7 @@ func init() {
 	logger := zapwriter.Logger("main")
 
 	cfgFile := ""
-	config.SetUpViper(logger, &cfgFile, "CARBONAPI_")
+	config.SetUpViper(logger, &cfgFile, false, "CARBONAPI_")
 	config.Config.Upstreams.Backends = []string{"dummy"}
 	config.SetUpConfigUpstreams(logger)
 	config.SetUpConfig(logger, "(test)")

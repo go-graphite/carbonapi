@@ -76,6 +76,12 @@ func expandHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if queryLengthLimitExceeded(query, config.Config.MaxQueryLength) {
+		setError(w, &accessLogDetails, "query length limit exceeded", http.StatusBadRequest, uid.String())
+		logAsError = true
+		return
+	}
+
 	var pv3Request pbv3.MultiGlobRequest
 	pv3Request.Metrics = query
 	pv3Request.StartTime = from64
