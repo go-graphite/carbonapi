@@ -17,6 +17,31 @@ Changes
 
 CHANGELOG
 ---------
+**0.16.1**
+ - [Build] Update build version of golang to 1.21.0
+ - [Improvement] Better error messages
+ - [Improvement] Implement /metrics/expand API
+ - [Improvement] Implement aliasQuery
+ - [Fix] aliasByNode/Tag should not disacrd tags anymore
+ - [Fix] VicotriaMetrics cluster now should support autocomplete for tags
+ - [Fix] ConstantSeries should now work as in graphite-web
+ - [Fix] Fix logic of hitcount function (should behave like in graphite-web)
+ - [Fix] alignToInterval should work well in hitcount function
+ - [Fix] smartSummarize should handle stop time properly
+ - [Fix] smartSummarize should now handle alignTo properly
+ - [Fix] smartSummarize should handle consolidation functiosn better
+ - [Fix] summarize should work as in graphite-web for functions that have only NaN values
+ - [Fix] toUpper and toLower now should work correctly with function names
+ - [Fix] Skip all whitespace during expression parsing
+ - [Fix] time units now case insensitive
+ - [Fix] use specified bootstrapInterval to adjust start time in holtWinters* class of functions
+ - [Fix] groupByNode should return exepcted amount of series
+ - [Fix] multiple fixes for exponentialMovingAverage
+ - [Fix] holtWinters supports seasonality argument
+ - [Fix] fix holtWintersAbberation behavior
+ - [Fix] fix behavior of Below function
+ - [Fix] fix sin and exp functions (description was not accurate or correct)
+
 **0.16.0.1**
  - [Build] Fix automation that builds docker images
  - [Build] Add rockylinux-9 packages (RHEL 9)

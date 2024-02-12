@@ -427,12 +427,17 @@ func (r *MetricData) Copy(includeValues bool) *MetricData {
 	}
 }
 
+func CopyLink(tags map[string]string) map[string]string {
+	newTags := make(map[string]string)
+	for k, v := range tags {
+		newTags[k] = v
+	}
+	return newTags
+}
+
 // CopyLink returns the copy of MetricData, Values not copied and link from parent. Tags map are copied
 func (r *MetricData) CopyLink() *MetricData {
-	tags := make(map[string]string)
-	for k, v := range r.Tags {
-		tags[k] = v
-	}
+	tags := CopyLink(r.Tags)
 
 	return &MetricData{
 		FetchResponse: pb.FetchResponse{
