@@ -35,6 +35,7 @@ func main() {
 
 	configPath := flag.String("config", "", "Path to the `config file`.")
 	checkConfig := flag.Bool("check-config", false, "Check config file and exit.")
+	exactConfig := flag.Bool("exact-config", false, "Ensure that all config params are contained in the target struct.")
 	envPrefix := flag.String("envprefix", "CARBONAPI", "Prefix for environment variables override")
 	if *envPrefix == "(empty)" {
 		*envPrefix = ""
@@ -43,7 +44,7 @@ func main() {
 		logger.Warn("empty prefix is not recommended due to possible collisions with OS environment variables")
 	}
 	flag.Parse()
-	config.SetUpViper(logger, configPath, *envPrefix)
+	config.SetUpViper(logger, configPath, *exactConfig, *envPrefix)
 	if *checkConfig {
 		os.Exit(0)
 	}
