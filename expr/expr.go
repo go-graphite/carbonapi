@@ -18,7 +18,9 @@ import (
 type evaluator struct{}
 
 func (eval evaluator) Fetch(ctx context.Context, exprs []parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (map[parser.MetricRequest][]*types.MetricData, error) {
-	config.Config.Limiter.Enter()
+	if err := config.Config.Limiter.Enter(ctx); err != nil {
+		return nil, err
+	}
 	defer config.Config.Limiter.Leave()
 
 	multiFetchRequest := pb.MultiFetchRequest{}
