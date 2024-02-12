@@ -221,6 +221,12 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if queryLengthLimitExceeded(query, config.Config.MaxQueryLength) {
+		setError(w, &accessLogDetails, "query length limit exceeded", http.StatusBadRequest, uid.String())
+		logAsError = true
+		return
+	}
+
 	if format == completerFormat {
 		var replacer = strings.NewReplacer("/", ".")
 		for i := range query {
