@@ -9,7 +9,10 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
+	"time"
 
 	"github.com/gorilla/handlers"
 	"github.com/lomik/zapwriter"
@@ -105,6 +108,9 @@ func main() {
 				zap.Error(err),
 			)
 		}
+
+		servers := make([]*http.Server, 0)
+
 		for _, ip := range ips {
 			address := (&net.TCPAddr{IP: ip, Port: port}).String()
 			s := &http.Server{
@@ -112,6 +118,7 @@ func main() {
 				Handler:  handler,
 				ErrorLog: httpLogger,
 			}
+			servers = append(servers, s)
 			isTLS := false
 			if len(listen.ServerTLSConfig.CACertFiles) > 0 {
 				tlsConfig, warns, err := tlsconfig.ParseServerTLSConfig(&listen.ServerTLSConfig, &listen.ClientTLSConfig)
@@ -152,6 +159,20 @@ func main() {
 				wg.Done()
 			}(listener, isTLS)
 		}
+
+		go func() {
+			stop := make(chan os.Signal, 1)
+			signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
+			<-stop
+			logger.Info("stoping carbonapi")
+			// initiating the shutdown
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+			for _, s := range servers {
+				s.Shutdown(ctx)
+			}
+			cancel()
+		}()
+
 	}
 
 	if config.Config.Expvar.Enabled {
