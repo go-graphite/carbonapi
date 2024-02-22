@@ -29,16 +29,16 @@ func TestFunction(t *testing.T) {
 		{
 			"join(metric1, metric2)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), -1, math.NaN(), -3, 4, 5}, 1, now32)},
-				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{1, 2, 3, -3, 4, 5}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), -1, math.NaN(), -3, 4, 5}, 1, now32)},
+				{Metric: "metric2", From: 0, Until: 1}: {types.MakeMetricData("metric2", []float64{1, 2, 3, -3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{},
 		},
 		{
 			"join(metric1, metric2, \"OR\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), -1, math.NaN(), -3, 4, 5}, 1, now32)},
-				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{1, 2, 3, -3, 4, 5}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), -1, math.NaN(), -3, 4, 5}, 1, now32)},
+				{Metric: "metric2", From: 0, Until: 1}: {types.MakeMetricData("metric2", []float64{1, 2, 3, -3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{
 				types.MakeMetricData("metric1", []float64{math.NaN(), -1, math.NaN(), -3, 4, 5}, 1, now32),
@@ -48,8 +48,8 @@ func TestFunction(t *testing.T) {
 		{
 			"join(metric1, metric2, \"XOR\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), -1, math.NaN(), -3, 4, 5}, 1, now32)},
-				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{1, 2, 3, -3, 4, 5}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), -1, math.NaN(), -3, 4, 5}, 1, now32)},
+				{Metric: "metric2", From: 0, Until: 1}: {types.MakeMetricData("metric2", []float64{1, 2, 3, -3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{
 				types.MakeMetricData("metric1", []float64{math.NaN(), -1, math.NaN(), -3, 4, 5}, 1, now32),
@@ -59,8 +59,8 @@ func TestFunction(t *testing.T) {
 		{
 			"join(metric1, metric2, \"SUB\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), -1, math.NaN(), -3, 4, 5}, 1, now32)},
-				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{1, 2, 3, -3, 4, 5}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), -1, math.NaN(), -3, 4, 5}, 1, now32)},
+				{Metric: "metric2", From: 0, Until: 1}: {types.MakeMetricData("metric2", []float64{1, 2, 3, -3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{
 				types.MakeMetricData("metric1", []float64{math.NaN(), -1, math.NaN(), -3, 4, 5}, 1, now32),

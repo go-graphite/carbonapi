@@ -28,7 +28,7 @@ func TestSetXFilesFactor(t *testing.T) {
 		{
 			"setXFilesFactor(metric1,0.6)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now64)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now64)},
 			},
 			[]*types.MetricData{types.MakeMetricData("metric1",
 				[]float64{1, 2, 3, 4, 5}, 1, now64).SetXFilesFactor(0.6).SetTag("xFilesFactor", "0.6")},

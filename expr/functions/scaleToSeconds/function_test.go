@@ -29,7 +29,7 @@ func TestFunction(t *testing.T) {
 		{
 			"scaleToSeconds(metric1,5)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{60, 120, math.NaN(), 120, 120}, 60, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{60, 120, math.NaN(), 120, 120}, 60, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("scaleToSeconds(metric1,5)", []float64{5, 10, math.NaN(), 10, 10}, 60, now32).SetTag("scaleToSeconds", "5")},
 		},

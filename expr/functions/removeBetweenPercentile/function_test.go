@@ -28,7 +28,7 @@ func TestFunction(t *testing.T) {
 		{
 			`removeBetweenPercentile(metric[1234], 30)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[1234]", 0, 1}: {
+				{Metric: "metric[1234]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{7, 7, 7, 7, 7, 7}, 1, now32),
 					types.MakeMetricData("metric2", []float64{5, 5, 5, 5, 5, 5}, 1, now32),
 					types.MakeMetricData("metric3", []float64{10, 10, 10, 10, 10, 10}, 1, now32),

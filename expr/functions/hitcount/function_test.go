@@ -25,7 +25,7 @@ func TestHitcountEmptyData(t *testing.T) {
 		{
 			"hitcount(foo.bar, '1min')",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"foo.bar", 0, 1}: {},
+				{Metric: "foo.bar", From: 0, Until: 1}: {},
 			},
 			[]*types.MetricData{},
 		},
@@ -47,7 +47,7 @@ func TestHitcount(t *testing.T) {
 		{
 			Target: "hitcount(metric1,\"30s\")",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", now32, now32 + 31*5}: {types.MakeMetricData("metric1", []float64{
+				{Metric: "metric1", From: now32, Until: now32 + 31*5}: {types.MakeMetricData("metric1", []float64{
 					1, 1, 1, 1, 1, 2,
 					2, 2, 2, 2, 3, 3,
 					3, 3, 3, 4, 4, 4,
@@ -66,7 +66,7 @@ func TestHitcount(t *testing.T) {
 		{
 			Target: "hitcount(metric1,\"1h\")",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", tenFiftyNine, tenFiftyNine + 25*5}: {types.MakeMetricData("metric1", []float64{
+				{Metric: "metric1", From: tenFiftyNine, Until: tenFiftyNine + 25*5}: {types.MakeMetricData("metric1", []float64{
 					1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3,
 					3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5,
 					5}, 5, tenFiftyNine)},
@@ -82,7 +82,7 @@ func TestHitcount(t *testing.T) {
 		{
 			Target: "hitcount(metric1,\"1h\",true)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 1410343200, 1410350340}: {types.MakeMetricData("metric1", []float64{
+				{Metric: "metric1", From: 1410343200, Until: 1410350340}: {types.MakeMetricData("metric1", []float64{
 					1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3,
 					3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5,
 					5}, 5, tenFiftyNine)},
@@ -98,7 +98,7 @@ func TestHitcount(t *testing.T) {
 		{
 			Target: "hitcount(metric1,\"1h\",alignToInterval=true)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 1410343200, 1410350340}: {types.MakeMetricData("metric1", []float64{
+				{Metric: "metric1", From: 1410343200, Until: 1410350340}: {types.MakeMetricData("metric1", []float64{
 					1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3,
 					3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5,
 					5}, 5, tenFiftyNine)},
@@ -114,7 +114,7 @@ func TestHitcount(t *testing.T) {
 		{
 			Target: "hitcount(metric1,\"15s\")", // Test having a smaller interval than the data's step
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", now32, now32 + 5*30}: {types.MakeMetricData("metric1", []float64{
+				{Metric: "metric1", From: now32, Until: now32 + 5*30}: {types.MakeMetricData("metric1", []float64{
 					11, 7, 19, 32, 23}, 30, now32)},
 			},
 			Want:  []float64{165, 165, 105, 105, 285, 285, 480, 480, 345, 345},

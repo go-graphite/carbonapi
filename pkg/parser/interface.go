@@ -8,9 +8,10 @@ import (
 
 // MetricRequest contains all necessary data to request a metric.
 type MetricRequest struct {
-	Metric string
-	From   int64
-	Until  int64
+	Metric            string
+	ConsolidationFunc string // explicitly use function for consolidation. Check https://graphite.readthedocs.io/en/latest/functions.html?highlight=consolidateBy#graphite.render.functions.consolidateBy
+	From              int64
+	Until             int64
 }
 
 // ExprType defines a type for expression types constants (e.x. functions, values, constants, parameters, strings)
@@ -50,7 +51,7 @@ var (
 	ErrUnknownTimeUnits = errors.New("unknown time units")
 	// ErrInvalidArg is eval error for invalid or mismatch function arg
 	ErrInvalidArg = errors.New("invalid function arg")
-	//ErrInvalidInterval is an eval error returned when an interval is set to 0
+	// ErrInvalidInterval is an eval error returned when an interval is set to 0
 	ErrInvalidInterval = errors.New("invalid interval arg")
 )
 

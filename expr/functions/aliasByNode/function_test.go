@@ -53,7 +53,7 @@ func TestAliasByNode(t *testing.T) {
 		{
 			"aliasByNode(aliasSub(a.b.c.d.e, '(.*)', '0.1.2.@.4'), 2)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"a.b.c.d.e", 0, 1}: {
+				{Metric: "a.b.c.d.e", From: 0, Until: 1}: {
 					types.MakeMetricData("a.b.c.d.e", []float64{8, 2, 4}, 1, now32),
 				},
 			},
@@ -150,7 +150,7 @@ func TestAliasByNode(t *testing.T) {
 		{
 			Target: `aliasByNode(sumSeries(metric.{a,b}*.b), 1, 2)`,
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric.{a,b}*.b", 0, 1}: {
+				{Metric: "metric.{a,b}*.b", From: 0, Until: 1}: {
 					types.MakeMetricData("metric.a1.b", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric.b2.b", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32),
 					types.MakeMetricData("metric.c2.b", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
@@ -162,12 +162,12 @@ func TestAliasByNode(t *testing.T) {
 		{
 			Target: `aliasByTags(sumSeries(seriesByTag('tag2=value*', 'name=metric')), 'tag2', 'name')`,
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"seriesByTag('tag2=value*', 'name=metric')", 0, 1}: {
+				{Metric: "seriesByTag('tag2=value*', 'name=metric')", From: 0, Until: 1}: {
 					types.MakeMetricData("metric;tag1=value1;tag2=value21", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric;tag2=value21;tag3=value3", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32),
 					types.MakeMetricData("metric;tag2=value21;tag3=value3", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
 				},
-				{"metric", 0, 1}: {types.MakeMetricData("metric", []float64{2, math.NaN(), 3, math.NaN(), 5, 11}, 1, now32)},
+				{Metric: "metric", From: 0, Until: 1}: {types.MakeMetricData("metric", []float64{2, math.NaN(), 3, math.NaN(), 5, 11}, 1, now32)},
 			},
 			// Want: []*types.MetricData{types.MakeMetricData("value____.metric", []float64{6, math.NaN(), 9, 8, 15, 11}, 1, now32)},
 			Want: []*types.MetricData{

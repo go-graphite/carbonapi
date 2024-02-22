@@ -82,7 +82,7 @@ func (f *reduce) Do(ctx context.Context, e parser.Expr, from, until int64, value
 		}
 
 		reduceGroups[aliasName][reduceNodeKey] = series
-		valueKey := parser.MetricRequest{series.Name, from, until}
+		valueKey := parser.MetricRequest{Metric: series.Name, From: from, Until: until}
 		reducedValues[valueKey] = append(reducedValues[valueKey], series)
 	}
 AliasLoop:

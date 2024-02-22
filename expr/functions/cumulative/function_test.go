@@ -28,7 +28,7 @@ func TestCumulative(t *testing.T) {
 		{
 			"cumulative(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("consolidateBy(metric1,\"sum\")",
 				[]float64{1, 2, 3, 4, 5}, 1, now32).SetTag("consolidateBy", "sum").SetConsolidationFunc("sum")},

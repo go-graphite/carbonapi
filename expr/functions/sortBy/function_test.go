@@ -1,9 +1,10 @@
 package sortBy
 
 import (
-	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"testing"
 	"time"
+
+	"github.com/go-graphite/carbonapi/expr/consolidations"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/metadata"
@@ -29,7 +30,7 @@ func TestFunction(t *testing.T) {
 		{
 			"sortByTotal(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {
+				{Metric: "metric1", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{5, 5, 5, 5, 5, 5}, 1, now32),
 					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 4, 4}, 1, now32),
@@ -44,7 +45,7 @@ func TestFunction(t *testing.T) {
 		{
 			"sortByMaxima(metric*)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{5, 5, 5, 5, 5, 5}, 1, now32),
 					types.MakeMetricData("metricC", []float64{2, 2, 10, 5, 2, 2}, 1, now32),
@@ -59,7 +60,7 @@ func TestFunction(t *testing.T) {
 		{
 			"sortByMinima(metric*)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
 					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
@@ -74,7 +75,7 @@ func TestFunction(t *testing.T) {
 		{
 			"sortBy(metric*)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
 					types.MakeMetricData("metricC", []float64{1, 2, 3, 4, 5, 6}, 1, now32),
@@ -89,7 +90,7 @@ func TestFunction(t *testing.T) {
 		{
 			"sortBy(metric*, 'median')",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 					types.MakeMetricData("metricC", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
@@ -105,7 +106,7 @@ func TestFunction(t *testing.T) {
 		{
 			"sortBy(metric*, 'max', true)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
 					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
@@ -135,7 +136,7 @@ func TestErrorInvalidConsolidationFunction(t *testing.T) {
 		{
 			"sortBy(metric*, 'test')",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 					types.MakeMetricData("metricC", []float64{3, 4, 5, 6, 7, 8}, 1, now32),

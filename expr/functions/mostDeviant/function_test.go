@@ -28,7 +28,7 @@ func TestFunctionMultiReturn(t *testing.T) {
 		{
 			"mostDeviant(2,metric*)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
 					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
@@ -45,7 +45,7 @@ func TestFunctionMultiReturn(t *testing.T) {
 		{
 			"mostDeviant(metric*,2)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
 					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),

@@ -29,7 +29,7 @@ func TestDerivative(t *testing.T) {
 		{
 			"derivative(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{2, 4, 6, 1, 4, math.NaN(), 8}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{2, 4, 6, 1, 4, math.NaN(), 8}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("derivative(metric1)",
 				[]float64{math.NaN(), 2, 2, -5, 3, math.NaN(), 4}, 1, now32).SetTag("derivative", "1").SetNameTag("derivative(metric1)")},
@@ -37,7 +37,7 @@ func TestDerivative(t *testing.T) {
 		{
 			"derivative(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), 4, 6, 1, 4, math.NaN(), 8}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), 4, 6, 1, 4, math.NaN(), 8}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("derivative(metric1)",
 				[]float64{math.NaN(), math.NaN(), 2, -5, 3, math.NaN(), 4}, 1, now32).SetTag("derivative", "1").SetNameTag("derivative(metric1)")},

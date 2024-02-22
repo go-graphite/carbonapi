@@ -28,7 +28,7 @@ func TestLimit(t *testing.T) {
 		{
 			"limit(metric1,2)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {
+				{Metric: "metric1", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{0, 0, 1, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricC", []float64{0, 0, 0, 1, 0, 0}, 1, now32),
@@ -45,7 +45,7 @@ func TestLimit(t *testing.T) {
 		{
 			"limit(metric1,20)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {
+				{Metric: "metric1", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 1, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{0, 0, 1, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricC", []float64{0, 0, 0, 1, 0, 0}, 1, now32),

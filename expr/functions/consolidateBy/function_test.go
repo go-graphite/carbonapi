@@ -27,7 +27,7 @@ func TestConsolidateBy(t *testing.T) {
 		{
 			"consolidateBy(metric1,\"sum\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("consolidateBy(metric1,\"sum\")",
 				[]float64{1, 2, 3, 4, 5}, 1, now32).SetTag("consolidateBy", "sum").SetConsolidationFunc("sum")},
@@ -35,7 +35,7 @@ func TestConsolidateBy(t *testing.T) {
 		{
 			"consolidateBy(metric1,\"avg\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("consolidateBy(metric1,\"avg\")",
 				[]float64{1, 2, 3, 4, 5}, 1, now32).SetTag("consolidateBy", "avg").SetConsolidationFunc("avg")},
@@ -43,7 +43,7 @@ func TestConsolidateBy(t *testing.T) {
 		{
 			"consolidateBy(metric1,\"min\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("consolidateBy(metric1,\"min\")",
 				[]float64{1, 2, 3, 4, 5}, 1, now32).SetTag("consolidateBy", "min").SetConsolidationFunc("min")},
@@ -51,7 +51,7 @@ func TestConsolidateBy(t *testing.T) {
 		{
 			"consolidateBy(metric1,\"max\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("consolidateBy(metric1,\"max\")",
 				[]float64{1, 2, 3, 4, 5}, 1, now32).SetTag("consolidateBy", "max").SetConsolidationFunc("max")},
@@ -59,7 +59,7 @@ func TestConsolidateBy(t *testing.T) {
 		{
 			"consolidateBy(metric1,\"first\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("consolidateBy(metric1,\"first\")",
 				[]float64{1, 2, 3, 4, 5}, 1, now32).SetTag("consolidateBy", "first").SetConsolidationFunc("first")},
@@ -67,7 +67,7 @@ func TestConsolidateBy(t *testing.T) {
 		{
 			"consolidateBy(metric1,\"last\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("consolidateBy(metric1,\"last\")",
 				[]float64{1, 2, 3, 4, 5}, 1, now32).SetTag("consolidateBy", "last").SetConsolidationFunc("last")},

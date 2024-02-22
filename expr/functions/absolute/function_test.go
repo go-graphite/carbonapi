@@ -28,7 +28,7 @@ func TestAbsolute(t *testing.T) {
 		{
 			"absolute(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{0, -1, 2, -3, 4, 5}, 1, now32)},
+				{"metric1", "", 0, 1}: {types.MakeMetricData("metric1", []float64{0, -1, 2, -3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("absolute(metric1)",
 				[]float64{0, 1, 2, 3, 4, 5}, 1, now32).SetTag("absolute", "1").SetNameTag("absolute(metric1)")},
@@ -41,5 +41,4 @@ func TestAbsolute(t *testing.T) {
 			th.TestEvalExpr(t, &tt)
 		})
 	}
-
 }

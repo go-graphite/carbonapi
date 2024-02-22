@@ -28,7 +28,7 @@ func TestFunction(t *testing.T) {
 		{
 			"legendValue(metric1,\"avg\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("metric1 (avg: 3)",
 				[]float64{1, 2, 3, 4, 5}, 1, now32).SetNameTag("metric1")},
@@ -36,7 +36,7 @@ func TestFunction(t *testing.T) {
 		{
 			"legendValue(metric1,\"sum\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("metric1 (sum: 15)",
 				[]float64{1, 2, 3, 4, 5}, 1, now32).SetNameTag("metric1")},
@@ -44,7 +44,7 @@ func TestFunction(t *testing.T) {
 		{
 			"legendValue(metric1,\"total\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("metric1 (total: 15)",
 				[]float64{1, 2, 3, 4, 5}, 1, now32).SetNameTag("metric1")},
@@ -52,7 +52,7 @@ func TestFunction(t *testing.T) {
 		{
 			"legendValue(metric1,\"sum\",\"avg\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("metric1 (sum: 15) (avg: 3)",
 				[]float64{1, 2, 3, 4, 5}, 1, now32).SetNameTag("metric1")},
@@ -60,7 +60,7 @@ func TestFunction(t *testing.T) {
 		{
 			"legendValue(metric1,\"sum\",\"si\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{0, 10000, 20000, -30000, -40000}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{0, 10000, 20000, -30000, -40000}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("metric1 (sum: -40.00K )",
 				[]float64{0, 10000, 20000, -30000, -40000}, 1, now32).SetNameTag("metric1")},
@@ -68,7 +68,7 @@ func TestFunction(t *testing.T) {
 		{
 			"legendValue(metric1,\"avg\",\"total\",\"si\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{0, 10000, 20000, -30000, -40000}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{0, 10000, 20000, -30000, -40000}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("metric1 (avg: -8.00K ) (total: -40.00K )",
 				[]float64{0, 10000, 20000, -30000, -40000}, 1, now32).SetNameTag("metric1")},
@@ -76,7 +76,7 @@ func TestFunction(t *testing.T) {
 		{
 			"legendValue(metric1,\"sum\",\"binary\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{0, 10000, 20000, -30000, -40000}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{0, 10000, 20000, -30000, -40000}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("metric1 (sum: -39.06Ki )",
 				[]float64{0, 10000, 20000, -30000, -40000}, 1, now32).SetNameTag("metric1")},
@@ -84,7 +84,7 @@ func TestFunction(t *testing.T) {
 		{
 			"legendValue(metric1,\"avg\",\"total\",\"binary\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{0, 10000, 20000, -30000, -40000}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{0, 10000, 20000, -30000, -40000}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("metric1 (avg: -7.81Ki ) (total: -39.06Ki )",
 				[]float64{0, 10000, 20000, -30000, -40000}, 1, now32).SetNameTag("metric1")},

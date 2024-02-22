@@ -29,28 +29,28 @@ func TestPerSecond(t *testing.T) {
 		{
 			"perSecond(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{27, 19, math.NaN(), 10, 1, 100, 1.5, 10.20}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{27, 19, math.NaN(), 10, 1, 100, 1.5, 10.20}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("perSecond(metric1)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 99, math.NaN(), 8.7}, 1, now32).SetTag("perSecond", "1")},
 		},
 		{
 			"perSecond(metric1,32)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), 1, 2, 3, 4, 30, 0, 32, math.NaN()}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), 1, 2, 3, 4, 30, 0, 32, math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("perSecond(metric1,32)", []float64{math.NaN(), math.NaN(), 1, 1, 1, 26, 3, 32, math.NaN()}, 1, now32).SetTag("perSecond", "1")},
 		},
 		{
 			"perSecond(metric1,minValue=1)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), 1, 2, 3, 4, 30, 3, 32, math.NaN()}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{math.NaN(), 1, 2, 3, 4, 30, 3, 32, math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("perSecond(metric1,minValue=1)", []float64{math.NaN(), math.NaN(), 1, 1, 1, 26, 2, 29, math.NaN()}, 1, now32).SetTag("perSecond", "1")},
 		},
 		{
 			"perSecond(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("perSecond(metric1)", []float64{}, 1, now32).SetTag("perSecond", "1")},
 		},

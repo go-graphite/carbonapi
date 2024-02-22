@@ -29,7 +29,7 @@ func TestFunction(t *testing.T) {
 		{
 			"offsetToZero(metric1)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{93, 94, 95, math.NaN(), 97, 98, 99, 100, 101}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{93, 94, 95, math.NaN(), 97, 98, 99, 100, 101}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("offsetToZero(metric1)",
 				[]float64{0, 1, 2, math.NaN(), 4, 5, 6, 7, 8}, 1, now32).SetTag("offsetToZero", "93").SetNameTag("offsetToZero(metric1)")},

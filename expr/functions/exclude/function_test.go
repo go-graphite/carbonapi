@@ -28,7 +28,7 @@ func TestExclude(t *testing.T) {
 		{
 			"exclude(metric1,\"(Foo|Baz)\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {
+				{Metric: "metric1", From: 0, Until: 1}: {
 					types.MakeMetricData("metricFoo", []float64{1, 1, 1, 1, 1}, 1, now32),
 					types.MakeMetricData("metricBar", []float64{2, 2, 2, 2, 2}, 1, now32),
 					types.MakeMetricData("metricBaz", []float64{3, 3, 3, 3, 3}, 1, now32),
