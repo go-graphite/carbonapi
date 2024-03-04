@@ -12,9 +12,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type example struct {
-	interfaces.FunctionBase
-}
+type example struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -30,7 +28,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *example) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *example) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	_ = helper.Backref
 	return nil, nil
 }

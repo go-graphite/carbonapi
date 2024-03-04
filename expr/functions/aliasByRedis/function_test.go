@@ -9,14 +9,17 @@ import (
 
 	"github.com/alicebob/miniredis/v2"
 
-	"github.com/go-graphite/carbonapi/expr/helper"
+	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
 )
 
-var r *miniredis.Miniredis
+var (
+	md []interfaces.FunctionMetadata
+	r  *miniredis.Miniredis
+)
 
 func init() {
 	var err error
@@ -43,10 +46,7 @@ enabled: true
 	))
 	config.Close()
 
-	md := New(config.Name())
-	evaluator := th.EvaluatorFromFunc(md[0].F)
-	metadata.SetEvaluator(evaluator)
-	helper.SetEvaluator(evaluator)
+	md = New(config.Name())
 	for _, m := range md {
 		metadata.RegisterFunction(m.Name, m.F)
 	}
@@ -142,7 +142,8 @@ func TestAliasByRedis(t *testing.T) {
 	for _, tt := range tests {
 		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
-			th.TestEvalExpr(t, &tt)
+			eval := th.EvaluatorFromFunc(md[0].F)
+			th.TestEvalExpr(t, eval, &tt)
 		})
 	}
 }

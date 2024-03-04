@@ -12,9 +12,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type sortBy struct {
-	interfaces.FunctionBase
-}
+type sortBy struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -31,8 +29,8 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // sortByMaxima(seriesList), sortByMinima(seriesList), sortByTotal(seriesList)
-func (f *sortBy) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	original, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+func (f *sortBy) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	original, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}

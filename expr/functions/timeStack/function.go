@@ -11,9 +11,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type timeStack struct {
-	interfaces.FunctionBase
-}
+type timeStack struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -30,7 +28,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // timeStack(seriesList, timeShiftUnit, timeShiftStart, timeShiftEnd)
-func (f *timeStack) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *timeStack) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	unit, err := e.GetIntervalArg(1, -1)
 	if err != nil {
 		return nil, err
@@ -52,7 +50,7 @@ func (f *timeStack) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		offs := i * int64(unit)
 		fromNew := from + offs
 		untilNew := until + offs
-		arg, err := helper.GetSeriesArg(ctx, e.Arg(0), fromNew, untilNew, values)
+		arg, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), fromNew, untilNew, values)
 		if err != nil {
 			return nil, err
 		}

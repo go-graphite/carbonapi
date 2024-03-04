@@ -13,9 +13,7 @@ import (
 )
 
 // TODO(civil): See if it's possible to merge it with NonNegativeDerivative
-type perSecond struct {
-	interfaces.FunctionBase
-}
+type perSecond struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -32,8 +30,8 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // perSecond(seriesList, maxValue=None)
-func (f *perSecond) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+func (f *perSecond) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	args, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}

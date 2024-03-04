@@ -9,9 +9,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type group struct {
-	interfaces.FunctionBase
-}
+type group struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -28,8 +26,8 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // group(*seriesLists)
-func (f *group) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := helper.GetSeriesArgsAndRemoveNonExisting(ctx, e, from, until, values)
+func (f *group) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	args, err := helper.GetSeriesArgsAndRemoveNonExisting(ctx, eval, e, from, until, values)
 	if err != nil {
 		return nil, err
 	}

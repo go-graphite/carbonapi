@@ -13,9 +13,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type aggregate struct {
-	interfaces.FunctionBase
-}
+type aggregate struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -39,7 +37,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // aggregate(*seriesLists)
-func (f *aggregate) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *aggregate) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	var args []*types.MetricData
 	var xFilesFactor float64
 	isAggregateFunc := true
@@ -49,7 +47,7 @@ func (f *aggregate) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		if e.Target() == "aggregate" {
 			return nil, err
 		} else {
-			args, err = helper.GetSeriesArgsAndRemoveNonExisting(ctx, e, from, until, values)
+			args, err = helper.GetSeriesArgsAndRemoveNonExisting(ctx, eval, e, from, until, values)
 			if err != nil {
 				return nil, err
 			}
@@ -61,7 +59,7 @@ func (f *aggregate) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			xFilesFactor = -1 // xFilesFactor is not used by the ...Series functions
 		}
 	} else {
-		args, err = helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+		args, err = helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 		if err != nil {
 			return nil, err
 		}

@@ -5,10 +5,12 @@ import (
 	"time"
 
 	"github.com/go-graphite/carbonapi/cache"
-	"github.com/go-graphite/carbonapi/cmd/carbonapi/interfaces"
+	"github.com/go-graphite/carbonapi/expr"
+	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/pkg/tlsconfig"
 	zipperCfg "github.com/go-graphite/carbonapi/zipper/config"
+	zipper "github.com/go-graphite/carbonapi/zipper/interfaces"
 	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 
 	"github.com/lomik/zapwriter"
@@ -116,10 +118,12 @@ type ConfigType struct {
 	DefaultTimeZone *time.Location `mapstructure:"-" json:"-"`
 
 	// ZipperInstance is API entry to carbonzipper
-	ZipperInstance interfaces.CarbonZipper `mapstructure:"-" json:"-"`
+	ZipperInstance zipper.CarbonZipper `mapstructure:"-" json:"-"`
 
 	// Limiter limits concurrent zipper requests
 	Limiter limiter.SimpleLimiter `mapstructure:"-" json:"-"`
+
+	Evaluator interfaces.Evaluator `mapstructure:"-" json:"-"`
 }
 
 // skipcq: CRT-P0003
@@ -130,6 +134,12 @@ func (c ConfigType) String() string {
 	} else {
 		return string(data)
 	}
+}
+
+func (c *ConfigType) SetZipper(zipper zipper.CarbonZipper) (err error) {
+	c.ZipperInstance = zipper
+	c.Evaluator, err = expr.NewEvaluator(c.Limiter, c.ZipperInstance)
+	return
 }
 
 var Config = ConfigType{

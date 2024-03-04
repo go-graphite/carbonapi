@@ -4,8 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-graphite/carbonapi/expr/helper"
-
+	"github.com/go-graphite/carbonapi/expr"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -13,10 +12,6 @@ import (
 )
 
 func init() {
-	evaluator := th.DummyEvaluator()
-	helper.SetEvaluator(evaluator)
-	metadata.SetEvaluator(evaluator)
-
 	md := New("")
 	for _, m := range md {
 		metadata.RegisterRewriteFunction(m.Name, m.F)
@@ -76,7 +71,12 @@ func TestDiffSeries(t *testing.T) {
 	for _, tt := range tests {
 		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
-			th.TestRewriteExpr(t, &tt)
+			eval, err := expr.NewEvaluator(nil, th.NewTestZipper(nil))
+			if err == nil {
+				th.TestRewriteExpr(t, eval, &tt)
+			} else {
+				t.Errorf("error='%v'", err)
+			}
 		})
 	}
 

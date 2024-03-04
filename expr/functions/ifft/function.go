@@ -12,9 +12,7 @@ import (
 	realFFT "github.com/mjibson/go-dsp/fft"
 )
 
-type ifft struct {
-	interfaces.FunctionBase
-}
+type ifft struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -31,15 +29,15 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // ifft(absSeriesList, phaseSeriesList)
-func (f *ifft) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	absSeriesList, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+func (f *ifft) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	absSeriesList, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
 
 	var phaseSeriesList []*types.MetricData
 	if e.ArgsLen() > 1 {
-		phaseSeriesList, err = helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
+		phaseSeriesList, err = helper.GetSeriesArg(ctx, eval, e.Arg(1), from, until, values)
 		if err != nil {
 			return nil, err
 		}

@@ -1,29 +1,21 @@
 package aggregateSeriesLists
 
 import (
-	"github.com/go-graphite/carbonapi/expr/helper"
+	"math"
+	"testing"
+	"time"
+
+	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
-	"math"
-	"testing"
-	"time"
 )
 
-func init() {
-	md := New("")
-	evaluator := th.EvaluatorFromFunc(md[0].F)
-	metadata.SetEvaluator(evaluator)
-	helper.SetEvaluator(evaluator)
-	for _, m := range md {
-		metadata.RegisterFunction(m.Name, m.F)
-	}
-}
-
 var (
-	now     = time.Now().Unix()
-	shipped = []*types.MetricData{
+	md      []interfaces.FunctionMetadata = New("")
+	now                                   = time.Now().Unix()
+	shipped                               = []*types.MetricData{
 		types.MakeMetricData("mining.other.shipped", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, 1, now),
 		types.MakeMetricData("mining.diamond.shipped", []float64{0, -1, -1, 2, 3, -5, -8, 13, 21, -34, -55, 89, 144, -233, -377}, 1, now),
 		types.MakeMetricData("mining.graphite.shipped", []float64{math.NaN(), 2.3, math.NaN(), -4.5, math.NaN(), 6.7, math.NaN(), -8.9, math.NaN(), 10.111, math.NaN(), -12.13, math.NaN(), 14.15, math.NaN(), -16.17, math.NaN(), 18.19, math.NaN(), -20.21}, 1, now),
@@ -36,6 +28,12 @@ var (
 		types.MakeMetricData("mining.carbon.extracted", []float64{7.22, math.NaN(), 2.718, math.NaN(), 2.54, -1.234, -6.16, -13.37, math.NaN(), -7.77, 0.128, 8.912}, 1, now),
 	}
 )
+
+func init() {
+	for _, m := range md {
+		metadata.RegisterFunction(m.Name, m.F)
+	}
+}
 
 func TestFunction(t *testing.T) {
 	tests := []th.EvalTestItem{
@@ -134,7 +132,8 @@ func TestFunction(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Target, func(t *testing.T) {
-			th.TestEvalExpr(t, &test)
+			eval := th.EvaluatorFromFunc(md[0].F)
+			th.TestEvalExpr(t, eval, &test)
 		})
 	}
 }

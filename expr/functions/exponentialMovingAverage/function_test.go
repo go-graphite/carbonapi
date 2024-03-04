@@ -5,18 +5,18 @@ import (
 	"math"
 	"testing"
 
-	"github.com/go-graphite/carbonapi/expr/helper"
+	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
 )
 
+var (
+	md []interfaces.FunctionMetadata = New("")
+)
+
 func init() {
-	md := New("")
-	evaluator := th.EvaluatorFromFunc(md[0].F)
-	metadata.SetEvaluator(evaluator)
-	helper.SetEvaluator(evaluator)
 	for _, m := range md {
 		metadata.RegisterFunction(m.Name, m.F)
 	}
@@ -97,7 +97,8 @@ func TestExponentialMovingAverage(t *testing.T) {
 		tt := tt
 		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
-			th.TestEvalExprWithRange(t, &tt)
+			eval := th.EvaluatorFromFunc(md[0].F)
+			th.TestEvalExprWithRange(t, eval, &tt)
 		})
 	}
 }
@@ -124,7 +125,7 @@ func BenchmarkExponentialMovingAverage(b *testing.B) {
 		{"metric[1234]", 0, 1}: {types.MakeMetricData("metric1", []float64{2, 4, 6, 8, 12, 14, 16, 18, 20}, 1, 0)},
 	}
 
-	evaluator := metadata.GetEvaluator()
+	eval := th.EvaluatorFromFunc(md[0].F)
 	exp, _, err := parser.ParseExpr(target)
 	if err != nil {
 		b.Fatalf("failed to parse %s: %+v", target, err)
@@ -132,7 +133,7 @@ func BenchmarkExponentialMovingAverage(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		g, err := evaluator.Eval(context.Background(), exp, 0, 1, metrics)
+		g, err := eval.Eval(context.Background(), exp, 0, 1, metrics)
 		if err != nil {
 			b.Fatalf("failed to eval %s: %+v", target, err)
 		}
@@ -146,7 +147,7 @@ func BenchmarkExponentialMovingAverageStr(b *testing.B) {
 		{"metric[1234]", 0, 1}: {types.MakeMetricData("metric1", []float64{2, 4, 6, 8, 12, 14, 16, 18, 20}, 1, 0)},
 	}
 
-	evaluator := metadata.GetEvaluator()
+	eval := th.EvaluatorFromFunc(md[0].F)
 	exp, _, err := parser.ParseExpr(target)
 	if err != nil {
 		b.Fatalf("failed to parse %s: %+v", target, err)
@@ -154,7 +155,7 @@ func BenchmarkExponentialMovingAverageStr(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		g, err := evaluator.Eval(context.Background(), exp, 0, 1, metrics)
+		g, err := eval.Eval(context.Background(), exp, 0, 1, metrics)
 		if err != nil {
 			b.Fatalf("failed to eval %s: %+v", target, err)
 		}

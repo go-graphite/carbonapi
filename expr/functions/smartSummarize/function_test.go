@@ -5,18 +5,18 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/go-graphite/carbonapi/expr/helper"
+	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
 )
 
+var (
+	md []interfaces.FunctionMetadata = New("")
+)
+
 func init() {
-	md := New("")
-	evaluator := th.EvaluatorFromFunc(md[0].F)
-	metadata.SetEvaluator(evaluator)
-	helper.SetEvaluator(evaluator)
 	for _, m := range md {
 		metadata.RegisterFunction(m.Name, m.F)
 	}
@@ -36,7 +36,8 @@ func TestSummarizeEmptyData(t *testing.T) {
 	for _, tt := range tests {
 		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
-			th.TestEvalExpr(t, &tt)
+			eval := th.EvaluatorFromFunc(md[0].F)
+			th.TestEvalExpr(t, eval, &tt)
 		})
 	}
 
@@ -232,7 +233,8 @@ func TestEvalSummarize(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		th.TestSummarizeEvalExpr(t, &tt)
+		eval := th.EvaluatorFromFunc(md[0].F)
+		th.TestSummarizeEvalExpr(t, eval, &tt)
 	}
 }
 
@@ -306,7 +308,8 @@ func TestSmartSummarizeAlignTo1Year(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		th.TestSummarizeEvalExpr(t, &tt)
+		eval := th.EvaluatorFromFunc(md[0].F)
+		th.TestSummarizeEvalExpr(t, eval, &tt)
 	}
 }
 
@@ -380,7 +383,8 @@ func TestSmartSummarizeAlignToMonths(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		th.TestSummarizeEvalExpr(t, &tt)
+		eval := th.EvaluatorFromFunc(md[0].F)
+		th.TestSummarizeEvalExpr(t, eval, &tt)
 	}
 }
 
@@ -454,7 +458,8 @@ func TestSmartSummarizeAlignToWeeksThursday(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		th.TestSummarizeEvalExpr(t, &tt)
+		eval := th.EvaluatorFromFunc(md[0].F)
+		th.TestSummarizeEvalExpr(t, eval, &tt)
 	}
 }
 
@@ -528,7 +533,8 @@ func TestSmartSummarizeAlignToDays(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		th.TestSummarizeEvalExpr(t, &tt)
+		eval := th.EvaluatorFromFunc(md[0].F)
+		th.TestSummarizeEvalExpr(t, eval, &tt)
 	}
 }
 
@@ -602,7 +608,8 @@ func TestSmartSummarizeAlignToHours(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		th.TestSummarizeEvalExpr(t, &tt)
+		eval := th.EvaluatorFromFunc(md[0].F)
+		th.TestSummarizeEvalExpr(t, eval, &tt)
 	}
 }
 
@@ -676,7 +683,8 @@ func TestSmartSummarizeAlignToMinutes(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		th.TestSummarizeEvalExpr(t, &tt)
+		eval := th.EvaluatorFromFunc(md[0].F)
+		th.TestSummarizeEvalExpr(t, eval, &tt)
 	}
 }
 
@@ -750,7 +758,8 @@ func TestSmartSummarizeAlignToSeconds(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		th.TestSummarizeEvalExpr(t, &tt)
+		eval := th.EvaluatorFromFunc(md[0].F)
+		th.TestSummarizeEvalExpr(t, eval, &tt)
 	}
 }
 
@@ -777,7 +786,8 @@ func TestFunctionUseNameWithWildcards(t *testing.T) {
 	for _, tt := range tests {
 		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
-			th.TestMultiReturnEvalExpr(t, &tt)
+			eval := th.EvaluatorFromFunc(md[0].F)
+			th.TestMultiReturnEvalExpr(t, eval, &tt)
 		})
 	}
 }
@@ -796,7 +806,8 @@ func TestSmartSummarizeErrors(t *testing.T) {
 	for n, tt := range tests {
 		testName := tt.Target
 		t.Run(testName+"#"+strconv.Itoa(n), func(t *testing.T) {
-			th.TestEvalExprWithError(t, &tt)
+			eval := th.EvaluatorFromFunc(md[0].F)
+			th.TestEvalExprWithError(t, eval, &tt)
 		})
 	}
 }

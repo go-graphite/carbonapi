@@ -13,9 +13,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type pearsonClosest struct {
-	interfaces.FunctionBase
-}
+type pearsonClosest struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -32,12 +30,12 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 // pearsonClosest(series, seriesList, n, direction=abs)
-func (f *pearsonClosest) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *pearsonClosest) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if e.ArgsLen() > 3 {
 		return nil, types.ErrTooManyArguments
 	}
 
-	ref, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+	ref, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +44,7 @@ func (f *pearsonClosest) Do(ctx context.Context, e parser.Expr, from, until int6
 		return nil, types.ErrWildcardNotAllowed
 	}
 
-	compare, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
+	compare, err := helper.GetSeriesArg(ctx, eval, e.Arg(1), from, until, values)
 	if err != nil {
 		return nil, err
 	}

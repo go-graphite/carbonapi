@@ -11,9 +11,7 @@ import (
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
-type holtWintersForecast struct {
-	interfaces.FunctionBase
-}
+type holtWintersForecast struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -29,13 +27,13 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *holtWintersForecast) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *holtWintersForecast) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	bootstrapInterval, err := e.GetIntervalNamedOrPosArgDefault("bootstrapInterval", 1, 1, holtwinters.DefaultBootstrapInterval)
 	if err != nil {
 		return nil, err
 	}
 
-	args, err := helper.GetSeriesArg(ctx, e.Arg(0), from-bootstrapInterval, until, values)
+	args, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from-bootstrapInterval, until, values)
 	if err != nil {
 		return nil, err
 	}

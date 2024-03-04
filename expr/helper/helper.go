@@ -12,8 +12,6 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-var evaluator interfaces.Evaluator
-
 // Backref is a pre-compiled expression for backref
 var Backref = regexp.MustCompile(`\\(\d+)`)
 
@@ -24,18 +22,13 @@ func (e ErrUnknownFunction) Error() string {
 	return fmt.Sprintf("unknown function in evalExpr: %q", string(e))
 }
 
-// SetEvaluator sets evaluator for all helper functions
-func SetEvaluator(e interfaces.Evaluator) {
-	evaluator = e
-}
-
 // GetSeriesArg returns argument from series.
-func GetSeriesArg(ctx context.Context, arg parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func GetSeriesArg(ctx context.Context, eval interfaces.Evaluator, arg parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if !arg.IsName() && !arg.IsFunc() {
 		return nil, parser.ErrMissingTimeseries
 	}
 
-	a, err := evaluator.Eval(ctx, arg, from, until, values)
+	a, err := eval.Eval(ctx, arg, from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -54,11 +47,11 @@ func RemoveEmptySeriesFromName(args []*types.MetricData) string {
 }
 
 // GetSeriesArgs returns arguments of series
-func GetSeriesArgs(ctx context.Context, e []parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func GetSeriesArgs(ctx context.Context, eval interfaces.Evaluator, e []parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	var args []*types.MetricData
 
 	for _, arg := range e {
-		a, err := GetSeriesArg(ctx, arg, from, until, values)
+		a, err := GetSeriesArg(ctx, eval, arg, from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -74,8 +67,8 @@ func GetSeriesArgs(ctx context.Context, e []parser.Expr, from, until int64, valu
 
 // GetSeriesArgsAndRemoveNonExisting will fetch all required arguments, but will also filter out non existing Series
 // This is needed to be graphite-web compatible in cases when you pass non-existing Series to, for example, sumSeries
-func GetSeriesArgsAndRemoveNonExisting(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	args, err := GetSeriesArgs(ctx, e.Args(), from, until, values)
+func GetSeriesArgsAndRemoveNonExisting(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	args, err := GetSeriesArgs(ctx, eval, e.Args(), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -118,8 +111,8 @@ func AggKey(arg *types.MetricData, nodesOrTags []parser.NodeOrTag) string {
 type seriesFunc1 func(*types.MetricData) *types.MetricData
 
 // ForEachSeriesDo do action for each serie in list.
-func ForEachSeriesDo1(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData, function seriesFunc1) ([]*types.MetricData, error) {
-	arg, err := GetSeriesArg(ctx, e.Arg(0), from, until, values)
+func ForEachSeriesDo1(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData, function seriesFunc1) ([]*types.MetricData, error) {
+	arg, err := GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -135,8 +128,8 @@ func ForEachSeriesDo1(ctx context.Context, e parser.Expr, from, until int64, val
 type seriesFunc func(*types.MetricData, *types.MetricData) *types.MetricData
 
 // ForEachSeriesDo do action for each serie in list.
-func ForEachSeriesDo(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData, function seriesFunc) ([]*types.MetricData, error) {
-	arg, err := GetSeriesArg(ctx, e.Arg(0), from, until, values)
+func ForEachSeriesDo(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData, function seriesFunc) ([]*types.MetricData, error) {
+	arg, err := GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}

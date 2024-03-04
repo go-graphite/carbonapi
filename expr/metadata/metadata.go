@@ -13,7 +13,7 @@ import (
 func RegisterRewriteFunctionWithFilename(name, filename string, function interfaces.RewriteFunction) {
 	FunctionMD.Lock()
 	defer FunctionMD.Unlock()
-	function.SetEvaluator(FunctionMD.evaluator)
+
 	if _, ok := FunctionMD.RewriteFunctions[name]; ok {
 		n := FunctionMD.RewriteFunctionsFilenames[name]
 		logger := zapwriter.Logger("registerRewriteFunction")
@@ -58,7 +58,6 @@ func RegisterRewriteFunction(name string, function interfaces.RewriteFunction) {
 func RegisterFunctionWithFilename(name, filename string, function interfaces.Function) {
 	FunctionMD.Lock()
 	defer FunctionMD.Unlock()
-	function.SetEvaluator(FunctionMD.evaluator)
 
 	if _, ok := FunctionMD.Functions[name]; ok {
 		n := FunctionMD.FunctionsFilenames[name]
@@ -98,29 +97,6 @@ func RegisterFunctionWithFilename(name, filename string, function interfaces.Fun
 // RegisterFunction registers function in metadata and fills out all Description structs
 func RegisterFunction(name string, function interfaces.Function) {
 	RegisterFunctionWithFilename(name, "", function)
-}
-
-// SetEvaluator sets new evaluator function to be default for everything that needs it
-func SetEvaluator(evaluator interfaces.Evaluator) {
-	FunctionMD.Lock()
-	defer FunctionMD.Unlock()
-
-	FunctionMD.evaluator = evaluator
-	for _, v := range FunctionMD.Functions {
-		v.SetEvaluator(evaluator)
-	}
-
-	for _, v := range FunctionMD.RewriteFunctions {
-		v.SetEvaluator(evaluator)
-	}
-}
-
-// GetEvaluator returns evaluator
-func GetEvaluator() interfaces.Evaluator {
-	FunctionMD.RLock()
-	defer FunctionMD.RUnlock()
-
-	return FunctionMD.evaluator
 }
 
 // Metadata is a type to store global function metadata

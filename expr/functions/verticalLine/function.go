@@ -6,6 +6,7 @@ package verticalLine
 import (
 	"context"
 	"fmt"
+
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
@@ -13,9 +14,7 @@ import (
 
 var UnsupportedError = fmt.Errorf("must build w/ cairo support")
 
-type verticalLine struct {
-	interfaces.FunctionBase
-}
+type verticalLine struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -33,7 +32,7 @@ func New(_ string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *verticalLine) Do(_ context.Context, _ parser.Expr, _, _ int64, _ map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+func (f *verticalLine) Do(_ context.Context, _ interfaces.Evaluator, _ parser.Expr, _, _ int64, _ map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	return nil, UnsupportedError
 }
 

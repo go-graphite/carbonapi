@@ -3,11 +3,11 @@ package tests
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/ansel1/merry"
+	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
@@ -19,7 +19,7 @@ import (
 )
 
 type FuncEvaluator struct {
-	eval func(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
+	eval func(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error)
 }
 
 func (evaluator *FuncEvaluator) Fetch(_ context.Context, _ []parser.Expr, _, _ int64, values map[parser.MetricRequest][]*types.MetricData) (map[parser.MetricRequest][]*types.MetricData, error) {
@@ -47,7 +47,7 @@ func (evaluator *FuncEvaluator) Eval(ctx context.Context, e parser.Expr, from, u
 	}
 
 	if evaluator.eval != nil {
-		return evaluator.eval(context.Background(), e, from, until, values)
+		return evaluator.eval(context.Background(), evaluator, e, from, until, values)
 	}
 
 	return nil, helper.ErrUnknownFunction(e.Target())
@@ -71,9 +71,9 @@ func EvaluatorFromFunc(function interfaces.Function) interfaces.Evaluator {
 
 func EvaluatorFromFuncWithMetadata(metadata map[string]interfaces.Function) interfaces.Evaluator {
 	e := &FuncEvaluator{
-		eval: func(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+		eval: func(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 			if f, ok := metadata[e.Target()]; ok {
-				return f.Do(context.Background(), e, from, until, values)
+				return f.Do(context.Background(), eval, e, from, until, values)
 			}
 			return nil, fmt.Errorf("unknown function: %v", e.Target())
 		},
@@ -185,13 +185,11 @@ func InitTestSummarize() (int64, int64, int64) {
 	return tenThirtyTwo, tenFiftyNine, tenThirty
 }
 
-func TestSummarizeEvalExpr(t *testing.T, tt *SummarizeEvalTestItem) {
-	evaluator := metadata.GetEvaluator()
-
+func TestSummarizeEvalExpr(t *testing.T, eval interfaces.Evaluator, tt *SummarizeEvalTestItem) {
 	t.Run(tt.Name, func(t *testing.T) {
 		originalMetrics := DeepClone(tt.M)
 		exp, _, _ := parser.ParseExpr(tt.Target)
-		g, err := evaluator.Eval(context.Background(), exp, tt.From, tt.Until, tt.M)
+		g, err := eval.Eval(context.Background(), exp, tt.From, tt.Until, tt.M)
 		if err != nil {
 			t.Errorf("failed to eval %v: %+v", tt.Name, err)
 			return
@@ -226,16 +224,14 @@ type MultiReturnEvalTestItem struct {
 	Results map[string][]*types.MetricData
 }
 
-func TestMultiReturnEvalExpr(t *testing.T, tt *MultiReturnEvalTestItem) {
-	evaluator := metadata.GetEvaluator()
-
+func TestMultiReturnEvalExpr(t *testing.T, eval interfaces.Evaluator, tt *MultiReturnEvalTestItem) {
 	originalMetrics := DeepClone(tt.M)
 	exp, _, err := parser.ParseExpr(tt.Target)
 	if err != nil {
 		t.Errorf("failed to parse %v: %+v", tt.Target, err)
 		return
 	}
-	g, err := evaluator.Eval(context.Background(), exp, 0, 1, tt.M)
+	g, err := eval.Eval(context.Background(), exp, 0, 1, tt.M)
 	if err != nil {
 		t.Errorf("failed to eval %v: %+v", tt.Name, err)
 		return
@@ -286,7 +282,7 @@ func TestMultiReturnEvalExpr(t *testing.T, tt *MultiReturnEvalTestItem) {
 			}
 		}
 
-		if !reflect.DeepEqual(wants[0].Values, actual.Values) ||
+		if !compare.NearlyEqual(wants[0].Values, actual.Values) ||
 			wants[0].StartTime != actual.StartTime ||
 			wants[0].StopTime != actual.StopTime ||
 			wants[0].StepTime != actual.StepTime {
@@ -315,19 +311,19 @@ type RewriteTestError struct {
 	Want   error
 }
 
-func rewriteExpr(e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
+func rewriteExpr(e parser.Expr, eval interfaces.Evaluator, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (bool, []string, error) {
 	if e.IsFunc() {
 		metadata.FunctionMD.RLock()
 		f, ok := metadata.FunctionMD.RewriteFunctions[e.Target()]
 		metadata.FunctionMD.RUnlock()
 		if ok {
-			return f.Do(context.Background(), e, from, until, values)
+			return f.Do(context.Background(), eval, e, from, until, values)
 		}
 	}
 	return false, nil, nil
 }
 
-func TestRewriteExpr(t *testing.T, tt *RewriteTestItem) {
+func TestRewriteExpr(t *testing.T, eval interfaces.Evaluator, tt *RewriteTestItem) {
 	originalMetrics := DeepClone(tt.M)
 	testName := tt.Target
 	exp, _, err := parser.ParseExpr(tt.Target)
@@ -335,7 +331,7 @@ func TestRewriteExpr(t *testing.T, tt *RewriteTestItem) {
 		t.Fatalf("failed to parse %s: %+v", tt.Target, err)
 	}
 
-	rewritten, targets, err := rewriteExpr(exp, 0, 1, tt.M)
+	rewritten, targets, err := rewriteExpr(exp, eval, 0, 1, tt.M)
 	if err != tt.Want.Err {
 		if err == nil || tt.Want.Err == nil || !merry.Is(err, tt.Want.Err) {
 			t.Fatalf("unexpected error while calling rewrite for '%s': got '%+v', expected '%+v'", testName, err, tt.Want.Err)
@@ -396,28 +392,26 @@ func (r *EvalTestItemWithRange) TestItem() *EvalTestItem {
 	}
 }
 
-func TestEvalExprWithCustomValidation(t *testing.T, tt *EvalTestItemWithCustomValidation) {
-	evaluator := metadata.GetEvaluator()
+func TestEvalExprWithCustomValidation(t *testing.T, eval interfaces.Evaluator, tt *EvalTestItemWithCustomValidation) {
 	exp, _, err := parser.ParseExpr(tt.Target)
 	if err != nil {
 		t.Errorf("failed to parse %s: %+v", tt.Target, err)
 	}
-	g, err := evaluator.Eval(context.Background(), exp, tt.From, tt.Until, tt.M)
+	g, err := eval.Eval(context.Background(), exp, tt.From, tt.Until, tt.M)
 	if err != nil {
 		t.Errorf("failed to eval %s: %+v", tt.Target, err)
 	}
 	tt.Validator(t, g)
 }
 
-func TestEvalExprModifiedOrigin(t *testing.T, tt *EvalTestItem, from, until int64, strictOrder, compareTags bool) error {
-	evaluator := metadata.GetEvaluator()
+func TestEvalExprModifiedOrigin(t *testing.T, eval interfaces.Evaluator, tt *EvalTestItem, from, until int64, strictOrder, compareTags bool) error {
 	testName := tt.Target
 	exp, _, err := parser.ParseExpr(tt.Target)
 	if err != nil {
 		t.Errorf("failed to parse %s: %+v", tt.Target, err)
 		return nil
 	}
-	g, err := evaluator.Eval(context.Background(), exp, from, until, tt.M)
+	g, err := eval.Eval(context.Background(), exp, from, until, tt.M)
 	if err != nil {
 		return err
 	}
@@ -475,13 +469,13 @@ func TestEvalExprModifiedOrigin(t *testing.T, tt *EvalTestItem, from, until int6
 	return nil
 }
 
-func TestEvalExpr(t *testing.T, tt *EvalTestItem) {
-	TestEvalExprWithOptions(t, tt, true)
+func TestEvalExpr(t *testing.T, eval interfaces.Evaluator, tt *EvalTestItem) {
+	TestEvalExprWithOptions(t, eval, tt, true)
 }
 
-func TestEvalExprWithOptions(t *testing.T, tt *EvalTestItem, compareTags bool) {
+func TestEvalExprWithOptions(t *testing.T, eval interfaces.Evaluator, tt *EvalTestItem, compareTags bool) {
 	originalMetrics := DeepClone(tt.M)
-	err := TestEvalExprModifiedOrigin(t, tt, 0, 1, false, compareTags)
+	err := TestEvalExprModifiedOrigin(t, eval, tt, 0, 1, false, compareTags)
 	if err != nil {
 		t.Errorf("unexpected error while evaluating %s: got `%+v`", tt.Target, err)
 		return
@@ -489,8 +483,8 @@ func TestEvalExprWithOptions(t *testing.T, tt *EvalTestItem, compareTags bool) {
 	DeepEqual(t, tt.Target, originalMetrics, tt.M, true)
 }
 
-func TestEvalExprResult(t *testing.T, tt *EvalTestItem) {
-	err := TestEvalExprModifiedOrigin(t, tt, 0, 1, false, true)
+func TestEvalExprResult(t *testing.T, eval interfaces.Evaluator, tt *EvalTestItem) {
+	err := TestEvalExprModifiedOrigin(t, eval, tt, 0, 1, false, true)
 	if err != nil {
 		t.Errorf("unexpected error while evaluating %s: got `%+v`", tt.Target, err)
 		return
@@ -498,10 +492,10 @@ func TestEvalExprResult(t *testing.T, tt *EvalTestItem) {
 	//
 }
 
-func TestEvalExprWithRange(t *testing.T, tt *EvalTestItemWithRange) {
+func TestEvalExprWithRange(t *testing.T, eval interfaces.Evaluator, tt *EvalTestItemWithRange) {
 	originalMetrics := DeepClone(tt.M)
 	tt2 := tt.TestItem()
-	err := TestEvalExprModifiedOrigin(t, tt2, tt.From, tt.Until, false, true)
+	err := TestEvalExprModifiedOrigin(t, eval, tt2, tt.From, tt.Until, false, true)
 	if err != nil {
 		t.Errorf("unexpected error while evaluating %s: got `%+v`", tt.Target, err)
 		return
@@ -509,14 +503,14 @@ func TestEvalExprWithRange(t *testing.T, tt *EvalTestItemWithRange) {
 	DeepEqual(t, tt.Target, originalMetrics, tt.M, true)
 }
 
-func TestEvalExprWithError(t *testing.T, tt *EvalTestItemWithError) {
+func TestEvalExprWithError(t *testing.T, eval interfaces.Evaluator, tt *EvalTestItemWithError) {
 	originalMetrics := DeepClone(tt.M)
 	tt2 := &EvalTestItem{
 		Target: tt.Target,
 		M:      tt.M,
 		Want:   tt.Want,
 	}
-	err := TestEvalExprModifiedOrigin(t, tt2, 0, 1, false, true)
+	err := TestEvalExprModifiedOrigin(t, eval, tt2, 0, 1, false, true)
 	if !merry.Is(err, tt.Error) {
 		t.Errorf("unexpected error while evaluating %s: got `%+v`, expected `%+v`", tt.Target, err, tt.Error)
 		return
@@ -524,12 +518,62 @@ func TestEvalExprWithError(t *testing.T, tt *EvalTestItemWithError) {
 	DeepEqual(t, tt.Target, originalMetrics, tt.M, true)
 }
 
-func TestEvalExprOrdered(t *testing.T, tt *EvalTestItem) {
+func TestEvalExprOrdered(t *testing.T, eval interfaces.Evaluator, tt *EvalTestItem) {
 	originalMetrics := DeepClone(tt.M)
-	err := TestEvalExprModifiedOrigin(t, tt, 0, 1, true, true)
+	err := TestEvalExprModifiedOrigin(t, eval, tt, 0, 1, true, true)
 	if err != nil {
 		t.Errorf("unexpected error while evaluating %s: got `%+v`", tt.Target, err)
 		return
 	}
 	DeepEqual(t, tt.Target, originalMetrics, tt.M, true)
+}
+
+type TestZipper struct {
+	M map[parser.MetricRequest][]*types.MetricData
+}
+
+func NewTestZipper(m map[parser.MetricRequest][]*types.MetricData) TestZipper {
+	return TestZipper{M: m}
+}
+
+func (zp TestZipper) Find(ctx context.Context, request pb.MultiGlobRequest) (*pb.MultiGlobResponse, *zipperTypes.Stats, merry.Error) {
+	return nil, nil, zipperTypes.ErrNotImplementedYet
+}
+
+func (zp TestZipper) Info(ctx context.Context, metrics []string) (*pb.ZipperInfoResponse, *zipperTypes.Stats, merry.Error) {
+	return nil, nil, zipperTypes.ErrNotImplementedYet
+}
+
+func (zp TestZipper) RenderCompat(ctx context.Context, metrics []string, from, until int64) ([]*types.MetricData, *zipperTypes.Stats, merry.Error) {
+	return nil, nil, zipperTypes.ErrNotImplementedYet
+}
+
+func (zp TestZipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*types.MetricData, *zipperTypes.Stats, merry.Error) {
+	var resp []*types.MetricData
+	for _, r := range request.Metrics {
+		metricRequest := parser.MetricRequest{Metric: r.PathExpression, From: r.StartTime, Until: r.StopTime}
+		if v, ok := zp.M[metricRequest]; ok {
+			resp = append(resp, v...)
+		}
+	}
+	return resp, nil, nil
+}
+
+func (zp TestZipper) TagNames(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+	return nil, zipperTypes.ErrNotImplementedYet
+}
+
+func (zp TestZipper) TagValues(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+	return nil, zipperTypes.ErrNotImplementedYet
+}
+
+func (zp TestZipper) ScaleToCommonStep() bool {
+	return false
+}
+
+func GenerateValues(start, stop, step int64) (values []float64) {
+	for i := start; i < stop; i += step {
+		values = append(values, float64(i))
+	}
+	return
 }

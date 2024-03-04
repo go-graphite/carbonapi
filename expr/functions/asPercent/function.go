@@ -12,9 +12,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type asPercent struct {
-	interfaces.FunctionBase
-}
+type asPercent struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -334,8 +332,8 @@ func seriesGroup2AsPercent(arg, total []*types.MetricData, nodesOrTags []parser.
 }
 
 // asPercent(seriesList, total=None, *nodes)
-func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	arg, err := helper.GetSeriesArg(ctx, e.Arg(0), from, until, values)
+func (f *asPercent) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	arg, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
 	}
@@ -389,7 +387,7 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 		return arg, nil
 	} else if e.ArgsLen() == 2 && (e.Arg(1).IsName() || e.Arg(1).IsFunc()) {
 		// asPercent(seriesList, totalList)
-		total, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
+		total, err := helper.GetSeriesArg(ctx, eval, e.Arg(1), from, until, values)
 		if err != nil {
 			return nil, err
 		}
@@ -414,7 +412,7 @@ func (f *asPercent) Do(ctx context.Context, e parser.Expr, from, until int64, va
 			return seriesGroupAsPercent(arg, nodesOrTags), nil
 		} else {
 			// asPercent(seriesList, totalSeriesList, *nodes)
-			total, err := helper.GetSeriesArg(ctx, e.Arg(1), from, until, values)
+			total, err := helper.GetSeriesArg(ctx, eval, e.Arg(1), from, until, values)
 			if err != nil {
 				return nil, err
 			}

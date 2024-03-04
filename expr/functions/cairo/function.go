@@ -9,9 +9,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 )
 
-type cairo struct {
-	interfaces.FunctionBase
-}
+type cairo struct{}
 
 func GetOrder() interfaces.Order {
 	return interfaces.Any
@@ -27,8 +25,8 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
-func (f *cairo) Do(ctx context.Context, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	return png.EvalExprGraph(ctx, e, from, until, values)
+func (f *cairo) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
+	return png.EvalExprGraph(ctx, eval, e, from, until, values)
 }
 
 func (f *cairo) Description() map[string]types.FunctionDescription {
