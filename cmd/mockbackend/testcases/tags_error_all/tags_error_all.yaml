@@ -5,7 +5,7 @@ test:
           binary: "./carbonapi"
           args:
               - "-config"
-              - "./cmd/mockbackend/carbonapi_singlebackend.yaml"
+              - "./cmd/mockbackend/carbonapi_singlebackend_all.yaml"
               - "-exact-config"
     queries:
         - endpoint: "http://127.0.0.1:8081"
@@ -44,20 +44,18 @@ test:
           type: "GET"
           URL: "/tags/autoComplete/values?expr=tag2%3Dv1&tag=tag3"
           expectedResponse:
-              httpCode: 200
-              contentType: "application/json"
-              expectedResults:
-                  - tagsAutocompelete: []
+            httpCode: 503
+            contentType: "text/plain; charset=utf-8"
+            errBody: "timeout while fetching Response\n"
 
         # 503
         - endpoint: "http://127.0.0.1:8081"
           type: "GET"
           URL: "/tags/autoComplete/values?expr=tag2%3Dv1&tag=tag4"
           expectedResponse:
-              httpCode: 200
-              contentType: "application/json"
-              expectedResults:
-                  - tagsAutocompelete: []
+              httpCode: 503
+              contentType: "text/plain; charset=utf-8"
+              errBody: "Service Unavailable\n"
 
 listeners:
       - address: ":9070"

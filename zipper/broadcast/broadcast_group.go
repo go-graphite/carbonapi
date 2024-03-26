@@ -846,9 +846,9 @@ func (bg *BroadcastGroup) tagEverything(ctx context.Context, isTagName bool, que
 
 	var err merry.Error
 	if result.Err != nil {
-		err = types.ErrNonFatalErrors
-		for _, e := range result.Err {
-			err = err.WithCause(e)
+		code, errors := helper.MergeHttpErrors(result.Err)
+		if len(errors) > 0 {
+			err = types.ErrNonFatalErrors.WithHTTPCode(code).WithMessage(strings.Join(errors, "\n"))
 		}
 	}
 
