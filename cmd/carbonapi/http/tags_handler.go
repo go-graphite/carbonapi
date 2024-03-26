@@ -13,6 +13,7 @@ import (
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 	utilctx "github.com/go-graphite/carbonapi/util/ctx"
+	"github.com/go-graphite/carbonapi/zipper/helper"
 	"github.com/go-graphite/carbonapi/zipper/types"
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
@@ -58,8 +59,7 @@ func tagHandler(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		logAsError = true
-		w.Header().Set("Content-Type", contentTypeJSON)
-		_, _ = w.Write([]byte{'[', ']'})
+		setError(w, accessLogDetails, err.Error(), http.StatusBadRequest, carbonapiUUID)
 		return
 	}
 
@@ -100,10 +100,9 @@ func tagHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO(civil): Implement stats
-	if err != nil && !merry.Is(err, types.ErrNoMetricsFetched) && !merry.Is(err, types.ErrNonFatalErrors) {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		accessLogDetails.HTTPCode = http.StatusInternalServerError
-		accessLogDetails.Reason = err.Error()
+	if err != nil && !merry.Is(err, types.ErrNoMetricsFetched) && (!merry.Is(err, types.ErrNonFatalErrors) || config.Config.Upstreams.RequireSuccessAll) {
+		code := merry.HTTPCode(err)
+		setError(w, accessLogDetails, helper.MerryRootError(err), code, carbonapiUUID)
 		logAsError = true
 		return
 	}
@@ -116,9 +115,7 @@ func tagHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		accessLogDetails.HTTPCode = http.StatusInternalServerError
-		accessLogDetails.Reason = err.Error()
+		setError(w, accessLogDetails, err.Error(), http.StatusInternalServerError, carbonapiUUID)
 		logAsError = true
 		return
 	}
