@@ -68,7 +68,7 @@ func TestNewBroadcastGroup(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b, err := NewBroadcastGroup(logger, tt.name, true, tt.servers, 60, 500, 100, timeouts, false)
+			b, err := NewBroadcastGroup(logger, tt.name, true, tt.servers, 60, 500, 100, timeouts, false, false)
 			if !errorsAreEqual(err, tt.expectedErr) {
 				t.Fatalf("unexpected error %v, expected %v", err, tt.expectedErr)
 			}
@@ -107,18 +107,7 @@ func TestProbeTLDs(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		b, err := New(
-			WithLogger(logger),
-			WithGroupName(tt.name),
-			WithSplitMultipleRequests(true),
-			WithBackends(tt.servers),
-			WithPathCache(60),
-			WithLimiter(500),
-			WithMaxMetricsPerRequest(100),
-			WithTimeouts(timeouts),
-			WithTLDCache(true),
-		)
-
+		b, err := NewBroadcastGroup(logger, tt.name, true, tt.servers, 60, 500, 100, timeouts, false, false)
 		if err != nil {
 			t.Fatalf("unexpected error %v", err)
 		}

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -15,7 +14,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/go-graphite/carbonapi/limiter"
-	"github.com/go-graphite/carbonapi/pkg/parser"
 	util "github.com/go-graphite/carbonapi/util/ctx"
 	"github.com/go-graphite/carbonapi/zipper/types"
 )
@@ -80,98 +78,6 @@ func stripHtmlTags(s string, maxLen int) string {
 	}
 	s = strings.Trim(builder.String(), "\r\n")
 	return s
-}
-
-func requestError(err error, server string) merry.Error {
-	// with code InternalServerError by default, overwritten by custom error
-	if merry.Is(err, context.DeadlineExceeded) {
-		return types.ErrTimeoutExceeded.WithValue("server", server).WithCause(err)
-	}
-	if urlErr, ok := err.(*url.Error); ok {
-		if netErr, ok := urlErr.Err.(*net.OpError); ok {
-			return types.ErrBackendError.WithValue("server", server).WithCause(netErr)
-		}
-	}
-	if netErr, ok := err.(*net.OpError); ok {
-		return types.ErrBackendError.WithValue("server", server).WithCause(netErr)
-	}
-	return types.ErrResponceError.WithValue("server", server)
-}
-
-func MergeHttpErrors(errors []merry.Error) (int, []string) {
-	returnCode := http.StatusNotFound
-	errMsgs := make([]string, 0)
-	for _, err := range errors {
-		c := merry.RootCause(err)
-		if c == nil {
-			c = err
-		}
-
-		code := merry.HTTPCode(err)
-		if code == http.StatusNotFound {
-			continue
-		} else if code == http.StatusInternalServerError && merry.Is(c, parser.ErrInvalidArg) {
-			// check for invalid args, see applyByNode rewrite function
-			code = http.StatusBadRequest
-		}
-
-		if msg := merry.Message(c); len(msg) > 0 {
-			errMsgs = append(errMsgs, strings.TrimRight(msg, "\n"))
-		} else {
-			errMsgs = append(errMsgs, c.Error())
-		}
-
-		if code == http.StatusGatewayTimeout || code == http.StatusBadGateway {
-			// simplify code, one error type for communications errors, all we can retry
-			code = http.StatusServiceUnavailable
-		}
-
-		if code == http.StatusBadRequest {
-			// The 400 is returned on wrong requests, e.g. non-existent functions
-			returnCode = code
-		} else if returnCode == http.StatusNotFound || code == http.StatusForbidden {
-			// First error or access denied (may be limits or other)
-			returnCode = code
-		} else if code != http.StatusServiceUnavailable {
-			returnCode = code
-		}
-	}
-
-	return returnCode, errMsgs
-}
-
-func MergeHttpErrorMap(errorsMap map[string]merry.Error) (int, []string) {
-	errors := make([]merry.Error, len(errorsMap))
-	i := 0
-	for _, err := range errorsMap {
-		errors[i] = err
-		i++
-	}
-
-	return MergeHttpErrors(errors)
-}
-
-func HttpErrorByCode(err merry.Error) merry.Error {
-	var returnErr merry.Error
-	if err == nil {
-		returnErr = types.ErrNoMetricsFetched
-	} else {
-		code := merry.HTTPCode(err)
-		msg := stripHtmlTags(merry.Message(err), 0)
-		if code == http.StatusForbidden {
-			returnErr = types.ErrForbidden
-			if len(msg) > 0 {
-				// pass message to caller
-				returnErr = returnErr.WithMessage(msg)
-			}
-		} else if code == http.StatusServiceUnavailable || code == http.StatusBadGateway || code == http.StatusGatewayTimeout {
-			returnErr = types.ErrFailedToFetch.WithHTTPCode(code).WithMessage(msg)
-		} else {
-			returnErr = types.ErrFailed.WithHTTPCode(code).WithMessage(msg)
-		}
-	}
-
-	return returnErr
 }
 
 type ServerResponse struct {
@@ -306,7 +212,7 @@ func (c *HttpQuery) doRequest(ctx context.Context, logger *zap.Logger, server, u
 	return &ServerResponse{Server: server, Response: body}, nil
 }
 
-func (c *HttpQuery) DoQuery(ctx context.Context, logger *zap.Logger, uri string, r types.Request) (*ServerResponse, merry.Error) {
+func (c *HttpQuery) DoQuery(ctx context.Context, logger *zap.Logger, uri string, r types.Request) (resp *ServerResponse, err merry.Error) {
 	maxTries := c.maxTries
 	if len(c.servers) > maxTries {
 		maxTries = len(c.servers)
@@ -319,11 +225,14 @@ func (c *HttpQuery) DoQuery(ctx context.Context, logger *zap.Logger, uri string,
 		res, err := c.doRequest(ctx, logger, server, uri, r)
 		if err != nil {
 			logger.Debug("have errors",
-				zap.Error(err),
+				zap.String("error", err.Error()),
+				zap.String("server", server),
 			)
 
 			e = e.WithCause(err).WithHTTPCode(merry.HTTPCode(err))
 			code = merry.HTTPCode(err)
+			// TODO (msaf1980): may be metric for server failures ?
+			// TODO (msaf1980): may be retry policy for avoid retry bad queries ?
 			continue
 		}
 
@@ -333,7 +242,7 @@ func (c *HttpQuery) DoQuery(ctx context.Context, logger *zap.Logger, uri string,
 	return nil, types.ErrMaxTriesExceeded.WithCause(e).WithHTTPCode(code)
 }
 
-func (c *HttpQuery) DoQueryToAll(ctx context.Context, logger *zap.Logger, uri string, r types.Request) ([]*ServerResponse, merry.Error) {
+func (c *HttpQuery) DoQueryToAll(ctx context.Context, logger *zap.Logger, uri string, r types.Request) (resp []*ServerResponse, err merry.Error) {
 	maxTries := c.maxTries
 	if len(c.servers) > maxTries {
 		maxTries = len(c.servers)

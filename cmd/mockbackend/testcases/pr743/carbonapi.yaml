@@ -49,7 +49,7 @@ upstreams:
                 connect: "200ms"
             servers:
                 - "http://127.0.0.1:9070"
-    graphite09compat: false
+graphite09compat: false
 expireDelaySec: 10
 logger:
     - logger: ""

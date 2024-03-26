@@ -91,89 +91,96 @@ func (cfg *listener) renderHandler(wr http.ResponseWriter, req *http.Request) {
 		Metrics: []carbonapi_v3_pb.FetchResponse{},
 	}
 
-	newCfg := Listener{
-		Code:        cfg.Code,
-		EmptyBody:   cfg.EmptyBody,
-		Expressions: copyMap(cfg.Expressions),
+	httpCode := http.StatusOK
+	for _, target := range targets {
+		if response, ok := cfg.Expressions[target]; ok {
+			if response.ReplyDelayMS > 0 {
+				delay := time.Duration(response.ReplyDelayMS) * time.Millisecond
+				logger.Info("will add extra delay",
+					zap.Duration("delay", delay),
+				)
+				time.Sleep(delay)
+			}
+			if response.Code > 0 && response.Code != http.StatusOK {
+				httpCode = response.Code
+			}
+			if httpCode == http.StatusOK {
+				for _, m := range response.Data {
+					step := m.Step
+					if step == 0 {
+						step = 1
+					}
+					startTime := m.StartTime
+					if startTime == 0 {
+						startTime = step
+					}
+					isAbsent := make([]bool, 0, len(m.Values))
+					protov2Values := make([]float64, 0, len(m.Values))
+					for i := range m.Values {
+						if math.IsNaN(m.Values[i]) {
+							isAbsent = append(isAbsent, true)
+							protov2Values = append(protov2Values, 0.0)
+						} else {
+							isAbsent = append(isAbsent, false)
+							protov2Values = append(protov2Values, m.Values[i])
+						}
+					}
+					fr2 := carbonapi_v2_pb.FetchResponse{
+						Name:      m.MetricName,
+						StartTime: int32(startTime),
+						StopTime:  int32(startTime + step*len(protov2Values)),
+						StepTime:  int32(step),
+						Values:    protov2Values,
+						IsAbsent:  isAbsent,
+					}
+
+					fr3 := carbonapi_v3_pb.FetchResponse{
+						Name:                    m.MetricName,
+						PathExpression:          target,
+						ConsolidationFunc:       "avg",
+						StartTime:               int64(startTime),
+						StopTime:                int64(startTime + step*len(m.Values)),
+						StepTime:                int64(step),
+						XFilesFactor:            0,
+						HighPrecisionTimestamps: false,
+						Values:                  m.Values,
+						RequestStartTime:        1,
+						RequestStopTime:         int64(startTime + step*len(m.Values)),
+					}
+
+					multiv2.Metrics = append(multiv2.Metrics, fr2)
+					multiv3.Metrics = append(multiv3.Metrics, fr3)
+				}
+			}
+		}
 	}
 
-	for _, target := range targets {
-		response, ok := newCfg.Expressions[target]
-		if !ok {
+	if httpCode == http.StatusOK {
+		if len(multiv2.Metrics) == 0 {
 			wr.WriteHeader(http.StatusNotFound)
 			_, _ = wr.Write([]byte("Not found"))
 			return
 		}
-		if response.ReplyDelayMS > 0 {
-			delay := time.Duration(response.ReplyDelayMS) * time.Millisecond
-			logger.Info("will add extra delay",
-				zap.Duration("delay", delay),
-			)
-			time.Sleep(delay)
+
+		if cfg.Listener.ShuffleResults {
+			rand.Shuffle(len(multiv2.Metrics), func(i, j int) {
+				multiv2.Metrics[i], multiv2.Metrics[j] = multiv2.Metrics[j], multiv2.Metrics[i]
+			})
+			rand.Shuffle(len(multiv3.Metrics), func(i, j int) {
+				multiv3.Metrics[i], multiv3.Metrics[j] = multiv3.Metrics[j], multiv3.Metrics[i]
+			})
 		}
-		for _, m := range response.Data {
-			step := m.Step
-			if step == 0 {
-				step = 1
-			}
-			startTime := m.StartTime
-			if startTime == 0 {
-				startTime = step
-			}
-			isAbsent := make([]bool, 0, len(m.Values))
-			protov2Values := make([]float64, 0, len(m.Values))
-			for i := range m.Values {
-				if math.IsNaN(m.Values[i]) {
-					isAbsent = append(isAbsent, true)
-					protov2Values = append(protov2Values, 0.0)
-				} else {
-					isAbsent = append(isAbsent, false)
-					protov2Values = append(protov2Values, m.Values[i])
-				}
-			}
-			fr2 := carbonapi_v2_pb.FetchResponse{
-				Name:      m.MetricName,
-				StartTime: int32(startTime),
-				StopTime:  int32(startTime + step*len(protov2Values)),
-				StepTime:  int32(step),
-				Values:    protov2Values,
-				IsAbsent:  isAbsent,
-			}
 
-			fr3 := carbonapi_v3_pb.FetchResponse{
-				Name:                    m.MetricName,
-				PathExpression:          target,
-				ConsolidationFunc:       "avg",
-				StartTime:               int64(startTime),
-				StopTime:                int64(startTime + step*len(m.Values)),
-				StepTime:                int64(step),
-				XFilesFactor:            0,
-				HighPrecisionTimestamps: false,
-				Values:                  m.Values,
-				RequestStartTime:        1,
-				RequestStopTime:         int64(startTime + step*len(m.Values)),
-			}
-
-			multiv2.Metrics = append(multiv2.Metrics, fr2)
-			multiv3.Metrics = append(multiv3.Metrics, fr3)
+		contentType, d := cfg.marshalResponse(wr, logger, format, multiv3, multiv2)
+		if d == nil {
+			return
 		}
+		wr.Header().Set("Content-Type", contentType)
+		_, _ = wr.Write(d)
+	} else {
+		wr.WriteHeader(httpCode)
+		_, _ = wr.Write([]byte(http.StatusText(httpCode)))
 	}
-
-	if cfg.Listener.ShuffleResults {
-		rand.Shuffle(len(multiv2.Metrics), func(i, j int) {
-			multiv2.Metrics[i], multiv2.Metrics[j] = multiv2.Metrics[j], multiv2.Metrics[i]
-		})
-		rand.Shuffle(len(multiv3.Metrics), func(i, j int) {
-			multiv3.Metrics[i], multiv3.Metrics[j] = multiv3.Metrics[j], multiv3.Metrics[i]
-		})
-	}
-
-	contentType, d := cfg.marshalResponse(wr, logger, format, multiv3, multiv2)
-	if d == nil {
-		return
-	}
-	wr.Header().Set("Content-Type", contentType)
-	_, _ = wr.Write(d)
 }
 
 func (cfg *listener) marshalResponse(wr http.ResponseWriter, logger *zap.Logger, format responseFormat, multiv3 carbonapi_v3_pb.MultiFetchResponse, multiv2 carbonapi_v2_pb.MultiFetchResponse) (string, []byte) {

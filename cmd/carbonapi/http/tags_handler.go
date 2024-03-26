@@ -13,6 +13,7 @@ import (
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
 	utilctx "github.com/go-graphite/carbonapi/util/ctx"
+	"github.com/go-graphite/carbonapi/zipper/helper"
 	"github.com/go-graphite/carbonapi/zipper/types"
 	"github.com/lomik/zapwriter"
 	"go.uber.org/zap"
@@ -21,9 +22,10 @@ import (
 func tagHandler(w http.ResponseWriter, r *http.Request) {
 	t0 := time.Now()
 	uuid := uuid.NewV4()
+	carbonapiUUID := uuid.String()
 
 	// TODO: Migrate to context.WithTimeout
-	ctx := utilctx.SetUUID(r.Context(), uuid.String())
+	ctx := utilctx.SetUUID(r.Context(), carbonapiUUID)
 	requestHeaders := utilctx.GetLogHeaders(ctx)
 	username, _, _ := r.BasicAuth()
 
@@ -39,7 +41,7 @@ func tagHandler(w http.ResponseWriter, r *http.Request) {
 	var accessLogDetails = &carbonapipb.AccessLogDetails{
 		Handler:        "tags",
 		Username:       username,
-		CarbonapiUUID:  uuid.String(),
+		CarbonapiUUID:  carbonapiUUID,
 		URL:            r.URL.Path,
 		PeerIP:         srcIP,
 		PeerPort:       srcPort,
@@ -57,8 +59,7 @@ func tagHandler(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		logAsError = true
-		w.Header().Set("Content-Type", contentTypeJSON)
-		_, _ = w.Write([]byte{'[', ']'})
+		setError(w, accessLogDetails, err.Error(), http.StatusBadRequest, carbonapiUUID)
 		return
 	}
 
@@ -81,7 +82,7 @@ func tagHandler(w http.ResponseWriter, r *http.Request) {
 	rawQuery := q.Encode()
 
 	if queryLengthLimitExceeded(r.Form["query"], config.Config.MaxQueryLength) {
-		setError(w, accessLogDetails, "query length limit exceeded", http.StatusBadRequest, uuid.String())
+		setError(w, accessLogDetails, "query length limit exceeded", http.StatusBadRequest, carbonapiUUID)
 		logAsError = true
 		return
 	}
@@ -99,10 +100,9 @@ func tagHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO(civil): Implement stats
-	if err != nil && !merry.Is(err, types.ErrNoMetricsFetched) && !merry.Is(err, types.ErrNonFatalErrors) {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		accessLogDetails.HTTPCode = http.StatusInternalServerError
-		accessLogDetails.Reason = err.Error()
+	if err != nil && !merry.Is(err, types.ErrNoMetricsFetched) && (!merry.Is(err, types.ErrNonFatalErrors) || config.Config.Upstreams.RequireSuccessAll) {
+		code := merry.HTTPCode(err)
+		setError(w, accessLogDetails, helper.MerryRootError(err), code, carbonapiUUID)
 		logAsError = true
 		return
 	}
@@ -115,15 +115,13 @@ func tagHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		accessLogDetails.HTTPCode = http.StatusInternalServerError
-		accessLogDetails.Reason = err.Error()
+		setError(w, accessLogDetails, err.Error(), http.StatusInternalServerError, carbonapiUUID)
 		logAsError = true
 		return
 	}
 
 	w.Header().Set("Content-Type", contentTypeJSON)
-	w.Header().Set(ctxHeaderUUID, uuid.String())
+	w.Header().Set(ctxHeaderUUID, carbonapiUUID)
 	_, _ = w.Write(b)
 	accessLogDetails.Runtime = time.Since(t0).Seconds()
 	accessLogDetails.HTTPCode = http.StatusOK
