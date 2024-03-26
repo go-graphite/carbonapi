@@ -35,7 +35,7 @@ type capabilityResponse struct {
 	protocol string
 }
 
-//_internal/capabilities/
+// _internal/capabilities/
 func doQuery(ctx context.Context, logger *zap.Logger, groupName string, httpClient *http.Client, limiter limiter.ServerLimiter, server string, request types.Request, resChan chan<- capabilityResponse) {
 	httpQuery := helper.NewHttpQuery(groupName, []string{server}, 1, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv3PB)
 	rewrite, _ := url.Parse("http://127.0.0.1/_internal/capabilities/")
@@ -136,11 +136,11 @@ type AutoGroup struct {
 	groupName string
 }
 
-func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool, limiter limiter.ServerLimiter) (types.BackendServer, merry.Error) {
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool, limiter limiter.ServerLimiter) (types.BackendServer, merry.Error) {
 	return nil, merry.New("auto group doesn't support anything useful except for New")
 }
 
-func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool) (types.BackendServer, merry.Error) {
+func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool) (types.BackendServer, merry.Error) {
 	logger = logger.With(zap.String("type", "autoGroup"), zap.String("name", config.GroupName))
 
 	if config.ConcurrencyLimit == nil {
@@ -176,7 +176,7 @@ func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool) (typ
 		cfg := config
 		cfg.GroupName = config.GroupName + "_" + proto
 		cfg.Servers = servers
-		c, ePtr := backendInit(logger, cfg, tldCacheDisabled)
+		c, ePtr := backendInit(logger, cfg, tldCacheDisabled, requireSuccessAll)
 		if ePtr != nil {
 			return nil, ePtr
 		}
@@ -184,17 +184,8 @@ func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled bool) (typ
 		backends = append(backends, c)
 	}
 
-	return broadcast.New(
-		broadcast.WithLogger(logger),
-		broadcast.WithGroupName(config.GroupName+"_broadcast"),
-		broadcast.WithSplitMultipleRequests(config.DoMultipleRequestsIfSplit),
-		broadcast.WithBackends(backends),
-		broadcast.WithPathCache(600),
-		broadcast.WithLimiter(*config.ConcurrencyLimit),
-		broadcast.WithMaxMetricsPerRequest(*config.MaxBatchSize),
-		broadcast.WithTimeouts(*config.Timeouts),
-		broadcast.WithTLDCache(!tldCacheDisabled),
-	)
+	return broadcast.NewBroadcastGroup(logger, config.GroupName+"_broadcast", config.DoMultipleRequestsIfSplit, backends,
+		600, *config.ConcurrencyLimit, *config.MaxBatchSize, *config.Timeouts, tldCacheDisabled, requireSuccessAll)
 }
 
 func (c AutoGroup) MaxMetricsPerRequest() int {

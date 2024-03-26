@@ -6,6 +6,7 @@ test:
           args:
               - "-config"
               - "./cmd/mockbackend/testcases/pr817/carbonapi.yaml"
+              - "-exact-config"
     queries:
             - endpoint: "http://127.0.0.1:8081"
               type: "GET"
@@ -13,35 +14,30 @@ test:
               expectedResponse:
                   httpCode: 400
                   contentType: "text/plain; charset=utf-8"
-                  emptyBody: true 
             - endpoint: "http://127.0.0.1:8081"
               type: "GET"
               URL: "/metrics/find?query=a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.*&format=json"
               expectedResponse:
                   httpCode: 400
                   contentType: "text/plain; charset=utf-8"
-                  emptyBody: true 
             - endpoint: "http://127.0.0.1:8081"
               type: "GET"
               URL: "/metrics/expand?query=a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b&format=json"
               expectedResponse:
                   httpCode: 400
                   contentType: "text/plain; charset=utf-8"
-                  emptyBody: true
             - endpoint: "http://127.0.0.1:8081"
               type: "GET"
               URL: "/tags/autoComplete/tags?query=a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b"
               expectedResponse:
                   httpCode: 400
                   contentType: "text/plain; charset=utf-8"
-                  emptyBody: true
             - endpoint: "http://127.0.0.1:8081"
               type: "GET"
               URL: "/tags/autoComplete/values?query=a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.b"
               expectedResponse:
                   httpCode: 400
                   contentType: "text/plain; charset=utf-8"
-                  emptyBody: true
             - endpoint: "http://127.0.0.1:8081"
               type: "GET"
               URL: "/render/?target=a.b.c&target=a.b.d&format=json"
@@ -49,11 +45,11 @@ test:
                   httpCode: 200
                   contentType: "application/json"
                   expectedResults:
-                          - metrics:
-                                  - target: "a.b.c"
-                                    datapoints: [[0,1],[1,2],[2,3],[2,4],[3,5]]
-                                  - target: "a.b.d"
-                                    datapoints: [[31,1],[10,2],[4,3],[7,4],[3,5]]
+                      - metrics:
+                          - target: "a.b.c"
+                            datapoints: [[0,1],[1,2],[2,3],[2,4],[3,5]]
+                          - target: "a.b.d"
+                            datapoints: [[31,1],[10,2],[4,3],[7,4],[3,5]]
             - endpoint: "http://127.0.0.1:8081"
               type: "GET"
               URL: "/metrics/find?query=a.b.*&format=json"

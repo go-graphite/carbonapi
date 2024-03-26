@@ -12,7 +12,7 @@ import (
 )
 
 // type Fetcher func(ctx context.Context, logger *zap.Logger, client types.BackendServer, reqs interface{}, resCh chan<- types.ServerFetchResponse) {
-//type Fetcher func(ctx context.Context, logger *zap.Logger, client BackendServer, reqs interface{}, resCh chan ServerFetchResponse) {
+// type Fetcher func(ctx context.Context, logger *zap.Logger, client BackendServer, reqs interface{}, resCh chan ServerFetchResponse) {
 type Fetcher func(ctx context.Context, logger *zap.Logger, client BackendServer, reqs interface{}, resCh chan ServerFetcherResponse)
 
 type ServerFetcherResponse interface {
@@ -52,9 +52,11 @@ GATHER:
 		select {
 		case res := <-resCh:
 			answeredServers[res.GetServer()] = struct{}{}
-			_ = result.MergeI(res)
-			responseCount++
-
+			if err := result.MergeI(res); err == nil {
+				responseCount++
+			} else {
+				result.AddError(err)
+			}
 		case <-ctx.Done():
 			err := ErrTimeoutExceeded.WithValue("timedout_backends", NoAnswerBackends(clients, answeredServers))
 			result.AddError(err)

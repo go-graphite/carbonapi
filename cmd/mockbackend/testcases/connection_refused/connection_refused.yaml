@@ -1,0 +1,72 @@
+version: "v1"
+test:
+    apps:
+        - name: "carbonapi"
+          binary: "./carbonapi"
+          args:
+              - "-config"
+              - "./cmd/mockbackend/testcases/connection_refused/carbonapi.yaml"
+              - "-exact-config"
+    queries:
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/render/?target=a&format=json"
+          expectedResponse:
+              httpCode: 503
+              contentType: "text/plain; charset=utf-8"
+              errBody: "a: connection refused\n"
+              errSort: true
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/render/?target=a&target=b&format=json"
+          expectedResponse:
+              httpCode: 503
+              contentType: "text/plain; charset=utf-8"
+              errBody: "a: connection refused\nb: connection refused\n"
+              errSort: true
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/metrics/find/?query=a&format=json"
+          expectedResponse:
+              httpCode: 503
+              contentType: "text/plain; charset=utf-8"
+              errBody: "connection refused\n"
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/metrics/find/?query=a&query=b&format=json"
+          expectedResponse:
+              httpCode: 503
+              contentType: "text/plain; charset=utf-8"
+              errBody: "connection refused\n"
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/tags/autoComplete/values?expr=tag2%3Dv1&tag=tag4"
+          expectedResponse:
+              httpCode: 200
+              contentType: "application/json"
+              expectedResults:
+                  - tagsAutocompelete: []
+            # TODO: query must fail
+            #   httpCode: 503
+            #   contentType: "text/plain; charset=utf-8"
+            #   errBody: "connection refused\n"
+            #   errSort: true
+
+listeners:
+      - address: ":9070"
+        expressions:
+            "a":
+                pathExpression: "a"
+                data:
+                    - metricName: "a"
+                      values: [0,1,2,2,3]
+
+            # timeout
+            "c":
+                pathExpression: "c"
+                code: 404
+                replyDelayMS: 7000
+
+            "d":
+                pathExpression: "d"
+                code: 503
