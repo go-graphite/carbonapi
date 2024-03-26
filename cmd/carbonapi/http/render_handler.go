@@ -353,16 +353,16 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		// Obtain error code from the errors
 		// In case we have only "Not Found" errors, result should be 404
 		// Otherwise it should be 500
-		var errMsgs []string
+		var errMsgs map[string]string
 		returnCode, errMsgs = helper.MergeHttpErrorMap(errors)
-		logger.Debug("error response or no response", zap.Strings("error", errMsgs))
+		logger.Debug("error response or no response", zap.Any("error", errMsgs))
 		// Allow override status code for 404-not-found replies.
 		if returnCode == http.StatusNotFound {
 			returnCode = config.Config.NotFoundStatusCode
 		}
 
 		if returnCode == http.StatusBadRequest || returnCode == http.StatusNotFound || returnCode == http.StatusForbidden || returnCode >= 500 {
-			setError(w, accessLogDetails, strings.Join(errMsgs, ","), returnCode, uid.String())
+			setErrors(w, accessLogDetails, errMsgs, returnCode, uid.String())
 			logAsError = true
 			return
 		}

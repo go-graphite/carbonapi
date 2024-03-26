@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -45,6 +46,8 @@ type Query struct {
 type ExpectedResponse struct {
 	HttpCode        int              `yaml:"httpCode"`
 	ContentType     string           `yaml:"contentType"`
+	ErrBody         string           `yaml:"errBody"`
+	ErrSort         bool             `yaml:"errSort"`
 	ExpectedResults []ExpectedResult `yaml:"expectedResults"`
 }
 
@@ -177,6 +180,20 @@ func max(a, b int) int {
 	return b
 }
 
+func resortErr(errStr string) string {
+	first := strings.Index(errStr, "\n")
+	if first >= 0 && first != len(errStr)-1 {
+		// resort error string
+		errs := strings.Split(errStr, "\n")
+		if errs[len(errs)-1] == "" {
+			errs = errs[:len(errs)-1]
+		}
+		sort.Strings(errs)
+		errStr = strings.Join(errs, "\n") + "\n"
+	}
+	return errStr
+}
+
 func doTest(logger *zap.Logger, t *Query, verbose bool) []error {
 	client := http.Client{}
 	failures := make([]error, 0)
@@ -245,8 +262,17 @@ func doTest(logger *zap.Logger, t *Query, verbose bool) []error {
 		)
 	}
 
-	// We don't need to actually check body of response if we expect any sort of error (4xx/5xx)
+	// We don't need to actually check body of response if we expect any sort of error (4xx/5xx), but for check error handling do this
 	if t.ExpectedResponse.HttpCode >= 300 {
+		if t.ExpectedResponse.ErrBody != "" {
+			errStr := string(b)
+			if t.ExpectedResponse.ErrSort {
+				errStr = resortErr(errStr)
+			}
+			if t.ExpectedResponse.ErrBody != errStr {
+				failures = append(failures, merry2.Errorf("mismatch error body, got '%s', expected '%s'", string(b), t.ExpectedResponse.ErrBody))
+			}
+		}
 		return failures
 	}
 

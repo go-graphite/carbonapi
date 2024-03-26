@@ -61,6 +61,25 @@ test:
           expectedResponse:
               httpCode: 503
               contentType: "text/plain; charset=utf-8"
+              errBody: "Service Unavailable\n"
+
+        # 503
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/metrics/find?query=c&query=d&format=json"
+          expectedResponse:
+              httpCode: 503
+              contentType: "text/plain; charset=utf-8"
+              errBody: "timeout while fetching Response\n"
+
+        # 503
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/metrics/find?query=d&query=e&format=json"
+          expectedResponse:
+              httpCode: 503
+              contentType: "text/plain; charset=utf-8"
+              errBody: "Service Unavailable\n"
 
         # 503, partial success
         - endpoint: "http://127.0.0.1:8081"
@@ -69,6 +88,7 @@ test:
           expectedResponse:
               httpCode: 503
               contentType: "text/plain; charset=utf-8"
+              errBody: "Service Unavailable\n"
 
 listeners:
       - address: ":9070"
@@ -90,4 +110,8 @@ listeners:
 
             "d":
                 pathExpression: "d"
+                code: 503
+
+            "e":
+                pathExpression: "e"
                 code: 503

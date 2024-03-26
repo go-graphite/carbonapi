@@ -45,6 +45,7 @@ test:
           expectedResponse:
               httpCode: 503
               contentType: "text/plain; charset=utf-8"
+              errBody: "c: timeout while fetching Response\n"
 
         # 503
         - endpoint: "http://127.0.0.1:8081"
@@ -53,6 +54,7 @@ test:
           expectedResponse:
               httpCode: 503
               contentType: "text/plain; charset=utf-8"
+              errBody: "d: Service Unavailable\n"
 
         # partial success
         - endpoint: "http://127.0.0.1:8081"
@@ -61,6 +63,7 @@ test:
           expectedResponse:
               httpCode: 503
               contentType: "text/plain; charset=utf-8"
+              errBody: "d: Service Unavailable\n"
 
         # partial success, must fail, target d failed
         - endpoint: "http://127.0.0.1:8081"
@@ -69,6 +72,7 @@ test:
           expectedResponse:
               httpCode: 503
               contentType: "text/plain; charset=utf-8"
+              errBody: "divideSeries(a,d): Service Unavailable\n"
 
 listeners:
       - address: ":9070"

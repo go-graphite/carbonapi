@@ -23,6 +23,7 @@ import (
 	"github.com/go-graphite/carbonapi/date"
 	"github.com/go-graphite/carbonapi/intervalset"
 	utilctx "github.com/go-graphite/carbonapi/util/ctx"
+	"github.com/go-graphite/carbonapi/zipper/helper"
 )
 
 // Find handler and it's helper functions
@@ -283,7 +284,7 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 			if returnCode < 300 {
 				multiGlobs = &pbv3.MultiGlobResponse{Metrics: []pbv3.GlobResponse{}}
 			} else {
-				setError(w, &accessLogDetails, http.StatusText(returnCode), returnCode, uid.String())
+				setError(w, &accessLogDetails, helper.MerryRootError(err), returnCode, uid.String())
 				// We don't want to log this as an error if it's something normal
 				// Normal is everything that is >= 500. So if config.Config.NotFoundStatusCode is 500 - this will be
 				// logged as error
