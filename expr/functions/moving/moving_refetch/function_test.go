@@ -65,7 +65,7 @@ func TestMovingRefetch(t *testing.T) {
 	for n, tt := range tests {
 		testName := tt.Target
 		t.Run(testName+"#"+strconv.Itoa(n), func(t *testing.T) {
-			eval, err := expr.NewEvaluator(nil, th.NewTestZipper(M))
+			eval, err := expr.NewEvaluator(nil, th.NewTestZipper(M), false)
 			if err == nil {
 				th.TestEvalExprWithRange(t, eval, &tt)
 			} else {

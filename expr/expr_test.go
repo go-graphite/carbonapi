@@ -206,7 +206,7 @@ func TestEvalExpr(t *testing.T) {
 				&data,
 			}
 
-			eval, err := NewEvaluator(nil, th.NewTestZipper(nil))
+			eval, err := NewEvaluator(nil, th.NewTestZipper(nil), false)
 			if err == nil {
 				_, err = EvalExpr(context.Background(), eval, exp, request.From, request.Until, metricMap)
 			}
@@ -361,7 +361,7 @@ func TestEvalExpression(t *testing.T) {
 	for _, tt := range tests {
 		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
-			eval, err := NewEvaluator(nil, th.NewTestZipper(nil))
+			eval, err := NewEvaluator(nil, th.NewTestZipper(nil), false)
 			if err == nil {
 				th.TestEvalExpr(t, eval, &tt)
 			} else {
@@ -464,7 +464,7 @@ func TestRewriteExpr(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			eval, err := NewEvaluator(nil, th.NewTestZipper(nil))
+			eval, err := NewEvaluator(nil, th.NewTestZipper(nil), false)
 			if err == nil {
 				rewritten, newTargets, err := RewriteExpr(context.Background(), eval, tt.e, 0, 1, tt.m)
 
@@ -521,7 +521,7 @@ func TestEvalCustomFromUntil(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			originalMetrics := th.DeepClone(tt.m)
 			exp, _, _ := parser.ParseExpr(tt.target)
-			eval, err := NewEvaluator(nil, th.NewTestZipper(nil))
+			eval, err := NewEvaluator(nil, th.NewTestZipper(nil), false)
 			if err == nil {
 				g, err := EvalExpr(context.Background(), eval, exp, tt.from, tt.until, tt.m)
 				if err != nil {

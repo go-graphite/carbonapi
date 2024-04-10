@@ -71,7 +71,7 @@ func TestDiffSeries(t *testing.T) {
 	for _, tt := range tests {
 		testName := tt.Target
 		t.Run(testName, func(t *testing.T) {
-			eval, err := expr.NewEvaluator(nil, th.NewTestZipper(nil))
+			eval, err := expr.NewEvaluator(nil, th.NewTestZipper(nil), false)
 			if err == nil {
 				th.TestRewriteExpr(t, eval, &tt)
 			} else {
