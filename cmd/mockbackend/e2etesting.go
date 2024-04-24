@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -44,15 +46,28 @@ type Query struct {
 type ExpectedResponse struct {
 	HttpCode        int              `yaml:"httpCode"`
 	ContentType     string           `yaml:"contentType"`
+	ErrBody         string           `yaml:"errBody"`
+	ErrSort         bool             `yaml:"errSort"`
 	ExpectedResults []ExpectedResult `yaml:"expectedResults"`
 }
 
 type ExpectedResult struct {
-	SHA256  []string `yaml:"sha256"`
-	Metrics []CarbonAPIResponse
+	SHA256            []string `yaml:"sha256"`
+	Metrics           []RenderResponse
+	MetricsFind       []MetricsFindResponse `json:"metricsFind" yaml:"metricsFind"`
+	TagsAutocompelete []string              `json:"tagsAutocompelete" yaml:"tagsAutocompelete"`
 }
 
-type CarbonAPIResponse struct {
+type MetricsFindResponse struct {
+	AllowChildren int               `json:"allowChildren" yaml:"allowChildren"`
+	Expandable    int               `json:"expandable" yaml:"expandable"`
+	Leaf          int               `json:"leaf" yaml:"leaf"`
+	Id            string            `json:"id" yaml:"id"`
+	Text          string            `json:"text" yaml:"text"`
+	Context       map[string]string `json:"context" yaml:"context"`
+}
+
+type RenderResponse struct {
 	Target     string            `json:"target" yaml:"target"`
 	Datapoints []Datapoint       `json:"datapoints" yaml:"datapoints"`
 	Tags       map[string]string `json:"tags" yaml:"tags"`
@@ -121,7 +136,7 @@ func (d *Datapoint) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
-func isMetricsEqual(m1, m2 CarbonAPIResponse) error {
+func isRenderEqual(m1, m2 RenderResponse) error {
 	if m1.Target != m2.Target {
 		return fmt.Errorf("target mismatch, got '%v', expected '%v'", m1.Target, m2.Target)
 	}
@@ -158,7 +173,28 @@ func isMetricsEqual(m1, m2 CarbonAPIResponse) error {
 	return nil
 }
 
-func doTest(logger *zap.Logger, t *Query) []error {
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func resortErr(errStr string) string {
+	first := strings.Index(errStr, "\n")
+	if first >= 0 && first != len(errStr)-1 {
+		// resort error string
+		errs := strings.Split(errStr, "\n")
+		if errs[len(errs)-1] == "" {
+			errs = errs[:len(errs)-1]
+		}
+		sort.Strings(errs)
+		errStr = strings.Join(errs, "\n") + "\n"
+	}
+	return errStr
+}
+
+func doTest(logger *zap.Logger, t *Query, verbose bool) []error {
 	client := http.Client{}
 	failures := make([]error, 0)
 	d, err := time.ParseDuration(fmt.Sprintf("%v", t.Delay) + "s")
@@ -201,19 +237,11 @@ func doTest(logger *zap.Logger, t *Query) []error {
 		return failures
 	}
 
-	if resp.StatusCode != t.ExpectedResponse.HttpCode {
-		failures = append(failures, merry2.Errorf("unexpected status code, got %v, expected %v",
-			resp.StatusCode,
-			t.ExpectedResponse.HttpCode,
-		),
-		)
-	}
-
 	contentType = resp.Header.Get("Content-Type")
 	if t.ExpectedResponse.ContentType != contentType {
 		failures = append(failures,
-			merry2.Errorf("unexpected content-type, got %v, expected %v",
-				contentType,
+			merry2.Errorf("unexpected content-type, got %v (code %d), expected %v",
+				contentType, resp.StatusCode,
 				t.ExpectedResponse.ContentType,
 			),
 		)
@@ -226,8 +254,25 @@ func doTest(logger *zap.Logger, t *Query) []error {
 		return failures
 	}
 
-	// We don't need to actually check body of response if we expect any sort of error (4xx/5xx)
+	if resp.StatusCode != t.ExpectedResponse.HttpCode {
+		failures = append(failures, merry2.Errorf("unexpected status code, got %v, expected %v",
+			resp.StatusCode,
+			t.ExpectedResponse.HttpCode,
+		),
+		)
+	}
+
+	// We don't need to actually check body of response if we expect any sort of error (4xx/5xx), but for check error handling do this
 	if t.ExpectedResponse.HttpCode >= 300 {
+		if t.ExpectedResponse.ErrBody != "" {
+			errStr := string(b)
+			if t.ExpectedResponse.ErrSort {
+				errStr = resortErr(errStr)
+			}
+			if t.ExpectedResponse.ErrBody != errStr {
+				failures = append(failures, merry2.Errorf("mismatch error body, got '%s', expected '%s'", string(b), t.ExpectedResponse.ErrBody))
+			}
+		}
 		return failures
 	}
 
@@ -245,45 +290,152 @@ func doTest(logger *zap.Logger, t *Query) []error {
 		}
 		if !sha256matched {
 			encodedBody := base64.StdEncoding.EncodeToString(b)
-			failures = append(failures, merry2.Errorf("sha256 mismatch, got '%v', expected '%v', encodedBodyy: '%v'", hashStr, t.ExpectedResponse.ExpectedResults[0].SHA256, encodedBody))
+			failures = append(failures, merry2.Errorf("sha256 mismatch, got '%v', expected '%v', encodedBody: '%v'", hashStr, t.ExpectedResponse.ExpectedResults[0].SHA256, encodedBody))
 			return failures
 		}
 	case "application/json":
-		res := make([]CarbonAPIResponse, 0, 1)
-		err := json.Unmarshal(b, &res)
-		if err != nil {
-			err = merry2.Prepend(err, "failed to parse response")
-			failures = append(failures, err)
-			return failures
-		}
-
-		if len(t.ExpectedResponse.ExpectedResults) == 0 {
-			return failures
-		}
-
-		if len(res) != len(t.ExpectedResponse.ExpectedResults[0].Metrics) {
-			failures = append(failures, merry2.Errorf("unexpected amount of results, got %v, expected %v",
-				len(res),
-				len(t.ExpectedResponse.ExpectedResults[0].Metrics)))
-			return failures
-		}
-
-		for i := range res {
-			err := isMetricsEqual(res[i], t.ExpectedResponse.ExpectedResults[0].Metrics[i])
+		if strings.HasPrefix(t.URL, "/metrics/find") {
+			res := make([]MetricsFindResponse, 0, 1)
+			err := json.Unmarshal(b, &res)
 			if err != nil {
-				err = merry2.Prependf(err, "metrics are not equal, got=`%+v`, expected=`%+v`", res[i], t.ExpectedResponse.ExpectedResults[0].Metrics[i])
+				err = merry2.Prepend(err, "failed to parse response")
 				failures = append(failures, err)
+				return failures
+			}
+
+			if len(t.ExpectedResponse.ExpectedResults) == 0 {
+				return failures
+			}
+
+			if len(res) != len(t.ExpectedResponse.ExpectedResults[0].MetricsFind) {
+				failures = append(failures, merry2.Errorf("unexpected amount of metrics find, got %v, expected %v",
+					len(res),
+					len(t.ExpectedResponse.ExpectedResults[0].MetricsFind)))
+				if verbose {
+					length := max(len(t.ExpectedResponse.ExpectedResults[0].MetricsFind), len(res))
+					for i := 0; i < length; i++ {
+						if i >= len(res) {
+							err = fmt.Errorf("metrics find[%d] want=`%+v`", i, t.ExpectedResponse.ExpectedResults[0].MetricsFind[i])
+							failures = append(failures, err)
+						} else if i >= len(t.ExpectedResponse.ExpectedResults[0].MetricsFind) {
+							err = fmt.Errorf("metrics find[%d] got unexpected=`%+v`", i, res[i])
+							failures = append(failures, err)
+						} else if !reflect.DeepEqual(res[i], t.ExpectedResponse.ExpectedResults[0].MetricsFind[i]) {
+							err = fmt.Errorf("metrics find[%d] are not equal, got=`%+v`, expected=`%+v`", i, res[i], t.ExpectedResponse.ExpectedResults[0].MetricsFind[i])
+							failures = append(failures, err)
+						}
+					}
+				}
+				return failures
+			}
+
+			for i := range res {
+				if !reflect.DeepEqual(res[i], t.ExpectedResponse.ExpectedResults[0].MetricsFind[i]) {
+					err = fmt.Errorf("metrics find[%d] are not equal, got=`%+v`, expected=`%+v`", i, res[i], t.ExpectedResponse.ExpectedResults[0].MetricsFind[i])
+					failures = append(failures, err)
+				}
+			}
+		} else if strings.HasPrefix(t.URL, "/tags/autoComplete/") {
+			// tags/autoComplete
+			res := make([]string, 0, 1)
+			err := json.Unmarshal(b, &res)
+			if err != nil {
+				err = merry2.Prepend(err, "failed to parse response")
+				failures = append(failures, err)
+				return failures
+			}
+
+			if len(t.ExpectedResponse.ExpectedResults) == 0 {
+				return failures
+			}
+
+			if len(res) != len(t.ExpectedResponse.ExpectedResults[0].TagsAutocompelete) {
+				failures = append(failures, merry2.Errorf("unexpected amount of results, got %v, expected %v",
+					len(res),
+					len(t.ExpectedResponse.ExpectedResults[0].TagsAutocompelete)))
+				if verbose {
+					length := max(len(t.ExpectedResponse.ExpectedResults[0].TagsAutocompelete), len(res))
+					for i := 0; i < length; i++ {
+						if i >= len(res) {
+							err = fmt.Errorf("tags[%d] want=`%+v`", i, t.ExpectedResponse.ExpectedResults[0].TagsAutocompelete[i])
+							failures = append(failures, err)
+						} else if i >= len(t.ExpectedResponse.ExpectedResults[0].TagsAutocompelete) {
+							err = fmt.Errorf("tags[%d] got unexpected=`%+v`", i, res[i])
+							failures = append(failures, err)
+						} else if !reflect.DeepEqual(res[i], t.ExpectedResponse.ExpectedResults[0].TagsAutocompelete[i]) {
+							err = fmt.Errorf("tags[%d] are not equal, got=`%+v`, expected=`%+v`", i, res[i], t.ExpectedResponse.ExpectedResults[0].TagsAutocompelete[i])
+							failures = append(failures, err)
+						}
+					}
+				}
+				return failures
+			}
+
+			for i := range res {
+				if res[i] != t.ExpectedResponse.ExpectedResults[0].TagsAutocompelete[i] {
+					err = merry2.Prependf(err, "tags[%d] are not equal, got=`%+v`, expected=`%+v`", i, res[i], t.ExpectedResponse.ExpectedResults[0].TagsAutocompelete[i])
+					failures = append(failures, err)
+				}
+			}
+
+		} else {
+			// render
+			res := make([]RenderResponse, 0, 1)
+			err := json.Unmarshal(b, &res)
+			if err != nil {
+				err = merry2.Prepend(err, "failed to parse response")
+				failures = append(failures, err)
+				return failures
+			}
+
+			if len(t.ExpectedResponse.ExpectedResults) == 0 {
+				return failures
+			}
+
+			if len(res) != len(t.ExpectedResponse.ExpectedResults[0].Metrics) {
+				failures = append(failures, merry2.Errorf("unexpected amount of results, got %v, expected %v",
+					len(res),
+					len(t.ExpectedResponse.ExpectedResults[0].Metrics)))
+				if verbose {
+					length := max(len(t.ExpectedResponse.ExpectedResults[0].Metrics), len(res))
+					for i := 0; i < length; i++ {
+						if i >= len(res) {
+							err = fmt.Errorf("metrics[%d] want=`%+v`", i, t.ExpectedResponse.ExpectedResults[0].Metrics[i])
+							failures = append(failures, err)
+						} else if i >= len(t.ExpectedResponse.ExpectedResults[0].Metrics) {
+							err = fmt.Errorf("metrics[%d] got unexpected=`%+v`", i, res[i])
+							failures = append(failures, err)
+						} else if !reflect.DeepEqual(res[i], t.ExpectedResponse.ExpectedResults[0].Metrics[i]) {
+							err = fmt.Errorf("metrics[%d] are not equal, got=`%+v`, expected=`%+v`", i, res[i], t.ExpectedResponse.ExpectedResults[0].Metrics[i])
+							failures = append(failures, err)
+						}
+					}
+				}
+				return failures
+			}
+
+			for i := range res {
+				err := isRenderEqual(res[i], t.ExpectedResponse.ExpectedResults[0].Metrics[i])
+				if err != nil {
+					err = merry2.Prependf(err, "metrics are not equal, got=`%+v`, expected=`%+v`", res[i], t.ExpectedResponse.ExpectedResults[0].Metrics[i])
+					failures = append(failures, err)
+				}
 			}
 		}
-
 	default:
-		failures = append(failures, merry2.Errorf("unsupported content-type: got '%v'", contentType))
+		if resp.StatusCode == http.StatusOK {
+			// if !strings.HasPrefix(t.URL, "/tags/autoComplete/") ||
+			// 	(contentType == "text/plain; charset=utf-8" &&
+			// 		resp.StatusCode == http.StatusNotFound &&
+			// 		t.ExpectedResponse.HttpCode == http.StatusNotFound) {
+			failures = append(failures, merry2.Errorf("unsupported content-type: got '%v'", contentType))
+		}
 	}
 
 	return failures
 }
 
-func e2eTest(logger *zap.Logger, noapp, breakOnError bool) bool {
+func e2eTest(logger *zap.Logger, noapp, breakOnError, verbose bool) bool {
 	failed := false
 	logger.Info("will run test",
 		zap.Any("config", cfg.Test),
@@ -307,12 +459,12 @@ func e2eTest(logger *zap.Logger, noapp, breakOnError bool) bool {
 	}
 
 	for _, t := range cfg.Test.Queries {
-		failures := doTest(logger, &t)
-
+		failures := doTest(logger, &t, verbose)
 		if len(failures) != 0 {
 			failed = true
 			logger.Error("test failed",
 				zap.Errors("failures", failures),
+				zap.String("url", t.URL), zap.String("type", t.Type), zap.String("body", t.Body),
 			)
 			for _, v := range runningApps {
 				if !v.IsRunning() {

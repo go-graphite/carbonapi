@@ -21,7 +21,7 @@ type MainConfig struct {
 
 type Listener struct {
 	Address        string              `yaml:"address"`
-	Code           int                 `yaml:"httpCode"`
+	Code           int                 `yaml:"httpCode"` // global responce code
 	ShuffleResults bool                `yaml:"shuffleResults"`
 	EmptyBody      bool                `yaml:"emptyBody"`
 	Expressions    map[string]Response `yaml:"expressions"`
@@ -36,6 +36,7 @@ type listener struct {
 
 func main() {
 	config := flag.String("config", "average.yaml", "yaml where it would be possible to get data")
+	verbose := flag.Bool("verbose", false, "verbose reporting")
 	testonly := flag.Bool("testonly", false, "run only unit test")
 	noapp := flag.Bool("noapp", false, "do not run application")
 	test := flag.Bool("test", false, "run unit test if present")
@@ -50,12 +51,14 @@ func main() {
 		logger.Fatal("failed to get config, it should be non-null")
 	}
 
-	d, err := os.ReadFile(*config)
+	f, err := os.Open(*config)
 	if err != nil {
 		logger.Fatal("failed to read config", zap.Error(err))
 	}
 
-	err = yaml.Unmarshal(d, &cfg)
+	decoder := yaml.NewDecoder(f)
+	decoder.SetStrict(true)
+	err = decoder.Decode(&cfg)
 	if err != nil {
 		logger.Fatal("failed to read config", zap.Error(err))
 		return
@@ -94,6 +97,8 @@ func main() {
 			mux.HandleFunc("/render/", listener.renderHandler)
 			mux.HandleFunc("/metrics/find", listener.findHandler)
 			mux.HandleFunc("/metrics/find/", listener.findHandler)
+			mux.HandleFunc("/tags/autoComplete/values", listener.tagsValuesHandler)
+			mux.HandleFunc("/tags/autoComplete/tags", listener.tagsNamesHandler)
 
 			wg.Add(1)
 			wgStart.Add(1)
@@ -120,7 +125,7 @@ func main() {
 
 	failed := false
 	if cfg.Test != nil && (*test || *testonly) {
-		failed = e2eTest(logger, *noapp, *breakOnError)
+		failed = e2eTest(logger, *noapp, *breakOnError, *verbose)
 	}
 
 	if !*testonly {
