@@ -490,7 +490,7 @@ logger:
       encodingTime: "iso8601"
       encodingDuration: "seconds"
     - logger: ""
-      file: "carbonapi.log"
+      file: "/var/log/carbonapi.log"
       level: "info"
       encoding: "json"
     # disable slow log completely
