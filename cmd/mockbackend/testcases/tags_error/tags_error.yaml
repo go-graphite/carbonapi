@@ -1,0 +1,86 @@
+version: "v1"
+test:
+    apps:
+        - name: "carbonapi"
+          binary: "./carbonapi"
+          args:
+              - "-config"
+              - "./cmd/mockbackend/carbonapi_singlebackend.yaml"
+              - "-exact-config"
+    queries:
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/tags/autoComplete/values?expr=tag1%3Dv1&tag=tag2"
+          expectedResponse:
+            httpCode: 200
+            contentType: "application/json"
+            expectedResults:
+              - tagsAutocompelete:
+                - "value1"
+                - "value2"
+
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/tags/autoComplete/tags?expr=tag1%3Dv1&tagPrefix=tag"
+          expectedResponse:
+            httpCode: 200
+            contentType: "application/json"
+            expectedResults:
+              - tagsAutocompelete:
+                - "tag2"
+
+        # empty
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/tags/autoComplete/values?expr=tag1%3Dv1&tag=tag3"
+          expectedResponse:
+            httpCode: 200
+            contentType: "application/json"
+            expectedResults:
+              - tagsAutocompelete: []
+
+        # timeout
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/tags/autoComplete/values?expr=tag2%3Dv1&tag=tag3"
+          expectedResponse:
+              httpCode: 200
+              contentType: "application/json"
+              expectedResults:
+                  - tagsAutocompelete: []
+            # TODO: error check
+            # httpCode: 503
+            # contentType: "text/plain; charset=utf-8"
+
+        # 503
+        - endpoint: "http://127.0.0.1:8081"
+          type: "GET"
+          URL: "/tags/autoComplete/values?expr=tag2%3Dv1&tag=tag4"
+          expectedResponse:
+              httpCode: 200
+              contentType: "application/json"
+              expectedResults:
+                  - tagsAutocompelete: []
+              # httpCode: 503
+              # contentType: "text/plain; charset=utf-8"
+
+listeners:
+      - address: ":9070"
+        expressions:
+            "/tags/autoComplete/values?expr=tag1%3Dv1&tag=tag2":
+                tags:
+                    - "value1"
+                    - "value2"
+
+            "/tags/autoComplete/tags?expr=tag1%3Dv1&tagPrefix=tag":
+                tags:
+                    - "tag2"
+
+            "/tags/autoComplete/values?expr=tag2%3Dv1&tag=tag3":
+                replyDelayMS: 7000
+                tags:
+                    - "value3"
+                    - "value4"
+
+            "/tags/autoComplete/values?expr=tag2%3Dv1&tag=tag4":
+                code: 503

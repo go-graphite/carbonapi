@@ -6,6 +6,7 @@ test:
           args:
               - "-config"
               - "./cmd/mockbackend/testcases/pr743/carbonapi.yaml"
+              - "-exact-config"
     queries:
             - endpoint: "http://127.0.0.1:8081"
               delay: 1

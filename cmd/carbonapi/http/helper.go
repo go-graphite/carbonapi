@@ -2,6 +2,7 @@ package http
 
 import (
 	"fmt"
+	"html"
 	"net/http"
 	"strings"
 	"time"
@@ -229,6 +230,27 @@ func splitRemoteAddr(addr string) (string, string) {
 	return tmp[0], tmp[1]
 }
 
+func stripKey(key string, n int) string {
+	if len(key) > n+3 {
+		key = key[:n/2] + "..." + key[n/2+1:]
+	}
+	return key
+}
+
+// stripError for strip network errors (ip and other private info)
+func stripError(err string) string {
+	if strings.Contains(err, "connection refused") {
+		return "connection refused"
+	} else if strings.Contains(err, " lookup ") {
+		return "lookup error"
+	} else if strings.Contains(err, "broken pipe") {
+		return "broken pipe"
+	} else if strings.Contains(err, " connection reset ") {
+		return "connection reset"
+	}
+	return html.EscapeString(err)
+}
+
 func buildParseErrorString(target, e string, err error) string {
 	msg := fmt.Sprintf("%s\n\n%-20s: %s\n", http.StatusText(http.StatusBadRequest), "Target", target)
 	if err != nil {
@@ -285,9 +307,56 @@ func timestampTruncate(ts int64, duration time.Duration, durations []config.Dura
 
 func setError(w http.ResponseWriter, accessLogDetails *carbonapipb.AccessLogDetails, msg string, status int, carbonapiUUID string) {
 	w.Header().Set(ctxHeaderUUID, carbonapiUUID)
-	http.Error(w, http.StatusText(status)+": "+msg, status)
+	if msg == "" {
+		msg = http.StatusText(status)
+	}
 	accessLogDetails.Reason = msg
 	accessLogDetails.HTTPCode = int32(status)
+	msg = html.EscapeString(stripError(msg))
+	http.Error(w, msg, status)
+}
+
+func joinErrors(errMap map[string]string, sep string, status int) (msg, reason string) {
+	if len(errMap) == 0 {
+		msg = http.StatusText(status)
+	} else {
+		var buf, rBuf strings.Builder
+		buf.Grow(512)
+		rBuf.Grow(512)
+
+		// map is unsorted, can produce flapping ordered output, not critical
+		for k, err := range errMap {
+			if buf.Len() > 0 {
+				buf.WriteString(sep)
+				rBuf.WriteString(sep)
+			}
+			buf.WriteString(html.EscapeString(stripKey(k, 128)))
+			rBuf.WriteString(k)
+			buf.WriteString(": ")
+			rBuf.WriteString(": ")
+			buf.WriteString(html.EscapeString(stripError(err)))
+			rBuf.WriteString(err)
+		}
+
+		msg = buf.String()
+		reason = rBuf.String()
+	}
+	return
+}
+
+func setErrors(w http.ResponseWriter, accessLogDetails *carbonapipb.AccessLogDetails, errMamp map[string]string, status int, carbonapiUUID string) {
+	w.Header().Set(ctxHeaderUUID, carbonapiUUID)
+	var msg string
+	if status != http.StatusOK {
+		if len(errMamp) == 0 {
+			msg = http.StatusText(status)
+			accessLogDetails.Reason = msg
+		} else {
+			msg, accessLogDetails.Reason = joinErrors(errMamp, "\n", status)
+		}
+	}
+	accessLogDetails.HTTPCode = int32(status)
+	http.Error(w, msg, status)
 }
 
 func queryLengthLimitExceeded(query []string, maxLength uint64) bool {
