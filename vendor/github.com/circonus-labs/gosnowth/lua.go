@@ -144,6 +144,10 @@ func (sc *SnowthClient) GetLuaExtensionsContext(ctx context.Context,
 		node = sc.GetActiveNode()
 	}
 
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
+	}
+
 	u := "/extension/lua"
 	r := LuaExtensions{}
 
@@ -184,6 +188,10 @@ func (sc *SnowthClient) ExecLuaExtensionContext(ctx context.Context,
 		node = nodes[0]
 	} else {
 		node = sc.GetActiveNode()
+	}
+
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
 	}
 
 	u := "/extension/lua/" + name

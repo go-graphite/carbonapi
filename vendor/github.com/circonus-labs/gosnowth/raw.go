@@ -81,6 +81,10 @@ func (sc *SnowthClient) ReadRawNumericValuesContext(ctx context.Context,
 		node = sc.GetActiveNode(sc.FindMetricNodeIDs(uuid, metric))
 	}
 
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
+	}
+
 	qp := url.Values{}
 	qp.Add("start_ts", formatTimestamp(start))
 	qp.Add("end_ts", formatTimestamp(end))
@@ -119,6 +123,10 @@ func (sc *SnowthClient) WriteRawContext(ctx context.Context,
 		node = nodes[0]
 	} else {
 		node = sc.GetActiveNode()
+	}
+
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
 	}
 
 	hdrs := http.Header{

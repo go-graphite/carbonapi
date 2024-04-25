@@ -152,6 +152,10 @@ func (sc *SnowthClient) FetchValuesContext(ctx context.Context,
 		node = sc.GetActiveNode()
 	}
 
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
+	}
+
 	buf := &bytes.Buffer{}
 	if err := json.NewEncoder(buf).Encode(&q); err != nil {
 		return nil, err

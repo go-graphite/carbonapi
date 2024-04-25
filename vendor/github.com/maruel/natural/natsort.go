@@ -16,7 +16,7 @@ import (
 
 // Less does a 'natural' comparison on the two strings.
 //
-// It treats digits as decimal numbers, so that Less("10", "2") return true.
+// It treats digits as decimal numbers, so that Less("10", "2") return false.
 //
 // This function does no memory allocation.
 func Less(a, b string) bool {

@@ -59,7 +59,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 	cfg := gosnowth.NewConfig(config.Servers...)
 
 	// enabling discovery.
-	cfg.Discover = true
+	// cfg.Discover = true
 
 	// parse backend options
 	var tmpInt int

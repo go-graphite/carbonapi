@@ -63,6 +63,10 @@ func (sc *SnowthClient) GraphiteFindMetricsContext(ctx context.Context,
 		node = sc.GetActiveNode()
 	}
 
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
+	}
+
 	u := fmt.Sprintf("%s?query=%s",
 		fmt.Sprintf("/graphite/%d/%s/metrics/find",
 			accountID, url.QueryEscape(prefix)), url.QueryEscape(query))
@@ -107,6 +111,10 @@ func (sc *SnowthClient) GraphiteFindTagsContext(ctx context.Context,
 		node = nodes[0]
 	} else {
 		node = sc.GetActiveNode()
+	}
+
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
 	}
 
 	u := fmt.Sprintf("%s?query=%s",
@@ -154,6 +162,10 @@ func (sc *SnowthClient) GraphiteGetDatapointsContext(ctx context.Context,
 		node = nodes[0]
 	} else {
 		node = sc.GetActiveNode()
+	}
+
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
 	}
 
 	u := fmt.Sprintf("/graphite/%d/%s/series_multi",

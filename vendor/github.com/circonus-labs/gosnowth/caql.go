@@ -28,39 +28,35 @@ type CAQLQuery struct {
 	Expansion            []string `json:"expansion,omitempty"`
 }
 
-// CAQLErrorArgs values represent CAQL request arguments returned in an error.
-type CAQLErrorArgs struct {
-	IgnoreDurationLimits bool     `json:"ignore_duration_limits"`
-	Debug                byte     `json:"_debug"`
-	Period               int64    `json:"period"`
-	ID                   int64    `json:"_id"`
-	AccountID            int64    `json:"account_id,string"`
-	Start                int64    `json:"start_time"`
-	Timeout              int64    `json:"_timeout"`
-	MinPrefill           int64    `json:"min_prefill"`
-	End                  int64    `json:"end_time"`
-	Format               string   `json:"format"`
-	Query                string   `json:"q"`
-	PrepareResults       string   `json:"prepare_results"`
-	Method               string   `json:"method"`
-	Expansion            []string `json:"expansion"`
-}
-
-// CAQLUserError values contain messages describing a CAQL error for a user.
-type CAQLUserError struct {
-	Message string `json:"message,omitempty"`
-}
-
 // CAQLError values contain information about an error returned by the CAQL
 // extension.
 type CAQLError struct {
-	Locals    []string      `json:"locals"`
-	Method    string        `json:"method"`
-	Trace     []string      `json:"trace"`
-	UserError CAQLUserError `json:"user_error"`
-	Status    string        `json:"status"`
-	Arguments CAQLErrorArgs `json:"arguments"`
-	Success   bool          `json:"success"`
+	Locals    []string               `json:"locals"`
+	Method    string                 `json:"method"`
+	Trace     []string               `json:"trace"`
+	UserError map[string]interface{} `json:"user_error"`
+	Status    string                 `json:"status"`
+	Arguments map[string]interface{} `json:"arguments"`
+	Success   bool                   `json:"success"`
+}
+
+// Message returns the user_error.message of a CAQL error, if it exists.
+func (ce *CAQLError) Message() string {
+	if ce.UserError == nil {
+		return ""
+	}
+
+	v, ok := ce.UserError["message"]
+	if !ok {
+		return ""
+	}
+
+	vs, ok := v.(string)
+	if !ok {
+		return ""
+	}
+
+	return vs
 }
 
 // String returns this value as a JSON format string.
@@ -99,11 +95,16 @@ func (sc *SnowthClient) GetCAQLQueryContext(ctx context.Context, q *CAQLQuery,
 		node = sc.GetActiveNode()
 	}
 
-	if q == nil {
-		q = &CAQLQuery{}
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
 	}
 
 	u := "/extension/lua/public/caql_v1"
+
+	if q == nil {
+		return nil, fmt.Errorf("invalid CAQL query: null")
+	}
+
 	q.Format = "DF4"
 
 	qBuf, err := encodeJSON(q)

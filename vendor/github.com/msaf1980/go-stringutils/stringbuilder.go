@@ -8,8 +8,7 @@ import (
 // It minimizes memory copying. The zero value is ready to use.
 // Do not copy a non-zero Builder.
 type Builder struct {
-	data   []byte
-	length int
+	data []byte
 }
 
 // grow scale factor for needed resize
@@ -17,7 +16,7 @@ const scaleFactor = 2
 
 // Len returns the number of accumulated bytes; b.Len() == len(b.String()).
 func (sb *Builder) Len() int {
-	return sb.length
+	return len(sb.data)
 }
 
 // Cap returns the capacity of the builder's underlying byte slice. It is the
@@ -29,15 +28,15 @@ func (sb *Builder) Cap() int {
 
 // Bytes returns the accumulated bytes.
 func (sb *Builder) Bytes() []byte {
-	return sb.data[0:sb.length]
+	return sb.data
 }
 
 // String returns the accumulated string.
 func (sb *Builder) String() string {
-	if sb.length == 0 {
+	if len(sb.data) == 0 {
 		return ""
 	}
-	return UnsafeStringFromPtr(&sb.data[0], sb.length)
+	return UnsafeStringFromPtr(&sb.data[0], len(sb.data))
 }
 
 // Grow grows b's capacity, if necessary, to guarantee space for
@@ -46,22 +45,23 @@ func (sb *Builder) String() string {
 func (sb *Builder) Grow(capacity int) {
 	if capacity > sb.Cap() {
 		b := make([]byte, capacity)
-		copy(b, sb.data[:sb.length])
-		sb.data = b
+		copy(b, sb.data)
+		length := len(sb.data)
+		sb.data = b[:length]
 	}
 }
 
 // Reset resets the Builder to be empty.
 func (sb *Builder) Reset() {
-	if sb.length > 0 {
-		sb.length = 0
+	if len(sb.data) > 0 {
+		sb.data = sb.data[:0]
 	}
 }
 
 // Truncate descrease the Builder length (dangerouse for partually truncated UTF strings).
 func (sb *Builder) Truncate(length int) {
-	if sb.length > length {
-		sb.length = length
+	if len(sb.data) > length {
+		sb.data = sb.data[:length]
 	}
 }
 
@@ -78,17 +78,7 @@ func (sb *Builder) Write(bytes []byte) (int, error) {
 	if len(bytes) == 0 {
 		return 0, nil
 	}
-	newlen := sb.length + len(bytes)
-	if newlen > cap(sb.data) {
-		scaled := sb.length * scaleFactor
-		if newlen > scaled {
-			sb.Grow(newlen)
-		} else {
-			sb.Grow(scaled)
-		}
-	}
-	copy(sb.data[sb.length:], bytes)
-	sb.length += len(bytes)
+	sb.data = append(sb.data, bytes...)
 
 	return len(bytes), nil
 }
@@ -98,17 +88,7 @@ func (sb *Builder) WriteBytes(bytes []byte) {
 	if len(bytes) == 0 {
 		return
 	}
-	newlen := sb.length + len(bytes)
-	if newlen > cap(sb.data) {
-		scaled := sb.length * scaleFactor
-		if newlen > scaled {
-			sb.Grow(newlen)
-		} else {
-			sb.Grow(scaled)
-		}
-	}
-	copy(sb.data[sb.length:], bytes)
-	sb.length += len(bytes)
+	sb.data = append(sb.data, bytes...)
 }
 
 // WriteString appends the contents of s to b's buffer.
@@ -116,32 +96,21 @@ func (sb *Builder) WriteString(s string) (int, error) {
 	if len(s) == 0 {
 		return 0, nil
 	}
-	newlen := sb.length + len(s)
-	if newlen > cap(sb.data) {
-		scaled := sb.length * scaleFactor
-		if newlen > scaled {
-			sb.Grow(newlen)
-		} else {
-			sb.Grow(scaled)
-		}
-	}
-	copy(sb.data[sb.length:], s)
-	sb.length += len(s)
+	sb.data = append(sb.data, s...)
 
 	return len(s), nil
 }
 
 // WriteByte appends the byte c to b's buffer.
 func (sb *Builder) WriteByte(c byte) error {
-	if sb.length == cap(sb.data) {
-		if sb.length == 0 {
-			sb.Grow(2 * scaleFactor)
-		} else {
-			sb.Grow(sb.length * scaleFactor)
-		}
+	if len(sb.data) == 0 {
+		sb.Grow(2 * scaleFactor)
+	} else if len(sb.data) == cap(sb.data) {
+		sb.Grow(len(sb.data) * scaleFactor)
 	}
-	sb.data[sb.length] = c
-	sb.length++
+	length := len(sb.data)
+	sb.data = sb.data[:length+1]
+	sb.data[length] = c
 
 	return nil
 }
@@ -153,15 +122,18 @@ func (sb *Builder) WriteRune(r rune) (int, error) {
 
 		return 1, nil
 	} else {
-		if sb.length+utf8.UTFMax > cap(sb.data) {
-			if sb.length > 2*utf8.UTFMax {
-				sb.Grow(sb.length * scaleFactor)
+		length := len(sb.data)
+		n := length + utf8.UTFMax
+		if n > cap(sb.data) {
+			if length > 2*utf8.UTFMax {
+				sb.Grow(length * scaleFactor)
 			} else {
-				sb.Grow(sb.length + utf8.UTFMax*scaleFactor)
+				sb.Grow(length + utf8.UTFMax*scaleFactor)
 			}
 		}
-		length := utf8.EncodeRune(sb.data[sb.length:sb.length+utf8.UTFMax], r)
-		sb.length += length
+		sb.data = sb.data[:n]
+		n = utf8.EncodeRune(sb.data[length:], r)
+		sb.data = sb.data[:length+n]
 
 		return length, nil
 	}

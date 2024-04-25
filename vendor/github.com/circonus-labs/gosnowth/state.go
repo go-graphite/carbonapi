@@ -23,6 +23,10 @@ func (sc *SnowthClient) GetNodeStateContext(ctx context.Context,
 		node = sc.GetActiveNode()
 	}
 
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
+	}
+
 	r := &NodeState{}
 
 	body, _, err := sc.DoRequestContext(ctx, node, "GET", "/state", nil, nil)

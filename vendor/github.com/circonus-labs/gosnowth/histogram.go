@@ -105,6 +105,10 @@ func (sc *SnowthClient) ReadHistogramValuesContext(ctx context.Context,
 		node = sc.GetActiveNode(sc.FindMetricNodeIDs(uuid, metric))
 	}
 
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
+	}
+
 	startTS := start.Unix() - start.Unix()%int64(period.Seconds())
 	endTS := end.Unix() - end.Unix()%int64(period.Seconds()) +
 		int64(period.Seconds())
@@ -155,6 +159,10 @@ func (sc *SnowthClient) WriteHistogramContext(ctx context.Context,
 	} else if len(data) > 0 {
 		node = sc.GetActiveNode(sc.FindMetricNodeIDs(data[0].ID,
 			data[0].Metric))
+	}
+
+	if node == nil {
+		return fmt.Errorf("unable to get active node")
 	}
 
 	buf := new(bytes.Buffer)

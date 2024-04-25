@@ -206,6 +206,10 @@ func (sc *SnowthClient) ReadRollupValuesContext(ctx context.Context,
 		node = sc.GetActiveNode(sc.FindMetricNodeIDs(uuid, metric))
 	}
 
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
+	}
+
 	if dataType == "" {
 		dataType = "average"
 	}
@@ -257,6 +261,10 @@ func (sc *SnowthClient) ReadRollupAllValuesContext(ctx context.Context,
 		node = nodes[0]
 	} else {
 		node = sc.GetActiveNode(sc.FindMetricNodeIDs(uuid, metric))
+	}
+
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
 	}
 
 	startTS := start.Unix() - start.Unix()%int64(period/time.Second)

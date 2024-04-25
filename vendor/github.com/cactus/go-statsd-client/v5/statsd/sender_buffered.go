@@ -31,6 +31,13 @@ type BufferedSender struct {
 
 // Send bytes.
 func (s *BufferedSender) Send(data []byte) (int, error) {
+	// Note: use manual unlocking instead of defer unlocking,
+	// due to the overhead of defers in this hot code path.
+	// https://go-review.googlesource.com/c/go/+/190098
+	// removes a lot of the overhead (in go versions >= 1.14),
+	// but it is still faster to not use it in some cases
+	// (like this one).
+
 	s.runmx.RLock()
 	if !s.running {
 		s.runmx.RUnlock()
@@ -85,6 +92,13 @@ func (s *BufferedSender) Start() {
 }
 
 func (s *BufferedSender) withBufferLock(fn func()) {
+	// Note: use manual unlocking instead of defer unlocking,
+	// due to the overhead of defers in this hot code path.
+	// https://go-review.googlesource.com/c/go/+/190098
+	// removes a lot of the overhead (in go versions >= 1.14),
+	// but it is still faster to not use it in some cases
+	// (like this one).
+
 	s.bufmx.Lock()
 	fn()
 	s.bufmx.Unlock()

@@ -66,13 +66,13 @@ type httpClient interface {
 
 // Config values represent configuration information SnowthClient values.
 type Config struct {
-	Discover       bool          `json:"discover"`
 	DialTimeout    time.Duration `json:"dial_timeout,omitempty"`
 	Timeout        time.Duration `json:"timeout,omitempty"`
 	WatchInterval  time.Duration `json:"watch_interval,omitempty"`
 	Retries        int64         `json:"retries,omitempty"`
 	ConnectRetries int64         `json:"connect_retries,omitempty"`
 	Servers        []string      `json:"servers,omitempty"`
+	DenyHosts      []string      `json:"deny_hosts,omitempty"`
 	CtxKeyTraceID  interface{}   `json:"-"`
 }
 
@@ -81,7 +81,6 @@ type Config struct {
 func NewConfig(servers ...string) *Config {
 	return &Config{
 		DialTimeout:    500 * time.Millisecond,
-		Discover:       false,
 		Servers:        servers,
 		Timeout:        10 * time.Second,
 		WatchInterval:  30 * time.Second,
@@ -111,6 +110,9 @@ type SnowthClient struct {
 	activeNodes   []*SnowthNode
 	inactiveNodes []*SnowthNode
 
+	// denyHosts are a list of hosts to always keep inactive.
+	denyHosts []string
+
 	// watchInterval is the duration between checks to tell if a node is active
 	// or inactive.
 	watchInterval time.Duration
@@ -123,11 +125,6 @@ type SnowthClient struct {
 	// before it is used by SnowthClient to connect with IRONdb. Tracing headers
 	// or other context information can be added by this function.
 	request func(r *http.Request) error
-
-	// watch is an assignable middleware function which can plugin functionality
-	// to activate or deactivate snowth cluster nodes during the watch and
-	// update process, using custom logic.
-	watch func(n *SnowthNode)
 
 	// dumpRequests and traceRequests are settings from the environment
 	// GOSNOWTH_DUMP_REQUESTS and GOSNOWTH_TRACE_REQUESTS respectively.
@@ -146,26 +143,25 @@ type SnowthClient struct {
 	currentTopologyCompiled *Topology
 }
 
-// NewSnowthClient initializes a new SnowthClient value, constructing all the
-// required state to communicate with a cluster of IRONdb nodes.
-// The discover parameter, when true, will allow the client to discover new
-// nodes from the topology.
-func NewSnowthClient(discover bool, addrs ...string) (*SnowthClient, error) {
-	cfg := NewConfig(addrs...)
-	cfg.Discover = discover
-
-	return NewClient(context.Background(), cfg)
-}
-
 // NewClient creates and performs initial setup of a new SnowthClient.
-func NewClient(ctx context.Context, cfg *Config) (*SnowthClient, error) {
+func NewClient(ctx context.Context, cfg *Config,
+	logs ...Logger,
+) (*SnowthClient, error) {
+	if cfg.Timeout == 0 {
+		cfg.Timeout = time.Second * 10
+	}
+
+	if cfg.DialTimeout == 0 {
+		cfg.DialTimeout = time.Millisecond * 500
+	}
+
 	client := &http.Client{
 		Timeout: cfg.Timeout,
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			DialContext: (&net.Dialer{
 				Timeout:   cfg.DialTimeout,
-				KeepAlive: 30 * time.Second,
+				KeepAlive: cfg.Timeout,
 				DualStack: true,
 			}).DialContext,
 			ForceAttemptHTTP2:     true,
@@ -173,7 +169,7 @@ func NewClient(ctx context.Context, cfg *Config) (*SnowthClient, error) {
 			MaxConnsPerHost:       0,
 			MaxIdleConns:          10,
 			MaxIdleConnsPerHost:   1,
-			IdleConnTimeout:       5 * time.Second,
+			IdleConnTimeout:       cfg.Timeout,
 			TLSHandshakeTimeout:   cfg.DialTimeout,
 			ExpectContinueTimeout: cfg.DialTimeout,
 		},
@@ -189,66 +185,116 @@ func NewClient(ctx context.Context, cfg *Config) (*SnowthClient, error) {
 		connRetries:   cfg.ConnectRetries,
 		dumpRequests:  os.Getenv("GOSNOWTH_DUMP_REQUESTS"),
 		traceRequests: os.Getenv("GOSNOWTH_TRACE_REQUESTS"),
+		denyHosts:     cfg.DenyHosts,
 		ctxKeyTraceID: cfg.CtxKeyTraceID,
 	}
 
-	// For each of the addrs we need to parse the connection string,
-	// then create a node for that connection string, poll the state
-	// of that node, and populate the identifier and topology of that
-	// node.  Finally we will add the node and activate it.
-	numActiveNodes := 0
-	nErr := newMultiError()
-
-	for _, addr := range cfg.Servers {
-		url, err := url.Parse(addr)
-		if err != nil {
-			// This node had an error, put on inactive list.
-			nErr.Add(fmt.Errorf("unable to parse server url: %w", err))
-
-			continue
-		}
-
-		// Call get stats to populate the id of this node.
-		node := &SnowthNode{url: url}
-
-		stats, err := sc.GetStatsNodeContext(ctx, node)
-		if err != nil {
-			// This node had an error, put on inactive list.
-			sc.AddNodes(node)
-			nErr.Add(fmt.Errorf("unable to get status of node: %w", err))
-
-			continue
-		}
-
-		node.identifier = stats.Identity()
-		node.currentTopology = stats.CurrentTopology()
-		sc.currentTopology = node.currentTopology
-		node.semVer = stats.SemVer()
-
-		sc.AddNodes(node)
-		sc.ActivateNodes(node)
-		numActiveNodes++
+	if len(logs) > 0 {
+		sc.log = logs[0]
 	}
 
-	if numActiveNodes == 0 {
-		if nErr.HasError() {
-			return nil, fmt.Errorf("no snowth nodes could be activated: %w",
-				nErr)
+	// Initial setup of the client may continue in the background after
+	// the client has been returned to the caller.
+	cCtx, cancel := context.WithTimeout(context.Background(), cfg.Timeout)
+
+	doneCh := make(chan struct{}, 1)
+
+	defer close(doneCh)
+
+	go func(ctx context.Context, sc *SnowthClient, cfg *Config) {
+		remaining := len(cfg.Servers)
+
+		nodeCh := make(chan *SnowthNode, remaining)
+
+		defer close(nodeCh)
+
+		errCh := make(chan error, remaining)
+
+		defer close(errCh)
+
+		for _, addr := range cfg.Servers {
+			go func(addr string) {
+				url, err := url.Parse(addr)
+				if err != nil {
+					errCh <- fmt.Errorf("unable to parse server url %s: %w",
+						addr, err)
+
+					return
+				}
+
+				for _, dh := range cfg.DenyHosts {
+					if url.Host == dh {
+						errCh <- fmt.Errorf("deny host found in servers: %s",
+							url.Host)
+
+						return
+					}
+				}
+
+				node := &SnowthNode{url: url}
+
+				stats, err := sc.GetStatsNodeContext(ctx, node)
+				if err != nil {
+					// This node had an error, put on inactive list.
+					sc.AddNodes(node)
+
+					errCh <- fmt.Errorf("unable to get status of node %s: %w",
+						addr, err)
+
+					return
+				}
+
+				node.identifier = stats.Identity()
+				node.currentTopology = stats.CurrentTopology()
+				node.semVer = stats.SemVer()
+
+				select {
+				case <-ctx.Done():
+					errCh <- fmt.Errorf("timeout getting status of node %s: %w",
+						addr, ctx.Err())
+				default:
+					nodeCh <- node
+				}
+			}(addr)
 		}
 
-		return nil, fmt.Errorf("no snowth nodes could be activated")
-	}
+		first := true
 
-	if cfg.Discover {
-		// For robustness, we will perform a discovery of associated nodes
-		// this works by pulling the topology information for given nodes
-		// and adding nodes discovered within the topology into the client.
-		if err := sc.discoverNodes(ctx); err != nil {
-			return nil, fmt.Errorf("failed discovery of new nodes: %w", err)
+		for remaining > 0 {
+			select {
+			case err := <-errCh:
+				sc.LogErrorf(err.Error())
+			case node := <-nodeCh:
+				sc.AddNodes(node)
+				sc.ActivateNodes(node)
+
+				if first {
+					sc.Lock()
+
+					sc.currentTopology = node.currentTopology
+
+					sc.Unlock()
+
+					doneCh <- struct{}{}
+
+					first = false
+				}
+			}
+
+			remaining--
+		}
+	}(cCtx, sc, cfg)
+
+	for {
+		select {
+		case <-ctx.Done():
+			cancel()
+
+			return nil, fmt.Errorf("no snowth nodes could be activated")
+		case <-doneCh:
+			return sc, nil
 		}
 	}
-
-	return sc, nil
 }
 
 // Retries gets the number of retries a SnowthClient will attempt when
@@ -305,15 +351,6 @@ func (sc *SnowthClient) SetRequestFunc(f func(r *http.Request) error) {
 	sc.Lock()
 	defer sc.Unlock()
 	sc.request = f
-}
-
-// SetWatchFunc sets an optional middleware function that can be used to
-// inspect and activate or deactivate IRONdb cluster nodes during the watch and
-// update process.
-func (sc *SnowthClient) SetWatchFunc(f func(n *SnowthNode)) {
-	sc.Lock()
-	defer sc.Unlock()
-	sc.watch = f
 }
 
 // SetWatchInterval sets the interval at which the watch process executes.
@@ -400,6 +437,19 @@ func (sc *SnowthClient) FindMetricNodeIDs(uuid, metric string) []string {
 func (sc *SnowthClient) isNodeActive(ctx context.Context,
 	node *SnowthNode,
 ) bool {
+	sc.RLock()
+	dhosts := sc.denyHosts
+	sc.RUnlock()
+
+	for _, dh := range dhosts {
+		if node.GetURL().Host == dh {
+			sc.LogWarnf("deny host from active node check: %s",
+				node.GetURL().Host)
+
+			return false
+		}
+	}
+
 	if node.identifier == "" || node.semVer == "" {
 		// go get state to figure out identity
 		stats, err := sc.GetStatsNodeContext(ctx, node)
@@ -451,6 +501,7 @@ func (sc *SnowthClient) isNodeActive(ctx context.Context,
 func (sc *SnowthClient) WatchAndUpdate(ctx context.Context) {
 	sc.RLock()
 	wi := sc.watchInterval
+	to := sc.timeout
 	sc.RUnlock()
 
 	if wi <= time.Duration(0) {
@@ -467,37 +518,57 @@ func (sc *SnowthClient) WatchAndUpdate(ctx context.Context) {
 			case <-tick.C:
 				sc.LogDebugf("updating active snowth nodes")
 
-				if err := sc.discoverNodes(ctx); err != nil {
-					sc.LogErrorf("failed to perform snowth node discovery: %v",
-						err)
+				for _, node := range sc.ListActiveNodes() {
+					tcCtx, tcCancel := context.WithTimeout(ctx, to)
+
+					topology, err := sc.GetTopologyInfoContext(tcCtx, node)
+
+					tcCancel()
+
+					if err != nil {
+						sc.LogErrorf("error getting topology info "+
+							"from node %s: %w", node.GetURL().Host, err)
+					} else if topology == nil || len(topology.Nodes) == 0 {
+						sc.LogErrorf("received no topology info "+
+							"from node %s", node.GetURL().Host)
+					} else {
+						for _, topoNode := range topology.Nodes {
+							pcCtx, pcCancel := context.WithTimeout(ctx, to)
+
+							sc.populateNodeInfo(pcCtx,
+								node.GetCurrentTopology(), topoNode)
+
+							pcCancel()
+						}
+
+						break
+					}
 				}
 
-				sc.RLock()
-				wf := sc.watch
-				sc.RUnlock()
-
 				for _, node := range sc.ListInactiveNodes() {
-					if sc.isNodeActive(ctx, node) {
+					icCtx, icCancel := context.WithTimeout(ctx, to)
+
+					if sc.isNodeActive(icCtx, node) {
 						sc.LogDebugf("moving snowth node to active list: %s",
 							node.GetURL().Host)
+
 						sc.ActivateNodes(node)
 					}
 
-					if wf != nil {
-						wf(node)
-					}
+					icCancel()
 				}
 
 				for _, node := range sc.ListActiveNodes() {
-					if !sc.isNodeActive(ctx, node) {
+					acCtx, acCancel := context.WithTimeout(ctx, to)
+
+					if !sc.isNodeActive(acCtx, node) {
 						sc.LogWarnf("moving snowth node to inactive list: %s",
 							node.GetURL().Host)
+
 						sc.DeactivateNodes(node)
 					}
 
-					if wf != nil {
-						wf(node)
-					}
+					acCancel()
 				}
 
 				tick = time.NewTimer(wi)
@@ -506,43 +577,11 @@ func (sc *SnowthClient) WatchAndUpdate(ctx context.Context) {
 	}(wi)
 }
 
-// discoverNodes attempts to discover peer nodes related to the topology.
-// This function will go through the active nodes and get the topology
-// information which shows all other nodes included in the cluster, then adds
-// them as nodes to this client's active node pool.
-func (sc *SnowthClient) discoverNodes(ctx context.Context) error {
-	success := false
-	mErr := newMultiError()
-
-	for _, node := range sc.ListActiveNodes() {
-		// lookup the topology
-		topology, err := sc.GetTopologyInfoContext(ctx, node)
-		if err != nil {
-			mErr.Add(fmt.Errorf("error getting topology info: %w", err))
-
-			continue
-		}
-
-		// populate all the nodes with the appropriate topology information
-		for _, topoNode := range topology.Nodes {
-			sc.populateNodeInfo(node.GetCurrentTopology(), topoNode)
-		}
-
-		success = true
-	}
-
-	if !success {
-		// we didn't get any topology information, therefore we didn't
-		// discover correctly, return the multitude of errors
-		return mErr
-	}
-
-	return nil
-}
-
 // populateNodeInfo populates an existing node with details from the topology.
 // If a node doesn't exist, it will be added to the list of active nodes.
-func (sc *SnowthClient) populateNodeInfo(hash string, topology TopologyNode) {
+func (sc *SnowthClient) populateNodeInfo(ctx context.Context, hash string,
+	topology TopologyNode,
+) {
 	sc.Lock()
 
 	found := false
@@ -586,6 +625,8 @@ func (sc *SnowthClient) populateNodeInfo(hash string, topology TopologyNode) {
 		sc.currentTopologyCompiled = nil
 	}
 
+	dhosts := sc.denyHosts
+
 	sc.Unlock()
 
 	if !found {
@@ -598,6 +639,26 @@ func (sc *SnowthClient) populateNodeInfo(hash string, topology TopologyNode) {
 			},
 			currentTopology: hash,
 		}
+
+		for _, dh := range dhosts {
+			if newNode.GetURL().Host == dh {
+				sc.LogWarnf("deny host found from topology: %s",
+					newNode.GetURL().Host)
+
+				return
+			}
+		}
+
+		stats, err := sc.GetStatsNodeContext(ctx, newNode)
+		if err != nil {
+			// This node is not returning stats, put it on the inactive list.
+			sc.AddNodes(newNode)
+
+			return
+		}
+
+		newNode.identifier = stats.Identity()
+		newNode.semVer = stats.SemVer()
 
 		sc.AddNodes(newNode)
 		sc.ActivateNodes(newNode)
@@ -846,9 +907,9 @@ func (sc *SnowthClient) DoRequestContext(ctx context.Context, node *SnowthNode,
 			surl := sc.getURL(sn, url)
 
 			sc.LogDebugf("gosnowth %s request "+
-				"[retry: %d, connRetry: %d]: %s %s %s traceID: %s",
-				reqMsg, r, (cr - connRetries), method, surl,
-				string(bBody), traceID)
+				"[traceID: %s, retry: %d, connRetry: %d]: %s %s %s",
+				reqMsg, traceID, r, (cr - connRetries), method, surl,
+				string(bBody))
 
 			start := time.Now()
 
@@ -856,9 +917,9 @@ func (sc *SnowthClient) DoRequestContext(ctx context.Context, node *SnowthNode,
 				bytes.NewBuffer(bBody), headers, traceID)
 
 			sc.LogDebugf("gosnowth request complete "+
-				"[retry: %d, connRetry: %d]: %s %s latency: %+v traceID: %s",
-				r, (cr - connRetries), method, surl,
-				time.Since(start), traceID)
+				"[traceID: %s, retry: %d, connRetry: %d]: %s %s latency: %+v",
+				traceID, r, (cr - connRetries), method, surl,
+				time.Since(start))
 
 			if err == nil {
 				return bdy, hdr, nil
@@ -1059,16 +1120,24 @@ func (sc *SnowthClient) do(ctx context.Context,
 
 	newTopo := resp.Header.Get("X-Topo-0")
 
-	sc.Lock()
+	if newTopo != "" {
+		sc.RLock()
 
-	if newTopo != "" && (newTopo != sc.currentTopology ||
-		newTopo != node.currentTopology) {
-		sc.currentTopology = newTopo
-		node.currentTopology = newTopo
-		sc.currentTopologyCompiled = nil
+		if newTopo != sc.currentTopology || newTopo != node.currentTopology {
+			sc.RUnlock()
+
+			sc.Lock()
+
+			sc.currentTopology = newTopo
+			sc.currentTopologyCompiled = nil
+
+			node.currentTopology = newTopo
+
+			sc.Unlock()
+		} else {
+			sc.RUnlock()
+		}
 	}
-
-	sc.Unlock()
 
 	if traceReq {
 		msg := string(res[0:64]) + "..."

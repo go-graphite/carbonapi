@@ -21,6 +21,10 @@ func (sc *SnowthClient) GetStatsContext(ctx context.Context,
 		node = sc.GetActiveNode()
 	}
 
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
+	}
+
 	r := &Stats{}
 
 	body, _, err := sc.DoRequestContext(ctx, node, "GET", "/stats.json", nil, nil)

@@ -1,0 +1,80 @@
+run:
+  concurrency: 4
+  issues-exit-code: 1
+  tests: true
+  skip-dirs-use-default: true
+  skip-files:
+    - ".*_mock_test.go$"
+  allow-parallel-runners: true
+
+# all available settings of specific linters
+linters-settings:
+  govet:
+    check-shadowing: true
+    enable-all: true
+  gofmt:
+    simplify: true
+  gosec:
+    excludes: 
+      - G404
+  goimports:
+    local-prefixes: github.com/circonus-labs,github.com/openhistogram,github.com/circonus
+  misspell:
+    locale: US
+  unused:
+    check-exported: false
+  unparam:
+    check-exported: false
+  staticcheck:
+    go: "1.16"
+    # https://staticcheck.io/docs/options#checks
+    checks: [ "all", "-ST1017" ]
+  stylecheck:
+    go: "1.16"
+    # https://staticcheck.io/docs/options#checks
+    checks: [ "all", "-ST1017" ]
+
+linters:
+  enable:
+    - deadcode
+    - errcheck
+    - gocritic
+    - gofmt
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - megacheck
+    - misspell
+    - prealloc
+    - staticcheck
+    - structcheck
+    - typecheck
+    - unparam
+    - unused
+    - varcheck
+    - gci
+    - godot
+    - godox
+    - goerr113
+    - predeclared
+    - unconvert
+    - wrapcheck
+    - revive
+    - exportloopref
+    - asciicheck
+    - errorlint
+    - wrapcheck
+    - goconst
+    #- stylecheck
+    - forcetypeassert
+    - goimports
+  disable:
+    - scopelint # deprecated
+    - golint    # deprecated
+    - maligned  # deprecated
+  disable-all: false
+  presets:
+    - bugs
+    - unused
+  fast: false

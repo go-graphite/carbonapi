@@ -44,6 +44,10 @@ func (sc *SnowthClient) WriteNNTBSFlatbufferContext(ctx context.Context,
 			merge.Ops[0].Metric.MetricLocator.MetricName))
 	}
 
+	if node == nil {
+		return fmt.Errorf("unable to get active node")
+	}
+
 	if builder == nil {
 		builder = flatbuffers.NewBuilder(1024)
 	} else {

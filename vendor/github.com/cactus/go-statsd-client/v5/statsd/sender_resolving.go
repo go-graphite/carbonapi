@@ -31,6 +31,13 @@ type ResolvingSimpleSender struct {
 
 // Send sends the data to the server endpoint.
 func (s *ResolvingSimpleSender) Send(data []byte) (int, error) {
+	// Note: use manual unlocking instead of defer unlocking,
+	// due to the overhead of defers in this hot code path.
+	// https://go-review.googlesource.com/c/go/+/190098
+	// removes a lot of the overhead (in go versions >= 1.14),
+	// but it is still faster to not use it in some cases
+	// (like this one).
+
 	s.mx.RLock()
 	if !s.running {
 		s.mx.RUnlock()
@@ -41,7 +48,6 @@ func (s *ResolvingSimpleSender) Send(data []byte) (int, error) {
 	// already serialized writes
 	n, err := s.conn.(*net.UDPConn).WriteToUDP(data, s.addrResolved)
 
-	// unlock manually, and early (vs doing a defer) to avoid some overhead
 	s.mx.RUnlock()
 
 	if err != nil {
@@ -71,6 +77,11 @@ func (s *ResolvingSimpleSender) Close() error {
 }
 
 func (s *ResolvingSimpleSender) Reconnect() {
+	// Note: use manual unlocking instead of defer unlocking.
+	// This is done here because we use a read lock first,
+	// read a value safely, then perform an action that doesn't require
+	// locking, then acquire a write lock for safe updating.
+
 	// lock to guard against s.running mutation
 	s.mx.RLock()
 
@@ -85,7 +96,7 @@ func (s *ResolvingSimpleSender) Reconnect() {
 	// done with rlock for now
 	s.mx.RUnlock()
 
-	// ro doesn't change, so no need to lock
+	// s.addrUnresolved doesn't change, so no do this under read lock
 	addrResolved, err := net.ResolveUDPAddr("udp", s.addrUnresolved)
 
 	if err != nil {
