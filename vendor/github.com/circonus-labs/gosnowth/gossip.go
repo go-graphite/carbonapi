@@ -43,6 +43,10 @@ func (sc *SnowthClient) GetGossipInfoContext(ctx context.Context,
 		node = sc.GetActiveNode()
 	}
 
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
+	}
+
 	r := &Gossip{}
 
 	body, _, err := sc.DoRequestContext(ctx, node, "GET", "/gossip/json",

@@ -171,6 +171,10 @@ func (sc *SnowthClient) WriteNumericContext(ctx context.Context,
 			data[0].Metric))
 	}
 
+	if node == nil {
+		return fmt.Errorf("unable to get active node")
+	}
+
 	_, _, err := sc.DoRequestContext(ctx, node, "POST",
 		"/write/numeric", buf, nil)
 
@@ -195,6 +199,10 @@ func (sc *SnowthClient) ReadNumericValuesContext(ctx context.Context,
 		node = nodes[0]
 	} else {
 		node = sc.GetActiveNode(sc.FindMetricNodeIDs(id, metric))
+	}
+
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
 	}
 
 	r := &NumericValueResponse{}
@@ -233,6 +241,10 @@ func (sc *SnowthClient) ReadNumericAllValuesContext(ctx context.Context,
 		node = nodes[0]
 	} else {
 		node = sc.GetActiveNode(sc.FindMetricNodeIDs(id, metric))
+	}
+
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
 	}
 
 	r := &NumericAllValueResponse{}

@@ -336,7 +336,7 @@ func (sc *SnowthClient) GetTopologyInfo(nodes ...*SnowthNode) (*Topology, error)
 	}
 
 	if node == nil {
-		return nil, fmt.Errorf("no active nodes")
+		return nil, fmt.Errorf("unable to get active node")
 	}
 
 	return sc.GetTopologyInfoContext(context.Background(), node)
@@ -369,6 +369,10 @@ func (sc *SnowthClient) GetTopologyInfoContext(ctx context.Context,
 		node = nodes[0]
 	} else {
 		node = sc.GetActiveNode()
+	}
+
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
 	}
 
 	topologyID := node.GetCurrentTopology()
@@ -409,6 +413,10 @@ func (sc *SnowthClient) LoadTopology(hash string, t *Topology,
 		node = nodes[0]
 	} else {
 		node = sc.GetActiveNode()
+	}
+
+	if node == nil {
+		return fmt.Errorf("unable to get active node")
 	}
 
 	return sc.LoadTopologyContext(context.Background(), hash, t, node)

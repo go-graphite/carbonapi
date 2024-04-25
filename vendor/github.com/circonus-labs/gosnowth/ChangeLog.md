@@ -6,6 +6,107 @@ to [Semantic Versioning](http://semver.org/) rules.
 
 ## [Next Release]
 
+## [v1.14.0] - 2023-05-19
+
+* refactor!: Modifies the FindTagsResult values returned by the FindTags()
+functions so that they do not include a separate FindCount value, but use the
+count and estimate fields on the FindTagsResult when the query is count only.
+* feat: Includes accurate values in FindTagsResult.Estimate when results
+from a FindTags() query return estimated results from IRONdb. This can be
+used to determine that a timeout occurred during processing by IRONdb.
+
+## [v1.13.9] - 2023-03-31
+
+* fix: Ensures PromQLMetadataQuery() only returns metrics with valid PromQL
+types and that can be expressed as PromQL types.
+
+## [v1.13.8] - 2023-03-21
+
+* add: Adds PromQL support for metadata queries via PromQLMetadataQuery().
+
+## [v1.13.7] - 2023-03-17
+
+* add: Adds PromQL support for series queries via PromQLSeriesQuery().
+* add: Adds PromQL support for label names queries via PromQLLabelQuery().
+* add: Adds PromQL support for label values queries via
+PromQLLabelValuesQuery().
+* add: Adds conversion of PromQL series selectors into IRONdb tag queries via
+ConvertSeriesSelector().
+
+## [v1.13.6] - 2023-03-14
+
+* upd: Adds support for fractional seconds for PromQL queries for compatibility.
+PromQL fractional seconds are truncated when converting to CAQL queries.
+
+## [v1.13.5] - 2023-03-14
+
+* add: Adds support for PromQL instant queries.
+
+## [v1.13.4] - 2023-03-10
+
+* fix: Restores some quote handling for metric name parsing but corrects the
+bug that was causing removal of quotes from quoted values.
+
+## [v1.13.3] - 2023-03-10
+
+* fix: Removes quote handling from the metric name parser. This handling is
+correct for tag queries, but not for canonical name parsing.
+
+## [v1.13.2] - 2023-03-09
+
+* add: Adds a configuration item, DenyHosts, to allow a list of hosts to
+always be considered inactive, regardless of topology discovery.
+
+## [v1.13.1] - 2023-02-23
+
+* upd: Modifies the PromQLResponse and PromQLError types to support more types
+of PromQL data values.
+* upd: Updates unit tests and examples to use NewClient().
+* upd: Ensures default values are set for snowth client timeouts.
+
+## [v1.13.0] - 2023-02-23
+
+* fix: Corrects a bug that could cause snowth client creation to fail if a
+single cluster node does not respond within the context timeout.
+* upd: Removes the Config.Discover option and the deprecated NewSnowthClient()
+function. These were not used and were previously replaced by NewClient() and
+the WatchAndUpdate() functionality.
+
+## [v1.12.5] - 2023-02-21
+
+* upd: Adds a PromQLError type, which duplicates the PromQL response envelope,
+but also functions as a Go error type.
+
+## [v1.12.3] - 2023-02-17
+
+* upd: Changes the mechanism of UpdateCheckTags() to mitigate a race condition
+that can occur if check tags are being rapidly changed. It will now always
+attempt to add the full set of check tags being submitted rather than only the
+ones that snowth thinks do not already exist.
+
+## [v1.12.2] - 2023-02-17
+
+* upd: Improve trace ID placement in log entries to ensure it is not truncated
+by request bodies in some debug logs.
+
+## [v1.12.1] - 2023-02-15
+
+* upd: Removes the WatchFunc functionality as this is not used anymore.
+* upd: Improves error handling when no active nodes are available.
+
+## [v1.12.0] - 2023-02-14
+
+* add: Adds support for PromQL queries via the new snowth PromQL support.
+* upd: Improves CAQLError values to include more information from snowth.
+Access to the message previously in CAQLError.UserError.Message must now be
+retrieved via the CAQLError.Message() method instead.
+
+## [v1.11.4] - 2023-01-26
+
+* fix: Ensures that snowth nodes loaded by the topology discovery process are
+properly populated with all stats information, and are correctly added as
+inactive servers if they are not responding to network requests.
+
 ## [v1.11.3] - 2022-11-30
 
 * upd: Updates the WatchAndUpdate() functionality of SnowthClient to correctly
@@ -410,6 +511,24 @@ writing to histogram endpoints.
 any delay, once started. Created: 2019-03-12. Fixed: 2019-03-13.
 
 [Next Release]: https://github.com/circonus-labs/gosnowth
+[v1.14.0]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.14.0
+[v1.13.9]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.13.9
+[v1.13.8]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.13.8
+[v1.13.7]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.13.7
+[v1.13.6]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.13.6
+[v1.13.5]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.13.5
+[v1.13.4]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.13.4
+[v1.13.3]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.13.3
+[v1.13.2]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.13.2
+[v1.13.1]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.13.1
+[v1.13.0]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.13.0
+[v1.12.5]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.12.5
+[v1.12.4]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.12.4
+[v1.12.3]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.12.3
+[v1.12.2]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.12.2
+[v1.12.1]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.12.1
+[v1.12.0]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.12.0
+[v1.11.4]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.11.4
 [v1.11.3]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.11.3
 [v1.11.2]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.11.2
 [v1.11.1]: https://github.com/circonus-labs/gosnowth/releases/tag/v1.11.1

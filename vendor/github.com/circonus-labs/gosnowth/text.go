@@ -65,6 +65,10 @@ func (sc *SnowthClient) ReadTextValuesContext(ctx context.Context,
 		node = sc.GetActiveNode(sc.FindMetricNodeIDs(uuid, metric))
 	}
 
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
+	}
+
 	r := TextValueResponse{}
 
 	body, _, err := sc.DoRequestContext(ctx, node, "GET", path.Join("/read",
@@ -104,6 +108,10 @@ func (sc *SnowthClient) WriteTextContext(ctx context.Context,
 	} else if len(data) > 0 {
 		node = sc.GetActiveNode(sc.FindMetricNodeIDs(data[0].ID,
 			data[0].Metric))
+	}
+
+	if node == nil {
+		return fmt.Errorf("unable to get active node")
 	}
 
 	buf := new(bytes.Buffer)

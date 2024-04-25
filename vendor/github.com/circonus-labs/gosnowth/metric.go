@@ -243,15 +243,8 @@ loop:
 					}
 				} else {
 					if err := ms.unread(); err != nil {
-						if _, err := buf.WriteRune(ch); err != nil {
-							return tokenIllegal, "", "", fmt.Errorf(
-								"unable to unread rune from tag name: %w", err)
-						}
-
-						if _, err := can.WriteRune(ch); err != nil {
-							return tokenIllegal, "", "", fmt.Errorf(
-								"unable to write to tag name canonical buffer: %w", err)
-						}
+						return tokenIllegal, "", "", fmt.Errorf(
+							"unable to unread rune from tag name: %w", err)
 					}
 
 					if _, err := buf.WriteRune(ch); err != nil {
@@ -313,7 +306,7 @@ loop:
 }
 
 // scanTagValue attempts to read a tag value token from the scan buffer.
-func (ms *metricScanner) scanTagValue( //nolint:gocyclo
+func (ms *metricScanner) scanTagValue(
 	tt tagType,
 ) (scanToken, string, string, error) {
 	var buf, can bytes.Buffer
@@ -356,15 +349,8 @@ loop:
 					}
 				} else {
 					if err := ms.unread(); err != nil {
-						if _, err := buf.WriteRune(ch); err != nil {
-							return tokenIllegal, "", "", fmt.Errorf(
-								"unable to unread rune from tag name: %w", err)
-						}
-
-						if _, err := can.WriteRune(ch); err != nil {
-							return tokenIllegal, "", "", fmt.Errorf(
-								"unable to write to canonical tag name buffer: %w", err)
-						}
+						return tokenIllegal, "", "", fmt.Errorf(
+							"unable to unread rune from tag name: %w", err)
 					}
 
 					if _, err := buf.WriteRune(ch); err != nil {
@@ -489,11 +475,6 @@ func (mp *MetricParser) parseTagSet(tt tagType) (string, []Tag, error) {
 			tag.Category = string(b)
 		}
 
-		if strings.HasPrefix(tag.Category, `"`) &&
-			strings.HasSuffix(tag.Category, `"`) {
-			tag.Category = strings.Trim(tag.Category, `"`)
-		}
-
 		canonical.WriteString(can)
 
 		if tok, lit = mp.s.scan(); tok != tokenColon {
@@ -527,11 +508,6 @@ func (mp *MetricParser) parseTagSet(tt tagType) (string, []Tag, error) {
 			}
 
 			tag.Value = string(b)
-		}
-
-		if strings.HasPrefix(tag.Value, `"`) &&
-			strings.HasSuffix(tag.Value, `"`) {
-			tag.Value = strings.Trim(tag.Value, `"`)
 		}
 
 		canonical.WriteString(can)

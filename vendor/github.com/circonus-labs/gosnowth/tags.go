@@ -29,15 +29,9 @@ type FindTagsItem struct {
 
 // FindTagsResult values contain the results of a find tags request.
 type FindTagsResult struct {
-	Items     []FindTagsItem
-	FindCount *FindTagsCount
-	Count     int64
-}
-
-// FindTagsCount values represent results from count only requests.
-type FindTagsCount struct {
-	Count    int64 `json:"count"`
-	Estimate bool  `json:"estimate"`
+	Items    []FindTagsItem `json:"items,omitempty"`
+	Count    int64          `json:"count"`
+	Estimate bool           `json:"estimate"`
 }
 
 // FindTagsOptions values contain optional parameters to be passed to the
@@ -220,6 +214,10 @@ func (sc *SnowthClient) FindTagsContext(ctx context.Context, accountID int64,
 		node = sc.GetActiveNode()
 	}
 
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
+	}
+
 	u := fmt.Sprintf("%s?query=%s",
 		fmt.Sprintf("/find/%d/tags", accountID),
 		url.QueryEscape(query))
@@ -270,28 +268,36 @@ func (sc *SnowthClient) FindTagsContext(ctx context.Context, accountID int64,
 	}
 
 	if options.CountOnly != 0 {
-		if err := decodeJSON(body, &r.FindCount); err != nil {
+		if err := decodeJSON(body, &r); err != nil {
 			return nil, fmt.Errorf("unable to decode IRONdb response: %w", err)
 		}
-	} else {
-		if err := decodeJSON(body, &r.Items); err != nil {
-			return nil, fmt.Errorf("unable to decode IRONdb response: %w", err)
-		}
+
+		return r, nil
 	}
 
-	// Return a results count and capture it from the header , if provided.
+	if err := decodeJSON(body, &r.Items); err != nil {
+		return nil, fmt.Errorf("unable to decode IRONdb response: %w", err)
+	}
+
 	r.Count = int64(len(r.Items))
 
-	if header != nil {
-		c := header.Get("X-Snowth-Search-Result-Count")
-		if c != "" {
-			if cv, err := strconv.ParseInt(c, 10, 64); err == nil {
-				r.Count = cv
-			}
+	if header == nil {
+		return r, nil
+	}
+
+	if v := header.Get("X-Snowth-Search-Result-Count"); v != "" {
+		if iv, err := strconv.ParseInt(v, 10, 64); err == nil {
+			r.Count = iv
 		}
 	}
 
-	return r, err
+	if v := header.Get("X-Snowth-Search-Result-Count-Is-Estimate"); v != "" {
+		if bv, err := strconv.ParseBool(v); err == nil {
+			r.Estimate = bv
+		}
+	}
+
+	return r, nil
 }
 
 // FindTagCats retrieves tag categories that are associated with the
@@ -314,6 +320,10 @@ func (sc *SnowthClient) FindTagCatsContext(ctx context.Context,
 		node = sc.GetActiveNode()
 	}
 
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
+	}
+
 	u := fmt.Sprintf("%s?query=%s",
 		fmt.Sprintf("/find/%d/tag_cats", accountID),
 		url.QueryEscape(query))
@@ -329,7 +339,7 @@ func (sc *SnowthClient) FindTagCatsContext(ctx context.Context,
 		return nil, fmt.Errorf("unable to decode IRONdb response: %w", err)
 	}
 
-	return r, err
+	return r, nil
 }
 
 // FindTagVals retrieves tag values that are associated with the
@@ -353,6 +363,10 @@ func (sc *SnowthClient) FindTagValsContext(ctx context.Context,
 		node = sc.GetActiveNode()
 	}
 
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
+	}
+
 	u := fmt.Sprintf("%s?query=%s&category=%s",
 		fmt.Sprintf("/find/%d/tag_vals", accountID),
 		url.QueryEscape(query), url.QueryEscape(category))
@@ -368,7 +382,7 @@ func (sc *SnowthClient) FindTagValsContext(ctx context.Context,
 		return nil, fmt.Errorf("unable to decode IRONdb response: %w", err)
 	}
 
-	return r, err
+	return r, nil
 }
 
 // CheckTags values contain check tag data from IRONdb.
@@ -402,6 +416,10 @@ func (sc *SnowthClient) GetCheckTagsContext(ctx context.Context,
 		node = sc.GetActiveNode()
 	}
 
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
+	}
+
 	u := fmt.Sprintf("/meta/check/tag/%s", checkUUID)
 
 	r := CheckTags{}
@@ -415,7 +433,7 @@ func (sc *SnowthClient) GetCheckTagsContext(ctx context.Context,
 		return nil, fmt.Errorf("unable to decode IRONdb response: %w", err)
 	}
 
-	return r, err
+	return r, nil
 }
 
 // DeleteCheckTags removes check tags from IRONdb for a specified check.
@@ -438,6 +456,10 @@ func (sc *SnowthClient) DeleteCheckTagsContext(ctx context.Context,
 		node = nodes[0]
 	} else {
 		node = sc.GetActiveNode()
+	}
+
+	if node == nil {
+		return fmt.Errorf("unable to get active node")
 	}
 
 	u := fmt.Sprintf("/meta/check/tag/%s", checkUUID)
@@ -476,6 +498,10 @@ func (sc *SnowthClient) UpdateCheckTagsContext(ctx context.Context,
 		node = sc.GetActiveNode()
 	}
 
+	if node == nil {
+		return 0, fmt.Errorf("unable to get active node")
+	}
+
 	old, err := sc.GetCheckTagsContext(ctx, checkUUID, node)
 	if err != nil {
 		return 0, err
@@ -501,7 +527,6 @@ func (sc *SnowthClient) UpdateCheckTagsContext(ctx context.Context,
 	}
 
 	del := []string{}
-	add := []string{}
 
 	for _, oldTag := range ex {
 		d := true
@@ -519,28 +544,8 @@ func (sc *SnowthClient) UpdateCheckTagsContext(ctx context.Context,
 		}
 	}
 
-	for _, newTag := range tags {
-		a := true
-
-		for _, oldTag := range ex {
-			if oldTag == newTag {
-				a = false
-
-				break
-			}
-		}
-
-		if a {
-			add = append(add, newTag)
-		}
-	}
-
-	if len(add) == 0 && len(del) == 0 {
-		return 0, nil
-	}
-
 	mod := ModifyTags{
-		Add:    add,
+		Add:    tags,
 		Remove: del,
 	}
 
@@ -556,7 +561,7 @@ func (sc *SnowthClient) UpdateCheckTagsContext(ctx context.Context,
 		return 0, fmt.Errorf("unable to post tags update: %w", err)
 	}
 
-	return int64(len(add) + len(del)), nil
+	return int64(len(tags) + len(del)), nil
 }
 
 // encodeTags performs base64 encoding on tags when needed.

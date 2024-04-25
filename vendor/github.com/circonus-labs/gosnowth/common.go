@@ -27,45 +27,6 @@ func resolveURL(baseURL *url.URL, ref string) string {
 	return baseURL.ResolveReference(refURL).String()
 }
 
-// multiError values keep track of multiple errors.
-type multiError struct {
-	errs []error
-}
-
-// newMultiError initializes a new multiError value.
-func newMultiError() *multiError {
-	return &multiError{
-		errs: []error{},
-	}
-}
-
-// Add appends an error to the list of errors.
-func (me *multiError) Add(err error) {
-	if err != nil {
-		me.errs = append(me.errs, err)
-	}
-}
-
-// HasError returns whether the value contains any errors.
-func (me multiError) HasError() bool {
-	return len(me.errs) > 0
-}
-
-// String returns a string representation of the error value.
-func (me multiError) String() string {
-	es := []string{}
-	for _, err := range me.errs {
-		es = append(es, err.Error())
-	}
-
-	return strings.Join(es, "; ")
-}
-
-// Error implements the error interface for multiError values.
-func (me multiError) Error() string {
-	return me.String()
-}
-
 // encodeJSON create a reader of JSON data representing an interface.
 func encodeJSON(v interface{}) (io.Reader, error) {
 	buf := &bytes.Buffer{}

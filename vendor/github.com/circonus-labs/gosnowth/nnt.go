@@ -166,6 +166,10 @@ func (sc *SnowthClient) WriteNNTContext(ctx context.Context,
 			data[0].Metric))
 	}
 
+	if node == nil {
+		return fmt.Errorf("unable to get active node")
+	}
+
 	_, _, err := sc.DoRequestContext(ctx, node, "POST", "/write/nnt", buf, nil)
 
 	return err
@@ -189,6 +193,10 @@ func (sc *SnowthClient) ReadNNTValuesContext(ctx context.Context,
 		node = nodes[0]
 	} else {
 		node = sc.GetActiveNode(sc.FindMetricNodeIDs(id, metric))
+	}
+
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
 	}
 
 	r := &NNTValueResponse{}
@@ -226,6 +234,10 @@ func (sc *SnowthClient) ReadNNTAllValuesContext(ctx context.Context,
 		node = nodes[0]
 	} else {
 		node = sc.GetActiveNode(sc.FindMetricNodeIDs(id, metric))
+	}
+
+	if node == nil {
+		return nil, fmt.Errorf("unable to get active node")
 	}
 
 	r := &NNTAllValueResponse{}

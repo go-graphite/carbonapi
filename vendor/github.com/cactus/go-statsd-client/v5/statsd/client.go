@@ -27,6 +27,15 @@ type StatSender interface {
 	Raw(string, string, float32, ...Tag) error
 }
 
+// The ExtendedStatSender interface wraps a StatSender and adds some
+// methods that may be unsupported by some servers.
+type ExtendedStatSender interface {
+	StatSender
+	GaugeFloat(string, float64, float32, ...Tag) error
+	GaugeFloatDelta(string, float64, float32, ...Tag) error
+	SetFloat(string, float64, float32, ...Tag) error
+}
+
 // The Statter interface defines the behavior of a stat client
 type Statter interface {
 	StatSender
@@ -132,6 +141,37 @@ func (s *Client) GaugeDelta(stat string, value int64, rate float32, tags ...Tag)
 	return s.submit(stat, "", value, "|g", rate, tags)
 }
 
+// GaugeFloat submits/updates a float statsd gauge type.
+// Note: May not be supported by all servers.
+// stat is a string name for the metric.
+// value is the float64 value.
+// rate is the sample rate (0.0 to 1.0).
+func (s *Client) GaugeFloat(stat string, value float64, rate float32, tags ...Tag) error {
+	if !s.includeStat(rate) {
+		return nil
+	}
+
+	return s.submit(stat, "", value, "|g", rate, tags)
+}
+
+// GaugeFloatDelta submits a float delta to a statsd gauge.
+// Note: May not be supported by all servers.
+// stat is the string name for the metric.
+// value is the (positive or negative) change.
+// rate is the sample rate (0.0 to 1.0).
+func (s *Client) GaugeFloatDelta(stat string, value float64, rate float32, tags ...Tag) error {
+	if !s.includeStat(rate) {
+		return nil
+	}
+
+	// if negative, the submit formatter will prefix with a - already
+	// so only special case the positive value
+	if value >= 0 {
+		return s.submit(stat, "+", value, "|g", rate, tags)
+	}
+	return s.submit(stat, "", value, "|g", rate, tags)
+}
+
 // Timing submits a statsd timing type.
 // stat is a string name for the metric.
 // delta is the time duration value in milliseconds
@@ -174,6 +214,19 @@ func (s *Client) Set(stat string, value string, rate float32, tags ...Tag) error
 // value is the integer value
 // rate is the sample rate (0.0 to 1.0).
 func (s *Client) SetInt(stat string, value int64, rate float32, tags ...Tag) error {
+	if !s.includeStat(rate) {
+		return nil
+	}
+
+	return s.submit(stat, "", value, "|s", rate, tags)
+}
+
+// SetFloat submits a number as a stats set type.
+// Note: May not be supported by all servers.
+// stat is a string name for the metric.
+// value is the integer value
+// rate is the sample rate (0.0 to 1.0).
+func (s *Client) SetFloat(stat string, value float64, rate float32, tags ...Tag) error {
 	if !s.includeStat(rate) {
 		return nil
 	}
@@ -293,9 +346,10 @@ func (s *Client) NewSubStatter(prefix string) SubStatter {
 	var c *Client
 	if s != nil {
 		c = &Client{
-			prefix:  joinPathComp(s.prefix, prefix),
-			sender:  s.sender,
-			sampler: s.sampler,
+			prefix:    joinPathComp(s.prefix, prefix),
+			sender:    s.sender,
+			sampler:   s.sampler,
+			tagFormat: s.tagFormat,
 		}
 	}
 	return c
