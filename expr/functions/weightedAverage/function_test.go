@@ -32,14 +32,14 @@ func TestWeightedAverage(t *testing.T) {
 		{
 			"weightedAverage(metric*, metric*, 0)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {},
+				{Metric: "metric*", From: 0, Until: 1}: {},
 			},
 			[]*types.MetricData{},
 		},
 		{
 			"weightedAverage(metric*, metric*, 0)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, 1, now32),
 					types.MakeMetricData("metric2", []float64{None, 2, None, 4, None, 6, None, 8, None, 10, None, 12, None, 14, None, 16, None, 18, None, 20}, 1, now32),
 					types.MakeMetricData("metric3", []float64{1, 2, None, None, None, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, None, None, None}, 1, now32),
@@ -54,13 +54,13 @@ func TestWeightedAverage(t *testing.T) {
 		{
 			"weightedAverage(metric*.dividend, metric*.divisor, 0)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric*.dividend", 0, 1}: {
+				{Metric: "metric*.dividend", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.dividend", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, 1, now32),
 					types.MakeMetricData("metric2.dividend", []float64{None, 2, None, 4, None, 6, None, 8, None, 10, None, 12, None, 14, None, 16, None, 18, None, 20}, 1, now32),
 					types.MakeMetricData("metric3.dividend", []float64{1, 2, None, None, None, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, None, None, None}, 1, now32),
 					types.MakeMetricData("metric5.dividend", []float64{1, 2, None, None, None, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, None, None}, 1, now32),
 				},
-				{"metric*.divisor", 0, 1}: {
+				{Metric: "metric*.divisor", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.divisor", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, 1, now32),
 					types.MakeMetricData("metric3.divisor", []float64{1, 2, None, None, None, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, None, None, None}, 1, now32),
 					types.MakeMetricData("metric4.divisor", []float64{1, 2, 3, 4, None, 6, None, None, 9, 10, 11, None, 13, None, None, None, None, 18, 19, 20}, 1, now32),
@@ -76,10 +76,10 @@ func TestWeightedAverage(t *testing.T) {
 		{
 			"weightedAverage(metric1.dividend, metric2.divisor, 0)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.dividend", 0, 1}: {
+				{Metric: "metric1.dividend", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.dividend", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, 1, now32),
 				},
-				{"metric2.divisor", 0, 1}: {
+				{Metric: "metric2.divisor", From: 0, Until: 1}: {
 					types.MakeMetricData("metric2.divisor", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, 1, now32),
 				},
 			},
@@ -107,7 +107,7 @@ func BenchmarkWeightedAverage(b *testing.B) {
 		{
 			target: "weightedAverage(metric*, metric*, 0)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", 0, 1}: {
+				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, 1, now32),
 					types.MakeMetricData("metric2", []float64{None, 2, None, 4, None, 6, None, 8, None, 10, None, 12, None, 14, None, 16, None, 18, None, 20}, 1, now32),
 					types.MakeMetricData("metric3", []float64{1, 2, None, None, None, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, None, None, None}, 1, now32),
@@ -119,13 +119,13 @@ func BenchmarkWeightedAverage(b *testing.B) {
 		{
 			target: "weightedAverage(metric*.dividend, metric*.divisor, 0)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric*.dividend", 0, 1}: {
+				{Metric: "metric*.dividend", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.dividend", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, 1, now32),
 					types.MakeMetricData("metric2.dividend", []float64{None, 2, None, 4, None, 6, None, 8, None, 10, None, 12, None, 14, None, 16, None, 18, None, 20}, 1, now32),
 					types.MakeMetricData("metric3.dividend", []float64{1, 2, None, None, None, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, None, None, None}, 1, now32),
 					types.MakeMetricData("metric5.dividend", []float64{1, 2, None, None, None, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, None, None}, 1, now32),
 				},
-				{"metric*.divisor", 0, 1}: {
+				{Metric: "metric*.divisor", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.divisor", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, 1, now32),
 					types.MakeMetricData("metric3.divisor", []float64{1, 2, None, None, None, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, None, None, None}, 1, now32),
 					types.MakeMetricData("metric4.divisor", []float64{1, 2, 3, 4, None, 6, None, None, 9, 10, 11, None, 13, None, None, None, None, 18, 19, 20}, 1, now32),
@@ -137,10 +137,10 @@ func BenchmarkWeightedAverage(b *testing.B) {
 			// empty result
 			target: "weightedAverage(metric1.dividend, metric2.divisor, 0)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.dividend", 0, 1}: {
+				{Metric: "metric1.dividend", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.dividend", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, 1, now32),
 				},
-				{"metric2.divisor", 0, 1}: {
+				{Metric: "metric2.divisor", From: 0, Until: 1}: {
 					types.MakeMetricData("metric2.divisor", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, 1, now32),
 				},
 			},

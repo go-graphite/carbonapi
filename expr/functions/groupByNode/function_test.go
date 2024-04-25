@@ -217,7 +217,7 @@ func TestGroupByNode(t *testing.T) {
 			Name:   "groupByNodes_range",
 			Target: `groupByNodes(test.metric*.foo*,"range",1,0)`,
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"test.metric*.foo*", 0, 1}: {
+				{Metric: "test.metric*.foo*", From: 0, Until: 1}: {
 					types.MakeMetricData("test.metric1.foo1", []float64{0}, 1, now32),
 					types.MakeMetricData("test.metric1.foo2", []float64{0}, 1, now32),
 					types.MakeMetricData("test.metric2.foo1", []float64{0}, 1, now32),
@@ -233,7 +233,7 @@ func TestGroupByNode(t *testing.T) {
 			Name:   "groupByNodes_average_no_nodes",
 			Target: `groupByNodes(test.metric*.foo*,"average")`,
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"test.metric*.foo*", 0, 1}: {
+				{Metric: "test.metric*.foo*", From: 0, Until: 1}: {
 					types.MakeMetricData("test.metric1.foo1", []float64{0}, 1, now32),
 					types.MakeMetricData("test.metric1.foo2", []float64{0}, 1, now32),
 					types.MakeMetricData("test.metric2.foo1", []float64{0}, 1, now32),

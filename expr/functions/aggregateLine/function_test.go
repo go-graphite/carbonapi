@@ -30,7 +30,7 @@ func TestConstantLine(t *testing.T) {
 		{
 			"aggregateLine(metric[123])",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[123]", 0, 1}: {
+				{Metric: "metric[123]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1.0, math.NaN(), 2.0, 3.0, 4.0, 5.0}, 1, now32),
 					types.MakeMetricData("metric2", []float64{2.0, math.NaN(), 3.0, math.NaN(), 5.0, 6.0}, 1, now32),
 					types.MakeMetricData("metric3", []float64{3.0, math.NaN(), 4.0, 5.0, 6.0, math.NaN()}, 1, now32),
@@ -45,7 +45,7 @@ func TestConstantLine(t *testing.T) {
 		{
 			"aggregateLine(metric[12],'avg',true)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[12]", 0, 1}: {
+				{Metric: "metric[12]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
 					types.MakeMetricData("metric2", []float64{2.0, 6.0, 3.0, 2.0, 5.0, 6.0}, 1, now32),
 				},
@@ -70,7 +70,7 @@ func TestConstantLine(t *testing.T) {
 func BenchmarkAverageSeries(b *testing.B) {
 	target := "aggregateLine(metric[12],'avg',true)"
 	metrics := map[parser.MetricRequest][]*types.MetricData{
-		{"metric[12]", 0, 1}: {
+		{Metric: "metric[12]", From: 0, Until: 1}: {
 			types.MakeMetricData("metric1", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, 1),
 			types.MakeMetricData("metric2", []float64{2.0, 6.0, 3.0, 2.0, 5.0, 6.0}, 1, 1),
 		},

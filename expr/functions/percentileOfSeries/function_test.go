@@ -32,21 +32,21 @@ func TestPercentileOfSeries(t *testing.T) {
 		{
 			`percentileOfSeries(metric1.empty,4)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.empty", 0, 1}: {},
+				{Metric: "metric1.empty", From: 0, Until: 1}: {},
 			},
 			[]*types.MetricData{},
 		},
 		{
 			`percentileOfSeries(metric1,4)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, math.NaN()}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("percentileOfSeries(metric1,4)", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, math.NaN()}, 1, now32)},
 		},
 		{
 			`percentileOfSeries(metric1.foo.*.*,50)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.*.*", 0, 1}: {
+				{Metric: "metric1.foo.*.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, math.NaN(), math.NaN()}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10, math.NaN()}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15, math.NaN()}, 1, now32),
@@ -58,7 +58,7 @@ func TestPercentileOfSeries(t *testing.T) {
 		{
 			`percentileOfSeries(metric1.foo.*.*,50,interpolate=true)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.*.*", 0, 1}: {
+				{Metric: "metric1.foo.*.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, math.NaN(), math.NaN()}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10, math.NaN()}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15, math.NaN()}, 1, now32),
@@ -70,7 +70,7 @@ func TestPercentileOfSeries(t *testing.T) {
 		{
 			`percentileOfSeries(metric1.foo.*.*,95,false)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.*.*", 0, 1}: {
+				{Metric: "metric1.foo.*.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar1.qux", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar2.qux", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar3.qux", []float64{0, 0, 0, 100500, 100501, 1005002}, 1, now32),
@@ -84,7 +84,7 @@ func TestPercentileOfSeries(t *testing.T) {
 		{
 			`percentileOfSeries(seriesByTag('tag2=value*', 'name=metric'),95,false)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"seriesByTag('tag2=value*', 'name=metric')", 0, 1}: {
+				{Metric: "seriesByTag('tag2=value*', 'name=metric')", From: 0, Until: 1}: {
 					types.MakeMetricData("metric;tag1=value1;tag2=value21;tag3=value3", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
 					types.MakeMetricData("metric;tag2=value21", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0}, 1, now32),
 					types.MakeMetricData("metric;tag1=value1;tag2=value21", []float64{0, 0, 0, 100500, 100501, 1005002}, 1, now32),
@@ -116,7 +116,7 @@ func TestPercentileOfSeriesExtractSeriesByTag(t *testing.T) {
 		{
 			`percentileOfSeries(seriesByTag('tag2=value*', 'name=metric'),95,false)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"seriesByTag('tag2=value*', 'name=metric')", 0, 1}: {
+				{Metric: "seriesByTag('tag2=value*', 'name=metric')", From: 0, Until: 1}: {
 					types.MakeMetricData("metric;tag1=value1;tag2=value21;tag3=value3", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32),
 					types.MakeMetricData("metric;tag2=value22", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), 0}, 1, now32),
 					types.MakeMetricData("metric;tag1=value1;tag2=value23", []float64{0, 0, 0, 100500, 100501, 1005002}, 1, now32),

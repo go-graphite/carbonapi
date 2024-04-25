@@ -3,13 +3,14 @@ package parser
 import (
 	"bytes"
 	"fmt"
-	"github.com/go-graphite/carbonapi/expr/holtwinters"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/go-graphite/carbonapi/expr/holtwinters"
 
 	"github.com/ansel1/merry"
 )
@@ -157,6 +158,14 @@ func (e *expr) Metrics(from, until int64) []MetricRequest {
 			referenceSeriesExpr := e.GetNamedArg("referenceSeries")
 			if !referenceSeriesExpr.IsInterfaceNil() {
 				r = append(r, referenceSeriesExpr.Metrics(from, until)...)
+			}
+		case "consolidateBy":
+			function, err := e.GetStringArg(1)
+			if err != nil {
+				break
+			}
+			for i := range r {
+				r[i].ConsolidationFunc = function
 			}
 		case "timeShift":
 			offs, err := e.GetIntervalArg(1, -1)

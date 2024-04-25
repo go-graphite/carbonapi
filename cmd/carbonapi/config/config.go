@@ -87,6 +87,7 @@ type ConfigType struct {
 	SendGlobsAsIs              *bool              `mapstructure:"sendGlobsAsIs"`
 	AlwaysSendGlobsAsIs        *bool              `mapstructure:"alwaysSendGlobsAsIs"`
 	ExtractTagsFromArgs        bool               `mapstructure:"extractTagsFromArgs"`
+	PassFunctionsToBackend     bool               `mapstructure:"passFunctionsToBackend"`
 	MaxBatchSize               int                `mapstructure:"maxBatchSize"`
 	Zipper                     string             `mapstructure:"zipper"`
 	Upstreams                  zipperCfg.Config   `mapstructure:"upstreams"`
@@ -138,7 +139,7 @@ func (c ConfigType) String() string {
 
 func (c *ConfigType) SetZipper(zipper zipper.CarbonZipper) (err error) {
 	c.ZipperInstance = zipper
-	c.Evaluator, err = expr.NewEvaluator(c.Limiter, c.ZipperInstance)
+	c.Evaluator, err = expr.NewEvaluator(c.Limiter, c.ZipperInstance, c.PassFunctionsToBackend)
 	return
 }
 

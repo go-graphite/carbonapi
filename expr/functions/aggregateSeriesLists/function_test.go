@@ -40,8 +40,8 @@ func TestFunction(t *testing.T) {
 		{
 			"aggregateSeriesLists(mining.*.shipped, mining.*.extracted,\"avg\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"mining.*.shipped", 0, 1}:   shipped,
-				{"mining.*.extracted", 0, 1}: extracted,
+				{Metric: "mining.*.shipped", From: 0, Until: 1}:   shipped,
+				{Metric: "mining.*.extracted", From: 0, Until: 1}: extracted,
 			},
 			[]*types.MetricData{
 				types.MakeMetricData("aggregateSeriesLists(mining.*.shipped, mining.*.extracted,\"avg\")", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, 1, now),
@@ -53,8 +53,8 @@ func TestFunction(t *testing.T) {
 		{
 			"aggregateSeriesLists(mining.*.shipped, mining.*.extracted,\"sum\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"mining.*.shipped", 0, 1}:   shipped,
-				{"mining.*.extracted", 0, 1}: extracted,
+				{Metric: "mining.*.shipped", From: 0, Until: 1}:   shipped,
+				{Metric: "mining.*.extracted", From: 0, Until: 1}: extracted,
 			},
 			[]*types.MetricData{
 				types.MakeMetricData("aggregateSeriesLists(mining.*.shipped, mining.*.extracted,\"sum\")", []float64{2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40}, 1, now),
@@ -66,8 +66,8 @@ func TestFunction(t *testing.T) {
 		{
 			"aggregateSeriesLists(mining.*.shipped, mining.*.extracted,\"diff\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"mining.*.shipped", 0, 1}:   shipped,
-				{"mining.*.extracted", 0, 1}: extracted,
+				{Metric: "mining.*.shipped", From: 0, Until: 1}:   shipped,
+				{Metric: "mining.*.extracted", From: 0, Until: 1}: extracted,
 			},
 			[]*types.MetricData{
 				types.MakeMetricData("aggregateSeriesLists(mining.*.shipped, mining.*.extracted,\"diff\")", []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 1, now),
@@ -79,8 +79,8 @@ func TestFunction(t *testing.T) {
 		{
 			"aggregateSeriesLists(mining.*.shipped, mining.*.extracted,\"multiply\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"mining.*.shipped", 0, 1}:   shipped,
-				{"mining.*.extracted", 0, 1}: extracted,
+				{Metric: "mining.*.shipped", From: 0, Until: 1}:   shipped,
+				{Metric: "mining.*.extracted", From: 0, Until: 1}: extracted,
 			},
 			[]*types.MetricData{
 				types.MakeMetricData("aggregateSeriesLists(mining.*.shipped, mining.*.extracted,\"multiply\")", []float64{1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144, 169, 196, 225, 256, 289, 324, 361, 400}, 1, now),
@@ -92,8 +92,8 @@ func TestFunction(t *testing.T) {
 		{
 			"aggregateSeriesLists(mining.*.shipped, mining.*.extracted,\"max\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"mining.*.shipped", 0, 1}:   shipped,
-				{"mining.*.extracted", 0, 1}: extracted,
+				{Metric: "mining.*.shipped", From: 0, Until: 1}:   shipped,
+				{Metric: "mining.*.extracted", From: 0, Until: 1}: extracted,
 			},
 			[]*types.MetricData{
 				types.MakeMetricData("aggregateSeriesLists(mining.*.shipped, mining.*.extracted,\"max\")", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, 1, now),
@@ -105,8 +105,8 @@ func TestFunction(t *testing.T) {
 		{
 			"aggregateSeriesLists(mining.*.shipped, mining.*.extracted,\"min\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"mining.*.shipped", 0, 1}:   shipped,
-				{"mining.*.extracted", 0, 1}: extracted,
+				{Metric: "mining.*.shipped", From: 0, Until: 1}:   shipped,
+				{Metric: "mining.*.extracted", From: 0, Until: 1}: extracted,
 			},
 			[]*types.MetricData{
 				types.MakeMetricData("aggregateSeriesLists(mining.*.shipped, mining.*.extracted,\"min\")", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, 1, now),
@@ -118,8 +118,8 @@ func TestFunction(t *testing.T) {
 		{
 			"aggregateSeriesLists(mining.*.shipped, mining.*.extracted,\"avg\", 0.6)", // Test with xFilesFactor
 			map[parser.MetricRequest][]*types.MetricData{
-				{"mining.*.shipped", 0, 1}:   shipped,
-				{"mining.*.extracted", 0, 1}: extracted,
+				{Metric: "mining.*.shipped", From: 0, Until: 1}:   shipped,
+				{Metric: "mining.*.extracted", From: 0, Until: 1}: extracted,
 			},
 			[]*types.MetricData{
 				types.MakeMetricData("aggregateSeriesLists(mining.*.shipped, mining.*.extracted,\"avg\", 0.6)", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, 1, now),

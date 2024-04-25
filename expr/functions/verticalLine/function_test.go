@@ -47,7 +47,7 @@ func TestFunction(t *testing.T) {
 		{
 			"verticalLine(\"-5m\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"foo", from, nowUnix}: {types.MakeMetricData("foo", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 0}, 1, nowUnix)},
+				{Metric: "foo", From: from, Until: nowUnix}: {types.MakeMetricData("foo", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 0}, 1, nowUnix)},
 			},
 			[]*types.MetricData{makeMetricData("", []float64{1.0, 1.0}, 1, wantedTs, wantedTs)},
 			from,
@@ -56,7 +56,7 @@ func TestFunction(t *testing.T) {
 		{
 			"verticalLine(\"-5m\", \"label\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"foo", from, nowUnix}: {types.MakeMetricData("foo", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 0}, 1, nowUnix)},
+				{Metric: "foo", From: from, Until: nowUnix}: {types.MakeMetricData("foo", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 0}, 1, nowUnix)},
 			},
 			[]*types.MetricData{makeMetricData("label", []float64{1.0, 1.0}, 1, wantedTs, wantedTs)},
 			from,
@@ -86,7 +86,7 @@ func TestFunctionErrors(t *testing.T) {
 		{
 			"verticalLine(\"-50m\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"foo", from, nowUnix}: {types.MakeMetricData("foo", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 0}, 1, nowUnix)},
+				{Metric: "foo", From: from, Until: nowUnix}: {types.MakeMetricData("foo", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 0}, 1, nowUnix)},
 			},
 			[]*types.MetricData{},
 			TsOutOfRangeError,
@@ -94,7 +94,7 @@ func TestFunctionErrors(t *testing.T) {
 		{
 			"verticalLine(\"+5m\")",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"foo", from, nowUnix}: {types.MakeMetricData("foo", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 0}, 1, nowUnix)},
+				{Metric: "foo", From: from, Until: nowUnix}: {types.MakeMetricData("foo", []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 0}, 1, nowUnix)},
 			},
 			[]*types.MetricData{},
 			TsOutOfRangeError,

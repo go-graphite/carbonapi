@@ -34,12 +34,12 @@ func TestTimeShift(t *testing.T) {
 		{
 			"timeShiftByMetric(apps.*.metric, apps.mark.*, 1)",
 			map[parser.MetricRequest][]*types.MetricData{
-				parser.MetricRequest{"apps.*.metric", 0, 1}: {
+				parser.MetricRequest{Metric: "apps.*.metric", From: 0, Until: 1}: {
 					types.MakeMetricData("apps.1_3.metric", []float64{1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, nan, nan}, 1, now32),
 					types.MakeMetricData("apps.2.metric", []float64{nan, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, nan}, 1, now32),
 					types.MakeMetricData("apps.3.metric", []float64{nan, nan, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9}, 1, now32),
 				},
-				parser.MetricRequest{"apps.mark.*", 0, 1}: {
+				parser.MetricRequest{Metric: "apps.mark.*", From: 0, Until: 1}: {
 					// leading versions
 					types.MakeMetricData("apps.mark.1_3", []float64{nan, nan, nan, 1, nan, nan, nan, nan, nan, nan, nan}, 1, now32),
 					types.MakeMetricData("apps.mark.2_2", []float64{nan, nan, nan, nan, nan, nan, 1, nan, nan, nan, nan}, 1, now32),
@@ -65,11 +65,11 @@ func TestTimeShift(t *testing.T) {
 		{
 			"timeShiftByMetric(*.metric, apps.mark.*, 0)",
 			map[parser.MetricRequest][]*types.MetricData{
-				parser.MetricRequest{"*.metric", 0, 1}: {
+				parser.MetricRequest{Metric: "*.metric", From: 0, Until: 1}: {
 					types.MakeMetricData("1_1.metric", []float64{1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7}, 1, now32),
 					types.MakeMetricData("2_0.metric", []float64{2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7}, 1, now32),
 				},
-				parser.MetricRequest{"apps.mark.*", 0, 1}: {
+				parser.MetricRequest{Metric: "apps.mark.*", From: 0, Until: 1}: {
 					// leading versions
 					types.MakeMetricData("apps.mark.1_1", []float64{nan, nan, 1, nan, nan, nan, nan}, 1, now32),
 					types.MakeMetricData("apps.mark.2_0", []float64{nan, nan, nan, nan, nan, nan, 1}, 1, now32),
@@ -102,12 +102,12 @@ func TestBadMarks(t *testing.T) {
 		{
 			"timeShiftByMetric(apps.*.metric, apps.mark.*, 1)",
 			map[parser.MetricRequest][]*types.MetricData{
-				parser.MetricRequest{"apps.*.metric", 0, 1}: {
+				parser.MetricRequest{Metric: "apps.*.metric", From: 0, Until: 1}: {
 					types.MakeMetricData("apps.1.metric", []float64{1, 2, 3}, 1, now32),
 					types.MakeMetricData("apps.2.metric", []float64{1, 2, 3}, 1, now32),
 					types.MakeMetricData("apps.3.metric", []float64{1, 2, 3}, 1, now32),
 				},
-				parser.MetricRequest{"apps.mark.*", 0, 1}: {
+				parser.MetricRequest{Metric: "apps.mark.*", From: 0, Until: 1}: {
 					types.MakeMetricData("apps.mark.1_0", []float64{1, nan, nan}, 1, now32),
 					types.MakeMetricData("apps.mark.1_1", []float64{nan, 1, nan}, 1, now32),
 					types.MakeMetricData("apps.mark.1_2", []float64{nan, nan, 1}, 1, now32),
@@ -147,8 +147,8 @@ func TestNotEnoughSeries(t *testing.T) {
 		testCases = append(testCases, th.EvalTestItemWithError{
 			"timeShiftByMetric(apps.*.metric, apps.mark.*, 1)",
 			map[parser.MetricRequest][]*types.MetricData{
-				parser.MetricRequest{"apps.*.metric", 0, 1}: metricsData,
-				parser.MetricRequest{"apps.mark.*", 0, 1}:   marksData,
+				parser.MetricRequest{Metric: "apps.*.metric", From: 0, Until: 1}: metricsData,
+				parser.MetricRequest{Metric: "apps.mark.*", From: 0, Until: 1}:   marksData,
 			},
 			nil,
 			errTooFewDatasets,
@@ -170,8 +170,8 @@ func TestNotEnoughSeries(t *testing.T) {
 		testCases = append(testCases, th.EvalTestItemWithError{
 			"timeShiftByMetric(apps.*.metric, apps.mark.*, 1)",
 			map[parser.MetricRequest][]*types.MetricData{
-				parser.MetricRequest{"apps.*.metric", 0, 1}: metricsData,
-				parser.MetricRequest{"apps.mark.*", 0, 1}:   marksData,
+				parser.MetricRequest{Metric: "apps.*.metric", From: 0, Until: 1}: metricsData,
+				parser.MetricRequest{Metric: "apps.mark.*", From: 0, Until: 1}:   marksData,
 			},
 			nil,
 			errTooFewDatasets,
@@ -201,12 +201,12 @@ func BenchmarkTimeShift(b *testing.B) {
 		{
 			target: "timeShiftByMetric(apps.*.metric, apps.mark.*, 1)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				parser.MetricRequest{"apps.*.metric", 0, 1}: {
+				parser.MetricRequest{Metric: "apps.*.metric", From: 0, Until: 1}: {
 					types.MakeMetricData("apps.1_3.metric", []float64{1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, nan, nan}, 1, now32),
 					types.MakeMetricData("apps.2.metric", []float64{nan, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, nan}, 1, now32),
 					types.MakeMetricData("apps.3.metric", []float64{nan, nan, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9}, 1, now32),
 				},
-				parser.MetricRequest{"apps.mark.*", 0, 1}: {
+				parser.MetricRequest{Metric: "apps.mark.*", From: 0, Until: 1}: {
 					// leading versions
 					types.MakeMetricData("apps.mark.1_3", []float64{nan, nan, nan, 1, nan, nan, nan, nan, nan, nan, nan}, 1, now32),
 					types.MakeMetricData("apps.mark.2_2", []float64{nan, nan, nan, nan, nan, nan, 1, nan, nan, nan, nan}, 1, now32),
@@ -227,11 +227,11 @@ func BenchmarkTimeShift(b *testing.B) {
 		{
 			target: "timeShiftByMetric(*.metric, apps.mark.*, 0)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				parser.MetricRequest{"*.metric", 0, 1}: {
+				{Metric: "*.metric", From: 0, Until: 1}: {
 					types.MakeMetricData("1_1.metric", []float64{1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7}, 1, now32),
 					types.MakeMetricData("2_0.metric", []float64{2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7}, 1, now32),
 				},
-				parser.MetricRequest{"apps.mark.*", 0, 1}: {
+				{Metric: "apps.mark.*", From: 0, Until: 1}: {
 					// leading versions
 					types.MakeMetricData("apps.mark.1_1", []float64{nan, nan, 1, nan, nan, nan, nan}, 1, now32),
 					types.MakeMetricData("apps.mark.2_0", []float64{nan, nan, nan, nan, nan, nan, 1}, 1, now32),

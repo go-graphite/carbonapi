@@ -21,8 +21,9 @@ import (
 var ErrZipperNotInit = errors.New("zipper not initialized")
 
 type Evaluator struct {
-	limiter limiter.SimpleLimiter
-	zipper  zipper.CarbonZipper
+	limiter                limiter.SimpleLimiter
+	zipper                 zipper.CarbonZipper
+	passFunctionsToBackend bool
 }
 
 func (eval Evaluator) Fetch(ctx context.Context, exprs []parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) (map[parser.MetricRequest][]*types.MetricData, error) {
@@ -51,6 +52,13 @@ func (eval Evaluator) Fetch(ctx context.Context, exprs []parser.Expr, from, unti
 				Metric: fetchRequest.PathExpression,
 				From:   fetchRequest.StartTime,
 				Until:  fetchRequest.StopTime,
+			}
+
+			if eval.passFunctionsToBackend && m.ConsolidationFunc != "" {
+				fetchRequest.FilterFunctions = append(fetchRequest.FilterFunctions, &pb.FilteringFunction{
+					Name:      "consolidateBy",
+					Arguments: []string{m.ConsolidationFunc},
+				})
 			}
 
 			if exp.Target() == "fallbackSeries" {
@@ -140,11 +148,11 @@ func (eval Evaluator) Eval(ctx context.Context, exp parser.Expr, from, until int
 }
 
 // NewEvaluator create evaluator with limiter and zipper
-func NewEvaluator(limiter limiter.SimpleLimiter, zipper zipper.CarbonZipper) (*Evaluator, error) {
+func NewEvaluator(limiter limiter.SimpleLimiter, zipper zipper.CarbonZipper, passFunctionsToBackend bool) (*Evaluator, error) {
 	if zipper == nil {
 		return nil, ErrZipperNotInit
 	}
-	return &Evaluator{limiter: limiter, zipper: zipper}, nil
+	return &Evaluator{limiter: limiter, zipper: zipper, passFunctionsToBackend: passFunctionsToBackend}, nil
 }
 
 // EvalExpr is the main expression evaluator.

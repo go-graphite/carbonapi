@@ -29,7 +29,7 @@ func TestFunction(t *testing.T) {
 		{
 			"removeBelowValue(metric1, 0)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("removeBelowValue(metric1, 0)",
 				[]float64{1, 2, math.NaN(), 7, 8, 20, 30, math.NaN()}, 1, now32).SetTag("removeBelowSeries", "0")},
@@ -37,7 +37,7 @@ func TestFunction(t *testing.T) {
 		{
 			"removeAboveValue(metric1, 10)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("removeAboveValue(metric1, 10)",
 				[]float64{1, 2, -1, 7, 8, math.NaN(), math.NaN(), math.NaN()}, 1, now32).SetTag("removeBelowSeries", "10")},
@@ -45,7 +45,7 @@ func TestFunction(t *testing.T) {
 		{
 			"removeBelowPercentile(metric1, 50)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("removeBelowPercentile(metric1, 50)",
 				[]float64{math.NaN(), math.NaN(), math.NaN(), 7, 8, 20, 30, math.NaN()}, 1, now32).SetTag("removeBelowSeries", "7")},
@@ -53,7 +53,7 @@ func TestFunction(t *testing.T) {
 		{
 			"removeAbovePercentile(metric1, 50)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, -1, 7, 8, 20, 30, math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("removeAbovePercentile(metric1, 50)",
 				[]float64{1, 2, -1, 7, math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32).SetTag("removeBelowSeries", "7")},

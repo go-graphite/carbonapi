@@ -32,11 +32,11 @@ func TestHoltWintersAberration(t *testing.T) {
 		{
 			Target: "holtWintersAberration(metric*)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", startTime, startTime + step*points}: {
+				{Metric: "metric*", From: startTime, Until: startTime + step*points}: {
 					types.MakeMetricData("metric1", generateHwRange(0, points*step, step, 0), step, startTime),
 					types.MakeMetricData("metric2", generateHwRange(0, points*step, step, 10), step, startTime),
 				},
-				{"metric*", startTime - holtwinters.DefaultBootstrapInterval, startTime + step*points}: {
+				{Metric: "metric*", From: startTime - holtwinters.DefaultBootstrapInterval, Until: startTime + step*points}: {
 					types.MakeMetricData("metric1", generateHwRange(0, ((holtwinters.DefaultBootstrapInterval/step)+points)*step, step, 0), step, startTime-holtwinters.DefaultBootstrapInterval),
 					types.MakeMetricData("metric2", generateHwRange(0, ((holtwinters.DefaultBootstrapInterval/step)+points)*step, step, 10), step, startTime-holtwinters.DefaultBootstrapInterval),
 				},
@@ -51,11 +51,11 @@ func TestHoltWintersAberration(t *testing.T) {
 		{
 			Target: "holtWintersAberration(metric*,4,'4d')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", startTime, startTime + step*points}: {
+				{Metric: "metric*", From: startTime, Until: startTime + step*points}: {
 					types.MakeMetricData("metric1", generateHwRange(0, points*step, step, 0), step, startTime),
 					types.MakeMetricData("metric2", generateHwRange(0, points*step, step, 10), step, startTime),
 				},
-				{"metric*", startTime - 4*seconds, startTime + step*points}: {
+				{Metric: "metric*", From: startTime - 4*seconds, Until: startTime + step*points}: {
 					types.MakeMetricData("metric1", generateHwRange(0, ((4*seconds/step)+points)*step, step, 0), step, startTime-4*seconds),
 					types.MakeMetricData("metric2", generateHwRange(0, ((4*seconds/step)+points)*step, step, 10), step, startTime-4*seconds),
 				},
@@ -70,11 +70,11 @@ func TestHoltWintersAberration(t *testing.T) {
 		{
 			Target: "holtWintersAberration(metric*,4,'1d','2d')",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", startTime, startTime + step*points}: {
+				{Metric: "metric*", From: startTime, Until: startTime + step*points}: {
 					types.MakeMetricData("metric1", generateHwRange(0, points*step, step, 0), step, startTime),
 					types.MakeMetricData("metric2", generateHwRange(0, points*step, step, 10), step, startTime),
 				},
-				{"metric*", startTime - seconds, startTime + step*points}: {
+				{Metric: "metric*", From: startTime - seconds, Until: startTime + step*points}: {
 					types.MakeMetricData("metric1", generateHwRange(0, ((seconds/step)+points)*step, step, 0), step, startTime-seconds),
 					types.MakeMetricData("metric2", generateHwRange(0, ((seconds/step)+points)*step, step, 10), step, startTime-seconds),
 				},
@@ -89,11 +89,11 @@ func TestHoltWintersAberration(t *testing.T) {
 		{
 			Target: "holtWintersAberration(metric*)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric*", startTime, startTime + step*points}: {
+				{Metric: "metric*", From: startTime, Until: startTime + step*points}: {
 					types.MakeMetricData("metric1", generateHwRange(0, points*step, step, 0), step, startTime),
 					types.MakeMetricData("metric2", generateHwRange(0, points*step, step, 10), step, startTime),
 				},
-				{"metric*", startTime - holtwinters.DefaultBootstrapInterval, startTime + step*points}: {
+				{Metric: "metric*", From: startTime - holtwinters.DefaultBootstrapInterval, Until: startTime + step*points}: {
 					types.MakeMetricData("metric1", generateHwRange(0, ((holtwinters.DefaultBootstrapInterval/step)+points)*step, step, 0), step, startTime-holtwinters.DefaultBootstrapInterval),
 					types.MakeMetricData("metric2", generateHwRange(0, ((holtwinters.DefaultBootstrapInterval/step)+points)*step, step, 10), step, startTime-holtwinters.DefaultBootstrapInterval),
 					types.MakeMetricData("metric3", generateHwRange(0, ((holtwinters.DefaultBootstrapInterval/step)+points)*step, step, 20), step, startTime-holtwinters.DefaultBootstrapInterval), // Verify that metrics that don't match those fetched with the unadjusted start time are not included in the results

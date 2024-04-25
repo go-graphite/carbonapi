@@ -29,8 +29,8 @@ func TestFunction(t *testing.T) {
 		{
 			"diffSeriesLists(metric1,metric2)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
-				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
+				{Metric: "metric2", From: 0, Until: 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("diffSeries(metric1,metric2)",
 				[]float64{-1, math.NaN(), math.NaN(), math.NaN(), 4, 6}, 1, now32)},
@@ -38,8 +38,8 @@ func TestFunction(t *testing.T) {
 		{
 			"sumSeriesLists(metric1,metric2)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1", 0, 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
-				{"metric2", 0, 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, math.NaN(), math.NaN(), 3, 4, 12}, 1, now32)},
+				{Metric: "metric2", From: 0, Until: 1}: {types.MakeMetricData("metric2", []float64{2, math.NaN(), 3, math.NaN(), 0, 6}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("sumSeries(metric1,metric2)",
 				[]float64{3, math.NaN(), math.NaN(), math.NaN(), 4, 18}, 1, now32)},
@@ -62,7 +62,7 @@ func TestSeriesListMultiReturn(t *testing.T) {
 		{
 			"divideSeriesLists(metric[12],metric[12])",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[12]", 0, 1}: {
+				{Metric: "metric[12]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric2", []float64{2, 4, 6, 8, 10}, 1, now32),
 				},
@@ -76,7 +76,7 @@ func TestSeriesListMultiReturn(t *testing.T) {
 		{
 			"multiplySeriesLists(metric[12],metric[12])",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[12]", 0, 1}: {
+				{Metric: "metric[12]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric2", []float64{2, 4, 6, 8, 10}, 1, now32),
 				},
@@ -90,7 +90,7 @@ func TestSeriesListMultiReturn(t *testing.T) {
 		{
 			"diffSeriesLists(metric[12],metric[12])",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[12]", 0, 1}: {
+				{Metric: "metric[12]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric2", []float64{2, 4, 6, 8, 10}, 1, now32),
 				},
@@ -104,11 +104,11 @@ func TestSeriesListMultiReturn(t *testing.T) {
 		{
 			"diffSeriesLists(metric[12],metric[134])",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[12]", 0, 1}: {
+				{Metric: "metric[12]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric2", []float64{2, 4, 6, 8, 10}, 1, now32),
 				},
-				{"metric[134]", 0, 1}: {
+				{Metric: "metric[134]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric3", []float64{2, 4, 6, 8, 10}, 1, now32),
 					types.MakeMetricData("metric4", []float64{2, 4, 6, 8, 10}, 1, now32),
@@ -122,7 +122,7 @@ func TestSeriesListMultiReturn(t *testing.T) {
 		{
 			"sumSeriesLists(metric[12],metric[12])",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[12]", 0, 1}: {
+				{Metric: "metric[12]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric2", []float64{2, 4, 6, 8, 10}, 1, now32),
 				},

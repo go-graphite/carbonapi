@@ -30,7 +30,7 @@ func TestAggregateWithWildcards(t *testing.T) {
 		{
 			`aggregateWithWildcards(metric[123],"avg",0)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[123]", 0, 1}: {
+				{Metric: "metric[123]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar.baz", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric2.foo.bar.baz", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32),
 					types.MakeMetricData("metric3.foo.bar.baz", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
@@ -42,7 +42,7 @@ func TestAggregateWithWildcards(t *testing.T) {
 		{
 			`aggregateWithWildcards(metric[123],"diff",1)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[123]", 0, 1}: {
+				{Metric: "metric[123]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar.baz", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric1.foo2.bar.baz", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32),
 					types.MakeMetricData("metric2.foo.bar.baz", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
@@ -56,7 +56,7 @@ func TestAggregateWithWildcards(t *testing.T) {
 		{
 			`aggregateWithWildcards(metric[1234],"max",2)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[1234]", 0, 1}: {
+				{Metric: "metric[1234]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz1", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar2.baz2", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar3.baz1", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
@@ -71,7 +71,7 @@ func TestAggregateWithWildcards(t *testing.T) {
 		{
 			`aggregateWithWildcards(metric[1234],"min",3)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[1234]", 0, 1}: {
+				{Metric: "metric[1234]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar.baz1", []float64{1, math.NaN(), 2, 3, 4, 6}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar.baz2", []float64{2, math.NaN(), 3, math.NaN(), 5, 5}, 1, now32),
 					types.MakeMetricData("metric2.foo.bar.baz3", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
@@ -86,7 +86,7 @@ func TestAggregateWithWildcards(t *testing.T) {
 		{
 			`aggregateWithWildcards(metric[1234],"median",0,3)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[1234]", 0, 1}: {
+				{Metric: "metric[1234]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, math.NaN(), 2, 3, 4, 6}, 1, now32),
 					types.MakeMetricData("metric2.foo.bar1.baz", []float64{2, math.NaN(), 3, math.NaN(), 5, 5}, 1, now32),
 					types.MakeMetricData("metric3.foo.bar2.baz", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
@@ -101,7 +101,7 @@ func TestAggregateWithWildcards(t *testing.T) {
 		{
 			`aggregateWithWildcards(metric[1234],"multiply",1,2)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[1234]", 0, 1}: {
+				{Metric: "metric[1234]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo1.bar.baz", []float64{1, math.NaN(), 2, 3, 4, 6}, 1, now32),
 					types.MakeMetricData("metric1.foo2.bar.baz", []float64{2, math.NaN(), 3, math.NaN(), 5, 5}, 1, now32),
 					types.MakeMetricData("metric1.foo3.bar.qux", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
@@ -116,7 +116,7 @@ func TestAggregateWithWildcards(t *testing.T) {
 		{
 			`aggregateWithWildcards(metric[1234],"range",0,2)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[1234]", 0, 1}: {
+				{Metric: "metric[1234]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar.baz.1", []float64{1, math.NaN(), 2, 3, 4, 6}, 1, now32),
 					types.MakeMetricData("metric2.foo.bar.baz", []float64{2, math.NaN(), 3, math.NaN(), 5, 5}, 1, now32),
 					types.MakeMetricData("metric3.foo.bar.baz.1", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
@@ -131,7 +131,7 @@ func TestAggregateWithWildcards(t *testing.T) {
 		{
 			`aggregateWithWildcards(metric[1234],"sum",1,3)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[1234]", 0, 1}: {
+				{Metric: "metric[1234]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo1.bar.baz.qux", []float64{1, math.NaN(), 2, 3, 4, 6}, 1, now32),
 					types.MakeMetricData("metric1.foo2.bar.baz.quux", []float64{2, math.NaN(), 3, math.NaN(), 5, 5}, 1, now32),
 					types.MakeMetricData("metric1.foo3.bar.baz.qux", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
@@ -146,7 +146,7 @@ func TestAggregateWithWildcards(t *testing.T) {
 		{
 			`aggregateWithWildcards(metric[1234],"sum")`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[1234]", 0, 1}: {
+				{Metric: "metric[1234]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo1.bar.baz.qux", []float64{1, math.NaN(), 2, 3, 4, 6}, 1, now32),
 					types.MakeMetricData("metric1.foo2.bar.baz.quux", []float64{2, math.NaN(), 3, math.NaN(), 5, 5}, 1, now32),
 				},
@@ -159,7 +159,7 @@ func TestAggregateWithWildcards(t *testing.T) {
 		{
 			`aggregateWithWildcards(metric[123456],"stddev",0,1,2)`,
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric[123456]", 0, 1}: {
+				{Metric: "metric[123456]", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar.baz1", []float64{1, math.NaN(), 2, 3, 4, 6}, 1, now32),
 					types.MakeMetricData("metric2.foo.bar.baz2", []float64{2, math.NaN(), 3, math.NaN(), 5, 5}, 1, now32),
 					types.MakeMetricData("metric3.foo.bar.baz1", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
@@ -192,7 +192,7 @@ func TestFunctionSumSeriesWithWildcards(t *testing.T) {
 		{
 			"sumSeriesWithWildcards(metric1.foo.*.*,1,2)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.*.*", 0, 1}: {
+				{Metric: "metric1.foo.*.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
@@ -225,7 +225,7 @@ func TestAverageSeriesWithWildcards(t *testing.T) {
 		{
 			"averageSeriesWithWildcards(metric1.foo.*.*,1,2)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.*.*", 0, 1}: {
+				{Metric: "metric1.foo.*.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
@@ -257,7 +257,7 @@ func TestFunctionMultiplySeriesWithWildcards(t *testing.T) {
 		{
 			"multiplySeriesWithWildcards(metric1.foo.*.*,1,2)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.*.*", 0, 1}: {
+				{Metric: "metric1.foo.*.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar1.qux", []float64{6, 0, 8, 9, 10}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, now32),
@@ -288,7 +288,7 @@ func TestEmptyData(t *testing.T) {
 		{
 			"multiplySeriesWithWildcards(metric1.foo.*.*,1,2)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.*.*", 0, 1}: {},
+				{Metric: "metric1.foo.*.*", From: 0, Until: 1}: {},
 			},
 			[]*types.MetricData{},
 		},
@@ -311,7 +311,7 @@ func BenchmarkMultiplySeriesWithWildcards(b *testing.B) {
 		{
 			target: "multiplySeriesWithWildcards(metric1.foo.bar*.*,1,2)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.bar*.*", 0, 1}: {
+				{Metric: "metric1.foo.bar*.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, 1),
 					types.MakeMetricData("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, 1),
 					types.MakeMetricData("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, 1),
@@ -322,7 +322,7 @@ func BenchmarkMultiplySeriesWithWildcards(b *testing.B) {
 		{
 			target: "multiplySeriesWithWildcards(metric1.foo.*.*,1,2)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.*.*", 0, 1}: {
+				{Metric: "metric1.foo.*.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, 1),
 					types.MakeMetricData("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, 1),
 
@@ -438,7 +438,7 @@ func BenchmarkMultiplyAverageSeriesWithWildcards(b *testing.B) {
 		{
 			target: "averageSeriesWithWildcards(metric1.foo.bar*.*,1,2)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.bar*.*", 0, 1}: {
+				{Metric: "metric1.foo.bar*.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, 1),
 					types.MakeMetricData("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, 1),
 					types.MakeMetricData("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, 1),
@@ -449,7 +449,7 @@ func BenchmarkMultiplyAverageSeriesWithWildcards(b *testing.B) {
 		{
 			target: "averageSeriesWithWildcards(metric1.foo.*.*,1,2)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.*.*", 0, 1}: {
+				{Metric: "metric1.foo.*.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, 1),
 					types.MakeMetricData("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, 1),
 
@@ -565,7 +565,7 @@ func BenchmarkSumSeriesWithWildcards(b *testing.B) {
 		{
 			target: "sumSeriesWithWildcards(metric1.foo.bar*.*,1,2)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.bar*.*", 0, 1}: {
+				{Metric: "metric1.foo.bar*.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, 1),
 					types.MakeMetricData("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, 1),
 					types.MakeMetricData("metric1.foo.bar2.baz", []float64{11, 12, 13, 14, 15}, 1, 1),
@@ -576,7 +576,7 @@ func BenchmarkSumSeriesWithWildcards(b *testing.B) {
 		{
 			target: "sumSeriesWithWildcards(metric1.foo.*.*,1,2)",
 			M: map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.*.*", 0, 1}: {
+				{Metric: "metric1.foo.*.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, 1),
 					types.MakeMetricData("metric1.foo.bar1.qux", []float64{6, 7, 8, 9, 10}, 1, 1),
 
