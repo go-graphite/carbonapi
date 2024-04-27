@@ -2,10 +2,11 @@ package victoriametrics
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 
-	"github.com/ansel1/merry"
+	"github.com/ansel1/merry/v2"
 	"go.uber.org/zap"
 
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
@@ -13,14 +14,14 @@ import (
 	"github.com/go-graphite/carbonapi/zipper/types"
 )
 
-func (c *VictoriaMetricsGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
+func (c *VictoriaMetricsGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, error) {
 	supportedFeatures, _ := c.featureSet.Load().(*vmSupportedFeatures)
 	if !supportedFeatures.SupportGraphiteFindAPI {
 		// VictoriaMetrics <1.41.0 doesn't support graphite find api, reverting back to prometheus code-path
 		return c.BackendServer.Find(ctx, request)
 	}
 	var r protov3.MultiGlobResponse
-	var e merry.Error
+	var e error
 
 	logger := c.logger.With(
 		zap.String("type", "find"),
@@ -55,23 +56,23 @@ func (c *VictoriaMetricsGroup) Find(ctx context.Context, request *protov3.MultiG
 		res, queryErr := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if queryErr != nil {
 			stats.FindErrors++
-			if merry.Is(queryErr, types.ErrTimeoutExceeded) {
+			if errors.Is(queryErr, types.ErrTimeoutExceeded) {
 				stats.Timeouts++
 				stats.FindTimeouts++
 			}
 			if e == nil {
-				e = merry.Wrap(queryErr).WithValue("query", query)
+				e = merry.Wrap(queryErr, merry.WithValue("query", query))
 			} else {
-				e = e.WithCause(queryErr)
+				e = merry.Wrap(e, merry.WithCause(queryErr))
 			}
 			continue
 		}
 		parsedJSON, err := parser.ParseBytes(res.Response)
 		if err != nil {
 			if e == nil {
-				e = merry.Wrap(err).WithValue("query", query)
+				e = merry.Wrap(err, merry.WithValue("query", query))
 			} else {
-				e = e.WithCause(err)
+				e = merry.Wrap(e, merry.WithCause(err))
 			}
 			continue
 		}
@@ -79,9 +80,9 @@ func (c *VictoriaMetricsGroup) Find(ctx context.Context, request *protov3.MultiG
 		globs, err := parsedJSON.Array()
 		if err != nil {
 			if e == nil {
-				e = merry.Wrap(err).WithValue("query", query)
+				e = merry.Wrap(err, merry.WithValue("query", query))
 			} else {
-				e = e.WithCause(err)
+				e = merry.Wrap(e, merry.WithCause(err))
 			}
 			continue
 		}
@@ -115,7 +116,7 @@ func (c *VictoriaMetricsGroup) Find(ctx context.Context, request *protov3.MultiG
 	return &r, stats, nil
 }
 
-func (c *VictoriaMetricsGroup) ProbeTLDs(ctx context.Context) ([]string, merry.Error) {
+func (c *VictoriaMetricsGroup) ProbeTLDs(ctx context.Context) ([]string, error) {
 	logger := c.logger.With(zap.String("function", "prober"))
 	req := &protov3.MultiGlobRequest{
 		Metrics: []string{"*"},

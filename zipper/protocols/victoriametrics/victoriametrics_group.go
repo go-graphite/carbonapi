@@ -3,18 +3,17 @@ package victoriametrics
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"strconv"
 	"sync/atomic"
 	"time"
 
-	"github.com/ansel1/merry"
+	"github.com/ansel1/merry/v2"
 	"github.com/valyala/fastjson"
 
 	"github.com/go-graphite/carbonapi/limiter"
-	"github.com/go-graphite/carbonapi/zipper/helper"
 	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 	"github.com/go-graphite/carbonapi/zipper/metadata"
+	"github.com/go-graphite/carbonapi/zipper/requests"
 	"github.com/go-graphite/carbonapi/zipper/types"
 
 	"github.com/go-graphite/carbonapi/zipper/protocols/prometheus"
@@ -41,8 +40,6 @@ type VictoriaMetricsGroup struct {
 	servers   []string
 	protocol  string
 
-	client *http.Client
-
 	limiter              limiter.ServerLimiter
 	logger               *zap.Logger
 	timeout              types.Timeouts
@@ -58,15 +55,14 @@ type VictoriaMetricsGroup struct {
 	probeVersionInterval time.Duration
 	fallbackVersion      string
 
-	httpQuery  *helper.HttpQuery
+	httpQuery  *requests.HttpQuery
 	parserPool fastjson.ParserPool
 
 	featureSet atomic.Value // *vmSupportedFeatures
 }
 
-func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool, limiter limiter.ServerLimiter) (types.BackendServer, merry.Error) {
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool, limiter limiter.ServerLimiter) (types.BackendServer, error) {
 	logger = logger.With(zap.String("type", "victoriametrics"), zap.String("protocol", config.Protocol), zap.String("name", config.GroupName))
-	httpClient := helper.GetHTTPClient(logger, config)
 
 	step := int64(15)
 	var vmClusterTenantID string = ""
@@ -200,7 +196,10 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		}
 	}
 
-	httpQuery := helper.NewHttpQuery(config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv2PB)
+	httpQuery, err := requests.NewHttpQuery(logger, &config, limiter, httpHeaders.ContentTypeCarbonAPIv2PB)
+	if err != nil {
+		return nil, merry.Wrap(err)
+	}
 
 	c := &VictoriaMetricsGroup{
 		groupName:            config.GroupName,
@@ -217,7 +216,6 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		probeVersionInterval: probeVersionInterval,
 		fallbackVersion:      fallbackVersion,
 
-		client:  httpClient,
 		limiter: limiter,
 		logger:  logger,
 
@@ -225,7 +223,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 	}
 
 	promLogger := logger.With(zap.String("subclass", "prometheus"))
-	c.BackendServer, _ = prometheus.NewWithEverythingInitialized(promLogger, config, tldCacheDisabled, requireSuccessAll, limiter, step, maxPointsPerQuery, forceMinStepInterval, delay, httpQuery, httpClient)
+	c.BackendServer, _ = prometheus.NewWithEverythingInitialized(promLogger, config, tldCacheDisabled, requireSuccessAll, limiter, step, maxPointsPerQuery, forceMinStepInterval, delay, httpQuery)
 
 	c.updateFeatureSet(context.Background())
 
@@ -240,7 +238,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 	return c, nil
 }
 
-func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool) (types.BackendServer, merry.Error) {
+func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool) (types.BackendServer, error) {
 	if config.ConcurrencyLimit == nil {
 		return nil, types.ErrConcurrencyLimitNotSet
 	}

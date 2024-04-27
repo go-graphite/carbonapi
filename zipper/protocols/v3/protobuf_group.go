@@ -3,17 +3,18 @@ package v3
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
 
-	"github.com/ansel1/merry"
+	"github.com/ansel1/merry/v2"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"go.uber.org/zap"
 
 	"github.com/go-graphite/carbonapi/limiter"
-	"github.com/go-graphite/carbonapi/zipper/helper"
 	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 	"github.com/go-graphite/carbonapi/zipper/metadata"
+	"github.com/go-graphite/carbonapi/zipper/requests"
 	"github.com/go-graphite/carbonapi/zipper/types"
 )
 
@@ -45,14 +46,14 @@ type ClientProtoV3Group struct {
 	maxTries             int
 	maxMetricsPerRequest int
 
-	httpQuery *helper.HttpQuery
+	httpQuery *requests.HttpQuery
 }
 
 func (c *ClientProtoV3Group) Children() []types.BackendServer {
 	return []types.BackendServer{c}
 }
 
-func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool) (types.BackendServer, merry.Error) {
+func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool) (types.BackendServer, error) {
 	if config.ConcurrencyLimit == nil {
 		return nil, types.ErrConcurrencyLimitNotSet
 	}
@@ -64,12 +65,13 @@ func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSu
 	return NewWithLimiter(logger, config, tldCacheDisabled, requireSuccessAll, l)
 }
 
-func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool, l limiter.ServerLimiter) (types.BackendServer, merry.Error) {
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool, l limiter.ServerLimiter) (types.BackendServer, error) {
 	logger = logger.With(zap.String("type", "protoV3Group"), zap.String("name", config.GroupName))
 
-	httpClient := helper.GetHTTPClient(logger, config)
-
-	httpQuery := helper.NewHttpQuery(config.GroupName, config.Servers, *config.MaxTries, l, httpClient, httpHeaders.ContentTypeCarbonAPIv3PB)
+	httpQuery, err := requests.NewHttpQuery(logger, &config, l, httpHeaders.ContentTypeCarbonAPIv3PB)
+	if err != nil {
+		return nil, merry.Wrap(err)
+	}
 
 	c := &ClientProtoV3Group{
 		groupName:            config.GroupName,
@@ -78,7 +80,6 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		maxTries:             *config.MaxTries,
 		maxMetricsPerRequest: *config.MaxBatchSize,
 
-		client:  httpClient,
 		limiter: l,
 		logger:  logger,
 
@@ -99,7 +100,7 @@ func (c ClientProtoV3Group) Backends() []string {
 	return c.servers
 }
 
-func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, merry.Error) {
+func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, error) {
 	stats := &types.Stats{
 		RenderRequests: 1,
 	}
@@ -114,7 +115,7 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), types.MultiFetchRequestV3{MultiFetchRequest: *request})
 	if err != nil {
 		stats.RenderErrors = 1
-		if merry.Is(err, types.ErrTimeoutExceeded) {
+		if errors.Is(err, types.ErrTimeoutExceeded) {
 			stats.Timeouts = 1
 			stats.RenderTimeouts = 1
 		}
@@ -142,7 +143,7 @@ func (c *ClientProtoV3Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	return &r, stats, nil
 }
 
-func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
+func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, error) {
 	logger := c.logger.With(zap.String("type", "find"), zap.Strings("request", request.Metrics))
 	stats := &types.Stats{
 		FindRequests: 1,
@@ -157,7 +158,7 @@ func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlo
 	res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), types.MultiGlobRequestV3{MultiGlobRequest: *request})
 	if err != nil {
 		stats.FindErrors = 1
-		if merry.Is(err, types.ErrTimeoutExceeded) {
+		if errors.Is(err, types.ErrTimeoutExceeded) {
 			stats.Timeouts = 1
 			stats.FindTimeouts = 1
 		}
@@ -178,7 +179,7 @@ func (c *ClientProtoV3Group) Find(ctx context.Context, request *protov3.MultiGlo
 	return &globs, stats, nil
 }
 
-func (c *ClientProtoV3Group) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, merry.Error) {
+func (c *ClientProtoV3Group) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, error) {
 	logger := c.logger.With(zap.String("type", "info"), zap.String("request", request.String()))
 	stats := &types.Stats{
 		InfoRequests: 1,
@@ -193,7 +194,7 @@ func (c *ClientProtoV3Group) Info(ctx context.Context, request *protov3.MultiMet
 	res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), types.MultiMetricsInfoV3{MultiMetricsInfoRequest: *request})
 	if err != nil {
 		stats.InfoErrors = 1
-		if merry.Is(err, types.ErrTimeoutExceeded) {
+		if errors.Is(err, types.ErrTimeoutExceeded) {
 			stats.Timeouts = 1
 			stats.InfoTimeouts = 1
 		}
@@ -222,14 +223,14 @@ func (c *ClientProtoV3Group) Info(ctx context.Context, request *protov3.MultiMet
 	return r, stats, nil
 }
 
-func (c *ClientProtoV3Group) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, merry.Error) {
+func (c *ClientProtoV3Group) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, error) {
 	return nil, nil, types.ErrNotImplementedYet
 }
-func (c *ClientProtoV3Group) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, merry.Error) {
+func (c *ClientProtoV3Group) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, error) {
 	return nil, nil, types.ErrNotImplementedYet
 }
 
-func (c *ClientProtoV3Group) doTagQuery(ctx context.Context, isTagName bool, query string, limit int64) ([]string, merry.Error) {
+func (c *ClientProtoV3Group) doTagQuery(ctx context.Context, isTagName bool, query string, limit int64) ([]string, error) {
 	logger := c.logger
 	var rewrite *url.URL
 	if isTagName {
@@ -260,15 +261,15 @@ func (c *ClientProtoV3Group) doTagQuery(ctx context.Context, isTagName bool, que
 	return r, nil
 }
 
-func (c *ClientProtoV3Group) TagNames(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+func (c *ClientProtoV3Group) TagNames(ctx context.Context, query string, limit int64) ([]string, error) {
 	return c.doTagQuery(ctx, true, query, limit)
 }
 
-func (c *ClientProtoV3Group) TagValues(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+func (c *ClientProtoV3Group) TagValues(ctx context.Context, query string, limit int64) ([]string, error) {
 	return c.doTagQuery(ctx, false, query, limit)
 }
 
-func (c *ClientProtoV3Group) ProbeTLDs(ctx context.Context) ([]string, merry.Error) {
+func (c *ClientProtoV3Group) ProbeTLDs(ctx context.Context) ([]string, error) {
 	logger := c.logger.With(zap.String("function", "prober"))
 	req := &protov3.MultiGlobRequest{
 		Metrics: []string{"*"},

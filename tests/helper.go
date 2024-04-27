@@ -2,13 +2,14 @@ package tests
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
 
-	"github.com/ansel1/merry"
-	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
+
+	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
@@ -333,7 +334,7 @@ func TestRewriteExpr(t *testing.T, eval interfaces.Evaluator, tt *RewriteTestIte
 
 	rewritten, targets, err := rewriteExpr(exp, eval, 0, 1, tt.M)
 	if err != tt.Want.Err {
-		if err == nil || tt.Want.Err == nil || !merry.Is(err, tt.Want.Err) {
+		if err == nil || tt.Want.Err == nil || !errors.Is(err, tt.Want.Err) {
 			t.Fatalf("unexpected error while calling rewrite for '%s': got '%+v', expected '%+v'", testName, err, tt.Want.Err)
 		}
 	}
@@ -511,7 +512,7 @@ func TestEvalExprWithError(t *testing.T, eval interfaces.Evaluator, tt *EvalTest
 		Want:   tt.Want,
 	}
 	err := TestEvalExprModifiedOrigin(t, eval, tt2, 0, 1, false, true)
-	if !merry.Is(err, tt.Error) {
+	if !errors.Is(err, tt.Error) {
 		t.Errorf("unexpected error while evaluating %s: got `%+v`, expected `%+v`", tt.Target, err, tt.Error)
 		return
 	}
@@ -536,19 +537,19 @@ func NewTestZipper(m map[parser.MetricRequest][]*types.MetricData) TestZipper {
 	return TestZipper{M: m}
 }
 
-func (zp TestZipper) Find(ctx context.Context, request pb.MultiGlobRequest) (*pb.MultiGlobResponse, *zipperTypes.Stats, merry.Error) {
+func (zp TestZipper) Find(ctx context.Context, request pb.MultiGlobRequest) (*pb.MultiGlobResponse, *zipperTypes.Stats, error) {
 	return nil, nil, zipperTypes.ErrNotImplementedYet
 }
 
-func (zp TestZipper) Info(ctx context.Context, metrics []string) (*pb.ZipperInfoResponse, *zipperTypes.Stats, merry.Error) {
+func (zp TestZipper) Info(ctx context.Context, metrics []string) (*pb.ZipperInfoResponse, *zipperTypes.Stats, error) {
 	return nil, nil, zipperTypes.ErrNotImplementedYet
 }
 
-func (zp TestZipper) RenderCompat(ctx context.Context, metrics []string, from, until int64) ([]*types.MetricData, *zipperTypes.Stats, merry.Error) {
+func (zp TestZipper) RenderCompat(ctx context.Context, metrics []string, from, until int64) ([]*types.MetricData, *zipperTypes.Stats, error) {
 	return nil, nil, zipperTypes.ErrNotImplementedYet
 }
 
-func (zp TestZipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*types.MetricData, *zipperTypes.Stats, merry.Error) {
+func (zp TestZipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*types.MetricData, *zipperTypes.Stats, error) {
 	var resp []*types.MetricData
 	for _, r := range request.Metrics {
 		metricRequest := parser.MetricRequest{Metric: r.PathExpression, From: r.StartTime, Until: r.StopTime}
@@ -559,11 +560,11 @@ func (zp TestZipper) Render(ctx context.Context, request pb.MultiFetchRequest) (
 	return resp, nil, nil
 }
 
-func (zp TestZipper) TagNames(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+func (zp TestZipper) TagNames(ctx context.Context, query string, limit int64) ([]string, error) {
 	return nil, zipperTypes.ErrNotImplementedYet
 }
 
-func (zp TestZipper) TagValues(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+func (zp TestZipper) TagValues(ctx context.Context, query string, limit int64) ([]string, error) {
 	return nil, zipperTypes.ErrNotImplementedYet
 }
 

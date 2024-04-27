@@ -6,45 +6,44 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ansel1/merry"
+	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
 	"github.com/go-graphite/carbonapi/zipper/types"
-	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 )
 
 type FetchResponse struct {
 	Response *protov3.MultiFetchResponse
 	Stats    *types.Stats
-	Errors   merry.Error
+	Errors   error
 }
 
 type FindResponse struct {
 	Response *protov3.MultiGlobResponse
 	Stats    *types.Stats
-	Errors   merry.Error
+	Errors   error
 }
 
 type InfoResponse struct {
 	Response *protov3.ZipperInfoResponse
 	Stats    *types.Stats
-	Errors   merry.Error
+	Errors   error
 }
 
 type ListResponse struct {
 	Response *protov3.ListMetricsResponse
 	Stats    *types.Stats
-	Errors   merry.Error
+	Errors   error
 }
 
 type StatsResponse struct {
 	Response *protov3.MetricDetailsResponse
 	Stats    *types.Stats
-	Errors   merry.Error
+	Errors   error
 }
 
 type ProbeResponse struct {
 	Response []string
-	Errors   merry.Error
+	Errors   error
 }
 
 type DummyClient struct {
@@ -115,7 +114,7 @@ func fetchRequestToKey(request *protov3.MultiFetchRequest) string {
 	return string(key)
 }
 
-func (c *DummyClient) AddFetchResponse(request *protov3.MultiFetchRequest, response *protov3.MultiFetchResponse, stats *types.Stats, errors merry.Error) {
+func (c *DummyClient) AddFetchResponse(request *protov3.MultiFetchRequest, response *protov3.MultiFetchResponse, stats *types.Stats, errors error) {
 	key := fetchRequestToKey(request)
 	c.fetchResponses[key] = FetchResponse{response, stats, errors}
 
@@ -142,7 +141,7 @@ func (c *DummyClient) AddFetchResponse(request *protov3.MultiFetchRequest, respo
 	}
 }
 
-func (c *DummyClient) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, merry.Error) {
+func (c *DummyClient) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, error) {
 	if c.alwaysTimeout > 0 {
 		time.Sleep(c.alwaysTimeout)
 		return nil, nil, types.ErrTimeoutExceeded
@@ -166,12 +165,12 @@ func findRequestToKey(request *protov3.MultiGlobRequest) string {
 	return strings.Join(request.Metrics, "&")
 }
 
-func (c *DummyClient) AddFindResponse(request *protov3.MultiGlobRequest, response *protov3.MultiGlobResponse, stats *types.Stats, errors merry.Error) {
+func (c *DummyClient) AddFindResponse(request *protov3.MultiGlobRequest, response *protov3.MultiGlobResponse, stats *types.Stats, errors error) {
 	key := findRequestToKey(request)
 	c.findResponses[key] = FindResponse{response, stats, errors}
 }
 
-func (c *DummyClient) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
+func (c *DummyClient) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, error) {
 	if c.alwaysTimeout > 0 {
 		time.Sleep(c.alwaysTimeout)
 		return nil, nil, types.ErrTimeoutExceeded
@@ -189,15 +188,15 @@ func (c *DummyClient) Find(ctx context.Context, request *protov3.MultiGlobReques
 	return nil, nil, nil
 }
 
-func (c *DummyClient) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, merry.Error) {
+func (c *DummyClient) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, error) {
 	return nil, nil, types.ErrNotImplementedYet
 }
 
-func (c *DummyClient) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, merry.Error) {
+func (c *DummyClient) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, error) {
 	return nil, nil, types.ErrNotImplementedYet
 }
 
-func (c *DummyClient) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, merry.Error) {
+func (c *DummyClient) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, error) {
 	return nil, nil, types.ErrNotImplementedYet
 }
 
@@ -209,7 +208,7 @@ func (c *DummyClient) SetTagNamesResponse(response []string) {
 	c.tagNameResponse = response
 }
 
-func (c *DummyClient) TagNames(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+func (c *DummyClient) TagNames(ctx context.Context, query string, limit int64) ([]string, error) {
 	return c.tagNameResponse, nil
 }
 
@@ -217,10 +216,10 @@ func (c *DummyClient) SetTagValuesResponse(response []string) {
 	c.tagValuesResponse = response
 }
 
-func (c *DummyClient) TagValues(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+func (c *DummyClient) TagValues(ctx context.Context, query string, limit int64) ([]string, error) {
 	return c.tagNameResponse, nil
 }
 
-func (c *DummyClient) ProbeTLDs(ctx context.Context) ([]string, merry.Error) {
+func (c *DummyClient) ProbeTLDs(ctx context.Context) ([]string, error) {
 	return c.probeResponses.Response, c.probeResponses.Errors
 }

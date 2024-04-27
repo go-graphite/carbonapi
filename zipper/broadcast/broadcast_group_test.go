@@ -2,6 +2,7 @@ package broadcast
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"reflect"
@@ -42,10 +43,6 @@ func init() {
 	}
 }
 
-func errorsAreEqual(e1, e2 merry.Error) bool {
-	return merry.Is(e1, e2)
-}
-
 type testCaseNew struct {
 	name        string
 	servers     []types.BackendServer
@@ -69,7 +66,7 @@ func TestNewBroadcastGroup(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b, err := NewBroadcastGroup(logger, tt.name, true, tt.servers, 60, 500, 100, timeouts, false, false)
-			if !errorsAreEqual(err, tt.expectedErr) {
+			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("unexpected error %v, expected %v", err, tt.expectedErr)
 			}
 			_ = b
@@ -122,7 +119,7 @@ func TestProbeTLDs(t *testing.T) {
 
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := b.ProbeTLDs(ctx)
-			if !errorsAreEqual(err, tt.expectedErr) {
+			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("unexpected error %v, expected %v", err, tt.expectedErr)
 			}
 
@@ -1145,7 +1142,7 @@ func TestFetchRequests(t *testing.T) {
 					t.Errorf("unexpected error '%+v', expected %v", merry.Details(err), tt.expectedErr)
 				}
 			} else {
-				if !errorsAreEqual(err, tt.expectedErr) {
+				if !errors.Is(err, tt.expectedErr) {
 					t.Errorf("unexpected error %v, expected %v", merry.Details(err), tt.expectedErr)
 				}
 			}

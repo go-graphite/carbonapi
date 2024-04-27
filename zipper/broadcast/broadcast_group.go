@@ -2,12 +2,13 @@ package broadcast
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"sort"
 	"strings"
 
-	"github.com/ansel1/merry"
+	"github.com/ansel1/merry/v2"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
 
@@ -119,7 +120,7 @@ func WithSuccess(requireSuccessAll bool) Option {
 	}
 }
 
-func New(opts ...Option) (*BroadcastGroup, merry.Error) {
+func New(opts ...Option) (*BroadcastGroup, error) {
 	bg := &BroadcastGroup{
 		limiter: limiter.NoopLimiter{},
 	}
@@ -159,7 +160,7 @@ func (bg *BroadcastGroup) SetDoMultipleRequestIfSplit(v bool) {
 	}
 }
 
-func NewBroadcastGroup(logger *zap.Logger, groupName string, doMultipleRequestsIfSplit bool, servers []types.BackendServer, expireDelaySec int32, concurrencyLimit, maxBatchSize int, timeouts types.Timeouts, tldCacheDisabled bool, requireSuccessAll bool) (*BroadcastGroup, merry.Error) {
+func NewBroadcastGroup(logger *zap.Logger, groupName string, doMultipleRequestsIfSplit bool, servers []types.BackendServer, expireDelaySec int32, concurrencyLimit, maxBatchSize int, timeouts types.Timeouts, tldCacheDisabled bool, requireSuccessAll bool) (*BroadcastGroup, error) {
 	return New(
 		WithLogger(logger),
 		WithGroupName(groupName),
@@ -263,7 +264,7 @@ func (bg *BroadcastGroup) doMultiFetch(ctx context.Context, logger *zap.Logger, 
 			defer bg.limiter.Leave(ctx, backend.Name())
 
 			// uuid := util.GetUUID(ctx)
-			var err merry.Error
+			var err error
 			logger.Debug("sending request")
 			response.Response, response.Stats, err = backend.Fetch(ctx, req)
 			response.AddError(err)
@@ -335,7 +336,7 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 	defer bg.limiter.Leave(ctx, backend.Name())
 
 	// uuid := util.GetUUID(ctx)
-	var err merry.Error
+	var err error
 	for _, req := range requests {
 		logger.Debug("sending request")
 		r := types.NewServerFetchResponse()
@@ -379,7 +380,7 @@ func (bg *BroadcastGroup) doSingleFetch(ctx context.Context, logger *zap.Logger,
 	resCh <- response
 }
 
-func (bg *BroadcastGroup) splitRequest(ctx context.Context, request *protov3.MultiFetchRequest, backend types.BackendServer) ([]*protov3.MultiFetchRequest, merry.Error) {
+func (bg *BroadcastGroup) splitRequest(ctx context.Context, request *protov3.MultiFetchRequest, backend types.BackendServer) ([]*protov3.MultiFetchRequest, error) {
 	if backend.MaxMetricsPerRequest() == 0 {
 		return []*protov3.MultiFetchRequest{request}, nil
 	}
@@ -387,7 +388,7 @@ func (bg *BroadcastGroup) splitRequest(ctx context.Context, request *protov3.Mul
 	var requests []*protov3.MultiFetchRequest
 	newRequest := &protov3.MultiFetchRequest{}
 
-	var err merry.Error
+	var err error
 	for _, metric := range request.Metrics {
 		if len(newRequest.Metrics) >= backend.MaxMetricsPerRequest() {
 			requests = append(requests, newRequest)
@@ -423,18 +424,18 @@ func (bg *BroadcastGroup) splitRequest(ctx context.Context, request *protov3.Mul
 		f, _, e := backend.Find(ctx, &protov3.MultiGlobRequest{Metrics: []string{metric.Name}})
 		if e != nil || f == nil || len(f.Metrics) == 0 {
 			if e == nil {
-				e = merry.Errorf("no result fetched")
+				e = errors.New("no result fetched")
 				if f == nil {
-					e = e.WithCause(types.ErrUnmarshalFailed)
+					e = merry.Wrap(e, merry.WithCause(types.ErrUnmarshalFailed))
 				} else {
-					e = e.WithCause(types.ErrNoMetricsFetched)
+					e = merry.Wrap(e, merry.WithCause(types.ErrNoMetricsFetched))
 				}
 			}
 			err = e
 
 			errStr := ""
-			if e.Cause() != nil {
-				errStr = e.Cause().Error()
+			if merry.Cause(e) != nil {
+				errStr = merry.Cause(e).Error()
 			} else {
 				// e != nil, but len(f.Metrics) == 0 or f == nil, then Cause could be nil
 				errStr = e.Error()
@@ -486,7 +487,7 @@ func (bg *BroadcastGroup) splitRequest(ctx context.Context, request *protov3.Mul
 	return requests, err
 }
 
-func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, merry.Error) {
+func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, error) {
 	requestNames := make([]string, 0, len(request.Metrics))
 	for i := range request.Metrics {
 		requestNames = append(requestNames, request.Metrics[i].Name)
@@ -513,16 +514,21 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	}
 
 	if len(result.Response.Metrics) == 0 || (bg.requireSuccessAll && len(result.Err) > 0) {
-		code, errors := helper.MergeHttpErrors(result.Err)
-		if len(errors) > 0 {
-			err := types.ErrFailedToFetch.WithHTTPCode(code).WithMessage(strings.Join(errors, "\n"))
-			logger.Debug("errors while fetching data from backends",
+		code, errs := helper.MergeHttpErrors(result.Err)
+		if len(errs) > 0 {
+			err := merry.Wrap(types.ErrFailedToFetch,
+				merry.WithHTTPCode(code),
+				merry.WithMessage(strings.Join(errs, "\n")),
+			)
+			logger.Debug("errs while fetching data from backends",
 				zap.Int("httpCode", code),
-				zap.Strings("errors", errors),
+				zap.Strings("errs", errs),
 			)
 			return nil, result.Stats, err
 		}
-		return nil, result.Stats, types.ErrNotFound.WithHTTPCode(404)
+		return nil, result.Stats, merry.Wrap(types.ErrNotFound,
+			merry.WithHTTPCode(404),
+		)
 	}
 
 	// Recalculate metrics start/step/stop parameters to avoid upstream misbehavior
@@ -538,22 +544,25 @@ func (bg *BroadcastGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 		zap.Int("metrics_in_response", len(result.Response.Metrics)),
 	)
 
-	var err merry.Error
+	var err error
 	if len(result.Err) > 0 {
 		if bg.requireSuccessAll {
-			code, errors := helper.MergeHttpErrors(result.Err)
-			if len(errors) > 0 {
-				err := types.ErrFailedToFetch.WithHTTPCode(code).WithMessage(strings.Join(errors, "\n"))
-				logger.Debug("errors while fetching data from backends",
+			code, errs := helper.MergeHttpErrors(result.Err)
+			if len(errs) > 0 {
+				err := merry.Wrap(types.ErrFailedToFetch,
+					merry.WithHTTPCode(code),
+					merry.WithMessage(strings.Join(errs, "\n")),
+				)
+				logger.Debug("errs while fetching data from backends",
 					zap.Int("httpCode", code),
-					zap.Strings("errors", errors),
+					zap.Strings("errs", errs),
 				)
 				return nil, result.Stats, err
 			}
 		} else {
 			err = types.ErrNonFatalErrors
 			for _, e := range result.Err {
-				err = err.WithCause(e)
+				err = merry.Wrap(err, merry.WithCause(e))
 			}
 		}
 	}
@@ -590,7 +599,7 @@ func (bg *BroadcastGroup) doFind(ctx context.Context, logger *zap.Logger, backen
 	logger.Debug("got slot")
 	defer bg.limiter.Leave(ctx, backend.Name())
 
-	var err merry.Error
+	var err error
 	r.Response, r.Stats, err = backend.Find(ctx, request)
 	r.AddError(err)
 	// TODO: Add a separate logger that would log full response
@@ -600,7 +609,7 @@ func (bg *BroadcastGroup) doFind(ctx context.Context, logger *zap.Logger, backen
 	resCh <- r
 }
 
-func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
+func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, error) {
 	logger := bg.logger.With(zap.String("type", "find"), zap.Strings("request", request.Metrics))
 
 	backends := bg.Children()
@@ -627,14 +636,17 @@ func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 		)
 	}
 
-	var err merry.Error
+	var err error
 	if len(result.Response.Metrics) == 0 || (bg.requireSuccessAll && len(result.Err) > 0) {
-		code, errors := helper.MergeHttpErrors(result.Err)
-		if len(errors) > 0 {
-			err = types.ErrFailedToFetch.WithHTTPCode(code).WithMessage(strings.Join(errors, "\n"))
-			logger.Debug("errors while fetching data from backends",
+		code, errs := helper.MergeHttpErrors(result.Err)
+		if len(errs) > 0 {
+			err = merry.Wrap(types.ErrFailedToFetch,
+				merry.WithHTTPCode(code),
+				merry.WithMessage(strings.Join(errs, "\n")),
+			)
+			logger.Debug("errs while fetching data from backends",
 				zap.Int("httpCode", code),
-				zap.Strings("errors", errors),
+				zap.Strings("errs", errs),
 			)
 			return nil, result.Stats, err
 		}
@@ -649,7 +661,9 @@ func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	)
 
 	if len(result.Response.Metrics) == 0 {
-		return &protov3.MultiGlobResponse{}, result.Stats, types.ErrNotFound.WithHTTPCode(404)
+		return &protov3.MultiGlobResponse{}, result.Stats, merry.Wrap(types.ErrNotFound,
+			merry.WithHTTPCode(404),
+		)
 	}
 	result.Stats.TotalMetricsCount = 0
 	for _, x := range result.Response.Metrics {
@@ -659,7 +673,7 @@ func (bg *BroadcastGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	if result.Err != nil {
 		err = types.ErrNonFatalErrors
 		for _, e := range result.Err {
-			err = err.WithCause(e)
+			err = merry.Wrap(err, merry.WithCause(e))
 		}
 	}
 
@@ -693,13 +707,13 @@ func (bg *BroadcastGroup) doInfoRequest(ctx context.Context, logger *zap.Logger,
 	defer bg.limiter.Leave(ctx, backend.Name())
 
 	logger.Debug("got a slot")
-	var err merry.Error
+	var err error
 	r.Response, r.Stats, err = backend.Info(ctx, request)
 	r.AddError(err)
 	resCh <- r
 }
 
-func (bg *BroadcastGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, merry.Error) {
+func (bg *BroadcastGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, error) {
 	logger := bg.logger.With(zap.String("type", "info"), zap.Strings("request", request.Names))
 
 	ctxNew, cancel := context.WithTimeout(ctx, bg.timeout.Render)
@@ -726,7 +740,7 @@ func (bg *BroadcastGroup) Info(ctx context.Context, request *protov3.MultiMetric
 		zap.Bool("have_errors", len(result.Err) != 0),
 	)
 
-	var err merry.Error
+	var err error
 	if result.Err != nil {
 		if bg.requireSuccessAll {
 			err = types.ErrFailedToFetch
@@ -734,17 +748,17 @@ func (bg *BroadcastGroup) Info(ctx context.Context, request *protov3.MultiMetric
 			err = types.ErrNonFatalErrors
 		}
 		for _, e := range result.Err {
-			err = err.WithCause(e)
+			err = merry.Wrap(err, merry.WithCause(e))
 		}
 	}
 
 	return result.Response, result.Stats, err
 }
 
-func (bg *BroadcastGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, merry.Error) {
+func (bg *BroadcastGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, error) {
 	return nil, nil, types.ErrNotImplementedYet
 }
-func (bg *BroadcastGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, merry.Error) {
+func (bg *BroadcastGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, error) {
 	return nil, nil, types.ErrNotImplementedYet
 }
 
@@ -784,7 +798,7 @@ func (bg *BroadcastGroup) doTagRequest(ctx context.Context, logger *zap.Logger, 
 	defer bg.limiter.Leave(ctx, backend.Name())
 
 	logger.Debug("got a slot")
-	var err merry.Error
+	var err error
 	if request.IsName {
 		r.Response, err = backend.TagNames(ctx, request.Query, request.Limit)
 	} else {
@@ -801,7 +815,7 @@ func (bg *BroadcastGroup) doTagRequest(ctx context.Context, logger *zap.Logger, 
 	resCh <- r
 }
 
-func (bg *BroadcastGroup) tagEverything(ctx context.Context, isTagName bool, query string, limit int64) ([]string, merry.Error) {
+func (bg *BroadcastGroup) tagEverything(ctx context.Context, isTagName bool, query string, limit int64) ([]string, error) {
 	logger := bg.logger.With(zap.String("query", query))
 	if isTagName {
 		logger = logger.With(zap.String("type", "tagName"))
@@ -844,29 +858,29 @@ func (bg *BroadcastGroup) tagEverything(ctx context.Context, isTagName bool, que
 		zap.Bool("have_errors", len(result.Err) != 0),
 	)
 
-	var err merry.Error
+	var err error
 	if result.Err != nil {
 		err = types.ErrNonFatalErrors
 		for _, e := range result.Err {
-			err = err.WithCause(e)
+			err = merry.Wrap(err, merry.WithCause(e))
 		}
 	}
 
 	return result.Response, err
 }
 
-func (bg *BroadcastGroup) TagNames(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+func (bg *BroadcastGroup) TagNames(ctx context.Context, query string, limit int64) ([]string, error) {
 	return bg.tagEverything(ctx, true, query, limit)
 }
 
-func (bg *BroadcastGroup) TagValues(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+func (bg *BroadcastGroup) TagValues(ctx context.Context, query string, limit int64) ([]string, error) {
 	return bg.tagEverything(ctx, false, query, limit)
 }
 
 type tldResponse struct {
 	server types.BackendServer
 	tlds   []string
-	err    merry.Error
+	err    error
 }
 
 func doProbe(ctx context.Context, backend types.BackendServer, resCh chan<- tldResponse) {
@@ -879,7 +893,7 @@ func doProbe(ctx context.Context, backend types.BackendServer, resCh chan<- tldR
 	}
 }
 
-func (bg *BroadcastGroup) ProbeTLDs(ctx context.Context) ([]string, merry.Error) {
+func (bg *BroadcastGroup) ProbeTLDs(ctx context.Context) ([]string, error) {
 	logger := bg.logger.With(zap.String("function", "prober"))
 
 	ctx, cancel := context.WithTimeout(ctx, bg.timeout.Find)
@@ -892,7 +906,7 @@ func (bg *BroadcastGroup) ProbeTLDs(ctx context.Context) ([]string, merry.Error)
 	}
 
 	responses := 0
-	var errs []merry.Error
+	var errs []error
 	answeredServers := make(map[string]struct{})
 	cache := make(map[string][]types.BackendServer)
 	tldSet := make(map[string]struct{})
@@ -934,11 +948,11 @@ GATHER:
 		bg.pathCache.Set(k, v)
 	}
 
-	var err merry.Error
+	var err error
 	if errs != nil {
 		err = types.ErrNonFatalErrors
 		for _, e := range errs {
-			err = err.WithCause(e)
+			err = merry.Wrap(err, merry.WithCause(e))
 		}
 	}
 

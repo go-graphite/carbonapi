@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+
+	"golang.org/x/exp/maps"
 )
 
 var ErrUnknownLBMethodFmt = "unknown lb method: '%v', supported: %v"
@@ -14,14 +16,6 @@ const (
 	RoundRobinLB LBMethod = iota
 	BroadcastLB
 )
-
-func (p LBMethod) keys(m map[string]LBMethod) []string {
-	res := make([]string, 0)
-	for k := range m {
-		res = append(res, k)
-	}
-	return res
-}
 
 var supportedLBMethods = map[string]LBMethod{
 	"roundrobin": RoundRobinLB,
@@ -34,7 +28,7 @@ var supportedLBMethods = map[string]LBMethod{
 func (m *LBMethod) FromString(method string) error {
 	var ok bool
 	if *m, ok = supportedLBMethods[strings.ToLower(method)]; !ok {
-		return fmt.Errorf(ErrUnknownLBMethodFmt, method, m.keys(supportedLBMethods))
+		return fmt.Errorf(ErrUnknownLBMethodFmt, method, maps.Keys(supportedLBMethods))
 	}
 	return nil
 }
@@ -62,5 +56,5 @@ func (m LBMethod) MarshalJSON() ([]byte, error) {
 		return json.Marshal("Broadcast")
 	}
 
-	return nil, fmt.Errorf(ErrUnknownLBMethodFmt, m, m.keys(supportedLBMethods))
+	return nil, fmt.Errorf(ErrUnknownLBMethodFmt, m, maps.Keys(supportedLBMethods))
 }

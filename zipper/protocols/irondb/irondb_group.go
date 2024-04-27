@@ -2,13 +2,14 @@ package irondb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"net/url"
 	"strings"
 	"time"
 
-	"github.com/ansel1/merry"
+	"github.com/ansel1/merry/v2"
 	"github.com/circonus-labs/gosnowth"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"go.uber.org/zap"
@@ -50,7 +51,7 @@ type IronDBGroup struct {
 	graphitePrefix string
 }
 
-func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool, limiter limiter.ServerLimiter) (types.BackendServer, merry.Error) {
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool, limiter limiter.ServerLimiter) (types.BackendServer, error) {
 	logger = logger.With(zap.String("type", "irondb"), zap.String("protocol", config.Protocol), zap.String("name", config.GroupName))
 
 	logger.Warn("support for this backend protocol is experimental, use with caution")
@@ -215,7 +216,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 	return c, nil
 }
 
-func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool) (types.BackendServer, merry.Error) {
+func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool) (types.BackendServer, error) {
 	if config.ConcurrencyLimit == nil {
 		return nil, types.ErrConcurrencyLimitNotSet
 	}
@@ -243,35 +244,35 @@ func (c IronDBGroup) Backends() []string {
 	return c.servers
 }
 
-func processFindErrors(err error, e merry.Error, stats *types.Stats, query string) merry.Error {
+func processFindErrors(err error, e error, stats *types.Stats, query string) error {
 	stats.FindErrors++
-	if merry.Is(err, types.ErrTimeoutExceeded) {
+	if errors.Is(err, types.ErrTimeoutExceeded) {
 		stats.Timeouts++
 		stats.FindTimeouts++
 	}
 	if e == nil {
-		e = merry.Wrap(err).WithValue("query", query)
+		e = merry.Wrap(err, merry.WithValue("query", query))
 	} else {
-		e = e.WithCause(err)
+		e = merry.Wrap(e, merry.WithCause(err))
 	}
 	return e
 }
 
-func processRenderErrors(err error, e merry.Error, stats *types.Stats, query string) merry.Error {
+func processRenderErrors(err error, e error, stats *types.Stats, query string) error {
 	stats.RenderErrors++
-	if merry.Is(err, types.ErrTimeoutExceeded) {
+	if errors.Is(err, types.ErrTimeoutExceeded) {
 		stats.Timeouts++
 		stats.RenderTimeouts++
 	}
 	if e == nil {
-		e = merry.Wrap(err).WithValue("query", query)
+		e = merry.Wrap(err, merry.WithValue("query", query))
 	} else {
-		e = e.WithCause(err)
+		e = merry.Wrap(e, merry.WithCause(err))
 	}
 	return e
 }
 
-func (c *IronDBGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, merry.Error) {
+func (c *IronDBGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, error) {
 	logger := c.logger.With(zap.String("type", "fetch"), zap.String("request", request.String()))
 	stats := &types.Stats{}
 
@@ -281,7 +282,7 @@ func (c *IronDBGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequ
 	}
 
 	var r protov3.MultiFetchResponse
-	var e merry.Error
+	var e error
 
 	start := request.Metrics[0].StartTime
 	stop := request.Metrics[0].StopTime
@@ -485,14 +486,14 @@ func (c *IronDBGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequ
 	return &r, stats, nil
 }
 
-func (c *IronDBGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
+func (c *IronDBGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, error) {
 	logger := c.logger.With(zap.String("type", "find"), zap.Strings("request", request.Metrics))
 	stats := &types.Stats{}
 
 	r := protov3.MultiGlobResponse{
 		Metrics: make([]protov3.GlobResponse, 0),
 	}
-	var e merry.Error
+	var e error
 
 	for _, query := range request.Metrics {
 		resp := protov3.GlobResponse{
@@ -540,19 +541,19 @@ func (c *IronDBGroup) Find(ctx context.Context, request *protov3.MultiGlobReques
 	return &r, stats, nil
 }
 
-func (c *IronDBGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, merry.Error) {
+func (c *IronDBGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, error) {
 	return nil, nil, types.ErrNotSupportedByBackend
 }
 
-func (c *IronDBGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, merry.Error) {
+func (c *IronDBGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, error) {
 	return nil, nil, types.ErrNotImplementedYet
 }
 
-func (c *IronDBGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, merry.Error) {
+func (c *IronDBGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, error) {
 	return nil, nil, types.ErrNotSupportedByBackend
 }
 
-func (c *IronDBGroup) doTagQuery(ctx context.Context, isTagName bool, query string, limit int64) ([]string, merry.Error) {
+func (c *IronDBGroup) doTagQuery(ctx context.Context, isTagName bool, query string, limit int64) ([]string, error) {
 	logger := c.logger
 	params := make(map[string][]string)
 	var result []string
@@ -618,7 +619,7 @@ func (c *IronDBGroup) doTagQuery(ctx context.Context, isTagName bool, query stri
 	)
 	tagResult, err := c.client.GraphiteFindTags(c.accountID, c.graphitePrefix, target, nil)
 	if err != nil {
-		return []string{}, merry.New("request returned an error").WithValue("error", err)
+		return []string{}, merry.Wrap(errors.New("request returned an error"), merry.WithCause(err))
 	}
 	logger.Debug("got GraphiteFindTags result from irondb",
 		zap.String("target", target),
@@ -664,15 +665,15 @@ func (c *IronDBGroup) doTagQuery(ctx context.Context, isTagName bool, query stri
 
 }
 
-func (c *IronDBGroup) TagNames(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+func (c *IronDBGroup) TagNames(ctx context.Context, query string, limit int64) ([]string, error) {
 	return c.doTagQuery(ctx, true, query, limit)
 }
 
-func (c *IronDBGroup) TagValues(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+func (c *IronDBGroup) TagValues(ctx context.Context, query string, limit int64) ([]string, error) {
 	return c.doTagQuery(ctx, false, query, limit)
 }
 
-func (c *IronDBGroup) ProbeTLDs(ctx context.Context) ([]string, merry.Error) {
+func (c *IronDBGroup) ProbeTLDs(ctx context.Context) ([]string, error) {
 	// ProbeTLDs is not really needed for IronDB but returning nil causing error
 	// so, let's return empty list
 	return []string{}, nil

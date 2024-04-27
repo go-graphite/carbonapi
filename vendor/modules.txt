@@ -14,6 +14,10 @@ github.com/alicebob/miniredis/v2/geohash
 github.com/alicebob/miniredis/v2/hyperloglog
 github.com/alicebob/miniredis/v2/metro
 github.com/alicebob/miniredis/v2/server
+# github.com/andybalholm/brotli v1.1.0
+## explicit; go 1.13
+github.com/andybalholm/brotli
+github.com/andybalholm/brotli/matchfinder
 # github.com/ansel1/merry v1.8.0
 ## explicit; go 1.18
 github.com/ansel1/merry
@@ -96,6 +100,11 @@ github.com/hashicorp/hcl/hcl/token
 github.com/hashicorp/hcl/json/parser
 github.com/hashicorp/hcl/json/scanner
 github.com/hashicorp/hcl/json/token
+# github.com/klauspost/compress v1.17.6
+## explicit; go 1.19
+github.com/klauspost/compress/flate
+github.com/klauspost/compress/gzip
+github.com/klauspost/compress/zlib
 # github.com/lib/pq v1.10.9
 ## explicit; go 1.13
 github.com/lib/pq
@@ -202,6 +211,14 @@ github.com/tevino/abool
 # github.com/tinylib/msgp v1.1.9
 ## explicit; go 1.18
 github.com/tinylib/msgp/msgp
+# github.com/valyala/bytebufferpool v1.0.0
+## explicit
+github.com/valyala/bytebufferpool
+# github.com/valyala/fasthttp v1.52.0
+## explicit; go 1.20
+github.com/valyala/fasthttp
+github.com/valyala/fasthttp/fasthttputil
+github.com/valyala/fasthttp/stackless
 # github.com/valyala/fastjson v1.6.4
 ## explicit; go 1.12
 github.com/valyala/fastjson
@@ -232,6 +249,7 @@ go.uber.org/zap/zapcore
 # golang.org/x/exp v0.0.0-20240416160154-fe59bbe5cc7f
 ## explicit; go 1.20
 golang.org/x/exp/constraints
+golang.org/x/exp/maps
 golang.org/x/exp/slices
 golang.org/x/exp/slog
 golang.org/x/exp/slog/internal

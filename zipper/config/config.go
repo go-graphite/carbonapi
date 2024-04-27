@@ -19,6 +19,7 @@ type Config struct {
 	SlowLogThreshold          time.Duration    `mapstructure:"slowLogThreshold"`
 	ConcurrencyLimitPerServer int              `mapstructure:"concurrencyLimitPerServer"`
 	MaxIdleConnsPerHost       int              `mapstructure:"maxIdleConnsPerHost"`
+	FetchClientType           string           `mapstructure:"fetchClientType"`
 	Backends                  []string         `mapstructure:"backends"`
 	BackendsV2                types.BackendsV2 `mapstructure:"backendsv2"`
 	MaxBatchSize              *int             `mapstructure:"maxBatchSize"`
@@ -43,13 +44,13 @@ func (cfg *Config) IsSanitized() bool {
 	return cfg.isSanitized
 }
 
-var defaultTimeouts = types.Timeouts{
+var DefaultTimeouts = types.Timeouts{
 	Render:  10000 * time.Second,
 	Find:    100 * time.Second,
 	Connect: 200 * time.Millisecond,
 }
 
-func sanitizeTimeouts(timeouts, defaultTimeouts types.Timeouts) types.Timeouts {
+func SanitizeTimeouts(timeouts, defaultTimeouts types.Timeouts) types.Timeouts {
 	if timeouts.Render == 0 {
 		timeouts.Render = defaultTimeouts.Render
 	}
@@ -81,7 +82,7 @@ func SanitizeConfig(logger *zap.Logger, oldConfig Config) *Config {
 		newConfig.MaxBatchSize = &newConfig.FallbackMaxBatchSize
 	}
 
-	newConfig.Timeouts = sanitizeTimeouts(newConfig.Timeouts, defaultTimeouts)
+	newConfig.Timeouts = SanitizeTimeouts(newConfig.Timeouts, DefaultTimeouts)
 
 	if newConfig.InternalRoutingCache.Seconds() < 30 {
 		logger.Warn("internalRoutingCache is too low",
@@ -93,6 +94,10 @@ func SanitizeConfig(logger *zap.Logger, oldConfig Config) *Config {
 
 	// Convert old config format to new one
 	defaultIdleConnTimeout := 3600 * time.Second
+	defaultClient := "std"
+	if newConfig.FetchClientType != "" {
+		defaultClient = newConfig.FetchClientType
+	}
 	if newConfig.Backends != nil && len(newConfig.Backends) != 0 {
 		newConfig.BackendsV2 = types.BackendsV2{
 			Backends: []types.BackendV2{
@@ -109,6 +114,7 @@ func SanitizeConfig(logger *zap.Logger, oldConfig Config) *Config {
 					MaxTries:                  &newConfig.MaxTries,
 					MaxBatchSize:              newConfig.MaxBatchSize,
 					IdleConnectionTimeout:     &defaultIdleConnTimeout,
+					FetchClientType:           defaultClient,
 				},
 			},
 			MaxIdleConnsPerHost:       newConfig.MaxIdleConnsPerHost,
@@ -122,13 +128,19 @@ func SanitizeConfig(logger *zap.Logger, oldConfig Config) *Config {
 		newConfig.DoMultipleRequestsIfSplit = true
 	}
 
-	newConfig.BackendsV2.Timeouts = sanitizeTimeouts(newConfig.BackendsV2.Timeouts, newConfig.Timeouts)
+	for i := range newConfig.BackendsV2.Backends {
+		if newConfig.BackendsV2.Backends[i].FetchClientType == "" {
+			newConfig.BackendsV2.Backends[i].FetchClientType = defaultClient
+		}
+	}
+
+	newConfig.BackendsV2.Timeouts = SanitizeTimeouts(newConfig.BackendsV2.Timeouts, newConfig.Timeouts)
 	for i := range newConfig.BackendsV2.Backends {
 		if newConfig.BackendsV2.Backends[i].Timeouts == nil {
 			timeouts := newConfig.BackendsV2.Timeouts
 			newConfig.BackendsV2.Backends[i].Timeouts = &timeouts
 		}
-		timeouts := sanitizeTimeouts(*(newConfig.BackendsV2.Backends[i].Timeouts), newConfig.BackendsV2.Timeouts)
+		timeouts := SanitizeTimeouts(*(newConfig.BackendsV2.Backends[i].Timeouts), newConfig.BackendsV2.Timeouts)
 		newConfig.BackendsV2.Backends[i].Timeouts = &timeouts
 		if newConfig.BackendsV2.Backends[i].IdleConnectionTimeout == nil {
 			newConfig.BackendsV2.Backends[i].IdleConnectionTimeout = &defaultIdleConnTimeout

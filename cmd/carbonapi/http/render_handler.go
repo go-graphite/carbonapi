@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ansel1/merry"
+	"github.com/ansel1/merry/v2"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"github.com/lomik/zapwriter"
 	"github.com/msaf1980/go-stringutils"
@@ -270,7 +270,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	errors := make(map[string]merry.Error)
+	errs := make(map[string]error)
 
 	var backendCacheKey string
 	if len(config.Config.TruncateTime) > 0 {
@@ -304,7 +304,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 			result, errs := expr.FetchAndEvalExprs(ctx, config.Config.Evaluator, exprs, from32, until32, values)
 			if errs != nil {
-				errors = errs
+				errs = errs
 			}
 
 			results = append(results, result...)
@@ -322,7 +322,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 				result, err := expr.FetchAndEvalExp(ctx, config.Config.Evaluator, exp, from32, until32, values)
 				if err != nil {
-					errors[target] = merry.Wrap(err)
+					errs[target] = merry.Wrap(err)
 					if config.Config.Upstreams.RequireSuccessAll {
 						code := merry.HTTPCode(err)
 						if code != http.StatusOK && code != http.StatusNotFound {
@@ -335,7 +335,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		if len(errors) == 0 && backendCacheTimeout > 0 {
+		if len(errs) == 0 && backendCacheTimeout > 0 {
 			w.Header().Set("X-Carbonapi-Backend-Cached", strconv.FormatInt(int64(backendCacheTimeout), 10))
 			backendCacheStoreResults(logger, backendCacheKey, results, backendCacheTimeout)
 		}
@@ -349,12 +349,12 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 	var body []byte
 
 	returnCode := http.StatusOK
-	if len(results) == 0 || (len(errors) > 0 && config.Config.Upstreams.RequireSuccessAll) {
-		// Obtain error code from the errors
-		// In case we have only "Not Found" errors, result should be 404
+	if len(results) == 0 || (len(errs) > 0 && config.Config.Upstreams.RequireSuccessAll) {
+		// Obtain error code from the errs
+		// In case we have only "Not Found" errs, result should be 404
 		// Otherwise it should be 500
 		var errMsgs map[string]string
-		returnCode, errMsgs = helper.MergeHttpErrorMap(errors)
+		returnCode, errMsgs = helper.MergeHttpErrorMap(errs)
 		logger.Debug("error response or no response", zap.Any("error", errMsgs))
 		// Allow override status code for 404-not-found replies.
 		if returnCode == http.StatusNotFound {
@@ -415,7 +415,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		ApiMetrics.RequestsCacheOverheadNS.Add(uint64(td))
 	}
 
-	gotErrors := len(errors) > 0
+	gotErrors := len(errs) > 0
 	accessLogDetails.HaveNonFatalErrors = gotErrors
 }
 

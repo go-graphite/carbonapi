@@ -3,21 +3,21 @@ package graphite
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"math"
-	"net/http"
 	"net/url"
 	"strconv"
 
-	"github.com/ansel1/merry"
+	"github.com/ansel1/merry/v2"
 
 	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
 	"github.com/go-graphite/carbonapi/limiter"
-	"github.com/go-graphite/carbonapi/zipper/helper"
 	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 	"github.com/go-graphite/carbonapi/zipper/metadata"
 	"github.com/go-graphite/carbonapi/zipper/protocols/graphite/msgpack"
+	"github.com/go-graphite/carbonapi/zipper/requests"
 	"github.com/go-graphite/carbonapi/zipper/types"
 
 	"go.uber.org/zap"
@@ -40,27 +40,26 @@ type GraphiteGroup struct {
 	servers   []string
 	protocol  string
 
-	client *http.Client
-
 	limiter              limiter.ServerLimiter
 	logger               *zap.Logger
 	timeout              types.Timeouts
 	maxTries             int
 	maxMetricsPerRequest int
 
-	httpQuery *helper.HttpQuery
+	httpQuery *requests.HttpQuery
 }
 
 func (g *GraphiteGroup) Children() []types.BackendServer {
 	return []types.BackendServer{g}
 }
 
-func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool, limiter limiter.ServerLimiter) (types.BackendServer, merry.Error) {
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool, limiter limiter.ServerLimiter) (types.BackendServer, error) {
 	logger = logger.With(zap.String("type", "graphite"), zap.String("protocol", config.Protocol), zap.String("name", config.GroupName))
 
-	httpClient := helper.GetHTTPClient(logger, config)
-
-	httpQuery := helper.NewHttpQuery(config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv2PB)
+	httpQuery, err := requests.NewHttpQuery(logger, &config, limiter, httpHeaders.ContentTypeCarbonAPIv2PB)
+	if err != nil {
+		return nil, merry.Wrap(err)
+	}
 
 	c := &GraphiteGroup{
 		groupName:            config.GroupName,
@@ -70,7 +69,6 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		maxTries:             *config.MaxTries,
 		maxMetricsPerRequest: *config.MaxBatchSize,
 
-		client:  httpClient,
 		limiter: limiter,
 		logger:  logger,
 
@@ -79,7 +77,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 	return c, nil
 }
 
-func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool) (types.BackendServer, merry.Error) {
+func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool) (types.BackendServer, error) {
 	if config.ConcurrencyLimit == nil {
 		return nil, types.ErrConcurrencyLimitNotSet
 	}
@@ -103,7 +101,7 @@ func (c GraphiteGroup) Backends() []string {
 	return c.servers
 }
 
-func (c *GraphiteGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, merry.Error) {
+func (c *GraphiteGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, error) {
 	logger := c.logger.With(zap.String("type", "fetch"), zap.String("request", request.String()))
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/render/")
@@ -115,7 +113,7 @@ func (c *GraphiteGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRe
 	}
 
 	var r protov3.MultiFetchResponse
-	var e merry.Error
+	var e error
 	for pathExpr, targets := range pathExprToTargets {
 		v := url.Values{
 			"target": targets,
@@ -128,14 +126,14 @@ func (c *GraphiteGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRe
 		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if err != nil {
 			stats.RenderErrors++
-			if merry.Is(err, types.ErrTimeoutExceeded) {
+			if errors.Is(err, types.ErrTimeoutExceeded) {
 				stats.Timeouts++
 				stats.RenderTimeouts++
 			}
 			if e == nil {
 				e = err
 			} else {
-				e = e.WithCause(err)
+				e = merry.Wrap(e, merry.WithCause(err))
 			}
 			continue
 		}
@@ -145,9 +143,9 @@ func (c *GraphiteGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRe
 		if marshalErr != nil {
 			stats.RenderErrors++
 			if e == nil {
-				e = merry.Wrap(marshalErr).WithValue("targets", targets)
+				e = merry.Wrap(marshalErr, merry.WithValue("targets", targets))
 			} else {
-				e = e.WithCause(err)
+				e = merry.Wrap(e, merry.WithCause(err))
 			}
 			continue
 		}
@@ -184,14 +182,14 @@ func (c *GraphiteGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRe
 	return &r, stats, nil
 }
 
-func (c *GraphiteGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
+func (c *GraphiteGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, error) {
 	logger := c.logger.With(zap.String("type", "find"), zap.Strings("request", request.Metrics))
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/metrics/find/")
 
 	var r protov3.MultiGlobResponse
 	r.Metrics = make([]protov3.GlobResponse, 0)
-	var e merry.Error
+	var e error
 	for _, query := range request.Metrics {
 		v := url.Values{
 			"query":  []string{query},
@@ -202,14 +200,14 @@ func (c *GraphiteGroup) Find(ctx context.Context, request *protov3.MultiGlobRequ
 		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if err != nil {
 			stats.FindErrors++
-			if merry.Is(err, types.ErrTimeoutExceeded) {
+			if errors.Is(err, types.ErrTimeoutExceeded) {
 				stats.Timeouts++
 				stats.FindTimeouts++
 			}
 			if e == nil {
 				e = err
 			} else {
-				e = e.WithCause(err)
+				e = merry.Wrap(e, merry.WithCause(err))
 			}
 			continue
 		}
@@ -217,9 +215,9 @@ func (c *GraphiteGroup) Find(ctx context.Context, request *protov3.MultiGlobRequ
 		_, marshalErr := globs.UnmarshalMsg(res.Response)
 		if marshalErr != nil {
 			if e == nil {
-				e = merry.Wrap(marshalErr).WithValue("query", query)
+				e = merry.Wrap(marshalErr, merry.WithValue("query", query))
 			} else {
-				e = e.WithCause(err)
+				e = merry.Wrap(e, merry.WithCause(err))
 			}
 			continue
 		}
@@ -247,13 +245,13 @@ func (c *GraphiteGroup) Find(ctx context.Context, request *protov3.MultiGlobRequ
 	return &r, stats, nil
 }
 
-func (c *GraphiteGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, merry.Error) {
+func (c *GraphiteGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, error) {
 	logger := c.logger.With(zap.String("type", "info"))
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/info/")
 
 	var r protov3.ZipperInfoResponse
-	var e merry.Error
+	var e error
 	r.Info = make(map[string]protov3.MultiMetricsInfoResponse)
 	data := protov3.MultiMetricsInfoResponse{}
 	server := c.groupName
@@ -271,14 +269,14 @@ func (c *GraphiteGroup) Info(ctx context.Context, request *protov3.MultiMetricsI
 		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if err != nil {
 			stats.InfoErrors++
-			if merry.Is(err, types.ErrTimeoutExceeded) {
+			if errors.Is(err, types.ErrTimeoutExceeded) {
 				stats.Timeouts++
 				stats.InfoTimeouts++
 			}
 			if e == nil {
 				e = err
 			} else {
-				e = e.WithCause(err)
+				e = merry.Wrap(e, merry.WithCause(err))
 			}
 			continue
 		}
@@ -288,9 +286,9 @@ func (c *GraphiteGroup) Info(ctx context.Context, request *protov3.MultiMetricsI
 		if marshalErr != nil {
 			stats.InfoErrors++
 			if e == nil {
-				e = merry.Wrap(marshalErr).WithValue("query", query)
+				e = merry.Wrap(marshalErr, merry.WithValue("query", query))
 			} else {
-				e = e.WithCause(err)
+				e = merry.Wrap(e, merry.WithCause(err))
 			}
 			continue
 		}
@@ -332,14 +330,14 @@ func (c *GraphiteGroup) Info(ctx context.Context, request *protov3.MultiMetricsI
 	return &r, stats, nil
 }
 
-func (c *GraphiteGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, merry.Error) {
+func (c *GraphiteGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, error) {
 	return nil, nil, types.ErrNotImplementedYet
 }
-func (c *GraphiteGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, merry.Error) {
+func (c *GraphiteGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, error) {
 	return nil, nil, types.ErrNotImplementedYet
 }
 
-func (c *GraphiteGroup) doTagQuery(ctx context.Context, isTagName bool, query string, limit int64) ([]string, merry.Error) {
+func (c *GraphiteGroup) doTagQuery(ctx context.Context, isTagName bool, query string, limit int64) ([]string, error) {
 	logger := c.logger
 	var rewrite *url.URL
 	if isTagName {
@@ -371,15 +369,15 @@ func (c *GraphiteGroup) doTagQuery(ctx context.Context, isTagName bool, query st
 	return r, nil
 }
 
-func (c *GraphiteGroup) TagNames(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+func (c *GraphiteGroup) TagNames(ctx context.Context, query string, limit int64) ([]string, error) {
 	return c.doTagQuery(ctx, true, query, limit)
 }
 
-func (c *GraphiteGroup) TagValues(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+func (c *GraphiteGroup) TagValues(ctx context.Context, query string, limit int64) ([]string, error) {
 	return c.doTagQuery(ctx, false, query, limit)
 }
 
-func (c *GraphiteGroup) ProbeTLDs(ctx context.Context) ([]string, merry.Error) {
+func (c *GraphiteGroup) ProbeTLDs(ctx context.Context) ([]string, error) {
 	logger := c.logger.With(zap.String("function", "prober"))
 	req := &protov3.MultiGlobRequest{
 		Metrics: []string{"*"},

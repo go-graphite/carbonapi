@@ -3,8 +3,8 @@ package prometheus
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -12,12 +12,12 @@ import (
 
 	"github.com/go-graphite/carbonapi/zipper/protocols/prometheus/helpers"
 	prometheusTypes "github.com/go-graphite/carbonapi/zipper/protocols/prometheus/types"
+	"github.com/go-graphite/carbonapi/zipper/requests"
 
-	"github.com/ansel1/merry"
+	"github.com/ansel1/merry/v2"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
 	"github.com/go-graphite/carbonapi/limiter"
-	"github.com/go-graphite/carbonapi/zipper/helper"
 	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 	"github.com/go-graphite/carbonapi/zipper/metadata"
 	"github.com/go-graphite/carbonapi/zipper/types"
@@ -60,8 +60,6 @@ type PrometheusGroup struct {
 	servers   []string
 	protocol  string
 
-	client *http.Client
-
 	limiter              limiter.ServerLimiter
 	logger               *zap.Logger
 	timeout              types.Timeouts
@@ -74,14 +72,13 @@ type PrometheusGroup struct {
 
 	startDelay StartDelay
 
-	httpQuery *helper.HttpQuery
+	httpQuery *requests.HttpQuery
 }
 
-func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool, limiter limiter.ServerLimiter) (types.BackendServer, merry.Error) {
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool, limiter limiter.ServerLimiter) (types.BackendServer, error) {
 	logger = logger.With(zap.String("type", "prometheus"), zap.String("protocol", config.Protocol), zap.String("name", config.GroupName))
 
 	logger.Warn("support for this backend protocol is experimental, use with caution")
-	httpClient := helper.GetHTTPClient(logger, config)
 
 	step := int64(15)
 	stepI, ok := config.BackendOptions["step"]
@@ -170,12 +167,15 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		}
 	}
 
-	httpQuery := helper.NewHttpQuery(config.GroupName, config.Servers, *config.MaxTries, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv2PB)
+	httpQuery, err := requests.NewHttpQuery(logger, &config, limiter, httpHeaders.ContentTypeCarbonAPIv2PB)
+	if err != nil {
+		return nil, err
+	}
 
-	return NewWithEverythingInitialized(logger, config, tldCacheDisabled, requireSuccessAll, limiter, step, maxPointsPerQuery, forceMinStepInterval, delay, httpQuery, httpClient)
+	return NewWithEverythingInitialized(logger, config, tldCacheDisabled, requireSuccessAll, limiter, step, maxPointsPerQuery, forceMinStepInterval, delay, httpQuery)
 }
 
-func NewWithEverythingInitialized(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool, limiter limiter.ServerLimiter, step, maxPointsPerQuery int64, forceMinStepInterval time.Duration, delay StartDelay, httpQuery *helper.HttpQuery, httpClient *http.Client) (types.BackendServer, merry.Error) {
+func NewWithEverythingInitialized(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool, limiter limiter.ServerLimiter, step, maxPointsPerQuery int64, forceMinStepInterval time.Duration, delay StartDelay, httpQuery *requests.HttpQuery) (types.BackendServer, error) {
 	c := &PrometheusGroup{
 		groupName:            config.GroupName,
 		servers:              config.Servers,
@@ -188,7 +188,6 @@ func NewWithEverythingInitialized(logger *zap.Logger, config types.BackendV2, tl
 		maxPointsPerQuery:    maxPointsPerQuery,
 		startDelay:           delay,
 
-		client:  httpClient,
 		limiter: limiter,
 		logger:  logger,
 
@@ -197,7 +196,7 @@ func NewWithEverythingInitialized(logger *zap.Logger, config types.BackendV2, tl
 	return c, nil
 }
 
-func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool) (types.BackendServer, merry.Error) {
+func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool) (types.BackendServer, error) {
 	if config.ConcurrencyLimit == nil {
 		return nil, types.ErrConcurrencyLimitNotSet
 	}
@@ -225,7 +224,7 @@ func (c PrometheusGroup) Backends() []string {
 	return c.servers
 }
 
-func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, merry.Error) {
+func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, error) {
 	logger := c.logger.With(zap.String("type", "fetch"), zap.String("request", request.String()))
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/api/v1/query_range")
@@ -237,7 +236,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	}
 
 	var r protov3.MultiFetchResponse
-	var e merry.Error
+	var e error
 
 	start := request.Metrics[0].StartTime
 	stop := request.Metrics[0].StopTime
@@ -304,14 +303,14 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 			res, err2 := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 			if err2 != nil {
 				stats.RenderErrors++
-				if merry.Is(err, types.ErrTimeoutExceeded) {
+				if errors.Is(err, types.ErrTimeoutExceeded) {
 					stats.Timeouts++
 					stats.RenderTimeouts++
 				}
 				if e == nil {
 					e = err2
 				} else {
-					e = e.WithCause(err2)
+					e = merry.Wrap(e, merry.WithCause(err2))
 				}
 				continue
 			}
@@ -326,7 +325,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 				if e == nil {
 					e = err2
 				} else {
-					e = e.WithCause(err2)
+					e = merry.Wrap(e, merry.WithCause(err2))
 				}
 				continue
 			}
@@ -334,9 +333,15 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 			if response.Status != "success" {
 				stats.RenderErrors++
 				if e == nil {
-					e = types.ErrFailedToFetch.WithMessage(response.Status).WithValue("query", target).WithValue("status", response.Status)
+					e = merry.Wrap(types.ErrFailedToFetch,
+						merry.WithMessage(response.Status),
+						merry.WithValue("query", target),
+						merry.WithValue("status", response.Status))
 				} else {
-					e = e.WithCause(err2).WithValue("query", target).WithValue("status", response.Status)
+					e = merry.Wrap(e,
+						merry.WithCause(err2),
+						merry.WithValue("query", target),
+						merry.WithValue("status", response.Status))
 				}
 				continue
 			}
@@ -376,7 +381,7 @@ func (c *PrometheusGroup) Fetch(ctx context.Context, request *protov3.MultiFetch
 	return &r, stats, nil
 }
 
-func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
+func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, error) {
 	logger := c.logger.With(zap.String("type", "find"), zap.Strings("request", request.Metrics))
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/api/v1/series")
@@ -384,7 +389,7 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	r := protov3.MultiGlobResponse{
 		Metrics: make([]protov3.GlobResponse, 0),
 	}
-	var e merry.Error
+	var e error
 	uniqueMetrics := make(map[string]bool)
 	for _, query := range request.Metrics {
 		// Convert query to Prometheus-compatible regex
@@ -407,14 +412,14 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if err != nil {
 			stats.FindErrors += 1
-			if merry.Is(err, types.ErrTimeoutExceeded) {
+			if errors.Is(err, types.ErrTimeoutExceeded) {
 				stats.Timeouts += 1
 				stats.FindTimeouts += 1
 			}
 			if e == nil {
 				e = err
 			} else {
-				e = e.WithCause(err)
+				e = merry.Wrap(e, merry.WithCause(err))
 			}
 			continue
 		}
@@ -427,7 +432,7 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 			if e == nil {
 				e = err
 			} else {
-				e = e.WithCause(err)
+				e = merry.Wrap(e, merry.WithCause(err))
 			}
 			continue
 		}
@@ -435,9 +440,16 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 		if pr.Status != "success" {
 			stats.FindErrors += 1
 			if e == nil {
-				e = types.ErrFailedToFetch.WithMessage(pr.Error).WithValue("query", matchQuery).WithValue("error_type", pr.ErrorType).WithValue("error", pr.Error)
+				e = merry.Wrap(types.ErrFailedToFetch,
+					merry.WithMessage(pr.Error),
+					merry.WithValue("query", matchQuery),
+					merry.WithValue("error_type", pr.ErrorType),
+					merry.WithValue("error", pr.Error))
 			} else {
-				e = e.WithCause(err2).WithValue("query", matchQuery).WithValue("error_type", pr.ErrorType).WithValue("error", pr.Error)
+				e = merry.Wrap(e, merry.WithCause(err2),
+					merry.WithValue("query", matchQuery),
+					merry.WithValue("error_type", pr.ErrorType),
+					merry.WithValue("error", pr.Error))
 			}
 			continue
 		}
@@ -485,18 +497,18 @@ func (c *PrometheusGroup) Find(ctx context.Context, request *protov3.MultiGlobRe
 	return &r, stats, nil
 }
 
-func (c *PrometheusGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, merry.Error) {
+func (c *PrometheusGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, error) {
 	return nil, nil, types.ErrNotSupportedByBackend
 }
 
-func (c *PrometheusGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, merry.Error) {
+func (c *PrometheusGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, error) {
 	return nil, nil, types.ErrNotImplementedYet
 }
-func (c *PrometheusGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, merry.Error) {
+func (c *PrometheusGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, error) {
 	return nil, nil, types.ErrNotSupportedByBackend
 }
 
-func (c *PrometheusGroup) doSimpleTagQuery(ctx context.Context, logger *zap.Logger, isTagName bool, params map[string][]string, limit int64) ([]string, merry.Error) {
+func (c *PrometheusGroup) doSimpleTagQuery(ctx context.Context, logger *zap.Logger, isTagName bool, params map[string][]string, limit int64) ([]string, error) {
 	var rewrite *url.URL
 
 	if isTagName {
@@ -524,7 +536,10 @@ func (c *PrometheusGroup) doSimpleTagQuery(ctx context.Context, logger *zap.Logg
 	}
 
 	if r.Status != "success" {
-		return []string{}, merry.New("request returned an error").WithValue("status", r.Status).WithValue("error_type", r.ErrorType).WithValue("error", r.Error)
+		return []string{}, merry.Wrap(errors.New("request returned an error"),
+			merry.WithValue("status", r.Status),
+			merry.WithValue("error_type", r.ErrorType),
+			merry.WithValue("error", r.Error))
 	}
 
 	if isTagName {
@@ -560,7 +575,7 @@ func (c *PrometheusGroup) doSimpleTagQuery(ctx context.Context, logger *zap.Logg
 	return r.Data, nil
 }
 
-func (c *PrometheusGroup) doComplexTagQuery(ctx context.Context, isTagName bool, params map[string][]string, limit int64) ([]string, merry.Error) {
+func (c *PrometheusGroup) doComplexTagQuery(ctx context.Context, isTagName bool, params map[string][]string, limit int64) ([]string, error) {
 	logger := c.logger
 	var rewrite *url.URL
 
@@ -599,7 +614,10 @@ func (c *PrometheusGroup) doComplexTagQuery(ctx context.Context, isTagName bool,
 	}
 
 	if r.Status != "success" {
-		return []string{}, merry.New("request returned an error").WithValue("status", r.Status).WithValue("error_type", r.ErrorType).WithValue("error", r.Error)
+		return []string{}, merry.Wrap(errors.New("request returned an error"),
+			merry.WithValue("status", r.Status),
+			merry.WithValue("error_type", r.ErrorType),
+			merry.WithValue("error", r.Error))
 	}
 
 	var prefix string
@@ -649,14 +667,14 @@ func (c *PrometheusGroup) doComplexTagQuery(ctx context.Context, isTagName bool,
 	return result, nil
 }
 
-func (c *PrometheusGroup) doTagQuery(ctx context.Context, isTagName bool, query string, limit int64) ([]string, merry.Error) {
+func (c *PrometheusGroup) doTagQuery(ctx context.Context, isTagName bool, query string, limit int64) ([]string, error) {
 	logger := c.logger
 	params := make(map[string][]string)
 	queryDecoded, _ := url.QueryUnescape(query)
 	querySplit := strings.Split(queryDecoded, "&")
 	for _, qvRaw := range querySplit {
 		idx := strings.Index(qvRaw, "=")
-		//no parameters passed
+		// no parameters passed
 		if idx < 1 {
 			continue
 		}
@@ -681,15 +699,15 @@ func (c *PrometheusGroup) doTagQuery(ctx context.Context, isTagName bool, query 
 	return c.doComplexTagQuery(ctx, isTagName, params, limit)
 }
 
-func (c *PrometheusGroup) TagNames(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+func (c *PrometheusGroup) TagNames(ctx context.Context, query string, limit int64) ([]string, error) {
 	return c.doTagQuery(ctx, true, query, limit)
 }
 
-func (c *PrometheusGroup) TagValues(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+func (c *PrometheusGroup) TagValues(ctx context.Context, query string, limit int64) ([]string, error) {
 	return c.doTagQuery(ctx, false, query, limit)
 }
 
-func (c *PrometheusGroup) ProbeTLDs(ctx context.Context) ([]string, merry.Error) {
+func (c *PrometheusGroup) ProbeTLDs(ctx context.Context) ([]string, error) {
 	logger := c.logger.With(zap.String("function", "prober"))
 	req := &protov3.MultiGlobRequest{
 		Metrics: []string{"*"},

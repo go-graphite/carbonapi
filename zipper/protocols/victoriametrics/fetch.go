@@ -3,18 +3,20 @@ package victoriametrics
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/ansel1/merry"
+	"github.com/ansel1/merry/v2"
+	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
+	"go.uber.org/zap"
+
 	"github.com/go-graphite/carbonapi/zipper/protocols/prometheus/helpers"
 	prometheusTypes "github.com/go-graphite/carbonapi/zipper/protocols/prometheus/types"
 	"github.com/go-graphite/carbonapi/zipper/types"
-	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"go.uber.org/zap"
 )
 
 type fetchTarget struct {
@@ -24,7 +26,7 @@ type fetchTarget struct {
 	step  string
 }
 
-func (c *VictoriaMetricsGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, merry.Error) {
+func (c *VictoriaMetricsGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, error) {
 	supportedFeatures, _ := c.featureSet.Load().(*vmSupportedFeatures)
 	if !supportedFeatures.SupportOptimizedGraphiteFetch {
 		// VictoriaMetrics <1.53.1 doesn't support graphite find api, reverting back to prometheus code-path
@@ -63,7 +65,7 @@ func (c *VictoriaMetricsGroup) Fetch(ctx context.Context, request *protov3.Multi
 	}
 
 	var r protov3.MultiFetchResponse
-	var e merry.Error
+	var e error
 
 	for pathExpr, targets := range pathExprToTargets {
 		for _, target := range targets {
@@ -117,14 +119,14 @@ func (c *VictoriaMetricsGroup) Fetch(ctx context.Context, request *protov3.Multi
 			res, err2 := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 			if err2 != nil {
 				stats.RenderErrors++
-				if merry.Is(err, types.ErrTimeoutExceeded) {
+				if errors.Is(err, types.ErrTimeoutExceeded) {
 					stats.Timeouts++
 					stats.RenderTimeouts++
 				}
 				if e == nil {
 					e = err2
 				} else {
-					e = e.WithCause(err2)
+					e = merry.Wrap(e, merry.WithCause(err2))
 				}
 				continue
 			}
@@ -139,7 +141,7 @@ func (c *VictoriaMetricsGroup) Fetch(ctx context.Context, request *protov3.Multi
 				if e == nil {
 					e = err2
 				} else {
-					e = e.WithCause(err2)
+					e = merry.Wrap(e, merry.WithCause(err2))
 				}
 				continue
 			}
@@ -147,9 +149,14 @@ func (c *VictoriaMetricsGroup) Fetch(ctx context.Context, request *protov3.Multi
 			if response.Status != "success" {
 				stats.RenderErrors += 1
 				if e == nil {
-					e = types.ErrFailedToFetch.WithMessage(response.Status).WithValue("query", target.name).WithValue("status", response.Status)
+					e = merry.Wrap(types.ErrFailedToFetch,
+						merry.WithMessage(response.Status),
+						merry.WithValue("query", target.name),
+						merry.WithValue("status", response.Status))
 				} else {
-					e = e.WithCause(err2).WithValue("query", target.name).WithValue("status", response.Status)
+					e = merry.Wrap(e, merry.WithCause(err2),
+						merry.WithValue("query", target.name),
+						merry.WithValue("status", response.Status))
 				}
 				continue
 			}

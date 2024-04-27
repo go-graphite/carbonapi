@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/ansel1/merry"
+	"github.com/ansel1/merry/v2"
 	"go.uber.org/zap"
 )
 
-func (c *VictoriaMetricsGroup) doTagQuery(ctx context.Context, isTagName bool, query string, limit int64, supportedFeatures *vmSupportedFeatures) ([]string, merry.Error) {
+func (c *VictoriaMetricsGroup) doTagQuery(ctx context.Context, isTagName bool, query string, limit int64, supportedFeatures *vmSupportedFeatures) ([]string, error) {
 	logger := c.logger
 	var rewrite *url.URL
 	if isTagName {
@@ -69,7 +69,7 @@ func (c *VictoriaMetricsGroup) doTagQuery(ctx context.Context, isTagName bool, q
 	return r, nil
 }
 
-func (c *VictoriaMetricsGroup) TagNames(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+func (c *VictoriaMetricsGroup) TagNames(ctx context.Context, query string, limit int64) ([]string, error) {
 	supportedFeatures, _ := c.featureSet.Load().(*vmSupportedFeatures)
 	if !supportedFeatures.SupportGraphiteTagsAPI {
 		// VictoriaMetrics < 1.47.0 doesn't support graphite tags api, reverting back to prometheus code-path
@@ -78,7 +78,7 @@ func (c *VictoriaMetricsGroup) TagNames(ctx context.Context, query string, limit
 	return c.doTagQuery(ctx, true, query, limit, supportedFeatures)
 }
 
-func (c *VictoriaMetricsGroup) TagValues(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+func (c *VictoriaMetricsGroup) TagValues(ctx context.Context, query string, limit int64) ([]string, error) {
 	supportedFeatures, _ := c.featureSet.Load().(*vmSupportedFeatures)
 	if !supportedFeatures.SupportGraphiteTagsAPI {
 		// VictoriaMetrics < 1.47.0 doesn't support graphite tags api, reverting back to prometheus code-path

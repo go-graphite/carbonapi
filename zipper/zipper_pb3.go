@@ -5,11 +5,11 @@ import (
 	"math"
 	_ "net/http/pprof"
 
-	"github.com/ansel1/merry"
-	"github.com/go-graphite/carbonapi/zipper/types"
 	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"go.uber.org/zap"
+
+	"github.com/go-graphite/carbonapi/zipper/types"
 
 	_ "github.com/go-graphite/carbonapi/zipper/protocols/auto"
 	_ "github.com/go-graphite/carbonapi/zipper/protocols/graphite"
@@ -23,7 +23,7 @@ import (
 // Likely they will be removed in future
 
 // PB3-compatible methods
-func (z Zipper) FetchProtoV2(ctx context.Context, query []string, startTime, stopTime int32) (*protov2.MultiFetchResponse, *types.Stats, merry.Error) {
+func (z Zipper) FetchProtoV2(ctx context.Context, query []string, startTime, stopTime int32) (*protov2.MultiFetchResponse, *types.Stats, error) {
 	logger := z.logger.With(zap.String("function", "FetchProtoV2"))
 	request := &protov3.MultiFetchRequest{}
 	for _, q := range query {
@@ -72,7 +72,7 @@ func (z Zipper) FetchProtoV2(ctx context.Context, query []string, startTime, sto
 	return &res, stats, nil
 }
 
-func (z Zipper) FindProtoV2(ctx context.Context, query []string) ([]*protov2.GlobResponse, *types.Stats, merry.Error) {
+func (z Zipper) FindProtoV2(ctx context.Context, query []string) ([]*protov2.GlobResponse, *types.Stats, error) {
 	logger := z.logger.With(zap.String("function", "FindProtoV2"))
 	request := &protov3.MultiGlobRequest{
 		Metrics: query,
@@ -108,7 +108,7 @@ func (z Zipper) FindProtoV2(ctx context.Context, query []string) ([]*protov2.Glo
 	return reses, stats, nil
 }
 
-func (z Zipper) InfoProtoV2(ctx context.Context, targets []string) (*protov2.ZipperInfoResponse, *types.Stats, merry.Error) {
+func (z Zipper) InfoProtoV2(ctx context.Context, targets []string) (*protov2.ZipperInfoResponse, *types.Stats, error) {
 	logger := z.logger.With(zap.String("function", "InfoProtoV2"))
 	request := &protov3.MultiGlobRequest{
 		Metrics: targets,
@@ -151,7 +151,7 @@ func (z Zipper) InfoProtoV2(ctx context.Context, targets []string) (*protov2.Zip
 
 	return res, stats, nil
 }
-func (z Zipper) ListProtoV2(ctx context.Context) (*protov2.ListMetricsResponse, *types.Stats, merry.Error) {
+func (z Zipper) ListProtoV2(ctx context.Context) (*protov2.ListMetricsResponse, *types.Stats, error) {
 	logger := z.logger.With(zap.String("function", "ListProtoV2"))
 	grpcRes, stats, err := z.ListProtoV3(ctx)
 	if err != nil {
@@ -169,7 +169,7 @@ func (z Zipper) ListProtoV2(ctx context.Context) (*protov2.ListMetricsResponse, 
 	}
 	return res, stats, nil
 }
-func (z Zipper) StatsProtoV2(ctx context.Context) (*protov2.MetricDetailsResponse, *types.Stats, merry.Error) {
+func (z Zipper) StatsProtoV2(ctx context.Context) (*protov2.MetricDetailsResponse, *types.Stats, error) {
 	logger := z.logger.With(zap.String("function", "StatsProtoV2"))
 	grpcRes, stats, err := z.StatsProtoV3(ctx)
 	if err != nil {

@@ -2,37 +2,50 @@ package helper
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
 	"net/url"
 	"strings"
 
-	"github.com/ansel1/merry"
+	"github.com/ansel1/merry/v2"
+
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	"github.com/go-graphite/carbonapi/zipper/types"
 )
 
-func requestError(err error, server string) merry.Error {
+func RequestError(err error, server string) error {
 	// with code InternalServerError by default, overwritten by custom error
-	if merry.Is(err, context.DeadlineExceeded) {
-		return types.ErrTimeoutExceeded.WithValue("server", server).WithCause(err)
+	if errors.Is(err, context.DeadlineExceeded) {
+		return merry.Wrap(types.ErrTimeoutExceeded,
+			merry.WithValue("server", server),
+			merry.WithCause(err),
+		)
 	}
 	if urlErr, ok := err.(*url.Error); ok {
 		if netErr, ok := urlErr.Err.(*net.OpError); ok {
-			return types.ErrBackendError.WithValue("server", server).WithCause(netErr)
+			return merry.Wrap(types.ErrBackendError,
+				merry.WithValue("server", server),
+				merry.WithCause(netErr),
+			)
 		}
 	}
 	if netErr, ok := err.(*net.OpError); ok {
-		return types.ErrBackendError.WithValue("server", server).WithCause(netErr)
+		return merry.Wrap(types.ErrBackendError,
+			merry.WithValue("server", server),
+			merry.WithCause(netErr),
+		)
 	}
-	return types.ErrResponceError.WithValue("server", server)
+	return merry.Wrap(types.ErrResponceError,
+		merry.WithValue("server", server),
+	)
 }
 
-func HttpErrorCode(err merry.Error) (code int) {
+func HttpErrorCode(err error) (code int) {
 	if err == nil {
 		code = http.StatusOK
 	} else {
-		c := merry.RootCause(err)
+		c := merry.Wrap(err)
 		if c == nil {
 			c = err
 		}
@@ -40,12 +53,12 @@ func HttpErrorCode(err merry.Error) (code int) {
 		code = merry.HTTPCode(err)
 		if code == http.StatusNotFound {
 			return
-		} else if code == http.StatusInternalServerError && merry.Is(c, parser.ErrInvalidArg) {
+		} else if code == http.StatusInternalServerError && errors.Is(c, parser.ErrInvalidArg) {
 			// check for invalid args, see applyByNode rewrite function
 			code = http.StatusBadRequest
 		}
 
-		if code == http.StatusGatewayTimeout || code == http.StatusBadGateway || merry.Is(c, types.ErrFailedToFetch) {
+		if code == http.StatusGatewayTimeout || code == http.StatusBadGateway || errors.Is(c, types.ErrFailedToFetch) {
 			// simplify code, one error type for communications errors, all we can retry
 			code = http.StatusServiceUnavailable
 		}
@@ -77,9 +90,19 @@ func recalcCode(code, newCode int) int {
 	return code
 }
 
+func RootCause(err error) error {
+	for {
+		cause := merry.Cause(err)
+		if cause == nil {
+			return err
+		}
+		err = cause
+	}
+}
+
 // MerryRootError strip merry error chain
 func MerryRootError(err error) string {
-	c := merry.RootCause(err)
+	c := RootCause(err)
 	if c == nil {
 		c = err
 	}
@@ -87,18 +110,18 @@ func MerryRootError(err error) string {
 }
 
 func merryError(err error) string {
-	if msg := merry.Message(err); len(msg) > 0 {
+	if msg := err.Error(); len(msg) > 0 {
 		return strings.TrimRight(msg, "\n")
 	} else {
 		return err.Error()
 	}
 }
 
-func MergeHttpErrors(errors []merry.Error) (int, []string) {
+func MergeHttpErrors(errs []error) (int, []string) {
 	returnCode := http.StatusNotFound
 	errMsgs := make([]string, 0)
-	for _, err := range errors {
-		c := merry.RootCause(err)
+	for _, err := range errs {
+		c := RootCause(err)
 		if c == nil {
 			c = err
 		}
@@ -106,7 +129,7 @@ func MergeHttpErrors(errors []merry.Error) (int, []string) {
 		code := merry.HTTPCode(err)
 		if code == http.StatusNotFound {
 			continue
-		} else if code == http.StatusInternalServerError && merry.Is(c, parser.ErrInvalidArg) {
+		} else if code == http.StatusInternalServerError && errors.Is(c, parser.ErrInvalidArg) {
 			// check for invalid args, see applyByNode rewrite function
 			code = http.StatusBadRequest
 		}
@@ -119,11 +142,11 @@ func MergeHttpErrors(errors []merry.Error) (int, []string) {
 	return returnCode, errMsgs
 }
 
-func MergeHttpErrorMap(errorsMap map[string]merry.Error) (returnCode int, errMap map[string]string) {
+func MergeHttpErrorMap(errorsMap map[string]error) (returnCode int, errMap map[string]string) {
 	returnCode = http.StatusNotFound
 	errMap = make(map[string]string)
 	for key, err := range errorsMap {
-		c := merry.RootCause(err)
+		c := RootCause(err)
 		if c == nil {
 			c = err
 		}
@@ -131,7 +154,7 @@ func MergeHttpErrorMap(errorsMap map[string]merry.Error) (returnCode int, errMap
 		code := merry.HTTPCode(err)
 		if code == http.StatusNotFound {
 			continue
-		} else if code == http.StatusInternalServerError && merry.Is(c, parser.ErrInvalidArg) {
+		} else if code == http.StatusInternalServerError && errors.Is(c, parser.ErrInvalidArg) {
 			// check for invalid args, see applyByNode rewrite function
 			code = http.StatusBadRequest
 		}
@@ -144,23 +167,29 @@ func MergeHttpErrorMap(errorsMap map[string]merry.Error) (returnCode int, errMap
 	return
 }
 
-func HttpErrorByCode(err merry.Error) merry.Error {
-	var returnErr merry.Error
+func HttpErrorByCode(err error) error {
+	var returnErr error
 	if err == nil {
 		returnErr = types.ErrNoMetricsFetched
 	} else {
 		code := merry.HTTPCode(err)
-		msg := stripHtmlTags(merry.Message(err), 0)
+		msg := stripHtmlTags(err.Error(), 0)
 		if code == http.StatusForbidden {
 			returnErr = types.ErrForbidden
 			if len(msg) > 0 {
 				// pass message to caller
-				returnErr = returnErr.WithMessage(msg)
+				returnErr = merry.Wrap(returnErr, merry.WithMessage(msg))
 			}
 		} else if code == http.StatusServiceUnavailable || code == http.StatusBadGateway || code == http.StatusGatewayTimeout {
-			returnErr = types.ErrFailedToFetch.WithHTTPCode(code).WithMessage(msg)
+			returnErr = merry.Wrap(types.ErrFailedToFetch,
+				merry.WithHTTPCode(code),
+				merry.WithMessage(msg),
+			)
 		} else {
-			returnErr = types.ErrFailed.WithHTTPCode(code).WithMessage(msg)
+			returnErr = merry.Wrap(types.ErrFailed,
+				merry.WithHTTPCode(code),
+				merry.WithMessage(msg),
+			)
 		}
 	}
 

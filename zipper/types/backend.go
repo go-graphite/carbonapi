@@ -32,6 +32,7 @@ type BackendV2 struct {
 	DoMultipleRequestsIfSplit bool                   `mapstructure:"doMultipleRequestsIfSplit"`
 	IdleConnectionTimeout     *time.Duration         `mapstructure:"idleConnectionTimeout"`
 	TLSClientConfig           *tlsconfig.TLSConfig   `mapstructure:"tlsClientConfig"`
+	FetchClientType           string                 `mapstructure:"fetchClientType"` // Valid: std, fasthttp
 }
 
 func (b *BackendV2) FillDefaults() {
@@ -49,5 +50,9 @@ func (b *BackendV2) FillDefaults() {
 
 	if b.Timeouts.Connect == 0 {
 		b.Timeouts.Connect = 200 * time.Millisecond
+	}
+
+	if b.FetchClientType == "" {
+		b.FetchClientType = "std"
 	}
 }

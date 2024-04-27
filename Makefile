@@ -23,7 +23,7 @@ nocairo:
 	GO111MODULE=on $(GO) build -mod=vendor -ldflags '-X main.BuildVersion=$(VERSION)' $(PKG_CARBONAPI)
 
 test:
-	PKG_CONFIG_PATH="$(EXTRA_PKG_CONFIG_PATH)" $(GO) test -mod=vendor -tags cairo ./... -race
+	PKG_CONFIG_PATH="$(EXTRA_PKG_CONFIG_PATH)" $(GO) test $(EXTRA_LINK_FLAGS) -mod=vendor -tags cairo ./... -race
 
 test_nocairo:
 	$(GO) test -mod=vendor ./... -race

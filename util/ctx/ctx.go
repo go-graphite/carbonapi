@@ -3,6 +3,8 @@ package ctx
 import (
 	"context"
 	"net/http"
+
+	"github.com/valyala/fasthttp"
 )
 
 type key int
@@ -89,6 +91,21 @@ func ParseCtx(h http.HandlerFunc, uuidKey string) http.HandlerFunc {
 
 		h.ServeHTTP(rw, req.WithContext(ctx))
 	})
+}
+
+func FastHTTPMarshalPassHeaders(ctx context.Context, response *fasthttp.Request) *fasthttp.Request {
+	headers := GetPassHeaders(ctx)
+	for name, value := range headers {
+		response.Header.Add(name, value)
+	}
+
+	return response
+}
+
+func FastHTTPMarshalCtx(ctx context.Context, response *fasthttp.Request, uuidKey string) *fasthttp.Request {
+	response.Header.Add(uuidKey, GetUUID(ctx))
+
+	return response
 }
 
 func MarshalPassHeaders(ctx context.Context, response *http.Request) *http.Request {

@@ -2,7 +2,6 @@ package auto
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 	"time"
 
@@ -10,12 +9,12 @@ import (
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 	"go.uber.org/zap"
 
-	"github.com/go-graphite/carbonapi/internal/dns"
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/zipper/broadcast"
-	"github.com/go-graphite/carbonapi/zipper/helper"
+	"github.com/go-graphite/carbonapi/zipper/config"
 	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 	"github.com/go-graphite/carbonapi/zipper/metadata"
+	"github.com/go-graphite/carbonapi/zipper/requests"
 	"github.com/go-graphite/carbonapi/zipper/types"
 )
 
@@ -31,20 +30,27 @@ func init() {
 }
 
 type capabilityResponse struct {
-	server   string
-	protocol string
+	server          string
+	protocol        string
+	fetchClientType string
 }
 
 // _internal/capabilities/
-func doQuery(ctx context.Context, logger *zap.Logger, groupName string, httpClient *http.Client, limiter limiter.ServerLimiter, server string, request types.Request, resChan chan<- capabilityResponse) {
-	httpQuery := helper.NewHttpQuery(groupName, []string{server}, 1, limiter, httpClient, httpHeaders.ContentTypeCarbonAPIv3PB)
+func doQuery(ctx context.Context, logger *zap.Logger, config *types.BackendV2, limiter limiter.ServerLimiter, request types.Request, resChan chan<- capabilityResponse) {
+	httpQuery, err := requests.NewHttpQuery(logger, config, limiter, httpHeaders.ContentTypeCarbonAPIv3PB)
+	if err != nil {
+		logger.Error("error creating httpQuery",
+			zap.Error(err),
+		)
+		return
+	}
 	rewrite, _ := url.Parse("http://127.0.0.1/_internal/capabilities/")
 
-	res, e := httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), request)
-	if e != nil || res == nil || res.Response == nil || len(res.Response) == 0 {
+	res, err := httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), request)
+	if err != nil || res == nil || res.Response == nil || len(res.Response) == 0 {
 		logger.Info("will assume old protocol")
 		resChan <- capabilityResponse{
-			server:   server,
+			server:   config.Servers[0],
 			protocol: "protobuf",
 		}
 		return
@@ -55,19 +61,20 @@ func doQuery(ctx context.Context, logger *zap.Logger, groupName string, httpClie
 		zap.String("server", res.Server),
 		zap.String("response", string(res.Response)),
 	)
-	err := response.Unmarshal(res.Response)
+	err = response.Unmarshal(res.Response)
 
 	if err != nil {
 		resChan <- capabilityResponse{
-			server:   server,
+			server:   config.Servers[0],
 			protocol: "protobuf",
 		}
 		return
 	}
 
 	resChan <- capabilityResponse{
-		server:   server,
-		protocol: response.SupportedProtocols[0],
+		server:          config.Servers[0],
+		protocol:        response.SupportedProtocols[0],
+		fetchClientType: config.FetchClientType,
 	}
 
 }
@@ -76,18 +83,12 @@ type CapabilityResponse struct {
 	ProtoToServers map[string][]string
 }
 
-func getBestSupportedProtocol(logger *zap.Logger, servers []string) *CapabilityResponse {
+func getBestSupportedProtocol(logger *zap.Logger, servers []string, fetchClientType string) *CapabilityResponse {
 	response := &CapabilityResponse{
 		ProtoToServers: make(map[string][]string),
 	}
 	groupName := "capability query"
 	l := limiter.NoopLimiter{}
-
-	httpClient := &http.Client{
-		Transport: &http.Transport{
-			DialContext: dns.GetDialContextWithTimeout(200*time.Millisecond, 30*time.Second),
-		},
-	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -96,7 +97,29 @@ func getBestSupportedProtocol(logger *zap.Logger, servers []string) *CapabilityR
 	resCh := make(chan capabilityResponse, len(servers))
 
 	for _, srv := range servers {
-		go doQuery(ctx, logger, groupName, httpClient, l, srv, request, resCh)
+		maxTries := 1
+		client := fetchClientType
+		kaInterval := time.Duration(10) * time.Second
+		timeouts := config.DefaultTimeouts
+		maxConsPerHost := 100
+		maxIdleConnsPerHost := 100
+		idleConnTimeout := time.Duration(60) * time.Second
+		maxBatchSize := 0
+		cfg := &types.BackendV2{
+			Servers:               []string{srv},
+			GroupName:             groupName,
+			MaxTries:              &maxTries,
+			FetchClientType:       client,
+			KeepAliveInterval:     &kaInterval,
+			Timeouts:              &timeouts,
+			MaxBatchSize:          &maxBatchSize,
+			MaxIdleConnsPerHost:   &maxIdleConnsPerHost,
+			IdleConnectionTimeout: &idleConnTimeout,
+			ConcurrencyLimit:      &maxConsPerHost,
+		}
+		go func(cfg *types.BackendV2, request types.Request) {
+			doQuery(ctx, logger, cfg, l, request, resCh)
+		}(cfg, request)
 	}
 
 	answeredServers := make(map[string]struct{})
@@ -136,11 +159,11 @@ type AutoGroup struct {
 	groupName string
 }
 
-func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool, limiter limiter.ServerLimiter) (types.BackendServer, merry.Error) {
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool, limiter limiter.ServerLimiter) (types.BackendServer, error) {
 	return nil, merry.New("auto group doesn't support anything useful except for New")
 }
 
-func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool) (types.BackendServer, merry.Error) {
+func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool) (types.BackendServer, error) {
 	logger = logger.With(zap.String("type", "autoGroup"), zap.String("name", config.GroupName))
 
 	if config.ConcurrencyLimit == nil {
@@ -148,7 +171,7 @@ func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSu
 		return nil, types.ErrConcurrencyLimitNotSet
 	}
 
-	res := getBestSupportedProtocol(logger, config.Servers)
+	res := getBestSupportedProtocol(logger, config.Servers, config.FetchClientType)
 	if res == nil {
 		return nil, merry.New("can't query all backend")
 	}
@@ -200,33 +223,33 @@ func (c AutoGroup) Backends() []string {
 	return nil
 }
 
-func (c *AutoGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, merry.Error) {
+func (c *AutoGroup) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, error) {
 	return nil, nil, merry.New("auto group doesn't support fetch")
 }
 
-func (c *AutoGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
+func (c *AutoGroup) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, error) {
 	return nil, nil, merry.New("auto group doesn't support find")
 }
 
-func (c *AutoGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, merry.Error) {
+func (c *AutoGroup) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, error) {
 	return nil, nil, merry.New("auto group doesn't support info")
 }
 
-func (c *AutoGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, merry.Error) {
+func (c *AutoGroup) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, error) {
 	return nil, nil, merry.New("auto group doesn't support list")
 }
-func (c *AutoGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, merry.Error) {
+func (c *AutoGroup) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, error) {
 	return nil, nil, merry.New("auto group doesn't support stats")
 }
 
-func (bg *AutoGroup) TagNames(ctx context.Context, prefix string, exprs []string, limit int64) ([]string, merry.Error) {
+func (bg *AutoGroup) TagNames(ctx context.Context, prefix string, exprs []string, limit int64) ([]string, error) {
 	return nil, merry.New("auto group doesn't support tag names")
 }
 
-func (bg *AutoGroup) TagValues(ctx context.Context, tagName, prefix string, exprs []string, limit int64) ([]string, merry.Error) {
+func (bg *AutoGroup) TagValues(ctx context.Context, tagName, prefix string, exprs []string, limit int64) ([]string, error) {
 	return nil, merry.New("auto group doesn't support tag values")
 }
 
-func (c *AutoGroup) ProbeTLDs(ctx context.Context) ([]string, merry.Error) {
+func (c *AutoGroup) ProbeTLDs(ctx context.Context) ([]string, error) {
 	return nil, merry.New("auto group doesn't support probing")
 }

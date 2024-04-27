@@ -3,21 +3,21 @@ package v2
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"math"
-	"net/http"
 	"net/url"
 	"strconv"
 
-	"github.com/ansel1/merry"
+	"github.com/ansel1/merry/v2"
 
 	protov2 "github.com/go-graphite/protocol/carbonapi_v2_pb"
 	protov3 "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
 	"github.com/go-graphite/carbonapi/limiter"
 	utilctx "github.com/go-graphite/carbonapi/util/ctx"
-	"github.com/go-graphite/carbonapi/zipper/helper"
 	"github.com/go-graphite/carbonapi/zipper/httpHeaders"
 	"github.com/go-graphite/carbonapi/zipper/metadata"
+	"github.com/go-graphite/carbonapi/zipper/requests"
 	"github.com/go-graphite/carbonapi/zipper/types"
 
 	"go.uber.org/zap"
@@ -43,28 +43,29 @@ type ClientProtoV2Group struct {
 	groupName string
 	servers   []string
 
-	client *http.Client
-
 	limiter              limiter.ServerLimiter
 	logger               *zap.Logger
 	timeout              types.Timeouts
 	maxTries             int
 	maxMetricsPerRequest int
 
-	httpQuery *helper.HttpQuery
+	httpQuery *requests.HttpQuery
 }
 
 func (c *ClientProtoV2Group) Children() []types.BackendServer {
 	return []types.BackendServer{c}
 }
 
-func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool, l limiter.ServerLimiter) (types.BackendServer, merry.Error) {
+func NewWithLimiter(logger *zap.Logger, config types.BackendV2, _, _ bool,
+	l limiter.ServerLimiter) (types.BackendServer, error) {
 	logger = logger.With(zap.String("type", "protoV2Group"), zap.String("name", config.GroupName))
 
-	httpClient := helper.GetHTTPClient(logger, config)
-
 	httpLimiter := limiter.NewServerLimiter(config.Servers, *config.ConcurrencyLimit)
-	httpQuery := helper.NewHttpQuery(config.GroupName, config.Servers, *config.MaxTries, httpLimiter, httpClient, httpHeaders.ContentTypeCarbonAPIv2PB)
+	httpQuery, err := requests.NewHttpQuery(logger, &config, httpLimiter, httpHeaders.ContentTypeCarbonAPIv2PB)
+	if err != nil {
+		return nil, merry.Wrap(err)
+
+	}
 
 	c := &ClientProtoV2Group{
 		groupName:            config.GroupName,
@@ -73,7 +74,6 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		maxTries:             *config.MaxTries,
 		maxMetricsPerRequest: *config.MaxBatchSize,
 
-		client:  httpClient,
 		limiter: l,
 		logger:  logger,
 
@@ -82,16 +82,16 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 	return c, nil
 }
 
-func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool) (types.BackendServer, merry.Error) {
+func New(logger *zap.Logger, config types.BackendV2, tldCacheDisabled, requireSuccessAll bool) (types.BackendServer, error) {
 	if config.ConcurrencyLimit == nil {
 		return nil, types.ErrConcurrencyLimitNotSet
 	}
 	if len(config.Servers) == 0 {
 		return nil, types.ErrNoServersSpecified
 	}
-	limiter := limiter.NewServerLimiter(config.Servers, *config.ConcurrencyLimit)
+	l := limiter.NewServerLimiter(config.Servers, *config.ConcurrencyLimit)
 
-	return NewWithLimiter(logger, config, tldCacheDisabled, requireSuccessAll, limiter)
+	return NewWithLimiter(logger, config, tldCacheDisabled, requireSuccessAll, l)
 }
 
 func (c ClientProtoV2Group) MaxMetricsPerRequest() int {
@@ -112,7 +112,7 @@ type queryBatch struct {
 	until          int64
 }
 
-func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, merry.Error) {
+func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFetchRequest) (*protov3.MultiFetchResponse, *types.Stats, error) {
 	logger := c.logger.With(zap.String("type", "fetch"), zap.String("request", request.String()), zap.String("carbonapi_uuid", utilctx.GetUUID(ctx)))
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/render/")
@@ -129,7 +129,7 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	}
 
 	var r protov3.MultiFetchResponse
-	var e merry.Error
+	var e error
 	for batch, targets := range batches {
 		v := url.Values{
 			"target": targets,
@@ -142,14 +142,14 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if err != nil {
 			stats.RenderErrors += 1
-			if merry.Is(err, types.ErrTimeoutExceeded) {
+			if errors.Is(err, types.ErrTimeoutExceeded) {
 				stats.Timeouts += 1
 				stats.RenderTimeouts += 1
 			}
 			if e == nil {
-				e = err
+				e = merry.Wrap(err)
 			} else {
-				e = e.WithCause(err)
+				e = merry.Wrap(e, merry.WithCause(err))
 			}
 			continue
 		}
@@ -159,9 +159,9 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 		if marshalErr != nil {
 			stats.RenderErrors += 1
 			if e == nil {
-				e = types.ErrUnmarshalFailed.WithCause(marshalErr)
+				e = merry.Wrap(types.ErrUnmarshalFailed, merry.WithCause(marshalErr))
 			} else {
-				e = e.WithCause(marshalErr)
+				e = merry.Wrap(e, merry.WithCause(marshalErr))
 			}
 			continue
 		}
@@ -196,14 +196,14 @@ func (c *ClientProtoV2Group) Fetch(ctx context.Context, request *protov3.MultiFe
 	return &r, stats, nil
 }
 
-func (c *ClientProtoV2Group) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, merry.Error) {
+func (c *ClientProtoV2Group) Find(ctx context.Context, request *protov3.MultiGlobRequest) (*protov3.MultiGlobResponse, *types.Stats, error) {
 	logger := c.logger.With(zap.String("type", "find"), zap.Strings("request", request.Metrics), zap.String("carbonapi_uuid", utilctx.GetUUID(ctx)))
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/metrics/find/")
 
 	var r protov3.MultiGlobResponse
 	r.Metrics = make([]protov3.GlobResponse, 0)
-	var e merry.Error
+	var e error
 	for _, query := range request.Metrics {
 		logger.Debug("will do query",
 			zap.String("query", query),
@@ -217,14 +217,14 @@ func (c *ClientProtoV2Group) Find(ctx context.Context, request *protov3.MultiGlo
 		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if err != nil {
 			stats.FindErrors += 1
-			if merry.Is(err, types.ErrTimeoutExceeded) {
+			if errors.Is(err, types.ErrTimeoutExceeded) {
 				stats.Timeouts += 1
 				stats.FindTimeouts += 1
 			}
 			if e == nil {
-				e = err
+				e = merry.Wrap(err)
 			} else {
-				e = e.WithCause(err)
+				e = merry.Wrap(e, merry.WithCause(err))
 			}
 			continue
 		}
@@ -233,9 +233,9 @@ func (c *ClientProtoV2Group) Find(ctx context.Context, request *protov3.MultiGlo
 		if marshalErr != nil {
 			stats.FindErrors += 1
 			if e == nil {
-				e = types.ErrUnmarshalFailed.WithCause(marshalErr)
+				e = merry.Wrap(types.ErrUnmarshalFailed, merry.WithCause(marshalErr))
 			} else {
-				e = e.WithCause(marshalErr)
+				e = merry.Wrap(e, merry.WithCause(marshalErr))
 			}
 			continue
 		}
@@ -264,13 +264,13 @@ func (c *ClientProtoV2Group) Find(ctx context.Context, request *protov3.MultiGlo
 	return &r, stats, nil
 }
 
-func (c *ClientProtoV2Group) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, merry.Error) {
+func (c *ClientProtoV2Group) Info(ctx context.Context, request *protov3.MultiMetricsInfoRequest) (*protov3.ZipperInfoResponse, *types.Stats, error) {
 	logger := c.logger.With(zap.String("type", "info"), zap.String("carbonapi_uuid", utilctx.GetUUID(ctx)))
 	stats := &types.Stats{}
 	rewrite, _ := url.Parse("http://127.0.0.1/info/")
 
 	var r protov3.ZipperInfoResponse
-	var e merry.Error
+	var e error
 	r.Info = make(map[string]protov3.MultiMetricsInfoResponse)
 	data := protov3.MultiMetricsInfoResponse{}
 	server := c.groupName
@@ -288,14 +288,14 @@ func (c *ClientProtoV2Group) Info(ctx context.Context, request *protov3.MultiMet
 		res, err := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 		if err != nil {
 			stats.InfoErrors += 1
-			if merry.Is(err, types.ErrTimeoutExceeded) {
+			if errors.Is(err, types.ErrTimeoutExceeded) {
 				stats.Timeouts += 1
 				stats.InfoTimeouts += 1
 			}
 			if e == nil {
-				e = err
+				e = merry.Wrap(err)
 			} else {
-				e = e.WithCause(err)
+				e = merry.Wrap(e, merry.WithCause(err))
 			}
 			continue
 		}
@@ -305,9 +305,11 @@ func (c *ClientProtoV2Group) Info(ctx context.Context, request *protov3.MultiMet
 		if marshalErr != nil {
 			stats.InfoErrors += 1
 			if e == nil {
-				e = types.ErrUnmarshalFailed.WithCause(marshalErr)
+				e = merry.Wrap(types.ErrUnmarshalFailed,
+					merry.WithCause(marshalErr),
+				)
 			} else {
-				e = e.WithCause(marshalErr)
+				e = merry.Wrap(e, merry.WithCause(marshalErr))
 			}
 			continue
 		}
@@ -349,7 +351,7 @@ func (c *ClientProtoV2Group) Info(ctx context.Context, request *protov3.MultiMet
 	return &r, stats, nil
 }
 
-func (c *ClientProtoV2Group) doTagQuery(ctx context.Context, isTagName bool, query string, limit int64) ([]string, merry.Error) {
+func (c *ClientProtoV2Group) doTagQuery(ctx context.Context, isTagName bool, query string, limit int64) ([]string, error) {
 	logger := c.logger
 	var rewrite *url.URL
 	if isTagName {
@@ -365,7 +367,7 @@ func (c *ClientProtoV2Group) doTagQuery(ctx context.Context, isTagName bool, que
 	rewrite.RawQuery = query
 	res, e := c.httpQuery.DoQuery(ctx, logger, rewrite.RequestURI(), nil)
 	if e != nil {
-		return r, e
+		return r, merry.Wrap(e)
 	}
 
 	err := json.Unmarshal(res.Response, &r)
@@ -380,22 +382,22 @@ func (c *ClientProtoV2Group) doTagQuery(ctx context.Context, isTagName bool, que
 	return r, nil
 }
 
-func (c *ClientProtoV2Group) TagNames(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+func (c *ClientProtoV2Group) TagNames(ctx context.Context, query string, limit int64) ([]string, error) {
 	return c.doTagQuery(ctx, true, query, limit)
 }
 
-func (c *ClientProtoV2Group) TagValues(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+func (c *ClientProtoV2Group) TagValues(ctx context.Context, query string, limit int64) ([]string, error) {
 	return c.doTagQuery(ctx, false, query, limit)
 }
 
-func (c *ClientProtoV2Group) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, merry.Error) {
+func (c *ClientProtoV2Group) List(ctx context.Context) (*protov3.ListMetricsResponse, *types.Stats, error) {
 	return nil, nil, types.ErrNotImplementedYet
 }
-func (c *ClientProtoV2Group) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, merry.Error) {
+func (c *ClientProtoV2Group) Stats(ctx context.Context) (*protov3.MetricDetailsResponse, *types.Stats, error) {
 	return nil, nil, types.ErrNotImplementedYet
 }
 
-func (c *ClientProtoV2Group) ProbeTLDs(ctx context.Context) ([]string, merry.Error) {
+func (c *ClientProtoV2Group) ProbeTLDs(ctx context.Context) ([]string, error) {
 	logger := c.logger.With(zap.String("function", "prober"))
 	req := &protov3.MultiGlobRequest{
 		Metrics: []string{"*"},
@@ -407,7 +409,7 @@ func (c *ClientProtoV2Group) ProbeTLDs(ctx context.Context) ([]string, merry.Err
 
 	res, _, err := c.Find(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, merry.Wrap(err)
 	}
 
 	var tlds []string

@@ -4,7 +4,9 @@ import (
 	"context"
 	"sort"
 
-	"github.com/ansel1/merry"
+	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
+	"go.uber.org/zap"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	tags2 "github.com/go-graphite/carbonapi/expr/tags"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -12,8 +14,6 @@ import (
 	realZipper "github.com/go-graphite/carbonapi/zipper"
 	zipperCfg "github.com/go-graphite/carbonapi/zipper/config"
 	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
-	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
-	"go.uber.org/zap"
 )
 
 type zipper struct {
@@ -43,7 +43,7 @@ func newZipper(sender func(*zipperTypes.Stats), config *zipperCfg.Config, ignore
 	return z
 }
 
-func (z zipper) Find(ctx context.Context, req pb.MultiGlobRequest) (*pb.MultiGlobResponse, *zipperTypes.Stats, merry.Error) {
+func (z zipper) Find(ctx context.Context, req pb.MultiGlobRequest) (*pb.MultiGlobResponse, *zipperTypes.Stats, error) {
 	newCtx := ctx
 	if z.ignoreClientTimeout {
 		uuid := util.GetUUID(ctx)
@@ -58,7 +58,7 @@ func (z zipper) Find(ctx context.Context, req pb.MultiGlobRequest) (*pb.MultiGlo
 	return res, stats, err
 }
 
-func (z zipper) Info(ctx context.Context, metrics []string) (*pb.ZipperInfoResponse, *zipperTypes.Stats, merry.Error) {
+func (z zipper) Info(ctx context.Context, metrics []string) (*pb.ZipperInfoResponse, *zipperTypes.Stats, error) {
 	newCtx := ctx
 	if z.ignoreClientTimeout {
 		uuid := util.GetUUID(ctx)
@@ -77,7 +77,7 @@ func (z zipper) Info(ctx context.Context, metrics []string) (*pb.ZipperInfoRespo
 	return resp, stats, err
 }
 
-func (z zipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*types.MetricData, *zipperTypes.Stats, merry.Error) {
+func (z zipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*types.MetricData, *zipperTypes.Stats, error) {
 	var result []*types.MetricData
 	newCtx := ctx
 	if z.ignoreClientTimeout {
@@ -105,7 +105,7 @@ func (z zipper) Render(ctx context.Context, request pb.MultiFetchRequest) ([]*ty
 	return result, stats, err
 }
 
-func (z zipper) RenderCompat(ctx context.Context, metrics []string, from, until int64) ([]*types.MetricData, *zipperTypes.Stats, merry.Error) {
+func (z zipper) RenderCompat(ctx context.Context, metrics []string, from, until int64) ([]*types.MetricData, *zipperTypes.Stats, error) {
 	req := pb.MultiFetchRequest{}
 	for _, metric := range metrics {
 		req.Metrics = append(req.Metrics, pb.FetchRequest{
@@ -118,11 +118,11 @@ func (z zipper) RenderCompat(ctx context.Context, metrics []string, from, until 
 	return z.Render(ctx, req)
 }
 
-func (z zipper) TagNames(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+func (z zipper) TagNames(ctx context.Context, query string, limit int64) ([]string, error) {
 	return z.z.TagNames(ctx, query, limit)
 }
 
-func (z zipper) TagValues(ctx context.Context, query string, limit int64) ([]string, merry.Error) {
+func (z zipper) TagValues(ctx context.Context, query string, limit int64) ([]string, error) {
 	return z.z.TagValues(ctx, query, limit)
 }
 
