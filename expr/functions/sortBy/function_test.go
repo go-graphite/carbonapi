@@ -1,6 +1,7 @@
 package sortBy
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -14,7 +15,8 @@ import (
 )
 
 var (
-	md []interfaces.FunctionMetadata = New("")
+	md  []interfaces.FunctionMetadata = New("")
+	nan                               = math.NaN()
 )
 
 func init() {
@@ -28,13 +30,8 @@ func TestFunction(t *testing.T) {
 
 	tests := []th.EvalTestItem{
 		{
-<<<<<<< HEAD
-			"sortByTotal(metric1)",
-			map[parser.MetricRequest][]*types.MetricData{
-=======
 			Target: "sortByTotal(metric1)",
 			M: map[parser.MetricRequest][]*types.MetricData{
->>>>>>> 6447e792 (Add field names to struct literal)
 				{Metric: "metric1", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{5, 5, 5, 5, 5, 5}, 1, now32),
@@ -48,13 +45,8 @@ func TestFunction(t *testing.T) {
 			},
 		},
 		{
-<<<<<<< HEAD
-			"sortByMaxima(metric*)",
-			map[parser.MetricRequest][]*types.MetricData{
-=======
 			Target: "sortByMaxima(metric*)",
 			M: map[parser.MetricRequest][]*types.MetricData{
->>>>>>> 6447e792 (Add field names to struct literal)
 				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{5, 5, 5, 5, 5, 5}, 1, now32),
@@ -68,13 +60,8 @@ func TestFunction(t *testing.T) {
 			},
 		},
 		{
-<<<<<<< HEAD
-			"sortByMinima(metric*)",
-			map[parser.MetricRequest][]*types.MetricData{
-=======
 			Target: "sortByMinima(metric*)",
 			M: map[parser.MetricRequest][]*types.MetricData{
->>>>>>> 6447e792 (Add field names to struct literal)
 				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
@@ -88,13 +75,8 @@ func TestFunction(t *testing.T) {
 			},
 		},
 		{
-<<<<<<< HEAD
-			"sortBy(metric*)",
-			map[parser.MetricRequest][]*types.MetricData{
-=======
 			Target: "sortBy(metric*)",
 			M: map[parser.MetricRequest][]*types.MetricData{
->>>>>>> 6447e792 (Add field names to struct literal)
 				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
@@ -108,13 +90,8 @@ func TestFunction(t *testing.T) {
 			},
 		},
 		{
-<<<<<<< HEAD
-			"sortBy(metric*, 'median')",
-			map[parser.MetricRequest][]*types.MetricData{
-=======
 			Target: "sortBy(metric*, 'median')",
 			M: map[parser.MetricRequest][]*types.MetricData{
->>>>>>> 6447e792 (Add field names to struct literal)
 				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
@@ -127,15 +104,9 @@ func TestFunction(t *testing.T) {
 				types.MakeMetricData("metricC", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
 			},
 		},
-
 		{
-<<<<<<< HEAD
-			"sortBy(metric*, 'max', true)",
-			map[parser.MetricRequest][]*types.MetricData{
-=======
 			Target: "sortBy(metric*, 'max', true)",
 			M: map[parser.MetricRequest][]*types.MetricData{
->>>>>>> 6447e792 (Add field names to struct literal)
 				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
@@ -146,6 +117,21 @@ func TestFunction(t *testing.T) {
 				types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
 				types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 				types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+			},
+		},
+		{
+			Target: "sortBy(metric*, 'max', true)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric*", From: 0, Until: 1}: {
+					types.MakeMetricData("metricA", []float64{nan, nan, nan, nan, nan, nan}, 1, now32),
+					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+				types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+				types.MakeMetricData("metricA", []float64{nan, nan, nan, nan, nan, nan}, 1, now32),
 			},
 		},
 	}
@@ -165,13 +151,8 @@ func TestErrorInvalidConsolidationFunction(t *testing.T) {
 
 	tests := []th.EvalTestItemWithError{
 		{
-<<<<<<< HEAD
-			"sortBy(metric*, 'test')",
-			map[parser.MetricRequest][]*types.MetricData{
-=======
 			Target: "sortBy(metric*, 'test')",
 			M: map[parser.MetricRequest][]*types.MetricData{
->>>>>>> 6447e792 (Add field names to struct literal)
 				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{4, 4, 5, 5, 6, 6}, 1, now32),

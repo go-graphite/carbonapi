@@ -1,0 +1,56 @@
+version: "v1"
+test:
+    apps:
+        - name: "carbonapi"
+          binary: "./carbonapi"
+          args:
+              - "-config"
+              - "./cmd/mockbackend/carbonapi_singlebackend.yaml"
+    queries:
+            - endpoint: "http://127.0.0.1:8081"
+              delay: 1
+              type: "GET"
+              URL: "/render?format=json&target=limit(sortByMaxima(metric*),2)"
+              expectedResponse:
+                  httpCode: 200
+                  contentType: "application/json"
+                  expectedResults:
+                          - metrics:
+                                  - target: "metricZ2"
+                                    datapoints: [[8.0, 1],[1.0, 2],[1.0, 3],[7.0, 4],[4.0, 5]]
+                                  - target: "metricZ1"
+                                    datapoints: [[4.0, 1],[6.0, 2],[2.0, 3],[2.0, 4],[3.0, 5]]
+            - endpoint: "http://127.0.0.1:8081"
+              delay: 1
+              type: "GET"
+              URL: "/render?format=json&target=limit(sortByMaxima(metric*),3)"
+              expectedResponse:
+                  httpCode: 200
+                  contentType: "application/json"
+                  expectedResults:
+                          - metrics:
+                                  - target: "metricZ2"
+                                    datapoints: [[8.0, 1],[1.0, 2],[1.0, 3],[7.0, 4],[4.0, 5]]
+                                  - target: "metricZ1"
+                                    datapoints: [[4.0, 1],[6.0, 2],[2.0, 3],[2.0, 4],[3.0, 5]]
+                                  - target: "metricNaN"
+                                    datapoints: [["null", 1],["null", 2],["null", 3],["null", 4],["null", 5]]    
+
+listeners:
+        - address: ":9070"
+          expressions:
+            "metric*":
+                pathExpression: "metric*"
+                data:
+                    - metricName: "metricNaN"
+                      values: [.NaN, .NaN, .NaN, .NaN, .NaN]
+                      step: 1
+                      startTime: 1
+                    - metricName: "metricZ1"
+                      values: [4.0, 6.0, 2.0, 2.0, 3.0]
+                      step: 1
+                      startTime: 1
+                    - metricName: "metricZ2"
+                      values: [8.0, 1.0, 1.0, 7.0, 4.0]
+                      step: 1
+                      startTime: 1
