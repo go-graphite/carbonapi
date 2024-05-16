@@ -3,6 +3,7 @@ package sortBy
 import (
 	"context"
 	"fmt"
+	"math"
 	"sort"
 
 	"github.com/go-graphite/carbonapi/expr/consolidations"
@@ -80,6 +81,9 @@ func doSort(aggFuncName string, ascending bool, original []*types.MetricData) []
 
 	for i, a := range arg {
 		vals[i] = consolidations.SummarizeValues(aggFuncName, a.Values, a.XFilesFactor)
+		if math.IsNaN(vals[i]) {
+			vals[i] = math.Inf(-1)
+		}
 	}
 
 	if ascending {

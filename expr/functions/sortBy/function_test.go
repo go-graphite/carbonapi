@@ -1,6 +1,7 @@
 package sortBy
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -14,7 +15,8 @@ import (
 )
 
 var (
-	md []interfaces.FunctionMetadata = New("")
+	md  []interfaces.FunctionMetadata = New("")
+	nan                               = math.NaN()
 )
 
 func init() {
@@ -28,94 +30,108 @@ func TestFunction(t *testing.T) {
 
 	tests := []th.EvalTestItem{
 		{
-			"sortByTotal(metric1)",
-			map[parser.MetricRequest][]*types.MetricData{
+			Target: "sortByTotal(metric1)",
+			M: map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "metric1", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{5, 5, 5, 5, 5, 5}, 1, now32),
 					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 4, 4}, 1, now32),
 				},
 			},
-			[]*types.MetricData{
+			Want: []*types.MetricData{
 				types.MakeMetricData("metricB", []float64{5, 5, 5, 5, 5, 5}, 1, now32),
 				types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 4, 4}, 1, now32),
 				types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 			},
 		},
 		{
-			"sortByMaxima(metric*)",
-			map[parser.MetricRequest][]*types.MetricData{
+			Target: "sortByMaxima(metric*)",
+			M: map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{5, 5, 5, 5, 5, 5}, 1, now32),
 					types.MakeMetricData("metricC", []float64{2, 2, 10, 5, 2, 2}, 1, now32),
 				},
 			},
-			[]*types.MetricData{
+			Want: []*types.MetricData{
 				types.MakeMetricData("metricC", []float64{2, 2, 10, 5, 2, 2}, 1, now32),
 				types.MakeMetricData("metricB", []float64{5, 5, 5, 5, 5, 5}, 1, now32),
 				types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 			},
 		},
 		{
-			"sortByMinima(metric*)",
-			map[parser.MetricRequest][]*types.MetricData{
+			Target: "sortByMinima(metric*)",
+			M: map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
 					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 				},
 			},
-			[]*types.MetricData{
+			Want: []*types.MetricData{
 				types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 				types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
 				types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 			},
 		},
 		{
-			"sortBy(metric*)",
-			map[parser.MetricRequest][]*types.MetricData{
+			Target: "sortBy(metric*)",
+			M: map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
 					types.MakeMetricData("metricC", []float64{1, 2, 3, 4, 5, 6}, 1, now32),
 				},
 			},
-			[]*types.MetricData{
+			Want: []*types.MetricData{
 				types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 				types.MakeMetricData("metricC", []float64{1, 2, 3, 4, 5, 6}, 1, now32),
 				types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
 			},
 		},
 		{
-			"sortBy(metric*, 'median')",
-			map[parser.MetricRequest][]*types.MetricData{
+			Target: "sortBy(metric*, 'median')",
+			M: map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 					types.MakeMetricData("metricC", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
 				},
 			},
-			[]*types.MetricData{
+			Want: []*types.MetricData{
 				types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 				types.MakeMetricData("metricB", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 				types.MakeMetricData("metricC", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
 			},
 		},
-
 		{
-			"sortBy(metric*, 'max', true)",
-			map[parser.MetricRequest][]*types.MetricData{
+			Target: "sortBy(metric*, 'max', true)",
+			M: map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
 					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 				},
 			},
-			[]*types.MetricData{
+			Want: []*types.MetricData{
 				types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
 				types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 				types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
+			},
+		},
+		{
+			Target: "sortBy(metric*, 'max', true)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric*", From: 0, Until: 1}: {
+					types.MakeMetricData("metricA", []float64{nan, nan, nan, nan, nan, nan}, 1, now32),
+					types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+					types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData("metricB", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
+				types.MakeMetricData("metricC", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
+				types.MakeMetricData("metricA", []float64{nan, nan, nan, nan, nan, nan}, 1, now32),
 			},
 		},
 	}
@@ -135,16 +151,16 @@ func TestErrorInvalidConsolidationFunction(t *testing.T) {
 
 	tests := []th.EvalTestItemWithError{
 		{
-			"sortBy(metric*, 'test')",
-			map[parser.MetricRequest][]*types.MetricData{
+			Target: "sortBy(metric*, 'test')",
+			M: map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "metric*", From: 0, Until: 1}: {
 					types.MakeMetricData("metricA", []float64{0, 0, 0, 0, 0, 0}, 1, now32),
 					types.MakeMetricData("metricB", []float64{4, 4, 5, 5, 6, 6}, 1, now32),
 					types.MakeMetricData("metricC", []float64{3, 4, 5, 6, 7, 8}, 1, now32),
 				},
 			},
-			nil,
-			consolidations.ErrInvalidConsolidationFunc,
+			Want:  nil,
+			Error: consolidations.ErrInvalidConsolidationFunc,
 		},
 	}
 
