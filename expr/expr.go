@@ -8,6 +8,7 @@ import (
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
 
 	_ "github.com/go-graphite/carbonapi/expr/functions"
+	"github.com/go-graphite/carbonapi/expr/functions/consolidateBy"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/metadata"
@@ -55,6 +56,9 @@ func (eval Evaluator) Fetch(ctx context.Context, exprs []parser.Expr, from, unti
 			}
 
 			if eval.passFunctionsToBackend && m.ConsolidationFunc != "" {
+				if _, ok := consolidateBy.ValidAggregateFunctions[m.ConsolidationFunc]; !ok {
+					return nil, merry.WithMessagef(parser.ErrInvalidArg, "invalid consolidateBy argument: '%s'", m.ConsolidationFunc)
+				}
 				fetchRequest.FilterFunctions = append(fetchRequest.FilterFunctions, &pb.FilteringFunction{
 					Name:      "consolidateBy",
 					Arguments: []string{m.ConsolidationFunc},
