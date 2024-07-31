@@ -56,28 +56,28 @@ func TestAliasByNode(t *testing.T) {
 					types.MakeMetricData("a.b.c.d.e", []float64{8, 2, 4}, 1, now32),
 				},
 			},
-			[]*types.MetricData{types.MakeMetricData("2", []float64{8, 2, 4}, 1, now32)},
+			[]*types.MetricData{types.MakeMetricData("2", []float64{8, 2, 4}, 1, now32).SetNameTag("a.b.c.d.e")},
 		},
 		{
 			Target: "aliasByNode(aliasSub(a.b.c.d.e, '(.*)', '0.1.2.@.4'), 2)",
 			M: map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "a.b.c.d.e", From: 0, Until: 1}: {types.MakeMetricData("a.b.c.d.e", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			Want: []*types.MetricData{types.MakeMetricData("2", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			Want: []*types.MetricData{types.MakeMetricData("2", []float64{1, 2, 3, 4, 5}, 1, now32).SetNameTag("a.b.c.d.e")},
 		},
 		{
 			Target: "aliasByNode(aliasSub(transformNull(metric1.foo.bar.ba*, 0), 'baz', 'word'), 2, 3)",
 			M: map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "metric1.foo.bar.ba*", From: 0, Until: 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			Want: []*types.MetricData{types.MakeMetricData("bar.word", []float64{1, 2, 3, 4, 5}, 1, now32).SetTag("transformNull", "0")},
+			Want: []*types.MetricData{types.MakeMetricData("bar.word", []float64{1, 2, 3, 4, 5}, 1, now32).SetTag("transformNull", "0").SetNameTag("metric1.foo.bar.baz")},
 		},
 		{
 			Target: "aliasByNode(metric1.foo.bar.baz,1)",
 			M: map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "metric1.foo.bar.baz", From: 0, Until: 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			Want: []*types.MetricData{types.MakeMetricData("foo", []float64{1, 2, 3, 4, 5}, 1, now32)},
+			Want: []*types.MetricData{types.MakeMetricData("foo", []float64{1, 2, 3, 4, 5}, 1, now32).SetNameTag("metric1.foo.bar.baz")},
 		},
 		{
 			Target: "aliasByNode(metric1.foo.bar.baz,1,3)",
@@ -85,7 +85,7 @@ func TestAliasByNode(t *testing.T) {
 				{Metric: "metric1.foo.bar.baz", From: 0, Until: 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			Want: []*types.MetricData{types.MakeMetricData("foo.baz",
-				[]float64{1, 2, 3, 4, 5}, 1, now32)},
+				[]float64{1, 2, 3, 4, 5}, 1, now32).SetNameTag("metric1.foo.bar.baz")},
 		},
 		{
 			Target: "aliasByNode(metric1.foo.bar.baz,1,-2)",
@@ -93,42 +93,42 @@ func TestAliasByNode(t *testing.T) {
 				{Metric: "metric1.foo.bar.baz", From: 0, Until: 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			Want: []*types.MetricData{types.MakeMetricData("foo.bar",
-				[]float64{1, 2, 3, 4, 5}, 1, now32)},
+				[]float64{1, 2, 3, 4, 5}, 1, now32).SetNameTag("metric1.foo.bar.baz")},
 		},
 		{
 			Target: `aliasByTags(*, "foo")`,
 			M: map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "*", From: 0, Until: 1}: {types.MakeMetricData("metric1.foo.bar.baz;foo=bar;baz=bam", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			Want: []*types.MetricData{types.MakeMetricData("bar", []float64{1, 2, 3, 4, 5}, 1, now32).SetTag("foo", "bar").SetTag("baz", "bam")},
+			Want: []*types.MetricData{types.MakeMetricData("bar", []float64{1, 2, 3, 4, 5}, 1, now32).SetTag("foo", "bar").SetTag("baz", "bam").SetNameTag("metric1.foo.bar.baz")},
 		},
 		{
 			Target: `aliasByTags(*, "foo", "name")`,
 			M: map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "*", From: 0, Until: 1}: {types.MakeMetricData("metric1;foo=bar", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			Want: []*types.MetricData{types.MakeMetricData("bar.metric1", []float64{1, 2, 3, 4, 5}, 1, now32).SetTag("foo", "bar")},
+			Want: []*types.MetricData{types.MakeMetricData("bar.metric1", []float64{1, 2, 3, 4, 5}, 1, now32).SetTag("foo", "bar").SetNameTag("metric1")},
 		},
 		{
 			Target: `aliasByTags(*, 2, "blah", "foo", 1)`,
 			M: map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "*", From: 0, Until: 1}: {types.MakeMetricData("base.metric1;foo=bar;baz=bam", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			Want: []*types.MetricData{types.MakeMetricData(".bar.metric1", []float64{1, 2, 3, 4, 5}, 1, now32).SetTag("foo", "bar").SetTag("baz", "bam")},
+			Want: []*types.MetricData{types.MakeMetricData(".bar.metric1", []float64{1, 2, 3, 4, 5}, 1, now32).SetTag("foo", "bar").SetTag("baz", "bam").SetNameTag("base.metric1")},
 		},
 		{
 			Target: `aliasByTags(*, 2, "baz", "foo", 1)`,
 			M: map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "*", From: 0, Until: 1}: {types.MakeMetricData("base.metric1;foo=bar;baz=bam", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			Want: []*types.MetricData{types.MakeMetricData("bam.bar.metric1", []float64{1, 2, 3, 4, 5}, 1, now32).SetTag("foo", "bar").SetTag("baz", "bam")},
+			Want: []*types.MetricData{types.MakeMetricData("bam.bar.metric1", []float64{1, 2, 3, 4, 5}, 1, now32).SetTag("foo", "bar").SetTag("baz", "bam").SetNameTag("base.metric1")},
 		},
 		{
 			Target: `aliasByTags(perSecond(*), 'name')`,
 			M: map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "*", From: 0, Until: 1}: {types.MakeMetricData("base.metric1;foo=bar;baz=bam", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			Want: []*types.MetricData{types.MakeMetricData("base.metric1", []float64{math.NaN(), 1, 1, 1, 1}, 1, now32).SetTag("foo", "bar").SetTag("baz", "bam").SetTag("perSecond", "1")},
+			Want: []*types.MetricData{types.MakeMetricData("base.metric1", []float64{math.NaN(), 1, 1, 1, 1}, 1, now32).SetTag("foo", "bar").SetTag("baz", "bam").SetTag("perSecond", "1").SetNameTag("base.metric1")},
 		},
 		{
 			Target: "aliasByNode(metric1.fo*.bar.baz,1,3)",
@@ -136,14 +136,14 @@ func TestAliasByNode(t *testing.T) {
 				{Metric: "metric1.fo*.bar.baz", From: 0, Until: 1}: {types.MakeMetricData("metric1.foo==.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			Want: []*types.MetricData{types.MakeMetricData("foo==.baz",
-				[]float64{1, 2, 3, 4, 5}, 1, now32)},
+				[]float64{1, 2, 3, 4, 5}, 1, now32).SetNameTag("metric1.foo==.bar.baz")},
 		},
 		{
 			Target: `aliasByTags(*, 2, "baz", "foo", 1)`,
 			M: map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "*", From: 0, Until: 1}: {types.MakeMetricData("base.metric1;foo=bar=;baz=bam==", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
-			Want: []*types.MetricData{types.MakeMetricData("bam==.bar=.metric1", []float64{1, 2, 3, 4, 5}, 1, now32).SetTag("foo", "bar=").SetTag("baz", "bam==")},
+			Want: []*types.MetricData{types.MakeMetricData("bam==.bar=.metric1", []float64{1, 2, 3, 4, 5}, 1, now32).SetTag("foo", "bar=").SetTag("baz", "bam==").SetNameTag("base.metric1")},
 		},
 		// extract nodes with sumSeries
 		{
@@ -155,7 +155,7 @@ func TestAliasByNode(t *testing.T) {
 					types.MakeMetricData("metric.c2.b", []float64{3, math.NaN(), 4, 5, 6, math.NaN()}, 1, now32),
 				},
 			},
-			Want: []*types.MetricData{types.MakeMetricData("{a,b}*.b", []float64{6, math.NaN(), 9, 8, 15, 11}, 1, now32).SetTag("aggregatedBy", "sum")},
+			Want: []*types.MetricData{types.MakeMetricData("{a,b}*.b", []float64{6, math.NaN(), 9, 8, 15, 11}, 1, now32).SetTag("aggregatedBy", "sum").SetNameTag("metric.{a,b}*.b")},
 		},
 		// extract tags from seriesByTag
 		{
@@ -170,7 +170,7 @@ func TestAliasByNode(t *testing.T) {
 			},
 			// Want: []*types.MetricData{types.MakeMetricData("value____.metric", []float64{6, math.NaN(), 9, 8, 15, 11}, 1, now32)},
 			Want: []*types.MetricData{
-				types.MakeMetricData("value21.metric", []float64{6, math.NaN(), 9, 8, 15, 11}, 1, now32).SetTag("aggregatedBy", "sum").SetTag("tag2", "value21")},
+				types.MakeMetricData("value21.metric", []float64{6, math.NaN(), 9, 8, 15, 11}, 1, now32).SetTag("aggregatedBy", "sum").SetTag("tag2", "value21").SetNameTag("metric")},
 		},
 		// TODO msaf1980: tests with extractTagsFromArgs = true
 	}

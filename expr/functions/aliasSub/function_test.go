@@ -32,7 +32,7 @@ func TestAliasSub(t *testing.T) {
 				{Metric: "metric1.foo.bar.baz", From: 0, Until: 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("metric1.replaced.bar.baz",
-				[]float64{1, 2, 3, 4, 5}, 1, now32)},
+				[]float64{1, 2, 3, 4, 5}, 1, now32).SetNameTag("metric1.foo.bar.baz")},
 		},
 		{
 			"aliasSub(metric1.TCP100,\"^.*TCP(\\d+)\",\"$1\")",
@@ -40,7 +40,7 @@ func TestAliasSub(t *testing.T) {
 				{Metric: "metric1.TCP100", From: 0, Until: 1}: {types.MakeMetricData("metric1.TCP100", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("100",
-				[]float64{1, 2, 3, 4, 5}, 1, now32)},
+				[]float64{1, 2, 3, 4, 5}, 1, now32).SetNameTag("metric1.TCP100")},
 		},
 		{
 			"aliasSub(metric1.TCP100,\"^.*TCP(\\d+)\", \"\\1\")",
@@ -48,7 +48,7 @@ func TestAliasSub(t *testing.T) {
 				{Metric: "metric1.TCP100", From: 0, Until: 1}: {types.MakeMetricData("metric1.TCP100", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("100",
-				[]float64{1, 2, 3, 4, 5}, 1, now32)},
+				[]float64{1, 2, 3, 4, 5}, 1, now32).SetNameTag("metric1.TCP100")},
 		},
 		{
 			"aliasSub(metric1.foo.bar.baz, \"foo\", \"replaced\")",
@@ -56,7 +56,7 @@ func TestAliasSub(t *testing.T) {
 				{Metric: "metric1.foo.bar.baz", From: 0, Until: 1}: {types.MakeMetricData("metric1.foo.bar.baz", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("metric1.replaced.bar.baz",
-				[]float64{1, 2, 3, 4, 5}, 1, now32)},
+				[]float64{1, 2, 3, 4, 5}, 1, now32).SetNameTag("metric1.foo.bar.baz")},
 		},
 		// #290
 		{
@@ -66,7 +66,7 @@ func TestAliasSub(t *testing.T) {
 				{Metric: "*", From: 0, Until: 1}: {types.MakeMetricData("diffSeries(dns.snake.sql_updated, dns.snake.zone_updated)", []float64{1, 2, 3, 4, 5}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("diffSeries(dns.snake.sql_updated, snake diff to sql updated)",
-				[]float64{1, 2, 3, 4, 5}, 1, now32).SetNameTag("diffSeries(dns.snake.sql_updated, snake diff to sql updated)")},
+				[]float64{1, 2, 3, 4, 5}, 1, now32).SetNameTag("dns.snake.sql_updated")},
 		},
 	}
 
