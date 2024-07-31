@@ -51,8 +51,8 @@ func (f *alias) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr
 		if allowFormatStr {
 			name = strings.ReplaceAll(name, "${expr}", arg.Name)
 		}
-		r := arg.CopyName(name)
-
+		r := arg.CopyLinkTags()
+		r.Name = name
 		results[i] = r
 	}
 

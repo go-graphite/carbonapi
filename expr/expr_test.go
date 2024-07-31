@@ -258,8 +258,8 @@ func TestEvalExpression(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{
-				types.MakeMetricData("devops.service.server1.filter.received.reduce.asPercent.count", []float64{25, 200, 200}, 1, now32),
-				types.MakeMetricData("devops.service.server2.filter.received.reduce.asPercent.count", []float64{25, 100, 400}, 1, now32),
+				types.MakeMetricData("devops.service.server1.filter.received.reduce.asPercent.count", []float64{25, 200, 200}, 1, now32).SetNameTag("devops.service.server1.filter.received.valid.count"),
+				types.MakeMetricData("devops.service.server2.filter.received.reduce.asPercent.count", []float64{25, 100, 400}, 1, now32).SetNameTag("devops.service.server2.filter.received.valid.count"),
 			},
 		},
 		{
@@ -272,7 +272,7 @@ func TestEvalExpression(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{
-				types.MakeMetricData("devops.service.server2.filter.received.reduce.asPercent.count", []float64{25, 100, 400}, 1, now32),
+				types.MakeMetricData("devops.service.server2.filter.received.reduce.asPercent.count", []float64{25, 100, 400}, 1, now32).SetNameTag("devops.service.server2.filter.received.valid.count"),
 			},
 		},
 		{
