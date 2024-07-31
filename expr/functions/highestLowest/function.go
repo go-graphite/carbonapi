@@ -45,8 +45,6 @@ func (f *highest) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Ex
 		}
 	}
 
-	var results []*types.MetricData
-
 	// we have fewer arguments than we want result series
 	if len(arg) < n {
 		return arg, nil
@@ -100,8 +98,10 @@ func (f *highest) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Ex
 		return nil, fmt.Errorf("unsupported function %v", e.Target())
 	}
 
+	var results []*types.MetricData
+
 	if n <= 0 {
-		n = 1
+		return results, nil
 	}
 
 	if isHighest {
