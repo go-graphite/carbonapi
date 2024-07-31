@@ -100,6 +100,10 @@ func (f *highest) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Ex
 		return nil, fmt.Errorf("unsupported function %v", e.Target())
 	}
 
+	if n <= 0 {
+		n = 1
+	}
+
 	if isHighest {
 		for i, a := range arg {
 			m := compute(a.Values)

@@ -56,6 +56,20 @@ func TestHighestMultiReturn(t *testing.T) {
 			},
 		},
 		{
+			"highestCurrent(metric1,0)",
+			map[parser.MetricRequest][]*types.MetricData{
+				parser.MetricRequest{Metric: "metric1", From: 0, Until: 1}: {
+					types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
+					types.MakeMetricData("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
+				},
+			},
+			"highestCurrent",
+			map[string][]*types.MetricData{
+				"metricC": {types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32)},
+			},
+		},
+		{
 			"highestMax(metric1, 2)",
 			map[parser.MetricRequest][]*types.MetricData{
 				parser.MetricRequest{Metric: "metric1", From: 0, Until: 1}: {
@@ -98,6 +112,34 @@ func TestHighestMultiReturn(t *testing.T) {
 			map[string][]*types.MetricData{
 				"metricA": {types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 12, 11}, 1, now32)},
 				"metricC": {types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 10}, 1, now32)},
+			},
+		},
+		{
+			"highest(metric1, 0, \"max\")",
+			map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 0, Until: 1}: {
+					types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 12, 11}, 1, now32),
+					types.MakeMetricData("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 10}, 1, now32),
+				},
+			},
+			"highest",
+			map[string][]*types.MetricData{
+				"metricA": {types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 12, 11}, 1, now32)},
+			},
+		},
+		{
+			"highest(metric1, -1, \"max\")",
+			map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 0, Until: 1}: {
+					types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 12, 11}, 1, now32),
+					types.MakeMetricData("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 10}, 1, now32),
+				},
+			},
+			"highest",
+			map[string][]*types.MetricData{
+				"metricA": {types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 12, 11}, 1, now32)},
 			},
 		},
 		{
