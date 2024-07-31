@@ -118,7 +118,8 @@ func (f *movingMedian) Do(ctx context.Context, eval interfaces.Evaluator, e pars
 
 	result := make([]*types.MetricData, len(arg))
 	for n, a := range arg {
-		r := a.CopyName("movingMedian(" + a.Name + "," + argstr + ")")
+		r := a.CopyLink()
+		r.Name = "movingMedian(" + a.Name + "," + argstr + ")"
 
 		if windowSize == 0 {
 			if *f.config.ReturnNaNsIfStepMismatch {
