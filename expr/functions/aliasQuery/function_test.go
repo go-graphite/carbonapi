@@ -36,8 +36,8 @@ func TestAliasQuery(t *testing.T) {
 				},
 			},
 			Want: []*types.MetricData{
-				types.MakeMetricData("Channel 200 MHz", []float64{1, 2, 3, 4, 5}, 1, now),
-				types.MakeMetricData("Channel 400 MHz", []float64{10, 20, 30, 40, 50}, 1, now),
+				types.MakeMetricData("Channel 200 MHz", []float64{1, 2, 3, 4, 5}, 1, now).SetNameTag("channel.power.1"),
+				types.MakeMetricData("Channel 400 MHz", []float64{10, 20, 30, 40, 50}, 1, now).SetNameTag("channel.power.2"),
 			},
 		},
 	}

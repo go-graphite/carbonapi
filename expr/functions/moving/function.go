@@ -176,7 +176,8 @@ func (f *moving) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Exp
 	result := make([]*types.MetricData, len(adjustedArgs))
 
 	for j, a := range adjustedArgs {
-		r := a.CopyName(e.Target() + "(" + a.Name + "," + argstr + ")")
+		r := a.CopyLink()
+		r.Name = e.Target() + "(" + a.Name + "," + argstr + ")"
 		r.Tags[e.Target()] = argstr
 
 		if e.Arg(1).Type() == parser.EtString {

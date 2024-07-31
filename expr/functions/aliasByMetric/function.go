@@ -31,7 +31,8 @@ func (f *aliasByMetric) Do(ctx context.Context, eval interfaces.Evaluator, e par
 		metric := types.ExtractNameTag(a.Name)
 		part := strings.Split(metric, ".")
 		name := part[len(part)-1]
-		ret := a.CopyName(name)
+		ret := a.CopyLinkTags()
+		ret.Name = name
 		ret.PathExpression = name
 		return ret
 	})

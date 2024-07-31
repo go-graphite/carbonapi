@@ -48,7 +48,8 @@ func (f *delay) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr
 	for i, series := range seriesList {
 		length := len(series.Values)
 
-		result := series.CopyName("delay(" + series.Name + "," + stepsStr + ")")
+		result := series.CopyLink()
+		result.Name = "delay(" + series.Name + "," + stepsStr + ")"
 		result.Tags["delay"] = stepsStr
 
 		var newValues []float64

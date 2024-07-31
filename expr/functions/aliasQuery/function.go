@@ -68,17 +68,8 @@ func (f *aliasQuery) Do(ctx context.Context, eval interfaces.Evaluator, e parser
 		if err != nil {
 			return nil, err
 		}
-
-		n := fmt.Sprintf(newName, v)
-
-		var r *types.MetricData
-		if series.Name == n {
-			r = series.CopyLinkTags()
-			r.Tags["name"] = r.Name
-		} else {
-			r = series.CopyName(n)
-		}
-
+		r := series.CopyLinkTags()
+		r.Name = fmt.Sprintf(newName, v)
 		results[i] = r
 	}
 
