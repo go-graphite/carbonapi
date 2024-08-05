@@ -44,7 +44,7 @@ func TestAlias(t *testing.T) {
 				},
 			},
 			[]*types.MetricData{types.MakeMetricData("renamed",
-				[]float64{1, 2, 3, 4, 5}, 1, now32)},
+				[]float64{1, 2, 3, 4, 5}, 1, now32).SetNameTag("metric1")},
 		},
 		{
 			"alias(metric2, \"some format ${expr} str ${expr} and another ${expr\", true)",
@@ -68,7 +68,7 @@ func TestAlias(t *testing.T) {
 					[]float64{1, 2, 3, 4, 5},
 					1,
 					now32,
-				),
+				).SetNameTag("metric2"),
 			},
 		},
 		{
@@ -93,7 +93,7 @@ func TestAlias(t *testing.T) {
 					[]float64{1, 2, 3, 4, 5},
 					1,
 					now32,
-				),
+				).SetNameTag("metric2"),
 			},
 		},
 	}

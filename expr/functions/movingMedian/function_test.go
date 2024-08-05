@@ -34,7 +34,7 @@ func TestMovingMedian(t *testing.T) {
 				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,4)", []float64{math.NaN(), math.NaN(), math.NaN(), 1, 1, 1.5, 2, 2, 3, 4, 5, 6},
-				1, 0).SetTag("movingMedian", "4").SetNameTag("movingMedian(metric1,4)")}, // StartTime = from
+				1, 0).SetTag("movingMedian", "4").SetNameTag("metric1")}, // StartTime = from
 		},
 		{
 			"movingMedian(metric1,5)",
@@ -42,7 +42,7 @@ func TestMovingMedian(t *testing.T) {
 				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, math.NaN()}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,5)", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), 1, 1, 2, 2, 2, 4, 4, 6, 6, 4, 2},
-				1, 0).SetTag("movingMedian", "5").SetNameTag("movingMedian(metric1,5)")}, // StartTime = from
+				1, 0).SetTag("movingMedian", "5").SetNameTag("metric1")}, // StartTime = from
 		},
 		{
 			"movingMedian(metric1,\"1s\")",
@@ -50,7 +50,7 @@ func TestMovingMedian(t *testing.T) {
 				{Metric: "metric1", From: -1, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, 0}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,'1s')", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, 0},
-				1, 0).SetTag("movingMedian", "'1s'").SetNameTag("movingMedian(metric1,'1s')")}, // StartTime = from
+				1, 0).SetTag("movingMedian", "'1s'").SetNameTag("metric1")}, // StartTime = from
 		},
 		{
 			"movingMedian(metric1,\"3s\")",
@@ -58,7 +58,7 @@ func TestMovingMedian(t *testing.T) {
 				{Metric: "metric1", From: -3, Until: 1}: {types.MakeMetricData("metric1", []float64{0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2}, 1, now32)},
 			},
 			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,'3s')", []float64{0, 1, 1, 1, 1, 2, 2, 2, 4, 4, 6, 6, 6, 2},
-				1, 0).SetTag("movingMedian", "'3s'").SetNameTag("movingMedian(metric1,'3s')")}, // StartTime = from
+				1, 0).SetTag("movingMedian", "'3s'").SetNameTag("metric1")}, // StartTime = from
 		},
 		{
 			"movingMedian(metric1,\"5s\")",
@@ -66,7 +66,7 @@ func TestMovingMedian(t *testing.T) {
 				{Metric: "metric1", From: -5, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3}, 10, now32)}, // step > windowSize
 			},
 			[]*types.MetricData{types.MakeMetricData("movingMedian(metric1,'5s')", []float64{math.NaN(), math.NaN(), math.NaN()},
-				10, now32).SetTag("movingMedian", "'5s'").SetNameTag("movingMedian(metric1,'5s')")}, // StartTime = from
+				10, now32).SetTag("movingMedian", "'5s'").SetNameTag("metric1")}, // StartTime = from
 		},
 	}
 

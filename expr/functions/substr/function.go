@@ -76,7 +76,8 @@ func (f *substr) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Exp
 			nodes = nodes[:realStopField]
 		}
 
-		r := a.CopyName(strings.Join(nodes, "."))
+		r := a.CopyLinkTags()
+		r.Name = strings.Join(nodes, ".")
 		results[n] = r
 	}
 

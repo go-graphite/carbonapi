@@ -55,17 +55,8 @@ func (f *aliasSub) Do(ctx context.Context, eval interfaces.Evaluator, e parser.E
 	results := make([]*types.MetricData, len(args))
 
 	for i, a := range args {
-		var r *types.MetricData
-
-		oldName := a.Name
-		// not safe for tagged metrics
-		name := re.ReplaceAllString(oldName, replace)
-		if oldName == name {
-			r = a.CopyLinkTags()
-			r.Tags["name"] = r.Name
-		} else {
-			r = a.CopyName(name)
-		}
+		r := a.CopyLinkTags()
+		r.Name = re.ReplaceAllString(a.Name, replace)
 		results[i] = r
 	}
 
