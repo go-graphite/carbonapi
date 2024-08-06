@@ -232,6 +232,17 @@ func TestHighest(t *testing.T) {
 				[]float64{2, 5, 5, 5, 5, 5}, 1, now32)},
 		},
 		{
+			"highestCurrent(metric1,0)",
+			map[parser.MetricRequest][]*types.MetricData{
+				parser.MetricRequest{Metric: "metric1", From: 0, Until: 1}: {
+					types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 4, 12}, 1, now32),
+					types.MakeMetricData("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 15}, 1, now32),
+				},
+			},
+			[]*types.MetricData{},
+		},
+		{
 			"highest(metric1,\"max\")",
 			map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "metric1", From: 0, Until: 1}: {
@@ -242,6 +253,28 @@ func TestHighest(t *testing.T) {
 			},
 			[]*types.MetricData{types.MakeMetricData("metricA",
 				[]float64{1, 1, 3, 3, 12, 11}, 1, now32)},
+		},
+		{
+			"highest(metric1, 0, \"max\")",
+			map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 0, Until: 1}: {
+					types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 12, 11}, 1, now32),
+					types.MakeMetricData("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 10}, 1, now32),
+				},
+			},
+			[]*types.MetricData{},
+		},
+		{
+			"highest(metric1, -1, \"max\")",
+			map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 0, Until: 1}: {
+					types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 12, 11}, 1, now32),
+					types.MakeMetricData("metricB", []float64{1, 1, 3, 3, 4, 1}, 1, now32),
+					types.MakeMetricData("metricC", []float64{1, 1, 3, 3, 4, 10}, 1, now32),
+				},
+			},
+			[]*types.MetricData{},
 		},
 		{
 			"lowest(metric1,\"max\")",

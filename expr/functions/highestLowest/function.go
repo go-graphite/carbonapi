@@ -45,8 +45,6 @@ func (f *highest) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Ex
 		}
 	}
 
-	var results []*types.MetricData
-
 	// we have fewer arguments than we want result series
 	if len(arg) < n {
 		return arg, nil
@@ -98,6 +96,12 @@ func (f *highest) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Ex
 		compute = consolidations.MinValue
 	default:
 		return nil, fmt.Errorf("unsupported function %v", e.Target())
+	}
+
+	var results []*types.MetricData
+
+	if n <= 0 {
+		return results, nil
 	}
 
 	if isHighest {
