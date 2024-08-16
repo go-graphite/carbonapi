@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-graphite/carbonapi/tests/compare"
 	"github.com/go-graphite/carbonapi/zipper/protocols/prometheus/types"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAlignValues(t *testing.T) {
@@ -160,4 +161,92 @@ func TestAdjustStep(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPromethizeTagValue(t *testing.T) {
+	testCases := []struct {
+		name     string
+		tagValue string
+		wantName string
+		wantTag  types.Tag
+	}{
+		{
+			name: "empty string",
+		},
+		{
+			name:     "string without '='",
+			tagValue: "test>test",
+		},
+		{
+			name:     "check '='",
+			tagValue: "name=1",
+			wantName: "name",
+			wantTag:  types.Tag{OP: "=", TagValue: "1"},
+		},
+		{
+			name:     "check '!='",
+			tagValue: "name!=1",
+			wantName: "name",
+			wantTag:  types.Tag{OP: "!=", TagValue: "1"},
+		},
+		{
+			name:     "check '=~'",
+			tagValue: "name=~1",
+			wantName: "name",
+			wantTag:  types.Tag{OP: "=~", TagValue: "1"},
+		},
+		{
+			name:     "check '!=~'",
+			tagValue: "name!=~1",
+			wantName: "name",
+			wantTag:  types.Tag{OP: "!~", TagValue: "1"},
+		},
+		{
+			name:     "check '!=~' with empty name",
+			tagValue: "!=~1",
+			wantName: "",
+			wantTag:  types.Tag{OP: "!~", TagValue: "1"},
+		},
+		{
+			name:     "check '=~' with empty name",
+			tagValue: "=~1",
+			wantName: "",
+			wantTag:  types.Tag{OP: "=~", TagValue: "1"},
+		},
+		{
+			name:     "check '=' with empty value",
+			tagValue: "name=",
+			wantName: "name",
+			wantTag:  types.Tag{OP: "="},
+		},
+		{
+			name:     "check '!=' with empty value",
+			tagValue: "name!=",
+			wantName: "name",
+			wantTag:  types.Tag{OP: "!="},
+		},
+		{
+			name:     "check '!=~' with empty value",
+			tagValue: "name!=~",
+			wantName: "name",
+			wantTag:  types.Tag{OP: "!~"},
+		},
+		{
+			name:     "check '=~' with empty value",
+			tagValue: "name=~",
+			wantName: "name",
+			wantTag:  types.Tag{OP: "=~"},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			gotName, gotTag := PromethizeTagValue(tt.tagValue)
+
+			assert.Equal(t, tt.wantName, gotName)
+			assert.Equal(t, tt.wantTag, gotTag)
+		})
+
+	}
+
 }

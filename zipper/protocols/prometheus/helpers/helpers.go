@@ -139,29 +139,42 @@ func AdjustStep(start, stop, maxPointsPerQuery, minStep int64, forceMinStepInter
 // PromethizeTagValue - accept 'Tag=value' or 'Tag=~value' string and return sanitized version of it
 func PromethizeTagValue(tagValue string) (string, types.Tag) {
 	// Handle = and =~
-	t := types.Tag{}
-	idx := strings.Index(tagValue, "=")
-	if idx != -1 {
-		if tagValue[idx+1] == '~' {
-			t.OP = "=~"
-			t.TagValue = tagValue[idx+2:]
-		} else {
-			t.OP = "="
-			t.TagValue = tagValue[idx+1:]
-		}
-	} else {
-		// Handle != and !=~
-		idx = strings.Index(tagValue, "!")
-		if tagValue[idx+2] == '~' {
-			t.OP = "!~"
-			t.TagValue = tagValue[idx+3:]
-		} else {
-			t.OP = "!="
-			t.TagValue = tagValue[idx+2:]
-		}
+	var (
+		t       types.Tag
+		tagName string
+		idx     = strings.Index(tagValue, "=")
+	)
+
+	if idx < 0 {
+		return tagName, t
 	}
 
-	return tagValue[:idx], t
+	if idx > 0 && tagValue[idx-1] == '!' {
+		t.OP = "!"
+		tagName = tagValue[:idx-1]
+	} else {
+		tagName = tagValue[:idx]
+	}
+
+	switch {
+	case idx+1 == len(tagValue): // != or = with empty value
+		t.OP += "="
+	case tagValue[idx+1] == '~':
+		if len(t.OP) > 0 { // !=~
+			t.OP += "~"
+		} else { // =~
+			t.OP = "=~"
+		}
+
+		if idx+2 < len(tagValue) { // check is not empty value
+			t.TagValue = tagValue[idx+2:]
+		}
+	default: // != or = with value
+		t.OP += "="
+		t.TagValue = tagValue[idx+1:]
+	}
+
+	return tagName, t
 }
 
 // SplitTagValues - For given tag-value list converts it to more usable map[string]Tag, where string is TagName
