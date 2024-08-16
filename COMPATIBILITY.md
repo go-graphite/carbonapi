@@ -3,7 +3,7 @@
 Topics:
 * [Default settings](#default-settings)
 * [URI Parameters](#uri-params)
-* [Graphite-web 1.1 Compatibility](#graphite-web-11-compatibility)
+* [Graphite-web 1.1.7 Compatibility](#graphite-web-117-compatibility)
 * [Supported Functions](#supported-functions)
 * [Features of configuration functions](#functions-features)
 
