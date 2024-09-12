@@ -113,6 +113,9 @@ type ConfigType struct {
 	MaxQueryLength              uint64 `mapstructure:"maxQueryLength"`
 	CombineMultipleTargetsInOne bool   `mapstructure:"combineMultipleTargetsInOne"`
 
+	NudgeStartTimeOnAggregation             bool `mapstructure:"nudgeStartTimeOnAggregation"`
+	UseBucketsHighestTimestampOnAggregation bool `mapstructure:"useBucketsHighestTimestampOnAggregation"`
+
 	ResponseCache cache.BytesCache `mapstructure:"-" json:"-"`
 	BackendCache  cache.BytesCache `mapstructure:"-" json:"-"`
 

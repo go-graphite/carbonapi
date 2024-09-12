@@ -56,6 +56,8 @@ Table of Contents
       * [For IRONdb](#for-irondb)
   * [expireDelaySec](#expiredelaysec)
     * [Example](#example-21)
+  * [nudgeStartTimeOnAggregation](#nudgestarttimeonaggregation)
+  * [useBucketsHighestTimestampOnAggregation](#usebucketshighesttimestamponaggregation)
 
 # General configuration for carbonapi
 
@@ -939,4 +941,29 @@ Default: 600 (10 minutes)
 ### Example
 ```yaml
 expireDelaySec: 10
+```
+
+***
+## nudgeStartTimeOnAggregation
+Enables nudging the start time of metrics  when aggregating to honor MaxDataPoints.
+The start time is nudged in such way that timestamps always fall in the same bucket.
+This is done by GraphiteWeb, and is useful to avoid jitter in graphs when refreshing the page.
+
+Default: false
+
+### Example
+```yaml
+nudgeStartTimeOnAggregation: true
+```
+
+***
+## useBucketsHighestTimestampOnAggregation
+Enables using the highest timestamp of the buckets when aggregating to honor MaxDataPoints, instead of the lowest timestamp.
+This prevents results to appear to predict the future.
+
+Default: false
+
+### Example
+```yaml
+useBucketsHighestTimestampOnAggregation: true
 ```

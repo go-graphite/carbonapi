@@ -26,6 +26,7 @@ import (
 	fconfig "github.com/go-graphite/carbonapi/expr/functions/config"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/rewrite"
+	tconfig "github.com/go-graphite/carbonapi/expr/types/config"
 	"github.com/go-graphite/carbonapi/limiter"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
@@ -257,6 +258,9 @@ func SetUpConfig(logger *zap.Logger, BuildVersion string) {
 		)
 	}
 
+	tconfig.Config.NudgeStartTimeOnAggregation = Config.NudgeStartTimeOnAggregation
+	tconfig.Config.UseBucketsHighestTimestampOnAggregation = Config.UseBucketsHighestTimestampOnAggregation
+
 	if Config.Listen != "" {
 		listeners := make(map[string]struct{})
 		for _, l := range Config.Listeners {
@@ -401,6 +405,9 @@ func SetUpViper(logger *zap.Logger, configPath *string, exactConfig bool, viperP
 	viper.SetDefault("useCachingDNSResolver", false)
 	viper.SetDefault("logger", map[string]string{})
 	viper.SetDefault("combineMultipleTargetsInOne", false)
+	viper.SetDefault("nudgeStartTimeOnAggregation", false)
+	viper.SetDefault("useBucketsHighestTimestampOnAggregation", false)
+
 	viper.AutomaticEnv()
 
 	var err error
