@@ -17,6 +17,29 @@ Changes
 
 CHANGELOG
 ---------
+
+**0.17.0**
+
+ - [Feature] return error on partial targets fetch
+ - [Feature] add a config option to pass consolidateBy to the storage backend
+ - [Feature] add -exact-config command line argument
+ - [Improvement] :bangbang: refactor for avoid global evaluator usage
+ - [Improvement] Add movingWindow to list of functions that might adjust timerange
+ - [Improvement] tags/autoComplete: return detailed error code instead of 500
+ - [Improvement] MaxDataPoints consolidation: support nudging for consistent bucketing
+ - [Fix] incorrect positional parameters
+ - [Fix] transformNull name tag
+ - [Fix] Deadlock on uninitialized (nil) limiter
+ - [Fix] Check if query doesn't exceed allowed length limit
+ - [Fix] return code for render_handler
+ - [Fix] gracefully shutdown http servers
+ - [Fix] sortBy: substitute NaN values for negative infinity
+ - [Fix]  validate consolidateBy arguments
+ - [Fix] fix `"name"` tag overrides in various functions
+ - [Fix] runtime error highest current
+ - [Fix] PromethizeTagValue panic on empty value
+
+
 **0.16.1**
  - [Build] Update build version of golang to 1.21.0
  - [Improvement] Better error messages
