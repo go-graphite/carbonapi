@@ -120,6 +120,7 @@ Golang compatibility matrix:
 | 1.16 / 1.17    | 0.15.6                           |
 | 1.18           | 0.16.0-patch2                    |
 | 1.20           | 0.16.1                           |
+| 1.21           | 0.17.0                           |
 
 Overall rule of thumb is that carbonapi supports last 2 major go versions. E.x. at this moment Go 1.22 and 1.21 are supported.
 
