@@ -1,7 +1,7 @@
 name: Upload Docker images to ghcr.io
 on:
   release:
-    types: [created]
+    types: [published, edited]
 jobs:
   docker:
     name: Build image
