@@ -21,6 +21,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
+          context: ${{ inputs.ref && 'git' || 'workflow' }}
           images: ghcr.io/${{ github.repository }}
           # create latest tag for branch events
           flavor: |
