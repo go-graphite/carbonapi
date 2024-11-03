@@ -1,7 +1,13 @@
 name: Upload Docker images to ghcr.io
 on:
   release:
-    types: [published, edited]
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git tag to push the image'
+        required: true
+        type: string
 jobs:
   docker:
     name: Build image
@@ -9,6 +15,8 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
