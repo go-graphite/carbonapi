@@ -31,7 +31,7 @@ func New(_ string) []interfaces.FunctionMetadata {
 
 const (
 	defaultValuesLimit      = 32
-	LimitExceededMetricName = "error.too.many.values.limit.reached"
+	LimitExceededMetricName = "valuesLimitReached"
 )
 
 // countValues(seriesList)

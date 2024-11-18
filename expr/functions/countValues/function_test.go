@@ -5,14 +5,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/metadata"
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
 )
 
+var (
+	md []interfaces.FunctionMetadata = New("")
+)
+
 func init() {
-	md := New("")
 	for _, m := range md {
 		metadata.RegisterFunction(m.Name, m.F)
 	}
@@ -90,7 +94,7 @@ func TestCountValues(t *testing.T) {
 			},
 			"countValues",
 			map[string][]*types.MetricData{
-				LimitExceededMetricName: {types.MakeMetricData(LimitExceededMetricName, []float64{0, 0, 0, 0, 0}, 1, now32)},
+				"valuesLimitReached": {types.MakeMetricData("valuesLimitReached", []float64{0, 0, 0, 0, 0}, 1, now32)},
 			},
 		},
 		{
@@ -105,7 +109,7 @@ func TestCountValues(t *testing.T) {
 			},
 			"countValues",
 			map[string][]*types.MetricData{
-				LimitExceededMetricName: {types.MakeMetricData(LimitExceededMetricName, []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 1, now32)},
+				"valuesLimitReached": {types.MakeMetricData("valuesLimitReached", []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 1, now32)},
 			},
 		},
 	}
@@ -113,7 +117,7 @@ func TestCountValues(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Target, func(t *testing.T) {
 			eval := th.EvaluatorFromFunc(md[0].F)
-			th.TestEvalExprWithRange(t, eval, &tt)
+			th.TestMultiReturnEvalExpr(t, eval, &tt)
 		})
 	}
 
