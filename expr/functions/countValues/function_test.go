@@ -17,10 +17,6 @@ func init() {
 	for _, m := range md {
 		metadata.RegisterFunction(m.Name, m.F)
 	}
-
-	evaluator := th.EvaluatorFromFuncWithMetadata(metadata.FunctionMD.Functions)
-	metadata.SetEvaluator(evaluator)
-	helper.SetEvaluator(evaluator)
 }
 
 func TestCountValues(t *testing.T) {
@@ -30,7 +26,7 @@ func TestCountValues(t *testing.T) {
 		{
 			"countValues(metric1.foo.*.*)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.*.*", 0, 1}: {
+				{Metric: "metric1.foo.*.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar1.qux", []float64{2, 2, 4, 5, 6}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar2.baz", []float64{math.NaN(), 1, 1, 1, 1}, 1, now32),
@@ -49,7 +45,7 @@ func TestCountValues(t *testing.T) {
 		{
 			"countValues(metric1.foo.*.*, 7)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.*.*", 0, 1}: {
+				{Metric: "metric1.foo.*.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar1.qux", []float64{2, 2, 4, 5, 6}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar2.baz", []float64{math.NaN(), 1, 1, 1, 1}, 1, now32),
@@ -68,7 +64,7 @@ func TestCountValues(t *testing.T) {
 		{
 			"countValues(metric1.foo.*.*,valuesLimit=6)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.*.*", 0, 1}: {
+				{Metric: "metric1.foo.*.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar1.qux", []float64{2, 2, 4, 5, 6}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar2.baz", []float64{math.NaN(), 1, 1, 1, 1}, 1, now32),
@@ -87,7 +83,7 @@ func TestCountValues(t *testing.T) {
 		{
 			"countValues(metric1.foo.*.*, 5)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.foo.*.*", 0, 1}: {
+				{Metric: "metric1.foo.*.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar1.qux", []float64{2, 2, 4, 5, 6}, 1, now32),
 					types.MakeMetricData("metric1.foo.bar2.baz", []float64{math.NaN(), 1, 1, 1, 1}, 1, now32),
@@ -101,7 +97,7 @@ func TestCountValues(t *testing.T) {
 		{
 			"countValues(metric1.doo.*.*,valuesLimit=32)",
 			map[parser.MetricRequest][]*types.MetricData{
-				{"metric1.doo.*.*", 0, 1}: {
+				{Metric: "metric1.doo.*.*", From: 0, Until: 1}: {
 					types.MakeMetricData("metric1.doo.bar1.baz", []float64{11, 21, 31, 41, 51, 61, 71, 81, 91, 101}, 1, now32),
 					types.MakeMetricData("metric1.doo.bar2.baz", []float64{12, 22, 32, 42, 52, 62, 72, 82, 92, 102}, 1, now32),
 					types.MakeMetricData("metric1.doo.bar3.baz", []float64{13, 23, 33, 43, 53, 63, 73, 83, 93, 103}, 1, now32),
