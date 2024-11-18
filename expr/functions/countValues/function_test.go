@@ -85,7 +85,7 @@ func TestCountValues(t *testing.T) {
 			},
 		},
 		{
-			"countValues(metric1.foo.*.*, 5)"
+			"countValues(metric1.foo.*.*, 5)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{"metric1.foo.*.*", 0, 1}: {
 					types.MakeMetricData("metric1.foo.bar1.baz", []float64{1, 2, 3, 4, 5}, 1, now32),
