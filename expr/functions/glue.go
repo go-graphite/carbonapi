@@ -27,6 +27,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/compressPeriodicGaps"
 	"github.com/go-graphite/carbonapi/expr/functions/consolidateBy"
 	"github.com/go-graphite/carbonapi/expr/functions/constantLine"
+	"github.com/go-graphite/carbonapi/expr/functions/countValues"
 	"github.com/go-graphite/carbonapi/expr/functions/cumulative"
 	"github.com/go-graphite/carbonapi/expr/functions/delay"
 	"github.com/go-graphite/carbonapi/expr/functions/derivative"
@@ -153,6 +154,7 @@ func New(configs map[string]string) {
 		{name: "compressPeriodicGaps", filename: "compressPeriodicGaps", order: compressPeriodicGaps.GetOrder(), f: compressPeriodicGaps.New},
 		{name: "consolidateBy", filename: "consolidateBy", order: consolidateBy.GetOrder(), f: consolidateBy.New},
 		{name: "constantLine", filename: "constantLine", order: constantLine.GetOrder(), f: constantLine.New},
+		{name: "countValues", filename: "countValues", order: countValues.GetOrder(), f: countValues.New},
 		{name: "cumulative", filename: "cumulative", order: cumulative.GetOrder(), f: cumulative.New},
 		{name: "delay", filename: "delay", order: delay.GetOrder(), f: delay.New},
 		{name: "derivative", filename: "derivative", order: derivative.GetOrder(), f: derivative.New},
