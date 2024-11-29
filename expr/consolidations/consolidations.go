@@ -188,7 +188,13 @@ func SummarizeValues(f string, values []float64, XFilesFactor float32) float64 {
 			}
 		}
 	case "last", "current":
-		rv = values[len(values)-1]
+		rv = math.NaN()
+		for i := len(values) - 1; i >= 0; i-- {
+			if !math.IsNaN(values[i]) {
+				rv = values[i]
+				break
+			}
+		}
 		total = notNans(values)
 	case "range", "rangeOf":
 		vMax := math.Inf(-1)
