@@ -163,7 +163,7 @@ func SummarizeValues(f string, values []float64, XFilesFactor float32) float64 {
 				total++
 			}
 		}
-		if total == 0 {
+		if total > 0 {
 			rv /= float64(total)
 		}
 	case "max":
