@@ -103,8 +103,9 @@ func main() {
 			wg.Add(1)
 			wgStart.Add(1)
 			server := &http.Server{
-				Addr:    listener.Address,
-				Handler: mux,
+				ReadHeaderTimeout: 10 * time.Second,
+				Addr:              listener.Address,
+				Handler:           mux,
 			}
 			go func(h *http.Server) {
 				wgStart.Done()

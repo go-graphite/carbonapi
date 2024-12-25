@@ -118,9 +118,10 @@ func main() {
 		for _, ip := range ips {
 			address := (&net.TCPAddr{IP: ip, Port: port}).String()
 			s := &http.Server{
-				Addr:     address,
-				Handler:  handler,
-				ErrorLog: httpLogger,
+				ReadHeaderTimeout: 10 * time.Second,
+				Addr:              address,
+				Handler:           handler,
+				ErrorLog:          httpLogger,
 			}
 			servers = append(servers, s)
 			isTLS := false

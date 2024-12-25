@@ -44,7 +44,7 @@ func cleanupParams(r *http.Request) {
 
 func getCacheTimeout(logger *zap.Logger, r *http.Request, now32, until32 int64, duration time.Duration, cacheConfig *config.CacheConfig) int32 {
 	if tstr := r.FormValue("cacheTimeout"); tstr != "" {
-		t, err := strconv.Atoi(tstr)
+		t, err := strconv.ParseInt(tstr, 10, 32)
 		if err != nil {
 			logger.Error("failed to parse cacheTimeout",
 				zap.String("cache_string", tstr),
