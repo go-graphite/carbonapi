@@ -53,6 +53,13 @@ func DateParamToEpoch(s, qtz string, d int64, defaultTimeZone *time.Location) in
 		return d
 	}
 
+	var tz = defaultTimeZone
+	if qtz != "" {
+		if z, err := time.LoadLocation(qtz); err == nil {
+			tz = z
+		}
+	}
+
 	// relative timestamp
 	if s[0] == '-' {
 		offset, err := parser.IntervalString(s, -1)
@@ -60,16 +67,16 @@ func DateParamToEpoch(s, qtz string, d int64, defaultTimeZone *time.Location) in
 			return d
 		}
 
-		return timeNow().Add(time.Duration(offset) * time.Second).Unix()
+		return timeNow().In(tz).Add(time.Duration(offset) * time.Second).Unix()
 	}
 
 	switch s {
 	case "now":
-		return timeNow().Unix()
+		return timeNow().In(tz).Unix()
 	case "midnight", "noon", "teatime":
-		yy, mm, dd := timeNow().Date()
+		yy, mm, dd := timeNow().In(tz).Date()
 		hh, min, _ := parseTime(s) // error ignored, we know it's valid
-		dt := time.Date(yy, mm, dd, hh, min, 0, 0, defaultTimeZone)
+		dt := time.Date(yy, mm, dd, hh, min, 0, 0, tz)
 		return dt.Unix()
 	}
 
@@ -93,23 +100,16 @@ func DateParamToEpoch(s, qtz string, d int64, defaultTimeZone *time.Location) in
 		return d
 	}
 
-	var tz = defaultTimeZone
-	if qtz != "" {
-		if z, err := time.LoadLocation(qtz); err != nil {
-			tz = z
-		}
-	}
-
 	var t time.Time
 dateStringSwitch:
 	switch ds {
 	case "today":
-		t = timeNow()
+		t = timeNow().In(tz)
 		// nothing
 	case "yesterday":
-		t = timeNow().AddDate(0, 0, -1)
+		t = timeNow().In(tz).AddDate(0, 0, -1)
 	case "tomorrow":
-		t = timeNow().AddDate(0, 0, 1)
+		t = timeNow().In(tz).AddDate(0, 0, 1)
 	default:
 		for _, format := range TimeFormats {
 			t, err = time.ParseInLocation(format, ds, tz)
@@ -128,7 +128,7 @@ dateStringSwitch:
 	}
 
 	yy, mm, dd := t.Date()
-	t = time.Date(yy, mm, dd, hour, minute, 0, 0, defaultTimeZone)
+	t = time.Date(yy, mm, dd, hour, minute, 0, 0, tz)
 
 	return t.Unix()
 }
