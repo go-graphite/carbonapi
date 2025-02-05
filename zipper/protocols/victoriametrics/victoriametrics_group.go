@@ -211,6 +211,7 @@ func NewWithLimiter(logger *zap.Logger, config types.BackendV2, tldCacheDisabled
 		maxMetricsPerRequest: *config.MaxBatchSize,
 
 		step:                 step,
+		forceMinStepInterval: forceMinStepInterval,
 		maxPointsPerQuery:    maxPointsPerQuery,
 		vmClusterTenantID:    vmClusterTenantID,
 		startDelay:           delay,
