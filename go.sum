@@ -61,6 +61,8 @@ github.com/fsnotify/fsnotify v1.7.0 h1:8JEhPFa5W2WU7YfeZzPNqzMP6Lwt7L2715Ggo0nos
 github.com/fsnotify/fsnotify v1.7.0/go.mod h1:40Bi/Hjc2AVfZrqy+aj+yEI+/bRxZnMJyTJwOpGvigM=
 github.com/go-errors/errors v1.1.1 h1:ljK/pL5ltg3qoN+OtN6yCv9HWSfMwxSx90GJCZQxYNg=
 github.com/go-errors/errors v1.1.1/go.mod h1:psDX2osz5VnTOnFWbDeWwS7yejl+uV3FEWEp4lssFEs=
+github.com/go-graphite/gocairo v0.1.0 h1:VH624JTY1a6DsBHcM0knN73jJSUS/LwpqVEyXyBZRH4=
+github.com/go-graphite/gocairo v0.1.0/go.mod h1:6yOCt3ZqO6z4l6zZd5jM5Cj89B1kDK999KRYp6QO4Vs=
 github.com/go-graphite/protocol v1.0.0 h1:Fqb0mkVVtfMrn6vw6Ntm3raf3gVVZCOVdZu4JosW5qE=
 github.com/go-graphite/protocol v1.0.0/go.mod h1:eonkg/0UGhJUYu+PshOg1NzWSUcXskr/yHeQXJHJr8Y=
 github.com/gogo/protobuf v1.3.2 h1:Ov1cvc58UF3b5XjBnZv7+opcTcQFZebYjWzi34vdm4Q=

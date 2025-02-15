@@ -36,11 +36,11 @@ type pathDataHeader struct {
 // decodePathSegment extracts a series of points out of a cairo_path_data_t array.
 func decodePathSegment(pathData unsafe.Pointer) (*PathSegment, int) {
 	header := (*pathDataHeader)(pathData)
+	parts := unsafe.Slice((*PathPoint)(pathData), header.length)
 	seg := PathSegment{
 		Type:   PathDataType(header.dataType),
 		Points: make([]PathPoint, header.length-1),
 	}
-	parts := (*[1 << 30]PathPoint)(pathData)
 	copy(seg.Points, parts[1:])
 	return &seg, int(header.length)
 }

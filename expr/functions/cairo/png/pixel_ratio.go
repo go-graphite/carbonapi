@@ -1,8 +1,9 @@
+//go:build cairo
 // +build cairo
 
 package png
 
-import "github.com/evmar/gocairo/cairo"
+import "github.com/go-graphite/gocairo/cairo"
 
 // interface with all used cairo.Context methods
 type cairoContext interface {
