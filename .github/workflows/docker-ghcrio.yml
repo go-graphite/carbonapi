@@ -1,47 +1,71 @@
-name: Upload Docker images to ghcr.io
+name: Upload Docker images to GitHub Container Registry (ghcr.io)
+
 on:
   release:
     types: [published]
-  workflow_dispatch:
-    inputs:
-      ref:
-        description: 'Git tag to push the image'
-        required: true
-        type: string
+  push:
+    branches: [ master, main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ master, main ]
+
 jobs:
   docker:
-    name: Build image
+    name: Build images
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+      - name: Set up QEMU
+        if: github.event_name != 'pull_request'
+        uses: docker/setup-qemu-action@v3
         with:
-          ref: ${{ inputs.ref }}
+          platforms: arm,arm64
+          cache-image: false
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
         with:
-          context: ${{ inputs.ref && 'git' || 'workflow' }}
           images: ghcr.io/${{ github.repository }}
           # create latest tag for branch events
           flavor: |
-            latest=${{ inputs.ref && 'false' || 'auto' }}
+            latest=${{ github.event_name == 'push' && github.ref_type == 'branch' }}
           tags: |
-            type=semver,pattern={{version}},value=${{inputs.ref}}
-            type=semver,pattern={{major}}.{{minor}},value=${{inputs.ref}}
-            type=semver,pattern={{major}}.{{minor}}.{{patch}},value=${{inputs.ref}}
-      - name: Login to ghcr.io
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}.{{minor}}.{{patch}}
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
+      - name: Login to GitHub Container Registry
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push
-        id: docker_build
-        uses: docker/build-push-action@v5
+      - name: Build
+        if: github.event_name == 'pull_request'
+        uses: docker/build-push-action@v6
         with:
-          # push for non-pr events
-          push: ${{ github.event_name != 'pull_request' }}
           context: .
+          platforms: linux/amd64
+          push: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+      - name: Build and push
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

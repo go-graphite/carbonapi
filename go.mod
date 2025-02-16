@@ -17,7 +17,7 @@ require (
 	github.com/dgryski/go-onlinestats v0.0.0-20170612111826-1c7d19468768
 	github.com/dgryski/httputil v0.0.0-20160116060654-189c2918cd08
 	github.com/dustin/go-humanize v1.0.1
-	github.com/evmar/gocairo v0.0.0-20160222165215-ddd30f837497
+	github.com/go-graphite/gocairo v0.1.0
 	github.com/go-graphite/protocol v1.0.0
 	github.com/golang/protobuf v1.5.4
 	github.com/gomodule/redigo v1.9.2

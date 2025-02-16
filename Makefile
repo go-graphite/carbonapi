@@ -11,10 +11,10 @@ PKG_CARBONAPI=github.com/go-graphite/carbonapi/cmd/carbonapi
 PKG_MOCKBACKEND=github.com/go-graphite/carbonapi/cmd/mockbackend
 
 carbonapi: $(shell find . -name '*.go' | grep -v 'vendor')
-	PKG_CONFIG_PATH="$(EXTRA_PKG_CONFIG_PATH)" GO111MODULE=on $(GO) build -mod=vendor -v -tags cairo -ldflags '-X main.BuildVersion=$(VERSION)' $(PKG_CARBONAPI)
+	PKG_CONFIG_PATH="$(EXTRA_PKG_CONFIG_PATH)" GO111MODULE=on $(GO) build -mod=vendor -tags cairo -ldflags '-X main.BuildVersion=$(VERSION)' $(PKG_CARBONAPI)
 
 mockbackend: $(shell find . -name '*.go' | grep -v 'vendor')
-	GO111MODULE=on $(GO) build -mod=vendor -v -ldflags '-X main.BuildVersion=$(VERSION)' $(PKG_MOCKBACKEND)
+	GO111MODULE=on $(GO) build -mod=vendor -ldflags '-X main.BuildVersion=$(VERSION)' $(PKG_MOCKBACKEND)
 
 debug:
 	PKG_CONFIG_PATH="$(EXTRA_PKG_CONFIG_PATH)" GO111MODULE=on $(GO) build -mod=vendor -v -tags cairo -ldflags '-X main.BuildVersion=$(VERSION)' -gcflags=all='-l -N' $(PKG_CARBONAPI)
@@ -25,8 +25,14 @@ nocairo:
 test:
 	PKG_CONFIG_PATH="$(EXTRA_PKG_CONFIG_PATH)" $(GO) test -mod=vendor -tags cairo ./... -race
 
+test_norace:
+	PKG_CONFIG_PATH="$(EXTRA_PKG_CONFIG_PATH)" $(GO) test -mod=vendor -tags cairo ./...
+
 test_nocairo:
 	$(GO) test -mod=vendor ./... -race
+
+test_nocairo_norace:
+	$(GO) test -mod=vendor ./...
 
 vet:
 	$(GO) vet

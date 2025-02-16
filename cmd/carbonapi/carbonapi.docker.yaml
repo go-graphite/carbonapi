@@ -1,0 +1,23 @@
+listeners:
+  - address: ':8080'
+
+idleConnections: 1
+
+upstreams:
+  keepAliveInterval: 120s
+  tldCacheDisabled: true
+  backendsv2:
+    backends:
+      - groupName: carbon
+        protocol: carbonapi_v3_pb
+        lbMethod: any
+        servers:
+          - 'http://carbon:8080'
+
+logger:
+  - logger: ''
+    file: stdout
+    level: error
+    encoding: console
+    encodingTime: ''
+    encodingDuration: ''

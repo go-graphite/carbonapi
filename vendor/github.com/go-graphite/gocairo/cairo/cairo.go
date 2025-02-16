@@ -107,7 +107,7 @@ func (pi *PathIter) Next() *PathSegment {
 	}
 	// path.data is an array of cairo_path_data_t, but the union makes
 	// things complicated.
-	dataArray := (*[1 << 30]C.cairo_path_data_t)(unsafe.Pointer(pi.path.Ptr.data))
+	dataArray := unsafe.Slice((*C.cairo_path_data_t)(unsafe.Pointer(pi.path.Ptr.data)), pi.path.Ptr.num_data)
 	seg, ofs := decodePathSegment(unsafe.Pointer(&dataArray[pi.i]))
 	pi.i += C.int(ofs)
 	return seg
@@ -3651,7 +3651,7 @@ func SVGGetVersions() []SVGVersion {
 	var cVersionsPtr *C.cairo_svg_version_t
 	var cNumVersions C.int
 	C.cairo_svg_get_versions(&cVersionsPtr, &cNumVersions)
-	slice := (*[1 << 30]C.cairo_svg_version_t)(unsafe.Pointer(cVersionsPtr))[:cNumVersions:cNumVersions]
+	slice := unsafe.Slice((*C.cairo_svg_version_t)(unsafe.Pointer(cVersionsPtr)), cNumVersions)
 	versions := make([]SVGVersion, cNumVersions)
 	for i := 0; i < int(cNumVersions); i++ {
 		versions[i] = SVGVersion(slice[i])
