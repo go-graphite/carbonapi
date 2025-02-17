@@ -1,5 +1,6 @@
 FROM golang:alpine AS builder
 ARG TARGETARCH
+ARG GOCACHE=/tmp
 
 RUN apk --no-cache add --update make gcc git musl-dev
 
@@ -7,8 +8,8 @@ USER nobody:nogroup
 WORKDIR /usr/local/src/carbonapi
 COPY --chown=nobody:nogroup . .
 RUN --network=none make clean
-RUN --mount=type=cache,id=go-cache,target=/.cache,sharing=locked,uid=65534,gid=65534 make nocairo
-RUN --mount=type=cache,id=go-cache,target=/.cache,sharing=locked,uid=65534,gid=65534 <<EOT
+RUN make nocairo
+RUN <<EOT
 if [ "${TARGETARCH:-unknown}" = "amd64" ]; then
   make test_nocairo
 else
