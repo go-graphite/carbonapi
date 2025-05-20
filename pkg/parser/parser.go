@@ -651,6 +651,12 @@ func ParseExpr(e string) (Expr, string, error) {
 	if err != nil {
 		return exp, e, err
 	}
+
+  // all symbols should be parsed, otherwise we have an syntax error
+  if e != "" {
+    return nil, "", ErrUnexpectedCharacter
+  }
+
 	exp, err = defineMap.expandExpr(exp.(*expr))
 	return exp, e, err
 }
