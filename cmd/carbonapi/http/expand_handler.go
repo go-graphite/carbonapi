@@ -14,7 +14,6 @@ import (
 
 	"github.com/go-graphite/carbonapi/carbonapipb"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
-	"github.com/go-graphite/carbonapi/date"
 	utilctx "github.com/go-graphite/carbonapi/util/ctx"
 )
 
@@ -31,12 +30,6 @@ func expandHandler(w http.ResponseWriter, r *http.Request) {
 	jsonp := r.FormValue("jsonp")
 	groupByExpr := r.FormValue("groupByExpr")
 	leavesOnly := r.FormValue("leavesOnly")
-
-	qtz := r.FormValue("tz")
-	from := r.FormValue("from")
-	until := r.FormValue("until")
-	from64 := date.DateParamToEpoch(from, qtz, timeNow().Add(-time.Hour).Unix(), config.Config.DefaultTimeZone)
-	until64 := date.DateParamToEpoch(until, qtz, timeNow().Unix(), config.Config.DefaultTimeZone)
 
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
 
@@ -84,8 +77,6 @@ func expandHandler(w http.ResponseWriter, r *http.Request) {
 
 	var pv3Request pbv3.MultiGlobRequest
 	pv3Request.Metrics = query
-	pv3Request.StartTime = from64
-	pv3Request.StopTime = until64
 
 	multiGlobs, stats, err := config.Config.ZipperInstance.Find(ctx, pv3Request)
 	if stats != nil {
