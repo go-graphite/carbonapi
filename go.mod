@@ -8,7 +8,7 @@ require (
 	github.com/JaderDias/movingmedian v0.0.0-20220813210630-d8c6b6de8835
 	github.com/alicebob/miniredis/v2 v2.22.0
 	github.com/ansel1/merry v1.8.0
-	github.com/ansel1/merry/v2 v2.2.1
+	github.com/ansel1/merry/v2 v2.2.2
 	github.com/barkimedes/go-deepcopy v0.0.0-20220514131651-17c30cfc62df
 	github.com/bradfitz/gomemcache v0.0.0-20230905024940-24af94b03874
 	github.com/cactus/go-statsd-client/v5 v5.1.0
@@ -40,7 +40,7 @@ require (
 	github.com/valyala/fastjson v1.6.4
 	github.com/wangjohn/quickselect v0.0.0-20161129230411-ed8402a42d5f
 	go.uber.org/zap v1.27.0
-	golang.org/x/sys v0.19.0
+	golang.org/x/sys v0.24.0
 	gonum.org/v1/gonum v0.15.0
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -73,7 +73,7 @@ require (
 	golang.org/x/exp v0.0.0-20240416160154-fe59bbe5cc7f // indirect
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	google.golang.org/protobuf v1.33.0 // indirect
+	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
