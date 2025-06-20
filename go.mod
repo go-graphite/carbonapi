@@ -36,11 +36,11 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/tebeka/strftime v0.1.5
 	github.com/tevino/abool v1.2.0
-	github.com/tinylib/msgp v1.1.9
+	github.com/tinylib/msgp v1.3.0
 	github.com/valyala/fastjson v1.6.4
 	github.com/wangjohn/quickselect v0.0.0-20161129230411-ed8402a42d5f
 	go.uber.org/zap v1.27.0
-	golang.org/x/sys v0.19.0
+	golang.org/x/sys v0.21.0
 	gonum.org/v1/gonum v0.15.0
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -59,7 +59,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/openhistogram/circonusllhist v0.4.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.1 // indirect
-	github.com/philhofer/fwd v1.1.2 // indirect
+	github.com/philhofer/fwd v1.1.3-0.20240916144458-20a13a1f6b7c // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
