@@ -10,8 +10,8 @@ github.com/alicebob/miniredis/v2 v2.35.0 h1:QwLphYqCEAo1eu1TqPRN2jgVMPBweeQcR21j
 github.com/alicebob/miniredis/v2 v2.35.0/go.mod h1:TcL7YfarKPGDAthEtl5NBeHZfeUQj6OXMm/+iu5cLMM=
 github.com/ansel1/merry v1.8.0 h1:3RddCV1ubXegKphsodbkmZ4QuROep/ZaPCuwlKuCfFg=
 github.com/ansel1/merry v1.8.0/go.mod h1:wJVu1mHEtEUWq5zTTX9RiWjcE+xL8y7BGYl2VTYdP7M=
-github.com/ansel1/merry/v2 v2.2.1 h1:PJpynLFvIpJkn8ZGgNHLq332zIyBc/wTqp3o42ZpWdU=
-github.com/ansel1/merry/v2 v2.2.1/go.mod h1:K9lCkM6tJ8s7LQVQ0ZmZ0WrB3BCyr+ZDzoqotzzoxpI=
+github.com/ansel1/merry/v2 v2.2.2 h1:/R8URU5LtiYwP7UI1KoZW4ex4nTzr+/T49+TYZsjUas=
+github.com/ansel1/merry/v2 v2.2.2/go.mod h1:sludwzkWfhZHOF4jSOViv+t2nnu2HNmtsMKzAfwmVB8=
 github.com/barkimedes/go-deepcopy v0.0.0-20220514131651-17c30cfc62df h1:GSoSVRLoBaFpOOds6QyY1L8AX7uoY+Ln3BHc22W40X0=
 github.com/barkimedes/go-deepcopy v0.0.0-20220514131651-17c30cfc62df/go.mod h1:hiVxq5OP2bUGBRNS3Z/bt/reCLFNbdcST6gISi1fiOM=
 github.com/bradfitz/gomemcache v0.0.0-20230905024940-24af94b03874 h1:N7oVaKyGp8bttX0bfZGmcGkjz7DLQXhAn3DNd3T0ous=
