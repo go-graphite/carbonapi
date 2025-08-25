@@ -33,7 +33,7 @@ require (
 	github.com/rs/dnscache v0.0.0-20230804202142-fc85eb664529
 	github.com/satori/go.uuid v1.2.0
 	github.com/spf13/viper v1.20.1
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	github.com/tebeka/strftime v0.1.5
 	github.com/tevino/abool v1.2.0
 	github.com/tinylib/msgp v1.1.9
