@@ -128,8 +128,8 @@ github.com/pelletier/go-toml/v2/internal/characters
 github.com/pelletier/go-toml/v2/internal/danger
 github.com/pelletier/go-toml/v2/internal/tracker
 github.com/pelletier/go-toml/v2/unstable
-# github.com/philhofer/fwd v1.1.2
-## explicit; go 1.15
+# github.com/philhofer/fwd v1.2.0
+## explicit; go 1.20
 github.com/philhofer/fwd
 # github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
 ## explicit
@@ -181,8 +181,8 @@ github.com/tebeka/strftime
 # github.com/tevino/abool v1.2.0
 ## explicit; go 1.14
 github.com/tevino/abool
-# github.com/tinylib/msgp v1.1.9
-## explicit; go 1.18
+# github.com/tinylib/msgp v1.4.0
+## explicit; go 1.22
 github.com/tinylib/msgp/msgp
 # github.com/valyala/fastjson v1.6.4
 ## explicit; go 1.12
@@ -217,8 +217,8 @@ go.yaml.in/yaml/v3
 # golang.org/x/sync v0.16.0
 ## explicit; go 1.23.0
 golang.org/x/sync/singleflight
-# golang.org/x/sys v0.29.0
-## explicit; go 1.18
+# golang.org/x/sys v0.34.0
+## explicit; go 1.23.0
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # golang.org/x/text v0.28.0
