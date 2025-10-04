@@ -16,29 +16,33 @@ Installation
 
 At this moment we are building packages for CentOS 7, Rockylinux 8 (should be compatible with RHEL 8), Debian 10, Debian 11, Debian 12 (testing), Ubuntu 18.04, Ubuntu 20.04, Ubuntu 22.04. Installation guides are available on packagecloud (see the links below).
 
-Stable versions: [Stable repo](https://packagecloud.io/go-graphite/stable/install)
+* Stable versions: [Stable repo](https://packagecloud.io/go-graphite/stable/install)
+* *Autobuilds* (master, might be unstable): [Autobuild repo](https://packagecloud.io/go-graphite/autobuilds/install)
+* *Docker* images: [ghcr.io](https://ghcr.io/go-graphite/carbonapi)
 
-Autobuilds (master, might be unstable): [Autobuild repo](https://packagecloud.io/go-graphite/autobuilds/install)
+Configuration
+-------------
 
-Configuration guides: [docs/configuration.md](https://github.com/go-graphite/carbonapi/blob/master/doc/configuration.md) and [example config](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.yaml).
+CarbonAPI* can be configured by *config file* or by *environment variables*.
 
-There are multiple example configurations available for different backends: [prometheus](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.prometheus.yaml), [graphite-clickhouse](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.clickhouse.yaml), [go-carbon](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.yaml), [victoriametrics](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.victoriametrics.yaml), [IRONdb](https://github.com/go-graphite/carbonapi/blob/master/cmd/carbonapi/carbonapi.example.irondb.yaml)
+### Configuration file
 
-General information
--------------------
+```bash
+$ ./carbonapi -config /etc/carbonapi.yaml
+```
 
-Carbonapi can be configured by environment variables or by config file. For an example see `carbonapi.example.yaml`
+* [Configuration guides](doc/configuration.md),
+* [Example config](cmd/carbonapi/carbonapi.example.yaml).
 
-`$ ./carbonapi -config /etc/carbonapi.yaml`
+There are multiple example configurations available for different backends:
 
-Request metrics will be dumped to graphite if corresponding config options are set,
-or if the GRAPHITEHOST/GRAPHITEPORT environment variables are found.
+* [Prometheus](cmd/carbonapi/carbonapi.example.prometheus.yaml),
+* [graphite-clickhouse](cmd/carbonapi/carbonapi.example.clickhouse.yaml),
+* [go-carbon](cmd/carbonapi/carbonapi.example.yaml),
+* [VictoriaMetrics](cmd/carbonapi/carbonapi.example.victoriametrics.yaml),
+* [IRONdb](cmd/carbonapi/carbonapi.example.irondb.yaml).
 
-Request data will be stored in memory (default) or in memcache.
-
-Configuration is described in [docs](https://github.com/go-graphite/carbonapi/blob/master/doc/configuration.md)
-
-## Configuration by environment variables
+### Configuration by environment variables
 
 Every parameter in config file are mapped to environment variable. I.E.
 
@@ -126,10 +130,10 @@ Overall rule of thumb is that carbonapi supports last 2 major go versions. E.x. 
 
 You can verify current versions that are being tested in [CI Configuration](https://github.com/go-graphite/carbonapi/blob/main/.github/workflows/tests.yml#L14).
 
-CarbonAPI uses protobuf-based protocol to talk with underlying storages. For current version the compatibility list is:
+*CarbonAPI* uses protobuf-based protocol to talk with underlying storages. For current version the compatibility list is:
 
-1. [go-carbon](https://github.com/lomik/go-carbon) >= 0.9.0 (Note: you need to enable carbonserver in go-carbon). Recommended to run latest version, that currently supports `carbonapi_v3_pb`
-2. [graphite-clickhouse](https://github.com/lomik/graphite-clickhouse) any. That's alternative storage that doesn't use Whisper.
+1. [go-carbon](https://github.com/go-graphite/go-carbon) >= 0.9.0 (Note: you need to enable carbonserver in go-carbon). Recommended to run latest version, that currently supports `carbonapi_v3_pb`
+2. [graphite-clickhouse](https://github.com/go-graphite/graphite-clickhouse) any. That's alternative storage that doesn't use Whisper.
 3. [metrictank](https://github.com/grafana/metrictank) - supported via `msgpack` protocol. Support is not very well tested and might contain bugs. Use with cautions. Tags are not supported.
 4. [carbonapi](https://github.com/go-graphite/carbonapi) >= 0.5. Note: starting from carbonapi 1274333ebd1fe50946cb4d51561e3e0f1060bc79 separate binary of carbonzipper is deprecated.
 5. [carbonserver](https://github.com/grobian/carbonserver)@master (Note: you should probably switch to go-carbon in that case).
@@ -155,21 +159,25 @@ Tag support was only tested with `graphite-clickhouse`, however it should work w
 
 Internal Metrics
 ----------------------------------
-The internal metrics are configured inside the [graphite](https://github.com/go-graphite/carbonapi/blob/main/doc/configuration.md#graphite) subsection and sent to your destinated host on an specified interval. The metrics are:
+
+Internal metrics will be dumped to *Graphite* if [corresponding config options](doc/configuration.md#graphite) are set,
+or if the `GRAPHITEHOST`/`GRAPHITEPORT` environment variables are found.
+
+The metrics are:
 
 | Metric Name | Description |
 | ----------- | ----------- |
-| cache_items | if caching is enabled, this metric will contain many metrics are stored in cache |
-| cache_size | configured query cache size in bytes |
-| request_cache_hits | how many requests were served from cache. (this is for requests to /render endpoint) |
-| request_cache_misses | how many requests were not in cache. (this is for requests to /render endpoint) |
-| request_cache_overhead_ns | how much time in ns it took to talk to cache (that is useful to assess if cache actually helps you in terms of latency) (this is for  |requests to /render endpoint)
-| find_requests | requests server by endpoint /metrics/find |
-| requests | requests served by endpoint /render |
-| requests_in_XX_to_XX | request response times in percentiles |
-| timeouts | number of timeouts while fetching from backend |
-| backend_cache_hits | how many requests were not read from backend |
-| backend_cache_misses | how many requests were not found in the backend |
+| `cache_items` | if caching is enabled, this metric will contain many metrics are stored in cache |
+| `cache_size` | configured query cache size in bytes |
+| `request_cache_hits` | how many requests were served from cache. (this is for requests to /render endpoint) |
+| `request_cache_misses` | how many requests were not in cache. (this is for requests to /render endpoint) |
+| `request_cache_overhead_ns` | how much time in ns it took to talk to cache (that is useful to assess if cache actually helps you in terms of latency) (this is for `requests` to `/render` endpoint) |
+| `find_requests` | requests server by endpoint /metrics/find |
+| `requests` | requests served by endpoint `/render` |
+| `requests_in_XX_to_XX` | request response times in percentiles |
+| `timeouts` | number of timeouts while fetching from backend |
+| `backend_cache_hits` | how many requests were not read from backend |
+| `backend_cache_misses` | how many requests were not found in the backend |
 
 OSX Build Notes
 ---------------
