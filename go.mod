@@ -1,6 +1,6 @@
 module github.com/go-graphite/carbonapi
 
-go 1.23.0
+go 1.24.0
 
 require (
 	github.com/JaderDias/movingmedian v0.0.0-20220813210630-d8c6b6de8835
@@ -38,7 +38,7 @@ require (
 	github.com/valyala/fastjson v1.6.4
 	github.com/wangjohn/quickselect v0.0.0-20161129230411-ed8402a42d5f
 	go.uber.org/zap v1.27.0
-	golang.org/x/sys v0.34.0
+	golang.org/x/sys v0.36.0
 	gonum.org/v1/gonum v0.16.0
 	gopkg.in/yaml.v2 v2.4.0
 )
