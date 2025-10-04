@@ -14,18 +14,17 @@ jobs:
     strategy:
       matrix:
         go:
-          - ^1.21
-          - ^1.22
+          - ^1.24
           - ^1
     steps:
 
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
         go-version: ${{ matrix.go }}
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: 200
 
