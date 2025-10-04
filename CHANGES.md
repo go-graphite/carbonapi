@@ -1,22 +1,44 @@
-Changes
-=================================================
-
-[Fix] - bugfix
-
-**[Breaking]** - breaking change
-
-[Feature] - new feature
-
-[Improvement] - non-breaking improvement
-
-[Code] - code quality related change that shouldn't make any significant difference for end-user
-
-[Config] - related to config options or default parameters
-
-[Build] - only related to ways how someone can build application
-
 CHANGELOG
 ---------
+
+## What's Changed
+* doc: changelog for version 0.17.0 by @Tetrergeru in https://github.com/go-graphite/carbonapi/pull/843
+* Trigger docker-rebuild when the release is edited by @Felixoid in https://github.com/go-graphite/carbonapi/pull/845
+* Manual trigger for docker images build by @Felixoid in https://github.com/go-graphite/carbonapi/pull/846
+* [expr] add countValues func by @Ennorion in https://github.com/go-graphite/carbonapi/pull/847
+* In date.DateParamToEpoch handle tz parameter by @cbowman0 in https://github.com/go-graphite/carbonapi/pull/853
+* fix SummarizeValues to return last non-NaN value by @spacefreak86 in https://github.com/go-graphite/carbonapi/pull/848
+* Takeover forceMinStepInterval from config to VictoriaMetricsGroup object by @mlausch in https://github.com/go-graphite/carbonapi/pull/857
+* Docker: build multiarchitecture images by @RoEdAl in https://github.com/go-graphite/carbonapi/pull/858
+* Docker: distribute build across multiple runners by @RoEdAl in https://github.com/go-graphite/carbonapi/pull/863
+* Add -version flag for carbonapi executable by @martialblog in https://github.com/go-graphite/carbonapi/pull/866
+* Remove tz, from, and until parameters from expand handler by @martialblog in https://github.com/go-graphite/carbonapi/pull/865
+* Add dependabot configuration for golang dependencies by @RincewindsHat in https://github.com/go-graphite/carbonapi/pull/867
+* Bump github.com/spf13/viper from 1.18.2 to 1.20.1 by @dependabot[bot] in https://github.com/go-graphite/carbonapi/pull/874
+* Bump github.com/alicebob/miniredis/v2 from 2.22.0 to 2.35.0 by @dependabot[bot] in https://github.com/go-graphite/carbonapi/pull/870
+* Bump actions/download-artifact from 4 to 5 by @dependabot[bot] in https://github.com/go-graphite/carbonapi/pull/877
+* Bump actions/setup-go from 5 to 6 by @dependabot[bot] in https://github.com/go-graphite/carbonapi/pull/882
+* Bump github.com/go-viper/mapstructure/v2 from 2.2.1 to 2.4.0 by @dependabot[bot] in https://github.com/go-graphite/carbonapi/pull/880
+* Supporting 2 last golang releases by @deniszh in https://github.com/go-graphite/carbonapi/pull/887
+* Bump github.com/spf13/viper from 1.20.1 to 1.21.0 by @dependabot[bot] in https://github.com/go-graphite/carbonapi/pull/886
+* README: mention about Docker images (again) by @RoEdAl in https://github.com/go-graphite/carbonapi/pull/860
+* Bump actions/checkout from 4 to 5 by @dependabot[bot] in https://github.com/go-graphite/carbonapi/pull/879
+* Bump gonum.org/v1/gonum from 0.15.0 to 0.16.0 by @dependabot[bot] in https://github.com/go-graphite/carbonapi/pull/871
+* Bump github.com/ansel1/merry/v2 from 2.2.1 to 2.2.2 by @dependabot[bot] in https://github.com/go-graphite/carbonapi/pull/869
+* Bump github.com/tinylib/msgp from 1.1.9 to 1.4.0 by @dependabot[bot] in https://github.com/go-graphite/carbonapi/pull/884
+* Couple of typos by @deniszh in https://github.com/go-graphite/carbonapi/pull/888
+* Bump golang.org/x/sys from 0.29.0 to 0.36.0 by @dependabot[bot] in https://github.com/go-graphite/carbonapi/pull/885
+
+## New Contributors
+* @Tetrergeru made their first contribution in https://github.com/go-graphite/carbonapi/pull/843
+* @cbowman0 made their first contribution in https://github.com/go-graphite/carbonapi/pull/853
+* @spacefreak86 made their first contribution in https://github.com/go-graphite/carbonapi/pull/848
+* @mlausch made their first contribution in https://github.com/go-graphite/carbonapi/pull/857
+* @RoEdAl made their first contribution in https://github.com/go-graphite/carbonapi/pull/858
+* @martialblog made their first contribution in https://github.com/go-graphite/carbonapi/pull/866
+* @RincewindsHat made their first contribution in https://github.com/go-graphite/carbonapi/pull/867
+
+**Full Changelog**: https://github.com/go-graphite/carbonapi/compare/v0.17.0...v0.18.1
 
 **0.17.0**
 
