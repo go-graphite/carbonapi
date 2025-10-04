@@ -90,7 +90,7 @@ func (f *groupByNode) Do(ctx context.Context, eval interfaces.Evaluator, e parse
 		if err != nil {
 			return nil, err
 		} else if nexpr.Type() != parser.EtFunc {
-			err = merry.WithMessagef(parser.ErrInvalidArg, "unsupported "+target+" callback function")
+			err = merry.WithMessage(parser.ErrInvalidArg, "unsupported "+target+" callback function")
 			return nil, err
 		}
 		// remove all stub_ prefixes we've prepended before
