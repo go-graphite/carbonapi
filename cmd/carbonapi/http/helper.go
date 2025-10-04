@@ -65,6 +65,8 @@ func (r responseFormat) String() string {
 
 func (r responseFormat) ValidExpandFormat() bool {
 	switch r {
+	case treejsonFormat:
+		return true
 	case jsonFormat:
 		return true
 	default:

@@ -4,6 +4,7 @@ import (
 	"context"
 	"expvar"
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -26,6 +27,9 @@ import (
 	"github.com/go-graphite/carbonapi/internal/dns"
 )
 
+// Version of carbonapi
+const Version = "0.17.0"
+
 // BuildVersion is provided to be overridden at build time. Eg. go build -ldflags -X 'main.BuildVersion=...'
 var BuildVersion = "(development build)"
 
@@ -36,6 +40,7 @@ func main() {
 	}
 	logger := zapwriter.Logger("main")
 
+	printVersion := flag.Bool("version", false, "Print version")
 	configPath := flag.String("config", "", "Path to the `config file`.")
 	checkConfig := flag.Bool("check-config", false, "Check config file and exit.")
 	exactConfig := flag.Bool("exact-config", false, "Ensure that all config params are contained in the target struct.")
@@ -46,7 +51,14 @@ func main() {
 	if *envPrefix == "" {
 		logger.Warn("empty prefix is not recommended due to possible collisions with OS environment variables")
 	}
+
 	flag.Parse()
+	if *printVersion {
+		fmt.Println(Version)
+		fmt.Println(BuildVersion)
+		return
+	}
+
 	config.SetUpViper(logger, configPath, *exactConfig, *envPrefix)
 	if *checkConfig {
 		os.Exit(0)
