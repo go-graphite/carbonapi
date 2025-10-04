@@ -60,7 +60,7 @@ func CopyToJSON(dst io.Writer, src io.Reader) (n int64, err error) {
 // WriteToJSON translates MessagePack from 'r' and writes it as
 // JSON to 'w' until the underlying reader returns io.EOF. It returns
 // the number of bytes written, and an error if it stopped before EOF.
-func (r *Reader) WriteToJSON(w io.Writer) (n int64, err error) {
+func (m *Reader) WriteToJSON(w io.Writer) (n int64, err error) {
 	var j jsWriter
 	var bf *bufio.Writer
 	if jsw, ok := w.(jsWriter); ok {
@@ -71,7 +71,7 @@ func (r *Reader) WriteToJSON(w io.Writer) (n int64, err error) {
 	}
 	var nn int
 	for err == nil {
-		nn, err = rwNext(j, r)
+		nn, err = rwNext(j, m)
 		n += int64(nn)
 	}
 	if err != io.EOF {
@@ -107,6 +107,13 @@ func rwMap(dst jsWriter, src *Reader) (n int, err error) {
 
 	if sz == 0 {
 		return dst.WriteString("{}")
+	}
+
+	// This is potentially a recursive call.
+	if done, err := src.recursiveCall(); err != nil {
+		return 0, err
+	} else {
+		defer done()
 	}
 
 	err = dst.WriteByte('{')
@@ -162,6 +169,13 @@ func rwArray(dst jsWriter, src *Reader) (n int, err error) {
 	if err != nil {
 		return
 	}
+	// This is potentially a recursive call.
+	if done, err := src.recursiveCall(); err != nil {
+		return 0, err
+	} else {
+		defer done()
+	}
+
 	var sz uint32
 	var nn int
 	sz, err = src.ReadArrayHeader()
@@ -296,7 +310,7 @@ func rwExtension(dst jsWriter, src *Reader) (n int, err error) {
 	}
 	n++
 
-	nn, err = dst.WriteString(`"type:"`)
+	nn, err = dst.WriteString(`"type":`)
 	n += nn
 	if err != nil {
 		return
@@ -332,14 +346,12 @@ func rwExtension(dst jsWriter, src *Reader) (n int, err error) {
 }
 
 func rwString(dst jsWriter, src *Reader) (n int, err error) {
-	var p []byte
-	p, err = src.R.Peek(1)
+	lead, err := src.R.PeekByte()
 	if err != nil {
 		return
 	}
-	lead := p[0]
 	var read int
-
+	var p []byte
 	if isfixstr(lead) {
 		read = int(rfixstr(lead))
 		src.R.Skip(1)
@@ -370,6 +382,10 @@ func rwString(dst jsWriter, src *Reader) (n int, err error) {
 		return
 	}
 write:
+	if uint64(read) > src.GetMaxStringLength() {
+		err = ErrLimitExceeded
+		return
+	}
 	p, err = src.R.Next(read)
 	if err != nil {
 		return
