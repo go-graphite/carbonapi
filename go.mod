@@ -6,7 +6,7 @@ require (
 	github.com/JaderDias/movingmedian v0.0.0-20220813210630-d8c6b6de8835
 	github.com/alicebob/miniredis/v2 v2.35.0
 	github.com/ansel1/merry v1.8.0
-	github.com/ansel1/merry/v2 v2.2.1
+	github.com/ansel1/merry/v2 v2.2.2
 	github.com/barkimedes/go-deepcopy v0.0.0-20220514131651-17c30cfc62df
 	github.com/bradfitz/gomemcache v0.0.0-20230905024940-24af94b03874
 	github.com/cactus/go-statsd-client/v5 v5.1.0
