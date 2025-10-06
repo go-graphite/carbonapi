@@ -182,7 +182,7 @@ func (c *VictoriaMetricsGroup) updateFeatureSet(ctx context.Context) {
 	)
 
 	if minFeatureSet == nil {
-		minFeatureSet = versionToFeatureSet(logger, "c.fallbackVersion")
+		minFeatureSet = versionToFeatureSet(logger, c.fallbackVersion)
 	}
 
 	c.featureSet.Store(minFeatureSet)
