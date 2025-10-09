@@ -28,7 +28,7 @@ import (
 )
 
 // Version of carbonapi
-const Version = "0.18.1"
+const Version = "0.18.2"
 
 // BuildVersion is provided to be overridden at build time. Eg. go build -ldflags -X 'main.BuildVersion=...'
 var BuildVersion = "(development build)"
