@@ -1,6 +1,20 @@
 CHANGELOG
 ---------
 
+v0.18.2
+
+* Bump github/codeql-action from 3 to 4 by @dependabot[bot] in https://github.com/go-graphite/carbonapi/pull/895
+* Fixing docker build from tags (I hope) by @deniszh in https://github.com/go-graphite/carbonapi/pull/896
+* Bump github.com/ansel1/merry from 1.8.0 to 1.8.1 by @dependabot[bot] in https://github.com/go-graphite/carbonapi/pull/894
+* Fix VictoriaMetrics fallback version not being set from config by @martialblog in https://github.com/go-graphite/carbonapi/pull/893
+* Removing debian buster, adding ubuntu 24.04 by @deniszh in https://github.com/go-graphite/carbonapi/pull/897
+
+
+**Full Changelog**: https://github.com/go-graphite/carbonapi/compare/v0.18.1...v0.18.2
+
+
+v0.18.1
+
 ## What's Changed
 * doc: changelog for version 0.17.0 by @Tetrergeru in https://github.com/go-graphite/carbonapi/pull/843
 * Trigger docker-rebuild when the release is edited by @Felixoid in https://github.com/go-graphite/carbonapi/pull/845
