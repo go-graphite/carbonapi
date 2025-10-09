@@ -15,7 +15,7 @@ github.com/alicebob/miniredis/v2/metro
 github.com/alicebob/miniredis/v2/proto
 github.com/alicebob/miniredis/v2/server
 github.com/alicebob/miniredis/v2/size
-# github.com/ansel1/merry v1.8.0
+# github.com/ansel1/merry v1.8.1
 ## explicit; go 1.18
 github.com/ansel1/merry
 # github.com/ansel1/merry/v2 v2.2.2

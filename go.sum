@@ -8,8 +8,8 @@ github.com/aclements/go-moremath v0.0.0-20210112150236-f10218a38794 h1:xlwdaKcTN
 github.com/aclements/go-moremath v0.0.0-20210112150236-f10218a38794/go.mod h1:7e+I0LQFUI9AXWxOfsQROs9xPhoJtbsyWcjJqDd4KPY=
 github.com/alicebob/miniredis/v2 v2.35.0 h1:QwLphYqCEAo1eu1TqPRN2jgVMPBweeQcR21jeqDCONI=
 github.com/alicebob/miniredis/v2 v2.35.0/go.mod h1:TcL7YfarKPGDAthEtl5NBeHZfeUQj6OXMm/+iu5cLMM=
-github.com/ansel1/merry v1.8.0 h1:3RddCV1ubXegKphsodbkmZ4QuROep/ZaPCuwlKuCfFg=
-github.com/ansel1/merry v1.8.0/go.mod h1:wJVu1mHEtEUWq5zTTX9RiWjcE+xL8y7BGYl2VTYdP7M=
+github.com/ansel1/merry v1.8.1 h1:z2o6oeJiJ7WNuBp6XAW6BQScBl6vULWxGdw5A/BHJgQ=
+github.com/ansel1/merry v1.8.1/go.mod h1:wJVu1mHEtEUWq5zTTX9RiWjcE+xL8y7BGYl2VTYdP7M=
 github.com/ansel1/merry/v2 v2.2.2 h1:/R8URU5LtiYwP7UI1KoZW4ex4nTzr+/T49+TYZsjUas=
 github.com/ansel1/merry/v2 v2.2.2/go.mod h1:sludwzkWfhZHOF4jSOViv+t2nnu2HNmtsMKzAfwmVB8=
 github.com/barkimedes/go-deepcopy v0.0.0-20220514131651-17c30cfc62df h1:GSoSVRLoBaFpOOds6QyY1L8AX7uoY+Ln3BHc22W40X0=
