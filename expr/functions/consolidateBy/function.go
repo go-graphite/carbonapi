@@ -58,6 +58,7 @@ func (f *consolidateBy) Do(ctx context.Context, eval interfaces.Evaluator, e par
 		r := a.CopyLink()
 		r.Name = "consolidateBy(" + a.Name + ",\"" + name + "\")"
 		r.ConsolidationFunc = name
+		r.AggregateFunction = nil
 		r.Tags["consolidateBy"] = name
 		results[i] = r
 	}
