@@ -181,7 +181,7 @@ github.com/tebeka/strftime
 # github.com/tevino/abool v1.2.0
 ## explicit; go 1.14
 github.com/tevino/abool
-# github.com/tinylib/msgp v1.4.0
+# github.com/tinylib/msgp v1.5.0
 ## explicit; go 1.22
 github.com/tinylib/msgp/msgp
 # github.com/valyala/fastjson v1.6.4
