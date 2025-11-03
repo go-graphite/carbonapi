@@ -123,8 +123,8 @@ github.com/lomik/og-rek v0.0.0-20170411191824-628eefeb8d80 h1:KVyDGUXjVOdHQt24wI
 github.com/lomik/og-rek v0.0.0-20170411191824-628eefeb8d80/go.mod h1:T7SQVaLtK7mcQIEVzveZVJzsDQpAtzTs2YoezrIBdvI=
 github.com/lomik/zapwriter v0.0.0-20210624082824-c1161d1eb463 h1:SN/0TEkyYpp8tit79JPUnecebCGZsXiYYPxN8i3I6Rk=
 github.com/lomik/zapwriter v0.0.0-20210624082824-c1161d1eb463/go.mod h1:rWIJAUD2hPOAyOzc3jBShAhN4CAZeLAyzUA/n8tE8ak=
-github.com/maruel/natural v1.1.1 h1:Hja7XhhmvEFhcByqDoHz9QZbkWey+COd9xWfCfn1ioo=
-github.com/maruel/natural v1.1.1/go.mod h1:v+Rfd79xlw1AgVBjbO0BEQmptqb5HvL/k9GRHB7ZKEg=
+github.com/maruel/natural v1.2.1 h1:G/y4pwtTA07lbQsMefvsmEO0VN0NfqpxprxXDM4R/4o=
+github.com/maruel/natural v1.2.1/go.mod h1:v+Rfd79xlw1AgVBjbO0BEQmptqb5HvL/k9GRHB7ZKEg=
 github.com/mjibson/go-dsp v0.0.0-20180508042940-11479a337f12 h1:dd7vnTDfjtwCETZDrRe+GPYNLA1jBtbZeyfyE8eZCyk=
 github.com/mjibson/go-dsp v0.0.0-20180508042940-11479a337f12/go.mod h1:i/KKcxEWEO8Yyl11DYafRPKOPVYTrhxiTRigjtEEXZU=
 github.com/msaf1980/go-metrics v0.0.14 h1:gD0kCG5MDbon33Nkz49yW6kz3yu0DHzDN0SxjGTWlTA=
