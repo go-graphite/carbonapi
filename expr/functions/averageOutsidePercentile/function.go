@@ -77,7 +77,7 @@ func (f *averageOutsidePercentile) Description() map[string]types.FunctionDescri
 			Function:    "averageOutsidePercentile(seriesList, n)",
 			Group:       "Combine",
 			Module:      "graphite.render.functions",
-			Name:        "averageSeriesWithWildcards",
+			Name:        "averageOutsidePercentile",
 			Params: []types.FunctionParam{
 				{
 					Name:     "seriesList",
