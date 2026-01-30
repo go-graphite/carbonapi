@@ -95,6 +95,16 @@ func TestTimeShift(t *testing.T) {
 			From:  startTime,
 			Until: startTime + 6,
 		},
+		{
+			// Data starts at 205 but fetch requests 200-202, so we have no data for the series, expecting an empty result
+			Target: `timeShift(metric1, "+100s", true)`,
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 200, Until: 202}: {types.MakeMetricData("metric1", []float64{0, 1, 2, 3, 4, 5}, 1, 205)},
+			},
+			Want:  []*types.MetricData{},
+			From:  100,
+			Until: 102,
+		},
 	}
 
 	for _, tt := range tests {
