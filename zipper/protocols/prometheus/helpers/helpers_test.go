@@ -250,3 +250,122 @@ func TestPromethizeTagValue(t *testing.T) {
 	}
 
 }
+
+func TestSplitTagValues(t *testing.T) {
+	tests := []struct {
+		name  string
+		query string
+		want  map[string]types.Tag
+	}{
+		{
+			name:  "simple two tags",
+			query: "'env=prod','host=web1'",
+			want: map[string]types.Tag{
+				"env":  {OP: "=", TagValue: "prod"},
+				"host": {OP: "=", TagValue: "web1"},
+			},
+		},
+		{
+			name:  "comma inside quoted value",
+			query: "'env=prod','desc=hello, world'",
+			want: map[string]types.Tag{
+				"env":  {OP: "=", TagValue: "prod"},
+				"desc": {OP: "=", TagValue: "hello, world"},
+			},
+		},
+		{
+			name:  "empty input",
+			query: "",
+			want:  map[string]types.Tag{},
+		},
+		{
+			name:  "single tag",
+			query: "'name=cpu.load'",
+			want: map[string]types.Tag{
+				"name": {OP: "=", TagValue: "cpu.load"},
+			},
+		},
+		{
+			name:  "trailing comma produces empty segment (skipped)",
+			query: "'env=prod',",
+			want: map[string]types.Tag{
+				"env": {OP: "=", TagValue: "prod"},
+			},
+		},
+		{
+			name:  "whitespace around tags",
+			query: " 'env=prod' , 'host=web1' ",
+			want: map[string]types.Tag{
+				"env":  {OP: "=", TagValue: "prod"},
+				"host": {OP: "=", TagValue: "web1"},
+			},
+		},
+		{
+			name:  "double-quoted values",
+			query: `"env=prod","host=web1"`,
+			want: map[string]types.Tag{
+				"env":  {OP: "=", TagValue: "prod"},
+				"host": {OP: "=", TagValue: "web1"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := SplitTagValues(tt.query)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestSeriesByTagToPromQLWithRenames(t *testing.T) {
+	tests := []struct {
+		name       string
+		step       string
+		target     string
+		renames    map[string]string
+		wantStep   string
+		wantPromQL string
+	}{
+		{
+			name:       "VM: name renamed to __graphite__",
+			step:       "30",
+			target:     "seriesByTag('name=servers.web.cpu','env=prod')",
+			renames:    map[string]string{"name": "__graphite__"},
+			wantStep:   "30",
+			wantPromQL: `{__graphite__="servers.web.cpu", env="prod"}`,
+		},
+		{
+			name:       "VM: hostname not affected by name rename",
+			step:       "30",
+			target:     "seriesByTag('hostname=web1','env=prod')",
+			renames:    map[string]string{"name": "__graphite__"},
+			wantStep:   "30",
+			wantPromQL: `{env="prod", hostname="web1"}`,
+		},
+		{
+			name:       "no renames, same as SeriesByTagToPromQL",
+			step:       "60",
+			target:     "seriesByTag('__name__=~cpu.*','env=prod')",
+			renames:    nil,
+			wantStep:   "60",
+			wantPromQL: `{__name__=~"cpu.*", env="prod"}`,
+		},
+		{
+			name:       "rename collision: existing tag overwritten",
+			step:       "30",
+			target:     "seriesByTag('name=metric.path','__graphite__=old')",
+			renames:    map[string]string{"name": "__graphite__"},
+			wantStep:   "30",
+			wantPromQL: `{__graphite__="metric.path"}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotStep, gotPromQL := SeriesByTagToPromQLWithRenames(tt.step, tt.target, tt.renames)
+			assert.Equal(t, tt.wantStep, gotStep)
+			assert.Equal(t, tt.wantPromQL, gotPromQL)
+		})
+	}
+}
