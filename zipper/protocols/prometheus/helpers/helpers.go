@@ -160,7 +160,7 @@ func PromethizeTagValue(tagValue string) (string, types.Tag) {
 	case idx+1 == len(tagValue): // != or = with empty value
 		t.OP += "="
 	case tagValue[idx+1] == '~':
-		if len(t.OP) > 0 { // !=~
+		if t.OP != "" { // !=~
 			t.OP += "~"
 		} else { // =~
 			t.OP = "=~"
@@ -177,12 +177,37 @@ func PromethizeTagValue(tagValue string) (string, types.Tag) {
 	return tagName, t
 }
 
-// SplitTagValues - For given tag-value list converts it to more usable map[string]Tag, where string is TagName
+// splitWithQuotes splits s by delimiter, but skips delimiters inside single- or double-quoted regions.
+// This is needed because seriesByTag arguments are quoted ('tag=value') and tag values themselves may
+// contain commas which must not be treated as argument separators.
+func splitWithQuotes(s string, delimiter rune) []string {
+	var result []string
+	start := 0
+	var quoteChar rune // 0 = outside quotes
+	for i, c := range s {
+		switch {
+		case c == quoteChar:
+			quoteChar = 0
+		case quoteChar == 0 && (c == '\'' || c == '"'):
+			quoteChar = c
+		case quoteChar == 0 && c == delimiter:
+			result = append(result, s[start:i])
+			start = i + 1
+		}
+	}
+	return append(result, s[start:])
+}
+
+// SplitTagValues - For given tag-value list converts it to more usable map[string]Tag, where string is TagName.
+// Splits by comma but respects commas inside quoted strings (e.g. seriesByTag('tag=value','other=val,ue')).
 func SplitTagValues(query string) map[string]types.Tag {
-	tags := strings.Split(query, ",")
+	tags := splitWithQuotes(query, ',')
 	result := make(map[string]types.Tag)
 	for _, tvString := range tags {
 		tvString = strings.TrimSpace(tvString)
+		if len(tvString) < 2 {
+			continue
+		}
 		name, tag := PromethizeTagValue(tvString[1 : len(tvString)-1])
 		result[name] = tag
 	}
@@ -210,13 +235,37 @@ func PromMetricToGraphite(metric map[string]string) string {
 	return res.String()
 }
 
-// SeriesByTagToPromQL converts graphite SeriesByTag to PromQL
-// will return step if __step__ is passed
+// SeriesByTagToPromQL converts graphite SeriesByTag to PromQL.
+// Returns step (possibly overridden by __step__ tag) and the PromQL selector string.
 func SeriesByTagToPromQL(step, target string) (string, string) {
+	return convertSeriesByTagToPromQL(step, target, nil)
+}
+
+// SeriesByTagToPromQLWithRenames is like SeriesByTagToPromQL but applies tagRenames
+// to tag names after parsing and before building the PromQL selector. For example,
+// passing map[string]string{"name": "__graphite__"} renames the Graphite "name" tag
+// to the VictoriaMetrics "__graphite__" label.
+//
+// Note: if both the old and new tag names exist in the query, the renamed tag
+// overwrites the existing one (last-write-wins).
+func SeriesByTagToPromQLWithRenames(step, target string, tagRenames map[string]string) (string, string) {
+	return convertSeriesByTagToPromQL(step, target, tagRenames)
+}
+
+func convertSeriesByTagToPromQL(step, target string, tagRenames map[string]string) (string, string) {
 	firstTag := true
 	var queryBuilder strings.Builder
 	tagsString := target[len("seriesByTag(") : len(target)-1]
 	tvs := SplitTagValues(tagsString)
+
+	// Apply tag renames (e.g. "name" -> "__graphite__" for VictoriaMetrics).
+	for oldName, newName := range tagRenames {
+		if v, ok := tvs[oldName]; ok {
+			delete(tvs, oldName)
+			tvs[newName] = v
+		}
+	}
+
 	// It's ok to have empty "__name__"
 	if v, ok := tvs["__name__"]; ok {
 		if v.OP == "=" {
@@ -229,7 +278,15 @@ func SeriesByTagToPromQL(step, target string) (string, string) {
 
 		delete(tvs, "__name__")
 	}
-	for tagName, t := range tvs {
+	// Sort tag names to produce deterministic PromQL output.
+	tagNames := make([]string, 0, len(tvs))
+	for tagName := range tvs {
+		tagNames = append(tagNames, tagName)
+	}
+	sort.Strings(tagNames)
+
+	for _, tagName := range tagNames {
+		t := tvs[tagName]
 		if tagName == "__step__" {
 			step = t.TagValue
 			continue

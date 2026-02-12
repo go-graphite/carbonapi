@@ -33,7 +33,7 @@ func (c *VictoriaMetricsGroup) Fetch(ctx context.Context, request *protov3.Multi
 	logger := c.logger.With(zap.String("type", "fetch"), zap.String("request", request.String()))
 	stats := &types.Stats{}
 	var serverUrl string
-	if len(c.vmClusterTenantID) > 0 {
+	if c.vmClusterTenantID != "" {
 		serverUrl = fmt.Sprintf("http://127.0.0.1/select/%s/prometheus/api/v1/query_range", c.vmClusterTenantID)
 	} else {
 		serverUrl = "http://127.0.0.1/api/v1/query_range"
@@ -75,8 +75,11 @@ func (c *VictoriaMetricsGroup) Fetch(ctx context.Context, request *protov3.Multi
 			// Make local copy
 			stepLocalStr := target.step
 			if strings.HasPrefix(target.name, "seriesByTag") {
-				target.name = strings.ReplaceAll(target.name, "'name=", "'__name__=")
-				stepLocalStr, target.name = helpers.SeriesByTagToPromQL(stepLocalStr, target.name)
+				// VictoriaMetrics stores Graphite metric paths in the __graphite__ label,
+				// so rename the Graphite "name" tag accordingly before building PromQL.
+				stepLocalStr, target.name = helpers.SeriesByTagToPromQLWithRenames(stepLocalStr, target.name, map[string]string{
+					"name": "__graphite__",
+				})
 			} else {
 				target.name = fmt.Sprintf("{__graphite__=%q}", target.name)
 			}
