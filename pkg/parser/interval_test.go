@@ -24,6 +24,8 @@ func TestInterval(t *testing.T) {
 		{"+2d", 2 * 60 * 60 * 24, -1},
 		{"-10hours", -60 * 60 * 10, -1},
 		{"-360h2min", -360*60*60 - 2*60, -1},
+
+		{"68y", 68 * 365 * 24 * 60 * 60, 1},
 	}
 
 	for _, tt := range tests {
@@ -43,13 +45,18 @@ func TestInterval(t *testing.T) {
 		{"+", 0, "unknown time units", 1},
 		{"10x10s", 0, "unknown time units", 1},
 		{"10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000y", 0, "value out of range", 1},
+		{"100y", 0, "out of range", 1},
+		{"-100y", 0, "out of range", 1},
+		{"69y", 0, "out of range", 1},
 	}
 	for _, tt := range exceptTests {
 		secs, err := IntervalString(tt.t, tt.sign)
 		if secs != tt.seconds {
 			t.Errorf("intervalString(%q)=%d, want %d\n", tt.t, secs, tt.seconds)
 		}
-		if !strings.Contains(err.Error(), tt.err) {
+		if err == nil {
+			t.Errorf("Actual error for intervalString(%q) is nil, expected to contain %v\n", tt.t, tt.err)
+		} else if !strings.Contains(err.Error(), tt.err) {
 			t.Errorf("Error of intervalString(%q)=%v, expected to contain %v\n", tt.t, err.Error(), tt.err)
 		}
 	}

@@ -1,6 +1,8 @@
 package summarize
 
 import (
+	"context"
+	"errors"
 	"math"
 	"testing"
 
@@ -369,6 +371,30 @@ func TestEvalSummarize1Minute(t *testing.T) {
 	for _, tt := range tests {
 		eval := th.EvaluatorFromFunc(md[0].F)
 		th.TestSummarizeEvalExpr(t, eval, &tt)
+	}
+}
+
+func TestEvalSummarizeOverflow(t *testing.T) {
+	_, _, tenThirty := th.InitTestSummarize()
+	now32 := tenThirty
+
+	target := "summarize(metric1,'100y','sum',true)"
+	m := map[parser.MetricRequest][]*types.MetricData{
+		{Metric: "metric1", From: now32, Until: now32 + 5}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4, 5}, 1, now32)},
+	}
+
+	exp, _, err := parser.ParseExpr(target)
+	if err != nil {
+		t.Fatalf("failed to parse %v: %+v", target, err)
+	}
+
+	eval := th.EvaluatorFromFunc(md[0].F)
+	_, err = eval.Eval(context.Background(), exp, now32, now32+5, m)
+	if err == nil {
+		t.Fatalf("expected error for interval overflow, got nil")
+	}
+	if !errors.Is(err, parser.ErrBadType) {
+		t.Errorf("expected error wrapping parser.ErrBadType, got %v", err)
 	}
 }
 
