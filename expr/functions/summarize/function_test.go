@@ -2,6 +2,7 @@ package summarize
 
 import (
 	"context"
+	"errors"
 	"math"
 	"testing"
 
@@ -388,8 +389,12 @@ func TestEvalSummarizeOverflow(t *testing.T) {
 	}
 
 	eval := th.EvaluatorFromFunc(md[0].F)
-	if _, err := eval.Eval(context.Background(), exp, now32, now32+5, m); err == nil {
+	_, err = eval.Eval(context.Background(), exp, now32, now32+5, m)
+	if err == nil {
 		t.Fatalf("expected error for interval overflow, got nil")
+	}
+	if !errors.Is(err, parser.ErrBadType) {
+		t.Errorf("expected error wrapping parser.ErrBadType, got %v", err)
 	}
 }
 
