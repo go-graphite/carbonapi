@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"fmt"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -15,6 +17,7 @@ func IntervalString(s string, defaultSign int) (int32, error) {
 		return 0, ErrUnknownTimeUnits
 	}
 
+	original := s
 	sign := defaultSign
 
 	switch s[0] {
@@ -26,7 +29,7 @@ func IntervalString(s string, defaultSign int) (int32, error) {
 		s = s[1:]
 	}
 
-	var totalInterval int32
+	var totalInterval int64
 	for len(s) > 0 {
 		var j int
 		for j < len(s) && '0' <= s[j] && s[j] <= '9' {
@@ -42,7 +45,7 @@ func IntervalString(s string, defaultSign int) (int32, error) {
 		var unitStr string
 		unitStr, s = s[:j], s[j:]
 
-		var units int
+		var units int64
 		switch strings.ToLower(unitStr) {
 		case "s", "sec", "secs", "second", "seconds":
 			units = 1
@@ -66,10 +69,13 @@ func IntervalString(s string, defaultSign int) (int32, error) {
 		if err != nil {
 			return 0, err
 		}
-		totalInterval += int32(sign * offset * units)
+		totalInterval += int64(sign) * int64(offset) * units
 	}
 
-	return totalInterval, nil
+	if totalInterval > math.MaxInt32 || totalInterval < math.MinInt32 {
+		return 0, fmt.Errorf("interval %q out of range", original)
+	}
+	return int32(totalInterval), nil
 }
 
 func TruthyBool(s string) bool {
