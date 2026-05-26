@@ -35,7 +35,7 @@ func (f *smartSummarize) Do(ctx context.Context, eval interfaces.Evaluator, e pa
 		return nil, parser.ErrMissingArgument
 	}
 
-	alignToInterval, err := e.GetStringNamedOrPosArgDefault("alignTo", 3, "")
+	alignToInterval, err := getAlignTo(e)
 	if err != nil {
 		return nil, err
 	}
@@ -117,6 +117,21 @@ func (f *smartSummarize) Do(ctx context.Context, eval interfaces.Evaluator, e pa
 		results[n] = &r
 	}
 	return results, nil
+}
+
+// smartSummarize previously accepted a boolean alignToFrom argument, which has
+// since been deprecated. In graphite-web, if a boolean value is passed in for
+// this parameter, it is ignored rather than erroring out. This same is done here for
+// compatibility.
+func getAlignTo(e parser.Expr) (string, error) {
+	alignToArg, ok := parser.NamedOrPosArg(e, "alignTo", 3)
+	if !ok || alignToArg.IsBool() {
+		return "", nil
+	}
+	if !alignToArg.IsString() {
+		return "", parser.ErrBadType
+	}
+	return alignToArg.StringValue(), nil
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web

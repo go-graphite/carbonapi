@@ -558,6 +558,25 @@ func TestGetIntervalNamedOrPosArgDefault(t *testing.T) {
 	assert.Equal(t, int64(-60), val)
 }
 
+func TestNamedOrPosArg(t *testing.T) {
+	e, _, err := ParseExpr("func(metric, '1h', 'sum', true, alignTo='days')")
+	assert.NoError(t, err)
+
+	arg, ok := NamedOrPosArg(e, "alignTo", 3)
+	if assert.True(t, ok) {
+		assert.True(t, arg.IsString())
+		assert.Equal(t, "days", arg.StringValue())
+	}
+
+	arg, ok = NamedOrPosArg(e, "missing", 3)
+	if assert.True(t, ok) {
+		assert.True(t, arg.IsBool())
+	}
+
+	_, ok = NamedOrPosArg(e, "missing", 4)
+	assert.False(t, ok)
+}
+
 func TestDoGetFloatArg(t *testing.T) {
 	tests := []struct {
 		s string
@@ -919,6 +938,60 @@ func TestMetrics(t *testing.T) {
 					{valStr: "seconds", etype: EtString},
 				},
 				argString: "metric1, '1h', 'sum', 'seconds'",
+			},
+			1410346740,
+			1410346865,
+			[]MetricRequest{
+				{
+					Metric: "metric1",
+					From:   1410346740,
+					Until:  1410346865,
+				},
+			},
+		},
+		// Ensure that smartSummarize is able to silently handle invalid bool
+		// value for last argument
+		{
+			"smartSummarize(metric1, '1h', 'sum', true)",
+			&expr{
+				target: "smartSummarize",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{valStr: "1h", etype: EtString},
+					{valStr: "sum", etype: EtString},
+					{valStr: "true", etype: EtBool},
+				},
+				argString: "metric1, '1h', 'sum', true",
+			},
+			1410346740,
+			1410346865,
+			[]MetricRequest{
+				{
+					Metric: "metric1",
+					From:   1410346740,
+					Until:  1410346865,
+				},
+			},
+		},
+		{
+			"smartSummarize(metric1, '1h', 'sum', alignTo=true)",
+			&expr{
+				target: "smartSummarize",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{valStr: "1h", etype: EtString},
+					{valStr: "sum", etype: EtString},
+				},
+				namedArgs: map[string]*expr{
+					"alignTo": {
+						target: "true",
+						etype:  EtBool,
+						valStr: "true",
+					},
+				},
+				argString: "metric1, '1h', 'sum', alignTo=true",
 			},
 			1410346740,
 			1410346865,
