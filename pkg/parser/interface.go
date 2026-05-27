@@ -112,6 +112,8 @@ type Expr interface {
 	NamedArgs() map[string]Expr
 	// NamedArg returns named argument and boolean flag for check arg exist.
 	NamedArg(string) (Expr, bool)
+	// NamedOrPosArg returns the named argument when present, otherwise the positional argument at pos.
+	NamedOrPosArg(name string, pos int) (Expr, bool)
 	// RawArgs returns string that contains all arguments of expression exactly the same order they appear
 	RawArgs() string
 	// SetRawArgs changes raw argument list for current expression.

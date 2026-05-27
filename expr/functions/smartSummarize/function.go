@@ -124,7 +124,7 @@ func (f *smartSummarize) Do(ctx context.Context, eval interfaces.Evaluator, e pa
 // this parameter, it is ignored rather than erroring out. This same is done here for
 // compatibility.
 func getAlignTo(e parser.Expr) (string, error) {
-	alignToArg, ok := parser.NamedOrPosArg(e, "alignTo", 3)
+	alignToArg, ok := e.NamedOrPosArg("alignTo", 3)
 	if !ok || alignToArg.IsBool() {
 		return "", nil
 	}

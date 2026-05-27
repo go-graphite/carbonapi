@@ -142,10 +142,7 @@ func (e *expr) NamedArg(name string) (Expr, bool) {
 }
 
 // NamedOrPosArg returns the named argument when present, otherwise the positional argument.
-func NamedOrPosArg(e Expr, name string, pos int) (Expr, bool) {
-	if e == nil || e.IsInterfaceNil() {
-		return nil, false
-	}
+func (e *expr) NamedOrPosArg(name string, pos int) (Expr, bool) {
 	if arg, ok := e.NamedArg(name); ok {
 		return arg, true
 	}
@@ -309,7 +306,7 @@ func (e *expr) Metrics(from, until int64) []MetricRequest {
 			// this parameter, it is ignored rather than erroring out. This same is done here for
 			// compatibility
 			alignToInterval := ""
-			if arg, ok := NamedOrPosArg(e, "alignTo", 3); ok && !arg.IsBool() {
+			if arg, ok := e.NamedOrPosArg("alignTo", 3); ok && !arg.IsBool() {
 				if !arg.IsString() {
 					return nil
 				}

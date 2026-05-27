@@ -562,18 +562,18 @@ func TestNamedOrPosArg(t *testing.T) {
 	e, _, err := ParseExpr("func(metric, '1h', 'sum', true, alignTo='days')")
 	assert.NoError(t, err)
 
-	arg, ok := NamedOrPosArg(e, "alignTo", 3)
+	arg, ok := e.NamedOrPosArg("alignTo", 3)
 	if assert.True(t, ok) {
 		assert.True(t, arg.IsString())
 		assert.Equal(t, "days", arg.StringValue())
 	}
 
-	arg, ok = NamedOrPosArg(e, "missing", 3)
+	arg, ok = e.NamedOrPosArg("missing", 3)
 	if assert.True(t, ok) {
 		assert.True(t, arg.IsBool())
 	}
 
-	_, ok = NamedOrPosArg(e, "missing", 4)
+	_, ok = e.NamedOrPosArg("missing", 4)
 	assert.False(t, ok)
 }
 
