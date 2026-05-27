@@ -188,8 +188,8 @@ func findHandler(w http.ResponseWriter, r *http.Request) {
 	qtz := r.FormValue("tz")
 	from := r.FormValue("from")
 	until := r.FormValue("until")
-	from64 := date.DateParamToEpoch(from, qtz, timeNow().Add(-time.Hour).Unix(), config.Config.DefaultTimeZone)
-	until64 := date.DateParamToEpoch(until, qtz, timeNow().Unix(), config.Config.DefaultTimeZone)
+	from64 := date.ParseAtTimeOr(from, qtz, config.Config.DefaultTimeZone, timeNow().Add(-time.Hour).Unix())
+	until64 := date.ParseAtTimeOr(until, qtz, config.Config.DefaultTimeZone, timeNow().Unix())
 
 	query := r.Form["query"]
 	srcIP, srcPort := splitRemoteAddr(r.RemoteAddr)
