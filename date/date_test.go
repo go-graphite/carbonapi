@@ -10,9 +10,9 @@ func TestParseAtTimeOr(t *testing.T) {
 
 	defaultTimeZone := time.UTC
 	// 16 Aug 1994 15:30 UTC
-	defer MockTimeNow(MockTimeNow(func() time.Time {
+	defer MockTimeNow(func() time.Time {
 		return time.Date(1994, time.August, 16, 15, 30, 0, 100, defaultTimeZone)
-	}))
+	})()
 
 	const shortForm = "15:04 2006-Jan-02"
 

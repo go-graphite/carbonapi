@@ -28,7 +28,7 @@ func TestTimeSlice(t *testing.T) {
 
 	// 1994-08-16 12:00 UTC; today (UTC midnight) = 776995200.
 	mockNow := time.Date(1994, time.August, 16, 12, 0, 0, 0, time.UTC)
-	defer date.MockTimeNow(date.MockTimeNow(func() time.Time { return mockNow }))
+	defer date.MockTimeNow(func() time.Time { return mockNow })()
 
 	tests := []th.EvalTestItemWithRange{
 		{

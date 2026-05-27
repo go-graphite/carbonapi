@@ -12,11 +12,14 @@ import (
 var errBadTime = errors.New("bad time")
 var timeNow = time.Now
 
-// MockTimeNow replaces the package clock and returns the previous one so tests can restore it.
-func MockTimeNow(f func() time.Time) func() time.Time {
+// MockTimeNow replaces the package clock for tests and returns a restore
+// function meant to be deferred:
+//
+//	defer date.MockTimeNow(func() time.Time { ... })()
+func MockTimeNow(f func() time.Time) func() {
 	prev := timeNow
 	timeNow = f
-	return prev
+	return func() { timeNow = prev }
 }
 
 // parseTime parses a time and returns hours and minutes
