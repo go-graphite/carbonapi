@@ -50,7 +50,7 @@ func parseTime(s string) (hour, minute int, err error) {
 	return hour, minute, nil
 }
 
-var TimeFormats = []string{"20060102", "01/02/06"}
+var TimeFormats = []string{"20060102", "01/02/06", "01/02/2006"}
 
 // ParseAtTimeOr is ParseAtTime with a fallback: on parse error it returns d
 // instead of an error.
@@ -69,6 +69,8 @@ func ParseAtTime(s, qtz string, defaultTimeZone *time.Location) (int64, error) {
 	if s == "" {
 		return 0, errBadTime
 	}
+
+	s = strings.ToLower(s)
 
 	var tz = defaultTimeZone
 	if qtz != "" {
