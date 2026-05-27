@@ -119,7 +119,7 @@ func (f *timeSlice) Description() map[string]types.FunctionDescription {
 				},
 				{
 					Name:    "endSliceAt",
-					Type:    types.Interval,
+					Type:    types.Date,
 					Default: types.NewSuggestion("now"),
 				},
 			},
