@@ -55,9 +55,9 @@ func parseTime(s string) (hour, minute int, err error) {
 
 var TimeFormats = []string{"20060102", "01/02/06", "01/02/2006"}
 
-// ParseAtTimeOr is ParseAtTime with a fallback: on parse error it returns d
+// DateParamToEpoch is ParseAtTime with a fallback: on parse error it returns d
 // instead of an error.
-func ParseAtTimeOr(s, qtz string, defaultTimeZone *time.Location, d int64) int64 {
+func DateParamToEpoch(s, qtz string, d int64, defaultTimeZone *time.Location) int64 {
 	epoch, err := ParseAtTime(s, qtz, defaultTimeZone)
 	if err != nil {
 		return d

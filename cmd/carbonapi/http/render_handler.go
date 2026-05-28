@@ -154,8 +154,8 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 
 	// normalize from and until values
 	qtz := r.FormValue("tz")
-	from32 := date.ParseAtTimeOr(from, qtz, config.Config.DefaultTimeZone, now.Add(-24*time.Hour).Unix())
-	until32 := date.ParseAtTimeOr(until, qtz, config.Config.DefaultTimeZone, now.Unix())
+	from32 := date.DateParamToEpoch(from, qtz, now.Add(-24*time.Hour).Unix(), config.Config.DefaultTimeZone)
+	until32 := date.DateParamToEpoch(until, qtz, now.Unix(), config.Config.DefaultTimeZone)
 
 	var (
 		responseCacheKey     string

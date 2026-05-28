@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func TestParseAtTimeOr(t *testing.T) {
+func TestDateParamToEpoch(t *testing.T) {
 
 	defaultTimeZone := time.UTC
 	// 16 Aug 1994 15:30 UTC
@@ -54,7 +54,7 @@ func TestParseAtTimeOr(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got := ParseAtTimeOr(tt.input, "America/Los_Angeles", defaultTimeZone, 0)
+		got := DateParamToEpoch(tt.input, "America/Los_Angeles", 0, defaultTimeZone)
 		ts, err := time.ParseInLocation(shortForm, tt.output, defaultTimeZone)
 		if err != nil {
 			panic(fmt.Sprintf("error parsing time: %q: %v", tt.output, err))
@@ -62,7 +62,7 @@ func TestParseAtTimeOr(t *testing.T) {
 
 		want := int64(ts.Unix())
 		if got != want {
-			t.Errorf("ParseAtTimeOr(%q)=%v, want %v", tt.input, got, want)
+			t.Errorf("DateParamToEpoch(%q)=%v, want %v", tt.input, got, want)
 		}
 	}
 }
