@@ -847,10 +847,14 @@ var disallowedCharactersInMetricName = map[rune]struct{}{
 	'\'': struct{}{},
 	' ':  struct{}{},
 	'/':  struct{}{},
+	'|':  struct{}{},
 }
 
 func unicodeRuneAllowedInName(r rune) bool {
 	if _, ok := disallowedCharactersInMetricName[r]; ok {
+		return false
+	}
+	if unicode.IsSpace(r) {
 		return false
 	}
 
@@ -920,6 +924,10 @@ FOR:
 				if len(s) < i+2 || s[i+1] == '=' || s[i+1] == ',' || s[i+1] == ')' {
 					continue
 				}
+				// we are here: `key=value`
+				//                  ^
+				// even if '=' is a valid character for metric name, it's a separator for a named arg or tag
+				break FOR
 			}
 			fallthrough
 		/* */
