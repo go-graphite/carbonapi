@@ -141,6 +141,17 @@ func (e *expr) NamedArg(name string) (Expr, bool) {
 	return expr, exist
 }
 
+// NamedOrPosArg returns the named argument when present, otherwise the positional argument.
+func (e *expr) NamedOrPosArg(name string, pos int) (Expr, bool) {
+	if arg, ok := e.NamedArg(name); ok {
+		return arg, true
+	}
+	if e.ArgsLen() > pos {
+		return e.Arg(pos), true
+	}
+	return nil, false
+}
+
 func (e *expr) Metrics(from, until int64) []MetricRequest {
 	switch e.etype {
 	case EtName:
@@ -290,9 +301,16 @@ func (e *expr) Metrics(from, until int64) []MetricRequest {
 				return nil
 			}
 
-			alignToInterval, err := e.GetStringNamedOrPosArgDefault("alignTo", 3, "")
-			if err != nil {
-				return nil
+			// smartSummarize previously accepted a boolean alignToFrom argument, which has
+			// since been deprecated. In graphite-web, if a boolean value is passed in for
+			// this parameter, it is ignored rather than erroring out. This same is done here for
+			// compatibility
+			alignToInterval := ""
+			if arg, ok := e.NamedOrPosArg("alignTo", 3); ok && !arg.IsBool() {
+				if !arg.IsString() {
+					return nil
+				}
+				alignToInterval = arg.StringValue()
 			}
 
 			if alignToInterval != "" {
