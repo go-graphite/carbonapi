@@ -68,7 +68,7 @@ func (f *reduce) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Exp
 	var aliasNames []string
 
 	for _, series := range seriesList {
-		metric := series.Tags["name"]
+		metric := series.Name
 		nodes := strings.Split(metric, ".")
 		reduceNodeKey := nodes[reduceNode]
 		nodes[reduceNode] = "reduce." + reduceFunction
@@ -104,7 +104,10 @@ AliasLoop:
 			return nil, err
 		}
 
-		results = append(results, result...)
+		for _, r := range result {
+			renamed := r.CopyNameWithVal(aliasName)
+			results = append(results, renamed)
+		}
 	}
 
 	return results, nil
