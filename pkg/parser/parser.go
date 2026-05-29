@@ -937,6 +937,10 @@ FOR:
 		if isDefault {
 			r, w = utf8.DecodeRuneInString(s[i:])
 			if unicodeRuneAllowedInName(r) && unicode.In(r, RangeTables...) {
+				// this may be a multi-byte rune, but we only wrote the first byte
+				if w > 1 {
+					buf.WriteString(s[i+1 : i+w])
+				}
 				continue
 			}
 			if !isEscape {

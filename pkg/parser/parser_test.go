@@ -40,11 +40,13 @@ func TestSkipWhitespace(t *testing.T) {
 }
 
 func TestParseExpr(t *testing.T) {
-	// "Common" allows non-ASCII names but also contains '|', '\n', '=', etc.,
-	// which the grammar must still recognize as special characters depending on context.
+	// Widen RangeTables to every script so non-ASCII names are allowed.
+	// The grammar must still recognize '|', '\n', '=', etc. as special characters depending on context.
 	orig := RangeTables
 	defer func() { RangeTables = orig }()
-	RangeTables = append(RangeTables, unicode.Scripts["Common"])
+	for _, t := range unicode.Scripts {
+		RangeTables = append(RangeTables, t)
+	}
 
 	tests := []struct {
 		s string
@@ -52,6 +54,9 @@ func TestParseExpr(t *testing.T) {
 	}{
 		{"metric=",
 			&expr{target: "metric="},
+		},
+		{"métric.ñame",
+			&expr{target: "métric.ñame"},
 		},
 		{"metric",
 			&expr{target: "metric"},
