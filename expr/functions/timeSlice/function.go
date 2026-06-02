@@ -4,9 +4,9 @@ import (
 	"context"
 	"math"
 	"strconv"
-	"time"
 
 	"github.com/go-graphite/carbonapi/date"
+	fconfig "github.com/go-graphite/carbonapi/expr/functions/config"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -32,7 +32,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 // parseTimeArg parses using date.ParseAtTime and falls back
 // to parsing as an interval for retrocompatibility.
 func parseTimeArg(s string) (int64, error) {
-	if epoch, err := date.ParseAtTime(s, "", time.UTC); err == nil {
+	if epoch, err := date.ParseAtTime(s, "", fconfig.Config.DefaultTimeZone); err == nil {
 		return epoch, nil
 	}
 	if secs, err := parser.IntervalString(s, 1); err == nil {
