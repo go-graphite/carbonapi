@@ -812,6 +812,55 @@ func TestSmartSummarizeErrors(t *testing.T) {
 	}
 }
 
+func TestSmartSummarizeAlignToBoolIgnored(t *testing.T) {
+	tests := []th.SummarizeEvalTestItem{
+		{
+			Target: "smartSummarize(metric2,'2minute','sum',True)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric2", From: 0, Until: 300}: {types.MakeMetricData("metric2", []float64{1, 2, 3, 4}, 60, 0)},
+			},
+			Want:  []float64{3, 7},
+			From:  0,
+			Until: 300,
+			Name:  "smartSummarize(metric2,'2minute','sum')",
+			Step:  120,
+			Start: 0,
+			Stop:  240,
+		},
+		{
+			Target: "smartSummarize(metric2,'2minute','sum',False)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric2", From: 0, Until: 300}: {types.MakeMetricData("metric2", []float64{1, 2, 3, 4}, 60, 0)},
+			},
+			Want:  []float64{3, 7},
+			From:  0,
+			Until: 300,
+			Name:  "smartSummarize(metric2,'2minute','sum')",
+			Step:  120,
+			Start: 0,
+			Stop:  240,
+		},
+		{
+			Target: "smartSummarize(metric2,'2minute','sum',alignTo=True)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric2", From: 0, Until: 300}: {types.MakeMetricData("metric2", []float64{1, 2, 3, 4}, 60, 0)},
+			},
+			Want:  []float64{3, 7},
+			From:  0,
+			Until: 300,
+			Name:  "smartSummarize(metric2,'2minute','sum')",
+			Step:  120,
+			Start: 0,
+			Stop:  240,
+		},
+	}
+
+	for _, tt := range tests {
+		eval := th.EvaluatorFromFunc(md[0].F)
+		th.TestSummarizeEvalExpr(t, eval, &tt)
+	}
+}
+
 func generateValues(start, stop, step int64) (values []float64) {
 	for i := start; i < stop; i += step {
 		values = append(values, float64(i))
