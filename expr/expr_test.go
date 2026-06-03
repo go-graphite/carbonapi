@@ -172,6 +172,20 @@ func TestEvalExpr(t *testing.T) {
 			from:     1437127020,
 			until:    1437127140,
 		},
+		"metric unicode name inside a function": {
+			metric:  "1Метрика",
+			request: "summarize(1Метрика,'1min')",
+			metricRequest: parser.MetricRequest{
+				Metric: "1Метрика",
+				From:   1437127020,
+				Until:  1437127140,
+			},
+			values:   []float64{343, 407, 385},
+			isAbsent: []bool{false, false, false},
+			stepTime: 60,
+			from:     1437127020,
+			until:    1437127140,
+		},
 	}
 
 	parser.RangeTables = append(parser.RangeTables, unicode.Cyrillic)
