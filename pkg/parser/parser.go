@@ -613,10 +613,17 @@ func parseExprWithoutPipe(e string) (Expr, string, error) {
 	}
 
 	if '0' <= e[0] && e[0] <= '9' || e[0] == '-' || e[0] == '+' {
-		val, valStr, e, err := parseConst(e)
-		r, _ := utf8.DecodeRuneInString(e)
-		if !unicode.IsLetter(r) {
-			return &expr{val: val, etype: EtConst, valStr: valStr}, e, err
+		val, valStr, rest, err := parseConst(e)
+		// Only treat the token as a numeric constant when parseConst actually
+		// succeeded. A failure means the greedily-slurped run of [0-9.+-eE]
+		// characters is not a valid float (e.g. a root metric name like
+		// "587-AL"); in that case fall through to parseName so the original
+		// token is parsed as a metric name, matching graphite-web (issue #524).
+		if err == nil {
+			r, _ := utf8.DecodeRuneInString(rest)
+			if !unicode.IsLetter(r) {
+				return &expr{val: val, etype: EtConst, valStr: valStr}, rest, nil
+			}
 		}
 	}
 
