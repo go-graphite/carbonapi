@@ -612,18 +612,10 @@ func parseExprWithoutPipe(e string) (Expr, string, error) {
 		return nil, "", ErrMissingExpr
 	}
 
-	if '0' <= e[0] && e[0] <= '9' || e[0] == '-' || e[0] == '+' {
-		val, valStr, rest, err := parseConst(e)
-		// Only treat the token as a numeric constant when parseConst actually
-		// succeeded. A failure means the greedily-slurped run of [0-9.+-eE]
-		// characters is not a valid float (e.g. a root metric name like
-		// "587-AL"); in that case fall through to parseName so the original
-		// token is parsed as a metric name, matching graphite-web (issue #524).
-		if err == nil {
-			r, _ := utf8.DecodeRuneInString(rest)
-			if !unicode.IsLetter(r) {
-				return &expr{val: val, etype: EtConst, valStr: valStr}, rest, nil
-			}
+	if IsDigit(e[0]) || e[0] == '-' || e[0] == '+' {
+		exp, rest, ok := parseConstExpr(e)
+		if ok {
+			return exp, rest, nil
 		}
 	}
 
@@ -660,6 +652,25 @@ func parseExprWithoutPipe(e string) (Expr, string, error) {
 	}
 
 	return &expr{target: name}, e, nil
+}
+
+func parseConstExpr(e string) (*expr, string, bool) {
+	val, valStr, rest, err := parseConst(e)
+	if err != nil {
+		// A failure means the greedily-slurped run of [0-9.+-eE] characters is
+		// not a valid float, e.g. a root metric name like "587-AL". Let the
+		// caller parse the original token as a metric name instead.
+		return nil, e, false
+	}
+
+	if rest != "" {
+		r, size := utf8.DecodeRuneInString(rest)
+		if size > 0 && unicode.IsLetter(r) {
+			return nil, e, false
+		}
+	}
+
+	return &expr{val: val, etype: EtConst, valStr: valStr}, rest, true
 }
 
 func parseExprInner(e string) (Expr, string, error) {
