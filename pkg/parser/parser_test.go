@@ -165,6 +165,58 @@ func TestParseExpr(t *testing.T) {
 			},
 		},
 
+		// Issue #524: a root metric name that starts with one or more digits
+		// followed by a dash (e.g. "587-AL") must parse as a metric name, the
+		// same as graphite-web, instead of failing ParseFloat on "587-".
+		{
+			"587-AL.random.a",
+			&expr{target: "587-AL.random.a"},
+		},
+		{
+			"587-AL",
+			&expr{target: "587-AL"},
+		},
+		// Guard against over-correction: these already parsed as names and
+		// must keep doing so.
+		{
+			"AAA-587",
+			&expr{target: "AAA-587"},
+		},
+		{
+			"587AAA",
+			&expr{target: "587AAA"},
+		},
+		{
+			"AAA587",
+			&expr{target: "AAA587"},
+		},
+		// Genuine numeric constants must still parse as EtConst.
+		{
+			"-1",
+			&expr{val: -1, etype: EtConst, valStr: "-1"},
+		},
+		{
+			"+2.5",
+			&expr{val: 2.5, etype: EtConst, valStr: "+2.5"},
+		},
+		{
+			"1e3",
+			&expr{val: 1000, etype: EtConst, valStr: "1e3"},
+		},
+		// A function call with a digit-dash series arg parses without error and
+		// preserves the inner metric name.
+		{
+			"sumSeries(587-AL.random.*)",
+			&expr{
+				target: "sumSeries",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "587-AL.random.*"},
+				},
+				argString: "587-AL.random.*",
+			},
+		},
+
 		{
 			"func1(metric1, -3 , 'foo' )",
 			&expr{
