@@ -1,6 +1,7 @@
 package holtWintersAberration
 
 import (
+	"context"
 	"testing"
 
 	"github.com/go-graphite/carbonapi/expr/holtwinters"
@@ -10,6 +11,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -114,6 +116,43 @@ func TestHoltWintersAberration(t *testing.T) {
 			eval := th.EvaluatorFromFunc(md[0].F)
 			th.TestEvalExprWithRange(t, eval, &tt)
 		})
+	}
+}
+
+// TestHoltWintersAberrationShortBootstrap is a regression test to ensure
+// no panics occur when the bootstrap period is shorter than the requested series.
+func TestHoltWintersAberrationShortBootstrap(t *testing.T) {
+	var startTime int64 = 2678400
+	var step int64 = 600
+	var requestedPoints int64 = 10
+	var bootstrapInterval int64 = 86400 // '1d' => windowPoints = 86400/600 = 144
+
+	// The bootstrap fetch returns only windowPoints+5 points, so after trimming
+	// the warm-up the bands have length 5, shorter than the 10 requested points.
+	bootstrapPoints := (bootstrapInterval / step) + 5
+
+	tt := th.EvalTestItemWithRange{
+		Target: "holtWintersAberration(metric*,3,'1d','2d')",
+		M: map[parser.MetricRequest][]*types.MetricData{
+			{Metric: "metric*", From: startTime, Until: startTime + step*requestedPoints}: {
+				types.MakeMetricData("metric1", generateHwRange(0, requestedPoints*step, step, 0), step, startTime),
+			},
+			{Metric: "metric*", From: startTime - bootstrapInterval, Until: startTime + step*requestedPoints}: {
+				types.MakeMetricData("metric1", generateHwRange(0, bootstrapPoints*step, step, 0), step, startTime-bootstrapInterval),
+			},
+		},
+		From:  startTime,
+		Until: startTime + step*requestedPoints,
+	}
+
+	exp, _, err := parser.ParseExpr(tt.Target)
+	assert.NoError(t, err)
+
+	eval := th.EvaluatorFromFunc(md[0].F)
+	got, err := eval.Eval(context.Background(), exp, tt.From, tt.Until, tt.M)
+	assert.NoError(t, err)
+	if assert.Len(t, got, 1) {
+		assert.Len(t, got[0].Values, int(requestedPoints))
 	}
 }
 
