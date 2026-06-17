@@ -231,8 +231,8 @@ golang.org/x/text/internal/utf8internal
 golang.org/x/text/runes
 golang.org/x/text/transform
 golang.org/x/text/unicode/norm
-# gonum.org/v1/gonum v0.16.0
-## explicit; go 1.23.0
+# gonum.org/v1/gonum v0.17.0
+## explicit; go 1.24.0
 gonum.org/v1/gonum/blas
 gonum.org/v1/gonum/blas/blas64
 gonum.org/v1/gonum/blas/cblas128
