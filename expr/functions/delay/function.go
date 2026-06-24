@@ -52,20 +52,27 @@ func (f *delay) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr
 		result.Name = "delay(" + series.Name + "," + stepsStr + ")"
 		result.Tags["delay"] = stepsStr
 
-		var newValues []float64
 		if steps < 0 {
-			newValues = make([]float64, length)
-			copy(newValues, series.Values[-steps:])
-			for i := -steps; i < length; i++ {
+			shift := -steps
+			if shift > length {
+				shift = length
+			}
+			newValues := make([]float64, length)
+			copy(newValues, series.Values[shift:])
+			for i := length - shift; i < length; i++ {
 				newValues[i] = math.NaN()
 			}
 			result.Values = newValues
 		} else if steps != 0 {
-			newValues = make([]float64, length)
-			for i := 0; i < steps; i++ {
+			shift := steps
+			if shift > length {
+				shift = length
+			}
+			newValues := make([]float64, length)
+			for i := 0; i < shift; i++ {
 				newValues[i] = math.NaN()
 			}
-			copy(newValues[steps:], series.Values[:length-steps])
+			copy(newValues[shift:], series.Values[:length-shift])
 			result.Values = newValues
 		}
 
