@@ -52,6 +52,49 @@ func TestDelay(t *testing.T) {
 			[]*types.MetricData{types.MakeMetricData("delay(metric1,0)",
 				[]float64{1, 2, 3, math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 1, now32).SetTag("delay", "0").SetNameTag("metric1")},
 		},
+		{
+			// empty series must not panic
+			"delay(metric1,1)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData("delay(metric1,1)",
+				[]float64{}, 1, now32).SetTag("delay", "1").SetNameTag("metric1")},
+		},
+		{
+			// steps larger than the series length shifts everything out
+			"delay(metric1,5)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData("delay(metric1,5)",
+				[]float64{math.NaN(), math.NaN(), math.NaN()}, 1, now32).SetTag("delay", "5").SetNameTag("metric1")},
+		},
+		{
+			"delay(metric1,-5)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData("delay(metric1,-5)",
+				[]float64{math.NaN(), math.NaN(), math.NaN()}, 1, now32).SetTag("delay", "-5").SetNameTag("metric1")},
+		},
+		{
+			// steps equal to the series length shifts everything out
+			"delay(metric1,3)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData("delay(metric1,3)",
+				[]float64{math.NaN(), math.NaN(), math.NaN()}, 1, now32).SetTag("delay", "3").SetNameTag("metric1")},
+		},
+		{
+			"delay(metric1,-3)",
+			map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3}, 1, now32)},
+			},
+			[]*types.MetricData{types.MakeMetricData("delay(metric1,-3)",
+				[]float64{math.NaN(), math.NaN(), math.NaN()}, 1, now32).SetTag("delay", "-3").SetNameTag("metric1")},
+		},
 	}
 
 	for _, tt := range tests {
