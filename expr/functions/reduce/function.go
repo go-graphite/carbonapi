@@ -3,6 +3,8 @@ package reduce
 import (
 	"context"
 
+	"github.com/ansel1/merry"
+
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -70,8 +72,15 @@ func (f *reduce) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Exp
 	for _, series := range seriesList {
 		metric := types.ExtractName(series.Name)
 		nodes := strings.Split(metric, ".")
-		reduceNodeKey := nodes[reduceNode]
-		nodes[reduceNode] = "reduce." + reduceFunction
+		node := reduceNode
+		if node < 0 {
+			node += len(nodes)
+		}
+		if node < 0 || node >= len(nodes) {
+			return nil, merry.WithMessagef(parser.ErrInvalidArg, "reduceNode %d out of range for metric %q", reduceNode, metric)
+		}
+		reduceNodeKey := nodes[node]
+		nodes[node] = "reduce." + reduceFunction
 		aliasName := strings.Join(nodes, ".")
 		_, exist := reduceGroups[aliasName]
 		if !exist {
