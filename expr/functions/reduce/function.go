@@ -104,10 +104,7 @@ AliasLoop:
 			return nil, err
 		}
 
-		for _, r := range result {
-			renamed := r.CopyNameWithVal(aliasName)
-			results = append(results, renamed)
-		}
+		results = append(results, result...)
 	}
 
 	return results, nil
