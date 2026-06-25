@@ -2,6 +2,7 @@ package parser
 
 import (
 	"testing"
+	"unicode"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -39,12 +40,23 @@ func TestSkipWhitespace(t *testing.T) {
 }
 
 func TestParseExpr(t *testing.T) {
+	// Widen RangeTables to every script so non-ASCII names are allowed.
+	// The grammar must still recognize '|', '\n', '=', etc. as special characters depending on context.
+	orig := RangeTables
+	defer func() { RangeTables = orig }()
+	for _, t := range unicode.Scripts {
+		RangeTables = append(RangeTables, t)
+	}
+
 	tests := []struct {
 		s string
 		e *expr
 	}{
 		{"metric=",
 			&expr{target: "metric="},
+		},
+		{"métric.ñame",
+			&expr{target: "métric.ñame"},
 		},
 		{"metric",
 			&expr{target: "metric"},
@@ -179,6 +191,18 @@ func TestParseExpr(t *testing.T) {
 					"key": {etype: EtString, valStr: "value"},
 				},
 				argString: "metric, key='value'",
+			},
+		},
+		{
+			"func(metric, true\n)",
+			&expr{
+				target: "func",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "metric"},
+					{etype: EtBool, target: "true", valStr: "true"},
+				},
+				argString: "metric, true\n",
 			},
 		},
 		{
