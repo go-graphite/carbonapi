@@ -68,7 +68,7 @@ func (f *reduce) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Exp
 	var aliasNames []string
 
 	for _, series := range seriesList {
-		metric := series.Tags["name"]
+		metric := types.ExtractName(series.Name)
 		nodes := strings.Split(metric, ".")
 		reduceNodeKey := nodes[reduceNode]
 		nodes[reduceNode] = "reduce." + reduceFunction
