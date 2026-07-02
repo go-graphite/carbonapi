@@ -59,6 +59,19 @@ func TestEvalSummarize(t *testing.T) {
 			Stop:  14400,
 		},
 		{
+			Target: "smartSummarize(metric1,'1hr','sum')",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
+			},
+			Want:  []float64{6478200, 19438200, 32398200, 45358200},
+			Name:  "smartSummarize(metric1,'1hr','sum')",
+			From:  0,
+			Until: 14400,
+			Step:  3600,
+			Start: 0,
+			Stop:  14400,
+		},
+		{
 			Target: "smartSummarize(metric1,'1hour','sum','y')",
 			M: map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "metric1", From: 0, Until: 14400}: {types.MakeMetricData("metric1", generateValues(0, 14400, 1), 1, 0)},
