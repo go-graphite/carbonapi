@@ -157,6 +157,19 @@ func TestAggregateWithWildcards(t *testing.T) {
 			},
 		},
 		{
+			`averageSeriesWithWildcards(metric[])`,
+			map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric[]", From: 0, Until: 1}: {
+					types.MakeMetricData("metric1.foo.bar.baz", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32),
+					types.MakeMetricData("metric2.foo.bar.baz", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32),
+				},
+			},
+			[]*types.MetricData{
+				types.MakeMetricData("metric1.foo.bar.baz", []float64{1, math.NaN(), 2, 3, 4, 5}, 1, now32).SetNameTag(`metric[]`).SetTag("aggregatedBy", "average"),
+				types.MakeMetricData("metric2.foo.bar.baz", []float64{2, math.NaN(), 3, math.NaN(), 5, 6}, 1, now32).SetNameTag(`metric[]`).SetTag("aggregatedBy", "average"),
+			},
+		},
+		{
 			`aggregateWithWildcards(metric[123456],"stddev",0,1,2)`,
 			map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "metric[123456]", From: 0, Until: 1}: {

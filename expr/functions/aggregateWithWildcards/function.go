@@ -28,7 +28,7 @@ func New(configFile string) []interfaces.FunctionMetadata {
 }
 
 func (f *aggregateWithWildcards) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	if e.ArgsLen() < 2 {
+	if e.ArgsLen() < 1 {
 		return nil, parser.ErrMissingArgument
 	}
 
@@ -41,6 +41,9 @@ func (f *aggregateWithWildcards) Do(ctx context.Context, eval interfaces.Evaluat
 	fieldsArgsIx := 1
 	switch e.Target() {
 	case "aggregateWithWildcards":
+		if e.ArgsLen() < 2 {
+			return nil, parser.ErrMissingArgument
+		}
 		callback, err = e.GetStringArg(1)
 		if err != nil {
 			return nil, err
