@@ -55,7 +55,7 @@ func (f *applyByNode) Do(ctx context.Context, eval interfaces.Evaluator, e parse
 	rv := make([]string, 0, len(args))
 	for _, a := range args {
 		var node string
-		metric := a.Tags["name"]
+		metric := types.ExtractName(a.Name)
 		nodes := strings.Split(metric, ".")
 		if nodeNum >= len(nodes) {
 			// field overflow
