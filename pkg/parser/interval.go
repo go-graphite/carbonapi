@@ -51,15 +51,15 @@ func IntervalString(s string, defaultSign int) (int32, error) {
 			units = 1
 		case "m", "min", "mins", "minute", "minutes":
 			units = 60
-		case "h", "hour", "hours":
+		case "h", "hr", "hrs", "hour", "hours":
 			units = 60 * 60
 		case "d", "day", "days":
 			units = 24 * 60 * 60
-		case "w", "week", "weeks":
+		case "w", "wk", "wks", "week", "weeks":
 			units = 7 * 24 * 60 * 60
 		case "mon", "month", "months":
 			units = 30 * 24 * 60 * 60
-		case "y", "year", "years":
+		case "y", "yr", "yrs", "year", "years":
 			units = 365 * 24 * 60 * 60
 		default:
 			return 0, ErrUnknownTimeUnits

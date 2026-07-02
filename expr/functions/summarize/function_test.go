@@ -250,6 +250,19 @@ func TestEvalSummarize1Minute(t *testing.T) {
 			Stop:  300,
 		},
 		{
+			Target: "summarize(metric1,'1hr','sum')",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
+			},
+			Want:  []float64{28680, math.NaN()},
+			From:  0,
+			Until: 240,
+			Name:  "summarize(metric1,'1hr','sum')",
+			Step:  3600,
+			Start: 0,
+			Stop:  7200,
+		},
+		{
 			Target: "summarize(metric1,'1min','avg')",
 			M: map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
