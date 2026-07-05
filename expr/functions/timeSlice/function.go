@@ -5,6 +5,8 @@ import (
 	"math"
 	"strconv"
 
+	"github.com/go-graphite/carbonapi/date"
+	fconfig "github.com/go-graphite/carbonapi/expr/functions/config"
 	"github.com/go-graphite/carbonapi/expr/helper"
 	"github.com/go-graphite/carbonapi/expr/interfaces"
 	"github.com/go-graphite/carbonapi/expr/types"
@@ -27,18 +29,37 @@ func New(configFile string) []interfaces.FunctionMetadata {
 	return res
 }
 
+// parseTimeArg parses using date.ParseAtTime and falls back
+// to parsing as an interval for retrocompatibility.
+func parseTimeArg(s string) (int64, error) {
+	if epoch, err := date.ParseAtTime(s, "", fconfig.Config.DefaultTimeZone); err == nil {
+		return epoch, nil
+	}
+	if secs, err := parser.IntervalString(s, 1); err == nil {
+		return int64(secs), nil
+	}
+	return 0, parser.ErrBadType
+}
+
 func (f *timeSlice) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
 	if e.ArgsLen() < 2 {
 		return nil, parser.ErrMissingArgument
 	}
 
-	start32, err := e.GetIntervalArg(1, 1)
+	startArg, err := e.GetStringArg(1)
 	if err != nil {
 		return nil, err
 	}
-	start := int64(start32)
+	endArg, err := e.GetStringNamedOrPosArgDefault("endSliceAt", 2, "now")
+	if err != nil {
+		return nil, err
+	}
 
-	end, err := e.GetIntervalNamedOrPosArgDefault("endSliceAt", 2, 1, 0)
+	start, err := parseTimeArg(startArg)
+	if err != nil {
+		return nil, err
+	}
+	end, err := parseTimeArg(endArg)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +119,7 @@ func (f *timeSlice) Description() map[string]types.FunctionDescription {
 				},
 				{
 					Name:    "endSliceAt",
-					Type:    types.Interval,
+					Type:    types.Date,
 					Default: types.NewSuggestion("now"),
 				},
 			},
