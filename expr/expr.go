@@ -3,6 +3,7 @@ package expr
 import (
 	"context"
 	"errors"
+	"net/http"
 
 	"github.com/ansel1/merry"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
@@ -17,6 +18,7 @@ import (
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	utilctx "github.com/go-graphite/carbonapi/util/ctx"
 	zipper "github.com/go-graphite/carbonapi/zipper/interfaces"
+	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 )
 
 var ErrZipperNotInit = errors.New("zipper not initialized")
@@ -40,6 +42,7 @@ func (eval Evaluator) Fetch(ctx context.Context, exprs []parser.Expr, from, unti
 	targetValues := make(map[parser.MetricRequest][]*types.MetricData)
 
 	haveFallbackSeries := false
+	haveCachedValues := false
 	for _, exp := range exprs {
 		for _, m := range exp.Metrics(from, until) {
 			fetchRequest := pb.FetchRequest{
@@ -79,6 +82,7 @@ func (eval Evaluator) Fetch(ctx context.Context, exprs []parser.Expr, from, unti
 			// avoid multiple requests in a http request, E.g render?target=a.b&target=a.b
 			if _, ok := values[metricRequest]; ok {
 				targetValues[metricRequest] = nil
+				haveCachedValues = true
 				continue
 			}
 
@@ -95,7 +99,13 @@ func (eval Evaluator) Fetch(ctx context.Context, exprs []parser.Expr, from, unti
 
 	if len(multiFetchRequest.Metrics) > 0 {
 		metrics, _, err := eval.zipper.Render(ctx, multiFetchRequest)
-		// If we had only partial result, we want to do our best to actually do our job
+		// If we had only partial result, we want to do our best to actually do our job. Ignore 404 ErrNotFound errors
+		// if there are some metrics cached from previous targets as we actually have the data - if we included all
+		// metrics in batch we would get no error and proceed normally. Without this queries with multiple targets like
+		// target=group(existing,notexisting)&target=group(existing,othernotexisting) would miss some results.
+		if merry.HTTPCode(err) == http.StatusNotFound && merry.Message(err) == zipperTypes.ErrNotFound.Error() && haveCachedValues {
+			err = nil
+		}
 		if err != nil && merry.HTTPCode(err) >= 400 && !haveFallbackSeries {
 			return nil, err
 		}
