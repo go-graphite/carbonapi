@@ -290,6 +290,17 @@ func TestHighest(t *testing.T) {
 			},
 		},
 		{
+			"lowest(metric1, 2, \"max\")",
+			map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 0, Until: 1}: {
+					types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 12, 11}, 1, now32),
+				},
+			},
+			[]*types.MetricData{
+				types.MakeMetricData("metricA", []float64{1, 1, 3, 3, 12, 11}, 1, now32),
+			},
+		},
+		{
 			"lowestCurrent(metric1,1)",
 			map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "metric1", From: 0, Until: 1}: {
