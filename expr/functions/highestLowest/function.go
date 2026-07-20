@@ -45,11 +45,6 @@ func (f *highest) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Ex
 		}
 	}
 
-	// we have fewer arguments than we want result series
-	if len(arg) < n {
-		return arg, nil
-	}
-
 	var mh types.MetricHeap
 
 	var compute func([]float64) float64
@@ -96,6 +91,11 @@ func (f *highest) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Ex
 		compute = consolidations.MinValue
 	default:
 		return nil, fmt.Errorf("unsupported function %v", e.Target())
+	}
+
+	// we have fewer series than we want result series
+	if len(arg) < n {
+		return arg, nil
 	}
 
 	var results []*types.MetricData
