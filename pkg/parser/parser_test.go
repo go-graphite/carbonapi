@@ -510,6 +510,36 @@ func TestParseExpr(t *testing.T) {
 				argString: "func2(func1(foo.bar),foo.baz),func4(asdf.zxcv.qwer)",
 			},
 		},
+		{
+			"someFunction (asd)",
+			&expr{
+				target:    "someFunction",
+				etype:     EtFunc,
+				args:      []*expr{{target: "asd"}},
+				argString: "asd",
+			},
+		},
+		{
+			"foo.bar | exclude ('baz') | groupByNode (1, 'sum')",
+			&expr{
+				target: "groupByNode",
+				etype:  EtFunc,
+				args: []*expr{
+					{
+						target: "exclude",
+						etype:  EtFunc,
+						args: []*expr{
+							{target: "foo.bar"},
+							{etype: EtString, valStr: "baz"},
+						},
+						argString: "foo.bar,'baz'",
+					},
+					{val: 1, etype: EtConst, valStr: "1"},
+					{etype: EtString, valStr: "sum"},
+				},
+				argString: "exclude(foo.bar,'baz'),1, 'sum'",
+			},
+		},
 	}
 
 	for _, tt := range tests {

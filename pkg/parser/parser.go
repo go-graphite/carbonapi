@@ -636,6 +636,12 @@ func parseExprWithoutPipe(e string) (Expr, string, error) {
 		return &expr{valStr: nameLower, etype: EtBool, target: nameLower}, e, nil
 	}
 
+	// ignores whitespace between function name and its argument list
+	// i.e. `function ('foo')` is equivalent to `function('foo')`.
+	if eTrimmed := skipWhitespace(e); eTrimmed != "" && eTrimmed[0] == '(' {
+		e = eTrimmed
+	}
+
 	if e != "" && e[0] == '(' {
 		// TODO(civil): Tags: make it a proper Expression
 		if name == "seriesByTag" {
