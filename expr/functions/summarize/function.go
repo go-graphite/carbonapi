@@ -50,10 +50,7 @@ func (f *summarize) Do(ctx context.Context, eval interfaces.Evaluator, e parser.
 	if err != nil {
 		return nil, err
 	}
-	_, funcOk := e.NamedArg("func")
-	if !funcOk {
-		funcOk = e.ArgsLen() > 2
-	}
+	_, funcOk := e.NamedOrPosArg("func", 2)
 	if err := consolidations.CheckValidConsolidationFunc(summarizeFunction); err != nil {
 		return nil, err
 	}
@@ -62,10 +59,7 @@ func (f *summarize) Do(ctx context.Context, eval interfaces.Evaluator, e parser.
 	if err != nil {
 		return nil, err
 	}
-	_, alignOk := e.NamedArgs()["alignToFrom"]
-	if !alignOk {
-		alignOk = e.ArgsLen() > 3
-	}
+	_, alignOk := e.NamedOrPosArg("alignToFrom", 3)
 
 	newStart := args[0].StartTime
 	newStop := args[0].StopTime

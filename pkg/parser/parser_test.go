@@ -310,6 +310,28 @@ func TestParseExpr(t *testing.T) {
 		},
 
 		{
+			// graphite-web only has None in its argument grammar, so a bare None is a metric name
+			"None",
+			&expr{target: "None"},
+		},
+		{
+			"func(metric, None, none, None.foo.bar, alignTo=None)",
+			&expr{
+				target: "func",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "metric"},
+					{target: "None", etype: EtNone},
+					{target: "none", etype: EtNone},
+					{target: "None.foo.bar"},
+				},
+				namedArgs: map[string]*expr{
+					"alignTo": {target: "None", etype: EtNone},
+				},
+				argString: "metric, None, none, None.foo.bar, alignTo=None",
+			},
+		},
+		{
 			`foo.{bar,baz}.qux`,
 			&expr{
 				target: "foo.{bar,baz}.qux",
@@ -599,6 +621,62 @@ func TestNamedOrPosArg(t *testing.T) {
 
 	_, ok = e.NamedOrPosArg("missing", 4)
 	assert.False(t, ok)
+
+	// None means "use the default", so it is reported as absent
+	e, _, err = ParseExpr("func(metric, None, alignTo=None)")
+	assert.NoError(t, err)
+
+	_, ok = e.NamedOrPosArg("alignTo", 1)
+	assert.False(t, ok)
+
+	_, ok = e.NamedOrPosArg("missing", 1)
+	assert.False(t, ok)
+}
+
+func TestNoneArgFallsBackToDefault(t *testing.T) {
+	e, _, err := ParseExpr("func(metric, None, key=None)")
+	assert.NoError(t, err)
+
+	s, err := e.GetStringArgDefault(1, "def")
+	assert.NoError(t, err)
+	assert.Equal(t, "def", s)
+
+	s, err = e.GetStringNamedOrPosArgDefault("key", 1, "def")
+	assert.NoError(t, err)
+	assert.Equal(t, "def", s)
+
+	f, err := e.GetFloatArgDefault(1, 0.5)
+	assert.NoError(t, err)
+	assert.Equal(t, 0.5, f)
+
+	f, err = e.GetFloatNamedOrPosArgDefault("key", 1, 0.5)
+	assert.NoError(t, err)
+	assert.Equal(t, 0.5, f)
+
+	i, err := e.GetIntArgDefault(1, 7)
+	assert.NoError(t, err)
+	assert.Equal(t, 7, i)
+
+	i, ok, err := e.GetIntArgWithIndication(1)
+	assert.NoError(t, err)
+	assert.False(t, ok)
+	assert.Equal(t, 0, i)
+
+	b, err := e.GetBoolArgDefault(1, true)
+	assert.NoError(t, err)
+	assert.True(t, b)
+
+	inf, err := e.GetIntOrInfArgDefault(1, IntOrInf{IsInf: true})
+	assert.NoError(t, err)
+	assert.True(t, inf.IsInf)
+
+	iv, err := e.GetIntervalNamedOrPosArgDefault("key", 1, -1, 42)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(42), iv)
+
+	// where a value is required, None is still an error, as in graphite-web
+	_, err = e.GetFloatArg(1)
+	assert.ErrorIs(t, err, ErrBadType)
 }
 
 func TestDoGetFloatArg(t *testing.T) {
@@ -771,6 +849,30 @@ func TestMetrics(t *testing.T) {
 					{valStr: "1h", etype: EtString},
 				},
 				argString: "metric1, '1h'",
+			},
+			1410346740,
+			1410346865,
+			[]MetricRequest{
+				{
+					Metric: "metric1",
+					From:   1410346740,
+					Until:  1410346865,
+				},
+			},
+		},
+		{
+			// alignTo=None must not align the start time, nor be fetched as a metric
+			"smartSummarize(metric1, '1h', 'sum', None)",
+			&expr{
+				target: "smartSummarize",
+				etype:  EtFunc,
+				args: []*expr{
+					{target: "metric1"},
+					{valStr: "1h", etype: EtString},
+					{valStr: "sum", etype: EtString},
+					{target: "None", etype: EtNone},
+				},
+				argString: "metric1, '1h', 'sum', None",
 			},
 			1410346740,
 			1410346865,

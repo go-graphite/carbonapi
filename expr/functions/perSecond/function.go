@@ -64,10 +64,10 @@ func (f *perSecond) Do(ctx context.Context, eval interfaces.Evaluator, e parser.
 	}
 
 	argMask := 0
-	if _, ok := e.NamedArg("maxValue"); ok || e.ArgsLen() > 1 {
+	if hasMax {
 		argMask |= 1
 	}
-	if _, ok := e.NamedArg("minValue"); ok || e.ArgsLen() > 2 {
+	if hasMin {
 		argMask |= 2
 	}
 

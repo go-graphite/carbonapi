@@ -38,14 +38,17 @@ func (f *linearRegression) Do(ctx context.Context, eval interfaces.Evaluator, e 
 
 	degree := 1
 
+	startSourceAt, hasStart := e.NamedOrPosArg("startSourceAt", 1)
+	endSourceAt, hasEnd := e.NamedOrPosArg("endSourceAt", 2)
+
 	results := make([]*types.MetricData, 0, len(arg))
 
 	for _, a := range arg {
 		r := a.CopyLink()
-		if e.ArgsLen() > 2 {
-			r.Name = "linearRegression(" + a.GetName() + ",'" + e.Arg(1).StringValue() + "','" + e.Arg(2).StringValue() + "')"
-		} else if e.ArgsLen() > 1 {
-			r.Name = "linearRegression(" + a.GetName() + ",'" + e.Arg(1).StringValue() + "')"
+		if hasStart && hasEnd {
+			r.Name = "linearRegression(" + a.GetName() + ",'" + startSourceAt.StringValue() + "','" + endSourceAt.StringValue() + "')"
+		} else if hasStart {
+			r.Name = "linearRegression(" + a.GetName() + ",'" + startSourceAt.StringValue() + "')"
 		} else {
 			r.Name = "linearRegression(" + a.Name + ")"
 		}
