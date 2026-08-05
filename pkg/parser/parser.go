@@ -640,9 +640,12 @@ func parseExprWithoutPipe(e string) (Expr, string, error) {
 		return parseCall(name, e)
 	}
 
-	// `function ('foo')` is equivalent to `function('foo')`, but a metric name may
-	// legitimately be followed by whitespace and a paren, so the call is only taken
-	// when the name could be a function name and its argument list parses.
+	// `function ('foo')` means the same as `function('foo')`. But a series name
+	// can also contain " (" — for example `metric1 (avg: 3)` produced by
+	// legendValue and later re-parsed by aliasQuery or applyByNode. So we only
+	// treat the name as a function call when it can be a function name and the
+	// text after the paren is a valid argument list; otherwise we return the
+	// plain name and leave the rest of the input untouched.
 	if eTrimmed := skipWhitespace(e); eTrimmed != "" && eTrimmed[0] == '(' && isFunctionName(name) {
 		if exp, eAfterCall, err := parseCall(name, eTrimmed); err == nil {
 			return exp, eAfterCall, nil

@@ -86,6 +86,9 @@ func (f *groupByNode) Do(ctx context.Context, eval interfaces.Evaluator, e parse
 		expr := callback + "(stub_" + k + ")"
 
 		// create a stub context to evaluate the callback in
+		// The callback must consume the whole stub expression. A callback like
+		// "sum (x)" parses fine as the call sum(x), but leaves "(stub_...)"
+		// unused in the remainder, so the stub series would never be evaluated.
 		nexpr, remainder, err := parser.ParseExpr(expr)
 		if err != nil {
 			return nil, err
