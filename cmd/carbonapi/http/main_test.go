@@ -10,6 +10,7 @@ import (
 
 	"github.com/ansel1/merry"
 	"github.com/go-graphite/carbonapi/cmd/carbonapi/config"
+	"github.com/go-graphite/carbonapi/expr/functions/cairo/png"
 	"github.com/go-graphite/carbonapi/expr/types"
 	zipperTypes "github.com/go-graphite/carbonapi/zipper/types"
 	pb "github.com/go-graphite/protocol/carbonapi_v3_pb"
@@ -148,6 +149,19 @@ func TestRenderHandler(t *testing.T) {
 	r = assert.Equal(t, expected, rr.Body.String(), "Http response should be same.")
 	if !r {
 		t.Error("Http response should be same.")
+	}
+}
+
+func TestRenderHandlerImageFormatWithoutCairo(t *testing.T) {
+	if png.HaveRenderSupport {
+		t.Skip("this build has image rendering support")
+	}
+
+	for _, format := range []string{"png", "svg"} {
+		req, rr := setUpRequest(t, "/render/?target=foo.bar&from=-10minutes&format="+format)
+		renderHandler(rr, req)
+
+		assert.Equal(t, http.StatusNotImplemented, rr.Code, "HttpStatusCode should be 501 Not Implemented.")
 	}
 }
 
