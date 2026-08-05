@@ -636,10 +636,13 @@ func parseExprWithoutPipe(e string) (Expr, string, error) {
 		return &expr{valStr: nameLower, etype: EtBool, target: nameLower}, e, nil
 	}
 
-	// ignores whitespace between function name and its argument list
-	// i.e. `function ('foo')` is equivalent to `function('foo')`.
-	if eTrimmed := skipWhitespace(e); eTrimmed != "" && eTrimmed[0] == '(' {
-		e = eTrimmed
+	// `function ('foo')` is equivalent to `function('foo')`, but a metric name may
+	// legitimately be followed by whitespace and a paren, so the whitespace is only
+	// consumed when the name could be a function name and its argument list parses.
+	if eTrimmed := skipWhitespace(e); eTrimmed != "" && eTrimmed[0] == '(' && isFunctionName(name) {
+		if _, _, _, _, err := parseArgList(eTrimmed); err == nil {
+			e = eTrimmed
+		}
 	}
 
 	if e != "" && e[0] == '(' {
@@ -659,6 +662,21 @@ func parseExprWithoutPipe(e string) (Expr, string, error) {
 	}
 
 	return &expr{target: name}, e, nil
+}
+
+// isFunctionName reports whether name matches graphite-web's funcname grammar,
+// Word(alphas+'_', alphanums+'_'), which notably excludes dots and wildcards.
+func isFunctionName(name string) bool {
+	for i := 0; i < len(name); i++ {
+		r := name[i]
+		switch {
+		case 'a' <= r && r <= 'z', 'A' <= r && r <= 'Z', r == '_':
+		case IsDigit(r) && i > 0:
+		default:
+			return false
+		}
+	}
+	return name != ""
 }
 
 func parseExprInner(e string) (Expr, string, error) {

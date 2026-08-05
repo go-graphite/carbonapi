@@ -86,10 +86,10 @@ func (f *groupByNode) Do(ctx context.Context, eval interfaces.Evaluator, e parse
 		expr := callback + "(stub_" + k + ")"
 
 		// create a stub context to evaluate the callback in
-		nexpr, _, err := parser.ParseExpr(expr)
+		nexpr, remainder, err := parser.ParseExpr(expr)
 		if err != nil {
 			return nil, err
-		} else if nexpr.Type() != parser.EtFunc {
+		} else if nexpr.Type() != parser.EtFunc || remainder != "" {
 			err = merry.WithMessage(parser.ErrInvalidArg, "unsupported "+target+" callback function")
 			return nil, err
 		}

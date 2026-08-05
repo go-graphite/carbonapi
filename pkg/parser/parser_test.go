@@ -554,6 +554,34 @@ func TestParseExpr(t *testing.T) {
 	}
 }
 
+func TestParseExprWhitespaceBeforeArgList(t *testing.T) {
+	tests := []struct {
+		s         string
+		target    string
+		etype     ExprType
+		remainder string
+	}{
+		{"someFunction (asd)", "someFunction", EtFunc, ""},
+		{"someFunction\t(asd)", "someFunction", EtFunc, ""},
+		{"foo.bar (baz)", "foo.bar", EtName, "(baz)"},
+		{"foo*bar (baz)", "foo*bar", EtName, "(baz)"},
+		{"metric1 (avg: 3)", "metric1", EtName, "(avg: 3)"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.s, func(t *testing.T) {
+			assert := assert.New(t)
+
+			e, remainder, err := ParseExpr(tt.s)
+			if assert.NoError(err) {
+				assert.Equal(tt.target, e.Target())
+				assert.Equal(tt.etype, e.Type())
+				assert.Equal(tt.remainder, remainder)
+			}
+		})
+	}
+}
+
 func TestDoGetBoolVar(t *testing.T) {
 	tests := []struct {
 		s string
