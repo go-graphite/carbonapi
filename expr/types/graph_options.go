@@ -1,5 +1,3 @@
-// +build cairo
-
 package types
 
 const DefaultStackName = "__DEFAULT__"

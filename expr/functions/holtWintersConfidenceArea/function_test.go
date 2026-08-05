@@ -1,6 +1,3 @@
-//go:build cairo
-// +build cairo
-
 package holtWintersConfidenceArea
 
 import (
