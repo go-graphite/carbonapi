@@ -27,6 +27,9 @@ func main() {
 		if name == "example" {
 			continue
 		}
+		if name == "cairo" {
+			continue
+		}
 
 		funcs = append(funcs, name)
 	}
