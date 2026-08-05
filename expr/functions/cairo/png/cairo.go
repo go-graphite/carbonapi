@@ -22,6 +22,8 @@ import (
 	"github.com/tebeka/strftime"
 )
 
+const HaveRenderSupport = true
+
 type HAlign int
 
 const (

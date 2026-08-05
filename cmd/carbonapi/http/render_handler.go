@@ -198,6 +198,12 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if (format == pngFormat || format == svgFormat) && !png.HaveRenderSupport {
+		setError(w, accessLogDetails, "this carbonapi binary was built without image rendering support (cairo)", http.StatusNotImplemented, uid.String())
+		logAsError = true
+		return
+	}
+
 	if format == protoV3Format {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {

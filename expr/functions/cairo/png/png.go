@@ -9,6 +9,8 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 )
 
+const HaveRenderSupport = false
+
 // skipcq: CRT-P0003
 func MarshalPNG(params PictureParams, results []*types.MetricData) []byte {
 	return nil
