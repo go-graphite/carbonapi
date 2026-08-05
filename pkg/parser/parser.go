@@ -636,32 +636,37 @@ func parseExprWithoutPipe(e string) (Expr, string, error) {
 		return &expr{valStr: nameLower, etype: EtBool, target: nameLower}, e, nil
 	}
 
-	// `function ('foo')` is equivalent to `function('foo')`, but a metric name may
-	// legitimately be followed by whitespace and a paren, so the whitespace is only
-	// consumed when the name could be a function name and its argument list parses.
-	if eTrimmed := skipWhitespace(e); eTrimmed != "" && eTrimmed[0] == '(' && isFunctionName(name) {
-		if _, _, _, _, err := parseArgList(eTrimmed); err == nil {
-			e = eTrimmed
-		}
+	if e != "" && e[0] == '(' {
+		return parseCall(name, e)
 	}
 
-	if e != "" && e[0] == '(' {
-		// TODO(civil): Tags: make it a proper Expression
-		if name == "seriesByTag" {
-			argString, _, _, e, err := parseArgList(e)
-			return &expr{target: name + "(" + argString + ")", etype: EtName}, e, err
+	// `function ('foo')` is equivalent to `function('foo')`, but a metric name may
+	// legitimately be followed by whitespace and a paren, so the call is only taken
+	// when the name could be a function name and its argument list parses.
+	if eTrimmed := skipWhitespace(e); eTrimmed != "" && eTrimmed[0] == '(' && isFunctionName(name) {
+		if exp, eAfterCall, err := parseCall(name, eTrimmed); err == nil {
+			return exp, eAfterCall, nil
 		}
-		exp := &expr{target: name, etype: EtFunc}
-
-		argString, posArgs, namedArgs, e, err := parseArgList(e)
-		exp.argString = argString
-		exp.args = posArgs
-		exp.namedArgs = namedArgs
-
-		return exp, e, err
 	}
 
 	return &expr{target: name}, e, nil
+}
+
+func parseCall(name, e string) (Expr, string, error) {
+	// TODO(civil): Tags: make it a proper Expression
+	if name == "seriesByTag" {
+		argString, _, _, e, err := parseArgList(e)
+		return &expr{target: name + "(" + argString + ")", etype: EtName}, e, err
+	}
+
+	exp := &expr{target: name, etype: EtFunc}
+
+	argString, posArgs, namedArgs, e, err := parseArgList(e)
+	exp.argString = argString
+	exp.args = posArgs
+	exp.namedArgs = namedArgs
+
+	return exp, e, err
 }
 
 // isFunctionName reports whether name matches graphite-web's funcname grammar,
