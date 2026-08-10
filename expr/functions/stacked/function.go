@@ -41,7 +41,7 @@ func (f *stacked) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Ex
 	results := make([]*types.MetricData, len(arg))
 
 	for i, a := range arg {
-		r := a.CopyLinkTags()
+		r := a.CopyLink()
 		r.Stacked = true
 		r.StackName = stackName
 		r.Tags["stacked"] = stackName
