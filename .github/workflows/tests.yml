@@ -50,3 +50,28 @@ jobs:
       run: |
         wget "https://raw.githubusercontent.com/go-graphite/helper-scripts/main/build.sh" && chmod +x ./build.sh
         ./build.sh carbonapi
+
+  tests-nocairo:
+    name: Test code (nocairo)
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        go:
+          - ^1.24
+          - ^1
+    steps:
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: ${{ matrix.go }}
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v5
+      with:
+        fetch-depth: 200
+
+    - name: Run tests
+      run: |
+        make test_nocairo
+        make nocairo

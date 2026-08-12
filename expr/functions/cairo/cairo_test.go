@@ -1,6 +1,3 @@
-//go:build cairo
-// +build cairo
-
 package cairo
 
 import (
@@ -26,6 +23,15 @@ func init() {
 func TestEvalExpressionGraph(t *testing.T) {
 
 	tests := []th.EvalTestItem{
+		{
+			"color(metric1,\"green\")",
+			map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1",
+					[]float64{1, 2, 3}, 1, 0)},
+			},
+			[]*types.MetricData{types.MakeMetricData("metric1",
+				[]float64{1, 2, 3}, 1, 0)},
+		},
 		{
 			"threshold(42.42)",
 			map[parser.MetricRequest][]*types.MetricData{},
