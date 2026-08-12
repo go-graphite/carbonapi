@@ -153,7 +153,7 @@ func TestRenderHandler(t *testing.T) {
 }
 
 func TestRenderHandlerImageFormatWithoutCairo(t *testing.T) {
-	if png.HaveRenderSupport {
+	if png.HaveGraphSupport {
 		t.Skip("this build has image rendering support")
 	}
 

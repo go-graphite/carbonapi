@@ -198,7 +198,7 @@ func renderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if (format == pngFormat || format == svgFormat) && !png.HaveRenderSupport {
+	if (format == pngFormat || format == svgFormat) && !png.HaveGraphSupport {
 		setError(w, accessLogDetails, "this carbonapi binary was built without image rendering support (cairo), use a data format instead (json, csv, raw, ...)", http.StatusNotImplemented, uid.String())
 		logAsError = true
 		return

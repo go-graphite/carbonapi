@@ -22,7 +22,8 @@ import (
 	"github.com/tebeka/strftime"
 )
 
-const HaveRenderSupport = true
+// HaveGraphSupport reports whether this build can render graph images (png/svg).
+const HaveGraphSupport = true
 
 type HAlign int
 

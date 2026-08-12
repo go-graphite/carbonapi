@@ -9,7 +9,8 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 )
 
-const HaveRenderSupport = false
+// HaveGraphSupport reports whether this build can render graph images (png/svg).
+const HaveGraphSupport = false
 
 // skipcq: CRT-P0003
 func MarshalPNG(params PictureParams, results []*types.MetricData) []byte {
