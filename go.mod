@@ -37,7 +37,7 @@ require (
 	github.com/tinylib/msgp v1.4.0
 	github.com/valyala/fastjson v1.6.4
 	github.com/wangjohn/quickselect v0.0.0-20161129230411-ed8402a42d5f
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.27.1
 	golang.org/x/sys v0.36.0
 	gonum.org/v1/gonum v0.16.0
 	gopkg.in/yaml.v2 v2.4.0
