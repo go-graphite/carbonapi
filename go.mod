@@ -20,7 +20,7 @@ require (
 	github.com/golang/protobuf v1.5.4
 	github.com/gomodule/redigo v1.9.2
 	github.com/gorilla/handlers v1.5.2
-	github.com/lib/pq v1.10.9
+	github.com/lib/pq v1.11.1
 	github.com/lomik/og-rek v0.0.0-20170411191824-628eefeb8d80
 	github.com/lomik/zapwriter v0.0.0-20210624082824-c1161d1eb463
 	github.com/maruel/natural v1.1.1
