@@ -35,7 +35,7 @@ require (
 	github.com/tebeka/strftime v0.1.5
 	github.com/tevino/abool v1.2.0
 	github.com/tinylib/msgp v1.4.0
-	github.com/valyala/fastjson v1.6.4
+	github.com/valyala/fastjson v1.6.7
 	github.com/wangjohn/quickselect v0.0.0-20161129230411-ed8402a42d5f
 	go.uber.org/zap v1.27.0
 	golang.org/x/sys v0.36.0
