@@ -77,13 +77,16 @@ func (f *holtWintersAberration) Do(ctx context.Context, eval interfaces.Evaluato
 		lowerBand, upperBand := holtwinters.HoltWintersConfidenceBands(adjustedStartSeries[arg.Name].Values, stepTime, delta, bootstrapInterval, seasonality)
 
 		for i, v := range arg.Values {
-			if math.IsNaN(v) {
+			// We may not have upper/lower band values if the bootstrap period is shorter than the requested series
+			hasBand := i < len(upperBand) && i < len(lowerBand)
+			switch {
+			case math.IsNaN(v):
 				aberration = append(aberration, 0)
-			} else if !math.IsNaN(upperBand[i]) && v > upperBand[i] {
+			case hasBand && !math.IsNaN(upperBand[i]) && v > upperBand[i]:
 				aberration = append(aberration, v-upperBand[i])
-			} else if !math.IsNaN(lowerBand[i]) && v < lowerBand[i] {
+			case hasBand && !math.IsNaN(lowerBand[i]) && v < lowerBand[i]:
 				aberration = append(aberration, v-lowerBand[i])
-			} else {
+			default:
 				aberration = append(aberration, 0)
 			}
 		}
