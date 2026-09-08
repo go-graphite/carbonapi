@@ -51,7 +51,6 @@ func (e *expr) IsNone() bool {
 	return e.etype == EtNone
 }
 
-// argMissing reports whether the positional argument at n was left out or set to None.
 func (e *expr) argMissing(n int) bool {
 	return len(e.args) <= n || e.args[n].IsNone()
 }
@@ -155,7 +154,7 @@ func (e *expr) NamedArg(name string) (Expr, bool) {
 
 // NamedOrPosArg returns the named argument when present, otherwise the positional argument.
 func (e *expr) NamedOrPosArg(name string, pos int) (Expr, bool) {
-	if arg := e.getNamedArg(name); arg != nil {
+	if arg, ok := e.NamedArg(name); ok {
 		return arg, true
 	}
 	if !e.argMissing(pos) {
@@ -606,8 +605,6 @@ func (e *expr) insertFirstArg(exp *expr) error {
 	return nil
 }
 
-// markNoneLiteral turns a parsed name into the None literal. graphite-web only has None
-// in its argument grammar, so a bare None outside an argument list stays a metric name.
 func markNoneLiteral(exp *expr) {
 	if exp.etype == EtName && strings.EqualFold(exp.target, "None") {
 		exp.etype = EtNone

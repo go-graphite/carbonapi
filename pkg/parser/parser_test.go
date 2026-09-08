@@ -310,7 +310,6 @@ func TestParseExpr(t *testing.T) {
 		},
 
 		{
-			// graphite-web only has None in its argument grammar, so a bare None is a metric name
 			"None",
 			&expr{target: "None"},
 		},
@@ -622,7 +621,6 @@ func TestNamedOrPosArg(t *testing.T) {
 	_, ok = e.NamedOrPosArg("missing", 4)
 	assert.False(t, ok)
 
-	// None means "use the default", so it is reported as absent
 	e, _, err = ParseExpr("func(metric, None, alignTo=None)")
 	assert.NoError(t, err)
 
@@ -674,7 +672,6 @@ func TestNoneArgFallsBackToDefault(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(42), iv)
 
-	// where a value is required, None is still an error, as in graphite-web
 	_, err = e.GetFloatArg(1)
 	assert.ErrorIs(t, err, ErrBadType)
 }
@@ -861,7 +858,6 @@ func TestMetrics(t *testing.T) {
 			},
 		},
 		{
-			// alignTo=None must not align the start time, nor be fetched as a metric
 			"smartSummarize(metric1, '1h', 'sum', None)",
 			&expr{
 				target: "smartSummarize",

@@ -28,9 +28,7 @@ const (
 	EtString
 	// EtBool is a constant for 'Bool' type expression
 	EtBool
-	// EtNone is a const for the 'None' literal. Accessors for optional arguments report
-	// None as absent and fall back to the default, as in graphite-web; accessors for
-	// required arguments reject it with ErrBadType.
+	// EtNone is a const for the 'None' literal
 	EtNone
 )
 
@@ -112,8 +110,7 @@ type Expr interface {
 	Arg(int) Expr
 	// Args returns slice of arguments (parsed, as Expr interface as well)
 	Args() []Expr
-	// ArgsLen return arguments count. It counts explicit None arguments, so it is not a
-	// presence check for optional arguments; use NamedOrPosArg for that.
+	// ArgsLen return arguments count
 	ArgsLen() int
 	// NamedArgs returns map of named arguments. E.x. for nonNegativeDerivative(metric1,maxValue=32) it will return map{"maxValue": constExpr(32)}
 	NamedArgs() map[string]Expr
