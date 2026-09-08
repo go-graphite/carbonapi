@@ -36,7 +36,7 @@ func (f *ifft) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr,
 	}
 
 	var phaseSeriesList []*types.MetricData
-	if e.ArgsLen() > 1 {
+	if e.ArgsLen() > 1 && !e.Arg(1).IsNone() {
 		phaseSeriesList, err = helper.GetSeriesArg(ctx, eval, e.Arg(1), from, until, values)
 		if err != nil {
 			return nil, err
