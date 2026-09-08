@@ -398,7 +398,7 @@ func (f *asPercent) Do(ctx context.Context, eval interfaces.Evaluator, e parser.
 
 		return seriesAsPercent(arg, total), nil
 
-	} else if e.ArgsLen() >= 3 && (e.Arg(1).IsName() || e.Arg(1).IsNone()) || e.Arg(1).IsFunc() {
+	} else if e.ArgsLen() >= 3 && (e.Arg(1).IsName() || e.Arg(1).IsNone() || e.Arg(1).IsFunc()) {
 		// Group by
 		nodesOrTags, err := e.GetNodeOrTagArgs(2, false)
 		if err != nil {

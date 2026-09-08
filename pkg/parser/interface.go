@@ -28,8 +28,9 @@ const (
 	EtString
 	// EtBool is a constant for 'Bool' type expression
 	EtBool
-	// EtNone is a const for the 'None' literal, which graphite-web accepts in
-	// argument position to mean "use the default value"
+	// EtNone is a const for the 'None' literal. Accessors for optional arguments report
+	// None as absent and fall back to the default, as in graphite-web; accessors for
+	// required arguments reject it with ErrBadType.
 	EtNone
 )
 
@@ -111,19 +112,14 @@ type Expr interface {
 	Arg(int) Expr
 	// Args returns slice of arguments (parsed, as Expr interface as well)
 	Args() []Expr
-	// ArgsLen return arguments count. Note that it counts explicit None arguments, so it is
-	// not a presence check for optional arguments; use NamedOrPosArg for that.
+	// ArgsLen return arguments count. It counts explicit None arguments, so it is not a
+	// presence check for optional arguments; use NamedOrPosArg for that.
 	ArgsLen() int
-	// NamedArgs returns map of named arguments. E.x. for nonNegativeDerivative(metric1,maxValue=32) it will return map{"maxValue": constExpr(32)}.
-	// Arguments set to None are omitted from the map.
+	// NamedArgs returns map of named arguments. E.x. for nonNegativeDerivative(metric1,maxValue=32) it will return map{"maxValue": constExpr(32)}
 	NamedArgs() map[string]Expr
 	// NamedArg returns named argument and boolean flag for check arg exist.
-	// An argument set to None is reported as absent.
 	NamedArg(string) (Expr, bool)
 	// NamedOrPosArg returns the named argument when present, otherwise the positional argument at pos.
-	// An argument set to None is reported as absent, as in graphite-web, where None means
-	// "use the default value". The Get*Default accessors below follow the same rule, while
-	// accessors for required arguments reject None with ErrBadType.
 	NamedOrPosArg(name string, pos int) (Expr, bool)
 	// RawArgs returns string that contains all arguments of expression exactly the same order they appear
 	RawArgs() string
