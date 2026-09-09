@@ -33,7 +33,7 @@ func (e *expr) doGetIntOrInfArg() (IntOrInf, error) {
 }
 
 func (e *expr) getNamedArg(name string) *expr {
-	if a, ok := e.namedArgs[name]; ok {
+	if a, ok := e.namedArgs[name]; ok && !a.IsNone() {
 		return a
 	}
 

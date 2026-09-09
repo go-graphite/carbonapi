@@ -341,8 +341,8 @@ func (f *asPercent) Do(ctx context.Context, eval interfaces.Evaluator, e parser.
 		return nil, nil
 	}
 
-	if e.ArgsLen() == 1 {
-		// asPercent(seriesList)
+	if e.ArgsLen() == 1 || (e.ArgsLen() == 2 && e.Arg(1).IsNone()) {
+		// asPercent(seriesList), asPercent(seriesList, None)
 
 		// TODO (msaf1980): may be copy in before start eval (based on function pipeline descritptions (ValueChange field)) and avoid copy metrics in functions
 		arg = helper.AlignSeries(types.CopyMetricDataSlice(arg))
@@ -398,14 +398,14 @@ func (f *asPercent) Do(ctx context.Context, eval interfaces.Evaluator, e parser.
 
 		return seriesAsPercent(arg, total), nil
 
-	} else if e.ArgsLen() >= 3 && e.Arg(1).IsName() || e.Arg(1).IsFunc() {
+	} else if e.ArgsLen() >= 3 && (e.Arg(1).IsName() || e.Arg(1).IsNone() || e.Arg(1).IsFunc()) {
 		// Group by
 		nodesOrTags, err := e.GetNodeOrTagArgs(2, false)
 		if err != nil {
 			return nil, err
 		}
 
-		if e.Arg(1).Target() == "None" {
+		if e.Arg(1).IsNone() {
 			// asPercent(seriesList, None, *nodes)
 			arg = helper.AlignSeries(types.CopyMetricDataSlice(arg))
 

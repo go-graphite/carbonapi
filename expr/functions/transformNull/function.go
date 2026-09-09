@@ -46,10 +46,7 @@ func (f *transformNull) Do(ctx context.Context, eval interfaces.Evaluator, e par
 		return nil, err
 	}
 
-	_, ok := e.NamedArg("default")
-	if !ok {
-		ok = e.ArgsLen() > 1
-	}
+	_, ok := e.NamedOrPosArg("default", 1)
 	defvStr := strconv.FormatFloat(defv, 'g', -1, 64)
 
 	var valMap []bool

@@ -28,6 +28,8 @@ const (
 	EtString
 	// EtBool is a constant for 'Bool' type expression
 	EtBool
+	// EtNone is a const for the 'None' literal
+	EtNone
 )
 
 var (
@@ -81,6 +83,8 @@ type Expr interface {
 	IsString() bool
 	// IsBool checks if Expression is 'Bool' expression
 	IsBool() bool
+	// IsNone checks if Expression is the 'None' literal
+	IsNone() bool
 	// Type returns type of the expression
 	Type() ExprType
 	// Target returns target value for expression

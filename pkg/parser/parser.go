@@ -47,6 +47,14 @@ func (e *expr) IsBool() bool {
 	return e.etype == EtBool
 }
 
+func (e *expr) IsNone() bool {
+	return e.etype == EtNone
+}
+
+func (e *expr) argMissing(n int) bool {
+	return len(e.args) <= n || e.args[n].IsNone()
+}
+
 func (e *expr) Type() ExprType {
 	return e.etype
 }
@@ -131,14 +139,17 @@ func (e *expr) ArgsLen() int {
 func (e *expr) NamedArgs() map[string]Expr {
 	ret := make(map[string]Expr)
 	for k, v := range e.namedArgs {
+		if v.IsNone() {
+			continue
+		}
 		ret[k] = v
 	}
 	return ret
 }
 
 func (e *expr) NamedArg(name string) (Expr, bool) {
-	expr, exist := e.namedArgs[name]
-	return expr, exist
+	arg := e.getNamedArg(name)
+	return arg, arg != nil
 }
 
 // NamedOrPosArg returns the named argument when present, otherwise the positional argument.
@@ -146,7 +157,7 @@ func (e *expr) NamedOrPosArg(name string, pos int) (Expr, bool) {
 	if arg, ok := e.NamedArg(name); ok {
 		return arg, true
 	}
-	if e.ArgsLen() > pos {
+	if !e.argMissing(pos) {
 		return e.Arg(pos), true
 	}
 	return nil, false
@@ -156,7 +167,7 @@ func (e *expr) Metrics(from, until int64) []MetricRequest {
 	switch e.etype {
 	case EtName:
 		return []MetricRequest{{Metric: e.target, From: from, Until: until}}
-	case EtConst, EtString:
+	case EtConst, EtString, EtNone:
 		return nil
 	case EtFunc:
 		var r []MetricRequest
@@ -355,7 +366,7 @@ func (e *expr) GetIntervalNamedOrPosArgDefault(k string, n, defaultSign int, v i
 			return 0, ErrBadType
 		}
 	} else {
-		if len(e.args) <= n {
+		if e.argMissing(n) {
 			return v, nil
 		}
 
@@ -400,7 +411,7 @@ func (e *expr) GetStringArgs(n int) ([]string, error) {
 }
 
 func (e *expr) GetStringArgDefault(n int, s string) (string, error) {
-	if len(e.args) <= n {
+	if e.argMissing(n) {
 		return s, nil
 	}
 
@@ -424,7 +435,7 @@ func (e *expr) GetFloatArg(n int) (float64, error) {
 }
 
 func (e *expr) GetFloatArgDefault(n int, v float64) (float64, error) {
-	if len(e.args) <= n {
+	if e.argMissing(n) {
 		return v, nil
 	}
 
@@ -466,7 +477,7 @@ func (e *expr) GetIntArgs(n int) ([]int, error) {
 }
 
 func (e *expr) GetIntArgDefault(n, d int) (int, error) {
-	if len(e.args) <= n {
+	if e.argMissing(n) {
 		return d, nil
 	}
 
@@ -474,7 +485,7 @@ func (e *expr) GetIntArgDefault(n, d int) (int, error) {
 }
 
 func (e *expr) GetIntArgWithIndication(n int) (int, bool, error) {
-	if len(e.args) <= n {
+	if e.argMissing(n) {
 		return 0, false, nil
 	}
 
@@ -508,7 +519,7 @@ func (e *expr) GetIntOrInfArg(n int) (IntOrInf, error) {
 }
 
 func (e *expr) GetIntOrInfArgDefault(n int, d IntOrInf) (IntOrInf, error) {
-	if len(e.args) <= n {
+	if e.argMissing(n) {
 		return d, nil
 	}
 
@@ -536,7 +547,7 @@ func (e *expr) GetBoolNamedOrPosArgDefault(k string, n int, b bool) (bool, error
 }
 
 func (e *expr) GetBoolArgDefault(n int, b bool) (bool, error) {
-	if len(e.args) <= n {
+	if e.argMissing(n) {
 		return b, nil
 	}
 
@@ -592,6 +603,12 @@ func (e *expr) insertFirstArg(exp *expr) error {
 	}
 
 	return nil
+}
+
+func markNoneLiteral(exp *expr) {
+	if exp.etype == EtName && strings.EqualFold(exp.target, "None") {
+		exp.etype = EtNone
+	}
 }
 
 func skipWhitespace(e string) string {
@@ -781,6 +798,7 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 				valStr: argCont.StringValue(),
 				target: argCont.Target(),
 			}
+			markNoneLiteral(exp)
 			namedArgs[arg.Target()] = exp
 
 			e = eCont
@@ -791,6 +809,7 @@ func parseArgList(e string) (string, []*expr, map[string]*expr, string, error) {
 			charNum += len(argString) - len(e)
 		} else {
 			exp := arg.toExpr().(*expr)
+			markNoneLiteral(exp)
 			posArgs = append(posArgs, exp)
 
 			if argStringBuffer.Len() > 0 {
