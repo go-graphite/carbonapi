@@ -531,6 +531,36 @@ func TestParseExpr(t *testing.T) {
 				argString: "func2(func1(foo.bar),foo.baz),func4(asdf.zxcv.qwer)",
 			},
 		},
+		{
+			"someFunction (asd)",
+			&expr{
+				target:    "someFunction",
+				etype:     EtFunc,
+				args:      []*expr{{target: "asd"}},
+				argString: "asd",
+			},
+		},
+		{
+			"foo.bar | exclude ('baz') | groupByNode (1, 'sum')",
+			&expr{
+				target: "groupByNode",
+				etype:  EtFunc,
+				args: []*expr{
+					{
+						target: "exclude",
+						etype:  EtFunc,
+						args: []*expr{
+							{target: "foo.bar"},
+							{etype: EtString, valStr: "baz"},
+						},
+						argString: "foo.bar,'baz'",
+					},
+					{val: 1, etype: EtConst, valStr: "1"},
+					{etype: EtString, valStr: "sum"},
+				},
+				argString: "exclude(foo.bar,'baz'),1, 'sum'",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -540,6 +570,34 @@ func TestParseExpr(t *testing.T) {
 			e, _, err := ParseExpr(tt.s)
 			if assert.NoError(err) {
 				assert.Equal(tt.e, e, tt.s)
+			}
+		})
+	}
+}
+
+func TestParseExprWhitespaceBeforeArgList(t *testing.T) {
+	tests := []struct {
+		s         string
+		target    string
+		etype     ExprType
+		remainder string
+	}{
+		{"someFunction (asd)", "someFunction", EtFunc, ""},
+		{"someFunction\t(asd)", "someFunction", EtFunc, ""},
+		{"foo.bar (baz)", "foo.bar", EtName, "(baz)"},
+		{"foo*bar (baz)", "foo*bar", EtName, "(baz)"},
+		{"metric1 (avg: 3)", "metric1", EtName, "(avg: 3)"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.s, func(t *testing.T) {
+			assert := assert.New(t)
+
+			e, remainder, err := ParseExpr(tt.s)
+			if assert.NoError(err) {
+				assert.Equal(tt.target, e.Target())
+				assert.Equal(tt.etype, e.Type())
+				assert.Equal(tt.remainder, remainder)
 			}
 		})
 	}

@@ -654,22 +654,54 @@ func parseExprWithoutPipe(e string) (Expr, string, error) {
 	}
 
 	if e != "" && e[0] == '(' {
-		// TODO(civil): Tags: make it a proper Expression
-		if name == "seriesByTag" {
-			argString, _, _, e, err := parseArgList(e)
-			return &expr{target: name + "(" + argString + ")", etype: EtName}, e, err
+		return parseCall(name, e)
+	}
+
+	// `function ('foo')` means the same as `function('foo')`. But a series name
+	// can also contain " (" — for example `metric1 (avg: 3)` produced by
+	// legendValue and later re-parsed by aliasQuery or applyByNode. So we only
+	// treat the name as a function call when it can be a function name and the
+	// text after the paren is a valid argument list; otherwise we return the
+	// plain name and leave the rest of the input untouched.
+	if eTrimmed := skipWhitespace(e); eTrimmed != "" && eTrimmed[0] == '(' && isFunctionName(name) {
+		if exp, eAfterCall, err := parseCall(name, eTrimmed); err == nil {
+			return exp, eAfterCall, nil
 		}
-		exp := &expr{target: name, etype: EtFunc}
-
-		argString, posArgs, namedArgs, e, err := parseArgList(e)
-		exp.argString = argString
-		exp.args = posArgs
-		exp.namedArgs = namedArgs
-
-		return exp, e, err
 	}
 
 	return &expr{target: name}, e, nil
+}
+
+func parseCall(name, e string) (Expr, string, error) {
+	// TODO(civil): Tags: make it a proper Expression
+	if name == "seriesByTag" {
+		argString, _, _, e, err := parseArgList(e)
+		return &expr{target: name + "(" + argString + ")", etype: EtName}, e, err
+	}
+
+	exp := &expr{target: name, etype: EtFunc}
+
+	argString, posArgs, namedArgs, e, err := parseArgList(e)
+	exp.argString = argString
+	exp.args = posArgs
+	exp.namedArgs = namedArgs
+
+	return exp, e, err
+}
+
+// isFunctionName reports whether name matches graphite-web's funcname grammar,
+// Word(alphas+'_', alphanums+'_'), which notably excludes dots and wildcards.
+func isFunctionName(name string) bool {
+	for i := 0; i < len(name); i++ {
+		r := name[i]
+		switch {
+		case 'a' <= r && r <= 'z', 'A' <= r && r <= 'Z', r == '_':
+		case IsDigit(r) && i > 0:
+		default:
+			return false
+		}
+	}
+	return name != ""
 }
 
 func parseExprInner(e string) (Expr, string, error) {
