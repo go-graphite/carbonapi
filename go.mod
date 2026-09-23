@@ -18,7 +18,7 @@ require (
 	github.com/go-graphite/gocairo v0.1.0
 	github.com/go-graphite/protocol v1.0.0
 	github.com/golang/protobuf v1.5.4
-	github.com/gomodule/redigo v1.9.2
+	github.com/gomodule/redigo v1.9.3
 	github.com/gorilla/handlers v1.5.2
 	github.com/lib/pq v1.10.9
 	github.com/lomik/og-rek v0.0.0-20170411191824-628eefeb8d80
