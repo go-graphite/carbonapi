@@ -10,8 +10,8 @@ github.com/alicebob/miniredis/v2 v2.35.0 h1:QwLphYqCEAo1eu1TqPRN2jgVMPBweeQcR21j
 github.com/alicebob/miniredis/v2 v2.35.0/go.mod h1:TcL7YfarKPGDAthEtl5NBeHZfeUQj6OXMm/+iu5cLMM=
 github.com/ansel1/merry v1.8.1 h1:z2o6oeJiJ7WNuBp6XAW6BQScBl6vULWxGdw5A/BHJgQ=
 github.com/ansel1/merry v1.8.1/go.mod h1:wJVu1mHEtEUWq5zTTX9RiWjcE+xL8y7BGYl2VTYdP7M=
-github.com/ansel1/merry/v2 v2.2.2 h1:/R8URU5LtiYwP7UI1KoZW4ex4nTzr+/T49+TYZsjUas=
-github.com/ansel1/merry/v2 v2.2.2/go.mod h1:sludwzkWfhZHOF4jSOViv+t2nnu2HNmtsMKzAfwmVB8=
+github.com/ansel1/merry/v2 v2.2.3 h1:/gBjiifpoymj+iV/8QApOET6Q4++DZJp55VR6fcHkIQ=
+github.com/ansel1/merry/v2 v2.2.3/go.mod h1:Rs65Tv8RrdygaFCkV2VqLBTFe6HYIHFzEZRzvuIP0PU=
 github.com/barkimedes/go-deepcopy v0.0.0-20220514131651-17c30cfc62df h1:GSoSVRLoBaFpOOds6QyY1L8AX7uoY+Ln3BHc22W40X0=
 github.com/barkimedes/go-deepcopy v0.0.0-20220514131651-17c30cfc62df/go.mod h1:hiVxq5OP2bUGBRNS3Z/bt/reCLFNbdcST6gISi1fiOM=
 github.com/bradfitz/gomemcache v0.0.0-20230905024940-24af94b03874 h1:N7oVaKyGp8bttX0bfZGmcGkjz7DLQXhAn3DNd3T0ous=
@@ -52,8 +52,8 @@ github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHk
 github.com/frankban/quicktest v1.14.6/go.mod h1:4ptaffx2x8+WTWXmUCuVU6aPUX1/Mz7zb5vbUoiM6w0=
 github.com/fsnotify/fsnotify v1.9.0 h1:2Ml+OJNzbYCTzsxtv8vKSFD9PbJjmhYF14k/jKC7S9k=
 github.com/fsnotify/fsnotify v1.9.0/go.mod h1:8jBTzvmWwFyi3Pb8djgCCO5IBqzKJ/Jwo8TRcHyHii0=
-github.com/go-errors/errors v1.1.1 h1:ljK/pL5ltg3qoN+OtN6yCv9HWSfMwxSx90GJCZQxYNg=
-github.com/go-errors/errors v1.1.1/go.mod h1:psDX2osz5VnTOnFWbDeWwS7yejl+uV3FEWEp4lssFEs=
+github.com/go-errors/errors v1.5.1 h1:ZwEMSLRCapFLflTpT7NKaAc7ukJ8ZPEjzlxt8rPN8bk=
+github.com/go-errors/errors v1.5.1/go.mod h1:sIVyrIiJhuEF+Pj9Ebtd6P/rEYROXFi3BopGUQ5a5Og=
 github.com/go-graphite/gocairo v0.1.0 h1:VH624JTY1a6DsBHcM0knN73jJSUS/LwpqVEyXyBZRH4=
 github.com/go-graphite/gocairo v0.1.0/go.mod h1:6yOCt3ZqO6z4l6zZd5jM5Cj89B1kDK999KRYp6QO4Vs=
 github.com/go-graphite/protocol v1.0.0 h1:Fqb0mkVVtfMrn6vw6Ntm3raf3gVVZCOVdZu4JosW5qE=
