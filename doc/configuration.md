@@ -353,8 +353,7 @@ Extra config files for specific functions
 Only the following functions currently support having their own config:
   - `graphiteWeb`
   - `aliasByPostgres`
-  - `movingMedian`
-  - `moving` (applies to `movingAverage`, `movingMin`, `movingMax`, `movingSum`)
+  - `moving` (applies to `movingAverage`, `movingMedian`, `movingMin`, `movingMax`, `movingSum`, `movingWindow`)
 
 ### Example
 ```yaml

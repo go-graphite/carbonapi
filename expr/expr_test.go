@@ -385,6 +385,40 @@ func TestEvalExpression(t *testing.T) {
 	}
 }
 
+func TestEvalExpressionWithRange(t *testing.T) {
+	tests := []th.EvalTestItemWithRange{
+		{
+			Target: "asPercent(metric1,movingMedian(metric1,'1min'))",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 600, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{1, 4, 1, 5, 9, 2, 6, 5, 3, 5}, 10, 610),
+				},
+				{Metric: "metric1", From: 540, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{3, 2, 3, 8, 4, 3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5}, 10, 550),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData("asPercent(metric1,movingMedian(metric1,'1min'))",
+					[]float64{33.33333333333333, 114.28571428571428, 28.57142857142857, 142.85714285714286, 257.14285714285717, 66.66666666666666, 133.33333333333331, 100, 60, 100}, 10, 610),
+			},
+			From:  600,
+			Until: 700,
+		},
+	}
+
+	for _, tt := range tests {
+		testName := tt.Target
+		t.Run(testName, func(t *testing.T) {
+			eval, err := NewEvaluator(nil, th.NewTestZipper(nil), false)
+			if err == nil {
+				th.TestEvalExprWithRange(t, eval, &tt)
+			} else {
+				t.Errorf("error='%v'", err)
+			}
+		})
+	}
+}
+
 func TestRewriteExpr(t *testing.T) {
 	now32 := time.Now().Unix()
 

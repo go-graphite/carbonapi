@@ -1,8 +1,8 @@
 package types
 
 import (
-	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"math"
+	"slices"
 )
 
 // Based on github.com/dgryski/go-onlinestats
@@ -20,6 +20,7 @@ type Windowed struct {
 	sum    float64
 	sumsq  float64
 	nans   int
+	sorted []float64
 }
 
 func (w *Windowed) Reset() {
@@ -28,6 +29,7 @@ func (w *Windowed) Reset() {
 	w.sum = 0
 	w.sumsq = 0
 	w.nans = 0
+	w.sorted = nil
 	for i := range w.Data {
 		w.Data[i] = 0
 	}
@@ -61,6 +63,33 @@ func (w *Windowed) Push(n float64) {
 		w.sumsq += (n * n)
 	} else {
 		w.nans++
+	}
+
+	// sorted is built by the first Median() call and kept up to date from then on
+	if w.sorted != nil {
+		w.replaceSorted(old, n)
+	}
+}
+
+func (w *Windowed) replaceSorted(old, n float64) {
+	switch {
+	case math.IsNaN(old) && math.IsNaN(n):
+	case math.IsNaN(old):
+		i, _ := slices.BinarySearch(w.sorted, n)
+		w.sorted = slices.Insert(w.sorted, i, n)
+	case math.IsNaN(n):
+		i, _ := slices.BinarySearch(w.sorted, old)
+		w.sorted = slices.Delete(w.sorted, i, i+1)
+	default:
+		i, _ := slices.BinarySearch(w.sorted, old)
+		j, _ := slices.BinarySearch(w.sorted, n)
+		if j > i {
+			j--
+			copy(w.sorted[i:j], w.sorted[i+1:j+1])
+		} else {
+			copy(w.sorted[j+1:i+1], w.sorted[j:i])
+		}
+		w.sorted[j] = n
 	}
 }
 
@@ -112,7 +141,25 @@ func (w *Windowed) Mean() float64 { return w.sum / float64(w.Len()) }
 func (w *Windowed) MeanZero() float64 { return w.sum / float64(len(w.Data)) }
 
 func (w *Windowed) Median() float64 {
-	return consolidations.Percentile(w.Data, 50, true)
+	if w.sorted == nil {
+		w.sorted = make([]float64, 0, len(w.Data))
+		for _, v := range w.Data {
+			if !math.IsNaN(v) {
+				w.sorted = append(w.sorted, v)
+			}
+		}
+		slices.Sort(w.sorted)
+	}
+
+	n := len(w.sorted)
+	switch {
+	case n == 0:
+		return math.NaN()
+	case n%2 == 1:
+		return w.sorted[n/2]
+	default:
+		return (w.sorted[n/2-1] + w.sorted[n/2]) / 2
+	}
 }
 
 // Max returns max(values)
