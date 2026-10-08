@@ -3,7 +3,6 @@ module github.com/go-graphite/carbonapi
 go 1.24.0
 
 require (
-	github.com/JaderDias/movingmedian v0.0.0-20220813210630-d8c6b6de8835
 	github.com/alicebob/miniredis/v2 v2.35.0
 	github.com/ansel1/merry v1.8.1
 	github.com/ansel1/merry/v2 v2.2.2

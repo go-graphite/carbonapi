@@ -3,6 +3,8 @@ package moving
 import (
 	"context"
 	"math"
+	"os"
+	"path/filepath"
 	"strconv"
 	"testing"
 	"time"
@@ -249,12 +251,367 @@ func TestMoving(t *testing.T) {
 			From:  610,
 			Until: 700,
 		},
+		{
+			Target: "movingMedian(metric1,4)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 610, Until: 618}: {
+					types.MakeMetricData("metric1", []float64{2, 2, 2, 4, 6, 4, 6, 8}, 1, 611),
+				},
+				{Metric: "metric1", From: 606, Until: 618}: {
+					types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8}, 1, 607),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingMedian(metric1,4)`, []float64{1, 1.5, 2, 2, 3, 4, 5, 6}, 1, 611).SetTag("movingMedian", "4").SetNameTag(`metric1`),
+			},
+			From:  610,
+			Until: 618,
+		},
+		{
+			Target: "movingMedian(metric1,5)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 610, Until: 620}: {
+					types.MakeMetricData("metric1", []float64{2, 2, 4, 6, 4, 6, 8, 1, 2, math.NaN()}, 1, 611),
+				},
+				{Metric: "metric1", From: 605, Until: 620}: {
+					types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, math.NaN()}, 1, 606),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingMedian(metric1,5)`, []float64{1, 2, 2, 2, 4, 4, 6, 6, 4, 4}, 1, 611).SetTag("movingMedian", "5").SetNameTag(`metric1`),
+			},
+			From:  610,
+			Until: 620,
+		},
+		{
+			Target: "movingMedian(metric1,\"1s\")",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 610, Until: 625}: {
+					types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, 0}, 1, 611),
+				},
+				{Metric: "metric1", From: 609, Until: 625}: {
+					types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, 0}, 1, 610),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingMedian(metric1,'1s')`, []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2, 0}, 1, 611).SetTag("movingMedian", "'1s'").SetNameTag(`metric1`),
+			},
+			From:  610,
+			Until: 625,
+		},
+		{
+			Target: "movingMedian(metric1,\"3s\")",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 610, Until: 624}: {
+					types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2}, 1, 611),
+				},
+				{Metric: "metric1", From: 607, Until: 624}: {
+					types.MakeMetricData("metric1", []float64{0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 4, 6, 4, 6, 8, 1, 2}, 1, 608),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingMedian(metric1,'3s')`, []float64{0, 1, 1, 1, 1, 2, 2, 2, 4, 4, 6, 6, 6, 2}, 1, 611).SetTag("movingMedian", "'3s'").SetNameTag(`metric1`),
+			},
+			From:  610,
+			Until: 624,
+		},
+		{
+			Target: "movingMedian(metric1,\"5s\")",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 610, Until: 630}: {
+					types.MakeMetricData("metric1", []float64{2, 3}, 10, 620),
+				},
+				{Metric: "metric1", From: 605, Until: 630}: {
+					types.MakeMetricData("metric1", []float64{1, 2, 3}, 10, 610),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingMedian(metric1,'5s')`, []float64{math.NaN(), math.NaN(), math.NaN()}, 10, 615).SetTag("movingMedian", "'5s'").SetNameTag(`metric1`),
+			},
+			From:  610,
+			Until: 630,
+		},
+		{
+			Target: "movingMedian(metric1,5)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 600, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{1, 4, 1, 5, 9, 2, 6, 5, 3, 5}, 10, 610),
+				},
+				{Metric: "metric1", From: 550, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{2, 3, 8, 4, 3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5}, 10, 560),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingMedian(metric1,5)`, []float64{3, 4, 3, 3, 4, 4, 5, 5, 5, 5}, 10, 610).SetTag("movingMedian", "5").SetNameTag(`metric1`),
+			},
+			From:  600,
+			Until: 700,
+		},
+		{
+			Target: "movingMedian(metric1,5)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 600, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{1, 4, 1, 5, 9, 2, 6, 5, 3, 5}, 10, 610),
+				},
+				{Metric: "metric1", From: 550, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), 3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5}, 10, 560),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingMedian(metric1,5)`, []float64{2, 3, 2, 3, 4, 4, 5, 5, 5, 5}, 10, 610).SetTag("movingMedian", "5").SetNameTag(`metric1`),
+			},
+			From:  600,
+			Until: 700,
+		},
+		{
+			Target: "movingMedian(metric1,4)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 600, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{1, 4, 1, 5, 9, 2, 6, 5, 3, 5}, 10, 610),
+				},
+				{Metric: "metric1", From: 560, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{3, 8, 4, 3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5}, 10, 570),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingMedian(metric1,4)`, []float64{3.5, 3.5, 2, 2.5, 4.5, 3.5, 5.5, 5.5, 4, 5}, 10, 610).SetTag("movingMedian", "4").SetNameTag(`metric1`),
+			},
+			From:  600,
+			Until: 700,
+		},
+		{
+			Target: "movingMedian(metric1,'1min')",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 600, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{1, 4, 1, 5, 9, 2, 6, 5, 3, 5}, 10, 610),
+				},
+				{Metric: "metric1", From: 540, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{3, 2, 3, 8, 4, 3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5}, 10, 550),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingMedian(metric1,'1min')`, []float64{3, 3.5, 3.5, 3.5, 3.5, 3, 4.5, 5, 5, 5}, 10, 610).SetTag("movingMedian", "'1min'").SetNameTag(`metric1`),
+			},
+			From:  600,
+			Until: 700,
+		},
+		{
+			Target: "movingMedian(metric1,'10min')",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 3600, Until: 4800}: {
+					types.MakeMetricData("metric1", []float64{1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9, 3, 2, 3, 8, 4, 3}, 60, 3660),
+				},
+				{Metric: "metric1", From: 3000, Until: 4800}: {
+					types.MakeMetricData("metric1", []float64{8, 9, 7, 9, 3, 2, 3, 8, 4, 3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9, 3, 2, 3, 8, 4, 3}, 60, 3060),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingMedian(metric1,'10min')`, []float64{3.5, 3.5, 3, 3, 3.5, 3.5, 4, 4, 3.5, 4.5, 5, 5, 5.5, 6.5, 5.5, 5.5, 5, 6, 6, 5.5}, 60, 3660).SetTag("movingMedian", "'10min'").SetNameTag(`metric1`),
+			},
+			From:  3600,
+			Until: 4800,
+		},
+		{
+			Target: "movingMedian(metric1,3)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 605, Until: 705}: {
+					types.MakeMetricData("metric1", []float64{1, 4, 1, 5, 9, 2, 6, 5, 3, 5}, 10, 610),
+				},
+				{Metric: "metric1", From: 575, Until: 705}: {
+					types.MakeMetricData("metric1", []float64{8, 4, 3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5}, 10, 580),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingMedian(metric1,3)`, []float64{3, 3, 1, 4, 5, 5, 6, 5, 5, 5}, 10, 610).SetTag("movingMedian", "3").SetNameTag(`metric1`),
+			},
+			From:  605,
+			Until: 705,
+		},
+		{
+			Target: "movingMedian(metric1,'30s')",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 605, Until: 705}: {
+					types.MakeMetricData("metric1", []float64{1, 4, 1, 5, 9, 2, 6, 5, 3, 5}, 10, 610),
+				},
+				{Metric: "metric1", From: 575, Until: 705}: {
+					types.MakeMetricData("metric1", []float64{8, 4, 3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5}, 10, 580),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingMedian(metric1,'30s')`, []float64{3, 3, 1, 4, 5, 5, 6, 5, 5, 5}, 10, 610).SetTag("movingMedian", "'30s'").SetNameTag(`metric1`),
+			},
+			From:  605,
+			Until: 705,
+		},
+		{
+			Target: "movingMedian(metric1,'5s')",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 600, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{1, 4, 1, 5, 9, 2, 6, 5, 3, 5}, 10, 610),
+				},
+				{Metric: "metric1", From: 595, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5}, 10, 600),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingMedian(metric1,'5s')`, []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 10, 605).SetTag("movingMedian", "'5s'").SetNameTag(`metric1`),
+			},
+			From:  600,
+			Until: 700,
+		},
+		{
+			Target: "movingMedian(metric1,4)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 600, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 610),
+				},
+				{Metric: "metric1", From: 560, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{math.NaN(), 8, 4, math.NaN(), 1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 570),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingMedian(metric1,4)`, []float64{4, 4, 2.5, 4, 5, 7, 6, 6, 5.5, 5}, 10, 610).SetTag("movingMedian", "4").SetNameTag(`metric1`),
+			},
+			From:  600,
+			Until: 700,
+		},
+		{
+			Target: "movingMedian(metric1,4,0)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 600, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 610),
+				},
+				{Metric: "metric1", From: 560, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{math.NaN(), 8, 4, math.NaN(), 1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 570),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingMedian(metric1,4)`, []float64{4, 4, 2.5, 4, 5, 7, 6, 6, 5.5, 5}, 10, 610).SetTag("movingMedian", "4").SetNameTag(`metric1`),
+			},
+			From:  600,
+			Until: 700,
+		},
+		{
+			Target: "movingMedian(metric1,4,0.5)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 600, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 610),
+				},
+				{Metric: "metric1", From: 560, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{math.NaN(), 8, 4, math.NaN(), 1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 570),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingMedian(metric1,4)`, []float64{4, 4, 2.5, 4, 5, 7, 6, 6, 5.5, 5}, 10, 610).SetTag("movingMedian", "4").SetNameTag(`metric1`),
+			},
+			From:  600,
+			Until: 700,
+		},
+		{
+			Target: "movingMedian(metric1,4,0.75)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 600, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 610),
+				},
+				{Metric: "metric1", From: 560, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{math.NaN(), 8, 4, math.NaN(), 1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 570),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingMedian(metric1,4)`, []float64{4, 4, math.NaN(), 4, 5, math.NaN(), 6, 6, math.NaN(), 5}, 10, 610).SetTag("movingMedian", "4").SetNameTag(`metric1`),
+			},
+			From:  600,
+			Until: 700,
+		},
+		{
+			Target: "movingMedian(metric1,4,1)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 600, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 610),
+				},
+				{Metric: "metric1", From: 560, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{math.NaN(), 8, 4, math.NaN(), 1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 570),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingMedian(metric1,4)`, []float64{math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN(), math.NaN()}, 10, 610).SetTag("movingMedian", "4").SetNameTag(`metric1`),
+			},
+			From:  600,
+			Until: 700,
+		},
+		{
+			Target: "movingMedian(metric*,3)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric*", From: 600, Until: 720}: {
+					types.MakeMetricData("metric1", []float64{1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9}, 10, 610),
+					types.MakeMetricData("metric2", []float64{8, 9, 7, 9, 3, 2}, 20, 620),
+				},
+				{Metric: "metric*", From: 540, Until: 720}: {
+					types.MakeMetricData("metric1", []float64{3, 2, 3, 8, 4, 3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9}, 10, 550),
+					types.MakeMetricData("metric2", []float64{5, 3, 5, 8, 9, 7, 9, 3, 2}, 20, 560),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingMedian(metric1,3)`, []float64{3, 4, 4, 3, 3, 1, 4, 5, 5, 6, 5, 5, 5, 5, 8}, 10, 610).SetTag("movingMedian", "3").SetNameTag(`metric1`),
+				types.MakeMetricData(`movingMedian(metric2,3)`, []float64{5, 8, 8, 9, 7, 3}, 20, 620).SetTag("movingMedian", "3").SetNameTag(`metric2`),
+			},
+			From:  600,
+			Until: 720,
+		},
+		{
+			Target: "movingMedian(metric*,'1min')",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric*", From: 600, Until: 720}: {
+					types.MakeMetricData("metric1", []float64{1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9}, 10, 610),
+					types.MakeMetricData("metric2", []float64{8, 9, 7, 9, 3, 2}, 20, 620),
+				},
+				{Metric: "metric*", From: 540, Until: 720}: {
+					types.MakeMetricData("metric1", []float64{3, 2, 3, 8, 4, 3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9}, 10, 550),
+					types.MakeMetricData("metric2", []float64{5, 3, 5, 8, 9, 7, 9, 3, 2}, 20, 560),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingMedian(metric1,'1min')`, []float64{3, 3.5, 3.5, 3.5, 3.5, 3, 4.5, 5, 5, 5, 5, 5.5}, 10, 610).SetTag("movingMedian", "'1min'").SetNameTag(`metric1`),
+				types.MakeMetricData(`movingMedian(metric2,'1min')`, []float64{5, 8, 8, 9, 7, 3}, 20, 620).SetTag("movingMedian", "'1min'").SetNameTag(`metric2`),
+			},
+			From:  600,
+			Until: 720,
+		},
 	}
 
 	for n, tt := range tests {
 		testName := tt.Target
 		t.Run(testName+"#"+strconv.Itoa(n), func(t *testing.T) {
 			eval := th.EvaluatorFromFunc(md[0].F)
+			th.TestEvalExprWithRange(t, eval, &tt)
+		})
+	}
+}
+
+func TestMovingStepMismatchReturnsData(t *testing.T) {
+	configFile := filepath.Join(t.TempDir(), "movingMedian.yaml")
+	if err := os.WriteFile(configFile, []byte("returnNaNsIfStepMismatch: false\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	f := NewFunctions(configFile, "movingMedian")[0].F
+
+	tests := []th.EvalTestItemWithRange{
+		{
+			Target: "movingMedian(metric1,'30s')",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 570, Until: 780}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4}, 60, 600)},
+			},
+			Want: []*types.MetricData{types.MakeMetricData(`movingMedian(metric1,'30s')`,
+				[]float64{1, 2, 3, 4}, 60, 600).SetTag("movingMedian", "'30s'").SetNameTag(`metric1`)},
+			From:  600,
+			Until: 780,
+		},
+	}
+
+	for n, tt := range tests {
+		testName := tt.Target
+		t.Run(testName+"#"+strconv.Itoa(n), func(t *testing.T) {
+			eval := th.EvaluatorFromFunc(f)
 			th.TestEvalExprWithRange(t, eval, &tt)
 		})
 	}

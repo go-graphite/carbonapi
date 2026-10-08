@@ -28,10 +28,13 @@ type movingConfig struct {
 }
 
 func New(configFile string) []interfaces.FunctionMetadata {
+	return NewFunctions(configFile, "movingAverage", "movingMin", "movingMax", "movingSum", "movingWindow")
+}
+
+func NewFunctions(configFile string, functions ...string) []interfaces.FunctionMetadata {
 	logger := zapwriter.Logger("functionInit").With(zap.String("function", "moving"))
 	res := make([]interfaces.FunctionMetadata, 0)
 	f := &moving{}
-	functions := []string{"movingAverage", "movingMin", "movingMax", "movingSum", "movingWindow"}
 	for _, n := range functions {
 		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
 	}
@@ -190,9 +193,9 @@ func (f *moving) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Exp
 				for i := range a.Values {
 					r.Values[i] = math.NaN()
 				}
+				r.StartTime += preview
+				r.StopTime += preview
 			}
-			r.StartTime += preview
-			r.StopTime += preview
 			result[j] = r
 			continue
 		}
@@ -210,7 +213,7 @@ func (f *moving) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Exp
 			w.Push(a.Values[i])
 
 			if ridx := i - windowPoints; ridx >= 0 {
-				if w.IsNonNull() && helper.XFilesFactorValues(w.Data, xFilesFactor) {
+				if w.IsNonNull() && windowMeetsXFilesFactor(w, xFilesFactor) {
 					switch cons {
 					case "average":
 						r.Values[ridx] = w.Mean()
@@ -250,6 +253,13 @@ func (f *moving) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Exp
 		result[j] = r
 	}
 	return result, nil
+}
+
+func windowMeetsXFilesFactor(w *types.Windowed, xFilesFactor float64) bool {
+	if math.IsNaN(xFilesFactor) || xFilesFactor == 0 {
+		return true
+	}
+	return helper.XFilesFactor(w.Len(), len(w.Data), xFilesFactor)
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
@@ -368,6 +378,41 @@ func (f *moving) Description() map[string]types.FunctionDescription {
 			Group:       "Calculate",
 			Module:      "graphite.render.functions",
 			Name:        "movingMax",
+			Params: []types.FunctionParam{
+				{
+					Name:     "seriesList",
+					Required: true,
+					Type:     types.SeriesList,
+				},
+				{
+					Name:     "windowSize",
+					Required: true,
+					Suggestions: types.NewSuggestions(
+						5,
+						7,
+						10,
+						"1min",
+						"5min",
+						"10min",
+						"30min",
+						"1hour",
+					),
+					Type: types.IntOrInterval,
+				},
+				{
+					Name: "xFilesFactor",
+					Type: types.Float,
+				},
+			},
+			NameChange:   true, // name changed
+			ValuesChange: true, // values changed
+		},
+		"movingMedian": {
+			Description: "Graphs the moving median of a metric (or metrics) over a fixed number of\npast points, or a time interval.\n\nTakes one metric or a wildcard seriesList followed by a number N of datapoints\nor a quoted string with a length of time like '1hour' or '5min' (See ``from /\nuntil`` in the render\\_api_ for examples of time formats), and an xFilesFactor value to specify\nhow many points in the window must be non-null for the output to be considered valid. Graphs the\nmedian of the preceeding datapoints for each point on the graph.\n\nExample:\n\n.. code-block:: none\n\n  &target=movingMedian(Server.instance01.threads.busy,10)\n  &target=movingMedian(Server.instance*.threads.idle,'5min')",
+			Function:    "movingMedian(seriesList, windowSize, xFilesFactor=None)",
+			Group:       "Calculate",
+			Module:      "graphite.render.functions",
+			Name:        "movingMedian",
 			Params: []types.FunctionParam{
 				{
 					Name:     "seriesList",
