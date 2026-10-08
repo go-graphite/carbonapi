@@ -48,6 +48,9 @@ func (h *medianHeap) Pop() any {
 
 func (h *medianHeap) top() float64 { return h.slots[0].value }
 
+// movingMedian keeps the non-NaN values of the window in two heaps: lower (max-heap) holds the
+// smaller half and upper (min-heap) the larger half, so the median is read from their tops.
+// Each slot tracks its heap position, so a value that leaves the window is removed in O(log n).
 type movingMedian struct {
 	slots []medianSlot
 	lower medianHeap
