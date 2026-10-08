@@ -71,17 +71,19 @@ func TestWindowedMedianMatchesPercentile(t *testing.T) {
 }
 
 func BenchmarkWindowedMedian(b *testing.B) {
+	const outputPoints = 8640
 	r := rand.New(rand.NewSource(1))
-	data := make([]float64, 8640)
-	for i := range data {
-		if i%17 == 0 {
-			data[i] = math.NaN()
-		} else {
-			data[i] = float64(r.Intn(1000))
-		}
-	}
 
-	for _, window := range []int{4, 60, 360, 600, 3600} {
+	for _, window := range []int{4, 60, 360, 600, 3600, 60480} {
+		data := make([]float64, window+outputPoints)
+		for i := range data {
+			if i%17 == 0 {
+				data[i] = math.NaN()
+			} else {
+				data[i] = float64(r.Intn(1000))
+			}
+		}
+
 		b.Run(strconv.Itoa(window), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				w := &Windowed{Data: make([]float64, window)}
