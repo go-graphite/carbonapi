@@ -143,25 +143,18 @@ func (f *moving) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Exp
 		return adjustedArgs, nil
 	}
 
-	if e.ArgsLen() >= 2 && e.Target() == "movingWindow" {
-		cons, err = e.GetStringArgDefault(2, "average")
+	xFilesFactorPos := 2
+	if e.Target() == "movingWindow" {
+		cons, err = e.GetStringNamedOrPosArgDefault("func", 2, "average")
 		if err != nil {
 			return nil, err
 		}
+		xFilesFactorPos = 3
+	}
 
-		if e.ArgsLen() == 4 {
-			xFilesFactor, err = e.GetFloatArgDefault(3, float64(adjustedArgs[0].XFilesFactor))
-
-			if err != nil {
-				return nil, err
-			}
-		}
-	} else if e.ArgsLen() == 3 {
-		xFilesFactor, err = e.GetFloatArgDefault(2, float64(adjustedArgs[0].XFilesFactor))
-
-		if err != nil {
-			return nil, err
-		}
+	xFilesFactor, err = e.GetFloatNamedOrPosArgDefault("xFilesFactor", xFilesFactorPos, float64(adjustedArgs[0].XFilesFactor))
+	if err != nil {
+		return nil, err
 	}
 
 	switch e.Target() {
