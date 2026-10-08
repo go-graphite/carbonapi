@@ -71,8 +71,6 @@ func (f *moving) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Exp
 	var argstr string
 	var cons string
 
-	var xFilesFactor float64
-
 	if e.ArgsLen() < 2 {
 		return nil, parser.ErrMissingArgument
 	}
@@ -152,7 +150,7 @@ func (f *moving) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Exp
 		xFilesFactorPos = 3
 	}
 
-	xFilesFactor, err = e.GetFloatNamedOrPosArgDefault("xFilesFactor", xFilesFactorPos, float64(adjustedArgs[0].XFilesFactor))
+	xFilesFactorArg, err := e.GetFloatNamedOrPosArgDefault("xFilesFactor", xFilesFactorPos, math.NaN())
 	if err != nil {
 		return nil, err
 	}
@@ -173,6 +171,11 @@ func (f *moving) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Exp
 	result := make([]*types.MetricData, len(adjustedArgs))
 
 	for j, a := range adjustedArgs {
+		xFilesFactor := xFilesFactorArg
+		if math.IsNaN(xFilesFactor) {
+			xFilesFactor = float64(a.XFilesFactor)
+		}
+
 		r := a.CopyLink()
 		r.Name = e.Target() + "(" + a.Name + "," + argstr + ")"
 		r.Tags[e.Target()] = argstr

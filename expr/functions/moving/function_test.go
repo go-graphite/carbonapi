@@ -691,6 +691,82 @@ func TestMovingXFilesFactor(t *testing.T) {
 			From:  600,
 			Until: 700,
 		},
+		{
+			Target: "movingAverage(metric*,4)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric*", From: 600, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 610).SetXFilesFactor(0.75),
+					types.MakeMetricData("metric2", []float64{1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 610),
+				},
+				{Metric: "metric*", From: 560, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{math.NaN(), 8, 4, math.NaN(), 1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 570).SetXFilesFactor(0.75),
+					types.MakeMetricData("metric2", []float64{math.NaN(), 8, 4, math.NaN(), 1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 570),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingAverage(metric1,4)`, []float64{4.333333333333333, 3, math.NaN(), 3.3333333333333335, 6, math.NaN(), 6.666666666666667, 6.666666666666667, math.NaN(), 5.333333333333333}, 10, 610).SetTag("movingAverage", "4").SetNameTag(`metric1`),
+				types.MakeMetricData(`movingAverage(metric2,4)`, []float64{4.333333333333333, 3, 2.5, 3.3333333333333335, 6, 7, 6.666666666666667, 6.666666666666667, 5.5, 5.333333333333333}, 10, 610).SetTag("movingAverage", "4").SetNameTag(`metric2`),
+			},
+			From:  600,
+			Until: 700,
+		},
+		{
+			Target: "movingAverage(metric*,4,None)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric*", From: 600, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 610).SetXFilesFactor(0.75),
+					types.MakeMetricData("metric2", []float64{1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 610),
+				},
+				{Metric: "metric*", From: 560, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{math.NaN(), 8, 4, math.NaN(), 1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 570).SetXFilesFactor(0.75),
+					types.MakeMetricData("metric2", []float64{math.NaN(), 8, 4, math.NaN(), 1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 570),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingAverage(metric1,4)`, []float64{4.333333333333333, 3, math.NaN(), 3.3333333333333335, 6, math.NaN(), 6.666666666666667, 6.666666666666667, math.NaN(), 5.333333333333333}, 10, 610).SetTag("movingAverage", "4").SetNameTag(`metric1`),
+				types.MakeMetricData(`movingAverage(metric2,4)`, []float64{4.333333333333333, 3, 2.5, 3.3333333333333335, 6, 7, 6.666666666666667, 6.666666666666667, 5.5, 5.333333333333333}, 10, 610).SetTag("movingAverage", "4").SetNameTag(`metric2`),
+			},
+			From:  600,
+			Until: 700,
+		},
+		{
+			Target: "movingWindow(metric*,4,'sum',None)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric*", From: 600, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 610).SetXFilesFactor(0.75),
+					types.MakeMetricData("metric2", []float64{1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 610),
+				},
+				{Metric: "metric*", From: 560, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{math.NaN(), 8, 4, math.NaN(), 1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 570).SetXFilesFactor(0.75),
+					types.MakeMetricData("metric2", []float64{math.NaN(), 8, 4, math.NaN(), 1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 570),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingWindow(metric1,4)`, []float64{13, 9, math.NaN(), 10, 18, math.NaN(), 20, 20, math.NaN(), 16}, 10, 610).SetTag("movingWindow", "4").SetNameTag(`metric1`),
+				types.MakeMetricData(`movingWindow(metric2,4)`, []float64{13, 9, 5, 10, 18, 14, 20, 20, 11, 16}, 10, 610).SetTag("movingWindow", "4").SetNameTag(`metric2`),
+			},
+			From:  600,
+			Until: 700,
+		},
+		{
+			Target: "movingAverage(metric*,4,0)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric*", From: 600, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 610).SetXFilesFactor(0.75),
+					types.MakeMetricData("metric2", []float64{1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 610),
+				},
+				{Metric: "metric*", From: 560, Until: 700}: {
+					types.MakeMetricData("metric1", []float64{math.NaN(), 8, 4, math.NaN(), 1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 570).SetXFilesFactor(0.75),
+					types.MakeMetricData("metric2", []float64{math.NaN(), 8, 4, math.NaN(), 1, 4, math.NaN(), 5, 9, math.NaN(), 6, 5, math.NaN(), 5}, 10, 570),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData(`movingAverage(metric1,4)`, []float64{4.333333333333333, 3, 2.5, 3.3333333333333335, 6, 7, 6.666666666666667, 6.666666666666667, 5.5, 5.333333333333333}, 10, 610).SetTag("movingAverage", "4").SetNameTag(`metric1`),
+				types.MakeMetricData(`movingAverage(metric2,4)`, []float64{4.333333333333333, 3, 2.5, 3.3333333333333335, 6, 7, 6.666666666666667, 6.666666666666667, 5.5, 5.333333333333333}, 10, 610).SetTag("movingAverage", "4").SetNameTag(`metric2`),
+			},
+			From:  600,
+			Until: 700,
+		},
 	}
 
 	for n, tt := range tests {
