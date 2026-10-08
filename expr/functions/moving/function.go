@@ -5,6 +5,7 @@ import (
 	"math"
 	"strconv"
 
+	"github.com/ansel1/merry"
 	"github.com/lomik/zapwriter"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -70,8 +71,6 @@ func (f *moving) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Exp
 	var argstr string
 	var cons string
 
-	var xFilesFactor float64
-
 	if e.ArgsLen() < 2 {
 		return nil, parser.ErrMissingArgument
 	}
@@ -84,6 +83,9 @@ func (f *moving) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Exp
 	switch e.Arg(1).Type() {
 	case parser.EtConst:
 		n, err = e.GetIntArg(1)
+		if n < 0 {
+			return nil, merry.WithMessagef(parser.ErrInvalidArg, "invalid window size %d", n)
+		}
 		argstr = strconv.Itoa(n)
 
 		arg, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
@@ -139,25 +141,18 @@ func (f *moving) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Exp
 		return adjustedArgs, nil
 	}
 
-	if e.ArgsLen() >= 2 && e.Target() == "movingWindow" {
-		cons, err = e.GetStringArgDefault(2, "average")
+	xFilesFactorPos := 2
+	if e.Target() == "movingWindow" {
+		cons, err = e.GetStringNamedOrPosArgDefault("func", 2, "average")
 		if err != nil {
 			return nil, err
 		}
+		xFilesFactorPos = 3
+	}
 
-		if e.ArgsLen() == 4 {
-			xFilesFactor, err = e.GetFloatArgDefault(3, float64(adjustedArgs[0].XFilesFactor))
-
-			if err != nil {
-				return nil, err
-			}
-		}
-	} else if e.ArgsLen() == 3 {
-		xFilesFactor, err = e.GetFloatArgDefault(2, float64(adjustedArgs[0].XFilesFactor))
-
-		if err != nil {
-			return nil, err
-		}
+	xFilesFactorArg, err := e.GetFloatNamedOrPosArgDefault("xFilesFactor", xFilesFactorPos, math.NaN())
+	if err != nil {
+		return nil, err
 	}
 
 	switch e.Target() {
@@ -176,6 +171,11 @@ func (f *moving) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Exp
 	result := make([]*types.MetricData, len(adjustedArgs))
 
 	for j, a := range adjustedArgs {
+		xFilesFactor := xFilesFactorArg
+		if math.IsNaN(xFilesFactor) {
+			xFilesFactor = float64(a.XFilesFactor)
+		}
+
 		r := a.CopyLink()
 		r.Name = e.Target() + "(" + a.Name + "," + argstr + ")"
 		r.Tags[e.Target()] = argstr
