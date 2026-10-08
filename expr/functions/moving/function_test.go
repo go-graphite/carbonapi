@@ -586,6 +586,32 @@ func TestMoving(t *testing.T) {
 	}
 }
 
+func TestMovingStepMismatchReturnsData(t *testing.T) {
+	returnNaNs := false
+	f := &moving{config: movingConfig{ReturnNaNsIfStepMismatch: &returnNaNs}}
+
+	tests := []th.EvalTestItemWithRange{
+		{
+			Target: "movingMedian(metric1,'30s')",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 570, Until: 780}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 4}, 60, 600)},
+			},
+			Want: []*types.MetricData{types.MakeMetricData(`movingMedian(metric1,'30s')`,
+				[]float64{1, 2, 3, 4}, 60, 600).SetTag("movingMedian", "'30s'").SetNameTag(`metric1`)},
+			From:  600,
+			Until: 780,
+		},
+	}
+
+	for n, tt := range tests {
+		testName := tt.Target
+		t.Run(testName+"#"+strconv.Itoa(n), func(t *testing.T) {
+			eval := th.EvaluatorFromFunc(f)
+			th.TestEvalExprWithRange(t, eval, &tt)
+		})
+	}
+}
+
 func TestMovingXFilesFactor(t *testing.T) {
 	tests := []th.EvalTestItemWithRange{
 		{

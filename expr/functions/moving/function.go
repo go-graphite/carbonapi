@@ -190,9 +190,9 @@ func (f *moving) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Exp
 				for i := range a.Values {
 					r.Values[i] = math.NaN()
 				}
+				r.StartTime += preview
+				r.StopTime += preview
 			}
-			r.StartTime += preview
-			r.StopTime += preview
 			result[j] = r
 			continue
 		}
@@ -210,7 +210,7 @@ func (f *moving) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Exp
 			w.Push(a.Values[i])
 
 			if ridx := i - windowPoints; ridx >= 0 {
-				if w.IsNonNull() && helper.XFilesFactorValues(w.Data, xFilesFactor) {
+				if w.IsNonNull() && windowMeetsXFilesFactor(w, xFilesFactor) {
 					switch cons {
 					case "average":
 						r.Values[ridx] = w.Mean()
@@ -250,6 +250,13 @@ func (f *moving) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Exp
 		result[j] = r
 	}
 	return result, nil
+}
+
+func windowMeetsXFilesFactor(w *types.Windowed, xFilesFactor float64) bool {
+	if math.IsNaN(xFilesFactor) || xFilesFactor == 0 {
+		return true
+	}
+	return helper.XFilesFactor(w.Len(), len(w.Data), xFilesFactor)
 }
 
 // Description is auto-generated description, based on output of https://github.com/graphite-project/graphite-web
