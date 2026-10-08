@@ -77,6 +77,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/functions/minMax"
 	"github.com/go-graphite/carbonapi/expr/functions/mostDeviant"
 	"github.com/go-graphite/carbonapi/expr/functions/moving"
+	"github.com/go-graphite/carbonapi/expr/functions/movingMedian"
 	"github.com/go-graphite/carbonapi/expr/functions/nPercentile"
 	"github.com/go-graphite/carbonapi/expr/functions/nonNegativeDerivative"
 	"github.com/go-graphite/carbonapi/expr/functions/offset"
@@ -211,6 +212,7 @@ func New(configs map[string]string) {
 		{name: "minMax", filename: "minMax", order: minMax.GetOrder(), f: minMax.New},
 		{name: "mostDeviant", filename: "mostDeviant", order: mostDeviant.GetOrder(), f: mostDeviant.New},
 		{name: "moving", filename: "moving", order: moving.GetOrder(), f: moving.New},
+		{name: "movingMedian", filename: "movingMedian", order: movingMedian.GetOrder(), f: movingMedian.New},
 		{name: "nPercentile", filename: "nPercentile", order: nPercentile.GetOrder(), f: nPercentile.New},
 		{name: "nonNegativeDerivative", filename: "nonNegativeDerivative", order: nonNegativeDerivative.GetOrder(), f: nonNegativeDerivative.New},
 		{name: "offset", filename: "offset", order: offset.GetOrder(), f: offset.New},

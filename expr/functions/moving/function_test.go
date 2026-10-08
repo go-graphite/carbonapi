@@ -3,6 +3,8 @@ package moving
 import (
 	"context"
 	"math"
+	"os"
+	"path/filepath"
 	"strconv"
 	"testing"
 	"time"
@@ -587,8 +589,11 @@ func TestMoving(t *testing.T) {
 }
 
 func TestMovingStepMismatchReturnsData(t *testing.T) {
-	returnNaNs := false
-	f := &moving{config: movingConfig{ReturnNaNsIfStepMismatch: &returnNaNs}}
+	configFile := filepath.Join(t.TempDir(), "movingMedian.yaml")
+	if err := os.WriteFile(configFile, []byte("returnNaNsIfStepMismatch: false\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	f := NewFunctions(configFile, "movingMedian")[0].F
 
 	tests := []th.EvalTestItemWithRange{
 		{

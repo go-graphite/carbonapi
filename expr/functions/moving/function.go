@@ -28,10 +28,13 @@ type movingConfig struct {
 }
 
 func New(configFile string) []interfaces.FunctionMetadata {
+	return NewFunctions(configFile, "movingAverage", "movingMin", "movingMax", "movingSum", "movingWindow")
+}
+
+func NewFunctions(configFile string, functions ...string) []interfaces.FunctionMetadata {
 	logger := zapwriter.Logger("functionInit").With(zap.String("function", "moving"))
 	res := make([]interfaces.FunctionMetadata, 0)
 	f := &moving{}
-	functions := []string{"movingAverage", "movingMin", "movingMax", "movingMedian", "movingSum", "movingWindow"}
 	for _, n := range functions {
 		res = append(res, interfaces.FunctionMetadata{Name: n, F: f})
 	}
