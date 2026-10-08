@@ -1,6 +1,7 @@
 package moving_refetch
 
 import (
+	"context"
 	"math"
 	"strconv"
 	"testing"
@@ -12,6 +13,7 @@ import (
 	"github.com/go-graphite/carbonapi/expr/types"
 	"github.com/go-graphite/carbonapi/pkg/parser"
 	th "github.com/go-graphite/carbonapi/tests"
+	"github.com/go-graphite/carbonapi/tests/compare"
 )
 
 var (
@@ -71,6 +73,49 @@ func TestMovingRefetch(t *testing.T) {
 			} else {
 				t.Errorf("error='%v'", err)
 			}
+		})
+	}
+}
+
+func TestMovingFetch(t *testing.T) {
+	tests := []th.EvalTestItemWithRange{
+		{
+			Target: "movingAverage(metric1,'1min')",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 540, Until: 700}: {types.MakeMetricData("metric1", []float64{3, 2, 3, 8, 4, 3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5}, 10, 550).SetPathExpression("metric1")},
+			},
+			Want: []*types.MetricData{types.MakeMetricData(`movingAverage(metric1,'1min')`,
+				[]float64{3.5, 3.8333333333333335, 3.5, 3, 3.8333333333333335, 3.6666666666666665, 4.5, 4.666666666666667, 5, 5}, 10, 610).SetTag("movingAverage", "'1min'").SetNameTag(`metric1`)},
+			From:  600,
+			Until: 700,
+		},
+		{
+			Target: "movingAverage(metric1,'-1min')",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 540, Until: 700}: {types.MakeMetricData("metric1", []float64{3, 2, 3, 8, 4, 3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5}, 10, 550).SetPathExpression("metric1")},
+			},
+			Want: []*types.MetricData{types.MakeMetricData(`movingAverage(metric1,'-1min')`,
+				[]float64{3.5, 3.8333333333333335, 3.5, 3, 3.8333333333333335, 3.6666666666666665, 4.5, 4.666666666666667, 5, 5}, 10, 610).SetTag("movingAverage", "'-1min'").SetNameTag(`metric1`)},
+			From:  600,
+			Until: 700,
+		},
+	}
+
+	for n, tt := range tests {
+		t.Run(tt.Target+"#"+strconv.Itoa(n), func(t *testing.T) {
+			eval, err := expr.NewEvaluator(nil, th.NewTestZipper(tt.M), false)
+			if err != nil {
+				t.Fatalf("error='%v'", err)
+			}
+			exp, _, err := parser.ParseExpr(tt.Target)
+			if err != nil {
+				t.Fatalf("failed to parse %s: %v", tt.Target, err)
+			}
+			got, err := expr.FetchAndEvalExp(context.Background(), eval, exp, tt.From, tt.Until, map[parser.MetricRequest][]*types.MetricData{})
+			if err != nil {
+				t.Fatalf("failed to eval %s: %v", tt.Target, err)
+			}
+			compare.TestMetricData(t, got, tt.Want)
 		})
 	}
 }
