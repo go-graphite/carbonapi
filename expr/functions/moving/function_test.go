@@ -690,6 +690,13 @@ func TestMovingError(t *testing.T) {
 			},
 			Error: parser.ErrBadType,
 		},
+		{
+			Target: "movingAverage(metric1,-2)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3, 1, 2, 3}, 1, 0)},
+			},
+			Error: parser.ErrInvalidArg,
+		},
 	}
 
 	for n, tt := range tests {

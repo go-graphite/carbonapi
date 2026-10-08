@@ -5,6 +5,7 @@ import (
 	"math"
 	"strconv"
 
+	"github.com/ansel1/merry"
 	"github.com/lomik/zapwriter"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -84,6 +85,9 @@ func (f *moving) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Exp
 	switch e.Arg(1).Type() {
 	case parser.EtConst:
 		n, err = e.GetIntArg(1)
+		if n < 0 {
+			return nil, merry.WithMessagef(parser.ErrInvalidArg, "invalid window size %d", n)
+		}
 		argstr = strconv.Itoa(n)
 
 		arg, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
