@@ -153,7 +153,6 @@ func NewZipper(sender func(*types.Stats), cfg *config.Config, logger *zap.Logger
 		)
 	}
 
-	logger.Error("DEBUG ERROR LOGGGGG", zap.Any("cfg", cfg))
 	broadcastGroup, err := broadcast.NewBroadcastGroup(logger, "root", cfg.DoMultipleRequestsIfSplit, backends,
 		int32(cfg.InternalRoutingCache.Seconds()), cfg.ConcurrencyLimitPerServer, *cfg.MaxBatchSize, cfg.Timeouts, cfg.TLDCacheDisabled, cfg.RequireSuccessAll,
 	)
