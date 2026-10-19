@@ -1,6 +1,3 @@
-# github.com/JaderDias/movingmedian v0.0.0-20220813210630-d8c6b6de8835
-## explicit
-github.com/JaderDias/movingmedian
 # github.com/aclements/go-moremath v0.0.0-20210112150236-f10218a38794
 ## explicit; go 1.12
 github.com/aclements/go-moremath/mathx

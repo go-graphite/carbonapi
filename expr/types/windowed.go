@@ -1,7 +1,6 @@
 package types
 
 import (
-	"github.com/go-graphite/carbonapi/expr/consolidations"
 	"math"
 )
 
@@ -20,6 +19,7 @@ type Windowed struct {
 	sum    float64
 	sumsq  float64
 	nans   int
+	median *movingMedian
 }
 
 func (w *Windowed) Reset() {
@@ -28,6 +28,7 @@ func (w *Windowed) Reset() {
 	w.sum = 0
 	w.sumsq = 0
 	w.nans = 0
+	w.median = nil
 	for i := range w.Data {
 		w.Data[i] = 0
 	}
@@ -39,11 +40,12 @@ func (w *Windowed) Push(n float64) {
 		return
 	}
 
-	old := w.Data[w.head]
+	pos := w.head
+	old := w.Data[pos]
 
 	w.length++
 
-	w.Data[w.head] = n
+	w.Data[pos] = n
 	w.head++
 	if w.head >= len(w.Data) {
 		w.head = 0
@@ -61,6 +63,11 @@ func (w *Windowed) Push(n float64) {
 		w.sumsq += (n * n)
 	} else {
 		w.nans++
+	}
+
+	// median is built by the first Median() call and kept up to date from then on
+	if w.median != nil {
+		w.median.replace(pos, n)
 	}
 }
 
@@ -112,7 +119,10 @@ func (w *Windowed) Mean() float64 { return w.sum / float64(w.Len()) }
 func (w *Windowed) MeanZero() float64 { return w.sum / float64(len(w.Data)) }
 
 func (w *Windowed) Median() float64 {
-	return consolidations.Percentile(w.Data, 50, true)
+	if w.median == nil {
+		w.median = newMovingMedian(w.Data)
+	}
+	return w.median.median()
 }
 
 // Max returns max(values)
