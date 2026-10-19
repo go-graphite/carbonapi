@@ -272,6 +272,9 @@ func (e *expr) Metrics(from, until int64) []MetricRequest {
 				if err != nil {
 					return nil
 				}
+				if offs < 0 {
+					offs = -offs
+				}
 				for i := range r {
 					fromNew := r[i].From - int64(offs)
 					r[i].From = fromNew
