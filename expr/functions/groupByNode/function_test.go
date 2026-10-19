@@ -244,11 +244,60 @@ func TestGroupByNode(t *testing.T) {
 				"": {types.MakeMetricData("", []float64{0}, 1, now32).SetTag("aggregatedBy", "average")},
 			},
 		},
+		{
+			Name:   "groupByNode_names_with_special_chars",
+			Target: `groupByNode(metric1.foo.*.*,2,"sum")`,
+			M: map[parser.MetricRequest][]*types.MetricData{
+				mr: {
+					types.MakeMetricData("metric1.foo.a=b.baz", []float64{0, 1}, 1, now32),
+					types.MakeMetricData("metric1.foo.a=b.qux", []float64{0, 1}, 1, now32),
+					types.MakeMetricData("metric1.foo.a#b.baz", []float64{1, 2}, 1, now32),
+					types.MakeMetricData("metric1.foo.a#b.qux", []float64{10, 11}, 1, now32),
+					types.MakeMetricData("metric1.foo.Compressed Class Space.baz", []float64{2, 3}, 1, now32),
+					types.MakeMetricData("metric1.foo.Compressed Class Space.qux", []float64{20, 21}, 1, now32),
+					types.MakeMetricData("metric1.foo.CodeHeap 'profiled nmethods'.baz", []float64{3, 4}, 1, now32),
+					types.MakeMetricData("metric1.foo.CodeHeap 'profiled nmethods'.qux", []float64{30, 31}, 1, now32),
+					types.MakeMetricData(`metric1.foo.a"b.baz`, []float64{4, 5}, 1, now32),
+					types.MakeMetricData(`metric1.foo.a"b.qux`, []float64{40, 41}, 1, now32),
+					types.MakeMetricData("metric1.foo.Zürich.baz", []float64{5, 6}, 1, now32),
+					types.MakeMetricData("metric1.foo.Zürich.qux", []float64{50, 51}, 1, now32),
+				},
+			},
+			Results: map[string][]*types.MetricData{
+				"a=b":                          {types.MakeMetricData("a=b", []float64{0, 2}, 1, now32).SetTag("aggregatedBy", "sum")},
+				"a#b":                          {types.MakeMetricData("a#b", []float64{11, 13}, 1, now32).SetTag("aggregatedBy", "sum")},
+				"Compressed Class Space":       {types.MakeMetricData("Compressed Class Space", []float64{22, 24}, 1, now32).SetTag("aggregatedBy", "sum")},
+				"CodeHeap 'profiled nmethods'": {types.MakeMetricData("CodeHeap 'profiled nmethods'", []float64{33, 35}, 1, now32).SetTag("aggregatedBy", "sum")},
+				`a"b`:                          {types.MakeMetricData(`a"b`, []float64{44, 46}, 1, now32).SetTag("aggregatedBy", "sum")},
+				"Zürich":                       {types.MakeMetricData("Zürich", []float64{55, 57}, 1, now32).SetTag("aggregatedBy", "sum")},
+			},
+		},
+		{
+			Name:   "groupByNodes_names_with_special_chars",
+			Target: `groupByNodes(metric1.foo.*.*,"sum",2,3)`,
+			M: map[parser.MetricRequest][]*types.MetricData{
+				mr: {
+					types.MakeMetricData("metric1.foo.a=b.baz", []float64{0, 1}, 1, now32),
+					types.MakeMetricData("metric1.foo.a#b.baz", []float64{1, 2}, 1, now32),
+					types.MakeMetricData("metric1.foo.Compressed Class Space.baz", []float64{2, 3}, 1, now32),
+					types.MakeMetricData("metric1.foo.CodeHeap 'profiled nmethods'.baz", []float64{3, 4}, 1, now32),
+					types.MakeMetricData(`metric1.foo.a"b.baz`, []float64{4, 5}, 1, now32),
+					types.MakeMetricData("metric1.foo.Zürich.baz", []float64{5, 6}, 1, now32),
+				},
+			},
+			Results: map[string][]*types.MetricData{
+				"a=b.baz":                          {types.MakeMetricData("a=b.baz", []float64{0, 1}, 1, now32).SetTag("aggregatedBy", "sum")},
+				"a#b.baz":                          {types.MakeMetricData("a#b.baz", []float64{1, 2}, 1, now32).SetTag("aggregatedBy", "sum")},
+				"Compressed Class Space.baz":       {types.MakeMetricData("Compressed Class Space.baz", []float64{2, 3}, 1, now32).SetTag("aggregatedBy", "sum")},
+				"CodeHeap 'profiled nmethods'.baz": {types.MakeMetricData("CodeHeap 'profiled nmethods'.baz", []float64{3, 4}, 1, now32).SetTag("aggregatedBy", "sum")},
+				`a"b.baz`:                          {types.MakeMetricData(`a"b.baz`, []float64{4, 5}, 1, now32).SetTag("aggregatedBy", "sum")},
+				"Zürich.baz":                       {types.MakeMetricData("Zürich.baz", []float64{5, 6}, 1, now32).SetTag("aggregatedBy", "sum")},
+			},
+		},
 	}
 
 	for _, tt := range tests {
-		testName := tt.Target
-		t.Run(testName, func(t *testing.T) {
+		t.Run(tt.Name, func(t *testing.T) {
 			eval := th.EvaluatorFromFuncWithMetadata(metadata.FunctionMD.Functions)
 			th.TestMultiReturnEvalExpr(t, eval, &tt)
 		})

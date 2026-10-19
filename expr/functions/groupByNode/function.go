@@ -2,7 +2,6 @@ package groupByNode
 
 import (
 	"context"
-	"strings"
 
 	"github.com/ansel1/merry"
 	"github.com/go-graphite/carbonapi/expr/consolidations"
@@ -79,31 +78,19 @@ func (f *groupByNode) Do(ctx context.Context, eval interfaces.Evaluator, e parse
 	}
 
 	for _, k := range nodeList {
-		k := k // k's reference is used later, so it's important to make it unique per loop
 		v := groups[k]
 
-		// Ensure that names won't be parsed as consts, appending stub to them
-		expr := callback + "(stub_" + k + ")"
-
 		// create a stub context to evaluate the callback in
-		nexpr, _, err := parser.ParseExpr(expr)
+		nexpr, _, err := parser.ParseExpr(callback + "(stub)")
 		if err != nil {
 			return nil, err
 		} else if nexpr.Type() != parser.EtFunc {
 			err = merry.WithMessage(parser.ErrInvalidArg, "unsupported "+target+" callback function")
 			return nil, err
 		}
-		// remove all stub_ prefixes we've prepended before
-		nexpr.SetRawArgs(strings.Replace(nexpr.RawArgs(), "stub_", "", 1))
-		for argIdx := range nexpr.Args() {
-			nexpr.Args()[argIdx].SetTarget(strings.Replace(nexpr.Args()[0].Target(), "stub_", "", 1))
-		}
 
-		nvalues := values
-		if e.Target() == "groupByNode" || e.Target() == "groupByNodes" {
-			nvalues = map[parser.MetricRequest][]*types.MetricData{
-				{Metric: k, From: from, Until: until}: v,
-			}
+		nvalues := map[parser.MetricRequest][]*types.MetricData{
+			{Metric: "stub", From: from, Until: until}: v,
 		}
 
 		r, _ := eval.Eval(ctx, nexpr, from, until, nvalues)
