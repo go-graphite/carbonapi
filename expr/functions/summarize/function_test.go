@@ -202,13 +202,13 @@ func TestEvalSummarize(t *testing.T) {
 					3, 3, 3, 3, 3, 4, 4, 4, 4, 4,
 					5, 5, 5, 5, 5}, 60, tenThirtyTwo)},
 			},
-			Want:  []float64{11, 31, 33, math.NaN()},
+			Want:  []float64{11, 31, 33},
 			From:  tenThirtyTwo,
 			Until: tenThirty + 30*60,
 			Name:  "summarize(metric1,'10min')",
 			Step:  600,
 			Start: tenThirty,
-			Stop:  (tenThirty + 30*60) - ((tenThirty + 30*60) % 600) + 600, // When alignToFrom is false, the new stop time is calculated with: stop - (stop % bucketSize) + bucketSize
+			Stop:  tenThirty + 30*60,
 		},
 		{
 			Target: "summarize(metric1,'10min','sum',true)",
@@ -254,13 +254,13 @@ func TestEvalSummarize1Minute(t *testing.T) {
 			M: map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
-			Want:  []float64{28680, math.NaN()},
+			Want:  []float64{28680},
 			From:  0,
 			Until: 240,
 			Name:  "summarize(metric1,'1hr','sum')",
 			Step:  3600,
 			Start: 0,
-			Stop:  7200,
+			Stop:  3600,
 		},
 		{
 			Target: "summarize(metric1,'1min','avg')",
@@ -384,6 +384,74 @@ func TestEvalSummarize1Minute(t *testing.T) {
 	for _, tt := range tests {
 		eval := th.EvaluatorFromFunc(md[0].F)
 		th.TestSummarizeEvalExpr(t, eval, &tt)
+	}
+}
+
+func TestEvalSummarizeMultipleSeries(t *testing.T) {
+	tests := []th.EvalTestItem{
+		{
+			Target: "summarize(metric*,'5min')",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric*", From: 0, Until: 1}: {
+					types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 1, 1, 1}, 50, 300),
+					types.MakeMetricData("metric2", []float64{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 60, 0),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData("summarize(metric1,'5min')", []float64{6, 1}, 300, 300).
+					SetTag("summarize", "5min").SetTag("summarizeFunction", "sum").SetNameTag("metric1"),
+				types.MakeMetricData("summarize(metric2,'5min')", []float64{5, 5, 5, math.NaN()}, 300, 0).
+					SetTag("summarize", "5min").SetTag("summarizeFunction", "sum").SetNameTag("metric2"),
+			},
+		},
+		{
+			Target: "summarize(metric*,'5min','sum',true)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric*", From: 0, Until: 1}: {
+					types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 1, 1, 1}, 50, 300),
+					types.MakeMetricData("metric2", []float64{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 60, 30),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData("summarize(metric1,'5min','sum',true)", []float64{6, 1}, 300, 300).
+					SetTag("summarize", "5min").SetTag("summarizeFunction", "sum").SetNameTag("metric1"),
+				types.MakeMetricData("summarize(metric2,'5min','sum',true)", []float64{5, 5, 5}, 300, 30).
+					SetTag("summarize", "5min").SetTag("summarizeFunction", "sum").SetNameTag("metric2"),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Target, func(t *testing.T) {
+			eval := th.EvaluatorFromFunc(md[0].F)
+			th.TestEvalExpr(t, eval, &tt)
+		})
+	}
+}
+
+func TestEvalSummarizeErrors(t *testing.T) {
+	tests := []th.EvalTestItemWithError{
+		{
+			Target: "summarize(metric1,'0s')",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3}, 60, 0)},
+			},
+			Error: parser.ErrInvalidInterval,
+		},
+		{
+			Target: "summarize(metric1,'-5min')",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric1", From: 0, Until: 1}: {types.MakeMetricData("metric1", []float64{1, 2, 3}, 60, 0)},
+			},
+			Error: parser.ErrInvalidInterval,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Target, func(t *testing.T) {
+			eval := th.EvaluatorFromFunc(md[0].F)
+			th.TestEvalExprWithError(t, eval, &tt)
+		})
 	}
 }
 

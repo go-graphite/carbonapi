@@ -31,7 +31,6 @@ func New(configFile string) []interfaces.FunctionMetadata {
 
 // summarize(seriesList, intervalString, func='sum', alignToFrom=False)
 func (f *summarize) Do(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, from, until int64, values map[parser.MetricRequest][]*types.MetricData) ([]*types.MetricData, error) {
-	// TODO(dgryski): make sure the arrays are all the same 'size'
 	args, err := helper.GetSeriesArg(ctx, eval, e.Arg(0), from, until, values)
 	if err != nil {
 		return nil, err
@@ -43,6 +42,9 @@ func (f *summarize) Do(ctx context.Context, eval interfaces.Evaluator, e parser.
 	bucketSizeInt32, err := e.GetIntervalArg(1, 1)
 	if err != nil {
 		return nil, err
+	}
+	if bucketSizeInt32 <= 0 {
+		return nil, parser.ErrInvalidInterval
 	}
 	bucketSize := int64(bucketSizeInt32)
 
@@ -61,15 +63,17 @@ func (f *summarize) Do(ctx context.Context, eval interfaces.Evaluator, e parser.
 	}
 	_, alignOk := e.NamedOrPosArg("alignToFrom", 3)
 
-	newStart := args[0].StartTime
-	newStop := args[0].StopTime
-	if !alignToFrom {
-		newStart, newStop = helper.AlignToBucketSize(newStart, newStop, bucketSize)
-		newStop += bucketSize
-	}
-
 	results := make([]*types.MetricData, len(args))
 	for n, arg := range args {
+		newStart := arg.StartTime
+		newStop := arg.StopTime
+		if !alignToFrom {
+			newStart, newStop = helper.AlignToBucketSize(newStart, newStop, bucketSize)
+			// graphite-web adds an empty bucket when stop is already on a bucket boundary
+			if newStop == arg.StopTime {
+				newStop += bucketSize
+			}
+		}
 
 		name := fmt.Sprintf("summarize(%s,'%s'", arg.Name, e.Arg(1).StringValue())
 		if funcOk || alignOk {
@@ -115,8 +119,6 @@ func (f *summarize) Do(ctx context.Context, eval interfaces.Evaluator, e parser.
 				bucketStart = (ts - arg.StartTime + arg.StepTime - 1) / arg.StepTime // equivalent to ceil((ts-arg.StartTime) / arg.StepTime)
 
 				if bucketStart > int64(len(arg.Values)) {
-					// It is possible for the stop time to not be reached, but all of the values in the series have already been assigned
-					// to buckets and aggregated. In this case, the final bucket will have a value of NaN.
 					ts = bucketUpperBound
 					r.Values = append(r.Values, math.NaN())
 					break
