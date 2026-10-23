@@ -213,6 +213,7 @@ func EvalExpr(ctx context.Context, eval interfaces.Evaluator, e parser.Expr, fro
 				parser.ErrMissingValues,
 				parser.ErrUnknownTimeUnits,
 				parser.ErrInvalidArg,
+				parser.ErrInvalidInterval,
 			) {
 				err = merry.WithHTTPCode(err, 400)
 			}

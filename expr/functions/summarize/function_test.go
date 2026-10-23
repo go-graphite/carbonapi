@@ -404,6 +404,21 @@ func TestEvalSummarizeMultipleSeries(t *testing.T) {
 					SetTag("summarize", "5min").SetTag("summarizeFunction", "sum").SetNameTag("metric2"),
 			},
 		},
+		{
+			Target: "summarize(metric*,'5min','sum',true)",
+			M: map[parser.MetricRequest][]*types.MetricData{
+				{Metric: "metric*", From: 0, Until: 1}: {
+					types.MakeMetricData("metric1", []float64{1, 1, 1, 1, 1, 1, 1}, 50, 300),
+					types.MakeMetricData("metric2", []float64{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 60, 30),
+				},
+			},
+			Want: []*types.MetricData{
+				types.MakeMetricData("summarize(metric1,'5min','sum',true)", []float64{6, 1}, 300, 300).
+					SetTag("summarize", "5min").SetTag("summarizeFunction", "sum").SetNameTag("metric1"),
+				types.MakeMetricData("summarize(metric2,'5min','sum',true)", []float64{5, 5, 5}, 300, 30).
+					SetTag("summarize", "5min").SetTag("summarizeFunction", "sum").SetNameTag("metric2"),
+			},
+		},
 	}
 
 	for _, tt := range tests {
