@@ -65,6 +65,7 @@ func (f *summarize) Do(ctx context.Context, eval interfaces.Evaluator, e parser.
 	newStop := args[0].StopTime
 	if !alignToFrom {
 		newStart, newStop = helper.AlignToBucketSize(newStart, newStop, bucketSize)
+		// graphite-web adds an empty bucket when stop is already on a bucket boundary
 		if newStop == args[0].StopTime {
 			newStop += bucketSize
 		}
