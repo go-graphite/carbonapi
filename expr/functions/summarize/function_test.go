@@ -202,13 +202,13 @@ func TestEvalSummarize(t *testing.T) {
 					3, 3, 3, 3, 3, 4, 4, 4, 4, 4,
 					5, 5, 5, 5, 5}, 60, tenThirtyTwo)},
 			},
-			Want:  []float64{11, 31, 33, math.NaN()},
+			Want:  []float64{11, 31, 33},
 			From:  tenThirtyTwo,
 			Until: tenThirty + 30*60,
 			Name:  "summarize(metric1,'10min')",
 			Step:  600,
 			Start: tenThirty,
-			Stop:  (tenThirty + 30*60) - ((tenThirty + 30*60) % 600) + 600, // When alignToFrom is false, the new stop time is calculated with: stop - (stop % bucketSize) + bucketSize
+			Stop:  tenThirty + 30*60,
 		},
 		{
 			Target: "summarize(metric1,'10min','sum',true)",
@@ -254,13 +254,13 @@ func TestEvalSummarize1Minute(t *testing.T) {
 			M: map[parser.MetricRequest][]*types.MetricData{
 				{Metric: "metric1", From: 0, Until: 240}: {types.MakeMetricData("metric1", generateValues(0, 240, 1), 1, 0)},
 			},
-			Want:  []float64{28680, math.NaN()},
+			Want:  []float64{28680},
 			From:  0,
 			Until: 240,
 			Name:  "summarize(metric1,'1hr','sum')",
 			Step:  3600,
 			Start: 0,
-			Stop:  7200,
+			Stop:  3600,
 		},
 		{
 			Target: "summarize(metric1,'1min','avg')",

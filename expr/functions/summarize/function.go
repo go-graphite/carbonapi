@@ -65,7 +65,9 @@ func (f *summarize) Do(ctx context.Context, eval interfaces.Evaluator, e parser.
 	newStop := args[0].StopTime
 	if !alignToFrom {
 		newStart, newStop = helper.AlignToBucketSize(newStart, newStop, bucketSize)
-		newStop += bucketSize
+		if newStop == args[0].StopTime {
+			newStop += bucketSize
+		}
 	}
 
 	results := make([]*types.MetricData, len(args))
